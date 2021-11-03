@@ -97,7 +97,6 @@ class SimplifiedTwoDesign(Operation):
             weights = [np.random.random(size=shape) for shape in shapes]
 
     """
-    num_params = 2
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -126,6 +125,10 @@ class SimplifiedTwoDesign(Operation):
         self.n_layers = shape[0]
 
         super().__init__(initial_layer_weights, weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 2
 
     def expand(self):
 

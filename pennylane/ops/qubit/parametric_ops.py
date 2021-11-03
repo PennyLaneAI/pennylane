@@ -50,12 +50,15 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
     par_domain = "R"
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -105,12 +108,15 @@ class RY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
     par_domain = "R"
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -154,12 +160,15 @@ class RZ(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
     par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -214,12 +223,15 @@ class PhaseShift(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
     par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -286,12 +298,15 @@ class ControlledPhaseShift(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -370,10 +385,13 @@ class Rot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 3
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 3
 
     @classmethod
     def _matrix(cls, *params):
@@ -452,10 +470,13 @@ class MultiRZ(DiagonalOperation):
         theta (float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, theta, n):
@@ -552,7 +573,6 @@ class PauliRot(Operation):
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 2
     num_wires = AnyWires
     do_check_domain = False
     par_domain = "R"
@@ -585,6 +605,10 @@ class PauliRot(Operation):
                     len(pauli_word), num_wires, wires
                 )
             )
+
+    @property
+    def num_params(self):
+        return 2
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -807,7 +831,6 @@ class CRX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     basis = "X"
@@ -818,6 +841,10 @@ class CRX(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
@@ -900,7 +927,6 @@ class CRY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     basis = "Y"
@@ -911,6 +937,10 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
@@ -987,7 +1017,6 @@ class CRZ(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     basis = "Z"
@@ -998,6 +1027,10 @@ class CRZ(DiagonalOperation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
@@ -1079,11 +1112,14 @@ class CRot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 3
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+
+    @property
+    def num_params(self):
+        return 3
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
@@ -1168,11 +1204,14 @@ class U1(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -1227,10 +1266,13 @@ class U2(Operation):
         lambda (float): quantum phase :math:`\lambda`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
-    num_params = 2
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 2
 
     @classmethod
     def _matrix(cls, *params):
@@ -1301,10 +1343,13 @@ class U3(Operation):
         lambda (float): quantum phase :math:`\lambda`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
-    num_params = 3
     num_wires = 1
     par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 3
 
     @classmethod
     def _matrix(cls, *params):
@@ -1370,7 +1415,6 @@ class IsingXX(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
@@ -1379,6 +1423,10 @@ class IsingXX(Operation):
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -1432,7 +1480,6 @@ class IsingYY(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
@@ -1440,6 +1487,10 @@ class IsingYY(Operation):
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1491,7 +1542,6 @@ class IsingZZ(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
     """
-    num_params = 1
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
@@ -1499,6 +1549,10 @@ class IsingZZ(Operation):
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(phi, wires):

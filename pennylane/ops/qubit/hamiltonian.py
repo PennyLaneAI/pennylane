@@ -160,7 +160,6 @@ class Hamiltonian(Observable):
     """
 
     num_wires = qml.operation.AnyWires
-    num_params = 1
     par_domain = "A"
     grad_method = "A"  # supports analytic gradients
 
@@ -206,8 +205,6 @@ class Hamiltonian(Observable):
                 )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
-        # overwrite this attribute, now that we have the correct info
-        self.num_params = qml.math.shape(self._coeffs)[0]
 
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,

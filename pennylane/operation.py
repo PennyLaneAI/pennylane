@@ -483,6 +483,16 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
+        self._num_params = len(params)
+        # Check if the num_params attribute coincides with the number of parameters received.
+        # This test will only raise an error if a subclass overwrites the attribute to define
+        # an expected number of parameters for the operation.
+        if len(params) != self.num_params:
+            raise ValueError(
+                "{}: wrong number of parameters. "
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+            )
+
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -499,12 +509,6 @@ class Operator(abc.ABC):
                 "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
-        if len(params) != self.num_params:
-            raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
-            )
-
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -516,6 +520,18 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
         return "{}(wires={})".format(self.name, self.wires.tolist())
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters that this operator expects to be fed via the
+        dynamic `*params` argument. By default, this property returns as many parameters as it got.
+        If the expected number of parameters is known, this property can be overwritten to return
+        the expected value, which will be checked against the actual one.
+
+        Returns:
+            int: number of parameters
+        """
+        return self._num_params
 
     @property
     def wires(self):

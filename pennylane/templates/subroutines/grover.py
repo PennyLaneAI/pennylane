@@ -99,7 +99,6 @@ class GroverOperator(Operation):
     Optimally, the oracle-operator pairing should be repeated :math:`\lceil \frac{\pi}{4}\sqrt{2^{n}} \rceil` times.
 
     """
-    num_params = 0
     num_wires = AnyWires
     par_domain = None
     grad_method = None
@@ -110,6 +109,10 @@ class GroverOperator(Operation):
 
         self.work_wires = work_wires
         super().__init__(wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 0
 
     def expand(self):
         ctrl_str = "0" * (len(self.wires) - 1)
