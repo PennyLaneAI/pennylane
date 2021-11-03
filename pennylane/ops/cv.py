@@ -94,7 +94,7 @@ class Rotation(CVOperation):
     Args:
         phi (float): the rotation angle
     """
-    num_params = 1
+    num_wires = 1
     par_domain = "R"
     grad_method = "A"
 
@@ -142,7 +142,7 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 2
+    num_wires = 1
     par_domain = "R"
     grad_method = "A"
 
@@ -153,7 +153,7 @@ class Squeezing(CVOperation):
 
     @property
     def num_params(self):
-        return 1
+        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -197,7 +197,7 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 2
+    num_wires = 1
     par_domain = "R"
     grad_method = "A"
 
@@ -208,7 +208,7 @@ class Displacement(CVOperation):
 
     @property
     def num_params(self):
-        return 1
+        return 2
 
     @staticmethod
     def _heisenberg_rep(p):

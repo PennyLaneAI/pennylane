@@ -245,7 +245,6 @@ class kUpCCGSD(Operation):
     def num_params(self):
         return 1
 
-
     def expand(self):
 
         with qml.tape.QuantumTape() as tape:
