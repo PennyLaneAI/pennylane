@@ -35,11 +35,16 @@ class CommutingEvolution(Operation):
         U(t) \ = \ e^{-i H t} \ = \exp(-i t \displaystyle\sum_j c_j P_j) =
         \displaystyle\prod_j \exp(-i t c_j P_j).
 
-    If the Hamiltonian has a small number of unique eigenvalues, partial derivatives of cost
-    function expectation values taken with respect to :math:`t` may be efficiently computed
-    through generalized parameter shift rules. rules. When initialized, this template will
-    automatically compute the parameter-shift rule if given the Hamiltonian's eigenvalue
-    frequencies, i.e., the unique positive differences between eigenvalues.
+    If the Hamiltonian has a small number of unique eigenvalues, partial derivatives of observable
+    expectation values, i.e.
+
+    .. math:: \langle 0 | W(t)^\dagger O W(t) | 0 \rangle,
+
+    where :math:`W(t) = V U(t) Y` for some :math:`V` and :math:`Y`, taken with respect to
+    :math:`t` may be efficiently computed through generalized parameter shift rules. rules. When
+    initialized, this template will automatically compute the parameter-shift rule if given the
+    Hamiltonian's eigenvalue frequencies, i.e., the unique positive differences between
+    eigenvalues.
 
     .. warning::
 
