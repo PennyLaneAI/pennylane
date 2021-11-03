@@ -32,7 +32,7 @@ geometry of the molecule and the basis set parameters are all differentiable.
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
 
-    # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
+    # alpha and coeff are the exponents and contraction coefficients of the Gaussian functions
     alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
                       [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
     coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
