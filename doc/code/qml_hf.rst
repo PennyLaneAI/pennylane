@@ -5,6 +5,15 @@ This module provides the functionality to perform differentiable Hartree-Fock (H
 construct molecular Hamiltonians that can be differentiated with respect to nuclear coordinates and
 basis set parameters.
 
+The differentiable aspect of the HF solver allows computing exact gradients with respect to
+molecular geometry, basis set, and circuit parameters simultaneously using the techniques of
+automatic differentiation available in `Autograd <https://github.com/HIPS/autograd>`__. This makes
+this HF solver more versatile and robust compared to non-differentiable tools which mainly rely
+on numerical approaches for computing gradients, with an extra computational cost. In particular,
+optimizing the basis set parameters available with the Hf solver allows reaching lower ground state
+energies without increasing the size of the basis set which leads to a larger number of number of
+qubits.
+
 .. currentmodule:: pennylane.hf
 
 .. automodapi:: pennylane.hf
