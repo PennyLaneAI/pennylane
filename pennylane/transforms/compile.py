@@ -23,7 +23,7 @@ from pennylane.transforms import single_tape_transform, qfunc_transform
 from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations, remove_barrier
 
 
-default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
+default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
 
 
 @qfunc_transform
@@ -133,6 +133,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
             if not isinstance(p_func, single_tape_transform) and not hasattr(p_func, "tape_fn"):
                 raise ValueError("Invalid transform function {p} passed to compile.")
 
+    pipeline.append(remove_barrier)
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")
 
