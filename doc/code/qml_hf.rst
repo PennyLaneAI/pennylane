@@ -1,16 +1,13 @@
 qml.hf
 ======
 
-.. currentmodule:: pennylane.hf
-
-.. automodapi:: pennylane.hf
-
-Overview
---------
-
 This module provides the functionality to perform differentiable Hartree-Fock calculations and
 construct molecular Hamiltonians that can be differentiated with respect to nuclear coordinates and
 basis set parameters.
+
+.. currentmodule:: pennylane.hf
+
+.. automodapi:: pennylane.hf
 
 Usage details
 -------------
@@ -18,7 +15,7 @@ Usage details
 The HF solver computes the integrals over basis functions, constructs the relevant matrices, and
 performs self-consistent-field iterations to obtain a set of optimized molecular orbital
 coefficients. These coefficients and the computed integrals over basis functions are used to
-construct the one- and two-body electron integrals in the molecular orbital basis which can be
+construct the one- and two-body electron integrals in the molecular orbital basis, which can be
 used to generate a differentiable second-quantized Hamiltonian in the fermionic and qubit basis.
 
 The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
@@ -48,25 +45,25 @@ construct the Hamiltonian.
 
     hamiltonian = qml.hf.generate_hamiltonian(mol)(*args_mol)
 
-    >>> print(hamiltonian)
-      ((-0.3596823592263728+0j)) [I0]
-    + ((-0.11496335836149135+0j)) [Z3]
-    + ((-0.1149633583614913+0j)) [Z2]
-    + ((0.1308241430373499+0j)) [Z0]
-    + ((0.1308241430373499+0j)) [Z1]
-    + ((0.10316898251626505+0j)) [Z0 Z2]
-    + ((0.10316898251626505+0j)) [Z1 Z3]
-    + ((0.1532995999427217+0j)) [Z0 Z3]
-    + ((0.1532995999427217+0j)) [Z2 Z1]
-    + ((0.1540549585580985+0j)) [Z0 Z1]
-    + ((0.1609686663985837+0j)) [Z3 Z2]
-    + ((-0.05013061742645664+0j)) [Y0 X2 X3 Y1]
-    + ((-0.05013061742645664+0j)) [X0 Y2 Y3 X1]
-    + ((0.05013061742645664+0j)) [Y0 X2 Y3 X1]
-    + ((0.05013061742645664+0j)) [X0 Y2 X3 Y1]
+>>> print(hamiltonian)
+  ((-0.3596823592263728+0j)) [I0]
++ ((-0.11496335836149135+0j)) [Z3]
++ ((-0.1149633583614913+0j)) [Z2]
++ ((0.1308241430373499+0j)) [Z0]
++ ((0.1308241430373499+0j)) [Z1]
++ ((0.10316898251626505+0j)) [Z0 Z2]
++ ((0.10316898251626505+0j)) [Z1 Z3]
++ ((0.1532995999427217+0j)) [Z0 Z3]
++ ((0.1532995999427217+0j)) [Z2 Z1]
++ ((0.1540549585580985+0j)) [Z0 Z1]
++ ((0.1609686663985837+0j)) [Z3 Z2]
++ ((-0.05013061742645664+0j)) [Y0 X2 X3 Y1]
++ ((-0.05013061742645664+0j)) [X0 Y2 Y3 X1]
++ ((0.05013061742645664+0j)) [Y0 X2 Y3 X1]
++ ((0.05013061742645664+0j)) [X0 Y2 X3 Y1]
 
 The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
-parameters and the circuit parameters are optimized simultaneously.
+parameters, and the circuit parameters are optimized simultaneously.
 
 .. code-block:: python3
 
@@ -84,7 +81,12 @@ parameters and the circuit parameters are optimized simultaneously.
             return qml.expval(qml.hf.generate_hamiltonian(mol)(*args[1:]))
         return circuit
 
-    for n in range(10): # geometry and parameter optimization loop
+Now that the circuit is defined, we can create a geometry
+and parameter optimization loop:
+
+.. code-block:: python3
+
+    for n in range(10):
 
         mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [params, *args_mol] # initial values of the differentiable parameters
@@ -139,6 +141,6 @@ integral can be differentiated with respect to the basis set parameters as
     g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
     g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
 
-    >>> print(g_alpha)
-    [[ 0.00169332 -0.14826928 -0.37296693]
-     [ 0.00169332 -0.14826928 -0.37296693]]
+>>> print(g_alpha)
+[[ 0.00169332 -0.14826928 -0.37296693]
+ [ 0.00169332 -0.14826928 -0.37296693]]
