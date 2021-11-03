@@ -625,6 +625,10 @@
 
 <h3>Improvements</h3>
 
+* Refactored the `expand_fn` functionality in the Device class to avoid any
+  edge cases leading to failures with plugins.
+  [(#1840)](https://github.com/PennyLaneAI/pennylane/pull/1840)
+
 * Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
   deprecated functionality.
   [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
