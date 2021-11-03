@@ -1033,6 +1033,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where in rare instances the parameters of a tape are returned unsorted
+  by `Tape.get_parameters`.
+  [(#1836)](https://github.com/PennyLaneAI/pennylane/pull/1836)
+
 * Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
   [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
 
