@@ -611,10 +611,6 @@ class SWAP(Operation):
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
 
-    @property
-    def control_wires(self):
-        return Wires(self.wires[:2])
-
 
 class ISWAP(Operation):
     r"""ISWAP(wires)
@@ -790,6 +786,10 @@ class CSWAP(Operation):
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class Toffoli(Operation):

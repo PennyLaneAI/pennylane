@@ -105,6 +105,7 @@ class DefaultMixed(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "ThermalRelaxationError",
     }
 
     parametric_ops = {
