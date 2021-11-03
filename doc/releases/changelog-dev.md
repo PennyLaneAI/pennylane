@@ -634,6 +634,10 @@
   This can occur if within a function that has been just-in-time compiled.
   [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
 
+* Refactored the `expand_fn` functionality in the Device class to avoid any
+  edge cases leading to failures with plugins.
+  [(#1840)](https://github.com/PennyLaneAI/pennylane/pull/1840)
+
 * Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
   deprecated functionality.
   [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
@@ -1041,6 +1045,9 @@
   [(#1805)](https://github.com/PennyLaneAI/pennylane/pull/1805)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where `qml.math.dot` failed to work with `@tf.function` autograph mode.
+  [(#1842)](https://github.com/PennyLaneAI/pennylane/pull/1842)
 
 * Fixes a bug where in rare instances the parameters of a tape are returned unsorted
   by `Tape.get_parameters`.
