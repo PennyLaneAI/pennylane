@@ -1033,6 +1033,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where `qml.math.dot` failed to work with `@tf.function` autograph mode.
+  [(#1842)](https://github.com/PennyLaneAI/pennylane/pull/1842)
+
 * Fixes a bug where in rare instances the parameters of a tape are returned unsorted
   by `Tape.get_parameters`.
   [(#1836)](https://github.com/PennyLaneAI/pennylane/pull/1836)
