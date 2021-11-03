@@ -25,4 +25,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christina Lee
+Christina Lee, Alejandro Montanez
