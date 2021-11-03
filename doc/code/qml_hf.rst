@@ -8,9 +8,9 @@ qml.hf
 Overview
 --------
 
-This module provides the functionality to perform differentiable Hartree-Fock (HF) calculations and
+This module provides the functionality to perform differentiable Hartree-Fock calculations and
 construct molecular Hamiltonians that can be differentiated with respect to nuclear coordinates and
-basis-set parameters.
+basis set parameters.
 
 Usage details
 -------------
@@ -31,63 +31,98 @@ geometry of the molecule and the basis set parameters are all differentiable.
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
+
+    # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
     alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
                       [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
     coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
                       [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
 
-    # we create a molecule object with differentiable atomic coordinates and basis set parameters
-    # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
-    mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    args = [geometry, alpha, coeff] # initial values of the differentiable parameters
+We create a molecule object with differentiable atomic coordinates and basis set parameters and then
+construct the Hamiltonian.
 
-    hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
+.. code-block:: python3
+
+    mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    args_mol = [geometry, alpha, coeff] # initial values of the differentiable parameters
+
+    hamiltonian = qml.hf.generate_hamiltonian(mol)(*args_mol)
+
+    >>> print(hamiltonian)
+      ((-0.3596823592263728+0j)) [I0]
+    + ((-0.11496335836149135+0j)) [Z3]
+    + ((-0.1149633583614913+0j)) [Z2]
+    + ((0.1308241430373499+0j)) [Z0]
+    + ((0.1308241430373499+0j)) [Z1]
+    + ((0.10316898251626505+0j)) [Z0 Z2]
+    + ((0.10316898251626505+0j)) [Z1 Z3]
+    + ((0.1532995999427217+0j)) [Z0 Z3]
+    + ((0.1532995999427217+0j)) [Z2 Z1]
+    + ((0.1540549585580985+0j)) [Z0 Z1]
+    + ((0.1609686663985837+0j)) [Z3 Z2]
+    + ((-0.05013061742645664+0j)) [Y0 X2 X3 Y1]
+    + ((-0.05013061742645664+0j)) [X0 Y2 Y3 X1]
+    + ((0.05013061742645664+0j)) [Y0 X2 Y3 X1]
+    + ((0.05013061742645664+0j)) [X0 Y2 X3 Y1]
 
 The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
 parameters and the circuit parameters are optimized simultaneously.
 
 .. code-block:: python3
+
     import autograd
 
-    params = [np.array([0.0], requires_grad=True)]
     dev = qml.device("default.qubit", wires=4)
     hf_state = np.array([1, 1, 0, 0])
+    params = [np.array([0.0], requires_grad=True)] # initial values of the circuit parameters
 
     def generate_circuit(mol):
         @qml.qnode(dev)
         def circuit(*args):
             qml.BasisState(hf_state, wires=[0, 1, 2, 3])
             qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-            return qml.expval(hf.generate_hamiltonian(mol)(*args[1:]))
+            return qml.expval(qml.hf.generate_hamiltonian(mol)(*args[1:]))
         return circuit
 
     for n in range(10): # geometry and parameter optimization loop
 
-        # we create a molecule object with differentiable atomic coordinates and basis set parameters
-        # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
-        mol = hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-        args_ = [params, *args] # initial values of the differentiable parameters
+        mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        args = [params, *args_mol] # initial values of the differentiable parameters
 
         # compute gradients with respect to the circuit parameters and update the parameters
-        g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args_)
-        params = params - 0.1 * g_params[0]
+        g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args)
+        params = params - 0.5 * g_params[0]
 
         # compute gradients with respect to the nuclear coordinates and update geometry
-        forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args_)
+        forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args)
         geometry = geometry - 0.5 * forces
 
         # compute gradients with respect to the Gaussian exponents and update the exponents
-        g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args_)
-        alpha = alpha - 0.1 * g_alpha
+        g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args)
+        alpha = alpha - 0.5 * g_alpha
 
         # compute gradients with respect to the Gaussian contraction coefficients and update them
-        g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args_)
-        coeff = coeff - 0.1 * g_coeff
+        g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args)
+        coeff = coeff - 0.5 * g_coeff
+
+        >>> print(f'maximum force at step {n}: {forces.max()}')
+        maximum force at step 0: 0.1580194718925123
+        maximum force at step 1: 0.1527094314563785
+        maximum force at step 2: 0.1462756608966641
+        maximum force at step 3: 0.14015863409079743
+        maximum force at step 4: 0.13491711987786514
+        maximum force at step 5: 0.13066784426529857
+        maximum force at step 6: 0.12733410099341053
+        maximum force at step 7: 0.12477214547578205
+        maximum force at step 8: 0.12282987982558308
+        maximum force at step 9: 0.12137090168795783
+        maximum force at step 10: 0.12028191190852155
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap
 integral can be differentiated with respect to the basis set parameters as
 
 .. code-block:: python3
+
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=False)
     alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
@@ -103,3 +138,7 @@ integral can be differentiated with respect to the basis set parameters as
 
     g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
     g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
+
+    >>> print(g_alpha)
+    [[ 0.00169332 -0.14826928 -0.37296693]
+     [ 0.00169332 -0.14826928 -0.37296693]]
