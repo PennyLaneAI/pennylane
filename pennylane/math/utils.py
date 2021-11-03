@@ -205,7 +205,7 @@ def is_abstract(tensor, like=None):
 
     Abstract arrays have no internal value, and are used primarily when
     tracing Python functions, for example, in order to perform just-in-time
-    compilation.
+    (JIT) compilation.
 
     Abstract tensors most commonly occur within a function that has been
     decorated using ``@tf.function`` or ``@jax.jit``.
@@ -215,7 +215,7 @@ def is_abstract(tensor, like=None):
         Currently Autograd tensors and Torch tensors will always return ``False``.
         This is because:
 
-        - Autograd does not provide a JIT, and
+        - Autograd does not provide JIT compilation, and
 
         - ``@torch.jit.script`` is not currently compatible with QNodes.
 
@@ -292,6 +292,9 @@ def is_abstract(tensor, like=None):
         from jax.interpreters.partial_eval import DynamicJaxprTracer
 
         if isinstance(tensor, jax.ad.JVPTracer):
+            # JVPTracer objects will be used when computing gradients.
+            # If the value of the tracer is known, it will contain a ConcreteArray.
+            # Otherwise, it will be abstract.
             return not isinstance(tensor.aval, jax.core.ConcreteArray)
 
         return isinstance(tensor, DynamicJaxprTracer)

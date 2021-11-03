@@ -16,7 +16,6 @@ Unit tests for the :func:`pennylane.math.is_abstract` function.
 """
 import functools
 
-
 import numpy as np
 import pytest
 
