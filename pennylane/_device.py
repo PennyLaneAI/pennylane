@@ -640,6 +640,7 @@ class Device(abc.ABC):
         Can be the default or a custom expansion method, see
         :meth:`.Device.default_expand_fn` and :meth:`.Device.custom_expand` for more
         details.
+
         Args:
             circuit (.QuantumTape): the circuit to expand.
             max_expansion (int): The number of times the circuit should be
@@ -647,6 +648,7 @@ class Device(abc.ABC):
                 supported, and results in a gate decomposition. If any operations
                 in the decomposition remain unsupported by the device, another
                 expansion occurs.
+
         Returns:
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
