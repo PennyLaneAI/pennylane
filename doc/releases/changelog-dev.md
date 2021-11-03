@@ -625,6 +625,15 @@
 
 <h3>Improvements</h3>
 
+* The `qml.AmplitudeEmbedding` template now supports just-in-time compilation when
+  used with either `@jax.jit` or `@tf.function`, resulting in improved performance.
+  [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
+
+* A new utility function `qml.math.is_abstract(tensor)` has been added. This function
+  returns `True` if the tensor is *abstract*; that is, it has no value or shape.
+  This can occur if within a function that has been just-in-time compiled.
+  [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
+
 * Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
   deprecated functionality.
   [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
