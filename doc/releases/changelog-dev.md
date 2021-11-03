@@ -625,6 +625,10 @@
 
 <h3>Improvements</h3>
 
+* Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
+  deprecated functionality.
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
+
 * The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
   object instead of the attribute raising a `NonImplementedError`.
   [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
@@ -877,10 +881,6 @@
   operations with similar properties in `ops/qubit/attributes.py`.
   [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
 
-* The `template` decorator is now deprecated with a warning message and will be removed
-  in release `v0.20.0`.
-  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
-
 * The `qml.inv` function has been removed, `qml.adjoint` should be used
   instead.
   [(#1778)](https://github.com/PennyLaneAI/pennylane/pull/1778)
@@ -894,12 +894,6 @@
   [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
   If `hybrid=False`, the changed expansion rule might lead to a changed output.
-
-* The `qml.metric_tensor` keyword argument `diag_approx` is deprecated.
-  Approximations can be controlled with the more fine-grained `approx`
-  keyword argument, with `approx="block-diag"` (the default) reproducing
-  the old behaviour.
-  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
 
 * The `default.qubit.torch` device automatically determines if computations
   should be run on a CPU or a GPU and doesn't take a `torch_device` argument
@@ -926,6 +920,19 @@
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Deprecations</h3>
+
+* The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
+  is deprecated.
+  Approximations can be controlled with the more fine-grained `approx` keyword
+  argument, with `approx="block-diag"` (the default) reproducing the old
+  behaviour.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
+
+* The `template` decorator is now deprecated with a warning message and will be removed
+  in release `v0.20.0`. It has been removed from different PennyLane functions.
+  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
+  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
 
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
@@ -1028,6 +1035,10 @@
 
 * Fixes a bug where `qml.math.dot` failed to work with `@tf.function` autograph mode.
   [(#1842)](https://github.com/PennyLaneAI/pennylane/pull/1842)
+
+* Fixes a bug where in rare instances the parameters of a tape are returned unsorted
+  by `Tape.get_parameters`.
+  [(#1836)](https://github.com/PennyLaneAI/pennylane/pull/1836)
 
 * Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
   [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
