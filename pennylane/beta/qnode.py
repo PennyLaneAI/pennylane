@@ -414,11 +414,16 @@ class QNode:
                 if interface in backprop_devices:
                     # TODO: need a better way of passing existing device init options
                     # to a new device?
+                    expand_fn = device.expand_fn
+                    batch_transform = device.batch_transform
+
                     device = qml.device(
                         backprop_devices[interface],
                         wires=device.wires,
                         shots=device.shots,
                     )
+                    device.expand_fn = expand_fn
+                    device.batch_transform = batch_transform
                     return "backprop", {}, device
 
                 raise qml.QuantumFunctionError(
