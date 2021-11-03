@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function for generating generalized parameter shift rules."""
+import functools
 import numpy as np
+import pennylane as qml
 
 
-def get_shift_rule(frequencies, diff_shifts=None):
+@functools.lru_cache(maxsize=None)
+def get_shift_rule(frequencies, shifts=None):
     r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue frequency
      spectrum.
 
@@ -26,72 +29,97 @@ def get_shift_rule(frequencies, diff_shifts=None):
     found in https://arxiv.org/abs/2107.12390.
 
     Args:
-        frequencies (list): the list of eigenvalue frequencies. Eigenvalue frequencies are defined
-            as the unique positive differences obtained from a set of eigenvalues.
-        diff_shifts (list): the list of shift values. If unspecified, equidistant shifts are
-            assumed. Note that if equidistant frequencies are given, any specified shifts will be
-            ignored, and equidistant shifts will be used instead.
+        frequencies (tuple[int or float]): the tuple of eigenvalue frequencies. Eigenvalue
+            frequencies are defined as the unique positive differences obtained from a set of
+            eigenvalues.
+        shifts (tuple[int or float]): the tuple of shift values. If unspecified, equidistant
+            shifts are assumed. Note that if equidistant frequencies are given, any specified
+            shifts will be ignored, and equidistant shifts will be used instead. If supplied,
+            the length of this tuple should match the number of given frequencies.
 
     Returns:
-        tuple: a tuple of one nested list describing the gradient recipe for the parameter-shift
-        method.
+         tuple: a tuple of one nested list describing the gradient recipe
+            for the parameter-shift method.
+            This is a tuple with one nested list per operation parameter. For
+            parameter :math:`\phi_k`, the nested list contains elements of the form
+            :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+            term, resulting in a gradient recipe of
+
+            .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+
 
     Raises:
-        ValueError: if `frequencies` is not a list of unique positive values, or if `diff_shifts`
+        ValueError: if `frequencies` is not a list of unique positive values, or if `shifts`
             (if specified) is not a list of unique values the same length as `frequencies`.
 
-    **Example**
+    **Examples**
 
-    >>> frequencies = [1,2]
-    >>> get_shift_rule(frequencies)
+    An example of obtaining the frequencies from a set of unique eigenvals and obtaining the
+    parameter shift rule:
+
+    >>> unique_eigenvals = [1, -1, 0]
+    >>> unique_eigenvals = sorted(unique_eigenvals)
+    >>> frequencies = set()
+    >>> for i in range(len(unique_eigenvals)):
+    >>>     for j in range(i+1, len(unique_eigenvals)):
+    >>>         frequencies.add(unique_eigenvals[j] - unique_eigenvals[i])
+    >>> get_shift_rule(tuple(frequencies))
     ([[0.8535533905932737, 1, 0.7853981633974483], [-0.14644660940672624, 1, 2.356194490192345],
     [-0.8535533905932737, 1, -0.7853981633974483], [0.14644660940672624, 1, -2.356194490192345]],)
 
+    An example with user specified shift values:
+
+    >>> frequencies = (1, 2, 4)
+    >>> shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
+    >>> get_shift_rule(frequencies, shifts)
+    ([[-2.0907702751760278, 1, 1.0471975511965976], [0.2186308015824754, 1, 2.0943951023931953],
+    [3.0000000000000004, 1, 0.7853981633974483], [2.0907702751760278, 1, -1.0471975511965976],
+    [-0.2186308015824754, 1, -2.0943951023931953], [-3.0000000000000004, 1, -0.7853981633974483]],)
     """
 
     n_freqs = len(frequencies)
 
-    if not (len(set(frequencies)) == n_freqs and all(freq > 0 for freq in frequencies)):
+    if len(set(frequencies)) != n_freqs or any(freq <= 0 for freq in frequencies):
         raise ValueError(
             "Expected frequencies to be a list of unique positive values, instead got {}.".format(
                 frequencies
             )
         )
 
-    if diff_shifts is None:  # assume equidistant shifts
-        diff_shifts = [(2 * mu - 1) * np.pi / (2 * n_freqs) for mu in range(1, n_freqs + 1)]
+    if shifts is None:  # assume equidistant shifts
+        mu = np.arange(1, n_freqs + 1)
+        shifts = (2 * mu - 1) * np.pi / (2 * n_freqs)
     else:
-        diff_shifts = list(diff_shifts)
-        if len(diff_shifts) != n_freqs:
+        shifts = list(shifts)
+        if len(shifts) != n_freqs:
             raise ValueError(
                 "Expected number of shifts to equal the number of frequencies ({}), instead got {}.".format(
-                    n_freqs, diff_shifts
+                    n_freqs, shifts
                 )
             )
-        if len(set(diff_shifts)) != n_freqs:
-            raise ValueError("Shift values must be unique, instead got {}".format(diff_shifts))
+        if len(set(shifts)) != n_freqs:
+            raise ValueError("Shift values must be unique, instead got {}".format(shifts))
 
-    frequencies = sorted(frequencies)
+    frequencies = qml.math.sort(qml.math.stack(frequencies))
     freq_min = frequencies[0]
 
     if np.allclose(
         np.array(frequencies) / freq_min, range(1, len(frequencies) + 1)
     ):  # equidistant case
-        diff_shifts = [
-            (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min) for mu in range(1, n_freqs + 1)
-        ]
-        diff_coeffs = [
+
+        mu = np.arange(1, n_freqs + 1)
+        shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
+        coeffs = (
             freq_min
             * (-1) ** (mu - 1)
             / (4 * n_freqs * np.sin(np.pi * (2 * mu - 1) / (4 * n_freqs)) ** 2)
-            for mu in range(1, n_freqs + 1)
-        ]
+        )
 
     else:  # non-equidistant case
-        sin_matr = -4 * np.sin(np.outer(diff_shifts, frequencies))
+        sin_matr = -4 * np.sin(np.outer(shifts, frequencies))
         sin_matr_inv = np.linalg.inv(sin_matr)
-        diff_coeffs = [-2 * np.vdot(frequencies, sin_matr_inv[:, mu]) for mu in range(n_freqs)]
+        coeffs = -2 * np.tensordot(frequencies, sin_matr_inv, axes=1)
 
-    coeffs = diff_coeffs + [-coeff for coeff in diff_coeffs]
-    shifts = diff_shifts + [-shift for shift in diff_shifts]
+    coeffs = np.concatenate((coeffs, [-coeff for coeff in coeffs]))
+    shifts = np.concatenate((shifts, [-shift for shift in shifts]))
     return ([[coeffs[mu], 1, shifts[mu]] for mu in range(0, 2 * n_freqs)],)

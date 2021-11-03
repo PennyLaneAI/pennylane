@@ -29,13 +29,12 @@ def test_adjoint():
     obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
     coeffs = [1, -1]
     hamiltonian = qml.Hamiltonian(coeffs, obs)
-    frequencies = [2]
+    frequencies = (2,)
 
     @qml.qnode(dev1)
     def adjoint_evolution_circuit(time):
         for i in range(n_wires):
             qml.Hadamard(i)
-        # qml.CommutingEvolution(hamiltonian, time, frequencies).adjoint
         qml.adjoint(qml.CommutingEvolution)(hamiltonian, time, frequencies)
         return qml.expval(qml.PauliZ(1))
 
@@ -68,14 +67,14 @@ class TestGradients:
     are specified."""
 
     def test_two_term_case(self):
-        """Tests the paramer shift rules for `CommutingEvolution` equal the
+        """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a two term shift rule case."""
 
         n_wires = 1
         dev = qml.device("default.qubit", wires=n_wires)
 
         hamiltonian = qml.Hamiltonian([1], [qml.PauliX(0)])
-        frequencies = [2]
+        frequencies = (2,)
 
         @qml.qnode(dev)
         def circuit(time):
@@ -91,7 +90,7 @@ class TestGradients:
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-7))
 
     def test_four_term_case(self):
-        """Tests the paramer shift rules for `CommutingEvolution` equal the
+        """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
 
         n_wires = 2
@@ -100,7 +99,7 @@ class TestGradients:
         coeffs = [1, -1]
         obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
         hamiltonian = qml.Hamiltonian(coeffs, obs)
-        frequencies = [2, 4]
+        frequencies = (2, 4)
 
         @qml.qnode(dev)
         def circuit(time):
@@ -122,7 +121,7 @@ class TestGradients:
         dev = qml.device("default.qubit", wires=n_wires)
         obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
         diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
-        frequencies = [2, 4]
+        frequencies = (2, 4)
 
         def parameterized_hamiltonian(coeffs):
             return qml.Hamiltonian(coeffs, obs)

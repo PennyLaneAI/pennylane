@@ -35,14 +35,13 @@ class CommutingEvolution(Operation):
         U(t) \ = \ e^{-i H t} \ = \exp(-i t \displaystyle\sum_j c_j P_j) =
         \displaystyle\prod_j \exp(-i t c_j P_j).
 
-    If the Hamiltonian has a small number of unique eigenvalues, cost function partial derivatives
-    with respect to :math:`t` may be efficiently computed through generalized parameter shift
-    rules. When initialized, this template will compute a gradient recipe if given the
-    Hamiltonian's eigenvalue frequencies, i.e. the unique positive differences between eigenvalues
-    in its spectrum. Currently, generalized parameter shift rules may only be generated for
-    Hamiltonian's with equidistant valued spectra.
+    If the Hamiltonian has a small number of unique eigenvalues, partial derivatives of cost
+    function expectation values taken with respect to :math:`t` may be efficiently computed
+    through generalized parameter shift rules. rules. When initialized, this template will
+    automatically compute the parameter-shift rule if given the Hamiltonian's eigenvalue
+    frequencies, i.e., the unique positive differences between eigenvalues.
 
-    .. note::
+    .. warning::
 
        This template uses the :class:`~.ApproxTimeEvolution` operation with `n=1` in order to
        implement the time evolution, as a single-step Trotterization is exact for a commuting
@@ -60,13 +59,13 @@ class CommutingEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
 
     Keyword args:
-        frequencies (list): The unique positive differences between eigenvalues in the
-            Hamiltonian's spectrum. If frequencies are not given, cost function partial derivative
-            will be computed using the standard two-term shift rule applied to the constituent
-            Pauli words in the Hamiltonian individually.
+        frequencies (list[int or float]): The unique positive differences between eigenvalues in
+            the Hamiltonian's spectrum. If frequencies are not given, cost function partial
+            derivative will be computed using the standard two-term shift rule applied to the
+            constituent Pauli words in the Hamiltonian individually.
 
-        param_shifts (list): The parameter shifts to use in obtaining the generalized parameter shift
-            rules. If unspecified, equidistant shifts are used.
+        shifts (list[int or float]): The parameter shifts to use in obtaining the
+            generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
     .. UsageDetails::
 
@@ -99,12 +98,10 @@ class CommutingEvolution(Operation):
     par_domain = "R"
     grad_method = "A"
 
-    def __init__(
-        self, hamiltonian, time, frequencies=None, param_shifts=None, do_queue=True, id=None
-    ):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
         from pennylane.gradients.general_shift_rules import (
             get_shift_rule,
-        )  # pylint: disable-msg=import-outside-toplevel
+        )  # pylint: disable=import-outside-toplevel
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise TypeError(
@@ -114,14 +111,14 @@ class CommutingEvolution(Operation):
             )
 
         if frequencies is not None:
-            self.grad_recipe = (get_shift_rule(frequencies, param_shifts)[0],) + (None,) * len(
+            self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
                 hamiltonian.data
             )
 
         self.hamiltonian = hamiltonian
         self.num_params = len(hamiltonian.data) + 1
         self.frequencies = frequencies
-        self.param_shifts = param_shifts
+        self.shifts = shifts
 
         super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
 
@@ -135,11 +132,11 @@ class CommutingEvolution(Operation):
 
         return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).expand()
 
-    def adjoint(self):
+    def adjoint(self):  # pylint: disable=arguments-differ
 
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
         time = self.parameters[0]
         frequencies = self.frequencies
-        param_shifts = self.param_shifts
+        shifts = self.shifts
 
-        return CommutingEvolution(hamiltonian, -time, frequencies, param_shifts)
+        return CommutingEvolution(hamiltonian, -time, frequencies, shifts)

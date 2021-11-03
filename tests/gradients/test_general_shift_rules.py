@@ -26,8 +26,8 @@ class TestGetShiftRule:
     def test_invalid_frequency_spectrum(self):
         """Tests ValueError is raised if input frequency spectrum is non positive or non unique."""
 
-        non_positive_frequency_spectrum = [-1, 1]
-        non_unique_frequency_spectrum = [1, 2, 2, 3]
+        non_positive_frequency_spectrum = (-1, 1)
+        non_unique_frequency_spectrum = (1, 2, 2, 3)
 
         assert pytest.raises(ValueError, get_shift_rule, non_positive_frequency_spectrum)
         assert pytest.raises(ValueError, get_shift_rule, non_unique_frequency_spectrum)
@@ -36,9 +36,9 @@ class TestGetShiftRule:
         """Tests ValueError is raised if specified shifts is not of the same length as
         `frequencies`, or if shifts are non-unique."""
 
-        frequencies = [1, 4, 5, 6]
-        invalid_shifts_num = [np.pi / 8, 3 * np.pi / 8, 5 * np.pi / 8]
-        non_unique_shifts = [np.pi / 8, 3 * np.pi / 8, 5 * np.pi / 8, np.pi / 8]
+        frequencies = (1, 4, 5, 6)
+        invalid_shifts_num = (np.pi / 8, 3 * np.pi / 8, 5 * np.pi / 8)
+        non_unique_shifts = (np.pi / 8, 3 * np.pi / 8, 5 * np.pi / 8, np.pi / 8)
 
         assert pytest.raises(ValueError, get_shift_rule, frequencies, invalid_shifts_num)
         assert pytest.raises(ValueError, get_shift_rule, frequencies, non_unique_shifts)
@@ -47,7 +47,7 @@ class TestGetShiftRule:
         """Tests the correct two term equidistant rule is generated using default shift pi/2.
         Frequency 1 corresponds to any generator of the form: 1/2*P, where P is a Pauli word."""
 
-        frequencies = [1]
+        frequencies = (1,)
 
         n_terms = 2
         correct_terms = [[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 2]]
@@ -60,7 +60,7 @@ class TestGetShiftRule:
         """Tests the correct two term equidistant rule is generated using the default shifts [pi/4, 3*pi/4].
         The frequency [1,2] corresponds to a generator e.g. of the form 1/2*X0Y1 + 1/2*Y0X1."""
 
-        frequencies = [1, 2]
+        frequencies = (1, 2)
 
         n_terms = 4
         correct_terms = [
@@ -79,7 +79,7 @@ class TestGetShiftRule:
         frequencies using the default shifts. The frequency [1,4,5,6] corresponds to e.g.
         a 2-qubit generator of the form: 1/2*X0Y1 + 5/2*Y0X1."""
 
-        frequencies = [1, 4, 5, 6]
+        frequencies = (1, 4, 5, 6)
 
         n_terms = 8
         correct_terms = [
@@ -102,8 +102,8 @@ class TestGetShiftRule:
         frequencies using non-default shifts. The frequency [1,4,5,6] corresponds to e.g.
         a 2-qubit generator of the form: 1/2*X0Y1 + 5/2*Y0X1."""
 
-        frequencies = [1, 4, 5, 6]
-        custom_shifts = [2 / 3 * np.pi, 1 / 13 * np.pi, 3 / 4 * np.pi, 3 / 7 * np.pi]
+        frequencies = (1, 4, 5, 6)
+        custom_shifts = (2 / 3 * np.pi, 1 / 13 * np.pi, 3 / 4 * np.pi, 3 / 7 * np.pi)
 
         n_terms = 8
         correct_terms = [
@@ -115,6 +115,41 @@ class TestGetShiftRule:
             [-2.709571194594805, 1.0, -np.pi / 13],
             [-0.436088184940856, 1.0, -3 * np.pi / 4],
             [0.12914139932030527, 1.0, -3 * np.pi / 7],
+        ]
+
+        generated_terms = get_shift_rule(frequencies, custom_shifts)[0]
+
+        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+
+    def test_non_integer_frequency_default_shifts(self):
+
+        frequencies = (1 / 3, 2 / 3)
+        n_terms = 4
+
+        correct_terms = [
+            [0.2845177968644246, 1, 3 * np.pi / 4],
+            [-0.048815536468908745, 1, 9 * np.pi / 4],
+            [-0.2845177968644246, 1, -3 * np.pi / 4],
+            [0.048815536468908745, 1, -9 * np.pi / 4],
+        ]
+
+        generated_terms = get_shift_rule(frequencies)[0]
+
+        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+
+    def test_non_integer_frequency_custom_shifts(self):
+
+        frequencies = (1 / 3, 2 / 3, 4 / 3)
+        custom_shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
+        n_terms = 6
+
+        correct_terms = [
+            [-0.8720240894718643, 1, 1.0471975511965976],
+            [0.016695190986336428, 1, 2.0943951023931953],
+            [1.7548361197453346, 1, 0.7853981633974483],
+            [0.8720240894718643, 1, -1.0471975511965976],
+            [-0.016695190986336428, 1, -2.0943951023931953],
+            [-1.7548361197453346, 1, -0.7853981633974483],
         ]
 
         generated_terms = get_shift_rule(frequencies, custom_shifts)[0]

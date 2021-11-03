@@ -62,6 +62,7 @@ Utility functions
 
     finite_diff_coeffs
     generate_shifted_tapes
+    get_shift_rule
     compute_vjp
     batch_vjp
     vjp

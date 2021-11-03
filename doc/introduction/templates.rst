@@ -217,7 +217,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/qft.svg
 
 .. customgalleryitem::
-    :link: ../code/api/pennylane.templates.subroutines.CommutingEvolution.html
+    :link: :link: ../code/api/pennylane.CommutingEvolution.html
     :description: CommutingEvolution
     :figure: ../_static/templates/CommutingEvolution/commuting_evolution.png
 
