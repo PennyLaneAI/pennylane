@@ -1,7 +1,7 @@
 qml.hf
 ======
 
-This module provides the functionality to perform differentiable Hartree-Fock calculations and
+This module provides the functionality to perform differentiable Hartree-Fock (HF) calculations and
 construct molecular Hamiltonians that can be differentiated with respect to nuclear coordinates and
 basis set parameters.
 
@@ -9,8 +9,8 @@ basis set parameters.
 
 .. automodapi:: pennylane.hf
 
-Usage details
--------------
+Using the differentiable HF solver
+----------------------------------
 
 The HF solver computes the integrals over basis functions, constructs the relevant matrices, and
 performs self-consistent-field iterations to obtain a set of optimized molecular orbital
@@ -67,8 +67,6 @@ parameters, and the circuit parameters are optimized simultaneously.
 
 .. code-block:: python3
 
-    import autograd
-
     dev = qml.device("default.qubit", wires=4)
     hf_state = np.array([1, 1, 0, 0])
     params = [np.array([0.0], requires_grad=True)] # initial values of the circuit parameters
@@ -81,8 +79,7 @@ parameters, and the circuit parameters are optimized simultaneously.
             return qml.expval(qml.hf.generate_hamiltonian(mol)(*args[1:]))
         return circuit
 
-Now that the circuit is defined, we can create a geometry
-and parameter optimization loop:
+Now that the circuit is defined, we can create a geometry and parameter optimization loop:
 
 .. code-block:: python3
 
@@ -92,33 +89,38 @@ and parameter optimization loop:
         args = [params, *args_mol] # initial values of the differentiable parameters
 
         # compute gradients with respect to the circuit parameters and update the parameters
-        g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args)
+        g_params = qml.grad(generate_circuit(mol), argnum = 0)(*args)
         params = params - 0.5 * g_params[0]
 
         # compute gradients with respect to the nuclear coordinates and update geometry
-        forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args)
+        forces = qml.grad(generate_circuit(mol), argnum = 1)(*args)
         geometry = geometry - 0.5 * forces
 
         # compute gradients with respect to the Gaussian exponents and update the exponents
-        g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args)
+        g_alpha = qml.grad(generate_circuit(mol), argnum = 2)(*args)
         alpha = alpha - 0.5 * g_alpha
 
         # compute gradients with respect to the Gaussian contraction coefficients and update them
-        g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args)
+        g_coeff = qml.grad(generate_circuit(mol), argnum = 3)(*args)
         coeff = coeff - 0.5 * g_coeff
 
-        >>> print(f'maximum force at step {n}: {forces.max()}')
-        maximum force at step 0: 0.1580194718925123
-        maximum force at step 1: 0.1527094314563785
-        maximum force at step 2: 0.1462756608966641
-        maximum force at step 3: 0.14015863409079743
-        maximum force at step 4: 0.13491711987786514
-        maximum force at step 5: 0.13066784426529857
-        maximum force at step 6: 0.12733410099341053
-        maximum force at step 7: 0.12477214547578205
-        maximum force at step 8: 0.12282987982558308
-        maximum force at step 9: 0.12137090168795783
-        maximum force at step 10: 0.12028191190852155
+        print(f'maximum force at step {n}: {forces.max()}')
+
+Running this optimization, we get the following output:
+
+.. code-block:: text
+
+    maximum force at step 0: 0.1580194718925123
+    maximum force at step 1: 0.1527094314563785
+    maximum force at step 2: 0.1462756608966641
+    maximum force at step 3: 0.14015863409079743
+    maximum force at step 4: 0.13491711987786514
+    maximum force at step 5: 0.13066784426529857
+    maximum force at step 6: 0.12733410099341053
+    maximum force at step 7: 0.12477214547578205
+    maximum force at step 8: 0.12282987982558308
+    maximum force at step 9: 0.12137090168795783
+    maximum force at step 10: 0.12028191190852155
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap
 integral can be differentiated with respect to the basis set parameters as
