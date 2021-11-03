@@ -1026,6 +1026,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where `qml.math.dot` failed to work with `@tf.function` autograph mode.
+  [(#1842)](https://github.com/PennyLaneAI/pennylane/pull/1842)
+
 * Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
   [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
 
