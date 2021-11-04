@@ -878,6 +878,9 @@
 
 <h3>Breaking changes</h3>
 
+* Fixes a bug where `qml.math.dot` failed to work with `@tf.function` autograph mode.
+  [(#1842)](https://github.com/PennyLaneAI/pennylane/pull/1842)
+
 - The operator attributes `has_unitary_generator`, `is_composable_rotation`,
   `is_self_inverse`, `is_symmetric_over_all_wires`, and
   `is_symmetric_over_control_wires` have been removed as attributes from the
