@@ -1,4 +1,4 @@
-# Release 0.19.0-dev
+# Release 0.19.0
 
 <h3>New features</h3>
 
@@ -8,17 +8,11 @@
   to load the dipole matrix elements in the atomic basis.
   [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
 
-<h3>Improvements</h3>
-
-<h3>Bug fixes</h3>
-
-<h3>Breaking changes</h3>
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
 
 # Release 0.17.0
 
