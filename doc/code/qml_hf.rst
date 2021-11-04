@@ -5,18 +5,19 @@ This module provides the functionality to perform differentiable Hartree-Fock (H
 construct molecular Hamiltonians that can be differentiated with respect to nuclear coordinates and
 basis set parameters.
 
-The differentiable aspect of the HF solver allows computing exact gradients with respect to
+The differentiable HF solver allows computing exact gradients with respect to
 molecular geometry, basis set, and circuit parameters simultaneously using the techniques of
 automatic differentiation available in `Autograd <https://github.com/HIPS/autograd>`__. This makes
-this HF solver more versatile and robust compared to non-differentiable tools which mainly rely
-on numerical approaches for computing gradients, with an extra computational cost. In particular,
-optimizing the basis set parameters available with the Hf solver allows reaching lower ground state
-energies without increasing the size of the basis set which leads to a larger number of number of
-qubits.
+the solver more versatile and robust compared to non-differentiable tools which mainly rely
+on numerical approaches for computing gradients, which can lead to inaccuracies and instability.
+Additionally, optimizing the basis set parameters allows reaching lower ground-state energies
+without increasing the size of the basis set. Overall, the solver allows users to execute end-to-end
+differentiable algorithms for quantum chemistry. 
 
 .. currentmodule:: pennylane.hf
 
 .. automodapi:: pennylane.hf
+    :no-inheritance-diagram:
 
 Using the differentiable HF solver
 ----------------------------------
@@ -25,7 +26,7 @@ The HF solver computes the integrals over basis functions, constructs the releva
 performs self-consistent-field iterations to obtain a set of optimized molecular orbital
 coefficients. These coefficients and the computed integrals over basis functions are used to
 construct the one- and two-body electron integrals in the molecular orbital basis, which can be
-used to generate a differentiable second-quantized Hamiltonian in the fermionic and qubit basis.
+used to generate a differentiable second-quantized Hamiltonians in the fermionic and qubit basis.
 
 The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
 geometry of the molecule and the basis set parameters are all differentiable.
@@ -38,7 +39,7 @@ geometry of the molecule and the basis set parameters are all differentiable.
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
 
-    # alpha and coeff are the exponents and contraction coefficients of the Gaussian functions
+    # The exponents and contraction coefficients of the Gaussian basis functions
     alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
                       [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
     coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
@@ -135,7 +136,7 @@ Running this optimization, we get the following output:
     maximum force at step 10: 0.12028191190852155
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap
-integral can be differentiated with respect to the basis set parameters as
+integral can be differentiated with respect to the basis set parameters as follows
 
 .. code-block:: python3
 
