@@ -221,7 +221,7 @@ def read_structure(filepath, outpath="."):
 
     symbols = []
     coordinates = []
-    with open(file_out) as f:
+    with open(file_out, encoding="utf-8") as f:
         for line in f.readlines()[2:]:
             symbol, x, y, z = line.split()
             symbols.append(symbol)
