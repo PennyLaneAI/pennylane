@@ -618,7 +618,7 @@
 
 * Refactored the `expand_fn` functionality in the Device class to avoid any
   edge cases leading to failures with plugins.
-  [(#1840)](https://github.com/PennyLaneAI/pennylane/pull/1840)
+  [(#1838)](https://github.com/PennyLaneAI/pennylane/pull/1838)
 
 * Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
   deprecated functionality.
@@ -628,6 +628,7 @@
   `pennylane/math/single_dispatch.py` to ensure compabilitity with
   PyTorch 1.10.
   [(#1824)](https://github.com/PennyLaneAI/pennylane/pull/1824)
+  [(#1825)](https://github.com/PennyLaneAI/pennylane/pull/1825)
 
 * The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
   object instead of the attribute raising a `NonImplementedError`.
