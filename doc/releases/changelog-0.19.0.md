@@ -467,9 +467,10 @@
   ```python
   coordinates = np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614])
   H, qubits = qml.qchem.molecular_hamiltonian(["H", "H"], coordinates)
-  ref_state = qml.qchem.hf_state(electrons=2, qubits)
+  ref_state = qml.qchem.hf_state(electrons=2, orbitals=qubits)
 
   dev = qml.device('default.qubit', wires=qubits)
+
   @qml.qnode(dev)
   def ansatz(weights):
       qml.templates.GateFabric(weights, wires=[0,1,2,3],
