@@ -675,15 +675,15 @@ def fubini_ansatz7(x, wires=None):
 
 
 def fubini_ansatz8(params0, params1, wires=None):
-    # qml.RX(fixed_pars[1], wires=[0])
-    # qml.RY(fixed_pars[3], wires=[0])
-    # qml.RZ(fixed_pars[2], wires=[0])
-    # qml.RX(fixed_pars[2], wires=[1])
-    # qml.RY(fixed_pars[2], wires=[1])
-    # qml.RZ(fixed_pars[4], wires=[1])
-    # qml.CNOT(wires=[0, 1])
-    # qml.RX(fixed_pars[0], wires=[0])
-    # qml.RY(fixed_pars[1], wires=[0])
+    qml.RX(fixed_pars[1], wires=[0])
+    qml.RY(fixed_pars[3], wires=[0])
+    qml.RZ(fixed_pars[2], wires=[0])
+    qml.RX(fixed_pars[2], wires=[1])
+    qml.RY(fixed_pars[2], wires=[1])
+    qml.RZ(fixed_pars[4], wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qml.RX(fixed_pars[0], wires=[0])
+    qml.RY(fixed_pars[1], wires=[0])
     qml.RZ(fixed_pars[3], wires=[0])
     qml.RX(fixed_pars[1], wires=[1])
     qml.RY(fixed_pars[2], wires=[1])
@@ -700,19 +700,19 @@ def fubini_ansatz8(params0, params1, wires=None):
 
 
 fubini_ansatze = [
-    # fubini_ansatz0,
-    # fubini_ansatz1,
-    # fubini_ansatz2,
-    # fubini_ansatz3,
-    # fubini_ansatz4,
-    # fubini_ansatz5,
-    # fubini_ansatz6,
-    # fubini_ansatz7,
+    fubini_ansatz0,
+    fubini_ansatz1,
+    fubini_ansatz2,
+    fubini_ansatz3,
+    fubini_ansatz4,
+    fubini_ansatz5,
+    fubini_ansatz6,
+    fubini_ansatz7,
     fubini_ansatz8,
 ]
 
 fubini_params = [
-    (np.array([0.3434, -0.7245345]),),
+    (np.array([0.3434, -0.7245345], requires_grad=True),),
     (
         np.reshape(
             [
@@ -736,6 +736,7 @@ fubini_params = [
                 0.16,
             ],
             (2, 3, 3),
+            requires_grad=True,
         ),
     ),
     (-0.1111, -0.2222),
@@ -744,9 +745,6 @@ fubini_params = [
     (-0.1735, -0.2846),
     (-0.1735, -0.2846),
     (-0.1735,),
-    (-0.1111, 0.3333),
-]
-fubini_params = [
     (-0.1111, 0.3333),
 ]
 
@@ -860,52 +858,80 @@ class TestFullMetricTensor:
 
         assert np.allclose(mt, expected)
 
+def diffability_ansatz_0(weights, wires=None):
+    qml.RX(weights[0], wires=0)
+    qml.RX(weights[1], wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(weights[2], wires=1)
 
+expected_diag_0 = lambda a, b, c: np.array(
+    [
+        [0, 0, 0],
+        [0, 0, 0],
+        [np.cos(a+b) * np.sin(a+b) / 2, np.cos(a+b) * np.sin(a+b) / 2, 0],
+    ]
+)
+
+def diffability_ansatz_1(weights, wires=None):
+    qml.RX(weights[0], wires=0)
+    qml.RY(weights[1], wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(weights[2], wires=1)
+
+expected_diag_1 = lambda a, b, c: np.array(
+    [
+        [0, 0, 0],
+        [-np.sin(2 * a) / 4, 0, 0],
+        [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0],
+    ]
+)
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+@pytest.mark.parametrize(
+    "ansatz, expected_diag",
+    [(diffability_ansatz_0, expected_diag_0), (diffability_ansatz_1, expected_diag_1)],
+)
 class TestDifferentiability:
     """Test for metric tensor differentiability"""
 
-    def ansatz(self, weights, wires=None):
-        qml.RX(weights[0], wires=0)
-        qml.RY(weights[1], wires=0)
-        qml.CNOT(wires=[0, 1])
-        qml.RZ(weights[2], wires=1)
-
-    def circuit(self, weights):
-        self.ansatz(weights)
-        return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+    def get_circuit(self, ansatz):
+        def circuit(weights):
+            print(weights)
+            ansatz(weights)
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+        return circuit
 
     dev = qml.device("default.qubit", wires=3)
     weights = np.array([0.432, 0.12, -0.292], requires_grad=True)
-    a, b, c = weights
-    expected_diag = np.array(
-        [
-            [0, 0, 0],
-            [-np.sin(2 * a) / 4, 0, 0],
-            [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0],
-        ]
-    )
 
-    def test_autograd(self, diff_method, tol):
+    def test_autograd_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the autograd interface"""
-        qnode = qml.QNode(self.circuit, self.dev, interface="autograd", diff_method=diff_method)
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="autograd", diff_method=diff_method)
+        qnode(self.weights)
 
         def cost_diag(weights):
             return np.diag(qml.metric_tensor(qnode, approx="block-diag")(weights))
 
         jac = qml.jacobian(cost_diag)(self.weights)
-        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
+        assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
+
+
+    def test_autograd(self, diff_method, tol, ansatz, expected_diag):
+        """Test metric tensor differentiability in the autograd interface"""
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="autograd", diff_method=diff_method)
 
         def cost_full(weights):
             return qml.metric_tensor(qnode, approx=None)(weights)
 
-        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
-        assert np.allclose(_cost_full(self.weights), cost_full(self.weights))
+        _cost_full = lambda weights: autodiff_metric_tensor(ansatz, num_wires=3)(weights)
+        assert np.allclose(_cost_full(self.weights), cost_full(self.weights), atol=tol, rtol=0)
         jac = qml.jacobian(cost_full)(self.weights)
         expected_full = qml.jacobian(_cost_full)(self.weights)
-        assert np.allclose(expected_full, jac)
+        assert np.allclose(expected_full, jac, atol=tol, rtol=0)
 
-    def test_jax(self, diff_method, tol):
+
+    def test_jax_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the JAX interface"""
         if diff_method == "parameter-shift":
             pytest.skip("Does not support parameter-shift")
@@ -913,27 +939,42 @@ class TestDifferentiability:
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
-        qnode = qml.QNode(self.circuit, self.dev, interface="jax", diff_method=diff_method)
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
 
         def cost_diag(weights):
             return jnp.diag(qml.metric_tensor(qnode, approx="block-diag")(weights))
 
         jac = jax.jacobian(cost_diag)(jnp.array(self.weights))
-        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
+        assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
+
+
+    def test_jax(self, diff_method, tol, ansatz, expected_diag):
+        """Test metric tensor differentiability in the JAX interface"""
+        if diff_method == "parameter-shift":
+            pytest.skip("Does not support parameter-shift")
+
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
 
         def cost_full(weights):
             return qml.metric_tensor(qnode, approx=None)(weights)
 
-        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
-        assert np.allclose(_cost_full(self.weights), cost_full(self.weights))
+        _cost_full = lambda weights: autodiff_metric_tensor(ansatz, num_wires=3)(weights)
+        assert np.allclose(_cost_full(self.weights), cost_full(self.weights), atol=tol, rtol=0)
         jac = jax.jacobian(cost_full)(self.weights)
         expected_full = qml.jacobian(_cost_full)(self.weights)
-        assert np.allclose(expected_full, jac)
+        assert np.allclose(expected_full, jac, atol=tol, rtol=0)
 
-    def test_tf(self, diff_method, tol):
+
+    def test_tf_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the TF interface"""
         tf = pytest.importorskip("tensorflow", minversion="2.0")
-        qnode = qml.QNode(self.circuit, self.dev, interface="tf", diff_method=diff_method)
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
 
         weights_t = tf.Variable(self.weights)
         with tf.GradientTape() as tape:
@@ -941,35 +982,53 @@ class TestDifferentiability:
                 qml.metric_tensor(qnode, approx="block-diag")(weights_t)
             )
         jac = tape.jacobian(loss_diag, weights_t)
-        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
+        assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
 
+
+    def test_tf(self, diff_method, tol, ansatz, expected_diag):
+        """Test metric tensor differentiability in the TF interface"""
+        tf = pytest.importorskip("tensorflow", minversion="2.0")
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
+
+        weights_t = tf.Variable(self.weights)
         with tf.GradientTape() as tape:
             loss_full = qml.metric_tensor(qnode, approx=None)(weights_t)
         jac = tape.jacobian(loss_full, weights_t)
-        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
-        assert np.allclose(_cost_full(self.weights), loss_full)
+        _cost_full = lambda weights: autodiff_metric_tensor(ansatz, num_wires=3)(weights)
+        assert np.allclose(_cost_full(self.weights), loss_full, atol=tol, rtol=0)
         expected_full = qml.jacobian(_cost_full)(self.weights)
-        assert np.allclose(expected_full, jac)
+        assert np.allclose(expected_full, jac, atol=tol, rtol=0)
 
-    def test_torch(self, diff_method, tol):
+
+    def test_torch_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the torch interface"""
         torch = pytest.importorskip("torch")
 
-        qnode = qml.QNode(self.circuit, self.dev, interface="torch", diff_method=diff_method)
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
 
         weights_t = torch.tensor(self.weights, requires_grad=True)
         cost_diag = lambda w: torch.diag(qml.metric_tensor(qnode, approx="block-diag")(w))
         jac = torch.autograd.functional.jacobian(cost_diag, weights_t)
 
-        assert np.allclose(jac, self.expected_diag, atol=tol, rtol=0)
+        assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
 
+    def test_torch(self, diff_method, tol, ansatz, expected_diag):
+        """Test metric tensor differentiability in the torch interface"""
+        torch = pytest.importorskip("torch")
+
+        circuit = self.get_circuit(ansatz)
+        qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
         weights_t = torch.tensor(self.weights, requires_grad=True)
-        cost_full = lambda w: qml.metric_tensor(qnode, approx=None)(w)
-        _cost_full = lambda weights: autodiff_metric_tensor(self.ansatz, num_wires=3)(weights)
+        cost_full = qml.metric_tensor(qnode, approx=None)
+        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
         jac = torch.autograd.functional.jacobian(cost_full, weights_t)
         expected_full = qml.jacobian(_cost_full)(self.weights)
-        assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy())
-        assert np.allclose(expected_full, jac)
+        assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy(), atol=tol, rtol=0)
+        print(np.round(expected_full, 5))
+        print(np.round(jac, 5))
+        assert np.allclose(expected_full, jac, atol=tol, rtol=0)
 
 
 def test_generator_no_expval(monkeypatch):

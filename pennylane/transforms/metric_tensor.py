@@ -36,7 +36,7 @@ _OP_TO_CGEN = {
 }
 
 
-def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True, aux_wire=None):
+def expand_fn(tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -46,7 +46,7 @@ def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(
-    tape, approx="block-diag", diag_approx=None, allow_nonunitary=True, aux_wire=None
+    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None
 ):
     """Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
@@ -55,12 +55,6 @@ def metric_tensor(
 
         Only gates that have a single parameter and define a ``generator`` are supported.
         All other parametrized gates will be decomposed if possible.
-
-    .. warning::
-
-        While ``approx=None`` is a valid input, the full metric tensor is not implemented yet
-        but will be added in an upcoming enhancement. Effectively, this means that only
-        ``approx="block-diag"`` and ``approx="diag"`` are currently supported.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
@@ -423,9 +417,9 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
                 # Apply first layer and operations between layers
                 for op in ops_between_cgens:
                     qml.apply(op)
-                # Controlled-generator operation of first diff'ed op
+                # Controlled-generator operation of second diff'ed op
                 qml.apply(gen_op_j)
-                # Measure auxiliary wire
+                # Measure X on auxiliary wire
                 qml.expval(qml.PauliX(aux_wire))
             tapes.append(new_tape)
             # Memorize to which metric entry this tape belongs
