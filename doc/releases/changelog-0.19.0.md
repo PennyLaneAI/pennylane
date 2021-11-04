@@ -41,13 +41,10 @@
            0.16615103+0.j,  0.12092003+0.j,  0.17464937+0.j], requires_grad=True)
   ```
 
-  The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
-  parameters and the circuit parameters are optimized simultaneously.
+  The generated Hamiltonian can be used in a circuit where the atomic
+  coordinates and circuit parameters are optimized simultaneously.
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
   symbols = ["H", "H"]
   geometry = np.array([[0.0000000000, 0.0000000000, 0.0],
                        [0.0000000000, 0.0000000000, 2.0]], requires_grad=True)
@@ -77,35 +74,6 @@
       geometry = geometry - 0.5 * forces
 
       print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Force: {forces.max()}')
-  ```
-
-  The components of the HF solver can also be differentiated individually. For instance, the overlap
-  integral can be differentiated with respect to the basis set parameters as
-
-  ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=False)
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
-
-  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-  args = [alpha, coeff]
-
-  a = mol.basis_set[0]
-  b = mol.basis_set[1]
-  ```
-
-  ```pycon
-  >>> autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
-  array([[ 0.00169332, -0.14826928, -0.37296693],
-         [ 0.00169332, -0.14826928, -0.37296693]])
-  ```
-  ```pycon
-  >>> autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
-  array([[-0.17582273, -0.08523051,  0.16364188],
-         [-0.17582273, -0.08523051,  0.16364188]])
   ```
 
 <h4>Integration with Mitiq</h4>
