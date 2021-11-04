@@ -14,7 +14,6 @@
 """Autoray registrations"""
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position
 from importlib import import_module
-import semantic_version
 import numbers
 
 import autoray as ar

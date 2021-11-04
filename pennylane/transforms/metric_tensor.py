@@ -17,7 +17,6 @@ methods of computing the metric tensor.
 """
 import functools
 import warnings
-from inspect import signature
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -223,10 +222,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
     _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
-    # Extract number of arguments
-    # sig_pars = signature(qnode.func).parameters
-    # num_args = sum(par.default is par.empty for par in sig_pars.values())
-    # cjac_fn = qml.transforms.classical_jacobian(qnode, argnum=list(range(num_args)), expand_fn=_expand_fn)
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
