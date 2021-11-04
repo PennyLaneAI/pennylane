@@ -4,6 +4,13 @@
 
 <h3>Improvements</h3>
 
+* The ``meanfield`` function has been modified to avoid creating
+  a directory tree to the HF data file. Now the filename output by
+  the function encodes the qchem package and basis set
+  used to run the HF calculations. This ensures compatibility
+  with multiprocessing environment
+  [(#1854)](https://github.com/PennyLaneAI/pennylane/pull/1854)
+
 <h3>Bug fixes</h3>
 
 <h3>Breaking changes</h3>
@@ -11,6 +18,8 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Alain Delgado Gran
 
 # Release 0.19.0
 
