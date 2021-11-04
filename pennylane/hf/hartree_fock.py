@@ -192,7 +192,7 @@ def nuclear_energy(charges, r):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad = True)
-    >>> mol = qml.hf. Molecule(symbols, geometry)
+    >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> args = [mol.coordinates]
     >>> e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
     >>> print(e)
