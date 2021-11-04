@@ -792,7 +792,7 @@ class TestFullMetricTensor:
 
         assert np.allclose(mt, expected)
 
-    @pytest.mark.xfail(reason="JAX does not support the forward pass metric tensor.")
+    @pytest.mark.skip(reason="JAX does not support the forward pass metric tensor.")
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_jax(self, ansatz, params):
         jax = pytest.importorskip("jax")
@@ -813,7 +813,7 @@ class TestFullMetricTensor:
 
         assert np.allclose(mt, expected)
 
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="The torch implementation is not adapted to the forward pass metric tensor yet."
     )
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
@@ -835,7 +835,7 @@ class TestFullMetricTensor:
 
         assert np.allclose(mt, expected)
 
-    @pytest.mark.xfail(
+    @pytest.mark.skip(
         reason="The tensorflow implementation is not adapted to the forward pass metric tensor yet."
     )
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
