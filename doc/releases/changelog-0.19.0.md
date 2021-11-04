@@ -624,6 +624,11 @@
   deprecated functionality.
   [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
 
+* Added a custom `torch.to_numpy` implementation to
+  `pennylane/math/single_dispatch.py` to ensure compabilitity with
+  PyTorch 1.10.
+  [(#1824)](https://github.com/PennyLaneAI/pennylane/pull/1824)
+
 * The default for an `Operation`'s `control_wires` attribute is now an empty `Wires`
   object instead of the attribute raising a `NonImplementedError`.
   [(#1821)](https://github.com/PennyLaneAI/pennylane/pull/1821)
