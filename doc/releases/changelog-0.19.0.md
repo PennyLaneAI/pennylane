@@ -991,16 +991,17 @@
   qml.grad(test, argnum=0)(par)
   ```
 
-* The `qml.fourier.spectrum` function has been renamed to `qml.fourier.circuit_spectrum`,
-  in order to clearly separate the new `qnode_spectrum` function from this one.
-  `qml.fourier.spectrum` is now an alias for `circuit_spectrum` but is flagged for
-  deprecation and will be removed soon.
+* The `qml.fourier.spectrum` function has been renamed to
+  `qml.fourier.circuit_spectrum`, in order to clearly separate the new
+  `qnode_spectrum` function from this one.  `qml.fourier.spectrum` is now an
+  alias for `circuit_spectrum` but is flagged for deprecation and will be
+  removed soon.
   [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
 
-* The `init` module, which contains functions to generate random parameter tensors for
-  templates, is flagged for deprecation and will be removed in the next release cycle.
-  Instead, the templates' `shape` method can be used to get the desired shape of the tensor,
-  which can then be generated manually.
+* The `init` module, which contains functions to generate random parameter
+  tensors for templates, is flagged for deprecation and will be removed in the
+  next release cycle.  Instead, the templates' `shape` method can be used to
+  get the desired shape of the tensor, which can then be generated manually.
   [(#1689)](https://github.com/PennyLaneAI/pennylane/pull/1689)
 
   To generate the parameter tensors, the `np.random.normal` and
@@ -1019,12 +1020,12 @@
     `cvqnn_layers_kappa_uniform` functions used `np.random.uniform` by passing
     `high=0.1`.
 
-* The `QNode.draw` method has been deprecated, and will be removed in an upcoming release.
-  Please use the `qml.draw` transform instead.
+* The `QNode.draw` method has been deprecated, and will be removed in an
+  upcoming release.  Please use the `qml.draw` transform instead.
   [(#1746)](https://github.com/PennyLaneAI/pennylane/pull/1746)
 
-* The `QNode.metric_tensor` method has been deprecated, and will be removed in an upcoming release.
-  Please use the `qml.metric_tensor` transform instead.
+* The `QNode.metric_tensor` method has been deprecated, and will be removed in
+  an upcoming release.  Please use the `qml.metric_tensor` transform instead.
   [(#1638)](https://github.com/PennyLaneAI/pennylane/pull/1638)
 
 * The `pad` parameter of the `qml.AmplitudeEmbedding` template has been removed.
@@ -1043,35 +1044,39 @@
 * Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`.
   [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
 
-* The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add` now are
-  entirely differentiable when using Autograd.
-  Previously only indexed entries of the block diagonal could be differentiated, while
-  the derivative w.r.t to the second argument of `qml.math.scatter_element_add` dispatched
-  to NumPy instead of Autograd.
+* The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add`
+  now are entirely differentiable when using Autograd.  Previously only indexed
+  entries of the block diagonal could be differentiated, while the derivative
+  w.r.t to the second argument of `qml.math.scatter_element_add` dispatched to
+  NumPy instead of Autograd.
   [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
   [(#1818)](https://github.com/PennyLaneAI/pennylane/pull/1818)
 
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
-* Fix a bug where the devices cache the same result for different observables return types.
+* Fix a bug where the devices cache the same result for different observables
+  return types.
   [(#1719)](https://github.com/PennyLaneAI/pennylane/pull/1719)
 
 * Fixed a bug of the default circuit drawer where having more measurements
   compared to the number of measurements on any wire raised a `KeyError`.
   [(#1702)](https://github.com/PennyLaneAI/pennylane/pull/1702)
 
-* Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using `QubitStateVector`.
+* Fix a bug where it was not possible to use `jax.jit` on a `QNode` when using
+  `QubitStateVector`.
   [(#1683)](https://github.com/PennyLaneAI/pennylane/pull/1683)
 
-* The device suite tests can now execute successfully if no shots configuration variable is given.
+* The device suite tests can now execute successfully if no shots configuration
+  variable is given.
   [(#1641)](https://github.com/PennyLaneAI/pennylane/pull/1641)
 
-* Fixes a bug where the `qml.gradients.param_shift` transform would raise an error while attempting
-  to compute the variance of a QNode with ragged output.
+* Fixes a bug where the `qml.gradients.param_shift` transform would raise an
+  error while attempting to compute the variance of a QNode with ragged output.
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
 
-* Fixes a bug in `default.mixed`, to ensure that returned probabilities are always non-negative.
+* Fixes a bug in `default.mixed`, to ensure that returned probabilities are
+  always non-negative.
   [(#1680)](https://github.com/PennyLaneAI/pennylane/pull/1680)
 
 * Fixes a bug where gradient transforms would fail to apply to QNodes
@@ -1087,18 +1092,26 @@
 * Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
-* Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of the `ansatz` argument. [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
+* Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of
+  the `ansatz` argument.
+  [(#1715)](https://github.com/PennyLaneAI/pennylane/pull/1715)
+
+* Updated docstring examples using the `qchem.molecular_hamiltonian` function.
+  [(#1724)](https://github.com/PennyLaneAI/pennylane/pull/1724)
 
 * Updates the 'Gradients and training' quickstart guide to provide information
   on gradient transforms.
   [(#1751)](https://github.com/PennyLaneAI/pennylane/pull/1751)
 
-* All instances of `qnode.draw()` have been updated to instead use the transform `qml.draw(qnode)`.
+* All instances of `qnode.draw()` have been updated to instead use the
+  transform `qml.draw(qnode)`.
   [(#1750)](https://github.com/PennyLaneAI/pennylane/pull/1750)
 
-* Add the `jax` interface in QNode Documentation. [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
+* Add the `jax` interface in QNode Documentation.
+  [(#1755)](https://github.com/PennyLaneAI/pennylane/pull/1755)
 
-* Reorganized all the templates related to quantum chemistry under a common header `Quantum Chemistry templates`.
+* Reorganized all the templates related to quantum chemistry under a common
+  header `Quantum Chemistry templates`.
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Contributors</h3>
