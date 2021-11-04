@@ -1,17 +1,116 @@
 :orphan:
 
-# Release 0.19.0-dev (development release)
+# Release 0.19.0-dev (current release)
 
 <h3>New features since last release</h3>
+
+<h4>Differentiable Hartree-Fock solver</h4>
+
+* A differentiable Hartree-Fock (HF) solver has been added. It can be used to construct molecular Hamiltonians
+  that can be differentiated with respect to nuclear coordinates and basis-set parameters.
+  [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
+
+  The HF solver computes the integrals over basis functions, constructs the relevant matrices, and
+  performs self-consistent-field iterations to obtain a set of optimized molecular orbital
+  coefficients. These coefficients and the computed integrals over basis functions are used to
+  construct the one- and two-body electron integrals in the molecular orbital basis which can be
+  used to generate a differentiable second-quantized Hamiltonian in the fermionic and qubit basis.
+
+  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
+  geometry of the molecule and the basis set parameters are all differentiable.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
+  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
+  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+
+  # we create a molecule object with differentiable atomic coordinates and basis set parameters
+  # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
+  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
+
+  hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
+  ```
+
+  The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
+  parameters and the circuit parameters are optimized simultaneously.
+
+  ```python
+  import autograd
+
+  params = [np.array([0.0], requires_grad=True)]
+  dev = qml.device("default.qubit", wires=4)
+  hf_state = np.array([1, 1, 0, 0])
+
+  def generate_circuit(mol):
+      @qml.qnode(dev)
+      def circuit(*args):
+          qml.BasisState(hf_state, wires=[0, 1, 2, 3])
+          qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
+          return qml.expval(hf.generate_hamiltonian(mol)(*args[1:]))
+      return circuit
+
+  for n in range(10): # geometry and parameter optimization loop
+
+      # we create a molecule object with differentiable atomic coordinates and basis set parameters
+      # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
+      mol = hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+      args_ = [params, *args] # initial values of the differentiable parameters
+
+      # compute gradients with respect to the circuit parameters and update the parameters
+      g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args_)
+      params = params - 0.1 * g_params[0]
+
+      # compute gradients with respect to the nuclear coordinates and update geometry
+      forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args_)
+      geometry = geometry - 0.5 * forces
+
+      # compute gradients with respect to the Gaussian exponents and update the exponents
+      g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args_)
+      alpha = alpha - 0.1 * g_alpha
+
+      # compute gradients with respect to the Gaussian contraction coefficients and update them
+      g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args_)
+      coeff = coeff - 0.1 * g_coeff
+  ```
+
+  The components of the HF solver can also be differentiated individually. For instance, the overlap
+  integral can be differentiated with respect to the basis set parameters as
+
+  ```python
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=False)
+  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
+  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+
+  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+  args = [alpha, coeff]
+
+  a = mol.basis_set[0]
+  b = mol.basis_set[1]
+
+  g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
+  g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
+  ```
+
+<h4>Integration with Mitiq</h4>
 
 * Error mitigation using the zero-noise extrapolation method is now available through the
   `transforms.mitigate_with_zne` transform. This transform can integrate with the
   [Mitiq](https://mitiq.readthedocs.io/en/stable/) package for unitary folding and extrapolation
   functionality.
   [(#1813)](https://github.com/PennyLaneAI/pennylane/pull/1813)
-  
+
   Consider the following noisy device:
-  
+
   ```python
   import pennylane as qml
 
@@ -20,10 +119,10 @@
   dev = qml.device("default.mixed", wires=2)
   dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
   ```
-  
+
   We can mitigate the effects of this noise for circuits run on this device by using the added
   transform:
-  
+
   ```python
   from pennylane import numpy as np
   from pennylane.beta import qnode
@@ -44,120 +143,27 @@
       qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
       return qml.expval(qml.PauliZ(0))
   ```
-  
+
   Now, executing `circuit` will be mitigated:
-  
+
   ```pycon
   >>> circuit(w1, w2)
   0.19113067083636542
   ```
 
-* A differentiable Hartree-Fock (HF) solver has been added. It can be used to construct molecular Hamiltonians 
-  that can be differentiated with respect to nuclear coordinates and basis-set parameters.
-  [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
-
-  The HF solver computes the integrals over basis functions, constructs the relevant matrices, and
-  performs self-consistent-field iterations to obtain a set of optimized molecular orbital
-  coefficients. These coefficients and the computed integrals over basis functions are used to
-  construct the one- and two-body electron integrals in the molecular orbital basis which can be
-  used to generate a differentiable second-quantized Hamiltonian in the fermionic and qubit basis.
-
-  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
-  geometry of the molecule and the basis set parameters are all differentiable.
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
-
-  # we create a molecule object with differentiable atomic coordinates and basis set parameters
-  # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
-  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
-  
-  hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
-  ```
-
-  The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
-  parameters and the circuit parameters are optimized simultaneously.
-
-  ```python
-  import autograd
-  
-  params = [np.array([0.0], requires_grad=True)]
-  dev = qml.device("default.qubit", wires=4)
-  hf_state = np.array([1, 1, 0, 0])
-  
-  def generate_circuit(mol):
-      @qml.qnode(dev)
-      def circuit(*args):
-          qml.BasisState(hf_state, wires=[0, 1, 2, 3])
-          qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-          return qml.expval(hf.generate_hamiltonian(mol)(*args[1:]))
-      return circuit
-  
-  for n in range(10): # geometry and parameter optimization loop
-  
-      # we create a molecule object with differentiable atomic coordinates and basis set parameters
-      # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions 
-      mol = hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-      args_ = [params, *args] # initial values of the differentiable parameters
-  
-      # compute gradients with respect to the circuit parameters and update the parameters
-      g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args_)
-      params = params - 0.1 * g_params[0]
-  
-      # compute gradients with respect to the nuclear coordinates and update geometry
-      forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args_)
-      geometry = geometry - 0.5 * forces
-  
-      # compute gradients with respect to the Gaussian exponents and update the exponents
-      g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args_)
-      alpha = alpha - 0.1 * g_alpha
-  
-      # compute gradients with respect to the Gaussian contraction coefficients and update them
-      g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args_)
-      coeff = coeff - 0.1 * g_coeff
-  ```
-
-  The components of the HF solver can also be differentiated individually. For instance, the overlap
-  integral can be differentiated with respect to the basis set parameters as
-
-  ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=False)
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
-
-  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-  args = [alpha, coeff]
-  
-  a = mol.basis_set[0]
-  b = mol.basis_set[1]
-
-  g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
-  g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
-  ```
+<h4>Powerful new transforms</h4>
 
 * The `insert` transform has now been added, providing a way to insert single-qubit operations into
   a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
   [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
-  
+
   The following QNode can be transformed to add noise to the circuit:
 
   ```python
   from pennylane.transforms import insert
-    
+
   dev = qml.device("default.mixed", wires=2)
-        
+
   @qml.qnode(dev)
   @insert(qml.AmplitudeDamping, 0.2, position="end")
   def f(w, x, y, z):
@@ -168,52 +174,16 @@
       qml.RX(z, wires=1)
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
-        
+
   Executions of this circuit will differ from the noise-free value:
-  
-  ```pycon  
+
+  ```pycon
   >>> f(0.9, 0.4, 0.5, 0.6)
   tensor(0.754847, requires_grad=True)
   >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩ 
+   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩
    1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
-  ``` 
-
-* A new class has been added to store operator attributes, such as `self_inverses`,
-  and `composable_rotation`, as a list of operation names.
-  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
-
-  A number of such attributes, for the purpose of compilation transforms, can be found
-  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
-  example, we can create a new Attribute, `pauli_ops`, like so:
-
-  ```pycon
-  >>> from pennylane.ops.qubits.attributes import Attribute
-  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
   ```
-  
-  We can check either a string or an Operation for inclusion in this set:
-
-  ```pycon
-  >>> qml.PauliX(0) in pauli_ops
-  True
-  >>> "Hadamard" in pauli_ops
-  False
-  ```
-  
-  We can also dynamically add operators to the sets at runtime. This is useful
-  for adding custom operations to the attributes such as `composable_rotations`
-  and ``self_inverses`` that are used in compilation transforms. For example,
-  suppose you have created a new Operation, `MyGate`, which you know to be its
-  own inverse. Adding it to the set, like so
-
-  ```pycon
-  >>> from pennylane.ops.qubits.attributes import self_inverses
-  >>> self_inverses.add("MyGate")
-  ```
-
-  will enable the gate to be considered by the `cancel_inverses` compilation
-  transform if two such gates are adjacent in a circuit.
 
 * Common tape expansion functions are now available in `qml.transforms`,
   alongside a new `create_expand_fn` function for easily creating expansion functions
@@ -259,123 +229,6 @@
   ```pycon
   >>> circuit(x, weights)
   [-0.30773348  0.23135516  0.13086565]
-  ```
-
-* The new `qml.fourier.qnode_spectrum` function extends the former
-  `qml.fourier.spectrum` function
-  and takes classical processing of QNode arguments into account.
-  The frequencies are computed per (requested) QNode argument instead
-  of per gate `id`. The gate `id`s are ignored.
-  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
-  [(#1720)](https://github.com/PennyLaneAI/pennylane/pull/1720)
-
-  Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
-  as well as trainable parameters `w` as arguments to the QNode.
-
-  ```python
-  import pennylane as qml
-  import numpy as np
-
-  n_qubits = 3
-  dev = qml.device("default.qubit", wires=n_qubits)
-
-  @qml.qnode(dev)
-  def circuit(x, y, z, w):
-      for i in range(n_qubits):
-          qml.RX(0.5*x[i], wires=i)
-          qml.Rot(w[0,i,0], w[0,i,1], w[0,i,2], wires=i)
-          qml.RY(2.3*y[i], wires=i)
-          qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
-          qml.RX(z, wires=i)
-      return qml.expval(qml.PauliZ(wires=0))
-
-  x = np.array([1., 2., 3.])
-  y = np.array([0.1, 0.3, 0.5])
-  z = -1.8
-  w = np.random.random((2, n_qubits, 3))
-  ```
-
-  This circuit looks as follows:
-
-  ```pycon
-  >>> print(qml.draw(circuit)(x, y, z, w))
-  0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
-  1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
-  2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
-  ```
-
-  Applying the `qml.fourier.qnode_spectrum` function to the circuit for the non-trainable
-  parameters, we obtain:
-
-  ```pycon
-  >>> spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
-  >>> for inp, freqs in spec.items():
-  ...     print(f"{inp}: {freqs}")
-  "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
-  "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
-  "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
-  ```
-
-  We can see that all three parameters in the QNode arguments ``x`` and ``y``
-  contribute the spectrum of a Pauli rotation ``[-1.0, 0.0, 1.0]``, rescaled with the
-  prefactor of the respective parameter in the circuit.
-  The three ``RX`` rotations using the parameter ``z`` accumulate, yielding a more
-  complex frequency spectrum.
-
-  For details on how to control for which parameters the spectrum is computed,
-  a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
-  [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
-
-* There is a new utility function `qml.math.is_independent` that checks whether
-  a callable is independent of its arguments.
-  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
-
-  **Warning**
-
-  This function is experimental and might behave differently than expected.
-  Also, it might be subject to change.
-
-  **Disclaimer**
-
-  Note that the test relies on both numerical and analytical checks, except
-  when using the PyTorch interface which only performs a numerical check.
-  It is known that there are edge cases on which this test will yield wrong
-  results, in particular non-smooth functions may be problematic.
-  For details, please refer to the
-  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
-
-* Support for differentiable execution of batches of circuits has been
-  extended to the JAX interface for scalar functions, via the beta
-  `pennylane.interfaces.batch` module.
-  [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
-  [(#1685)](https://github.com/PennyLaneAI/pennylane/pull/1685)
-
-  For example using the `execute` function from the `pennylane.interfaces.batch` module:
-
-  ```python
-  from pennylane.interfaces.batch import execute
-
-  def cost_fn(x):
-      with qml.tape.JacobianTape() as tape1:
-          qml.RX(x[0], wires=[0])
-          qml.RY(x[1], wires=[1])
-          qml.CNOT(wires=[0, 1])
-          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
-
-      with qml.tape.JacobianTape() as tape2:
-          qml.RX(x[0], wires=0)
-          qml.RY(x[0], wires=1)
-          qml.CNOT(wires=[0, 1])
-          qml.probs(wires=1)
-
-      result = execute(
-        [tape1, tape2], dev,
-        gradient_fn=qml.gradients.param_shift,
-        interface="autograd"
-      )
-      return (result[0] + result[1][0, 0])[0]
-
-  res = jax.grad(cost_fn)(params)
   ```
 
 * The unitary matrix corresponding to a quantum circuit can now be generated using the new
@@ -479,31 +332,7 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
-* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate.
-  [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
-
-  An example circuit that uses `OrbitalRotation` operation is:
-
-  ```python
-  dev = qml.device('default.qubit', wires=4)
-  @qml.qnode(dev)
-  def circuit(phi):
-      qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
-      qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-      return qml.state()
-  ```
-
-  If we run this circuit, we will get the following output
-
-  ```pycon
-  >>> circuit(0.1)
-  array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
-          0.00249792+0.j,  0.        +0.j,  0.        +0.j,
-          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
-          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
-          0.99750208+0.j,  0.        +0.j,  0.        +0.j,
-          0.        +0.j])
-  ```
+<h4>Batch execution of circuits</h4>
 
 * A new, experimental QNode has been added, that adds support for batch execution of circuits,
   custom quantum gradient support, and arbitrary order derivatives. This QNode is available via
@@ -558,28 +387,67 @@
 
   It is also not tested with the `qml.qnn` module.
 
-* Two new methods were added to the Device API, allowing PennyLane devices
-  increased control over circuit decompositions.
-  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
+* Support for differentiable execution of batches of circuits has been
+  extended to the JAX interface for scalar functions, via the beta
+  `pennylane.interfaces.batch` module.
+  [(#1634)](https://github.com/PennyLaneAI/pennylane/pull/1634)
+  [(#1685)](https://github.com/PennyLaneAI/pennylane/pull/1685)
 
-  - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
-    default, performs the standard device-specific gate set decomposition done in the default
-    QNode. Devices may overwrite this method in order to define their own decomposition logic.
+  For example using the `execute` function from the `pennylane.interfaces.batch` module:
 
-    Note that the numerical result after applying this method should remain unchanged; PennyLane
-    will assume that the expanded tape returns exactly the same value as the original tape when
-    executed.
+  ```python
+  from pennylane.interfaces.batch import execute
 
-  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
-    where the device needs to generate multiple circuits to execute from the input circuit. The
-    requirement of a post-processing function makes this distinct to the `expand_fn` method above.
+  def cost_fn(x):
+      with qml.tape.JacobianTape() as tape1:
+          qml.RX(x[0], wires=[0])
+          qml.RY(x[1], wires=[1])
+          qml.CNOT(wires=[0, 1])
+          qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-    By default, this method applies the transform
+      with qml.tape.JacobianTape() as tape2:
+          qml.RX(x[0], wires=0)
+          qml.RY(x[0], wires=1)
+          qml.CNOT(wires=[0, 1])
+          qml.probs(wires=1)
 
-    .. math:: \left\langle \sum_i c_i h_i\right\rangle -> \sum_i c_i \left\langle h_i \right\rangle
+      result = execute(
+        [tape1, tape2], dev,
+        gradient_fn=qml.gradients.param_shift,
+        interface="autograd"
+      )
+      return (result[0] + result[1][0, 0])[0]
 
-    if `expval(H)` is present on devices that do not natively support Hamiltonians with
-    non-commuting terms.
+  res = jax.grad(cost_fn)(params)
+  ```
+
+<h4>New operations and templates</h4>
+
+* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate.
+  [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
+
+  An example circuit that uses `OrbitalRotation` operation is:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  @qml.qnode(dev)
+  def circuit(phi):
+      qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+      qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+      return qml.state()
+  ```
+
+  If we run this circuit, we will get the following output
+
+  ```pycon
+  >>> circuit(0.1)
+  array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+          0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+          0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+          0.        +0.j])
+  ```
 
 * Added a new template `GateFabric`, which implements a local, expressive, quantum-number-preserving
   ansatz proposed by Anselmetti *et al.* in [arXiv:2104.05692](https://arxiv.org/abs/2104.05695).
@@ -622,6 +490,151 @@
       return qml.expval(H)
   ```
 
+<h4>Improved utilities across the entire code base</h4>
+
+* Two new methods were added to the Device API, allowing PennyLane devices
+  increased control over circuit decompositions.
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
+
+  - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
+    default, performs the standard device-specific gate set decomposition done in the default
+    QNode. Devices may overwrite this method in order to define their own decomposition logic.
+
+    Note that the numerical result after applying this method should remain unchanged; PennyLane
+    will assume that the expanded tape returns exactly the same value as the original tape when
+    executed.
+
+  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
+    where the device needs to generate multiple circuits to execute from the input circuit. The
+    requirement of a post-processing function makes this distinct to the `expand_fn` method above.
+
+    By default, this method applies the transform
+
+    .. math:: \left\langle \sum_i c_i h_i\right\rangle -> \sum_i c_i \left\langle h_i \right\rangle
+
+    if `expval(H)` is present on devices that do not natively support Hamiltonians with
+    non-commuting terms.
+
+* A new class has been added to store operator attributes, such as `self_inverses`,
+  and `composable_rotation`, as a list of operation names.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
+  A number of such attributes, for the purpose of compilation transforms, can be found
+  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
+  example, we can create a new Attribute, `pauli_ops`, like so:
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import Attribute
+  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+  ```
+
+  We can check either a string or an Operation for inclusion in this set:
+
+  ```pycon
+  >>> qml.PauliX(0) in pauli_ops
+  True
+  >>> "Hadamard" in pauli_ops
+  False
+  ```
+
+  We can also dynamically add operators to the sets at runtime. This is useful
+  for adding custom operations to the attributes such as `composable_rotations`
+  and ``self_inverses`` that are used in compilation transforms. For example,
+  suppose you have created a new Operation, `MyGate`, which you know to be its
+  own inverse. Adding it to the set, like so
+
+  ```pycon
+  >>> from pennylane.ops.qubits.attributes import self_inverses
+  >>> self_inverses.add("MyGate")
+  ```
+
+  will enable the gate to be considered by the `cancel_inverses` compilation
+  transform if two such gates are adjacent in a circuit.
+
+* The new `qml.fourier.qnode_spectrum` function extends the former
+  `qml.fourier.spectrum` function
+  and takes classical processing of QNode arguments into account.
+  The frequencies are computed per (requested) QNode argument instead
+  of per gate `id`. The gate `id`s are ignored.
+  [(#1681)](https://github.com/PennyLaneAI/pennylane/pull/1681)
+  [(#1720)](https://github.com/PennyLaneAI/pennylane/pull/1720)
+
+  Consider the following example, which uses non-trainable inputs `x`, `y` and `z`
+  as well as trainable parameters `w` as arguments to the QNode.
+
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  n_qubits = 3
+  dev = qml.device("default.qubit", wires=n_qubits)
+
+  @qml.qnode(dev)
+  def circuit(x, y, z, w):
+      for i in range(n_qubits):
+          qml.RX(0.5*x[i], wires=i)
+          qml.Rot(w[0,i,0], w[0,i,1], w[0,i,2], wires=i)
+          qml.RY(2.3*y[i], wires=i)
+          qml.Rot(w[1,i,0], w[1,i,1], w[1,i,2], wires=i)
+          qml.RX(z, wires=i)
+      return qml.expval(qml.PauliZ(wires=0))
+
+  x = np.array([1., 2., 3.])
+  y = np.array([0.1, 0.3, 0.5])
+  z = -1.8
+  w = np.random.random((2, n_qubits, 3))
+  ```
+
+  This circuit looks as follows:
+
+  ```pycon
+  >>> print(qml.draw(circuit)(x, y, z, w))
+  0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
+  1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
+  2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
+  ```
+
+  Applying the `qml.fourier.qnode_spectrum` function to the circuit for the non-trainable
+  parameters, we obtain:
+
+  ```pycon
+  >>> spec = qml.fourier.qnode_spectrum(circuit, encoding_args={"x", "y", "z"})(x, y, z, w)
+  >>> for inp, freqs in spec.items():
+  ...     print(f"{inp}: {freqs}")
+  "x": {(0,): [-0.5, 0.0, 0.5], (1,): [-0.5, 0.0, 0.5], (2,): [-0.5, 0.0, 0.5]}
+  "y": {(0,): [-2.3, 0.0, 2.3], (1,): [-2.3, 0.0, 2.3], (2,): [-2.3, 0.0, 2.3]}
+  "z": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]}
+  ```
+
+  We can see that all three parameters in the QNode arguments ``x`` and ``y``
+  contribute the spectrum of a Pauli rotation ``[-1.0, 0.0, 1.0]``, rescaled with the
+  prefactor of the respective parameter in the circuit.
+  The three ``RX`` rotations using the parameter ``z`` accumulate, yielding a more
+  complex frequency spectrum.
+
+  For details on how to control for which parameters the spectrum is computed,
+  a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
+  [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
+
+* There is a new utility function `qml.math.is_independent` that checks whether
+  a callable is independent of its arguments.
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
+
+  **Warning**
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  **Disclaimer**
+
+  Note that the test relies on both numerical and analytical checks, except
+  when using the PyTorch interface which only performs a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the
+  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
+
+
 
 <h3>Improvements</h3>
 
@@ -640,7 +653,7 @@
 * `qml.circuit_drawer.MPLDrawer` will now automatically rotate and resize text to fit inside
   the rectangle created by the `box_gate` method.
   [(#1764)](https://github.com/PennyLaneAI/pennylane/pull/1764)
-  
+
 * Quantum function transforms and batch transforms can now be applied to devices.
   Once applied to a device, any quantum function executed on the
   modified device will be transformed prior to execution.
@@ -650,7 +663,7 @@
   ```python
   dev = qml.device("default.mixed", wires=1)
   dev = qml.transforms.merge_rotations()(dev)
-  
+
   @qml.beta.qnode(dev)
   def f(w, x, y, z):
       qml.RX(w, wires=0)
@@ -925,7 +938,7 @@
 
 <h3>Deprecations</h3>
 
-* The `default.tensor` device from the beta folder has not been maintained in 
+* The `default.tensor` device from the beta folder has not been maintained in
   years and is deprecated. It will be removed in future releases.
   [(#1851)](https://github.com/PennyLaneAI/pennylane/pull/1851)
 
@@ -1048,7 +1061,7 @@
   by `Tape.get_parameters`.
   [(#1836)](https://github.com/PennyLaneAI/pennylane/pull/1836)
 
-* Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`. 
+* Fixes a bug with the arrow width in the `measure` of `qml.circuit_drawer.MPLDrawer`.
   [(#1823)](https://github.com/PennyLaneAI/pennylane/pull/1823)
 
 * The helper functions `qml.math.block_diag` and `qml.math.scatter_element_add` now are
@@ -1058,7 +1071,7 @@
   to NumPy instead of Autograd.
   [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
   [(#1818)](https://github.com/PennyLaneAI/pennylane/pull/1818)
-  
+
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
