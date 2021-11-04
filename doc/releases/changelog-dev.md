@@ -19,6 +19,10 @@
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
 
+* The `requires_grad` attribute of `qml.numpy.tensor` objecsts is now
+  preserved when pickling/unpickling the object.
+  [(#1848)](https://github.com/PennyLaneAI/pennylane/pull/1848)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
