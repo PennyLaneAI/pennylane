@@ -236,7 +236,9 @@
 
   ```pycon
   >>> circuit(x, weights)
-  [-0.30773348  0.23135516  0.13086565]
+  tensor([[0.16804   ],
+          [0.2519191 ],
+          [0.04035688]], requires_grad=True)
   ```
 
 * The unitary matrix corresponding to a quantum circuit can now be generated using the new
@@ -438,6 +440,7 @@
 
   ```python
   dev = qml.device('default.qubit', wires=4)
+
   @qml.qnode(dev)
   def circuit(phi):
       qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
@@ -641,8 +644,6 @@
   results, in particular non-smooth functions may be problematic.
   For details, please refer to the
   [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
-
-
 
 <h3>Improvements</h3>
 
