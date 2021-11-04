@@ -8,11 +8,18 @@
   to load the dipole matrix elements in the atomic basis.
   [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
 
+<h3>Bug fixes</h3>
+
+* Pins PySCF to version `>=1.7.2`, `<2.0` to ensure that features,
+  tests and documentation continue to work.
+  [(#1827)](https://github.com/PennyLaneAI/pennylane/pull/1827)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
+Juan Miguel Arrazola, Alain Delgado Gran, Josh Izaac, Soran Jahangiri,
+Romain Moyard.
 
 # Release 0.17.0
 
