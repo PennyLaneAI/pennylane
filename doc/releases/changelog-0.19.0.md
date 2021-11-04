@@ -20,9 +20,6 @@
   geometry of the molecule and the basis set parameters are all differentiable.
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
   symbols = ["H", "H"]
   geometry = np.array([[0.0000000000, 0.0000000000, -0.6943528941],
                        [0.0000000000, 0.0000000000,  0.6943528941]], requires_grad=True)
