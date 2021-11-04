@@ -17,7 +17,7 @@
   used to generate a differentiable second-quantized Hamiltonian in the fermionic and qubit basis.
 
   The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
-  geometry of the molecule and the basis set parameters are all differentiable.
+  geometry of the molecule is differentiable.
 
   ```python
   symbols = ["H", "H"]
@@ -72,6 +72,10 @@
 
       print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Force: {forces.max()}')
   ```
+  In addition, the new Hartree-Fock solver can further be used to optimize the
+  basis set parameters. For details, please refer to the [page on using the
+  differentiable Hartree-Fock
+  solver](https://pennylane.readthedocs.io/en/latest/code/qml_hf.html#using-the-differentiable-hf-solver).
 
 <h4>Integration with Mitiq</h4>
 
