@@ -858,25 +858,29 @@ class TestFullMetricTensor:
 
         assert np.allclose(mt, expected)
 
+
 def diffability_ansatz_0(weights, wires=None):
     qml.RX(weights[0], wires=0)
     qml.RX(weights[1], wires=0)
     qml.CNOT(wires=[0, 1])
     qml.RZ(weights[2], wires=1)
 
+
 expected_diag_0 = lambda a, b, c: np.array(
     [
         [0, 0, 0],
         [0, 0, 0],
-        [np.cos(a+b) * np.sin(a+b) / 2, np.cos(a+b) * np.sin(a+b) / 2, 0],
+        [np.cos(a + b) * np.sin(a + b) / 2, np.cos(a + b) * np.sin(a + b) / 2, 0],
     ]
 )
+
 
 def diffability_ansatz_1(weights, wires=None):
     qml.RX(weights[0], wires=0)
     qml.RY(weights[1], wires=0)
     qml.CNOT(wires=[0, 1])
     qml.RZ(weights[2], wires=1)
+
 
 expected_diag_1 = lambda a, b, c: np.array(
     [
@@ -885,6 +889,8 @@ expected_diag_1 = lambda a, b, c: np.array(
         [np.cos(a) * np.cos(b) ** 2 * np.sin(a) / 2, np.cos(a) ** 2 * np.sin(2 * b) / 4, 0],
     ]
 )
+
+
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
 @pytest.mark.parametrize(
     "ansatz, expected_diag",
@@ -898,6 +904,7 @@ class TestDifferentiability:
             print(weights)
             ansatz(weights)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
+
         return circuit
 
     dev = qml.device("default.qubit", wires=3)
@@ -915,7 +922,6 @@ class TestDifferentiability:
         jac = qml.jacobian(cost_diag)(self.weights)
         assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
 
-
     def test_autograd(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -929,7 +935,6 @@ class TestDifferentiability:
         jac = qml.jacobian(cost_full)(self.weights)
         expected_full = qml.jacobian(_cost_full)(self.weights)
         assert np.allclose(expected_full, jac, atol=tol, rtol=0)
-
 
     def test_jax_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the JAX interface"""
@@ -947,7 +952,6 @@ class TestDifferentiability:
 
         jac = jax.jacobian(cost_diag)(jnp.array(self.weights))
         assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
-
 
     def test_jax(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the JAX interface"""
@@ -969,7 +973,6 @@ class TestDifferentiability:
         expected_full = qml.jacobian(_cost_full)(self.weights)
         assert np.allclose(expected_full, jac, atol=tol, rtol=0)
 
-
     def test_tf_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the TF interface"""
         tf = pytest.importorskip("tensorflow", minversion="2.0")
@@ -983,7 +986,6 @@ class TestDifferentiability:
             )
         jac = tape.jacobian(loss_diag, weights_t)
         assert np.allclose(jac, expected_diag(*self.weights), atol=tol, rtol=0)
-
 
     def test_tf(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the TF interface"""
@@ -999,7 +1001,6 @@ class TestDifferentiability:
         assert np.allclose(_cost_full(self.weights), loss_full, atol=tol, rtol=0)
         expected_full = qml.jacobian(_cost_full)(self.weights)
         assert np.allclose(expected_full, jac, atol=tol, rtol=0)
-
 
     def test_torch_diag(self, diff_method, tol, ansatz, expected_diag):
         """Test metric tensor differentiability in the torch interface"""
@@ -1025,7 +1026,9 @@ class TestDifferentiability:
         _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
         jac = torch.autograd.functional.jacobian(cost_full, weights_t)
         expected_full = qml.jacobian(_cost_full)(self.weights)
-        assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy(), atol=tol, rtol=0)
+        assert np.allclose(
+            _cost_full(self.weights), cost_full(weights_t).detach().numpy(), atol=tol, rtol=0
+        )
         print(np.round(expected_full, 5))
         print(np.round(jac, 5))
         assert np.allclose(expected_full, jac, atol=tol, rtol=0)
