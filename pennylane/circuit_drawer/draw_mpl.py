@@ -29,31 +29,28 @@ from .utils import convert_wire_order
 ############################ Special Gate Methods #########################
 # If an operation is drawn differently than the standard box/ ctrl+box style
 # create a private method here and add it to the ``special_cases`` dictionary
-# These methods should accept arguments in the order of ``drawer, op, layer, mapped_wires``
+# These methods should accept arguments in the order of ``drawer, layer, mapped_wires, op``
 
-# pylint: disable=unused-argument
-def _add_swap(drawer, op, layer, mapped_wires):
+def _add_swap(drawer, layer, mapped_wires, *args):
     drawer.SWAP(layer, mapped_wires)
 
-# pylint: disable=unused-argument
-def _add_cswap(drawer, op, layer, mapped_wires):
+
+def _add_cswap(drawer, layer, mapped_wires, *args):
     drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
     drawer.SWAP(layer, wires=mapped_wires[1:])
 
-# pylint: disable=unused-argument
-def _add_cx(drawer, op, layer, mapped_wires):
+def _add_cx(drawer, layer, mapped_wires, *args):
     drawer.CNOT(layer, mapped_wires)
 
 
-def _add_multicontrolledx(drawer, op, layer, mapped_wires):
+def _add_multicontrolledx(drawer, layer, mapped_wires, op):
     # convert control values
     control_values = [(i == "1") for i in op.control_values]
     drawer.ctrl(layer, mapped_wires[:-1], mapped_wires[-1], control_values=control_values)
     # pylint: disable=protected-access
     drawer._target_x(layer, mapped_wires[-1])
 
-# pylint: disable=unused-argument
-def _add_cz(drawer, op, layer, mapped_wires):
+def _add_cz(drawer, layer, mapped_wires, *args):
     drawer.ctrl(layer, mapped_wires)
 
 
@@ -83,7 +80,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         label_options (dict): matplotlib formatting options for the wire labels
 
     Returns:
-        matplotlib.figure.Figure, matplotlib.axes._axes.Axes
+        matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface
 
     **Example:**
 
@@ -245,13 +242,13 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
                 mapped_wires = [wire_map[w] for w in op.wires]
-                specialfunc(drawer, op, layer, mapped_wires)
+                specialfunc(drawer, layer, mapped_wires, op)
 
             else:
                 control_wires = [wire_map[w] for w in op.control_wires]
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
 
-                if len(control_wires) == 0:
+                if len(control_wires) != 0:
                     drawer.ctrl(layer, control_wires, wires_target=target_wires)
                 drawer.box_gate(
                     layer,
@@ -269,7 +266,8 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         # state and probs 
         if len(m.wires) == 0:
             for wire in range(n_wires):
-                drawer.measure(n_layers, wire)
+                if wire not in measured_wires:
+                    drawer.measure(n_layers, wire)
             break
 
         for wire in m.wires:

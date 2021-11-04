@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the circuit drawing functionality used to render QNodes
-as circuit diagrams.
-
-.. currentmodule:: pennylane.circuit_drawer
-.. autosummary::
-    :toctree: api
-
+Tests for ``GradientDescentOptimzer``
 """
 
-from .circuit_drawer import CircuitDrawer
-from .charsets import CHARSETS
-from .draw_mpl import draw_mpl
-from .mpldrawer import MPLDrawer
-from .drawable_layers import drawable_layers, drawable_grid
-from .utils import convert_wire_order
+import pytest
+
+from pennylane import GradientDescentOptimizer
+
+def test_initialization():
+    """Test class initializes with the default stepsize"""
+
+    opt = GradientDescentOptimizer()
+    assert opt.stepsize == 0.01
+
+@pytest.mark.parametrize("stepsize", (0.02, 0.03))
+def test_initialization_stepsize(stepsize):
+    """Test stepsize set on initialization"""
+
+    opt = GradientDescentOptimizer(stepsize=stepsize)
+    assert opt.stepsize == stepsize

@@ -23,6 +23,18 @@ from pennylane.tape import QuantumTape
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
 
+
+def test_empty_tape():
+    """Edge case where tape is empty.  Use this to test return types"""
+
+    fig, ax = draw_mpl(QuantumTape())
+
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes._axes.Axes)
+
+    assert fig.axes == [ax]
+
+
 with QuantumTape() as tape1:
     qml.PauliX(0)
     qml.PauliX("a")
@@ -84,7 +96,7 @@ class TestWires:
             qml.PauliY(1)
             qml.PauliZ(2)
 
-        fig, ax = draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
@@ -182,7 +194,7 @@ class TestSpecialGates:
         assert x_lines[3].get_data() == ((layer-0.2, layer+0.2), (2.2, 1.8))
         plt.close()
 
-    def test_CNOT(self, mocker):
+    def test_CNOT(self):
         """Test CNOT gets a special call"""
 
         with QuantumTape() as tape:
@@ -243,7 +255,7 @@ class TestSpecialGates:
         plt.close()
 
     def test_MultiControlledX_control_values(self):
-        """Test MultiControlledX with provided control values."""
+        """Test MultiControlledX special call with provided control values."""
 
         with QuantumTape() as tape:
             qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values="0101")
@@ -258,7 +270,7 @@ class TestSpecialGates:
         plt.close()
 
     def test_CZ(self):
-        """Test CZ gets a special call."""
+        """Test CZ gets correct special call."""
 
         with QuantumTape() as tape:
             qml.CZ(wires=(0, 1))
@@ -288,6 +300,8 @@ class TestControlledGates:
 
     @pytest.mark.parametrize("op, label", controlled_data)
     def test_control_gates(self, op, label):
+        """Test a variety of non-special gates.  Checks control wires are drawn, and
+        box drawn over target wires."""
 
         with QuantumTape() as tape:
             qml.apply(op)
@@ -346,6 +360,8 @@ class TestGeneralOperations:
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations(self, op):
+        """Test a variety of operations produce a rectangle accross relevant wires
+        and correct label text."""
 
         with QuantumTape() as tape:
             qml.apply(op)
@@ -364,6 +380,7 @@ class TestGeneralOperations:
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
+        """Check decimals affects text strings when applicable"""
 
         with QuantumTape() as tape:
             qml.apply(op)
@@ -373,68 +390,87 @@ class TestGeneralOperations:
         num_wires = len(op.wires)
         assert ax.texts[num_wires].get_text() == op.label(decimals=2)
 
+        plt.close()
+
 
 
 class TestMeasurements:
     """Tests measurements are drawn correctly"""
 
-    def test_expval(self, mocker):
-        """Test expval produce measure boxes"""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+    def test_expval(self):
+        """Test expval produces measure boxes"""
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliX(0))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
-        # layer 1 wire 0
-        mock_drawer().measure.assert_called_with(1, 0)
+        assert isinstance(ax.patches[0], mpl.patches.Rectangle)
+        assert isinstance(ax.patches[1], mpl.patches.Arc)
+        assert isinstance(ax.patches[2], mpl.patches.FancyArrow)
 
-    def test_state(self, mocker):
+        # layer 1, row 0 box
+        assert ax.patches[0].get_xy() == (0.6, -0.4)
+        assert ax.patches[1].center == (1, 0.05)
+
+        plt.close()
+
+    def test_state(self):
         """Test state produces measurements on all wires."""
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
 
         with QuantumTape() as tape:
             qml.state()
 
-        draw_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
+        _, ax = draw_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
 
-        call_list = [((1, 0),), ((1, 1),), ((1, 2),)]
-        assert mock_drawer().measure.call_args_list == call_list
+        assert len(ax.patches) == 9 # three measure boxes with 3 patches each
 
-    def test_probs(self, mocker):
-        """Test probs with wires."""
+        assert all(isinstance(box, mpl.patches.Rectangle) for box in ax.patches[::3])
+        assert all(isinstance(arc, mpl.patches.Arc) for arc in ax.patches[1::3])
+        assert all(isinstance(arrow, mpl.patches.FancyArrow) for arrow in ax.patches[2::3])
 
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+        for layer, box in enumerate(ax.patches[::3]):
+            assert box.get_xy() == (0.6, layer-0.4)
+
+    def test_probs(self):
+        """Test probs with wires produces measurement boxes."""
 
         with QuantumTape() as tape:
             qml.probs(wires=(0, 1, 2))
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
 
-        call_list = [((1, 0),), ((1, 1),), ((1, 2),)]
-        assert mock_drawer().measure.call_args_list == call_list
+        assert len(ax.patches) == 9 # three measure boxes with 3 patches each
 
-    def test_multiple_measurements(self, mocker):
-        """Assert """
+        assert all(isinstance(box, mpl.patches.Rectangle) for box in ax.patches[::3])
+        assert all(isinstance(arc, mpl.patches.Arc) for arc in ax.patches[1::3])
+        assert all(isinstance(arrow, mpl.patches.FancyArrow) for arrow in ax.patches[2::3])
 
-        mock_drawer = mocker.patch("pennylane.circuit_drawer.draw.MPLDrawer")
+        for layer, box in enumerate(ax.patches[::3]):
+            assert box.get_xy() == (0.6, layer-0.4)
+
+
+    def test_multiple_measurements(self):
+        """Assert only max one measurement box per wire"""
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
             qml.state()
 
-        draw_mpl(tape)
+        _, ax = draw_mpl(tape)
+
+        assert len(ax.patches) == 6 # two measure boxes with three patches each
+
+        for layer, box in enumerate(ax.patches[::3]):
+            assert box.get_xy() == (0.6, layer-0.4)
         
-        call_list = [((1,0),), ((1,1), )]
-        assert mock_drawer().measure.call_args_list == call_list
 
 class TestLayering:
     """Tests operations are placed into layers correctly."""
 
     def test_single_layer_multiple_wires(self):
-        """Tests mulitple gates all in the same layer"""
+        """Tests positions when mulitple gates all in the same layer"""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
@@ -453,7 +489,7 @@ class TestLayering:
             assert t.get_text() == "X"
 
     def test_three_layers_one_wire(self):
-        """Tests multiple gates all on the same wire"""
+        """Tests positions when multiple gates all on the same wire"""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
@@ -469,7 +505,7 @@ class TestLayering:
             assert t.get_text() == "X"
 
     def test_blocking_IsingXX(self):
-        """Tests a multiwire gate blocking another on its empty wire"""
+        """Tests positions when multiwire gate blocking another on its empty wire"""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
