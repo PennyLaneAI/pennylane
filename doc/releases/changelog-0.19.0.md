@@ -1052,6 +1052,11 @@
   [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
   [(#1818)](https://github.com/PennyLaneAI/pennylane/pull/1818)
 
+* Fixes a bug such that the original shot vector information of a
+  device is preserved, so that outside the context manager the device
+  remains unchanged.
+  [(#1792)](https://github.com/PennyLaneAI/pennylane/pull/1792)
+
 * Modifies `qml.math.take` to be compatible with a breaking change
   released in JAX 0.2.24 and ensure that PennyLane supports this JAX
   version.
