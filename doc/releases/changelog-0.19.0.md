@@ -316,6 +316,7 @@
   [(#1642)](https://github.com/PennyLaneAI/pennylane/pull/1642)
   [(#1646)](https://github.com/PennyLaneAI/pennylane/pull/1646)
   [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
+  [(#1804)](https://github.com/PennyLaneAI/pennylane/pull/1804)
 
   It differs from the standard QNode in several ways:
 
@@ -730,6 +731,7 @@
   framework-specific device classes no longer need to maintain framework-specific
   versions of these matrices.
   [(#1749)](https://github.com/PennyLaneAI/pennylane/pull/1749)
+  [(#1802)](https://github.com/PennyLaneAI/pennylane/pull/1802)
 
 * A new utility class `qml.BooleanFn` is introduced. It wraps a function that takes a single
   argument and returns a Boolean.
