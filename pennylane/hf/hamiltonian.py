@@ -82,7 +82,7 @@ def generate_electron_integrals(mol, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> generate_electron_integrals(mol)(*args)
     (1.0,
@@ -157,7 +157,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = generate_fermionic_hamiltonian(mol)(*args)
     """
@@ -220,7 +220,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = generate_hamiltonian(mol)(*args)
     >>> h.terms[0]

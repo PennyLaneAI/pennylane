@@ -49,7 +49,7 @@ class Molecule:
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = pnp.array([[0.0, 0.0, -0.694349],
+    >>> geometry = np.array([[0.0, 0.0, -0.694349],
     >>>                       [0.0, 0.0,  0.694349]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry)
     >>> print(mol.n_electrons)
