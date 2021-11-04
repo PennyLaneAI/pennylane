@@ -152,38 +152,6 @@ class TestCVGradient:
         manualgrad_val = 0.5 * np.tanh(r) ** 3 * (2 / (np.sinh(r) ** 2) - 1) / np.cosh(r)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator, PolyN])
-    @pytest.mark.parametrize("G", analytic_cv_ops)
-    def test_cv_gradients_gaussian_circuit(self, G, O, gaussian_dev, tol):
-        """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
-
-        tol = 1e-5
-        par = 0.4
-
-        def circuit(x):
-            args = [0.3] * G.num_params
-            args[0] = x
-            qml.Displacement(0.5, 0, wires=0)
-            G(*args, wires=range(G.num_wires))
-            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
-            qml.Displacement(-0.5, 0.1, wires=0)
-            qml.Squeezing(0.5, -1.5, wires=0)
-            qml.Rotation(-1.1, wires=0)
-            return qml.expval(O(wires=0))
-
-        q = qml.QNode(circuit, gaussian_dev)
-        val = q(par)
-
-        grad_F = qml.gradients.finite_diff(q)(par)
-        grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(par)
-        if O.ev_order == 1:
-            grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(par)
-            # the different methods agree
-            assert grad_A == pytest.approx(grad_F, abs=tol)
-
-        # the different methods agree
-        assert grad_A2 == pytest.approx(grad_F, abs=tol)
-
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
         par = [0.4, -0.3, -0.7, 0.2]

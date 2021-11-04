@@ -60,11 +60,11 @@ GAUSSIAN_OBS = [
 
 
 class TestGaussian:
-    """Tests the continuous variable based operations."""
+    """Tests Gaussian operators."""
 
     @pytest.mark.parametrize("op", GAUSSIAN_GATES)
     def test_gradient_recipe_operations(self, op, tol):
-        "Heisenberg picture adjoint actions of CV Operations."
+        """Validate that finite difference and analytic differentiation coincide."""
 
         if op.grad_recipe is not None:
             # compare gradient recipe to numerical gradient
