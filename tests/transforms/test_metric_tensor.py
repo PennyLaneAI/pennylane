@@ -668,20 +668,22 @@ def fubini_ansatz5(params0, params1, wires=None):
 def fubini_ansatz6(params0, params1, wires=None):
     fubini_ansatz4(params0, params0, params1, -params1, wires=wires)
 
+
 def fubini_ansatz7(x, wires=None):
     qml.RX(fixed_pars[0], wires=0)
     qml.RX(x, wires=0)
 
+
 def fubini_ansatz8(params0, params1, wires=None):
-    #qml.RX(fixed_pars[1], wires=[0])
-    #qml.RY(fixed_pars[3], wires=[0])
-    #qml.RZ(fixed_pars[2], wires=[0])
-    #qml.RX(fixed_pars[2], wires=[1])
-    #qml.RY(fixed_pars[2], wires=[1])
-    #qml.RZ(fixed_pars[4], wires=[1])
-    #qml.CNOT(wires=[0, 1])
-    #qml.RX(fixed_pars[0], wires=[0])
-    #qml.RY(fixed_pars[1], wires=[0])
+    # qml.RX(fixed_pars[1], wires=[0])
+    # qml.RY(fixed_pars[3], wires=[0])
+    # qml.RZ(fixed_pars[2], wires=[0])
+    # qml.RX(fixed_pars[2], wires=[1])
+    # qml.RY(fixed_pars[2], wires=[1])
+    # qml.RZ(fixed_pars[4], wires=[1])
+    # qml.CNOT(wires=[0, 1])
+    # qml.RX(fixed_pars[0], wires=[0])
+    # qml.RY(fixed_pars[1], wires=[0])
     qml.RZ(fixed_pars[3], wires=[0])
     qml.RX(fixed_pars[1], wires=[1])
     qml.RY(fixed_pars[2], wires=[1])
@@ -698,14 +700,14 @@ def fubini_ansatz8(params0, params1, wires=None):
 
 
 fubini_ansatze = [
-    #fubini_ansatz0,
-    #fubini_ansatz1,
-    #fubini_ansatz2,
-    #fubini_ansatz3,
-    #fubini_ansatz4,
-    #fubini_ansatz5,
-    #fubini_ansatz6,
-    #fubini_ansatz7,
+    # fubini_ansatz0,
+    # fubini_ansatz1,
+    # fubini_ansatz2,
+    # fubini_ansatz3,
+    # fubini_ansatz4,
+    # fubini_ansatz5,
+    # fubini_ansatz6,
+    # fubini_ansatz7,
     fubini_ansatz8,
 ]
 
@@ -792,8 +794,6 @@ class TestFullMetricTensor:
 
         mt = qml.metric_tensor(circuit, approx=None)(*params)
 
-        print(f"Output:\n{mt}")
-        print(f"Expected:\n{expected}")
         assert np.allclose(mt, expected)
 
     @pytest.mark.xfail(reason="JAX does not support the forward pass metric tensor.")
@@ -971,6 +971,8 @@ class TestDifferentiability:
         jac = torch.autograd.functional.jacobian(cost_full, weights_t)
         expected_full = qml.jacobian(_cost_full)(self.weights)
         assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy())
+        print(f"Expected(jac):\n{np.round(expected_full, 4)}")
+        print(f"Output(jac):\n{np.round(jac, 4)}")
         assert np.allclose(expected_full, jac)
 
 

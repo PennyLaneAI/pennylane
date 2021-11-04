@@ -14,6 +14,7 @@
 """Autoray registrations"""
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position
 from importlib import import_module
+import semantic_version
 import numbers
 
 import autoray as ar
@@ -383,6 +384,16 @@ def _sort_torch(tensor):
 
 
 ar.register_function("torch", "sort", _sort_torch)
+
+
+def _tensordot_torch(tensor1, tensor2, axes):
+    torch = _i("torch")
+    if not semantic_version.match(">=1.10.0", torch.__version__) and axes == 0:
+        return torch.outer(tensor1, tensor2)
+    return torch.tensordot(tensor1, tensor2, axes)
+
+
+ar.register_function("torch", "tensordot", _tensordot_torch)
 
 
 # -------------------------------- JAX --------------------------------- #

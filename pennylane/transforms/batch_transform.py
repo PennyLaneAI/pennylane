@@ -384,6 +384,11 @@ class batch_transform:
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
+        for i, tape in enumerate(tapes):
+            print(f"Tape {i}")
+            for op in tape.operations:
+                print(f"Op: {op.name}; Data: {[d.requires_grad for d in op.data]}")
+
         if processing_fn is None:
             processing_fn = lambda x: x
 

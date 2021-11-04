@@ -244,7 +244,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
-        print(qnode.qtape.get_parameters())
 
         if isinstance(cjac, tuple):
             if len(cjac) == 1:
@@ -557,4 +556,5 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         mt = off_diag_mt + diag_mt
 
         return mt
+
     return tapes, processing_fn
