@@ -157,7 +157,7 @@ class DefaultTensor(Device):
     def __init__(self, wires, shots=None, representation="exact", contraction_method="auto"):
 
         warnings.warn(
-            "The default.tensor device is deprecated and due to be removed in an upcoming PennyLane release.",
+            f"The {self.short_name} device is deprecated and due to be removed in an upcoming PennyLane release.",
             UserWarning,
             stacklevel=2,
         )
