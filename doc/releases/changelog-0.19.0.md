@@ -290,9 +290,7 @@
   @qml.qnode(dev)
   @qml.transforms.unitary_to_rot
   def circuit(x, y):
-      qml.RX(x, wires=0)
       qml.QubitUnitary(U, wires=[0, 1])
-      qml.RY(y, wires=0)
       return qml.expval(qml.PauliZ(wires=0))
   ```
 
@@ -300,10 +298,10 @@
 
   ```pycon
   >>> circuit(0.3, 0.4)
-  tensor(-0.70520073, requires_grad=True)
+  tensor(-0.81295986, requires_grad=True)
   >>> print(qml.draw(circuit)(0.3, 0.4))
-  0: ──RX(0.3)─────────────────Rot(-3.5, 0.242, 0.86)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(5.56, 0.321, -2.09)───RY(0.4)──┤ ⟨Z⟩
-  1: ──Rot(-1.64, 2.69, 1.58)──────────────────────────╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(-1.46, 0.337, 0.587)───────────┤
+  0: ──Rot(2.78, 0.242, -2.28)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(-3.87, 0.321, -2.09)──┤ ⟨Z⟩
+  1: ──Rot(4.64, 2.69, -1.56)───╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(1.68, 0.337, 0.587)───┤
   ```
 
 * The transform for the Jacobian of the classical preprocessing within a QNode,
