@@ -248,8 +248,7 @@ def meanfield(
     This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to
     perform the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
     chemistry packages ``PySCF`` and ``Psi4``, respectively. The mean field electronic
-    structure is saved in an hdf5-formatted file in the directory
-    ``os.path.join(outpath, package, basis)``.
+    structure is saved in an hdf5-formatted file.
 
     The charge of the molecule can be given to simulate cationic/anionic systems.
     Also, the spin multiplicity can be input to determine the number of unpaired electrons
