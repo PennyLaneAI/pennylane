@@ -191,7 +191,13 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         diag_approx = approx == "diag"
         return _metric_tensor_cov_matrix(tape, diag_approx)[:2]
 
-    return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire)
+    if approx is None:
+        return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire)
+
+    raise ValueError(
+        f"Unknown value {approx} for keyword argument `approx`. "
+        "Valid values are 'diag', 'block-diag' and None."
+    )
 
 
 @metric_tensor.custom_qnode_wrapper

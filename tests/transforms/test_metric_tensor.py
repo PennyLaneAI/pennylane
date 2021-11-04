@@ -1034,6 +1034,17 @@ class TestDifferentiability:
         assert np.allclose(expected_full, jac, atol=tol, rtol=0)
 
 
+@pytest.mark.parametrize("approx", [True, False, "Invalid", 2])
+def test_invalid_value_for_approx(approx):
+    """Test exception is raised if ``approx`` is invalid."""
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(np.array(0.5, requires_grad=True), wires=0)
+        qml.expval(qml.PauliX(0))
+
+    with pytest.raises(ValueError, match="keyword argument `approx`"):
+        qml.metric_tensor(tape, approx=approx)
+
+
 def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
     operation with generator object that is not an observable"""
