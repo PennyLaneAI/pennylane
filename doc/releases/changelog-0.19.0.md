@@ -535,7 +535,7 @@
   example, we can create a new Attribute, `pauli_ops`, like so:
 
   ```pycon
-  >>> from pennylane.ops.qubits.attributes import Attribute
+  >>> from pennylane.ops.qubit.attributes import Attribute
   >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
   ```
 
@@ -555,7 +555,7 @@
   own inverse. Adding it to the set, like so
 
   ```pycon
-  >>> from pennylane.ops.qubits.attributes import self_inverses
+  >>> from pennylane.ops.qubit.attributes import self_inverses
   >>> self_inverses.add("MyGate")
   ```
 
@@ -886,10 +886,12 @@
   ...     qml.RX(x, wires=0)
   ...     return qml.expval(qml.PauliZ(0))
   >>> grad_fn = qml.gradients.param_shift(circuit)
-  >>> grad_fn(0.564, shots=[(1, 10)]).T
+  >>> param = np.array(0.564, requires_grad=True)
+  >>> grad_fn(param, shots=[(1, 10)]).T
   array([[-1., -1., -1., -1., -1.,  0., -1.,  0., -1.,  0.]])
-  >>> grad_fn(0.1233, shots=None)
-  array([[-0.53457096]])
+  >>> param2 = np.array(0.1233, requires_grad=True)
+  >>> grad_fn(param2, shots=None)
+  array([[-0.12298782]])
   ```
 
 * Specific QNode execution options are now re-used by batch transforms
