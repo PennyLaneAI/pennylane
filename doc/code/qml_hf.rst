@@ -37,6 +37,7 @@ geometry of the molecule and the basis set parameters are all differentiable.
     from pennylane import numpy as np
 
     symbols = ["H", "H"]
+    # This initial geometry is suboptimal and will be optimized by the algorithm
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
 
     # The exponents and contraction coefficients of the Gaussian basis functions
@@ -96,14 +97,14 @@ Now that the circuit is defined, we can create a geometry and parameter optimiza
 
 .. code-block:: python3
 
-    for n in range(10):
+    for n in range(21):
 
         mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-        args = [params, *args_mol] # initial values of the differentiable parameters
+        args = [params, geometry, alpha, coeff] # initial values of the differentiable parameters
 
         # compute gradients with respect to the circuit parameters and update the parameters
         g_params = qml.grad(generate_circuit(mol), argnum = 0)(*args)
-        params = params - 0.5 * g_params[0]
+        params = params - 0.25 * g_params[0]
 
         # compute gradients with respect to the nuclear coordinates and update geometry
         forces = qml.grad(generate_circuit(mol), argnum = 1)(*args)
@@ -111,29 +112,28 @@ Now that the circuit is defined, we can create a geometry and parameter optimiza
 
         # compute gradients with respect to the Gaussian exponents and update the exponents
         g_alpha = qml.grad(generate_circuit(mol), argnum = 2)(*args)
-        alpha = alpha - 0.5 * g_alpha
+        alpha = alpha - 0.25 * g_alpha
 
         # compute gradients with respect to the Gaussian contraction coefficients and update them
         g_coeff = qml.grad(generate_circuit(mol), argnum = 3)(*args)
-        coeff = coeff - 0.5 * g_coeff
+        coeff = coeff - 0.25 * g_coeff
 
-        print(f'maximum force at step {n}: {forces.max()}')
+        if n%5 == 0:
+            print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Force: {forces.max()}')
 
-Running this optimization, we get the following output:
+
+Running this optimization, we get the following output in atomic units:
 
 .. code-block:: text
 
-    maximum force at step 0: 0.1580194718925123
-    maximum force at step 1: 0.1527094314563785
-    maximum force at step 2: 0.1462756608966641
-    maximum force at step 3: 0.14015863409079743
-    maximum force at step 4: 0.13491711987786514
-    maximum force at step 5: 0.13066784426529857
-    maximum force at step 6: 0.12733410099341053
-    maximum force at step 7: 0.12477214547578205
-    maximum force at step 8: 0.12282987982558308
-    maximum force at step 9: 0.12137090168795783
-    maximum force at step 10: 0.12028191190852155
+    Step: 0, Energy: -1.0491709019853235, Maximum Force: 0.15801947189250276
+    Step: 5, Energy: -1.134986263549686, Maximum Force: 0.037660772858684355
+    Step: 10, Energy: -1.1399960673348044, Maximum Force: 0.005175326423590643
+    Step: 15, Energy: -1.1403213849556897, Maximum Force: 0.0004138322831406249
+    Step: 20, Energy: -1.1403680839521801, Maximum Force: 8.223301624310508e-06
+
+Note that the computed energy is lower than the Full-CI energy, -1.1373060483 Ha, computed without
+optimizing the basis set parameters.
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap
 integral can be differentiated with respect to the basis set parameters as follows
@@ -153,8 +153,8 @@ integral can be differentiated with respect to the basis set parameters as follo
     a = mol.basis_set[0]
     b = mol.basis_set[1]
 
-    g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
-    g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
+    g_alpha = qml.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
+    g_coeff = qml.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
 
 >>> print(g_alpha)
 [[ 0.00169332 -0.14826928 -0.37296693]
