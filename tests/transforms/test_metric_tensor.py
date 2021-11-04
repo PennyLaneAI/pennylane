@@ -767,8 +767,6 @@ def autodiff_metric_tensor(ansatz, num_wires):
         iqnode = lambda *params: np.imag(qnode(*params))
         jac = qml.jacobian(rqnode)(*params) + 1j * qml.jacobian(iqnode)(*params)
         psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
-        print(f"First:\n{np.real(np.tensordot(np.conj(jac), jac, axes=([0], [0])))}")
-        print(f"Second:\n{-np.real(np.tensordot(np.conj(psidpsi), psidpsi, axes=0))}")
         return np.real(
             np.tensordot(np.conj(jac), jac, axes=([0], [0]))
             - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
@@ -971,8 +969,6 @@ class TestDifferentiability:
         jac = torch.autograd.functional.jacobian(cost_full, weights_t)
         expected_full = qml.jacobian(_cost_full)(self.weights)
         assert np.allclose(_cost_full(self.weights), cost_full(weights_t).detach().numpy())
-        print(f"Expected(jac):\n{np.round(expected_full, 4)}")
-        print(f"Output(jac):\n{np.round(jac, 4)}")
         assert np.allclose(expected_full, jac)
 
 

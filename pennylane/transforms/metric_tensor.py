@@ -521,7 +521,6 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         diag_res, off_diag_res = results[:num_diag_tapes], results[num_diag_tapes:]
         # Get full block diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
-        print(f"Diag:\n{diag_mt}")
         # Initialize block off-diagonal tensor using the stored ids
         first_term = qml.math.zeros_like(diag_mt)
         for result, idx in zip(off_diag_res, ids):
@@ -549,8 +548,6 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         _coeffs = qml.math.hstack(coeffs)
         scale = qml.math.convert_like(qml.math.outer(_coeffs, _coeffs), results[0])
         off_diag_mt = scale * off_diag_mt
-        print(f"First (off):\n{scale*first_term}")
-        print(f"Second (off):\n{-scale*second_term}")
 
         # Combine block diagonal and off-diagonal
         mt = off_diag_mt + diag_mt
