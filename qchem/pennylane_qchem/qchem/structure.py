@@ -288,7 +288,7 @@ def meanfield(
 
     >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> meanfield(symbols, coordinates, name="h2")
-    ./pyscf/sto-3g/h2
+    ./h2_pyscf_sto-3g
     """
 
     if coordinates.size != 3 * len(symbols):
@@ -306,16 +306,8 @@ def meanfield(
         )
         raise TypeError(error_message)
 
-    package_dir = os.path.join(outpath.strip(), package)
-    basis_dir = os.path.join(package_dir, basis.strip())
-
-    if not os.path.isdir(package_dir):
-        os.mkdir(package_dir)
-        os.mkdir(basis_dir)
-    elif not os.path.isdir(basis_dir):
-        os.mkdir(basis_dir)
-
-    path_to_file = os.path.join(basis_dir, name.strip())
+    filename = name + "_" + package.lower() + "_" + basis.strip()
+    path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
         [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]
