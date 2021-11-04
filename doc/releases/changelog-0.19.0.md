@@ -53,14 +53,14 @@
       def circuit(*args):
           qml.BasisState(hf_state, wires=[0, 1, 2, 3])
           qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-          return qml.expval(hf.generate_hamiltonian(mol)(*args[1:]))
+          return qml.expval(qml.hf.generate_hamiltonian(mol)(*args[1:]))
       return circuit
 
   for n in range(10): # geometry and parameter optimization loop
 
       # we create a molecule object with differentiable atomic coordinates and basis set parameters
       # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
-      mol = hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+      mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
       args_ = [params, *args] # initial values of the differentiable parameters
 
       # compute gradients with respect to the circuit parameters and update the parameters
@@ -96,9 +96,17 @@
 
   a = mol.basis_set[0]
   b = mol.basis_set[1]
+  ```
 
-  g_alpha = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
-  g_coeff = autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
+  ```pycon
+  >>> autograd.grad(qml.hf.generate_overlap(a, b), argnum = 0)(*args)
+  array([[ 0.00169332, -0.14826928, -0.37296693],
+         [ 0.00169332, -0.14826928, -0.37296693]])
+  ```
+  ```pycon
+  >>> autograd.grad(qml.hf.generate_overlap(a, b), argnum = 1)(*args)
+  array([[-0.17582273, -0.08523051,  0.16364188],
+         [-0.17582273, -0.08523051,  0.16364188]])
   ```
 
 <h4>Integration with Mitiq</h4>
