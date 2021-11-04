@@ -24,60 +24,59 @@
   from pennylane import numpy as np
 
   symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+  geometry = np.array([[0.0000000000, 0.0000000000, -0.6943528941],
+                       [0.0000000000, 0.0000000000,  0.6943528941]], requires_grad=True)
 
-  # we create a molecule object with differentiable atomic coordinates and basis set parameters
-  # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
-  mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
+  mol = qml.hf.Molecule(symbols, geometry)
+  args_mol = [geometry]
 
-  hamiltonian = qml.hf.generate_hamiltonian(mol)(*args)
+  hamiltonian = qml.hf.generate_hamiltonian(mol)(*args_mol)
+  ```
+  ```pycon
+  >>> hamiltonian.coeffs
+  tensor([-0.09041082+0.j,  0.17220382+0.j,  0.17220382+0.j,
+           0.16893367+0.j,  0.04523101+0.j, -0.04523101+0.j,
+          -0.04523101+0.j,  0.04523101+0.j, -0.22581352+0.j,
+           0.12092003+0.j, -0.22581352+0.j,  0.16615103+0.j,
+           0.16615103+0.j,  0.12092003+0.j,  0.17464937+0.j], requires_grad=True)
   ```
 
   The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
   parameters and the circuit parameters are optimized simultaneously.
 
   ```python
-  import autograd
+  import pennylane as qml
+  from pennylane import numpy as np
 
-  params = [np.array([0.0], requires_grad=True)]
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0000000000, 0.0000000000, 0.0],
+                       [0.0000000000, 0.0000000000, 2.0]], requires_grad=True)
+
+  mol = qml.hf.Molecule(symbols, geometry)
+
   dev = qml.device("default.qubit", wires=4)
-  hf_state = np.array([1, 1, 0, 0])
+  params = [np.array([0.0], requires_grad=True)]
 
   def generate_circuit(mol):
       @qml.qnode(dev)
       def circuit(*args):
-          qml.BasisState(hf_state, wires=[0, 1, 2, 3])
+          qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
           qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
           return qml.expval(qml.hf.generate_hamiltonian(mol)(*args[1:]))
       return circuit
 
-  for n in range(10): # geometry and parameter optimization loop
+  for n in range(25):
 
-      # we create a molecule object with differentiable atomic coordinates and basis set parameters
-      # alpha and coeff are the exponentents and contraction coefficients of the Gaussian functions
-      mol = qml.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-      args_ = [params, *args] # initial values of the differentiable parameters
+      mol = qml.hf.Molecule(symbols, geometry)
+      args = [params, geometry] # initial values of the differentiable parameters
 
-      # compute gradients with respect to the circuit parameters and update the parameters
-      g_params = autograd.grad(generate_circuit(mol), argnum = 0)(*args_)
-      params = params - 0.1 * g_params[0]
+      g_params = qml.grad(generate_circuit(mol), argnum = 0)(*args)
+      params = params - 0.5 * g_params[0]
 
-      # compute gradients with respect to the nuclear coordinates and update geometry
-      forces = autograd.grad(generate_circuit(mol), argnum = 1)(*args_)
+      forces = qml.grad(generate_circuit(mol), argnum = 1)(*args)
       geometry = geometry - 0.5 * forces
 
-      # compute gradients with respect to the Gaussian exponents and update the exponents
-      g_alpha = autograd.grad(generate_circuit(mol), argnum = 2)(*args_)
-      alpha = alpha - 0.1 * g_alpha
-
-      # compute gradients with respect to the Gaussian contraction coefficients and update them
-      g_coeff = autograd.grad(generate_circuit(mol), argnum = 3)(*args_)
-      coeff = coeff - 0.1 * g_coeff
+      print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Force: {forces.max()}')
   ```
 
   The components of the HF solver can also be differentiated individually. For instance, the overlap
