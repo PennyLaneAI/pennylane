@@ -1052,6 +1052,11 @@
   [(#1816)](https://github.com/PennyLaneAI/pennylane/pull/1816)
   [(#1818)](https://github.com/PennyLaneAI/pennylane/pull/1818)
 
+* Modifies `qml.math.take` to be compatible with a breaking change
+  released in JAX 0.2.24 and ensure that PennyLane supports this JAX
+  version.
+  [(#1769)](https://github.com/PennyLaneAI/pennylane/pull/1769)
+
 * Fixes a bug where the GPU cannot be used with `qml.qnn.TorchLayer`.
   [(#1705)](https://github.com/PennyLaneAI/pennylane/pull/1705)
 
