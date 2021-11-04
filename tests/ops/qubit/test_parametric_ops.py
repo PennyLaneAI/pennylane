@@ -1506,3 +1506,32 @@ class TestLabel:
 
         op3 = qml.Rot("x", "y", "z", wires=0)
         assert op3.label(decimals=0) == "Rot\n(x,y,z)"
+
+
+control_data = [
+    (qml.Rot(1, 2, 3, wires=0), Wires([])),
+    (qml.RX(1.23, wires=0), Wires([])),
+    (qml.RY(1.23, wires=0), Wires([])),
+    (qml.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
+    (qml.PauliRot(1.234, "IXY", wires=(0, 1, 2)), Wires([])),
+    (qml.PhaseShift(1.234, wires=0), Wires([])),
+    (qml.U1(1.234, wires=0), Wires([])),
+    (qml.U2(1.234, 2.345, wires=0), Wires([])),
+    (qml.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
+    (qml.IsingXX(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingYY(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
+    ### Controlled Ops
+    (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhase(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRX(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRY(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRZ(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRot(1.234, 2.2345, 3.456, wires=(0, 1)), Wires(0)),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test the ``control_wires`` attribute for parametrized operations."""
+    assert op.control_wires == control_wires

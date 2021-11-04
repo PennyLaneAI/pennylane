@@ -51,7 +51,7 @@ jobs:
 
       - name: Conditionally install TensorFlow
         if: contains(matrix.config.interfaces, 'tf')
-        run: pip3 install tensorflow==$TF_VERSION
+        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
 
       # Jax releases new version very frequently, so we should always build
       # to the latest release. We can always fix a version later if it breaks.

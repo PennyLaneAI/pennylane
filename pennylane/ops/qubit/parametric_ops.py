@@ -1143,6 +1143,10 @@ class CRot(Operation):
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires)
 
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
 
 class U1(Operation):
     r"""U1(phi)
