@@ -910,8 +910,8 @@
 
 <h3>Deprecations</h3>
 
-* The `default.tensor` device from the beta folder has not been maintained in
-  years and is deprecated. It will be removed in future releases.
+* The `default.tensor` device from the beta folder is no longer maintained
+  and has been deprecated. It will be removed in future releases.
   [(#1851)](https://github.com/PennyLaneAI/pennylane/pull/1851)
 
 * The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
