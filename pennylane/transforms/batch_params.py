@@ -133,4 +133,4 @@ def batch_params(tape, all_operations=False):
         new_tape.set_parameters(p, trainable_only=not all_operations)
         output_tapes.append(new_tape)
 
-    return output_tapes, qml.math.stack
+    return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
