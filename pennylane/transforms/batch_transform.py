@@ -150,7 +150,8 @@ class batch_transform:
 
     Batch tape transforms are fully differentiable:
 
-    >>> gradient = qml.grad(circuit)(-0.5)
+    >>> x = np.array(-0.5, requires_grad=True)
+    >>> gradient = qml.grad(circuit)(x)
     >>> print(gradient)
     2.5800122591960153
 

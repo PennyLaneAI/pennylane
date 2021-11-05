@@ -71,21 +71,22 @@ def batch_params(tape, all_operations=False):
 
     >>> batch_size = 3
     >>> x = np.linspace(0.1, 0.5, batch_size)
-    >>> weights = np.random.random((batch_size, 10, 3, 3))
+    >>> rng = np.random.default_rng(seed=1234)
+    >>> weights = rng.random((batch_size, 10, 3, 3), requires_grad=True)
 
     If we evaluate the QNode with these inputs, we will get an output
     of shape ``(batch_size,)``:
 
     >>> circuit(x, weights)
-    tensor([-0.30773348 0.23135516 0.13086565], requires_grad=True)
+    tensor([ 0.00800498,  0.2735391 , -0.24395442], requires_grad=True)
 
     QNodes with a batch dimension remain fully differentiable:
 
     >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
     >>> cost_fn(x, weights)
-    -0.8581269507766536
+    tensor(0.03758966, requires_grad=True)
     >>> qml.grad(cost_fn)(x, weights)[0]
-    [ 0.23235464  0.00928953 -0.30083487]
+    array([-0.30262974,  0.06320878,  0.00811555])
 
     If we pass the ``all_operations`` argument, we can specify that
     *all* operation parameters in the transformed QNode, regardless of whether they
@@ -104,9 +105,9 @@ def batch_params(tape, all_operations=False):
     >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
     >>> weights.requires_grad = False
     >>> cost_fn(x, weights)
-    0.5497108163237583
+    tensor(0.03758966, requires_grad=True)
     >>> qml.grad(cost_fn)(x, weights)[0]
-    0.43792281188363347
+    -0.30262974103192636
     """
     params = tape.get_parameters(trainable_only=not all_operations)
     output_tapes = []
