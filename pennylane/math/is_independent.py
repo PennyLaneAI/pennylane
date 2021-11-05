@@ -328,8 +328,8 @@ def is_independent(
 
     .. code-block:: pycon
 
-        >>> x = np.array([0.2, 9.1, -3.2])
-        >>> weights = np.array([1.1, -0.7, 1.8])
+        >>> x = np.array([0.2, 9.1, -3.2], requires_grad=True)
+        >>> weights = np.array([1.1, -0.7, 1.8], requires_grad=True)
         >>> qml.math.is_independent(lin, "autograd", (x,), {"weights": weights})
         False
 
