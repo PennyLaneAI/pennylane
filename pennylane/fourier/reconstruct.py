@@ -123,7 +123,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
 
     # Solve the system of linear equations
     cond = np.linalg.cond(C)
-    if cond>1e8:
+    if cond > 1e8:
         warnings.warn(
             f"The condition number of the Fourier transform matrix is very large: {cond}.",
             UserWarning,
@@ -237,7 +237,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     # pylint: disable=cell-var-from-loop, unused-argument
 
     atol = 1e-8
-    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(ids, spectra, shifts, nums_frequency, atol)
+    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(
+        ids, spectra, shifts, nums_frequency, atol
+    )
     arg_names = list(signature(qnode).parameters.keys())
 
     @wraps(qnode)
