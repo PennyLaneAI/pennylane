@@ -88,10 +88,7 @@
   Consider the following noisy device:
 
   ```python
-  import pennylane as qml
-
   noise_strength = 0.05
-
   dev = qml.device("default.mixed", wires=2)
   dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
   ```
