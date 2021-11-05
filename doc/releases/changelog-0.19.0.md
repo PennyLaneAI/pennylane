@@ -129,84 +129,6 @@
 
 <h4>Powerful new transforms</h4>
 
-* The `insert` transform has now been added, providing a way to insert single-qubit operations into
-  a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
-  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
-
-  The following QNode can be transformed to add noise to the circuit:
-
-  ```python
-  from pennylane.transforms import insert
-
-  dev = qml.device("default.mixed", wires=2)
-
-  @qml.qnode(dev)
-  @insert(qml.AmplitudeDamping, 0.2, position="end")
-  def f(w, x, y, z):
-      qml.RX(w, wires=0)
-      qml.RY(x, wires=1)
-      qml.CNOT(wires=[0, 1])
-      qml.RY(y, wires=0)
-      qml.RX(z, wires=1)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-  ```
-
-  Executions of this circuit will differ from the noise-free value:
-
-  ```pycon
-  >>> f(0.9, 0.4, 0.5, 0.6)
-  tensor(0.754847, requires_grad=True)
-  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩
-   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
-  ```
-
-* Common tape expansion functions are now available in `qml.transforms`,
-  alongside a new `create_expand_fn` function for easily creating expansion functions
-  from stopping criteria.
-  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
-  [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
-
-  `create_expand_fn` takes the default depth to which the expansion function
-  should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
-  created function.
-  The stopping criterion must take a queuable object and return a boolean.
-
-* A new transform, `@qml.batch_params`, has been added, that makes QNodes
-  handle a batch dimension in trainable parameters.
-  [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
-  [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
-
-  This transform will create multiple circuits, one per batch dimension.
-  As a result, it is both simulator and hardware compatible.
-
-  ```python
-  @qml.batch_params
-  @qml.beta.qnode(dev)
-  def circuit(x, weights):
-      qml.RX(x, wires=0)
-      qml.RY(0.2, wires=1)
-      qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-      return qml.expval(qml.Hadamard(0))
-  ```
-
-  The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
-  that have a batch dimension. For example,
-
-  ```pycon
-  >>> batch_size = 3
-  >>> x = np.linspace(0.1, 0.5, batch_size)
-  >>> weights = np.random.random((batch_size, 10, 3, 3))
-  ```
-
-  If we evaluate the QNode with these inputs, we will get an output
-  of shape ``(batch_size,)``:
-
-  ```pycon
-  >>> circuit(x, weights)
-  tensor([0.08569816, 0.12619101, 0.21122004], requires_grad=True)
-  ```
-
 * The unitary matrix corresponding to a quantum circuit can now be generated using the new
   `get_unitary_matrix()` transform.
   [(#1609)](https://github.com/PennyLaneAI/pennylane/pull/1609)
@@ -269,6 +191,84 @@
   0: ──Rot(2.78, 0.242, -2.28)──╭X──RZ(0.176)───╭C─────────────╭X──Rot(-3.87, 0.321, -2.09)──┤ ⟨Z⟩
   1: ──Rot(4.64, 2.69, -1.56)───╰C──RY(-0.883)──╰X──RY(-1.47)──╰C──Rot(1.68, 0.337, 0.587)───┤
   ```
+
+* A new transform, `@qml.batch_params`, has been added, that makes QNodes
+  handle a batch dimension in trainable parameters.
+  [(#1710)](https://github.com/PennyLaneAI/pennylane/pull/1710)
+  [(#1761)](https://github.com/PennyLaneAI/pennylane/pull/1761)
+
+  This transform will create multiple circuits, one per batch dimension.
+  As a result, it is both simulator and hardware compatible.
+
+  ```python
+  @qml.batch_params
+  @qml.beta.qnode(dev)
+  def circuit(x, weights):
+      qml.RX(x, wires=0)
+      qml.RY(0.2, wires=1)
+      qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.Hadamard(0))
+  ```
+
+  The `qml.batch_params` decorator allows us to pass arguments `x` and `weights`
+  that have a batch dimension. For example,
+
+  ```pycon
+  >>> batch_size = 3
+  >>> x = np.linspace(0.1, 0.5, batch_size)
+  >>> weights = np.random.random((batch_size, 10, 3, 3))
+  ```
+
+  If we evaluate the QNode with these inputs, we will get an output
+  of shape ``(batch_size,)``:
+
+  ```pycon
+  >>> circuit(x, weights)
+  tensor([0.08569816, 0.12619101, 0.21122004], requires_grad=True)
+  ```
+
+* The `insert` transform has now been added, providing a way to insert single-qubit operations into
+  a quantum circuit. The transform can apply to quantum functions, tapes, and devices.
+  [(#1795)](https://github.com/PennyLaneAI/pennylane/pull/1795)
+
+  The following QNode can be transformed to add noise to the circuit:
+
+  ```python
+  from pennylane.transforms import insert
+
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev)
+  @insert(qml.AmplitudeDamping, 0.2, position="end")
+  def f(w, x, y, z):
+      qml.RX(w, wires=0)
+      qml.RY(x, wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(y, wires=0)
+      qml.RX(z, wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+
+  Executions of this circuit will differ from the noise-free value:
+
+  ```pycon
+  >>> f(0.9, 0.4, 0.5, 0.6)
+  tensor(0.754847, requires_grad=True)
+  >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
+   0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩
+   1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+  ```
+
+* Common tape expansion functions are now available in `qml.transforms`,
+  alongside a new `create_expand_fn` function for easily creating expansion functions
+  from stopping criteria.
+  [(#1734)](https://github.com/PennyLaneAI/pennylane/pull/1734)
+  [(#1760)](https://github.com/PennyLaneAI/pennylane/pull/1760)
+
+  `create_expand_fn` takes the default depth to which the expansion function
+  should expand a tape, a stopping criterion, an optional device, and a docstring to be set for the
+  created function.
+  The stopping criterion must take a queuable object and return a boolean.
 
 * The transform for the Jacobian of the classical preprocessing within a QNode,
   `qml.transforms.classical_jacobian`, now takes a keyword argument `argnum` to specify
