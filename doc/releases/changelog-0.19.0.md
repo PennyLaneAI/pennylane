@@ -204,9 +204,7 @@
 
   ```pycon
   >>> circuit(x, weights)
-  tensor([[0.16804   ],
-          [0.2519191 ],
-          [0.04035688]], requires_grad=True)
+  tensor([0.08569816, 0.12619101, 0.21122004], requires_grad=True)
   ```
 
 * The unitary matrix corresponding to a quantum circuit can now be generated using the new
