@@ -125,12 +125,12 @@ How does PennyLane know which arguments of a quantum function to differentiate, 
 For example, you may want to pass arguments to a QNode but *not* have
 PennyLane consider them when computing gradients.
 
-Currently, all positional arguments provided to the QNode are assumed to be differentiable
-by default, but this behavior is undergoing deprecation. In a future release, only arguments explicitly
-marked as trainable will be treated as trainable. Not explicitly marking arguments currently raises a 
+All positional arguments provided to the QNode are assumed to be differentiable
+by default, but this behaviour is deprecated. In a future release, only arguments explicitly
+marked as trainable or marked using the `argnum` keyword argument will be treated as trainable. Not explicitly marking arguments currently raises a 
 deprecation warning.
 
-For now, arguments are internally turned into arrays of the PennyLane NumPy module,
+For now, arguments are internally turned into arrays from the PennyLane NumPy module,
 which have a special flag ``requires_grad`` specifying whether they are trainable or not:
 
 >>> from pennylane import numpy as np
@@ -173,7 +173,7 @@ and two non-differentiable arguments ``data`` and ``wires``:
 
 For ``data``, which is a PennyLane NumPy array, we can simply specify ``requires_grad=False``:
 
->>> rng = np.random.default_rng(seed=42)
+>>> rng = np.random.default_rng(seed=42)  # make the results reproducable
 >>> data = rng.random([2**3], requires_grad=False)
 
 But ``wires`` is a list in this example, and if we turn it into a PennyLane NumPy array we would have to
