@@ -64,7 +64,7 @@ class Tracker:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array(0.1)
+        x = np.array(0.1, requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
             qml.grad(circuit)(x)
