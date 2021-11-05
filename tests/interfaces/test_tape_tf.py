@@ -568,7 +568,7 @@ class TestTFPassthru:
 
         with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
             tape.watch(a)
-            tape.watch(b)          
+            tape.watch(b)
             res2 = qtape.execute(dev, params=[2 * a, b])
 
         expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
