@@ -21,8 +21,8 @@ import itertools
 import numpy as np
 from pennylane import numpy as pnp
 from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.basis_set import BasisFunction, mol_basis_data
-
+from pennylane.hf.basis_set import BasisFunction, mol_basis_data, atom_basis_data
+from pennylane.hf.integrals import primitive_norm, contracted_norm
 
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
@@ -110,3 +110,59 @@ class Molecule:
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
         self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
+
+    def get_atomic_orbital(self,i_atom):
+        '''
+        input : i_atom atom index for the ATOMIC orbital
+
+        output : ATOMIC orbital f(x,y,z)
+        '''
+
+        atom_symbol = self.symbols[i_atom]
+        r = self.r[i_atom]
+        basis_data = atom_basis_data(self.basis_name, atom_symbol)
+        lmn = basis_data[0][0]
+        coeff = basis_data[0][1]
+        alpha = basis_data[0][2]
+
+        N = [primitive_norm(lmn,a) for a in alpha]
+        C = [n * c for n, c in zip(N, coeff)]
+
+        x0, y0, z0 = r[0], r[1], r[2]
+        norm = contracted_norm(lmn, np.asarray(alpha), np.asarray(C))
+
+        l, m, n = lmn
+#         x, y, z = r[0], r[1], r[2]
+        def f_orbital(x,y,z):
+            ang = ((x - x0) ** l) * ((y - y0) ** m) * ((z - z0) ** n)
+            val = ang * np.dot(np.array(C), np.array([np.exp(-a * ((x - x0) ** 2 + (y - y0) ** 2 + (z - z0) ** 2)) for a in alpha]))
+            return norm * val
+        return f_orbital
+
+    def get_molecular_orbital(self,i_mo,M=None):
+        '''
+        input : i_atom atom index for the ATOMIC orbital
+                M linear combination for the atomic orbitals
+
+        output : MOLECULAR orbital f(x,y,z)
+        '''
+
+        if i_mo > self.n_orbitals:
+            print('The molecular orbital number does not exists!')
+            i_mo = self.n_orbitals
+
+        if not M.any(): # RANDOM WEIGHTS
+            M = np.random.rand(self.n_orbitals)
+            M = M/np.linalg.norm(M)
+        # TODO
+        # READ THE LINEAR COMBINATION FROM THE HF CALCULATIONS
+        # else:
+            # M = molecule.D[i_mo]
+
+        def f_orbital(x,y,z):
+            mo = 0.
+            for i in range(self.n_orbitals):
+                mo_t = self.get_atomic_orbital(i)
+                mo = mo + M[i]*mo_t(x,y,z)
+            return mo
+        return f_orbital
