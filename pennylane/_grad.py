@@ -20,6 +20,7 @@ from functools import partial
 import numpy as onp
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
+from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
@@ -86,7 +87,8 @@ class grad:
 
         for idx, arg in enumerate(args):
             trainable = getattr(arg, "requires_grad", None)
-            if trainable is None:
+            array_box = isinstance(arg, ArrayBox)
+            if trainable is None and not array_box:
 
                 warnings.warn(
                     "Starting with PennyLane v0.20.0, when using Autograd, inputs "
@@ -185,7 +187,8 @@ def jacobian(func, argnum=None):
 
         for idx, arg in enumerate(args):
             trainable = getattr(arg, "requires_grad", None)
-            if trainable is None:
+            array_box = isinstance(arg, ArrayBox)
+            if trainable is None and not array_box:
 
                 warnings.warn(
                     "Starting with PennyLane v0.20.0, when using Autograd, inputs "
