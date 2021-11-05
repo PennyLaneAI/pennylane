@@ -557,8 +557,6 @@
   This function is experimental and might behave differently than expected.
   Also, it might be subject to change.
 
-  **Disclaimer**
-
   Note that the test relies on both numerical and analytical checks, except
   when using the PyTorch interface which only performs a numerical check.
   It is known that there are edge cases on which this test will yield wrong
