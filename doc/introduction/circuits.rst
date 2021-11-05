@@ -271,18 +271,21 @@ Consider the following two quantum nodes:
 
 
 .. code-block:: python
+
     @qml.qnode(dev1)
     def x_rotations(params):
         qml.RX(params[0], wires=0)
         qml.RX(params[1], wires=1)
         qml.CNOT(wires=[0, 1])
         return qml.expval(qml.PauliZ(0))
+
     @qml.qnode(dev2)
     def y_rotations(params):
         qml.RY(params[0], wires=0)
         qml.RY(params[1], wires=1)
         qml.CNOT(wires=[0, 1])
         return qml.expval(qml.Hadamard(0))
+
 As the QNodes in the collection have the same signature, and we can can construct a
 :class:`~.QNodeCollection` and therefore feed them the same parameters:
 
@@ -291,6 +294,7 @@ As the QNodes in the collection have the same signature, and we can can construc
 2
 >>> qnodes([0.2, 0.1])
 array([0.98006658, 0.70703636])
+
 PennyLane also provides some high-level tools for creating and evaluating
 QNode collections. For example, :func:`~.map` allows a single
 function of quantum operations (or :doc:`template <templates>`) to be mapped across
@@ -299,15 +303,18 @@ multiple observables or devices.
 For example, consider the following quantum function ansatz:
 
 .. code-block:: python
+
     def my_ansatz(params, **kwargs):
         qml.RX(params[0], wires=0)
         qml.RX(params[1], wires=1)
         qml.CNOT(wires=[0, 1])
+
 We can define a list of observables, and two devices:
 
 >>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
 >>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D") # requires PennyLane-Forest
 >>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B") # requires PennyLane-Forest
+
 .. note::
 
     The two devices above require the `PennyLane-Forest plugin <https://pennylane-forest.rtfd.io>`_
@@ -327,6 +334,7 @@ Functions are available to process QNode collections, including :func:`~.pennyla
 >>> cost_fn = qml.sum(qnodes)
 >>> cost_fn(params)
 0.906
+
 .. note::
 
     QNode collections support an experimental parallel execution mode. See
