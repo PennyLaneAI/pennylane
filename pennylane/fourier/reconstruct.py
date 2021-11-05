@@ -61,11 +61,13 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
 
     return _reconstruction
 
+
 _warn_text_fun_at_zero_ignored = (
     "The provided value of the function at zero will be ignored due to the "
     "provided shift values. This may lead to additional evaluations of the "
     "function to be reconstructed."
 )
+
 
 def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
@@ -113,7 +115,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         need_fun_at_zero = True
     elif have_fun_at_zero:
         zero_idx = np.where(np.isclose(shifts, 0.0))[0]
-        zero_idx = zero_idx[0] if len(zero_idx)>0 else None
+        zero_idx = zero_idx[0] if len(zero_idx) > 0 else None
         need_fun_at_zero = zero_idx is not None
 
     # Take care of shifts close to zero if fun_at_zero was provided

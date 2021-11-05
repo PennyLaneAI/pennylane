@@ -318,9 +318,9 @@ class TestReconstructGen:
     ]
 
     all_shifts = [
-        [-np.pi/3, -np.pi/20, 0.0, np.pi/20, np.pi/3],
+        [-np.pi / 3, -np.pi / 20, 0.0, np.pi / 20, np.pi / 3],
         [-0.15, -0.05, 0.05],
-        [-2*np.pi, -np.pi, -0.1, np.pi, 2*np.pi],
+        [-2 * np.pi, -np.pi, -0.1, np.pi, 2 * np.pi],
         [0.1],
         np.arange(-9, 10) * np.pi / 19,
         np.arange(-9, 10) * np.pi / 19,
@@ -362,8 +362,8 @@ class TestReconstructGen:
         if 0.0 in shifts:
             assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         else:
-            assert len(recwarn)==1
-            assert recwarn[0].category==UserWarning
+            assert len(recwarn) == 1
+            assert recwarn[0].category == UserWarning
             assert recwarn[0].message.args[0].startswith("The provided value")
         assert fun_close(fun, rec)
 
