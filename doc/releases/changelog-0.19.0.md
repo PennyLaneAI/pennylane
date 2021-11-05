@@ -120,7 +120,7 @@
       return qml.expval(qml.PauliZ(0))
   ```
 
-  Now, executing `circuit` will be mitigated:
+  Now, when we execute `circuit`, errors will be automatically mitigated:
 
   ```pycon
   >>> circuit(w1, w2)
