@@ -53,8 +53,8 @@ returning NumPy arrays.
 
 It can now be used like any other Python/NumPy function:
 
->>> phi = np.array([0.5, 0.1], requires_grad=True)
->>> theta = np.array(0.2, requires_grad=True)
+>>> phi = np.array([0.5, 0.1])
+>>> theta = 0.2
 >>> circuit1(phi, theta)
 array([ 0.87758256,  0.68803733])
 
