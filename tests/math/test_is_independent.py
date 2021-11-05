@@ -213,6 +213,7 @@ class TestIsIndependentAutograd:
         The only warning that is emitted is due to the output being independent
         of the input.
         """
+
         def lin(x):
             return pnp.sum(x)
 
@@ -223,7 +224,7 @@ class TestIsIndependentAutograd:
         # Check that there's only one warning (emitted by autograd)
         assert len(recwarn) == 1
         assert recwarn.list[0].category == UserWarning
-        assert recwarn.list[0].message.args[0] == 'Output seems independent of input.'
+        assert recwarn.list[0].message.args[0] == "Output seems independent of input."
 
         # Check that there's only one message in the warning
         assert len(recwarn.list[0].message.args) == 1
@@ -231,6 +232,7 @@ class TestIsIndependentAutograd:
     def test_no_trainable_params_deprecation_jac(self, recwarn):
         """Tests that no deprecation arises when using qml.jacobian with
         qml.math.is_independent."""
+
         def lin(x, weights=None):
             return np.dot(x, weights)
 
@@ -239,6 +241,7 @@ class TestIsIndependentAutograd:
         jac = qml.jacobian(lin)
         assert qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
         assert len(recwarn) == 0
+
 
 if have_jax:
 

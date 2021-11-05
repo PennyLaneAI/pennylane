@@ -196,7 +196,10 @@ def _get_random_args(args, interface, num, seed, bounds):
     else:
         np.random.seed(seed)
         rnd_args = [
-            tuple(np.random.random(np.shape(arg), requires_grad=True) * width + bounds[0] for arg in args)
+            tuple(
+                np.random.random(np.shape(arg), requires_grad=True) * width + bounds[0]
+                for arg in args
+            )
             for _ in range(num)
         ]
 
