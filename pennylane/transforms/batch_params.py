@@ -105,7 +105,7 @@ def batch_params(tape, all_operations=False):
     >>> cost_fn = lambda x, weights: np.sum(circuit(x, weights))
     >>> weights.requires_grad = False
     >>> cost_fn(x, weights)
-    tensor(-0.78401022, requires_grad=True)
+    tensor(0.03758966, requires_grad=True)
     >>> qml.grad(cost_fn)(x, weights)[0]
     -0.2587478476364347
     """
