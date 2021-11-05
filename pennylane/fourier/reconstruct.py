@@ -15,7 +15,8 @@
 a quantum expectation value."""
 from functools import wraps
 from inspect import signature
-#import numpy as np
+
+# import numpy as np
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -39,21 +40,22 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
         callable: Reconstructed Fourier series with ``num_frequency`` frequencies,
         as ``qml.numpy`` based function.
     """
-    if not abs(int(num_frequency))==num_frequency:
+    if not abs(int(num_frequency)) == num_frequency:
         raise ValueError(f"num_frequency must be a non-negative integer, got {num_frequency}")
 
     a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
     shifts_pos = qml.math.arange(1, num_frequency + 1) / a
     shifts_neg = -shifts_pos[::-1]
-    fun_at_zero = fun(qml.math.array(0.)) if fun_at_zero is None else fun_at_zero
+    fun_at_zero = fun(qml.math.array(0.0)) if fun_at_zero is None else fun_at_zero
     evals = list(map(fun, shifts_neg)) + [fun_at_zero] + list(map(fun, shifts_pos))
     shifts = qml.math.concatenate([shifts_neg, [0.0], shifts_pos])
 
     def _reconstruction(x):
         """Univariate reconstruction based on equidistant shifts and Dirichlet kernels."""
         return qml.math.tensordot(
-            evals, qml.math.sinc(a * (x - shifts)) / qml.math.sinc(b * (x - shifts)),
-            axes = [[0], [0]],
+            qml.math.sinc(a * (x - shifts)) / qml.math.sinc(b * (x - shifts)),
+            evals,
+            axes=[[0], [0]],
         )
 
     return _reconstruction
@@ -63,7 +65,8 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
     Args:
         fun (callable): Fourier series to reconstruct with signature ``float -> float``
-        spectrum (Sequence): Frequency spectrum of the Fourier series; negative frequencies are ignored
+        spectrum (Sequence): Frequency spectrum of the Fourier series; non-positive
+            frequencies are ignored
         shifts (list): Shift angles at which to evaluate ``fun`` for the reconstruction
             Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{min}]` if ``shift=None``
             where :math:`f_\text{min}` is the smallest frequency in ``spectrum``.
@@ -74,17 +77,25 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum``,
         as ``qml.numpy`` based function and coinciding with ``fun`` on :math:`2R+1` points.
     """
+    if spectrum in ([], [0.0]):
+        if fun_at_zero is None:
+            fun_at_zero = fun(0.0)
+        def _reconstruction(x):
+            """Univariate reconstruction of a constant Fourier series."""
+            return fun_at_zero
+        return _reconstruction
+
     spectrum = np.array([f for f in spectrum if f > 0.0])
-    f_min = min(spectrum)
+    f_max = max(spectrum)
     # If no shifts are provided, choose equidistant ones
     if shifts is None:
         R = len(spectrum)
-        shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_min * (2 * R + 1))
+        shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1))*R
         zero_idx = R
     elif fun_at_zero is not None:
         zero_idx = np.where(np.isclose(shifts, 0.0))[0]
         if len(zero_idx) > 0:
-            zero_idx = int(np.where(close_to_zero))
+            zero_idx = int(np.where(zero_idx))
         else:
             zero_idx = None
     # Take care of shifts close to zero if fun_at_zero was provided
@@ -103,6 +114,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     C = np.hstack([C1, C2, C3])
 
     # Solve the system of linear equations
+    print(np.linalg.cond(C))
     W = np.linalg.solve(C, evals)
 
     # Extract the Fourier coefficients
