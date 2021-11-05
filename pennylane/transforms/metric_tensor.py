@@ -95,11 +95,11 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
 
     .. warning::
 
-        Executing the tapes with the Hadamard tests requires a device
+        Performing the Hadamard tests requires a device
         that has an additional wire as compared to the wires on which the
-        original tape was defined. This wire may be specified via ``aux_wire``.
+        original circuit was defined. This wire may be specified via ``aux_wire``.
         By default, contiguous wire numbering is assumed and the additional
-        wire is set to ``tape.num_wires``.
+        wire is set to the last wire of the circuit/device.
 
     **Example**
 

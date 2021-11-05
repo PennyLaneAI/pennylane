@@ -8,9 +8,9 @@
   tensor, beyond the block diagonal approximation. 
   [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
 
-  This is done using Hadamard tests and requires an additional wire 
-  on the device to execute the tapes produced by the transform, 
-  as compared to the number of wires required by the original tape.
+  This is performed using Hadamard tests, and requires an additional wire 
+  on the device to execute the circuits produced by the transform, 
+  as compared to the number of wires required by the original circuit.
   The transform defaults to computing the full tensor, which can
   be controlled by the `approx` keyword argument.
   See the 
