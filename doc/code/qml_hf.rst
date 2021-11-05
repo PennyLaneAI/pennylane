@@ -8,7 +8,7 @@ basis set parameters.
 The differentiable HF solver allows computing exact gradients with respect to
 molecular geometry, basis set, and circuit parameters simultaneously using the techniques of
 automatic differentiation available in `Autograd <https://github.com/HIPS/autograd>`__. This makes
-the solver more versatile and robust compared to non-differentiable tools which mainly rely
+the solver more versatile and robust compared to non-differentiable tools that mainly rely
 on numerical approaches for computing gradients, which can lead to inaccuracies and instability.
 Additionally, optimizing the basis set parameters allows reaching lower ground-state energies
 without increasing the size of the basis set. Overall, the solver allows users to execute end-to-end
@@ -26,7 +26,7 @@ The HF solver computes the integrals over basis functions, constructs the releva
 performs self-consistent-field iterations to obtain a set of optimized molecular orbital
 coefficients. These coefficients and the computed integrals over basis functions are used to
 construct the one- and two-body electron integrals in the molecular orbital basis, which can be
-used to generate a differentiable second-quantized Hamiltonians in the fermionic and qubit basis.
+used to generate differentiable second-quantized Hamiltonians in the fermionic and qubit basis.
 
 The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
 geometry of the molecule and the basis set parameters are all differentiable.
@@ -107,8 +107,8 @@ Now that the circuit is defined, we can create a geometry and parameter optimiza
         params = params - 0.25 * g_params[0]
 
         # compute gradients with respect to the nuclear coordinates and update geometry
-        forces = qml.grad(generate_circuit(mol), argnum = 1)(*args)
-        geometry = geometry - 0.5 * forces
+        g_coor = qml.grad(generate_circuit(mol), argnum = 1)(*args)
+        geometry = geometry - 0.5 * g_coor
 
         # compute gradients with respect to the Gaussian exponents and update the exponents
         g_alpha = qml.grad(generate_circuit(mol), argnum = 2)(*args)
@@ -119,7 +119,7 @@ Now that the circuit is defined, we can create a geometry and parameter optimiza
         coeff = coeff - 0.25 * g_coeff
 
         if n%5 == 0:
-            print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Force: {forces.max()}')
+            print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Absolute Force: {abs(g_coor).max()}')
 
 
 Running this optimization, we get the following output in atomic units:
