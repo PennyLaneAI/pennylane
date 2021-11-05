@@ -853,6 +853,11 @@
   For more usage details, please see the
   [classical Jacobian docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.classical_jacobian.html).
 
+* A new utility function `qml.math.is_abstract(tensor)` has been added. This function
+  returns `True` if the tensor is *abstract*; that is, it has no value or shape.
+  This can occur if within a function that has been just-in-time compiled.
+  [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
+
 * ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
   [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
