@@ -111,7 +111,7 @@
   w1, w2 = [np.random.random(s) for s in shapes]
 
   @qml.transforms.mitigate_with_zne([1, 2, 3], fold_global, RichardsonFactory.extrapolate)
-  @qnode(dev)
+  @qml.beta.qnode(dev)
   def circuit(w1, w2):
       qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
       return qml.expval(qml.PauliZ(0))
