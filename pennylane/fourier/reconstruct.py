@@ -61,6 +61,11 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
 
     return _reconstruction
 
+_warn_text_fun_at_zero_ignored = (
+    "The provided value of the function at zero will be ignored due to the "
+    "provided shift values. This may lead to additional evaluations of the "
+    "function to be reconstructed."
+)
 
 def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
@@ -80,14 +85,20 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     """
     # pylint: disable=unused-argument
 
+    have_fun_at_zero = fun_at_zero is not None
+    have_shifts = shifts is not None
     # For an empty/trivial spectrum, the function simply is constant
     if spectrum in ([], [0.0]):
-        if fun_at_zero is None:
-            fun_at_zero = fun(0.0)
+        if have_shifts:
+            fun_value = fun(shifts[0])
+            if have_fun_at_zero:
+                warnings.warn(_warn_text_fun_at_zero_ignored)
+        else:
+            fun_value = fun_at_zero if have_fun_at_zero else fun(0.0)
 
         def constant_fn(x):
             """Univariate reconstruction of a constant Fourier series."""
-            return fun_at_zero
+            return fun_value
 
         return constant_fn
 
@@ -95,23 +106,24 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     f_max = max(spectrum)
 
     # If no shifts are provided, choose equidistant ones
-    if shifts is None:
+    if not have_shifts:
         R = len(spectrum)
         shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
-    elif fun_at_zero is not None:
+        need_fun_at_zero = True
+    elif have_fun_at_zero:
         zero_idx = np.where(np.isclose(shifts, 0.0))[0]
-        if len(zero_idx) > 0:
-            zero_idx = int(np.where(zero_idx))
-        else:
-            zero_idx = None
+        zero_idx = zero_idx[0] if len(zero_idx)>0 else None
+        need_fun_at_zero = zero_idx is not None
 
     # Take care of shifts close to zero if fun_at_zero was provided
-    if fun_at_zero is not None and zero_idx is not None:
+    if have_fun_at_zero and need_fun_at_zero:
         # Only one shift may be zero at a time
         shifts = np.concatenate([[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]])
         evals = np.array([fun_at_zero] + list(map(fun, shifts[1:])))
     else:
+        if have_fun_at_zero and not need_fun_at_zero:
+            warnings.warn(_warn_text_fun_at_zero_ignored)
         evals = np.array(list(map(fun, shifts)))
 
     L = len(shifts)
@@ -148,6 +160,8 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
     r"""For inputs to reconstruct, determine how the given information yields
     function reconstruction tasks and collect them into an ArgMap ``jobs``.
     Also determine whether the function at zero is needed."""
+    # pylint: disable=too-many-branches
+
     if nums_frequency is None:
         jobs = {}
 
@@ -197,7 +211,7 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
             for par_idx in inner_dict:
                 _num_frequency = nums_frequency[arg_name][par_idx]
                 # Store job; fun_at_zero missing
-                jobs[idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
+                jobs[par_idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
 
             jobs[arg_name] = _jobs
 

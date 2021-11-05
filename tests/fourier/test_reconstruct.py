@@ -317,6 +317,15 @@ class TestReconstructGen:
         ),
     ]
 
+    all_shifts = [
+        [-np.pi/3, -np.pi/20, 0.0, np.pi/20, np.pi/3],
+        [-0.15, -0.05, 0.05],
+        [-2*np.pi, -np.pi, -0.1, np.pi, 2*np.pi],
+        [0.1],
+        np.arange(-9, 10) * np.pi / 19,
+        np.arange(-9, 10) * np.pi / 19,
+    ]
+
     @pytest.mark.parametrize("fun, spectrum", zip(c_funs, spectra))
     def test_with_classical_fun(self, fun, spectrum, mocker):
         """Test that arbitrary-frequency classical functions are
@@ -335,7 +344,28 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(fun, rec)
 
-    # TO DO: Add tests using ``shifts`` kwarg.
+    @pytest.mark.parametrize("fun, spectrum, shifts", zip(c_funs, spectra, all_shifts))
+    def test_with_classical_fun_with_shifts(self, fun, spectrum, shifts, mocker, recwarn):
+        """Test that arbitrary-frequency classical functions are
+        reconstructed correctly."""
+        Fun = Lambda(fun)
+        spy = mocker.spy(Fun, "fun")
+        rec = _reconstruct_gen(Fun, spectrum, shifts=shifts)
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
+        assert fun_close(fun, rec)
+
+        # Repeat, using precomputed fun_at_zero
+        fun_at_zero = fun(0.0)
+        Fun = Lambda(fun)
+        spy = mocker.spy(Fun, "fun")
+        rec = _reconstruct_gen(Fun, spectrum, shifts=shifts, fun_at_zero=fun_at_zero)
+        if 0.0 in shifts:
+            assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
+        else:
+            assert len(recwarn)==1
+            assert recwarn[0].category==UserWarning
+            assert recwarn[0].message.args[0].startswith("The provided value")
+        assert fun_close(fun, rec)
 
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
