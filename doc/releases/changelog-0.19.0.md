@@ -554,8 +554,6 @@
   a callable is independent of its arguments.
   [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
 
-  **Warning**
-
   This function is experimental and might behave differently than expected.
   Also, it might be subject to change.
 
