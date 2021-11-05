@@ -102,8 +102,9 @@ class Tracker:
         >>> def shots_info(totals, history, latest):
         ...     if 'shots' in latest.keys():
         ...         print("Total shots: ", totals['shots'])
+        >>> x = np.array(0.1, requires_grad=True)
         >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
-        ...     qml.grad(circuit)(0.1)
+        ...     qml.grad(circuit)(x)
         Total shots:  100
         Total shots:  200
         Total shots:  300
