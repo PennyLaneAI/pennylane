@@ -15,16 +15,17 @@
 Unit tests for ensuring that objects that are pickled/unpickled are identical to the original.
 """
 
-import pennylane as qml
 import pickle
+
+import pennylane as qml
+
 
 def test_pass_positional_wires_to_observable():
     """Tests whether qml.numpy.tensor objects are pickleable."""
-    
+
     x = qml.numpy.random.random(15)
     x_str = pickle.dumps(x)
     x_reloaded = pickle.loads(x_str)
-    
-    assert qml.numpy.allclose(x,x_reloaded)
+
+    assert qml.numpy.allclose(x, x_reloaded)
     assert x.__dict__ == x_reloaded.__dict__
-    
