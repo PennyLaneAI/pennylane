@@ -29,4 +29,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christina Lee, Alejandro Montanez
+Jalani Kanem, Christina Lee, Alejandro Montanez
