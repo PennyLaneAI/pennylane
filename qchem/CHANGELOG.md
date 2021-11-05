@@ -8,6 +8,15 @@
   to load the dipole matrix elements in the atomic basis.
   [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
 
+<h3>Improvements</h3>
+
+* The ``meanfield`` function has been modified to avoid creating
+  a directory tree to the HF data file. Now the filename output by
+  the function encodes the qchem package and basis set
+  used to run the HF calculations. This ensures compatibility
+  with multiprocessing environment
+  [(#1854)](https://github.com/PennyLaneAI/pennylane/pull/1854)
+
 <h3>Bug fixes</h3>
 
 * Pins PySCF to version `>=1.7.2`, `<2.0` to ensure that features,
@@ -19,7 +28,7 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Alain Delgado Gran, Josh Izaac, Soran Jahangiri,
-Romain Moyard.
+Lee James O'Riordan, Romain Moyard.
 
 # Release 0.17.0
 
