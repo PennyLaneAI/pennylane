@@ -550,20 +550,6 @@
   a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
   [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
 
-* There is a new utility function `qml.math.is_independent` that checks whether
-  a callable is independent of its arguments.
-  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
-
-  This function is experimental and might behave differently than expected.
-  Also, it might be subject to change.
-
-  Note that the test relies on both numerical and analytical checks, except
-  when using the PyTorch interface which only performs a numerical check.
-  It is known that there are edge cases on which this test will yield wrong
-  results, in particular non-smooth functions may be problematic.
-  For details, please refer to the
-  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
-
 <h3>Improvements</h3>
 
 * Refactored the `expand_fn` functionality in the Device class to avoid any
@@ -696,6 +682,20 @@
   After wrapping, `qml.BooleanFn` can be called like the wrapped function, and
   multiple instances can be manipulated and combined with the bitwise operators
   `&`, `|` and `~`.
+
+* There is a new utility function `qml.math.is_independent` that checks whether
+  a callable is independent of its arguments.
+  [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
+
+  This function is experimental and might behave differently than expected.
+  Also, it might be subject to change.
+
+  Note that the test relies on both numerical and analytical checks, except
+  when using the PyTorch interface which only performs a numerical check.
+  It is known that there are edge cases on which this test will yield wrong
+  results, in particular non-smooth functions may be problematic.
+  For details, please refer to the
+  [is_indpendent docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.math.is_independent.html).
 
 * `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the
   probabilities in the rotated basis.
