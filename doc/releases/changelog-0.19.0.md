@@ -312,7 +312,6 @@
   Currently, this beta QNode does not support the following features:
 
   - Non-mutability via the `mutable` keyword argument
-  - Viewing specifications with `qml.specs`
   - The `reversible` QNode differentiation method
   - The ability to specify a `dtype` when using PyTorch and TensorFlow.
 
