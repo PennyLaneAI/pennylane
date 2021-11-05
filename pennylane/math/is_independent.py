@@ -296,7 +296,7 @@ def is_independent(
     The analytic and numeric tests used are as follows.
 
     - The analytic test performed depends on the provided ``interface``,
-       both in its method and its degree of reliability.
+      both in its method and its degree of reliability.
 
     - For the numeric test, the function is evaluated at a series of random positions,
       and the outputs numerically compared to verify that the output
