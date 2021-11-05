@@ -14,8 +14,9 @@
 """Quantum natural gradient optimizer"""
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
+import warnings
 
-import numpy as np
+from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.utils import _flatten, unflatten
@@ -150,9 +151,23 @@ class QNGOptimizer(GradientDescentOptimizer):
             to be applied at each optimization step
     """
 
-    def __init__(self, stepsize=0.01, diag_approx=False, lam=0):
+    def __init__(self, stepsize=0.01, approx="block-diag", diag_approx=None, lam=0):
         super().__init__(stepsize)
-        self.diag_approx = diag_approx
+
+        approx_set = False
+        if diag_approx is not None:
+
+            warnings.warn(
+                "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
+                UserWarning,
+            )
+            if diag_approx:
+                self.approx = "diag"
+                approx_set = True
+
+        if not approx_set:
+            self.approx = approx
+
         self.metric_tensor = None
         self.lam = lam
 
@@ -192,13 +207,14 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                metric_tensor_fn = qml.metric_tensor(qnode, diag_approx=self.diag_approx)
+
+                metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
 
             self.metric_tensor = metric_tensor_fn(*args, **kwargs)
             self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
-        new_args = self.apply_grad(g, args)
+        new_args = np.array(self.apply_grad(g, args), requires_grad=True)
 
         if forward is None:
             forward = qnode(*args, **kwargs)

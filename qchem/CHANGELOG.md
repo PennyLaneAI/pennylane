@@ -1,14 +1,15 @@
-# Release 0.19.0-dev
+# Release 0.20.0-dev
 
 <h3>New features</h3>
 
-* The ``dipole`` function has been added to the ``obs`` module
-  to construct the electric dipole operator of a molecule.
-  Currently, the implemented function relies on a PySCF functionality
-  to load the dipole matrix elements in the atomic basis.
-  [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
-
 <h3>Improvements</h3>
+
+* The ``meanfield`` function has been modified to avoid creating
+  a directory tree to the HF data file. Now the filename output by
+  the function encodes the qchem package and basis set
+  used to run the HF calculations. This ensures compatibility
+  with multiprocessing environment
+  [(#1854)](https://github.com/PennyLaneAI/pennylane/pull/1854)
 
 <h3>Bug fixes</h3>
 
@@ -18,7 +19,23 @@
 
 This release contains contributions from (in alphabetical order):
 
-Alain Delgado
+Alain Delgado Gran
+
+# Release 0.19.0
+
+<h3>New features</h3>
+
+* The ``dipole`` function has been added to the ``obs`` module
+  to construct the electric dipole operator of a molecule.
+  Currently, the implemented function relies on a PySCF functionality
+  to load the dipole matrix elements in the atomic basis.
+  [(#1698)](https://github.com/PennyLaneAI/pennylane/pull/1698)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Juan Miguel Arrazola, Alain Delgado Gran, Soran Jahangiri.
 
 # Release 0.17.0
 

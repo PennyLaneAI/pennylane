@@ -15,7 +15,6 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template as temp
 from pennylane.math import shape
 
 
@@ -39,7 +38,6 @@ def _preprocess(args, depth):
             )
 
 
-@temp
 def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.
 
