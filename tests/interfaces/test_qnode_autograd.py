@@ -158,7 +158,8 @@ class TestQNode:
 
         a = tf.Variable(0.1, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(a)
             res_tf = circuit(a)
 
         grad_tf = tape.gradient(res_tf, a)

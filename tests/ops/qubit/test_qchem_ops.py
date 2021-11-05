@@ -253,7 +253,8 @@ class TestSingleExcitation:
             return qml.expval(qml.PauliZ(0))
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(phi_t)
             res = circuit(phi_t)
 
         grad = tape.gradient(res, phi_t)
@@ -527,7 +528,8 @@ class TestDoubleExcitation:
             return qml.expval(qml.PauliZ(0))
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(phi_t)
             res = circuit(phi_t)
 
         grad = tape.gradient(res, phi_t)
@@ -852,7 +854,8 @@ class TestOrbitalRotation:
             return qml.expval(qml.PauliZ(0))
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(phi_t)
             res = circuit(phi_t)
 
         grad = tape.gradient(res, phi_t)

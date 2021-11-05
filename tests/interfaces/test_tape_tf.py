@@ -62,7 +62,9 @@ class TestTFQuantumTape:
         c = tf.Variable(0.3)
         d = 0.4
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(a)
+            tape.watch(c)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.Rot(a, b, c, wires=0)
                 qml.RX(d, wires=1)
@@ -77,7 +79,8 @@ class TestTFQuantumTape:
         a = tf.Variable(0.1)
         dev = qml.device("default.qubit", wires=1)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(a)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
@@ -97,7 +100,9 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -114,7 +119,7 @@ class TestTFQuantumTape:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [a, b])
+        res = tape.jacobian(res, [a, b], experimental_use_pfor=False)
         expected = [[-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -128,7 +133,9 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             with TFInterface.apply(JacobianTape(), dtype=tf.float32) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -143,7 +150,7 @@ class TestTFQuantumTape:
         assert res.shape == (2,)
         assert res.dtype is tf.float32
 
-        res = tape.jacobian(res, [a, b])
+        res = tape.jacobian(res, [a, b], experimental_use_pfor=False)
         assert [r.dtype is tf.float32 for r in res]
 
     def test_jacobian_options(self, mocker, tol):
@@ -154,7 +161,8 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
@@ -163,7 +171,7 @@ class TestTFQuantumTape:
             res = qtape.execute(dev)
 
         qtape.jacobian_options = {"h": 1e-8, "order": 2}
-        tape.jacobian(res, a)
+        tape.jacobian(res, a, experimental_use_pfor=False)
 
         for args in spy.call_args_list:
             assert args[1]["order"] == 2
@@ -177,8 +185,9 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with tf.GradientTape() as tape:
-
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -190,18 +199,20 @@ class TestTFQuantumTape:
 
             res = qtape.execute(dev)
 
-        jac = tape.jacobian(res, [a, b])
+        jac = tape.jacobian(res, [a, b], experimental_use_pfor=False)
 
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             res2 = qtape.execute(dev, params=[2 * a, b])
 
         expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac2 = tape.jacobian(res2, [a, b])
+        jac2 = tape.jacobian(res2, [a, b], experimental_use_pfor=False)
         expected = [
             [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
             [0, -tf.cos(2 * a) * tf.cos(b)],
@@ -223,24 +234,28 @@ class TestTFQuantumTape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             qtape.set_parameters([a, b], trainable_only=False)
             qtape._update_trainable_params()
             assert qtape.trainable_params == {0, 1}
             res = qtape.execute(dev)
 
-        jac = tape.jacobian(res, [a, b])
+        jac = tape.jacobian(res, [a, b], experimental_use_pfor=False)
 
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             res2 = qtape.execute(dev, params=[2 * a, b])
 
         expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac2 = tape.jacobian(res2, [a, b])
+        jac2 = tape.jacobian(res2, [a, b], experimental_use_pfor=False)
         expected = [
             [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
             [0, -tf.cos(2 * a) * tf.cos(b)],
@@ -255,7 +270,7 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=True) as tape:
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
@@ -266,7 +281,7 @@ class TestTFQuantumTape:
             assert qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
             res = qtape.execute(dev)
 
-        res = tape.jacobian(res, [a, b, c])
+        res = tape.jacobian(res, [a, b, c], experimental_use_pfor=False)
         assert isinstance(res[0], tf.Tensor)
         assert res[1] is None
         assert isinstance(res[2], tf.Tensor)
@@ -275,8 +290,7 @@ class TestTFQuantumTape:
         """Test evaluation if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        with tf.GradientTape() as tape:
-
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(0.2, wires=0)
                 qml.RX(tf.constant(0.1), wires=0)
@@ -299,8 +313,8 @@ class TestTFQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with tf.GradientTape() as tape:
-
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
@@ -311,7 +325,7 @@ class TestTFQuantumTape:
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
-        res = tape.jacobian(res, a)
+        res = tape.jacobian(res, a, experimental_use_pfor=False)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
     def test_differentiable_expand(self, tol):
@@ -335,8 +349,8 @@ class TestTFQuantumTape:
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
-
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(p)
             with qtape:
                 qml.RX(a, wires=0)
                 U3(p[0], p[1], p[2], wires=0)
@@ -355,7 +369,7 @@ class TestTFQuantumTape:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, p)
+        res = tape.jacobian(res, p, experimental_use_pfor=False)
         expected = np.array(
             [
                 tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
@@ -376,7 +390,9 @@ class TestTFQuantumTape:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(x)
+            tape.watch(y)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
@@ -394,7 +410,7 @@ class TestTFQuantumTape:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y])
+        res = tape.jacobian(res, [x, y], experimental_use_pfor=False)
         expected = np.array(
             [
                 [
@@ -416,7 +432,9 @@ class TestTFQuantumTape:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(x)
+            tape.watch(y)
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
@@ -431,7 +449,7 @@ class TestTFQuantumTape:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y])
+        res = tape.jacobian(res, [x, y], experimental_use_pfor=False)
         expected = np.array(
             [
                 [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
@@ -444,7 +462,7 @@ class TestTFQuantumTape:
         """Test sampling works as expected"""
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
@@ -478,7 +496,7 @@ class TestTFPassthru:
         a = tf.Variable(0.1)
         dev = qml.device("default.qubit.tf", wires=1)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             with JacobianTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(0.2, wires=0)
@@ -497,7 +515,9 @@ class TestTFPassthru:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(a)
+            tape.watch(b)
             with JacobianTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -529,8 +549,9 @@ class TestTFPassthru:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        with tf.GradientTape() as tape:
-
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)
             with JacobianTape() as qtape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -540,18 +561,20 @@ class TestTFPassthru:
 
             res = qtape.execute(dev)
 
-        jac = tape.jacobian(res, [a, b])
+        jac = tape.jacobian(res, [a, b], experimental_use_pfor=False)
 
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(b)          
             res2 = qtape.execute(dev, params=[2 * a, b])
 
         expected = [tf.cos(2 * a), -tf.cos(2 * a) * tf.sin(b)]
         assert np.allclose(res2, expected, atol=tol, rtol=0)
 
-        jac = tape.jacobian(res2, [a, b])
+        jac = tape.jacobian(res2, [a, b], experimental_use_pfor=False)
         expected = [
             [-2 * tf.sin(2 * a), 2 * tf.sin(2 * a) * tf.sin(b)],
             [0, -tf.cos(2 * a) * tf.cos(b)],
@@ -570,7 +593,9 @@ class TestTFPassthru:
 
         dev = qml.device("default.qubit.tf", wires=1)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
+            tape.watch(c)
             with JacobianTape() as qtape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
@@ -580,7 +605,7 @@ class TestTFPassthru:
             assert qtape.get_parameters() == [a * c, b, c + c ** 2 + tf.sin(a)]
             res = qtape.execute(dev)
 
-        res = tape.jacobian(res, [a, b, c])
+        res = tape.jacobian(res, [a, b, c], experimental_use_pfor=False)
         assert isinstance(res[0], tf.Tensor)
         assert res[1] is None
         assert isinstance(res[2], tf.Tensor)
@@ -592,7 +617,7 @@ class TestTFPassthru:
         spy = mocker.spy(JacobianTape, "jacobian")
         dev = qml.device("default.qubit.tf", wires=2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             with JacobianTape() as qtape:
                 qml.RY(0.2, wires=0)
                 qml.RX(tf.constant(0.1), wires=0)
@@ -615,7 +640,8 @@ class TestTFPassthru:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(a)
             with JacobianTape() as qtape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
@@ -624,7 +650,7 @@ class TestTFPassthru:
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
-        res = tape.jacobian(res, a)
+        res = tape.jacobian(res, a, experimental_use_pfor=False)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
         spy.assert_not_called()
 
@@ -650,8 +676,8 @@ class TestTFPassthru:
         a = np.array(0.1)
         p = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
-
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(p)
             with qtape:
                 qml.RX(a, wires=0)
                 U3(p[0], p[1], p[2], wires=0)
@@ -669,7 +695,7 @@ class TestTFPassthru:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, p)
+        res = tape.jacobian(res, p, experimental_use_pfor=False)
         expected = np.array(
             [
                 tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
@@ -691,7 +717,9 @@ class TestTFPassthru:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(x)
+            tape.watch(y)
             with JacobianTape() as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
@@ -709,7 +737,7 @@ class TestTFPassthru:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y])
+        res = tape.jacobian(res, [x, y], experimental_use_pfor=False)
         expected = np.array(
             [
                 [
@@ -743,7 +771,9 @@ class TestTFPassthru:
         # this change directly in the device.
         monkeypatch.setattr(dev, "_asarray", _asarray)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+            tape.watch(x)
+            tape.watch(y)
             with JacobianTape() as qtape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
@@ -758,7 +788,7 @@ class TestTFPassthru:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y])
+        res = tape.jacobian(res, [x, y], experimental_use_pfor=False)
         expected = np.array(
             [
                 [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
@@ -771,7 +801,7 @@ class TestTFPassthru:
         """Test sampling works as expected"""
         dev = qml.device("default.qubit.tf", wires=2, shots=10)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             with JacobianTape() as qtape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])

@@ -578,7 +578,8 @@ class TestVQE:
         w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
         w = tf.Variable(w)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(w)
             res = cost(w)
 
         dc = tape.gradient(res, w).numpy()
@@ -891,7 +892,8 @@ class TestNewVQE:
 
         w = tf.Variable(PARAMS, dtype=tf.double)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(w)
             res = circuit(w)
 
         dc = tape.gradient(res, w).numpy()
@@ -1057,7 +1059,8 @@ class TestTFInterface:
         params = Variable([a, b], dtype=tf.float64)
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(params)
             loss = cost(params)
             res = np.array(tape.gradient(loss, params))
 
@@ -1093,7 +1096,8 @@ class TestMultipleInterfaceIntegration:
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch(w)
             loss = cost(w)
             res_tf = np.array(tape.gradient(loss, w))
 

@@ -911,7 +911,8 @@ class TestParamShiftGradients:
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
+            t.watch(params)
             with qml.tape.JacobianTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
@@ -927,7 +928,7 @@ class TestParamShiftGradients:
         expected = np.array([np.sin(2 * x) * np.sin(y) ** 2, -np.cos(x) ** 2 * np.sin(2 * y)])
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-        res = t.jacobian(jac, params)
+        res = t.jacobian(jac, params, experimental_use_pfor=False)
         expected = np.array(
             [
                 [2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)],
@@ -1225,14 +1226,14 @@ class TestHamiltonianExpvalGradients:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(persistent=True) as t:
             jac = self.cost_fn(weights, coeffs1, coeffs2, dev=dev)
 
         expected = self.cost_fn_expected(weights.numpy(), coeffs1.numpy(), coeffs2.numpy())
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
         # second derivative wrt to Hamiltonian coefficients should be zero
-        hess = t.jacobian(jac, [coeffs1, coeffs2])
+        hess = t.jacobian(jac, [coeffs1, coeffs2], experimental_use_pfor=False)
         assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 

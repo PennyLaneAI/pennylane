@@ -269,7 +269,8 @@ class TestVJPGradients:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
+            t.watch(params)
             with qml.tape.JacobianTape() as tape:
                 ansatz(params[0], params[1])
 
@@ -279,7 +280,7 @@ class TestVJPGradients:
 
         assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
 
-        res = t.jacobian(vjp, params)
+        res = t.jacobian(vjp, params, experimental_use_pfor=False)
         assert np.allclose(res, qml.jacobian(expected)(params.numpy()), atol=tol, rtol=0)
 
     @pytest.mark.slow

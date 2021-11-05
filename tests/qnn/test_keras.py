@@ -417,7 +417,7 @@ class TestKerasLayer:
         layer = KerasLayer(c, w, output_dim)
         x = tf.ones((batch_size, middle_dim, n_qubits))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             layer_out = layer(x)
 
         g_layer = tape.gradient(layer_out, layer.trainable_variables)
@@ -478,7 +478,7 @@ class TestKerasLayer:
 
         inputs = tf.ones((4, 2))
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             out = tf.reduce_sum(qlayer(inputs))
 
         spy = mocker.spy(qml.tape.QubitParamShiftTape, "jacobian")

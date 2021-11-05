@@ -995,7 +995,8 @@ class TestParamShiftInterfaces:
         dev = qml.device("default.gaussian", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
+            t.watch(params)
             with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(params[0], 0, wires=0)
                 qml.Rotation(params[1], wires=0)
@@ -1020,7 +1021,7 @@ class TestParamShiftInterfaces:
         )
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-        grad = t.jacobian(res, params)
+        grad = t.jacobian(res, params, experimental_use_pfor=False)
         expected = np.array(
             [4 * np.cosh(2 * r) * np.sin(2 * phi), 4 * np.cos(2 * phi) * np.sinh(2 * r)]
         )

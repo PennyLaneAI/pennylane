@@ -513,7 +513,8 @@ class TestFiniteDiffGradients:
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
+            t.watch(params)
             with qml.tape.JacobianTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
@@ -529,7 +530,7 @@ class TestFiniteDiffGradients:
         expected = np.array([-np.sin(x) * np.sin(y), np.cos(x) * np.cos(y)])
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
-        res = t.jacobian(jac, params)
+        res = t.jacobian(jac, params, experimental_use_pfor=False)
         expected = np.array(
             [
                 [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
@@ -545,7 +546,8 @@ class TestFiniteDiffGradients:
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
-        with tf.GradientTape() as t:
+        with tf.GradientTape(watch_accessed_variables=False) as t:
+            t.watch(params)
             with qml.tape.JacobianTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
