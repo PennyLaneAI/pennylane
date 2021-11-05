@@ -22,7 +22,8 @@ a function is independent of its arguments for the interfaces
 """
 import warnings
 
-from pennylane import numpy as np
+import numpy as np
+from pennylane import numpy as pnp
 
 from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
@@ -196,12 +197,13 @@ def _get_random_args(args, interface, num, seed, bounds):
     else:
         np.random.seed(seed)
         rnd_args = [
-            tuple(
-                np.random.random(np.shape(arg), requires_grad=True) * width + bounds[0]
-                for arg in args
-            )
+            tuple(np.random.random(np.shape(arg)) * width + bounds[0] for arg in args)
             for _ in range(num)
         ]
+        if interface == "autograd":
+
+            # Mark the arguments as trainable with Autograd
+            rnd_args = pnp.array(rnd_args, requires_grad=True)
 
     return rnd_args
 
