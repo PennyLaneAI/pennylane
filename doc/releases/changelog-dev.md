@@ -625,6 +625,15 @@
 
 <h3>Improvements</h3>
 
+* The `qml.AmplitudeEmbedding` template now supports just-in-time compilation when
+  used with either `@jax.jit` or `@tf.function`, resulting in improved performance.
+  [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
+
+* A new utility function `qml.math.is_abstract(tensor)` has been added. This function
+  returns `True` if the tensor is *abstract*; that is, it has no value or shape.
+  This can occur if within a function that has been just-in-time compiled.
+  [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
+
 * Refactored the `expand_fn` functionality in the Device class to avoid any
   edge cases leading to failures with plugins.
   [(#1840)](https://github.com/PennyLaneAI/pennylane/pull/1840)
@@ -924,6 +933,10 @@
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Deprecations</h3>
+
+* The `default.tensor` device from the beta folder has not been maintained in 
+  years and is deprecated. It will be removed in future releases.
+  [(#1851)](https://github.com/PennyLaneAI/pennylane/pull/1851)
 
 * The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
   is deprecated.
