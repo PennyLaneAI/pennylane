@@ -80,9 +80,11 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     if spectrum in ([], [0.0]):
         if fun_at_zero is None:
             fun_at_zero = fun(0.0)
+
         def _reconstruction(x):
             """Univariate reconstruction of a constant Fourier series."""
             return fun_at_zero
+
         return _reconstruction
 
     spectrum = np.array([f for f in spectrum if f > 0.0])
@@ -90,7 +92,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     # If no shifts are provided, choose equidistant ones
     if shifts is None:
         R = len(spectrum)
-        shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1))*R
+        shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
     elif fun_at_zero is not None:
         zero_idx = np.where(np.isclose(shifts, 0.0))[0]

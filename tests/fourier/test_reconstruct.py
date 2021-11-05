@@ -44,6 +44,7 @@ def dummy_qnode(x):
     qml.RX(x, wires=0)
     return qml.expval(qml.PauliZ(0))
 
+
 def get_RX_circuit(scales):
     """Generate a circuit with Pauli-X rotation gates with ``f*x``
     as argument where the ``f`` s are stored in ``scales`` ."""
@@ -55,6 +56,7 @@ def get_RX_circuit(scales):
         return qml.expval(qml.PauliZ(0))
 
     return circuit
+
 
 def fun_close(fun1, fun2, zero=None, tol=1e-5):
     X = np.linspace(-np.pi, np.pi, 100)
@@ -130,9 +132,7 @@ class TestReconstructEqu:
         fun_at_zero = _fun(0.0)
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
-        _rec = _reconstruct_equ(
-            _fun, num_frequency, fun_at_zero=fun_at_zero
-        )
+        _rec = _reconstruct_equ(_fun, num_frequency, fun_at_zero=fun_at_zero)
         # Convert reconstruction to have original frequencies
         rec = lambda x: _rec(f0 * x)
         assert spy.call_count == num_frequency * 2
@@ -277,42 +277,44 @@ class TestReconstructGen:
     shifted evaluations for arbitrary frequencies."""
 
     c_funs = [
-        lambda x: -3.27 * np.sin(0.1712*x) - np.cos(20.812 * x) / 23,
+        lambda x: -3.27 * np.sin(0.1712 * x) - np.cos(20.812 * x) / 23,
         lambda x: -0.49 * np.sin(3.2 * x),
         lambda x: 0.1 * np.cos(-0.1 * x) + 2.9 * np.sin(0.3 * x - 1.2),
         lambda x: 4.01,
         lambda x: np.sum([np.sin(i * x) for i in range(1, 10)]),
-        lambda x: np.sum([i ** 0.9 * 0.2 * np.sin(i**1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]),
+        lambda x: np.sum(
+            [i ** 0.9 * 0.2 * np.sin(i ** 1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
+        ),
     ]
 
     spectra = [
         [0.1712, 20.812],
         [3.2],
-        [-0.3, -0.1, 0., 0.1, 0.3],
+        [-0.3, -0.1, 0.0, 0.1, 0.3],
         [],
         list(range(1, 10)),
-        [3.921*i**1.2 for i in range(1, 10)],
+        [3.921 * i ** 1.2 for i in range(1, 10)],
     ]
 
     expected_grads = [
-        lambda x: -3.27 * np.cos(0.1712*x) * 0.1712 + np.sin(20.812 * x) / 23 * 20.812,
+        lambda x: -3.27 * np.cos(0.1712 * x) * 0.1712 + np.sin(20.812 * x) / 23 * 20.812,
         lambda x: -0.49 * np.cos(3.2 * x) * 3.2,
-        lambda x: (-0.1)**2 * np.sin(-0.1 * x) + 0.3 * 2.9 * np.cos(0.3 * x - 1.2),
+        lambda x: (-0.1) ** 2 * np.sin(-0.1 * x) + 0.3 * 2.9 * np.cos(0.3 * x - 1.2),
         lambda x: 0.0,
         lambda x: np.sum([i * np.cos(i * x) for i in range(1, 10)]),
-        lambda x: np.sum([i**2.1*3.921* 0.2 * np.cos(i**1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]),
+        lambda x: np.sum(
+            [i ** 2.1 * 3.921 * 0.2 * np.cos(i ** 1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
+        ),
     ]
 
-    @pytest.mark.parametrize(
-        "fun, spectrum", zip(c_funs, spectra)
-    )
+    @pytest.mark.parametrize("fun, spectrum", zip(c_funs, spectra))
     def test_with_classical_fun(self, fun, spectrum, mocker):
         """Test that arbitrary-frequency classical functions are
         reconstructed correctly."""
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
         rec = _reconstruct_gen(Fun, spectrum)
-        assert spy.call_count == len([f for f in spectrum if f>0.]) * 2 + 1
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
 
         # Repeat, using precomputed fun_at_zero
@@ -320,10 +322,10 @@ class TestReconstructGen:
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
         rec = _reconstruct_gen(Fun, spectrum, fun_at_zero=fun_at_zero)
-        assert spy.call_count == len([f for f in spectrum if f>0.]) * 2
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(fun, rec)
 
-    #TO DO: Add tests using ``shifts`` kwarg.
+    # TO DO: Add tests using ``shifts`` kwarg.
 
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
@@ -387,7 +389,7 @@ class TestReconstructGen:
         spy = mocker.spy(Fun, "fun")
         rec = _reconstruct_gen(Fun, spectrum)
 
-        assert spy.call_count == len([f for f in spectrum if f>0.]) * 2 + 1
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert not fun_close(fun, rec)
 
     @pytest.mark.parametrize("fun, spectrum", zip(c_funs, spectra))
@@ -399,9 +401,8 @@ class TestReconstructGen:
         spy = mocker.spy(Fun, "fun")
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(Fun, spectrum)
-        assert spy.call_count == len([f for f in spectrum if f>0.]) * 2 + 1
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
-
 
     all_scales = [
         [1.3],
@@ -418,14 +419,14 @@ class TestReconstructGen:
         circuit = get_RX_circuit(scales)
         Fun = Lambda(circuit)
         spy = mocker.spy(Fun, "fun")
-        if len(scales)==1:
+        if len(scales) == 1:
             spectrum = sorted({0.0, scales[0]})
         else:
             _spectra = [{0.0, s} for s in scales]
             spectrum = sorted(reduce(join_spectra, _spectra, {0.0}))
 
         rec = _reconstruct_gen(Fun, spectrum)
-        assert spy.call_count == len([f for f in spectrum if f>0.]) * 2 + 1
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(circuit, rec)
 
         # Repeat, using precomputed fun_at_zero
@@ -433,5 +434,5 @@ class TestReconstructGen:
         Fun = Lambda(circuit)
         spy = mocker.spy(Fun, "fun")
         rec = _reconstruct_gen(Fun, spectrum, fun_at_zero=fun_at_zero)
-        assert spy.call_count == len([f for f in spectrum if f>0.]) * 2
+        assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(circuit, rec)
