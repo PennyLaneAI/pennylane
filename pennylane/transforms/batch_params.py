@@ -86,7 +86,7 @@ def batch_params(tape, all_operations=False):
     >>> cost_fn(x, weights)
     tensor(0.03758966, requires_grad=True)
     >>> qml.grad(cost_fn)(x, weights)[0]
-    array([-0.25874785, -0.20385371, -0.48930298])
+    array([-0.30262974,  0.06320878,  0.00811555])
 
     If we pass the ``all_operations`` argument, we can specify that
     *all* operation parameters in the transformed QNode, regardless of whether they
