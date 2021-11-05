@@ -9,6 +9,10 @@
 
 <h3>Improvements</h3>
 
+* Update the PL test-suite to use the `tf.GradientTape` best-practices. 
+This update reduces the total running time of the Python test-suite up to %12.
+
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -25,4 +29,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christina Lee, Alejandro Montanez
+Ali Asadi, Christina Lee, Alejandro Montanez
