@@ -71,7 +71,8 @@ def batch_params(tape, all_operations=False):
 
     >>> batch_size = 3
     >>> x = np.linspace(0.1, 0.5, batch_size)
-    >>> weights = np.random.random((batch_size, 10, 3, 3), requires_grad=True)
+    >>> rng = np.random.default_rng(seed=1234)
+    >>> weights = rng.random((batch_size, 10, 3, 3), requires_grad=True)
 
     If we evaluate the QNode with these inputs, we will get an output
     of shape ``(batch_size,)``:
