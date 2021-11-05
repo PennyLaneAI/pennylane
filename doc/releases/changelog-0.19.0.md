@@ -688,7 +688,6 @@
   [(#1700)](https://github.com/PennyLaneAI/pennylane/pull/1700)
 
   This function is experimental and might behave differently than expected.
-  Also, it might be subject to change.
 
   Note that the test relies on both numerical and analytical checks, except
   when using the PyTorch interface which only performs a numerical check.
