@@ -1,10 +1,10 @@
 Quantum Chemistry
 =================
 
-PennyLane provides a quantum chemistry module ``qchem`` to perform quantum simulations
-of the electronic structure of molecules. ``qchem`` contains tools to construct the
-electronic Hamiltonian of molecules, and uses PennyLane to implement the Variational Quantum
-Eigensolver (VQE) algorithm.
+PennyLane provides a differentiable Hartree-Fock solver module :mod:`~.hf` and a quantum chemistry
+module :mod:`~.qchem` to perform quantum simulations of the electronic structure of molecules. These
+modules contain tools to construct the electronic Hamiltonian of molecules that can be used to
+implement the Variational Quantum Eigensolver (VQE) algorithm.
 
 .. figure:: ../_static/sketch_pennylane_qchem.png
     :width: 80%
