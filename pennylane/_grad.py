@@ -86,8 +86,10 @@ class grad:
         argnum = []
 
         for idx, arg in enumerate(args):
+
             trainable = getattr(arg, "requires_grad", None)
             array_box = isinstance(arg, ArrayBox)
+
             if trainable is None and not array_box:
 
                 warnings.warn(
@@ -97,6 +99,8 @@ class grad:
                     "identified.",
                     UserWarning,
                 )
+
+            if trainable is None:
                 trainable = True
 
             if trainable:
@@ -186,8 +190,10 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
+
             trainable = getattr(arg, "requires_grad", None)
             array_box = isinstance(arg, ArrayBox)
+
             if trainable is None and not array_box:
 
                 warnings.warn(
@@ -197,6 +203,8 @@ def jacobian(func, argnum=None):
                     "identified.",
                     UserWarning,
                 )
+
+            if trainable is None:
                 trainable = True
 
             if trainable:

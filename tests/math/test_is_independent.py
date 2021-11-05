@@ -209,9 +209,6 @@ class TestIsIndependentAutograd:
     def test_no_trainable_params_deprecation_grad(self, recwarn):
         """Tests that no deprecation warning arises when using qml.grad with
         qml.math.is_independent.
-
-        The only warning that is emitted is due to the output being independent
-        of the input.
         """
 
         def lin(x):
@@ -221,13 +218,7 @@ class TestIsIndependentAutograd:
         jac = qml.grad(lin)
         assert qml.math.is_independent(jac, "autograd", (x,), {})
 
-        # Check that there's only one warning (emitted by autograd)
-        assert len(recwarn) == 1
-        assert recwarn.list[0].category == UserWarning
-        assert recwarn.list[0].message.args[0] == "Output seems independent of input."
-
-        # Check that there's only one message in the warning
-        assert len(recwarn.list[0].message.args) == 1
+        assert len(recwarn) == 0
 
     def test_no_trainable_params_deprecation_jac(self, recwarn):
         """Tests that no deprecation arises when using qml.jacobian with
