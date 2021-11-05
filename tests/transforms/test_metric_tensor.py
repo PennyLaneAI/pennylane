@@ -437,7 +437,7 @@ class TestMetricTensor:
             qml.RY(y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
-            return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
+            return qml.expval(qml.PauliY(1) @ qml.PauliZ(2))
 
         layer2_off_diag_second_order = qml.QNode(layer2_off_diag_second_order, dev)
 

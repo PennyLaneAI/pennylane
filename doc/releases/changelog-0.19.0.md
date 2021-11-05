@@ -625,6 +625,10 @@
 
 <h3>Improvements</h3>
 
+* Refactored the `expand_fn` functionality in the Device class to avoid any
+  edge cases leading to failures with plugins.
+  [(#1840)](https://github.com/PennyLaneAI/pennylane/pull/1840)
+
 * Updated the `qml.QNGOptimizer.step_and_cost` method to avoid the use of
   deprecated functionality.
   [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
@@ -873,6 +877,9 @@
 * To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
 <h3>Breaking changes</h3>
+
+* Fixes a bug where `qml.math.dot` failed to work with `@tf.function` autograph mode.
+  [(#1842)](https://github.com/PennyLaneAI/pennylane/pull/1842)
 
 - The operator attributes `has_unitary_generator`, `is_composable_rotation`,
   `is_self_inverse`, `is_symmetric_over_all_wires`, and
