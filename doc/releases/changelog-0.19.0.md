@@ -1101,6 +1101,8 @@
 * Reorganized all the templates related to quantum chemistry under a common header `Quantum Chemistry templates`.
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
+* Added a Community section in the documentation and the readme
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
