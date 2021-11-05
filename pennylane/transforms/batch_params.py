@@ -93,7 +93,7 @@ def batch_params(tape, all_operations=False):
 
     .. code-block:: python
 
-        @functools.partial(qml.batch_params, all_operations=True)
+        @qml.batch_params(all_operations=True)
         @qml.beta.qnode(dev)
         def circuit(x, weights):
             qml.RX(x, wires=0)
