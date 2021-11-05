@@ -376,9 +376,11 @@ to the ``scipy.minimize`` function:
 
 Some of the SciPy minimization methods require information about the gradient
 of the cost function via the ``jac`` keyword argument. This is easy to include; we
-can simply create a function that computes the gradient using ``qml.grad``:
+can simply create a function that computes the gradient using ``qml.grad``.  Since
+``minimize`` does not use our wrapped version of numpy, we need to explicitly 
+specify which arguments are trainable via the ``argnum`` keyword.
 
->>> minimize(cost, params, method='BFGS', jac=qml.grad(cost))
+>>> minimize(cost, params, method='BFGS', jac=qml.grad(cost, argnum=0))
       fun: 6.3491130264451484e-18
  hess_inv: array([[ 1.85642354e+00, -8.84954187e-22,  3.89539943e+00],
        [-8.84954187e-22,  1.00000000e+00, -4.02571211e-21],
