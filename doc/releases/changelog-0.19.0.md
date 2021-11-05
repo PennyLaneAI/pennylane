@@ -73,9 +73,9 @@
       print(f'Step: {n}, Energy: {generate_circuit(mol)(*args)}, Maximum Force: {forces.max()}')
   ```
   In addition, the new Hartree-Fock solver can further be used to optimize the
-  basis set parameters. For details, please refer to the [page on using the
-  differentiable Hartree-Fock
-  solver](https://pennylane.readthedocs.io/en/latest/code/qml_hf.html#using-the-differentiable-hf-solver).
+  basis set parameters. For details, please refer to the [differentiable
+  Hartree-Fock solver
+  documentation](https://pennylane.readthedocs.io/en/latest/code/qml_hf.html#using-the-differentiable-hf-solver).
 
 <h4>Integration with Mitiq</h4>
 
