@@ -148,9 +148,9 @@ For example:
 Executing this, we will get an output of size ``(3, 2)``:
 
 >>> circuit(0.5)
-[[0.33333333 1.        ]
-[0.2        1.        ]
-[0.012      0.868     ]]
+tensor([[ 1.   ,  1.   ],
+        [ 0.2  ,  1.   ],
+        [-0.022,  0.876]], requires_grad=True)
 
 Custom wire labels
 ^^^^^^^^^^^^^^^^^^
@@ -166,7 +166,7 @@ This is done by passing an iterable of wire labels to the ``wires`` argument:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000)
+    dev = qml.device('default.qubit', wires=['wire1', 'wire2'])
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -180,13 +180,13 @@ In the quantum function you can now use your own labels to address wires:
 
 Allowed wire labels can be of the following types:
 
-* *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['ancilla', 'q1', 'q2', ...]``,
+* *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['auxiliary', 'q1', 'q2', ...]``,
 
 * *integers* like ``wires=[0, 4, 7]`` or even ``wires=[-1, 0, 4]``
 
 * *floats* and other *numbers* like ``wires=[1., 2., 4.]``
 
-* *mixed types* like ``wires=['ancilla', -1, 0, 'q3']``
+* *mixed types* like ``wires=['auxiliary', -1, 0, 'q3']``
 
 .. note::
 
@@ -212,14 +212,14 @@ The QNode can be used to compute the result of a quantum circuit as if it was a 
 function. It takes the same arguments as the original quantum function:
 
 >>> circuit(np.pi/4, 0.7)
-0.7648421872844883
+tensor(0.764, requires_grad=True)
 
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
 transform:
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
-0: ──RZ(0.785)──╭C───────────┤
-1: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩
+ wire1: ──RZ(0.785)──╭C───────────┤     
+ wire2: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩ 
 
 .. _intro_vcirc_decorator:
 
@@ -249,97 +249,6 @@ For example:
         return qml.expval(qml.PauliZ(1))
 
     result = circuit(0.543)
-
-
-Collections of QNodes
----------------------
-
-Sometimes you may need multiple QNodes that only differ in the measurement observable
-(like in VQE), or in the device they are run on (for example, if you benchmark different devices),
-or even the quantum circuit that is evaluated. While these QNodes can be defined manually
-"by hand", PennyLane offers **QNode collections** as a convenient way to define and run
-families of QNodes.
-
-QNode collections are a sequence of QNodes that:
-
-1. Have the same function signature, and
-
-2. Can be evaluated independently (that is, the input of any QNode in the collection
-   does not depend on the output of another).
-
-Consider the following two quantum nodes:
-
-
-.. code-block:: python
-
-    @qml.qnode(dev1)
-    def x_rotations(params):
-        qml.RX(params[0], wires=0)
-        qml.RX(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0))
-
-    @qml.qnode(dev2)
-    def y_rotations(params):
-        qml.RY(params[0], wires=0)
-        qml.RY(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.Hadamard(0))
-
-As the QNodes in the collection have the same signature, and we can can construct a
-:class:`~.QNodeCollection` and therefore feed them the same parameters:
-
->>> qnodes = qml.QNodeCollection([x_rotations, y_rotations])
->>> len(qnodes)
-2
->>> qnodes([0.2, 0.1])
-array([0.98006658, 0.70703636])
-
-PennyLane also provides some high-level tools for creating and evaluating
-QNode collections. For example, :func:`~.map` allows a single
-function of quantum operations (or :doc:`template <templates>`) to be mapped across
-multiple observables or devices.
-
-For example, consider the following quantum function ansatz:
-
-.. code-block:: python
-
-    def my_ansatz(params, **kwargs):
-        qml.RX(params[0], wires=0)
-        qml.RX(params[1], wires=1)
-        qml.CNOT(wires=[0, 1])
-
-We can define a list of observables, and two devices:
-
->>> obs_list = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliX(1)]
->>> qpu1 = qml.device("forest.qvm", device="Aspen-4-4Q-D") # requires PennyLane-Forest
->>> qpu2 = qml.device("forest.qvm", device="Aspen-7-4Q-B") # requires PennyLane-Forest
-
-.. note::
-
-    The two devices above require the `PennyLane-Forest plugin <https://pennylane-forest.rtfd.io>`_
-    be installed, as well as the Forest QVM. You can also try replacing them with alternate devices.
-
-Mapping the template across the observables and devices creates a :class:`~.QNodeCollection`:
-
->>> qnodes = qml.map(my_ansatz, obs_list, [qpu1, qpu2], measure="expval")
->>> type(qnodes)
-pennylane.collections.qnode_collection.QNodeCollection
->>> params = [0.54, 0.12]
->>> qnodes(params)
-array([-0.02854835  0.99280864])
-
-Functions are available to process QNode collections, including :func:`~.pennylane.collections.dot`,
-:func:`~.pennylane.collections.sum`, and :func:`~.pennylane.collections.apply`:
-
->>> cost_fn = qml.sum(qnodes)
->>> cost_fn(params)
-0.906
-
-.. note::
-
-    QNode collections support an experimental parallel execution mode. See
-    the :class:`~.QNodeCollection` documentation for more details.
 
 
 Importing circuits from other frameworks

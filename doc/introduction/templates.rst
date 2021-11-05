@@ -316,7 +316,7 @@ The shape can for example be used to construct random weights at the beginning o
     weights = np.random.random(size=shape)
 
 >>> circuit(weights)
-0.7258859204630561
+tensor(0.72588592, requires_grad=True)
 
 If a template takes more than one weight tensor, the ``shape`` method returns a list of shape tuples.
 
