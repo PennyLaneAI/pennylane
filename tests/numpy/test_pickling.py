@@ -29,4 +29,4 @@ def test_unpickling_tensor():
 
     assert qml.numpy.allclose(x, x_reloaded)
     assert x.__dict__ == x_reloaded.__dict__
-    assert hasattr(x_reloaded,"requires_grad")
+    assert hasattr(x_reloaded, "requires_grad")
