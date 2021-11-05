@@ -444,7 +444,7 @@
 
     By default, this method applies the transform
 
-    .. math:: \left\langle \sum_i c_i h_i\right\rangle -> \sum_i c_i \left\langle h_i \right\rangle
+    .. math:: \left\langle \sum_i c_i h_i\right\rangle → \sum_i c_i \left\langle h_i \right\rangle
 
     if `expval(H)` is present on devices that do not natively support Hamiltonians with
     non-commuting terms.
