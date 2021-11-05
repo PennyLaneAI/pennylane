@@ -15,6 +15,7 @@
 a quantum expectation value."""
 from functools import wraps
 from inspect import signature
+import warnings
 
 # import numpy as np
 import pennylane as qml
@@ -68,7 +69,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         spectrum (Sequence): Frequency spectrum of the Fourier series; non-positive
             frequencies are ignored
         shifts (list): Shift angles at which to evaluate ``fun`` for the reconstruction
-            Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{min}]` if ``shift=None``
+            Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{min}]` if ``shifts=None``
             where :math:`f_\text{min}` is the smallest frequency in ``spectrum``.
         fun_at_zero (float): Value of ``fun`` at zero. If :math:`0` is among the ``shifts``
             and ``fun_at_zero`` is provided, one evaluation of ``fun`` is saved.
@@ -77,18 +78,22 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum``,
         as ``qml.numpy`` based function and coinciding with ``fun`` on :math:`2R+1` points.
     """
+    # pylint: disable=unused-argument
+
+    # For an empty/trivial spectrum, the function simply is constant
     if spectrum in ([], [0.0]):
         if fun_at_zero is None:
             fun_at_zero = fun(0.0)
 
-        def _reconstruction(x):
+        def constant_fn(x):
             """Univariate reconstruction of a constant Fourier series."""
             return fun_at_zero
 
-        return _reconstruction
+        return constant_fn
 
     spectrum = np.array([f for f in spectrum if f > 0.0])
     f_max = max(spectrum)
+
     # If no shifts are provided, choose equidistant ones
     if shifts is None:
         R = len(spectrum)
@@ -100,6 +105,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
             zero_idx = int(np.where(zero_idx))
         else:
             zero_idx = None
+
     # Take care of shifts close to zero if fun_at_zero was provided
     if fun_at_zero is not None and zero_idx is not None:
         # Only one shift may be zero at a time
@@ -116,7 +122,12 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     C = np.hstack([C1, C2, C3])
 
     # Solve the system of linear equations
-    print(np.linalg.cond(C))
+    cond = np.linalg.cond(C)
+    if cond>1e8:
+        warnings.warn(
+            f"The condition number of the Fourier transform matrix is very large: {cond}.",
+            UserWarning,
+        )
     W = np.linalg.solve(C, evals)
 
     # Extract the Fourier coefficients
@@ -133,37 +144,45 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     return _reconstruction
 
 
-def _prepare_jobs(ids, spectra, shifts, nums_frequency):
+def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
     r"""For inputs to reconstruct, determine how the given information yields
     function reconstruction tasks and collect them into an ArgMap ``jobs``.
     Also determine whether the function at zero is needed."""
     if nums_frequency is None:
         jobs = {}
+
         if spectra is None:
             raise ValueError("Either nums_frequency or spectra must be given.")
         if ids is None:
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in spectra.items()}
         if shifts is None:
             shifts = {}
+
         need_fun_at_zero = False
         recon_fn = _reconstruct_gen
+
         # If no shifts are provided, compute them
         for arg_name, inner_dict in ids.items():
             _jobs = {}
+
             for par_idx in inner_dict:
                 _shifts = shifts.get(arg_name)
                 if _shifts is not None:
                     _shifts = _shifts.get(par_idx)
+
                 _spectrum = spectra[arg_name][par_idx]
                 # Determine whether fun_at_zero is needed
                 if _shifts is None or any(np.isclose(_shifts, 0.0, rtol=0, atol=atol)):
                     need_fun_at_zero = True
+
                 # Store job; fun_at_zero missing
                 if len(_spectrum) > 1:
                     _jobs[par_idx] = {"shifts": _shifts, "spectrum": _spectrum}
                 else:
                     _jobs[par_idx] = None
+
             jobs[arg_name] = _jobs
+
     else:
         jobs = {}
         need_fun_at_zero = True
@@ -171,12 +190,15 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency):
             # ids = nums_frequency.keys()
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in nums_frequency.items()}
         recon_fn = _reconstruct_equ
+
         for arg_name, inner_dict in ids.items():
             _jobs = {}
+
             for par_idx in inner_dict:
                 _num_frequency = nums_frequency[arg_name][par_idx]
                 # Store job; fun_at_zero missing
                 jobs[idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
+
             jobs[arg_name] = _jobs
 
     return ids, recon_fn, jobs, need_fun_at_zero
@@ -212,11 +234,10 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     Either the ``spectra`` of the QNode with respect to its input parameter or the numbers
     of frequencies, ``nums_frequency``, per parameter must be provided.
     """
-
-    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(ids, spectra, shifts, nums_frequency)
+    # pylint: disable=cell-var-from-loop, unused-argument
 
     atol = 1e-8
-
+    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(ids, spectra, shifts, nums_frequency, atol)
     arg_names = list(signature(qnode).parameters.keys())
 
     @wraps(qnode)
@@ -226,17 +247,16 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             fun_at_zero = qnode(*args, **kwargs)
 
         def constant_fn(x):
+            """Univariate reconstruction of a constant Fourier series."""
             return fun_at_zero
 
         # Carry out the reconstruction jobs
-        # reconstructions = ArgMap(like=jobs)
         reconstructions = {}
         for arg_name, inner_dict in jobs.items():
             _reconstructions = {}
             arg_idx = arg_names.index(arg_name)
+
             for par_idx, job in inner_dict.items():
-                # arg_idx = idx[0] if not (jobs.single_arg or jobs.single_object) else 0
-                # param_idx = idx[1] if not jobs.single_object else 0
                 if job is None:
                     _reconstructions[par_idx] = constant_fn
                 else:
@@ -249,6 +269,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                         return qnode(*new_args, **kwargs)
 
                     _reconstructions[par_idx] = recon_fn(_univariate_fn, **job)
+
             reconstructions[arg_name] = _reconstructions
 
         return reconstructions

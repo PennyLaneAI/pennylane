@@ -86,6 +86,15 @@ class TestErrors:
         with pytest.raises(ValueError, match="num_frequency must be a non-negative integer"):
             _reconstruct_equ(dummy_qnode, num_frequency=num_frequency)
 
+class TestWarnings:
+    """Test that warnings are raised e.g. for an ill-conditioned
+    Fourier transform during the reconstruction."""
+
+    def test_ill_conditioned(self):
+        shifts = [-np.pi/2-1e-9, -np.pi/2, 0, np.pi/2, np.pi/2+1e-9]
+        with pytest.warns(UserWarning, match="condition number of the Fourier"):
+            _reconstruct_gen(dummy_qnode, spectrum=[1.0, 2.0], shifts=shifts)
+
 
 class TestReconstructEqu:
     """Tests the one-dimensional reconstruction subroutine based on equidistantly
