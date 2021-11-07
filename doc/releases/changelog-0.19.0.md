@@ -6,9 +6,9 @@
 
 <h4>Differentiable Hartree-Fock solver</h4>
 
-* A differentiable Hartree-Fock (HF) solver has been added. It can be used to construct molecular Hamiltonians
-  that can be differentiated with respect to nuclear coordinates and basis-set parameters.
-  [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
+* A differentiable Hartree-Fock (HF) solver has been added. It can be used to construct molecular
+  Hamiltonians that can be differentiated with respect to nuclear coordinates and basis-set
+  parameters. [(#1610)](https://github.com/PennyLaneAI/pennylane/pull/1610)
 
   The HF solver computes the integrals over basis functions, constructs the relevant matrices, and
   performs self-consistent-field iterations to obtain a set of optimized molecular orbital
@@ -353,8 +353,8 @@
 
 <h4>New operations and templates</h4>
 
-* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital rotation gate.
-  [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
+* Added a new operation `OrbitalRotation`, which implements the spin-adapted spatial orbital
+  rotation gate. [(#1665)](https://github.com/PennyLaneAI/pennylane/pull/1665)
 
   An example circuit that uses `OrbitalRotation` operation is:
 
@@ -423,66 +423,7 @@
       return qml.expval(H)
   ```
 
-<h4>Improved utilities across the entire code base</h4>
-
-* Two new methods were added to the Device API, allowing PennyLane devices
-  increased control over circuit decompositions.
-  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
-
-  - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
-    default, performs the standard device-specific gate set decomposition done in the default
-    QNode. Devices may overwrite this method in order to define their own decomposition logic.
-
-    Note that the numerical result after applying this method should remain unchanged; PennyLane
-    will assume that the expanded tape returns exactly the same value as the original tape when
-    executed.
-
-  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
-    where the device needs to generate multiple circuits to execute from the input circuit. The
-    requirement of a post-processing function makes this distinct to the `expand_fn` method above.
-
-    By default, this method applies the transform
-
-    .. math:: \left\langle \sum_i c_i h_i\right\rangle → \sum_i c_i \left\langle h_i \right\rangle
-
-    if `expval(H)` is present on devices that do not natively support Hamiltonians with
-    non-commuting terms.
-
-* A new class has been added to store operator attributes, such as `self_inverses`,
-  and `composable_rotation`, as a list of operation names.
-  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
-
-  A number of such attributes, for the purpose of compilation transforms, can be found
-  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
-  example, we can create a new Attribute, `pauli_ops`, like so:
-
-  ```pycon
-  >>> from pennylane.ops.qubit.attributes import Attribute
-  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
-  ```
-
-  We can check either a string or an Operation for inclusion in this set:
-
-  ```pycon
-  >>> qml.PauliX(0) in pauli_ops
-  True
-  >>> "Hadamard" in pauli_ops
-  False
-  ```
-
-  We can also dynamically add operators to the sets at runtime. This is useful
-  for adding custom operations to the attributes such as `composable_rotations`
-  and ``self_inverses`` that are used in compilation transforms. For example,
-  suppose you have created a new Operation, `MyGate`, which you know to be its
-  own inverse. Adding it to the set, like so
-
-  ```pycon
-  >>> from pennylane.ops.qubit.attributes import self_inverses
-  >>> self_inverses.add("MyGate")
-  ```
-
-  will enable the gate to be considered by the `cancel_inverses` compilation
-  transform if two such gates are adjacent in a circuit.
+<h4>Improved utilities for quantum compilation and characterization</h4>
 
 * The new `qml.fourier.qnode_spectrum` function extends the former
   `qml.fourier.spectrum` function
@@ -548,6 +489,65 @@
   For details on how to control for which parameters the spectrum is computed,
   a comparison to `qml.fourier.circuit_spectrum`, and other usage details, please see the
   [fourier.qnode_spectrum docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.qnode_spectrum.html).
+
+* Two new methods were added to the Device API, allowing PennyLane devices
+  increased control over circuit decompositions.
+  [(#1651)](https://github.com/PennyLaneAI/pennylane/pull/1651)
+
+  - `Device.expand_fn(tape) -> tape`: expands a tape such that it is supported by the device. By
+    default, performs the standard device-specific gate set decomposition done in the default
+    QNode. Devices may overwrite this method in order to define their own decomposition logic.
+
+    Note that the numerical result after applying this method should remain unchanged; PennyLane
+    will assume that the expanded tape returns exactly the same value as the original tape when
+    executed.
+
+  - `Device.batch_transform(tape) -> (tapes, processing_fn)`: preprocesses the tape in the case
+    where the device needs to generate multiple circuits to execute from the input circuit. The
+    requirement of a post-processing function makes this distinct to the `expand_fn` method above.
+
+    By default, this method applies the transform
+
+    .. math:: \left\langle \sum_i c_i h_i\right\rangle → \sum_i c_i \left\langle h_i \right\rangle
+
+    if `expval(H)` is present on devices that do not natively support Hamiltonians with
+    non-commuting terms.
+
+* A new class has been added to store operator attributes, such as `self_inverses`,
+  and `composable_rotation`, as a list of operation names.
+  [(#1763)](https://github.com/PennyLaneAI/pennylane/pull/1763)
+
+  A number of such attributes, for the purpose of compilation transforms, can be found
+  in `ops/qubit/attributes.py`, but the class can also be used to create your own. For
+  example, we can create a new Attribute, `pauli_ops`, like so:
+
+  ```pycon
+  >>> from pennylane.ops.qubit.attributes import Attribute
+  >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+  ```
+
+  We can check either a string or an Operation for inclusion in this set:
+
+  ```pycon
+  >>> qml.PauliX(0) in pauli_ops
+  True
+  >>> "Hadamard" in pauli_ops
+  False
+  ```
+
+  We can also dynamically add operators to the sets at runtime. This is useful
+  for adding custom operations to the attributes such as `composable_rotations`
+  and ``self_inverses`` that are used in compilation transforms. For example,
+  suppose you have created a new Operation, `MyGate`, which you know to be its
+  own inverse. Adding it to the set, like so
+
+  ```pycon
+  >>> from pennylane.ops.qubit.attributes import self_inverses
+  >>> self_inverses.add("MyGate")
+  ```
+
+  will enable the gate to be considered by the `cancel_inverses` compilation
+  transform if two such gates are adjacent in a circuit.
 
 <h3>Improvements</h3>
 
@@ -715,9 +715,8 @@
           return ([[c, 0.0, 2 * x], [-c, 0.0, 0.0]],)
   ```
 
-* Shots can now be passed as a runtime argument to transforms that execute circuits in batches, similarly
-  to QNodes.
-  [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
+* Shots can now be passed as a runtime argument to transforms that execute circuits in batches,
+  similarly to QNodes. [(#1707)](https://github.com/PennyLaneAI/pennylane/pull/1707)
 
   An example of such a transform are the gradient transforms in the
   `qml.gradients` module. As a result, we can now call gradient transforms
@@ -741,8 +740,8 @@
 * Templates are now top level imported and can be used directly e.g. `qml.QFT(wires=0)`.
   [(#1779)](https://github.com/PennyLaneAI/pennylane/pull/1779)
 
-* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get the
-  probabilities in the rotated basis.
+* `qml.probs` now accepts an attribute `op` that allows to rotate the computational basis and get
+  the probabilities in the rotated basis.
   [(#1692)](https://github.com/PennyLaneAI/pennylane/pull/1692)
 
 * Refactored the `expand_fn` functionality in the Device class to avoid any
@@ -857,17 +856,20 @@
   This can occur if within a function that has been just-in-time compiled.
   [(#1845)](https://github.com/PennyLaneAI/pennylane/pull/1845)
 
-* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of a ``CharSet`` object.
-  [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
+* ``qml.circuit_drawer.CircuitDrawer`` can accept a string for the ``charset`` keyword, instead of
+  a ``CharSet`` object. [(#1640)](https://github.com/PennyLaneAI/pennylane/pull/1640)
 
-* ``qml.math.sort`` will now return only the sorted torch tensor and not the corresponding indices, making sort consistent across interfaces.
+* ``qml.math.sort`` will now return only the sorted torch tensor and not the corresponding indices,
+  making sort consistent across interfaces.
   [(#1691)](https://github.com/PennyLaneAI/pennylane/pull/1691)
 
 * Specific QNode execution options are now re-used by batch transforms
   to execute transformed QNodes.
   [(#1708)](https://github.com/PennyLaneAI/pennylane/pull/1708)
 
-* To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation` (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
+* To standardize across all optimizers, `qml.optimize.AdamOptimizer` now also uses `accumulation`
+  (in form of `collections.namedtuple`) to keep track of running quantities. Before it used three
+  variables `fm`, `sm` and `t`. [(#1757)](https://github.com/PennyLaneAI/pennylane/pull/1757)
 
 <h3>Breaking changes</h3>
 
@@ -912,23 +914,6 @@
   [(#1822)](https://github.com/PennyLaneAI/pennylane/pull/1822)
 
 <h3>Deprecations</h3>
-
-* The `default.tensor` device from the beta folder is no longer maintained
-  and has been deprecated. It will be removed in future releases.
-  [(#1851)](https://github.com/PennyLaneAI/pennylane/pull/1851)
-
-* The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
-  is deprecated.
-  Approximations can be controlled with the more fine-grained `approx` keyword
-  argument, with `approx="block-diag"` (the default) reproducing the old
-  behaviour.
-  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
-  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
-
-* The `template` decorator is now deprecated with a warning message and will be removed
-  in release `v0.20.0`. It has been removed from different PennyLane functions.
-  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
-  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
 
 * Allowing cost functions to be differentiated using `qml.grad` or
   `qml.jacobian` without explicitly marking parameters as trainable is being
@@ -986,6 +971,25 @@
   par = 0.3
   qml.grad(test, argnum=0)(par)
   ```
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/requires_grad.png" />
+
+* The `default.tensor` device from the beta folder is no longer maintained
+  and has been deprecated. It will be removed in future releases.
+  [(#1851)](https://github.com/PennyLaneAI/pennylane/pull/1851)
+
+* The `qml.metric_tensor` and `qml.QNGOptimizer` keyword argument `diag_approx`
+  is deprecated.
+  Approximations can be controlled with the more fine-grained `approx` keyword
+  argument, with `approx="block-diag"` (the default) reproducing the old
+  behaviour.
+  [(#1721)](https://github.com/PennyLaneAI/pennylane/pull/1721)
+  [(#1834)](https://github.com/PennyLaneAI/pennylane/pull/1834)
+
+* The `template` decorator is now deprecated with a warning message and will be removed
+  in release `v0.20.0`. It has been removed from different PennyLane functions.
+  [(#1794)](https://github.com/PennyLaneAI/pennylane/pull/1794)
+  [(#1808)](https://github.com/PennyLaneAI/pennylane/pull/1808)
 
 * The `qml.fourier.spectrum` function has been renamed to
   `qml.fourier.circuit_spectrum`, in order to clearly separate the new
