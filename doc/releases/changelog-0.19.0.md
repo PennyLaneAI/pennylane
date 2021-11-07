@@ -972,7 +972,7 @@
   qml.grad(test, argnum=0)(par)
   ```
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/requires_grad.png" />
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/requires_grad.png" style="width: 100%;"/>
 
 * The `default.tensor` device from the beta folder is no longer maintained
   and has been deprecated. It will be removed in future releases.
