@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains a function that computes the fourier series equivalent to
 a quantum expectation value."""
+from collections.abc import Collection
 from functools import wraps
 from inspect import signature
 import warnings
@@ -73,9 +74,9 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
     Args:
         fun (callable): Fourier series to reconstruct with signature ``float -> float``
-        spectrum (Sequence): Frequency spectrum of the Fourier series; non-positive
+        spectrum (Collection): Frequency spectrum of the Fourier series; non-positive
             frequencies are ignored
-        shifts (list): Shift angles at which to evaluate ``fun`` for the reconstruction
+        shifts (Sequence): Shift angles at which to evaluate ``fun`` for the reconstruction
             Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{min}]` if ``shifts=None``
             where :math:`f_\text{min}` is the smallest frequency in ``spectrum``.
         fun_at_zero (float): Value of ``fun`` at zero. If :math:`0` is among the ``shifts``
@@ -89,20 +90,6 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
 
     have_fun_at_zero = fun_at_zero is not None
     have_shifts = shifts is not None
-    # For an empty/trivial spectrum, the function simply is constant
-    if spectrum in ([], [0.0]):
-        if have_shifts:
-            fun_value = fun(shifts[0])
-            if have_fun_at_zero:
-                warnings.warn(_warn_text_fun_at_zero_ignored)
-        else:
-            fun_value = fun_at_zero if have_fun_at_zero else fun(0.0)
-
-        def constant_fn(x):
-            """Univariate reconstruction of a constant Fourier series."""
-            return fun_value
-
-        return constant_fn
 
     spectrum = np.array([f for f in spectrum if f > 0.0])
     f_max = max(spectrum)
@@ -160,10 +147,31 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
 
 def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
     r"""For inputs to reconstruct, determine how the given information yields
-    function reconstruction tasks and collect them into an ArgMap ``jobs``.
-    Also determine whether the function at zero is needed."""
-    # pylint: disable=too-many-branches
+    function reconstruction tasks and collect them into a dictionary ``jobs``.
+    Also determine whether the function at zero is needed.
 
+    Args:
+        ids (dict or Collection or key): Indices for the QNode parameters with respect to which
+            the QNode should be reconstructed as a univariate function.
+            If a dictionary, ``ids`` contain the QNode argument names as keys and a ``Collection``
+            for each value, indicating the parameter index in the argument.
+            If a ``Collection``, all parameter indices of the given arguments are considered.
+            If a single key, ``ids`` is interpreted as a ``Collection`` with that key as only entry.
+            If ``None``, all keys of ``nums_frequency``/``spectra`` are considered.
+        spectra (dict[dict]): Frequency spectra per QNode parameter.
+            Ignored if ``nums_frequency!=None``.
+        shifts (dict[dict]): Shift angles for computing the reconstruction per
+            QNode parameter. Ignored if ``nums_frequency!=None``.
+        nums_frequency (dict[dict]): Numbers of integer frequencies -- and biggest
+            frequency -- per QNode parameter. If the frequencies are not contiguous integers,
+            the argument ``spectra`` should be used. Takes precedence over ``spectra`` and
+            leads to usage of equidistant shifts.
+        atol (float): Absolute tolerance used to analyze shifts lying close to 0.
+
+    Returns:
+
+    """
+    # pylint: disable=too-many-branches
     if nums_frequency is None:
         jobs = {}
 
@@ -171,6 +179,14 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
             raise ValueError("Either nums_frequency or spectra must be given.")
         if ids is None:
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in spectra.items()}
+        elif not isinstance(ids, dict):
+            if isinstance(ids, Collection):
+                # ids only provides argument names but no parameter indices
+                ids = {_id: spectra[_id].keys() for _id in ids}
+            else:
+                # ids only provides a single argument name but no parameter indices
+                ids = {ids: spectra[ids].keys()}
+
         if shifts is None:
             shifts = {}
 
@@ -195,6 +211,8 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
                 if len(_spectrum) > 1:
                     _jobs[par_idx] = {"shifts": _shifts, "spectrum": _spectrum}
                 else:
+                    # As we assume 0.0 to be in the spectrum, any spectrum with length 1
+                    # belongs to a constant function
                     _jobs[par_idx] = None
 
             jobs[arg_name] = _jobs
@@ -203,8 +221,14 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
         jobs = {}
         need_fun_at_zero = True
         if ids is None:
-            # ids = nums_frequency.keys()
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in nums_frequency.items()}
+        elif not isinstance(ids, dict):
+            if isinstance(ids, Collection):
+                # ids only provides argument names but no parameter indices
+                ids = {_id: nums_frequency[_id].keys() for _id in ids}
+            else:
+                # ids only provides a single argument name but no parameter indices
+                ids = {ids: nums_frequency[ids].keys()}
         recon_fn = _reconstruct_equ
 
         for arg_name, inner_dict in ids.items():
@@ -213,7 +237,7 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
             for par_idx in inner_dict:
                 _num_frequency = nums_frequency[arg_name][par_idx]
                 # Store job; fun_at_zero missing
-                jobs[par_idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
+                _jobs[par_idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
 
             jobs[arg_name] = _jobs
 
@@ -226,22 +250,24 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     Args:
         qnode (pennylane.QNode): Quantum node to be reconstructed, representing a
             circuit that outputs an expectation value.
-        ids (list): Indices for the QNode parameters with respect to which
-            the QNode should be reconstructed as a univariate function.
-            Each entry of the list should be a valid key for ``nums_frequency`` if
-            it is provided or ``spectra``. Alternatively, a single valid key may be provided.
+        ids (dict or list or key): Indices for the QNode parameters with respect to which
+            the QNode should be reconstructed as a univariate function, per QNode argument.
+            Each key of the dict or entry of the list should be a valid key for
+            ``nums_frequency`` if it is provided or ``spectra`` otherwise.
+            Alternatively, a single valid key may be provided.
             If ``None``, all keys of ``nums_frequency``/``spectra`` are considered.
-        nums_frequency (pennylane.ArgMap[int]): Numbers of integer frequencies -- and biggest
+        nums_frequency (dict[dict]): Numbers of integer frequencies -- and biggest
             frequency -- per QNode parameter. If the frequencies are not contiguous integers,
             the argument ``spectra`` should be used. Takes precedence over ``spectra`` and
-            uses equidistant shifts.
-        spectra (pennylane.ArgMap[list[float]]): Frequency spectra per QNode parameter.
+            leads to usage of equidistant shifts.
+        spectra (dict[dict]): Frequency spectra per QNode parameter.
             Ignored if ``nums_frequency!=None``.
-        shifts (pennylane.ArgMap[list[float]]): Shift angles for computing the reconstruction per
+        shifts (dict[dict]): Shift angles for computing the reconstruction per
             QNode parameter. Ignored if ``nums_frequency!=None``.
     Returns:
         function: Function which accepts the same arguments as the QNode.
-            When called, this function will return a :class:`~.pennylane.argmap.ArgMap`
+            When called, this function will return a dictionary of dictionaries,
+            formatted like ``nums_frequency`` or ``spectra``,
             that contains the univariate reconstructions per QNode parameter.
 
     For each provided ``id`` in ``ids``, the QNode is restricted to varying the single QNode
@@ -278,8 +304,11 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                 if job is None:
                     _reconstructions[par_idx] = constant_fn
                 else:
-                    shift_vec = np.zeros_like(args[arg_idx])
-                    shift_vec[par_idx] = 1.0
+                    shift_vec = qml.math.zeros_like(args[arg_idx])
+                    if len(np.shape(shift_vec)) == 0:
+                        shift_vec = 1.0
+                    else:
+                        shift_vec[par_idx] = 1.0
 
                     def _univariate_fn(x):
                         new_arg = args[arg_idx] + shift_vec * x

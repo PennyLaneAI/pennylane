@@ -15,7 +15,8 @@
 Tests for the Fourier reconstruction transform.
 """
 import pytest
-from itertools import combinations
+from inspect import signature
+from itertools import chain, combinations
 from functools import reduce
 import numpy as np
 import pennylane as qml
@@ -28,7 +29,7 @@ from pennylane.fourier.reconstruct import (
 )
 from pennylane.fourier.utils import join_spectra
 
-dev = qml.device("default.qubit", wires=1)
+dev_0 = qml.device("default.qubit", wires=1)
 
 
 class Lambda:
@@ -39,7 +40,7 @@ class Lambda:
         return self.fun(*args, **kwargs)
 
 
-@qml.qnode(dev)
+@qml.qnode(dev_0)
 def dummy_qnode(x):
     qml.RX(x, wires=0)
     return qml.expval(qml.PauliZ(0))
@@ -49,7 +50,7 @@ def get_RX_circuit(scales):
     """Generate a circuit with Pauli-X rotation gates with ``f*x``
     as argument where the ``f`` s are stored in ``scales`` ."""
 
-    @qml.qnode(dev)
+    @qml.qnode(dev_0)
     def circuit(x):
         for f in scales:
             qml.RX(f * x, wires=0)
@@ -80,7 +81,7 @@ class TestErrors:
             reconstruct(dummy_qnode)
 
     @pytest.mark.parametrize("num_frequency", [-3, -9.2, 0.999])
-    def test_nums_frequency_and_spectra_missing(self, num_frequency):
+    def test_num_frequency_invalid(self, num_frequency):
         """Tests that an error is raised if ``_reconstruct_equ`` receives a
         negative or non-integer ``num_frequency`` ."""
         with pytest.raises(ValueError, match="num_frequency must be a non-negative integer"):
@@ -290,7 +291,6 @@ class TestReconstructGen:
         lambda x: -3.27 * np.sin(0.1712 * x) - np.cos(20.812 * x) / 23,
         lambda x: -0.49 * np.sin(3.2 * x),
         lambda x: 0.1 * np.cos(-0.1 * x) + 2.9 * np.sin(0.3 * x - 1.2),
-        lambda x: 4.01,
         lambda x: np.sum([np.sin(i * x) for i in range(1, 10)]),
         lambda x: np.sum(
             [i ** 0.9 * 0.2 * np.sin(i ** 1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
@@ -301,7 +301,6 @@ class TestReconstructGen:
         [0.1712, 20.812],
         [3.2],
         [-0.3, -0.1, 0.0, 0.1, 0.3],
-        [],
         list(range(1, 10)),
         [3.921 * i ** 1.2 for i in range(1, 10)],
     ]
@@ -310,7 +309,6 @@ class TestReconstructGen:
         lambda x: -3.27 * np.cos(0.1712 * x) * 0.1712 + np.sin(20.812 * x) / 23 * 20.812,
         lambda x: -0.49 * np.cos(3.2 * x) * 3.2,
         lambda x: (-0.1) ** 2 * np.sin(-0.1 * x) + 0.3 * 2.9 * np.cos(0.3 * x - 1.2),
-        lambda x: 0.0,
         lambda x: np.sum([i * np.cos(i * x) for i in range(1, 10)]),
         lambda x: np.sum(
             [i ** 2.1 * 3.921 * 0.2 * np.cos(i ** 1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
@@ -321,7 +319,6 @@ class TestReconstructGen:
         [-np.pi / 3, -np.pi / 20, 0.0, np.pi / 20, np.pi / 3],
         [-0.15, -0.05, 0.05],
         [-2 * np.pi, -np.pi, -0.1, np.pi, 2 * np.pi],
-        [0.1],
         np.arange(-9, 10) * np.pi / 19,
         np.arange(-9, 10) * np.pi / 19,
     ]
@@ -422,8 +419,8 @@ class TestReconstructGen:
     def test_with_classical_fun_spectrum_incomplete(self, fun, spectrum, mocker):
         """Test that arbitrary-frequency classical functions are reconstructed wrongly
         if spectrum does not contain all frequencies."""
-        if spectrum == []:
-            pytest.skip("Can't skip a frequency if spectrum=[].")
+        if len(spectrum) <= 1:
+            pytest.skip("Can't skip a frequency if len(spectrum)<=1.")
         spectrum = spectrum[:-1]
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
@@ -446,7 +443,6 @@ class TestReconstructGen:
 
     all_scales = [
         [1.3],
-        [0.0],
         [1.02, 1.59],
         [0.08, 20.2],
         [1.2, 5.0001],
@@ -476,3 +472,237 @@ class TestReconstructGen:
         rec = _reconstruct_gen(Fun, spectrum, fun_at_zero=fun_at_zero)
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(circuit, rec)
+
+
+all_ids = [
+    None,
+    {"x": [0, 1], "y": {1, 5}},
+    {"z": (0, 9)},
+    ["z", "y", "x", "x"],
+    {"x", "z", "y"},
+    ("y",),
+    "x",
+]
+
+all_spectra = [
+    None,
+    {
+        "x": {0: [1.3], 1: [4.2, 0.2]},
+        "y": {3: [0.3, 0.2], 1: [1.1, 5.2], 5: [1.2]},
+        "z": {i: [i * 3.2, i * 8.7] for i in range(20)},
+    },
+]
+
+all_shifts = [
+    None,
+    {
+        "x": {0: [1.3], 1: [4.2]},
+        "y": {3: [0.3, 0.2], 1: [1.1, 5.2], 5: [1.2]},
+        "z": {i: [i * 3.2 + 1.0] for i in range(20)},
+    },
+]
+
+all_nums_frequency = [
+    None,
+    {
+        "x": {0: 1, 1: 4},
+        "y": {3: 1, 1: 1, 5: 9},
+        "z": {i: 2 * i for i in range(20)},
+    },
+]
+
+
+class TestPrepareJobs:
+    """Tests the subroutine that determines the 1D reconstruction
+    jobs to be carried out for a call to ``reconstruct`` ."""
+
+    @pytest.mark.parametrize("ids", all_ids)
+    @pytest.mark.parametrize("spectra", all_spectra)
+    @pytest.mark.parametrize("shifts", all_shifts)
+    @pytest.mark.parametrize("nums_frequency", all_nums_frequency)
+    def test_prejobs(self, ids, spectra, shifts, nums_frequency, tol):
+        """Test ``_prepare_jobs`` with only ``spectra`` given."""
+        if nums_frequency is None and spectra is None:
+            with pytest.raises(ValueError, match="Either nums_frequency or spectra"):
+                _prepare_jobs(ids, spectra, shifts, nums_frequency, atol=tol)
+            return
+
+        ids_, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(
+            ids,
+            spectra,
+            shifts,
+            nums_frequency,
+            atol=tol,
+        )
+
+        # Check ids
+        if ids is None:
+            # Test automatic generation of ids
+            if nums_frequency is None:
+                assert ids_.keys() == spectra.keys()
+                for _id, _ids in ids_.items():
+                    assert _ids == spectra[_id].keys()
+            else:
+                assert ids_.keys() == nums_frequency.keys()
+                for _id, _ids in ids_.items():
+                    assert _ids == nums_frequency[_id].keys()
+
+        else:
+            assert all(id_ in ids for id_ in ids_.keys())
+            if type(ids) == dict:
+                assert all(ids_[id_] == ids[id_] for id_ in ids_.keys())
+
+        # Check function to use for 1D reconstructions
+        assert recon_fn == _reconstruct_gen if nums_frequency is None else _reconstruct_equ
+        # Check reconstruction jobs to be run
+        print(jobs)
+        assert jobs.keys() == ids_.keys()
+        for _id, _jobs in jobs.items():
+            _jobs.keys() == ids_[_id]
+        # Check all job details
+        if nums_frequency is None:
+            # for spectra given
+            for _id, _jobs in jobs.items():
+                for idx, job in _jobs.items():
+                    if len(spectra[_id][idx]) == 1:
+                        assert job is None
+                        continue
+                    assert list(job.keys()) == ["shifts", "spectrum"]
+                    if shifts is not None:
+                        assert job["shifts"] == shifts[_id][idx]
+                    else:
+                        assert job["shifts"] is None
+                    job["spectrum"] == spectra[_id][idx]
+            if shifts is not None:
+                # sometimes need fun at zero if general reconstruction is performed
+                _all_shifts = chain.from_iterable(
+                    [
+                        sum([__shifts for __shifts in _shifts.values()], start=[])
+                        for _shifts in shifts.values()
+                    ],
+                )
+                assert need_fun_at_zero == any(
+                    np.isclose(_shift, 0.0, atol=tol, rtol=0) for _shift in _all_shifts
+                )
+            else:
+                assert need_fun_at_zero
+
+        else:
+            # for nums_frequency given
+            for _id, _jobs in jobs.items():
+                for idx, job in _jobs.items():
+                    if nums_frequency[_id][idx] == 0:
+                        assert job is None
+                        continue
+                    assert list(job.keys()) == ["num_frequency"]
+                    assert job["num_frequency"] == nums_frequency[_id][idx]
+            # always need fun at zero if equidistant reconstruction is performed
+            assert need_fun_at_zero
+
+
+dev_1 = qml.device("default.qubit", wires=2)
+
+
+@qml.qnode(dev_1)
+def qnode_0(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+@qml.qnode(dev_1)
+def qnode_1(X):
+    qml.RX(X[0], wires=0)
+    qml.RX(X[0], wires=1)
+    qml.RX(X[1], wires=0)
+    qml.RX(X[1], wires=1)
+    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+
+@qml.qnode(dev_1)
+def qnode_2(X, y):
+    qml.RX(X[0], wires=0)
+    qml.RX(X[2], wires=1)
+    qml.RY(y, wires=0)
+    qml.RX(0.5 * X[0], wires=0)
+    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+
+@qml.qnode(dev_1)
+def qnode_3(X, Y):
+    for i in range(5):
+        qml.RX(X[i], wires=0)
+        qml.RY(Y[i], wires=0)
+        qml.RX(X[i], wires=0)
+    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+
+x = 0.1
+y = 2.3
+
+X = pnp.array([i ** 1.2 - 2.0 / i for i in range(1, 6)])
+Y = pnp.array([i ** 0.9 - 1.0 / i for i in range(1, 6)])
+
+
+class TestReconstruct:
+    """Tests the integration of ``_reconstruct_equ`` and ``_reconstruct_gen`` via
+    the full ``reconstruct`` function."""
+
+    @pytest.mark.parametrize(
+        "qnode, params, ids, nums_frequency, spectra, shifts",
+        [
+            (qnode_0, (x,), "x", None, {"x": {0: [0.0, 1.0]}}, None),
+            (
+                qnode_0,
+                (x,),
+                {"x": [0]},
+                None,
+                {"x": {0: [0.0, 1.0]}},
+                {"x": {0: [-np.pi / 3, 0.0, np.pi / 3]}},
+            ),
+            (qnode_0, (x,), "x", {"x": {0: 1}}, None, None),
+            (qnode_1, (X,), {"X"}, None, {"X": {0: [0.0, 1.0, 2.0], 1: [0.0, 2.0]}}, None),
+            (
+                qnode_1,
+                (X,),
+                "X",
+                None,
+                {"X": {0: [0.0, 2.0]}},
+                {"X": {0: [-np.pi / 2, -0.1, np.pi / 5]}},
+            ),
+            (qnode_1, (X,), ["X"], {"X": {0: 2, 1: 2}}, None, None),
+            (
+                qnode_2,
+                (X, y),
+                ["X", "y"],
+                None,
+                {"X": {0: [0.0, 0.5, 1.0, 1.5], 2: [0.0, 1.0]}, "y": {0: [0.0, 1.0]}},
+                None,
+            ),
+            (
+                qnode_3,
+                (X, Y),
+                {"X": [0, 3], "Y": (4, 1)},
+                {"X": {i: 2 for i in range(5)}, "Y": {i: 1 for i in range(5)}},
+                None,
+                None,
+            ),
+        ],
+    )
+    def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts):
+        """Run a full reconstruction on a QNode."""
+        recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        arg_names = list(signature(qnode).parameters.keys())
+        for outer_key in recons:
+            outer_key_num = arg_names.index(outer_key)
+            for inner_key, rec in recons[outer_key].items():
+                shift_vec = (
+                    1.0
+                    if pnp.isscalar(params[outer_key_num])
+                    else np.eye(len(params[outer_key_num]))[inner_key]
+                )
+                univariate = lambda x: qnode(
+                    *params[:outer_key_num],
+                    params[outer_key_num] + x * shift_vec,
+                    *params[outer_key_num + 1 :]
+                )
+                fun_close(rec, univariate)
