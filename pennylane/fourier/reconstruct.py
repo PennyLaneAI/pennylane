@@ -100,7 +100,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
 
     spectrum = qml.math.array(spectrum)
     spectrum = spectrum[spectrum > 0]
-    f_max = max(spectrum)
+    f_max = qml.math.max(spectrum)
 
     # If no shifts are provided, choose equidistant ones
     if not have_shifts:
@@ -195,13 +195,12 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
             raise ValueError("Either nums_frequency or spectra must be given.")
         if ids is None:
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in spectra.items()}
+        elif isinstance(ids, str):
+            # ids only provides a single argument name but no parameter indices
+            ids = {ids: spectra[ids].keys()}
         elif not isinstance(ids, dict):
-            if isinstance(ids, Collection):
-                # ids only provides argument names but no parameter indices
-                ids = {_id: spectra[_id].keys() for _id in ids}
-            else:
-                # ids only provides a single argument name but no parameter indices
-                ids = {ids: spectra[ids].keys()}
+            # ids only provides argument names but no parameter indices
+            ids = {_id: spectra[_id].keys() for _id in ids}
 
         if shifts is None:
             shifts = {}
@@ -238,13 +237,12 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
         need_f0 = True
         if ids is None:
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in nums_frequency.items()}
+        elif isinstance(ids, str):
+            # ids only provides a single argument name but no parameter indices
+            ids = {ids: nums_frequency[ids].keys()}
         elif not isinstance(ids, dict):
-            if isinstance(ids, Collection):
-                # ids only provides argument names but no parameter indices
-                ids = {_id: nums_frequency[_id].keys() for _id in ids}
-            else:
-                # ids only provides a single argument name but no parameter indices
-                ids = {ids: nums_frequency[ids].keys()}
+            # ids only provides argument names but no parameter indices
+            ids = {_id: nums_frequency[_id].keys() for _id in ids}
         recon_fn = _reconstruct_equ
 
         for arg_name, inner_dict in ids.items():

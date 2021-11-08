@@ -647,6 +647,9 @@ def qnode_3(X, Y):
         qml.RX(X[i], wires=0)
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+@qml.qnode(dev_1)
+def qnode_4(x):
+    return qml.expval(qml.PauliX(0))
 
 x = 0.1
 y = 2.3
@@ -702,6 +705,7 @@ class TestReconstruct:
                 None,
                 13,
             ),
+            (qnode_4, (x,), ["x"], {"x": {0: 0}}, None, None, 1),
         ],
     )
     def test_with_qnode(
