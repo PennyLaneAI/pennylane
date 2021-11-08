@@ -103,22 +103,22 @@ class TestReconstructEqu:
     shifted evaluations for equidistant frequencies."""
 
     c_funs = [
-        lambda x: 13.71 * np.sin(x) - np.cos(2 * x) / 30,
-        lambda x: -0.49 * np.sin(3.2 * x),
-        lambda x: 0.1 * np.cos(-2.1 * x) + 2.9 * np.sin(4.2 * x - 1.2),
+        lambda x: 13.71 * qml.math.sin(x) - qml.math.cos(2 * x) / 30,
+        lambda x: -0.49 * qml.math.sin(3.2 * x),
+        lambda x: 0.1 * qml.math.cos(-2.1 * x) + 2.9 * qml.math.sin(4.2 * x - 1.2),
         lambda x: 4.01,
-        lambda x: np.sum([i ** 2 * 0.1 * np.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]),
+        lambda x: qml.math.sum([i ** 2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]),
     ]
 
     nums_frequency = [2, 1, 2, 0, 9]
     base_frequencies = [1, 3.2, 2.1, 1, 3.921]
     expected_grads = [
-        lambda x: 13.71 * np.cos(x) + 2 * np.sin(2 * x) / 30,
-        lambda x: -0.49 * np.cos(3.2 * x) * 3.2,
-        lambda x: (-2.1) * (-0.1) * np.sin(-2.1 * x) + 4.2 * 2.9 * np.cos(4.2 * x - 1.2),
+        lambda x: 13.71 * qml.math.cos(x) + 2 * qml.math.sin(2 * x) / 30,
+        lambda x: -0.49 * qml.math.cos(3.2 * x) * 3.2,
+        lambda x: (-2.1) * (-0.1) * qml.math.sin(-2.1 * x) + 4.2 * 2.9 * qml.math.cos(4.2 * x - 1.2),
         lambda x: 0.0,
-        lambda x: np.sum(
-            [i * 3.921 * i ** 2 * 0.1 * np.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
+        lambda x: qml.math.sum(
+            [i * 3.921 * i ** 2 * 0.1 * qml.math.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -163,6 +163,8 @@ class TestReconstructEqu:
         # Convert reconstruction to have original frequencies
         rec = lambda x: _rec(f0 * x)
         grad = qml.grad(rec)
+
+        assert fun_close(fun, rec, zero=pnp.array(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=pnp.array(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
@@ -180,6 +182,7 @@ class TestReconstructEqu:
         # Convert reconstruction to have original frequencies
         rec = lambda x: _rec(f0 * x)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
     @pytest.mark.parametrize(
@@ -197,6 +200,7 @@ class TestReconstructEqu:
         # Convert reconstruction to have original frequencies
         rec = lambda x: _rec(f0 * x)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=tf.Variable(0.0))
         assert fun_close(expected_grad, grad, zero=tf.Variable(0.0))
 
     @pytest.mark.parametrize(
@@ -214,6 +218,7 @@ class TestReconstructEqu:
         # Convert reconstruction to have original frequencies
         rec = lambda x: _rec(f0 * x)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=torch.tensor(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=torch.tensor(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
@@ -374,6 +379,7 @@ class TestReconstructGen:
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=pnp.array(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=pnp.array(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
@@ -387,6 +393,7 @@ class TestReconstructGen:
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
     @pytest.mark.parametrize(
@@ -400,6 +407,7 @@ class TestReconstructGen:
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=tf.Variable(0.0))
         assert fun_close(expected_grad, grad, zero=tf.Variable(0.0))
 
     @pytest.mark.parametrize(
@@ -413,6 +421,7 @@ class TestReconstructGen:
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum)
         grad = qml.grad(rec)
+        assert fun_close(fun, rec, zero=torch.tensor(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=torch.tensor(0.0, requires_grad=True))
 
     @pytest.mark.parametrize("fun, spectrum", zip(c_funs, spectra))
