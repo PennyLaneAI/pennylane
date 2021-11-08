@@ -20,7 +20,8 @@ def test_path_to_file(package, basis, tmpdir, psi4_support):
     if package == "Psi4" and not psi4_support:
         pytest.skip("Skipped, no Psi4 support")
 
-    exp_path = os.path.join(tmpdir.strpath, package.lower(), basis.strip(), name)
+    filename = name.strip() + "_" + package.lower() + "_" + basis.strip()
+    exp_path = os.path.join(tmpdir.strpath, filename)
 
     res_path = qchem.meanfield(
         symbols, coordinates, name=name, basis=basis, package=package, outpath=tmpdir.strpath

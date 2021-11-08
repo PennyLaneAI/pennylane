@@ -16,6 +16,7 @@ This module contains the :class:`Device` abstract base class.
 """
 # pylint: disable=too-many-format-args, use-maxsplit-arg
 import abc
+import types
 import warnings
 from collections.abc import Iterable, Sequence
 from collections import OrderedDict, namedtuple
@@ -140,6 +141,7 @@ class Device(abc.ABC):
         self._parameters = None
 
         self.tracker = qml.Tracker()
+        self.custom_expand_fn = None
 
     def __repr__(self):
         """String representation."""
@@ -561,7 +563,45 @@ class Device(abc.ABC):
         gradient_method = getattr(self, method)
         return [gradient_method(circuit, **kwargs) for circuit in circuits]
 
-    def expand_fn(self, circuit, max_expansion=10):
+    @property
+    def stopping_condition(self):
+        """.BooleanFn: Returns the stopping condition for the device. The returned
+        function accepts a queuable object (including a PennyLane operation
+        and observable) and returns ``True`` if supported by the device."""
+        return qml.BooleanFn(
+            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
+            and self.supports_operation(obj.name)
+        )
+
+    def custom_expand(self, fn):
+        """Register a custom expansion function for the device.
+
+        **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @dev.custom_expand
+            def my_expansion_function(self, tape, max_expansion=10):
+                ...
+                # can optionally call the default device expansion
+                tape = self.default_expand_fn(tape, max_expansion=max_expansion)
+                return tape
+
+        The custom device expansion function must have arguments
+        ``self`` (the device object), ``tape`` (the input circuit
+        to transform and execute), and ``max_expansion`` (the number of
+        times the circuit should be expanded).
+
+        The default :meth:`~.default_expand_fn` method of the original
+        device may be called. It is highly recommended to call this
+        before returning, to ensure that the expanded circuit is supported
+        on the device.
+        """
+        self.custom_expand_fn = types.MethodType(fn, self)
+
+    def default_expand_fn(self, circuit, max_expansion=10):
         """Method for expanding or decomposing an input circuit.
         This method should be overwritten if custom expansion logic is
         required.
@@ -588,20 +628,35 @@ class Device(abc.ABC):
             circuit._obs_sharing_wires  # pylint: disable=protected-access
         ) > 0 and not self.supports_observable("Hamiltonian")
 
-        ops_not_supported = any(
-            isinstance(op, qml.tape.QuantumTape)  # nested tapes must be expanded
-            or not self.supports_operation(op.name)  # unsupported ops must be expanded
-            for op in circuit.operations
-        )
+        ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
         if ops_not_supported or obs_on_same_wire:
-            circuit = circuit.expand(
-                depth=max_expansion,
-                stop_at=lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-                and self.supports_operation(obj.name),
-            )
+            circuit = circuit.expand(depth=max_expansion, stop_at=self.stopping_condition)
 
         return circuit
+
+    def expand_fn(self, circuit, max_expansion=10):
+        """Method for expanding or decomposing an input circuit.
+        Can be the default or a custom expansion method, see
+        :meth:`.Device.default_expand_fn` and :meth:`.Device.custom_expand` for more
+        details.
+
+        Args:
+            circuit (.QuantumTape): the circuit to expand.
+            max_expansion (int): The number of times the circuit should be
+                expanded. Expansion occurs when an operation or measurement is not
+                supported, and results in a gate decomposition. If any operations
+                in the decomposition remain unsupported by the device, another
+                expansion occurs.
+
+        Returns:
+            .QuantumTape: The expanded/decomposed circuit, such that the device
+            will natively support all operations.
+        """
+        if self.custom_expand_fn is not None:
+            return self.custom_expand_fn(circuit, max_expansion=max_expansion)
+
+        return self.default_expand_fn(circuit, max_expansion=max_expansion)
 
     def batch_transform(self, circuit):
         """Apply a differentiable batch transform for preprocessing a circuit
