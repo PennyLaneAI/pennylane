@@ -35,7 +35,7 @@ from pennylane.wires import Wires
 op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
 op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
 op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
-op_classes_exception = {"PauliRot", "Projector"}
+op_classes_exception = {"PauliRot", "Projector", "Barrier"}
 
 op_classes_param_testable = op_classes.copy()
 for i in [getattr(qml.ops, cls) for cls in list(op_classes_exception)]:
@@ -176,6 +176,41 @@ class TestOperation:
 
         if n == 0:
             return
+
+    def test_barrier(self):
+        r"Test that the barrier influences compilation"
+
+        def qfunc():
+            qml.Hadamard(wires=0)
+            qml.Barrier(wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+
+        assert optimized_gates == 2
+
+        # check only_visual parameter
+        def qfunc():
+            qml.Hadamard(wires=0)
+            qml.Barrier(only_visual=True, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+        gates = qml.specs(qnode)()["gate_sizes"][1]
+
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+
+        assert optimized_gates == 0
 
     def test_controlled_qubit_unitary_init(self):
         """Test for the init of ControlledQubitUnitary"""

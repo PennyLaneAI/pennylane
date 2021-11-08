@@ -41,7 +41,7 @@ class Barrier(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
 
-    def __init__(self, only_visual = False, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, only_visual=False, *params, wires=None, do_queue=True, id=None):
 
         self.only_visual = only_visual
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
@@ -53,7 +53,6 @@ class Barrier(Operation):
 
     def label(self, decimals=None, base_label=None):
         return base_label or "||"
-
 
     def decomposition(self, wires):
         if self.only_visual:
@@ -90,7 +89,6 @@ class Barrier(Operation):
 
     def adjoint(self):
         return Barrier(wires=self.wires)
-
 
 
 class Hadamard(Observable, Operation):

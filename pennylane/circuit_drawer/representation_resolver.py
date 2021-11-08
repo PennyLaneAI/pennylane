@@ -66,7 +66,7 @@ class RepresentationResolver:
         "CubicPhase": "V",
         "X": "x",
         "P": "p",
-        "Barrier":"||",
+        "Barrier": "||",
     }
     """Symbol used for uncontrolled wires."""
 

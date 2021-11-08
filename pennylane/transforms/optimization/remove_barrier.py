@@ -17,8 +17,6 @@ from pennylane import apply
 from pennylane.transforms import qfunc_transform
 
 
-
-
 @qfunc_transform
 def remove_barrier(tape):
     """Quantum function transform to remove Barrier gate.
@@ -73,8 +71,6 @@ def remove_barrier(tape):
         list_copy.pop(0)
         continue
 
-
     # Queue the measurements normally
     for m in tape.measurements:
         apply(m)
-

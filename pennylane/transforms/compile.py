@@ -20,7 +20,12 @@ from pennylane.tape import stop_recording
 from pennylane.ops import __all__ as all_ops
 
 from pennylane.transforms import single_tape_transform, qfunc_transform
-from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations, remove_barrier
+from pennylane.transforms.optimization import (
+    cancel_inverses,
+    commute_controlled,
+    merge_rotations,
+    remove_barrier,
+)
 
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
@@ -150,7 +155,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
             expanded_tape = tape.expand(stop_at=lambda obj: obj.name in all_ops)
-            expanded_tape = tape.expand(stop_at=lambda obj: obj.name != "Barrier")
+            expanded_tape = expanded_tape.expand(stop_at=lambda obj: obj.name != "Barrier")
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):
