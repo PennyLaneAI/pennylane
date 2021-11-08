@@ -18,8 +18,8 @@ from functools import wraps
 from inspect import signature
 import warnings
 
+import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def _reconstruct_equ(fun, num_frequency, x0=None, f0=None):
@@ -104,39 +104,39 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     # If no shifts are provided, choose equidistant ones
     if not have_shifts:
         R = len(spectrum)
-        shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
+        shifts = qml.math.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
         need_f0 = True
     elif have_f0:
-        zero_idx = np.where(np.isclose(shifts, 0.0))[0]
+        zero_idx = qml.math.argwhere(qml.math.isclose(shifts, 0.0)).T[0]
         zero_idx = zero_idx[0] if len(zero_idx) > 0 else None
         need_f0 = zero_idx is not None
 
     # Take care of shifts close to zero if f0 was provided
     if have_f0 and need_f0:
         # Only one shift may be zero at a time
-        shifts = np.concatenate([[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]])
-        evals = np.array([f0] + list(map(fun, shifts[1:])))
+        shifts = qml.math.concatenate([[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]])
+        evals = qml.math.array([f0] + list(map(fun, shifts[1:])))
     else:
         if have_f0 and not need_f0:
             warnings.warn(_warn_text_f0_ignored)
-        evals = np.array(list(map(fun, shifts)))
+        evals = qml.math.array(list(map(fun, shifts)))
 
     L = len(shifts)
     # Construct the coefficient matrix case by case
-    C1 = np.ones((L, 1))
-    C2 = np.cos(np.outer(shifts, spectrum))
-    C3 = np.sin(np.outer(shifts, spectrum))
-    C = np.hstack([C1, C2, C3])
+    C1 = qml.math.ones((L, 1))
+    C2 = qml.math.cos(qml.math.tensordot(shifts, spectrum, axes=0))
+    C3 = qml.math.sin(qml.math.tensordot(shifts, spectrum, axes=0))
+    C = qml.math.hstack([C1, C2, C3])
 
     # Solve the system of linear equations
-    cond = np.linalg.cond(C)
+    cond = qml.math.linalg.cond(C)
     if cond > 1e8:
         warnings.warn(
             f"The condition number of the Fourier transform matrix is very large: {cond}.",
             UserWarning,
         )
-    W = np.linalg.solve(C, evals)
+    W = qml.math.linalg.solve(C, evals)
 
     # Extract the Fourier coefficients
     R = (L - 1) // 2
@@ -149,7 +149,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     def _reconstruction(x):
         """Univariate reconstruction based on arbitrary shifts."""
         x = x - x0
-        return a0 + np.dot(a, np.cos(spectrum * x)) + np.dot(b, np.sin(spectrum * x))
+        return a0 + qml.math.dot(a, qml.math.cos(spectrum * x)) + qml.math.dot(b, qml.math.sin(spectrum * x))
 
     return _reconstruction
 
@@ -213,7 +213,7 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
 
                 _spectrum = spectra[arg_name][par_idx]
                 # Determine whether f0 is needed
-                if _shifts is None or any(np.isclose(_shifts, 0.0, rtol=0, atol=atol)):
+                if _shifts is None or any(qml.math.isclose(_shifts, 0.0, rtol=0, atol=atol)):
                     need_f0 = True
 
                 # Store job; f0 missing
@@ -314,7 +314,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                     _reconstructions[par_idx] = constant_fn
                 else:
                     shift_vec = qml.math.zeros_like(args[arg_idx])
-                    if len(np.shape(shift_vec)) == 0:
+                    if len(qml.math.shape(shift_vec)) == 0:
                         shift_vec = 1.0
                         x0 = args[arg_idx]
                     else:
