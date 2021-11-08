@@ -39,8 +39,9 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None):
             evaluation of ``fun``
 
     Returns:
-        callable: Reconstructed Fourier series with ``num_frequency`` frequencies,
-        as ``qml.numpy`` based function.
+        callable: Reconstructed Fourier series with ``num_frequency`` frequencies.
+        This function is a purely classical function. Furthermore, it is fully
+        differentiable.
     """
     if not abs(int(num_frequency)) == num_frequency:
         raise ValueError(f"num_frequency must be a non-negative integer, got {num_frequency}")

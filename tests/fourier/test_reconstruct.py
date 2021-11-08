@@ -588,7 +588,7 @@ class TestPrepareJobs:
                 # sometimes need fun at zero if general reconstruction is performed
                 _all_shifts = chain.from_iterable(
                     [
-                        sum([__shifts for __shifts in _shifts.values()], start=[])
+                        sum([__shifts for __shifts in _shifts.values()], [])
                         for _shifts in shifts.values()
                     ],
                 )
