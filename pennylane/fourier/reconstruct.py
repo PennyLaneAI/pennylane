@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function that computes the fourier series equivalent to
+"""Contains a function that computes the fourier series of
 a quantum expectation value."""
 from collections.abc import Collection
 from functools import wraps
 from inspect import signature
 import warnings
 
-# import numpy as np
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -45,7 +44,9 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
     if not abs(int(num_frequency)) == num_frequency:
         raise ValueError(f"num_frequency must be a non-negative integer, got {num_frequency}")
 
-    a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
+    a = (num_frequency + 0.5) / np.pi
+    b = 0.5 / np.pi
+
     shifts_pos = qml.math.arange(1, num_frequency + 1) / a
     shifts_neg = -shifts_pos[::-1]
     fun_at_zero = fun(qml.math.array(0.0)) if fun_at_zero is None else fun_at_zero
@@ -72,6 +73,7 @@ _warn_text_fun_at_zero_ignored = (
 
 def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
+
     Args:
         fun (callable): Fourier series to reconstruct with signature ``float -> float``
         spectrum (Collection): Frequency spectrum of the Fourier series; non-positive
