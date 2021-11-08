@@ -442,6 +442,10 @@ class TestDefaultGaussianDevice:
                     # initialise it using the parameters generated above.
                     S = fn(*p)
 
+                    if gate_name == "Identity":
+                        print("Identity is here!")
+                        assert False
+
                     # calculate the expected output
                     if op.num_wires == 1:
                         # reorder from symmetric ordering to xp-ordering

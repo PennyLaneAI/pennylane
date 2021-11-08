@@ -1297,7 +1297,6 @@ class FockStateProjector(CVObservable):
 
 
 ops = {
-    "Identity",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",
