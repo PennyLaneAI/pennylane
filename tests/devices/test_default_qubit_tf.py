@@ -1364,7 +1364,6 @@ class TestPassthruIntegration:
 
         with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(params)
-            tape.watch(params)
             res = cost(params)
 
         # check that the result is correct

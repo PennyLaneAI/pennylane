@@ -13,6 +13,9 @@
 This update reduces the total running time of the Python test-suite up to %12.
 [(#1869)](https://github.com/PennyLaneAI/pennylane/pull/1869)
 
+* AngleEmbedding now supports `batch_params` decorator. 
+[(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -23,10 +26,16 @@ This update reduces the total running time of the Python test-suite up to %12.
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
 
+* The `requires_grad` attribute of `qml.numpy.tensor` objects is now
+  preserved when pickling/unpickling the object.
+  [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order):
+This release contains contributions from (in alphabetical order): 
 
-Ali Asadi, Christina Lee, Alejandro Montanez
+Guillermo Alonso-Linaje
+
+Ali Asadi, Jalani Kanem, Christina Lee, Alejandro Montanez
