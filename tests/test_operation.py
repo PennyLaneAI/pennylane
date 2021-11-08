@@ -1370,7 +1370,7 @@ class TestDecomposition:
             with qml.tape.stop_recording():
                 op = qml.CRZ(phi, wires=operation_wires)
             op.decomposition()
-            
+
         assert len(rec.queue) == 4
 
         assert rec.queue[0].name == "PhaseShift"
