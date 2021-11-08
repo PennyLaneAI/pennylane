@@ -262,6 +262,18 @@
   created function.
   The stopping criterion must take a queuable object and return a boolean.
 
+  For example, to create an expansion function that decomposes all trainable,
+  multi-parameter operations:
+
+  ```python
+  >>> stop_at = ~(qml.operation.has_multipar & qml.operation.is_trainable)
+  >>> expand_fn = qml.transforms.create_expand_fn(depth=5, stop_at=stop_at)
+  ```
+
+  The created expansion function can be used within a custom transform.
+  Devices can also be provided, producing expansion functions that decompose
+  tapes to support the native gate set of the device.
+
 <h4>Batch execution of circuits</h4>
 
 * A new, experimental QNode has been added, that adds support for batch execution of circuits,
