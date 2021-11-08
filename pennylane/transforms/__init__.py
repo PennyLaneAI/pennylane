@@ -73,6 +73,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 .. autosummary::
     :toctree: api
 
+    ~transforms.custom_decomposition
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
 
@@ -114,7 +115,7 @@ from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
-from .decompositions import zyz_decomposition, two_qubit_decomposition
+from .decompositions import custom_decomposition, zyz_decomposition, two_qubit_decomposition
 from .draw import draw
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
