@@ -13,6 +13,35 @@
 
 <h3>Breaking changes</h3>
 
+* The `decomposition` method of operations has changed from a static
+  class method to an operation-dependent method.
+  [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
+
+  Instead of the original syntax
+
+  ```python
+  >>> qml.CRX.decomposition(0.3, wires=[0, 1])
+  ```
+
+  the decomposition must be called on an instantiated version of the operation:
+
+  ```python
+  >>> qml.CRX(0.3, wires=[0, 1]).decomposition()
+  ```
+
+  This has consequences when decompositions are called from within a
+  QNode, as the instantiation of the operation itself will be queued in addition
+  to the decomposition. This can be solved by stopping the recording
+  while instantiating an operator, and then calling its decomposition:
+
+  ```python
+  @qml.qnode(dev)
+  def my_qnode(x):
+      with qml.tape.stop_recording():
+          op = qml.CRX(x, wires=[0, 1])
+      op.decomposition()
+  ```
+
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
