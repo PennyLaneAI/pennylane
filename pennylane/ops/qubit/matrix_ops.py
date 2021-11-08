@@ -45,7 +45,7 @@ class QubitUnitary(Operation):
 
     def __init__(self, *params, wires, do_queue=True):
         wires = Wires(wires)
-
+        
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
@@ -53,7 +53,7 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if U.shape != (dim, dim):
+            if qml.math.shape(U) != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
@@ -272,7 +272,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return D
 
     def decomposition(self):
-        return [QubitUnitary(qml.math.diag(self.parameters), wires=self.wires)]
+        return [QubitUnitary(qml.math.diag(self.parameters[0]), wires=self.wires)]
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)

@@ -1237,7 +1237,7 @@ class TestDecomposition:
     def test_U1_decomposition(self):
         """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
         phi = 0.432
-        res = qml.U1.decomposition(phi, wires=0)
+        res = qml.U1(phi, wires=0).decomposition()
 
         assert len(res) == 1
         assert res[0].name == "PhaseShift"
@@ -1251,7 +1251,9 @@ class TestDecomposition:
         omega = -5.43
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.Rot.decomposition(phi, theta, omega, wires=0)
+            with qml.tape.stop_recording():
+                op = qml.Rot(phi, theta, omega, wires=0)
+            op.decomposition()
 
         assert len(rec.queue) == 3
 
@@ -1270,7 +1272,9 @@ class TestDecomposition:
         phi = 0.432
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.CRX.decomposition(phi, wires=[0, 1])
+            with qml.tape.stop_recording():
+                op = qml.CRX(phi, wires=[0, 1])
+            op.decomposition()
 
         assert len(rec.queue) == 6
 
@@ -1323,7 +1327,9 @@ class TestDecomposition:
         operation_wires = [0, 1]
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.CRY.decomposition(phi, wires=operation_wires)
+            with qml.tape.stop_recording():
+                op = qml.CRY(phi, wires=operation_wires)
+            op.decomposition()
 
         assert len(rec.queue) == 4
 
@@ -1361,8 +1367,10 @@ class TestDecomposition:
         operation_wires = [0, 1]
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.CRZ.decomposition(phi, wires=operation_wires)
-
+            with qml.tape.stop_recording():
+                op = qml.CRZ(phi, wires=operation_wires)
+            op.decomposition()
+            
         assert len(rec.queue) == 4
 
         assert rec.queue[0].name == "PhaseShift"
@@ -1397,7 +1405,9 @@ class TestDecomposition:
         lam = 0.654
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.U2.decomposition(phi, lam, wires=0)
+            with qml.tape.stop_recording():
+                op = qml.U2(phi, lam, wires=0)
+            op.decomposition()
 
         assert len(rec.queue) == 3
 
@@ -1417,7 +1427,9 @@ class TestDecomposition:
         lam = 0.654
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.U3.decomposition(theta, phi, lam, wires=0)
+            with qml.tape.stop_recording():
+                op = qml.U3(theta, phi, lam, wires=0)
+            op.decomposition()
 
         assert len(rec.queue) == 3
 
@@ -1443,7 +1455,7 @@ class TestDecomposition:
             "BasisStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.BasisState.decomposition(n, wires=wires)
+        qml.BasisState(n, wires=wires).decomposition()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], n)
@@ -1462,7 +1474,7 @@ class TestDecomposition:
             "MottonenStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.QubitStateVector.decomposition(state, wires=wires)
+        qml.QubitStateVector(state, wires=wires).decomposition()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], state)
