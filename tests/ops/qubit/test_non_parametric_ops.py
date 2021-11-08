@@ -79,7 +79,7 @@ class TestDecompositions:
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -102,7 +102,7 @@ class TestDecompositions:
     def test_y_decomposition(self, tol):
         """Tests that the decomposition of the PauliY is correct"""
         op = qml.PauliY(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -125,7 +125,7 @@ class TestDecompositions:
     def test_z_decomposition(self, tol):
         """Tests that the decomposition of the PauliZ is correct"""
         op = qml.PauliZ(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -140,7 +140,7 @@ class TestDecompositions:
     def test_s_decomposition(self, tol):
         """Tests that the decomposition of the S gate is correct"""
         op = qml.S(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -155,7 +155,7 @@ class TestDecompositions:
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the T gate is correct"""
         op = qml.T(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -170,7 +170,7 @@ class TestDecompositions:
     def test_sx_decomposition(self, tol):
         """Tests that the decomposition of the SX gate is correct"""
         op = qml.SX(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 4
 
@@ -192,7 +192,7 @@ class TestDecompositions:
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the Hadamard gate is correct"""
         op = qml.Hadamard(wires=0)
-        res = op.decomposition(0)
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -215,7 +215,7 @@ class TestDecompositions:
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
         op = qml.CY(wires=[0, 1])
-        res = op.decomposition(op.wires)
+        res = op.decomposition()
 
         mats = []
         for i in reversed(res):
@@ -230,7 +230,7 @@ class TestDecompositions:
     def test_ISWAP_decomposition(self, tol):
         """Tests that the decomposition of the ISWAP gate is correct"""
         op = qml.ISWAP(wires=[0, 1])
-        res = op.decomposition(op.wires)
+        res = op.decomposition()
 
         assert len(res) == 6
 
@@ -267,7 +267,7 @@ class TestDecompositions:
     def test_SISWAP_decomposition(self, siswap_op, tol):
         """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
         op = siswap_op(wires=[0, 1])
-        res = op.decomposition(op.wires)
+        res = op.decomposition()
 
         assert len(res) == 12
 
@@ -315,7 +315,7 @@ class TestDecompositions:
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
         op = qml.Toffoli(wires=[0, 1, 2])
-        res = op.decomposition(op.wires)
+        res = op.decomposition()
 
         assert len(res) == 15
 
@@ -355,7 +355,7 @@ class TestDecompositions:
     def test_CSWAP_decomposition(self, tol):
         """Tests that the decomposition of the CSWAP gate is correct"""
         op = qml.CSWAP(wires=[0, 1, 2])
-        res = op.decomposition(op.wires)
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -400,7 +400,7 @@ class TestDecompositions:
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
-        decomp = opr.decomposition([0, 1])
+        decomp = opr.decomposition()
 
         mat = []
         for op in reversed(decomp):

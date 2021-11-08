@@ -170,7 +170,7 @@ class TestQubitUnitary:
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
-        decomp = qml.QubitUnitary.decomposition(U, wires=0)
+        decomp = qml.QubitUnitary(U, wires=0).decomposition()
 
         assert len(decomp) == 1
         assert isinstance(decomp[0], expected_gate)
@@ -181,7 +181,7 @@ class TestQubitUnitary:
         U = qml.Toffoli(wires=[0, 1, 2]).matrix
 
         with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
-            qml.QubitUnitary.decomposition(U, wires=[0, 1])
+            qml.QubitUnitary(U, wires=[0, 1]).decomposition()
 
 
 class TestDiagonalQubitUnitary:
@@ -191,7 +191,7 @@ class TestDiagonalQubitUnitary:
         """Test that DiagonalQubitUnitary falls back to QubitUnitary."""
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
 
-        decomp = qml.DiagonalQubitUnitary.decomposition(D, [0, 1, 2])
+        decomp = qml.DiagonalQubitUnitary(D, [0, 1, 2]).decomposition()
 
         assert decomp[0].name == "QubitUnitary"
         assert decomp[0].wires == Wires([0, 1, 2])
