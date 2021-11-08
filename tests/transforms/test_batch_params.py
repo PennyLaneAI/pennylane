@@ -34,13 +34,33 @@ def test_simple_circuit(mocker):
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 2])
 
-    batch_size = 3
+    batch_size = 5
     data = np.random.random((batch_size, 8))
     x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
     weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, x, weights)
+    assert res.shape == (batch_size, 1, 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+
+def test_angle_embedding(mocker):
+    """Test that batching works for AngleEmbedding"""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(data):
+        qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
+        qml.RY(0.2, wires=1)
+        return qml.probs(wires=[0, 2])
+
+    batch_size = 5
+    data = np.random.random((batch_size, 3))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data)
     assert res.shape == (batch_size, 1, 4)
     assert len(spy.call_args[0][0]) == batch_size
 
