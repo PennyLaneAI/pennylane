@@ -531,6 +531,10 @@ class Operator(abc.ABC):
         """Current parameter values."""
         return self.data.copy()
 
+    def decomposition(self):
+        """Returns a template decomposing the operator into other operators"""
+        raise NotImplementedError
+
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
@@ -708,11 +712,6 @@ class Operation(Operator):
     @inverse.setter
     def inverse(self, boolean):
         self._inverse = boolean
-
-    def decomposition(self):
-        """Returns a template decomposing the operation into other
-        quantum operations."""
-        raise NotImplementedError
 
     def expand(self):
         """Returns a tape containing the decomposed operations, rather
