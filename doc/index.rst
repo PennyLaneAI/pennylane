@@ -78,12 +78,6 @@ PennyLane Documentation
         </div>
     </div>
 
-Community
----------
-We love having a diverse and engaged community that uses PennyLane and contributes to it. 
-We invite you to explore the different resources and events which are designed to help you learn 
-quantum computing and have fun in the process.
-
 During the month of November 2021 we're hosting the 
 `Pennylane Quantum Carnival <https://pennylane.ai/carnival/index.html>`_ where you will get to collect 
 tickets like the one below, and exchange them for prizes at the end of the month. 

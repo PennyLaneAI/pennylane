@@ -32,8 +32,6 @@
 </p>
 
 <p align="center">
-<<<<<<< HEAD
-=======
   <a href="https://pennylane.ai/carnival/">
     <img width=100% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/carnival_splash_bg.png">
   </a>
@@ -51,7 +49,6 @@
 <hr>
 
 <p align="center">
->>>>>>> cb866797 (Added tkt to docs and readme)
   <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
   href="https://en.wikipedia.org/wiki/Differentiable_programming">differentiable
   programming</a> of quantum computers.
