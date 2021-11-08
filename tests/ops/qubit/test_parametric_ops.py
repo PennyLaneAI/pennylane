@@ -1145,7 +1145,9 @@ class TestPauliRot:
 
         @qml.qnode(dev)
         def decomp_circuit(theta):
-            qml.PauliRot(theta, "XX", wires=[0, 1]).decomposition()
+            with qml.tape.stop_recording():
+                op = qml.PauliRot(theta, "XX", wires=[0, 1])
+            op.decomposition()
 
             return qml.expval(qml.PauliZ(0))
 

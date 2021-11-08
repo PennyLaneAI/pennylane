@@ -45,7 +45,7 @@ class QubitUnitary(Operation):
 
     def __init__(self, *params, wires, do_queue=True):
         wires = Wires(wires)
-        
+
         # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):

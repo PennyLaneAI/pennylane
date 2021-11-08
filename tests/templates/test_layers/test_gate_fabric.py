@@ -764,10 +764,13 @@ def circuit_decomposed(weights):
     include_pi_param = qml.math.array(np.pi, like=qml.math._multi_dispatch(weights))
     for layer in range(weights.shape[0]):
         for idx in range(weights.shape[1]):
-            qml.OrbitalRotation.decomposition(include_pi_param, wires=qwires[idx])
-            qml.DoubleExcitation.decomposition(weights[layer][idx][0], wires=qwires[idx])
-            qml.OrbitalRotation.decomposition(weights[layer][idx][1], wires=qwires[idx])
-
+            with qml.tape.stop_recording():
+                op1 = qml.OrbitalRotation(include_pi_param, wires=qwires[idx])
+                op2 = qml.DoubleExcitation(weights[layer][idx][0], wires=qwires[idx])
+                op3 = qml.OrbitalRotation(weights[layer][idx][1], wires=qwires[idx])
+            op1.decomposition()
+            op2.decomposition()
+            op3.decomposition()
     return qml.expval(qml.PauliZ(0))
 
 

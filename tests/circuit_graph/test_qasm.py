@@ -133,7 +133,9 @@ class TestToQasmUnitTests:
         qasm1 = circuit1.to_openqasm(wires=Wires([0, 1]))
 
         with qml.tape.QuantumTape() as circuit2:
-            qml.Rot.decomposition(0.3, 0.1, 0.2, wires=1)
+            with qml.tape.stop_recording():
+                op = qml.Rot(0.3, 0.1, 0.2, wires=1)
+            op.decomposition()
 
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
 
