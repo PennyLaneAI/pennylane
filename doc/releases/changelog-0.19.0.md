@@ -378,7 +378,8 @@
       return qml.expval(H)
   ```
 
-  For more details, see the [GateFabric documentation](../code/api/pennylane.GateFabric.html).
+  For more details, see the [GateFabric
+  documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.GateFabric.html).
 
 * Added a new template `kUpCCGSD`, which implements a unitary coupled cluster ansatz with
   generalized singles and pair doubles excitation operators, proposed by Joonho Lee *et al.*
