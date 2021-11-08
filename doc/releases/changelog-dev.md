@@ -9,6 +9,8 @@
 
 <h3>Improvements</h3>
 
+* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -27,6 +29,8 @@
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order):
+This release contains contributions from (in alphabetical order): 
+
+Guillermo Alonso-Linaje
 
 Jalani Kanem, Christina Lee, Alejandro Montanez
