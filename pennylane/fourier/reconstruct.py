@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
+def _reconstruct_equ(fun, num_frequency, x0=None, f0=None):
     r"""Reconstruct a univariate Fourier series with consecutive integer
     frequencies, using trigonometric interpolation and equidistant shifts.
 
@@ -32,9 +32,10 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
     `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
     Args:
-        fun (callable): Function to reconstruct
+        fun (callable): Univariate finite Fourier series to reconstruct.
         num_frequency (int): Number of integer frequencies in ``fun``
-        fun_at_zero (float): Value of ``fun`` at zero; Providing ``fun_at_zero`` saves one
+        x0 (float): Center with respect to which to reconstruct.
+        f0 (float): Value of ``fun`` at ``x0`` ; Providing ``f0`` saves one
             evaluation of ``fun``
 
     Returns:
@@ -49,12 +50,14 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
 
     shifts_pos = qml.math.arange(1, num_frequency + 1) / a
     shifts_neg = -shifts_pos[::-1]
-    fun_at_zero = fun(qml.math.array(0.0)) if fun_at_zero is None else fun_at_zero
-    evals = list(map(fun, shifts_neg)) + [fun_at_zero] + list(map(fun, shifts_pos))
+    x0 = qml.math.array(0.0) if x0 is None else x0
+    f0 = fun(0.0) if f0 is None else f0
+    evals = list(map(fun, shifts_neg)) + [f0] + list(map(fun, shifts_pos))
     shifts = qml.math.concatenate([shifts_neg, [0.0], shifts_pos])
 
     def _reconstruction(x):
         """Univariate reconstruction based on equidistant shifts and Dirichlet kernels."""
+        x = x - x0
         return qml.math.tensordot(
             qml.math.sinc(a * (x - shifts)) / qml.math.sinc(b * (x - shifts)),
             evals,
@@ -64,14 +67,14 @@ def _reconstruct_equ(fun, num_frequency, fun_at_zero=None):
     return _reconstruction
 
 
-_warn_text_fun_at_zero_ignored = (
+_warn_text_f0_ignored = (
     "The provided value of the function at zero will be ignored due to the "
     "provided shift values. This may lead to additional evaluations of the "
     "function to be reconstructed."
 )
 
 
-def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
+def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
 
     Args:
@@ -81,8 +84,9 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         shifts (Sequence): Shift angles at which to evaluate ``fun`` for the reconstruction
             Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{min}]` if ``shifts=None``
             where :math:`f_\text{min}` is the smallest frequency in ``spectrum``.
-        fun_at_zero (float): Value of ``fun`` at zero. If :math:`0` is among the ``shifts``
-            and ``fun_at_zero`` is provided, one evaluation of ``fun`` is saved.
+        x0 (float): Center with respect to which to reconstruct.
+        f0 (float): Value of ``fun`` at ``x0`` . If :math:`0` is among the ``shifts``
+            and ``f0`` is provided, one evaluation of ``fun`` is saved.
 
     Returns:
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum``,
@@ -90,10 +94,11 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     """
     # pylint: disable=unused-argument
 
-    have_fun_at_zero = fun_at_zero is not None
+    have_f0 = f0 is not None
     have_shifts = shifts is not None
 
-    spectrum = np.array([f for f in spectrum if f > 0.0])
+    spectrum = qml.math.array(spectrum)
+    spectrum = spectrum[spectrum > 0]
     f_max = max(spectrum)
 
     # If no shifts are provided, choose equidistant ones
@@ -101,20 +106,20 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
         R = len(spectrum)
         shifts = np.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
-        need_fun_at_zero = True
-    elif have_fun_at_zero:
+        need_f0 = True
+    elif have_f0:
         zero_idx = np.where(np.isclose(shifts, 0.0))[0]
         zero_idx = zero_idx[0] if len(zero_idx) > 0 else None
-        need_fun_at_zero = zero_idx is not None
+        need_f0 = zero_idx is not None
 
-    # Take care of shifts close to zero if fun_at_zero was provided
-    if have_fun_at_zero and need_fun_at_zero:
+    # Take care of shifts close to zero if f0 was provided
+    if have_f0 and need_f0:
         # Only one shift may be zero at a time
         shifts = np.concatenate([[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]])
-        evals = np.array([fun_at_zero] + list(map(fun, shifts[1:])))
+        evals = np.array([f0] + list(map(fun, shifts[1:])))
     else:
-        if have_fun_at_zero and not need_fun_at_zero:
-            warnings.warn(_warn_text_fun_at_zero_ignored)
+        if have_f0 and not need_f0:
+            warnings.warn(_warn_text_f0_ignored)
         evals = np.array(list(map(fun, shifts)))
 
     L = len(shifts)
@@ -139,9 +144,11 @@ def _reconstruct_gen(fun, spectrum, shifts=None, fun_at_zero=None):
     a = W[1 : R + 1]
     b = W[R + 1 :]
 
+    x0 = qml.math.array(0.0) if x0 is None else x0
     # Construct the Fourier series
     def _reconstruction(x):
         """Univariate reconstruction based on arbitrary shifts."""
+        x = x - x0
         return a0 + np.dot(a, np.cos(spectrum * x)) + np.dot(b, np.sin(spectrum * x))
 
     return _reconstruction
@@ -192,7 +199,7 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
         if shifts is None:
             shifts = {}
 
-        need_fun_at_zero = False
+        need_f0 = False
         recon_fn = _reconstruct_gen
 
         # If no shifts are provided, compute them
@@ -205,11 +212,11 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
                     _shifts = _shifts.get(par_idx)
 
                 _spectrum = spectra[arg_name][par_idx]
-                # Determine whether fun_at_zero is needed
+                # Determine whether f0 is needed
                 if _shifts is None or any(np.isclose(_shifts, 0.0, rtol=0, atol=atol)):
-                    need_fun_at_zero = True
+                    need_f0 = True
 
-                # Store job; fun_at_zero missing
+                # Store job; f0 missing
                 if len(_spectrum) > 1:
                     _jobs[par_idx] = {"shifts": _shifts, "spectrum": _spectrum}
                 else:
@@ -221,7 +228,7 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
 
     else:
         jobs = {}
-        need_fun_at_zero = True
+        need_f0 = True
         if ids is None:
             ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in nums_frequency.items()}
         elif not isinstance(ids, dict):
@@ -238,12 +245,12 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
 
             for par_idx in inner_dict:
                 _num_frequency = nums_frequency[arg_name][par_idx]
-                # Store job; fun_at_zero missing
+                # Store job; f0 missing
                 _jobs[par_idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
 
             jobs[arg_name] = _jobs
 
-    return ids, recon_fn, jobs, need_fun_at_zero
+    return ids, recon_fn, jobs, need_f0
 
 
 def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None):
@@ -281,20 +288,20 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     # pylint: disable=cell-var-from-loop, unused-argument
 
     atol = 1e-8
-    ids, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(
-        ids, spectra, shifts, nums_frequency, atol
-    )
+    ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, spectra, shifts, nums_frequency, atol)
     arg_names = list(signature(qnode).parameters.keys())
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         nonlocal spectra
-        if need_fun_at_zero:
-            fun_at_zero = qnode(*args, **kwargs)
+        if need_f0:
+            f0 = qnode(*args, **kwargs)
+        else:
+            f0 = None
 
         def constant_fn(x):
             """Univariate reconstruction of a constant Fourier series."""
-            return fun_at_zero
+            return f0
 
         # Carry out the reconstruction jobs
         reconstructions = {}
@@ -309,15 +316,17 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                     shift_vec = qml.math.zeros_like(args[arg_idx])
                     if len(np.shape(shift_vec)) == 0:
                         shift_vec = 1.0
+                        x0 = args[arg_idx]
                     else:
                         shift_vec[par_idx] = 1.0
+                        x0 = args[arg_idx][par_idx]
 
                     def _univariate_fn(x):
                         new_arg = args[arg_idx] + shift_vec * x
                         new_args = args[:arg_idx] + (new_arg,) + args[arg_idx + 1 :]
                         return qnode(*new_args, **kwargs)
 
-                    _reconstructions[par_idx] = recon_fn(_univariate_fn, **job)
+                    _reconstructions[par_idx] = recon_fn(_univariate_fn, **job, x0=x0, f0=f0)
 
             reconstructions[arg_name] = _reconstructions
 

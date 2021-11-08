@@ -66,7 +66,6 @@ def fun_close(fun1, fun2, zero=None, tol=1e-5):
 
     for x in X:
         if not np.isclose(fun1(x), fun2(x), atol=tol, rtol=0):
-            print(fun1(x), fun2(x), " at ", x, type(x))
             return False
     return True
 
@@ -93,6 +92,7 @@ class TestWarnings:
     Fourier transform during the reconstruction."""
 
     def test_ill_conditioned(self):
+        """Test that a warning is raised for an ill-conditioned matrix in the Fourier trafo."""
         shifts = [-np.pi / 2 - 1e-9, -np.pi / 2, 0, np.pi / 2, np.pi / 2 + 1e-9]
         with pytest.warns(UserWarning, match="condition number of the Fourier"):
             _reconstruct_gen(dummy_qnode, spectrum=[1.0, 2.0], shifts=shifts)
@@ -107,7 +107,9 @@ class TestReconstructEqu:
         lambda x: -0.49 * qml.math.sin(3.2 * x),
         lambda x: 0.1 * qml.math.cos(-2.1 * x) + 2.9 * qml.math.sin(4.2 * x - 1.2),
         lambda x: 4.01,
-        lambda x: qml.math.sum([i ** 2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]),
+        lambda x: qml.math.sum(
+            [i ** 2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
+        ),
     ]
 
     nums_frequency = [2, 1, 2, 0, 9]
@@ -115,7 +117,8 @@ class TestReconstructEqu:
     expected_grads = [
         lambda x: 13.71 * qml.math.cos(x) + 2 * qml.math.sin(2 * x) / 30,
         lambda x: -0.49 * qml.math.cos(3.2 * x) * 3.2,
-        lambda x: (-2.1) * (-0.1) * qml.math.sin(-2.1 * x) + 4.2 * 2.9 * qml.math.cos(4.2 * x - 1.2),
+        lambda x: (-2.1) * (-0.1) * qml.math.sin(-2.1 * x)
+        + 4.2 * 2.9 * qml.math.cos(4.2 * x - 1.2),
         lambda x: 0.0,
         lambda x: qml.math.sum(
             [i * 3.921 * i ** 2 * 0.1 * qml.math.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
@@ -123,108 +126,108 @@ class TestReconstructEqu:
     ]
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0", zip(c_funs, nums_frequency, base_frequencies)
+        "fun, num_frequency, base_f", zip(c_funs, nums_frequency, base_frequencies)
     )
-    def test_with_classical_fun(self, fun, num_frequency, f0, mocker):
+    def test_with_classical_fun(self, fun, num_frequency, base_f, mocker):
         """Test that equidistant-frequency classical functions are
         reconstructed correctly (via rescaling to integer frequencies)."""
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
         # Convert fun to have integer frequencies
-        _fun = lambda x: Fun(x / f0)
+        _fun = lambda x: Fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         assert spy.call_count == num_frequency * 2 + 1
         assert fun_close(fun, rec)
 
-        # Repeat, using precomputed fun_at_zero
-        fun_at_zero = _fun(0.0)
+        # Repeat, using precomputed f0
+        f0 = _fun(0.0)
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
-        _rec = _reconstruct_equ(_fun, num_frequency, fun_at_zero=fun_at_zero)
+        _rec = _reconstruct_equ(_fun, num_frequency, f0=f0)
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         assert spy.call_count == num_frequency * 2
         assert fun_close(fun, rec)
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0, expected_grad",
+        "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
     )
-    def test_differentiability_autograd(self, fun, num_frequency, f0, expected_grad):
+    def test_differentiability_autograd(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for Autograd input variables."""
         # Convert fun to have integer frequencies
-        _fun = lambda x: fun(x / f0)
+        _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         grad = qml.grad(rec)
 
         assert fun_close(fun, rec, zero=pnp.array(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=pnp.array(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0, expected_grad",
+        "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
     )
-    def test_differentiability_jax(self, fun, num_frequency, f0, expected_grad):
+    def test_differentiability_jax(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
         jax = pytest.importorskip("jax")
         # Convert fun to have integer frequencies
-        _fun = lambda x: fun(x / f0)
+        _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         grad = qml.grad(rec)
         assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0, expected_grad",
+        "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
     )
-    def test_differentiability_tensorflow(self, fun, num_frequency, f0, expected_grad):
+    def test_differentiability_tensorflow(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for TensorFlow input variables."""
         tf = pytest.importorskip("tensorflow")
         # Convert fun to have integer frequencies
-        _fun = lambda x: fun(x / f0)
+        _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         grad = qml.grad(rec)
         assert fun_close(fun, rec, zero=tf.Variable(0.0))
         assert fun_close(expected_grad, grad, zero=tf.Variable(0.0))
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0, expected_grad",
+        "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
     )
-    def test_differentiability_torch(self, fun, num_frequency, f0, expected_grad):
+    def test_differentiability_torch(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for Torch input variables."""
         torch = pytest.importorskip("torch")
         # Convert fun to have integer frequencies
-        _fun = lambda x: fun(x / f0)
+        _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         grad = qml.grad(rec)
         assert fun_close(fun, rec, zero=torch.tensor(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=torch.tensor(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0", zip(c_funs, nums_frequency, base_frequencies)
+        "fun, num_frequency, base_f", zip(c_funs, nums_frequency, base_frequencies)
     )
-    def test_with_classical_fun_num_freq_too_small(self, fun, num_frequency, f0, mocker):
+    def test_with_classical_fun_num_freq_too_small(self, fun, num_frequency, base_f, mocker):
         """Test that equidistant-frequency classical functions are
         reconstructed wrongly if num_frequency is too small."""
         if num_frequency == 0:
@@ -233,29 +236,29 @@ class TestReconstructEqu:
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
         # Convert fun to have integer frequencies
-        _fun = lambda x: Fun(x / f0)
+        _fun = lambda x: Fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         assert spy.call_count == num_frequency * 2 + 1
         assert not fun_close(fun, rec)
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, f0", zip(c_funs, nums_frequency, base_frequencies)
+        "fun, num_frequency, base_f", zip(c_funs, nums_frequency, base_frequencies)
     )
-    def test_with_classical_fun_num_freq_too_large(self, fun, num_frequency, f0, mocker):
+    def test_with_classical_fun_num_freq_too_large(self, fun, num_frequency, base_f, mocker):
         """Test that equidistant-frequency classical functions are
         reconstructed correctly if num_frequency is too large."""
         num_frequency += 1
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
         # Convert fun to have integer frequencies
-        _fun = lambda x: Fun(x / f0)
+        _fun = lambda x: Fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency)
 
         # Convert reconstruction to have original frequencies
-        rec = lambda x: _rec(f0 * x)
+        rec = lambda x: _rec(base_f * x)
         assert spy.call_count == num_frequency * 2 + 1
         assert fun_close(fun, rec)
 
@@ -279,11 +282,11 @@ class TestReconstructEqu:
         assert spy.call_count == num_frequency * 2 + 1
         assert fun_close(circuit, rec)
 
-        # Repeat, using precomputed fun_at_zero
-        fun_at_zero = circuit(0.0)
+        # Repeat, using precomputed f0
+        f0 = circuit(0.0)
         Fun = Lambda(circuit)
         spy = mocker.spy(Fun, "fun")
-        rec = _reconstruct_equ(Fun, num_frequency, fun_at_zero=fun_at_zero)
+        rec = _reconstruct_equ(Fun, num_frequency, f0=f0)
         assert spy.call_count == num_frequency * 2
         assert fun_close(circuit, rec)
 
@@ -338,11 +341,11 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
 
-        # Repeat, using precomputed fun_at_zero
-        fun_at_zero = fun(0.0)
+        # Repeat, using precomputed f0
+        f0 = fun(0.0)
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
-        rec = _reconstruct_gen(Fun, spectrum, fun_at_zero=fun_at_zero)
+        rec = _reconstruct_gen(Fun, spectrum, f0=f0)
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(fun, rec)
 
@@ -356,11 +359,11 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(fun, rec)
 
-        # Repeat, using precomputed fun_at_zero
-        fun_at_zero = fun(0.0)
+        # Repeat, using precomputed f0
+        f0 = fun(0.0)
         Fun = Lambda(fun)
         spy = mocker.spy(Fun, "fun")
-        rec = _reconstruct_gen(Fun, spectrum, shifts=shifts, fun_at_zero=fun_at_zero)
+        rec = _reconstruct_gen(Fun, spectrum, shifts=shifts, f0=f0)
         if 0.0 in shifts:
             assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         else:
@@ -474,11 +477,11 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert fun_close(circuit, rec)
 
-        # Repeat, using precomputed fun_at_zero
-        fun_at_zero = circuit(0.0)
+        # Repeat, using precomputed f0
+        f0 = circuit(0.0)
         Fun = Lambda(circuit)
         spy = mocker.spy(Fun, "fun")
-        rec = _reconstruct_gen(Fun, spectrum, fun_at_zero=fun_at_zero)
+        rec = _reconstruct_gen(Fun, spectrum, f0=f0)
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(circuit, rec)
 
@@ -530,13 +533,13 @@ class TestPrepareJobs:
     @pytest.mark.parametrize("shifts", all_shifts)
     @pytest.mark.parametrize("nums_frequency", all_nums_frequency)
     def test_prejobs(self, ids, spectra, shifts, nums_frequency, tol):
-        """Test ``_prepare_jobs`` with only ``spectra`` given."""
+        """Test ``_prepare_jobs`` with a large variety of test cases (cheap)."""
         if nums_frequency is None and spectra is None:
             with pytest.raises(ValueError, match="Either nums_frequency or spectra"):
                 _prepare_jobs(ids, spectra, shifts, nums_frequency, atol=tol)
             return
 
-        ids_, recon_fn, jobs, need_fun_at_zero = _prepare_jobs(
+        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
             ids,
             spectra,
             shifts,
@@ -564,7 +567,6 @@ class TestPrepareJobs:
         # Check function to use for 1D reconstructions
         assert recon_fn == _reconstruct_gen if nums_frequency is None else _reconstruct_equ
         # Check reconstruction jobs to be run
-        print(jobs)
         assert jobs.keys() == ids_.keys()
         for _id, _jobs in jobs.items():
             _jobs.keys() == ids_[_id]
@@ -590,11 +592,11 @@ class TestPrepareJobs:
                         for _shifts in shifts.values()
                     ],
                 )
-                assert need_fun_at_zero == any(
+                assert need_f0 == any(
                     np.isclose(_shift, 0.0, atol=tol, rtol=0) for _shift in _all_shifts
                 )
             else:
-                assert need_fun_at_zero
+                assert need_f0
 
         else:
             # for nums_frequency given
@@ -606,7 +608,7 @@ class TestPrepareJobs:
                     assert list(job.keys()) == ["num_frequency"]
                     assert job["num_frequency"] == nums_frequency[_id][idx]
             # always need fun at zero if equidistant reconstruction is performed
-            assert need_fun_at_zero
+            assert need_f0
 
 
 dev_1 = qml.device("default.qubit", wires=2)
@@ -629,6 +631,7 @@ def qnode_1(X):
 
 @qml.qnode(dev_1)
 def qnode_2(X, y):
+    print(X, y)
     qml.RX(X[0], wires=0)
     qml.RX(X[2], wires=1)
     qml.RY(y, wires=0)
@@ -657,9 +660,9 @@ class TestReconstruct:
     the full ``reconstruct`` function."""
 
     @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts",
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         [
-            (qnode_0, (x,), "x", None, {"x": {0: [0.0, 1.0]}}, None),
+            (qnode_0, (x,), "x", None, {"x": {0: [0.0, 1.0]}}, None, 3),
             (
                 qnode_0,
                 (x,),
@@ -667,9 +670,10 @@ class TestReconstruct:
                 None,
                 {"x": {0: [0.0, 1.0]}},
                 {"x": {0: [-np.pi / 3, 0.0, np.pi / 3]}},
+                3,
             ),
-            (qnode_0, (x,), "x", {"x": {0: 1}}, None, None),
-            (qnode_1, (X,), {"X"}, None, {"X": {0: [0.0, 1.0, 2.0], 1: [0.0, 2.0]}}, None),
+            (qnode_0, (x,), "x", {"x": {0: 1}}, None, None, 3),
+            (qnode_1, (X,), {"X"}, None, {"X": {0: [0.0, 1.0, 2.0], 1: [0.0, 2.0]}}, None, 7),
             (
                 qnode_1,
                 (X,),
@@ -677,8 +681,9 @@ class TestReconstruct:
                 None,
                 {"X": {0: [0.0, 2.0]}},
                 {"X": {0: [-np.pi / 2, -0.1, np.pi / 5]}},
+                3,
             ),
-            (qnode_1, (X,), ["X"], {"X": {0: 2, 1: 2}}, None, None),
+            (qnode_1, (X,), ["X"], {"X": {0: 2, 1: 2}}, None, None, 9),
             (
                 qnode_2,
                 (X, y),
@@ -686,6 +691,7 @@ class TestReconstruct:
                 None,
                 {"X": {0: [0.0, 0.5, 1.0, 1.5], 2: [0.0, 1.0]}, "y": {0: [0.0, 1.0]}},
                 None,
+                11,
             ),
             (
                 qnode_3,
@@ -694,24 +700,39 @@ class TestReconstruct:
                 {"X": {i: 2 for i in range(5)}, "Y": {i: 1 for i in range(5)}},
                 None,
                 None,
+                13,
             ),
         ],
     )
-    def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts):
+    def test_with_qnode(
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+    ):
         """Run a full reconstruction on a QNode."""
+        dev_1._num_executions = 0
         recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        assert dev_1._num_executions == exp_calls
         arg_names = list(signature(qnode).parameters.keys())
         for outer_key in recons:
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
+                x0 = params[outer_key_num]
+                if not pnp.isscalar(x0):
+                    x0 = x0[inner_key]
                 shift_vec = (
                     1.0
                     if pnp.isscalar(params[outer_key_num])
                     else np.eye(len(params[outer_key_num]))[inner_key]
                 )
+                mask = (
+                    0.0
+                    if pnp.isscalar(params[outer_key_num])
+                    else pnp.ones(len(params[outer_key_num])) - shift_vec
+                )
                 univariate = lambda x: qnode(
                     *params[:outer_key_num],
-                    params[outer_key_num] + x * shift_vec,
+                    params[outer_key_num] * mask + x * shift_vec,
                     *params[outer_key_num + 1 :]
                 )
-                fun_close(rec, univariate)
+                assert np.isclose(rec(x0), qnode(*params))
+                assert np.isclose(rec(x0 + 0.1), univariate(x0 + 0.1))
+                assert fun_close(rec, univariate)
