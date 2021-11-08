@@ -247,7 +247,7 @@ class PhaseShift(DiagonalOperation):
         return qml.math.stack([1, exp_part])
 
     def decomposition(self):
-        decomp_ops = [RZ(self.params[0], wires=self.wires)]
+        decomp_ops = [RZ(self.parameters[0], wires=self.wires)]
         return decomp_ops
 
     def adjoint(self):

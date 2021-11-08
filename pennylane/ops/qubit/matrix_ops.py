@@ -79,7 +79,7 @@ class QubitUnitary(Operation):
     def decomposition(self):
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
-        U = self.params[0]
+        U = self.parameters[0]
 
         if qml.math.shape(U) == (2, 2):
             wire = Wires(self.wires)[0]
@@ -272,7 +272,7 @@ class DiagonalQubitUnitary(DiagonalOperation):
         return D
 
     def decomposition(self):
-        return [QubitUnitary(qml.math.diag(self.params), wires=self.wires)]
+        return [QubitUnitary(qml.math.diag(self.parameters), wires=self.wires)]
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)

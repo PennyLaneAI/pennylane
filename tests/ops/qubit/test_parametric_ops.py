@@ -1334,7 +1334,9 @@ class TestMultiRZ:
         @qml.qnode(dev)
         def decomp_circuit(theta):
             qml.Hadamard(0)
-            qml.MultiRZ(theta, wires=[0, 1]).decomposition()
+            with qml.tape.stop_recording():
+                op = qml.MultiRZ(theta, wires=[0, 1])
+            op.decomposition()
 
             return qml.expval(qml.PauliX(0))
 

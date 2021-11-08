@@ -726,7 +726,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition(*self.data, wires=self.wires)
+            self.decomposition()
 
         if not self.data:
             # original operation has no trainable parameters
