@@ -115,7 +115,9 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     # Take care of shifts close to zero if f0 was provided
     if have_f0 and need_f0:
         # Only one shift may be zero at a time
-        shifts = qml.math.concatenate([[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]])
+        shifts = qml.math.concatenate(
+            [[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]]
+        )
         evals = qml.math.array([f0] + list(map(fun, shifts[1:])))
     else:
         if have_f0 and not need_f0:
@@ -149,7 +151,11 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     def _reconstruction(x):
         """Univariate reconstruction based on arbitrary shifts."""
         x = x - x0
-        return a0 + qml.math.dot(a, qml.math.cos(spectrum * x)) + qml.math.dot(b, qml.math.sin(spectrum * x))
+        return (
+            a0
+            + qml.math.dot(a, qml.math.cos(spectrum * x))
+            + qml.math.dot(b, qml.math.sin(spectrum * x))
+        )
 
     return _reconstruction
 
