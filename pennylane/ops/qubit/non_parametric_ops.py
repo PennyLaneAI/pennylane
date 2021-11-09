@@ -449,7 +449,7 @@ class CNOT(Operation):
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -836,7 +836,7 @@ class Toffoli(Operation):
     )
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -983,7 +983,7 @@ class MultiControlledX(Operation):
         return self._control_wires
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

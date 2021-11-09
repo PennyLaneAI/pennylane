@@ -21,6 +21,7 @@ as circuit diagrams.
 
 """
 
+from .draw_text import draw_text
 from .circuit_drawer import CircuitDrawer
 from .charsets import CHARSETS
 from .mpldrawer import MPLDrawer
