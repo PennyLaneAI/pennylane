@@ -48,13 +48,17 @@ class CommutingEvolution(Operation):
 
     .. warning::
 
-       This template uses the :class:`~.ApproxTimeEvolution` operation with `n=1` in order to
+       This template uses the :class:`~.ApproxTimeEvolution` operation with ``n=1`` in order to
        implement the time evolution, as a single-step Trotterization is exact for a commuting
-       Hamiltonian. If the input Hamiltonian contains Pauli words which do not commute, the
-       compilation of the time evolution operator to a sequence of gates will not equate to the
-       exact propagation under the given Hamiltonian. Furthermore, if the specified frequencies
-       do not correspond to the true eigenvalue frequency spectrum of the commuting Hamiltonian,
-       computed gradients will be incorrect in general.
+       Hamiltonian.
+
+       - If the input Hamiltonian contains Pauli words which do not commute, the
+         compilation of the time evolution operator to a sequence of gates will
+         not equate to the exact propagation under the given Hamiltonian.
+
+       - Furthermore, if the specified frequencies do not correspond to the
+         true eigenvalue frequency spectrum of the commuting Hamiltonian,
+         computed gradients will be incorrect in general.
 
     Args:
         hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.

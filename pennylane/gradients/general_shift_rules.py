@@ -54,7 +54,7 @@ def get_shift_rule(frequencies, shifts=None):
 
     **Examples**
 
-    An example of obtaining the frequencies from a set of unique eigenvals and obtaining the
+    An example of obtaining the frequencies from a set of unique eigenvalues and obtaining the
     parameter shift rule:
 
     >>> unique_eigenvals = [1, -1, 0]
@@ -67,7 +67,7 @@ def get_shift_rule(frequencies, shifts=None):
     ([[0.8535533905932737, 1, 0.7853981633974483], [-0.14644660940672624, 1, 2.356194490192345],
     [-0.8535533905932737, 1, -0.7853981633974483], [0.14644660940672624, 1, -2.356194490192345]],)
 
-    An example with user specified shift values:
+    An example with explicitly specified shift values:
 
     >>> frequencies = (1, 2, 4)
     >>> shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
@@ -90,7 +90,7 @@ def get_shift_rule(frequencies, shifts=None):
         mu = np.arange(1, n_freqs + 1)
         shifts = (2 * mu - 1) * np.pi / (2 * n_freqs)
     else:
-        shifts = list(shifts)
+        shifts = qml.math.stack(shifts)
         if len(shifts) != n_freqs:
             raise ValueError(
                 "Expected number of shifts to equal the number of frequencies ({}), instead got {}.".format(
@@ -103,9 +103,7 @@ def get_shift_rule(frequencies, shifts=None):
     frequencies = qml.math.sort(qml.math.stack(frequencies))
     freq_min = frequencies[0]
 
-    if np.allclose(
-        np.array(frequencies) / freq_min, range(1, len(frequencies) + 1)
-    ):  # equidistant case
+    if len(set(np.diff(frequencies))) == 1:  # equidistant case  # equidistant case
 
         mu = np.arange(1, n_freqs + 1)
         shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
@@ -120,6 +118,6 @@ def get_shift_rule(frequencies, shifts=None):
         sin_matr_inv = np.linalg.inv(sin_matr)
         coeffs = -2 * np.tensordot(frequencies, sin_matr_inv, axes=1)
 
-    coeffs = np.concatenate((coeffs, [-coeff for coeff in coeffs]))
-    shifts = np.concatenate((shifts, [-shift for shift in shifts]))
+    coeffs = np.concatenate((coeffs, -coeffs))
+    shifts = np.concatenate((shifts, -shifts))
     return ([[coeffs[mu], 1, shifts[mu]] for mu in range(0, 2 * n_freqs)],)
