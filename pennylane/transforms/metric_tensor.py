@@ -46,7 +46,7 @@ def expand_fn(tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wi
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None):
-    """Returns a function that computes the block-diagonal approximation of the metric tensor
+    r"""Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
     .. note::
@@ -311,7 +311,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
 
 def _metric_tensor_cov_matrix(tape, diag_approx):
-    """This is the metric tensor method for the block diagonal, using
+    r"""This is the metric tensor method for the block diagonal, using
     the covariance matrix of the generators of each layer.
 
     Args:
@@ -394,7 +394,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
 @functools.lru_cache()
 def _get_gen_op(op, allow_nonunitary, aux_wire):
-    """Get the controlled-generator operation for a given operation.
+    r"""Get the controlled-generator operation for a given operation.
 
     Args:
         op (pennylane.operation.Operation): Operation from which to extract the generator
@@ -434,7 +434,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
 
 def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
-    """Obtain the tapes for the first term of all tensor entries
+    r"""Obtain the tapes for the first term of all tensor entries
     belonging to an off-diagonal block.
 
     Args:
@@ -598,7 +598,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
 
 
 def _get_aux_wire(aux_wire, tape):
-    """Determine an unused wire to be used as auxiliary wire for Hadamard tests.
+    r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
         aux_wire (object): Input auxiliary wire. Returned unmodified if not ``None``
@@ -612,6 +612,8 @@ def _get_aux_wire(aux_wire, tape):
         return aux_wire
 
     _wires = tape.wires
-    for _aux in range(tape.num_wires + 1):
+    for _aux in range(tape.num_wires):
         if _aux not in _wires:
             return _aux
+
+    return tape.num_wires
