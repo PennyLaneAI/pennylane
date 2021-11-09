@@ -180,9 +180,9 @@ class Tracker:
 
     def reset(self):
         """Resets stored information."""
-        self.totals = dict()
-        self.history = dict()
-        self.latest = dict()
+        self.totals = {}
+        self.history = {}
+        self.latest = {}
 
     def record(self):
         """This method allows users to interact with the stored data.  While it's intended purpose
