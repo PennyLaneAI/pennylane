@@ -499,18 +499,22 @@ all_ids = [
 all_spectra = [
     None,
     {
-        "x": {0: [1.3], 1: [4.2, 0.2]},
-        "y": {3: [0.3, 0.2], 1: [1.1, 5.2], 5: [1.2]},
-        "z": {i: [i * 3.2, i * 8.7] for i in range(20)},
+        "x": {0: [0.0], 1: [4.2, 0.0, 0.2]},
+        "y": {3: [0.3, 0.0, 0.2], 1: [0.0, 1.1, 5.2], 5: [0.0, 1.2]},
+        "z": {i: [0.0, i * 8.7] for i in range(20)},
     },
 ]
 
 all_shifts = [
     None,
     {
-        "x": {0: [1.3], 1: [4.2]},
-        "y": {3: [0.3, 0.2], 1: [1.1, 5.2], 5: [1.2]},
-        "z": {i: [i * 3.2 + 1.0] for i in range(20)},
+        "x": {0: [-1.3], 1: [1.0, -0.4, 4.2, 2.3, -1.5]},
+        "y": {
+            3: [0.3 * i + 0.05 for i in range(-2, 3)],
+            1: [-1, -0.5, -0.1, 0.1, 0.9],
+            5: [-1, -0.5, -0.2],
+        },
+        "z": {i: [-np.pi / 2, 0.0, np.pi / 2] for i in range(20)},
     },
 ]
 
@@ -532,18 +536,18 @@ class TestPrepareJobs:
     @pytest.mark.parametrize("spectra", all_spectra)
     @pytest.mark.parametrize("shifts", all_shifts)
     @pytest.mark.parametrize("nums_frequency", all_nums_frequency)
-    def test_prejobs(self, ids, spectra, shifts, nums_frequency, tol):
+    def test_prepjobs(self, ids, spectra, shifts, nums_frequency, tol):
         """Test ``_prepare_jobs`` with a large variety of test cases (cheap)."""
         if nums_frequency is None and spectra is None:
             with pytest.raises(ValueError, match="Either nums_frequency or spectra"):
-                _prepare_jobs(ids, spectra, shifts, nums_frequency, atol=tol)
+                _prepare_jobs(ids, nums_frequency, spectra, shifts, atol=tol)
             return
 
         ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
             ids,
+            nums_frequency,
             spectra,
             shifts,
-            nums_frequency,
             atol=tol,
         )
 
@@ -588,8 +592,15 @@ class TestPrepareJobs:
                 # sometimes need fun at zero if general reconstruction is performed
                 _all_shifts = chain.from_iterable(
                     [
-                        sum([__shifts for __shifts in _shifts.values()], [])
-                        for _shifts in shifts.values()
+                        sum(
+                            [
+                                __shifts
+                                for par_idx, __shifts in _shifts.items()
+                                if id_ in ids_ and par_idx in ids_[id_]
+                            ],
+                            [],
+                        )
+                        for id_, _shifts in shifts.items()
                     ],
                 )
                 assert need_f0 == any(

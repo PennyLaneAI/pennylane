@@ -251,16 +251,19 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
                 # Determine spectrum and number of frequencies, discounting for 0
                 _spectrum = spectra[arg_name][par_idx]
                 _R = len(_spectrum) - 1
-                # Determine whether f0 is needed and whether the shifts have the correct shape
                 if _shifts is not None:
-                    need_f0 = True
+                    # Check whether 0 is among the shifts
+                    if any(qml.math.isclose(_shifts, 0.0, rtol=0, atol=atol)):
+                        need_f0 = True
+                    # Check whether the shifts have the correct size
                     if len(_shifts) != 2 * _R + 1:
                         raise ValueError(
                             f"The number of provided shifts ({len(_shifts)}) does not fit to the "
                             f"number of frequencies (2R+1={2*_R+1}) for parameter {par_idx} in "
                             f"argument {arg_name}."
                         )
-                if _shifts is None or any(qml.math.isclose(_shifts, 0.0, rtol=0, atol=atol)):
+                else:
+                    # If no shifts are given, f0 is needed always
                     need_f0 = True
 
                 # Store job
