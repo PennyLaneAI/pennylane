@@ -100,8 +100,9 @@ def unitary_to_rot(tape):
             transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         >>> g = qml.grad(transformed_qnode)
-        >>> g([0.2, 0.3])
-        [array(-0.24454992), array(-0.23913254)]
+        >>> params = np.array([0.2, 0.3], requires_grad=True)
+        >>> g(params)
+        array([ 0.00296633, -0.29392145])
 
         However, the following example will **not** be differentiable:
 

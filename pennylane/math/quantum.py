@@ -18,7 +18,7 @@ from autoray import numpy as np
 from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import cast, diag, dot
+from .multi_dispatch import cast, diag, dot, scatter_element_add
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -67,7 +67,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     We can now compute the covariance matrix:
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
-    >>> weights = np.random.random(shape)
+    >>> weights = np.random.random(shape, requires_grad=True)
     >>> cov = qml.math.cov_matrix(circuit(weights), obs_list)
     >>> cov
     array([[0.98707611, 0.03665537],
@@ -119,8 +119,8 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
         res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
 
-        cov = np.scatter_element_add(cov, [i, j], res)
-        cov = np.scatter_element_add(cov, [j, i], res)
+        cov = scatter_element_add(cov, [i, j], res)
+        cov = scatter_element_add(cov, [j, i], res)
 
     return cov
 

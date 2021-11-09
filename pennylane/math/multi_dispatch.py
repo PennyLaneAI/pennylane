@@ -238,13 +238,13 @@ def dot(tensor1, tensor2):
         return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
 
     if interface == "tensorflow":
-        if x.ndim == 0 and y.ndim == 0:
+        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
             return x * y
 
-        if y.ndim == 1:
+        if len(np.shape(y)) == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=interface)
 
-        if x.ndim == 2 and y.ndim == 2:
+        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
@@ -425,6 +425,41 @@ def frobenius_inner_product(A, B, normalize=False):
         inner_product = inner_product / norm
 
     return inner_product
+
+
+def scatter_element_add(tensor, index, value, like=None):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor.
+
+    Args:
+        tensor (tensor_like[float]): Tensor to add the value to
+        index (tuple or list[tuple]): Indices to which to add the value
+        value (float or tensor_like[float]): Value to add to ``tensor``
+        like (str): Manually chosen interface to dispatch to.
+    Returns:
+        tensor_like[float]: The tensor with the value added at the given indices.
+
+    **Example**
+
+    >>> tensor = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    >>> index = (1, 2)
+    >>> value = -3.1
+    >>> qml.math.scatter_element_add(tensor, index, value)
+    tensor([[ 0.1000,  0.2000,  0.3000],
+            [ 0.4000,  0.5000, -2.5000]])
+
+    If multiple indices are given, in the form of a list of tuples, the
+    ``k`` th tuple is interpreted to contain the ``k`` th entry of all indices:
+
+    >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
+    >>> values = torch.tensor([10, 20])
+    >>> qml.math.scatter_element_add(tensor, indices, values)
+    tensor([[ 0.1000, 20.2000,  0.3000],
+            [ 0.4000,  0.5000, 10.6000]])
+    """
+
+    interface = like or _multi_dispatch([tensor, value])
+    return np.scatter_element_add(tensor, index, value, like=interface)
 
 
 def unwrap(values, max_depth=None):

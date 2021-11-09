@@ -220,24 +220,6 @@ class TestInputs:
         # No normalization error is raised
         circuit(x=inputs)
 
-    def test_deprecated_pad_arg(self):
-        """Test that the pad argument raises a deprecation warning"""
-
-        num_qubits = 2
-        dev = qml.device("default.qubit", wires=num_qubits)
-        inputs = np.array([1.0, 0.0, 0.0, 0.0])
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.AmplitudeEmbedding(x, list(range(num_qubits)), pad=0.0, normalize=True)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            UserWarning,
-            match="will be replaced by the pad_with option in future versions",
-        ):
-            circuit(x=inputs)
-
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
@@ -309,6 +291,24 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    def test_jax_jit(self, tol):
+        """Tests jax tensors when using JIT."""
+
+        jax = pytest.importorskip("jax")
+        import jax.numpy as jnp
+
+        features = jnp.array([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"))
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev, interface="jax"))
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
     def test_tf(self, tol):
         """Tests tf tensors."""
 
@@ -320,6 +320,23 @@ class TestInterfaces:
 
         circuit = qml.QNode(circuit_template, dev, interface="tf")
         circuit2 = qml.QNode(circuit_decomposed, dev, interface="tf")
+
+        res = circuit(features)
+        res2 = circuit2(features)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    def test_tf_jit(self, tol):
+        """Tests tf tensors when using JIT."""
+
+        tf = pytest.importorskip("tensorflow")
+
+        features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = tf.function(jit_compile=True)(qml.QNode(circuit_template, dev, interface="tf"))
+        circuit2 = tf.function(jit_compile=True)(qml.QNode(circuit_decomposed, dev, interface="tf"))
 
         res = circuit(features)
         res2 = circuit2(features)

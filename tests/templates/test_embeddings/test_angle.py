@@ -136,18 +136,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
-    def test_exception_wrong_dim(self):
-        """Verifies that exception is raised if the number of dimensions of features is incorrect."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.AngleEmbedding(features=x, wires=range(1))
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
-            circuit(x=[[1], [0]])
-
     def test_id(self):
         """Tests that the id attribute can be set."""
         template = qml.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
