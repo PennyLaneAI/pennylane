@@ -67,6 +67,7 @@ ops = {
     "ISWAP": qml.ISWAP(wires=[0, 1]),
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
+    "Barrier": qml.Barrier(wires=[0, 1, 2]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
@@ -291,7 +292,7 @@ class TestSupportedGates:
             pytest.skip("Device does not support inverse operations.")
 
         assert hasattr(dev, "operations")
-        if operation in dev.operations:
+        if operation in dev.operations and operation != "Barrier":
 
             @qml.qnode(dev)
             def circuit():
