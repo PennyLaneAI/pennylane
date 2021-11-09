@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains a function for generating generalized parameter shift rules."""
 import functools
+import warnings
 import numpy as np
 import pennylane as qml
 
@@ -115,6 +116,12 @@ def get_shift_rule(frequencies, shifts=None):
 
     else:  # non-equidistant case
         sin_matr = -4 * np.sin(np.outer(shifts, frequencies))
+        det_sin_matr = np.linalg.det(sin_matr)
+        if abs(det_sin_matr) < 1e-5:
+            warnings.warn(
+                "Inverting matrix with near zero determinant ({})".format(det_sin_matr),
+                "may give unstable results for the parameter shift rules.",
+            )
         sin_matr_inv = np.linalg.inv(sin_matr)
         coeffs = -2 * np.tensordot(frequencies, sin_matr_inv, axes=1)
 
