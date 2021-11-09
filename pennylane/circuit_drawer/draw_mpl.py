@@ -80,13 +80,13 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     Keyword Args:
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (Int): How many decimal points to include when formatting operation parameters.  Default `None` will
+        decimals (int): How many decimal points to include when formatting operation parameters.  Default `None` will
              omit parameters from operation labels.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
 
     Returns:
-        matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface
+        matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
 
     **Example:**
 
@@ -244,7 +244,6 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
-            
             specialfunc = special_cases.get(op.__class__, None)
             if specialfunc is not None:
                 mapped_wires = [wire_map[w] for w in op.wires]
@@ -269,7 +268,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     measured_wires = Wires([])
 
     for m in tape.measurements:
-        # state and probs 
+        # state and probs
         if len(m.wires) == 0:
             for wire in range(n_wires):
                 if wire not in measured_wires:

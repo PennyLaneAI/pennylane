@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for ``GradientDescentOptimzer``
+Unit tests for ensuring that objects that are pickled/unpickled are identical to the original.
 """
 
-import pytest
+import pickle
 
-from pennylane import GradientDescentOptimizer
+import pennylane as qml
 
-def test_initialization():
-    """Test class initializes with the default stepsize"""
 
-    opt = GradientDescentOptimizer()
-    assert opt.stepsize == 0.01
+def test_unpickling_tensor():
+    """Tests whether qml.numpy.tensor objects are pickleable."""
 
-@pytest.mark.parametrize("stepsize", (0.02, 0.03))
-def test_initialization_stepsize(stepsize):
-    """Test stepsize set on initialization"""
+    x = qml.numpy.random.random(15)
+    x_str = pickle.dumps(x)
+    x_reloaded = pickle.loads(x_str)
 
-    opt = GradientDescentOptimizer(stepsize=stepsize)
-    assert opt.stepsize == stepsize
+    assert qml.numpy.allclose(x, x_reloaded)
+    assert x.__dict__ == x_reloaded.__dict__
+    assert hasattr(x_reloaded, "requires_grad")
