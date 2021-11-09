@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transform for remove Barrier gate in quantum circuits."""
+"""Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
