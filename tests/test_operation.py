@@ -188,6 +188,9 @@ class TestOperation:
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(qfunc, dev)
+        gates = qml.specs(qnode)()["gate_sizes"][1]
+
+        assert gates == 3
 
         optimized_qfunc = qml.compile()(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)

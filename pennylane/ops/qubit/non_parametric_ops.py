@@ -34,11 +34,11 @@ class Barrier(Operation):
 
     **Details:**
 
-    * Number of wires: 1
+    * Number of wires: AnyWires
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int): the wires the operation acts on
     """
 
     def __init__(self, only_visual=False, *params, wires=None, do_queue=True, id=None):
@@ -49,10 +49,6 @@ class Barrier(Operation):
     num_params = 0
     num_wires = AnyWires
     par_domain = None
-    eigvals = np.ones(int(2 ** num_wires))
-
-    def label(self, decimals=None, base_label=None):
-        return base_label or "||"
 
     def decomposition(self, wires):
         if self.only_visual:
@@ -60,35 +56,6 @@ class Barrier(Operation):
         else:
             raise NotImplementedError
         return decomp_ops
-
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        if self.inverse:
-            mat = mat.conj()
-        return mat
-
-    @classmethod
-    def _matrix(cls, num_wires):
-        return np.identity(2 ** num_wires)
-
-    @classmethod
-    def _eigvals(cls, num_wires):
-        return np.ones(2 ** num_wires)
-
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Barrier operator.
-
-        Returns:
-            list(~.Operation): A list of gates that diagonalize Barrier in
-            the computational basis.
-        """
-        return []
-
-    def adjoint(self):
-        return Barrier(wires=self.wires)
 
 
 class Hadamard(Observable, Operation):
