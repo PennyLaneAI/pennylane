@@ -104,6 +104,7 @@ class DefaultMixed(QubitDevice):
         "OrbitalRotation",
         "QFT",
         "Barrier",
+        "ThermalRelaxationError",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
