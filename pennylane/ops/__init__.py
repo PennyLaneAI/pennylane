@@ -64,7 +64,7 @@ class Identity(CVObservable, Operation):
     eigvals = np.array([1, 1])
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "I")
+        return base_label or "I"
 
     @classmethod
     def _eigvals(cls, *params):
