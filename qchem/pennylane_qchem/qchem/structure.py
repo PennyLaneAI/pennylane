@@ -221,7 +221,7 @@ def read_structure(filepath, outpath="."):
 
     symbols = []
     coordinates = []
-    with open(file_out) as f:
+    with open(file_out, encoding="utf-8") as f:
         for line in f.readlines()[2:]:
             symbol, x, y, z = line.split()
             symbols.append(symbol)
@@ -248,8 +248,7 @@ def meanfield(
     This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to
     perform the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
     chemistry packages ``PySCF`` and ``Psi4``, respectively. The mean field electronic
-    structure is saved in an hdf5-formatted file in the directory
-    ``os.path.join(outpath, package, basis)``.
+    structure is saved in an hdf5-formatted file.
 
     The charge of the molecule can be given to simulate cationic/anionic systems.
     Also, the spin multiplicity can be input to determine the number of unpaired electrons
@@ -288,7 +287,7 @@ def meanfield(
 
     >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
     >>> meanfield(symbols, coordinates, name="h2")
-    ./pyscf/sto-3g/h2
+    ./h2_pyscf_sto-3g
     """
 
     if coordinates.size != 3 * len(symbols):
@@ -306,16 +305,8 @@ def meanfield(
         )
         raise TypeError(error_message)
 
-    package_dir = os.path.join(outpath.strip(), package)
-    basis_dir = os.path.join(package_dir, basis.strip())
-
-    if not os.path.isdir(package_dir):
-        os.mkdir(package_dir)
-        os.mkdir(basis_dir)
-    elif not os.path.isdir(basis_dir):
-        os.mkdir(basis_dir)
-
-    path_to_file = os.path.join(basis_dir, name.strip())
+    filename = name + "_" + package.lower() + "_" + basis.strip()
+    path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
         [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]

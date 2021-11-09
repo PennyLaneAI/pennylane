@@ -10,6 +10,8 @@
 * `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
+  
+* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 * A `lru_cache` decorated function for computing generalized parameter shift rules for generators'
   whose eigenvalue frequency spectrum is known is available as `qml.gradients.get_shift_rule`.
@@ -76,10 +78,15 @@
   and 2) the eigenvalue frequency spectrum is correct, since these checks become
   prohibitively expensive for large Hamiltonians.
 
+* The `requires_grad` attribute of `qml.numpy.tensor` objects is now
+  preserved when pickling/unpickling the object.
+  [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order):
+This release contains contributions from (in alphabetical order): 
 
-Josh Izaac, Robert A. Lang, Christina Lee, Cedric Lin, Alejandro Montanez, David Wierichs.
+Josh Izaac, Jalani Kanem, Robert Lang, Christina Lee, Guillermo Alonso-Linaje, Cedric Lin, Alejandro Montanez, David Wierichs.
+
