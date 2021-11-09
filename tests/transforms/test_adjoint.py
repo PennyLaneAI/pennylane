@@ -54,7 +54,7 @@ def test_adjoint_directly_on_op():
 
 
 def test_barrier_adjoint():
-    "Check that the adjoint for the Barrier is working"
+    """Check that the adjoint for the Barrier is working"""
     dev = qml.device("default.qubit", wires=1)
 
     @qml.qnode(dev)
