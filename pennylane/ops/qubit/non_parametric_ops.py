@@ -41,15 +41,14 @@ class Barrier(Operation):
         only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
 
     def __init__(self, only_visual=False, *params, wires=None, do_queue=True, id=None):
 
         self.only_visual = only_visual
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-
-    num_params = 0
-    num_wires = AnyWires
-    par_domain = None
 
     def decomposition(self, wires):
         _wires = wires
