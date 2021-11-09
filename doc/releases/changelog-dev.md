@@ -7,6 +7,9 @@
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
+* The qml.Barrier() operator has been added. With it we can separate blocks in compilation or use it as a visual tool.
+[(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+  
 <h3>Improvements</h3>
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
