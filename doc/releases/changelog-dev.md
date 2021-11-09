@@ -8,7 +8,7 @@
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
 * The qml.Barrier() operator has been added. With it we can separate blocks in compilation or use it as a visual tool.
-[(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
   
 <h3>Improvements</h3>
 
