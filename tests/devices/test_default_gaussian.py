@@ -373,7 +373,8 @@ class TestDefaultGaussianDevice:
             "Kerr",
         }
 
-        assert set(qml.ops._cv__ops__) | set("Identity") - non_supported == set(gaussian_dev._operation_map)
+        cv_ops = set(qml.ops._cv__ops__) | {"Identity"}  # we also support identity operation
+        assert cv_ops - non_supported == set(gaussian_dev._operation_map)
 
     def test_observable_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
