@@ -831,14 +831,15 @@ class TestFullMetricTensor:
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
-        qml.metric_tensor(circuit, approx="block-diag")(*params)
-        mt = qml.metric_tensor(circuit, approx=None)(*params)
+        mt = qml.metric_tensor(circuit, approx=None)(*params) # Produces only diagonal entries, and as a tuple!
+        print(mt)
+        print(expected)
 
-        assert np.allclose(mt, expected)
+        assert np.allclose(mt.detach().numpy(), expected)
 
-    @pytest.mark.skip(
-        reason="The tensorflow implementation is not adapted to the forward pass metric tensor yet."
-    )
+    #@pytest.mark.skip(
+        #reason="The tensorflow implementation is not adapted to the forward pass metric tensor yet."
+    #)
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_tf(self, ansatz, params):
         tf = pytest.importorskip("tensorflow")
@@ -855,8 +856,10 @@ class TestFullMetricTensor:
 
         with tf.GradientTape() as t:
             qml.metric_tensor(circuit, approx="block-diag")(*params)
-            mt = qml.metric_tensor(circuit, approx=None)(*params)
+            mt = qml.metric_tensor(circuit, approx=None)(*params) # Produces only diagonal entries, and as a tuple!
 
+        print(mt)
+        print(expected)
         assert np.allclose(mt, expected)
 
 
