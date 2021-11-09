@@ -31,6 +31,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje
-
-Jalani Kanem, Christina Lee, Alejandro Montanez
+Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez
