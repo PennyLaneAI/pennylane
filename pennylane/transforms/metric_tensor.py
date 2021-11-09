@@ -529,7 +529,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         for layer in layers
     ]
 
-    # Get default for aux_wire 
+    # Get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape)
 
     # Get all tapes for the first term of the metric tensor and memorize which
@@ -560,11 +560,12 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         diag_mt = diag_proc_fn(diag_res)
 
         # Initialize off block-diagonal tensor using the stored ids
+        off_diag_res = qml.math.convert_like([res[0] for res in off_diag_res], diag_mt)
+        inv_ids = [_id[::-1] for _id in ids]
         first_term = qml.math.zeros_like(diag_mt)
-        for result, idx in zip(off_diag_res, ids):
-            # The metric tensor is symmetric
-            first_term = qml.math.scatter_element_add(first_term, idx, result[0])
-            first_term = qml.math.scatter_element_add(first_term, idx[::-1], result[0])
+        if ids != []:
+            first_term = qml.math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
+            first_term = qml.math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
 
         # Second terms of off block-diagonal metric tensor
         expvals = []

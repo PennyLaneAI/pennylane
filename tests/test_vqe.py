@@ -588,7 +588,7 @@ class TestVQE:
     def test_metric_tensor(self):
         """Test that the metric tensor can be calculated."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         p = np.array([1.0, 1.0, 1.0])
 
         def ansatz(params, **kwargs):
@@ -606,7 +606,7 @@ class TestVQE:
     def test_multiple_devices(self, mocker):
         """Test that passing multiple devices to ExpvalCost works correctly"""
 
-        dev = [qml.device("default.qubit", wires=2), qml.device("default.mixed", wires=2)]
+        dev = [qml.device("default.qubit", wires=3), qml.device("default.mixed", wires=3)]
         spy = mocker.spy(DefaultQubit, "apply")
         spy2 = mocker.spy(DefaultMixed, "apply")
 

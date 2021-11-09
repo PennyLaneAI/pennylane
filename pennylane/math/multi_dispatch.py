@@ -235,7 +235,7 @@ def dot(tensor1, tensor2):
         if x.ndim <= 2 and y.ndim <= 2:
             return x @ y
 
-        return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     if interface == "tensorflow":
         if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:

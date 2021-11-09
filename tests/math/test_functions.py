@@ -1095,6 +1095,11 @@ def test_squeeze(t):
 class TestScatterElementAdd:
     """Tests for the scatter_element_add function"""
 
+    _exp_jac1 = onp.zeros((2, 3, 2))
+    _exp_jac1[0, 1, 0] += 1.12
+    _exp_jac1[1, 2, 1] += 0.6
+    expected_jac = [onp.eye(6).reshape((2, 3, 2, 3)), _exp_jac1]
+
     def test_array(self):
         """Test that a NumPy array is differentiable when using scatter addition"""
         x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
@@ -1127,6 +1132,25 @@ class TestScatterElementAdd:
         jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
         assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
         assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
+
+    def test_array_batch(self):
+        """Test that a NumPy array and the addend are differentiable when using
+        scatter addition (multi dispatch)."""
+        x = np.ones((2, 3), requires_grad=True)
+        y = np.array([0.56, 0.3], requires_grad=True)
+
+        def cost_multi(weight_0, weight_1):
+            return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1 ** 2)
+
+        res = cost_multi(x, y)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
+
+        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        assert fn.allclose(jac[0], self.expected_jac[0])
+        print(jac[1])
+        print(self.expected_jac[1])
+        assert fn.allclose(jac[1], self.expected_jac[1])
 
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
