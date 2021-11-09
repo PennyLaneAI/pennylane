@@ -53,7 +53,7 @@ info = {
             'default.tensor = pennylane.beta.devices.default_tensor:DefaultTensor',
             'default.tensor.tf = pennylane.beta.devices.default_tensor_tf:DefaultTensorTF',
             'default.mixed = pennylane.devices.default_mixed:DefaultMixed',
-            'default.task = pennylane.devices:DefaultTask',
+            'task.qubit = pennylane.devices:TaskQubit',
             ],
         'console_scripts': [
                 'pl-device-test=pennylane.devices.tests:cli'
