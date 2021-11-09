@@ -190,9 +190,13 @@ class AmplitudeEmbedding(Operation):
             # normalize
             norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
 
-            if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+            if qml.math.is_abstract(norm):
                 if normalize or pad_with:
-                    feature_set = feature_set / np.sqrt(norm)
+                    feature_set = feature_set / qml.math.sqrt(norm)
+
+            elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+                if normalize or pad_with:
+                    feature_set = feature_set / qml.math.sqrt(norm)
                 else:
                     raise ValueError(
                         f"Features must be a vector of norm 1.0; got norm {norm}."

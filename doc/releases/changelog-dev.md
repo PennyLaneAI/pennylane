@@ -9,6 +9,8 @@
 
 <h3>Improvements</h3>
 
+* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -19,10 +21,14 @@
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
 
+* The `requires_grad` attribute of `qml.numpy.tensor` objects is now
+  preserved when pickling/unpickling the object.
+  [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order):
+This release contains contributions from (in alphabetical order): 
 
-Christina Lee, Alejandro Montanez
+Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez
