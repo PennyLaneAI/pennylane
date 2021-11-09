@@ -308,5 +308,17 @@ if (downloadNote.length >= 1) {
 }
 </script>
 <script type="text/javascript">jQuery.noConflict(true);</script>
+<script type="text/javascript">
+  let divs = document.getElementsByClassName('field-odd');
+
+  for (let x = 0; x < divs.length; x++) {
+      let div = divs[x];
+      let content = div.innerHTML.trim();
+
+      if (content == 'orphan') {
+          div.style.display = 'none';
+      }
+  }
+</script>
         {% include "footer.html" %}
 {%- endblock %}
