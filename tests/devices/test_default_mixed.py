@@ -677,7 +677,7 @@ class TestApply:
         dev2.apply([Identity(i) for i in range(num_wires)])
 
         # Correct States:
-        basis = np.reshape(basis_state(0, 2), [2] * (2 * num_wires))
+        basis = basis_state(0, num_wires)
         hadamard = hadamard_state(num_wires)
 
         assert np.allclose(dev1.state, basis, atol=tol, rtol=0)

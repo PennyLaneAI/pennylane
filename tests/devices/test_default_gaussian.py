@@ -373,7 +373,7 @@ class TestDefaultGaussianDevice:
             "Kerr",
         }
 
-        assert set(qml.ops._cv__ops__) - non_supported == set(gaussian_dev._operation_map)
+        assert set(qml.ops._cv__ops__) + set("Identity") - non_supported == set(gaussian_dev._operation_map)
 
     def test_observable_map(self, gaussian_dev):
         """Test that default Gaussian device supports all PennyLane Gaussian continuous observables."""
@@ -441,10 +441,6 @@ class TestDefaultGaussianDevice:
                     # if the default.gaussian is an operation accepting parameters,
                     # initialise it using the parameters generated above.
                     S = fn(*p)
-
-                    if gate_name == "Identity":
-                        print("Identity is here!")
-                        assert False
 
                     # calculate the expected output
                     if op.num_wires == 1:
