@@ -19,7 +19,7 @@ from pennylane.transforms import qfunc_transform
 
 @qfunc_transform
 def remove_barrier(tape):
-    """Quantum function transform to remove Barrier gate.
+    """Quantum function transform to remove Barrier gates.
 
     Args:
         qfunc (function): A quantum function.
