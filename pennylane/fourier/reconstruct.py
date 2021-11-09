@@ -477,6 +477,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     atol = 1e-8
     ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
     arg_names = list(signature(qnode).parameters.keys())
+    arg_idx_from_names = {arg_name: i for i, arg_name in enumerate(arg_names)}
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -494,7 +495,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         reconstructions = {}
         for arg_name, inner_dict in jobs.items():
             _reconstructions = {}
-            arg_idx = arg_names.index(arg_name)
+            arg_idx = arg_idx_from_names[arg_name]
 
             for par_idx, job in inner_dict.items():
                 if job is None:
