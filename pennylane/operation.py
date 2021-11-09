@@ -532,7 +532,11 @@ class Operator(abc.ABC):
         return self.data.copy()
 
     def decomposition(self):
-        """Returns a template decomposing the operator into other operators"""
+        """Defines a decomposition of this operator into products of other operators
+        
+        Returns:
+            list[Operation]  
+        """
         raise NotImplementedError
 
     def queue(self, context=qml.QueuingContext):
