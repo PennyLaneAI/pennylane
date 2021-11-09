@@ -25,7 +25,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 
 
 def test_empty_tape():
-    """Edge case where tape is empty.  Use this to test return types"""
+    """Edge case where the tape is empty. Use this to test return types."""
 
     fig, ax = draw_mpl(QuantumTape())
 
@@ -49,11 +49,11 @@ label_data = [({}, ["0", "a", "1.234"]), # default behaviour
 ]
 
 class TestLabelling:
-    """Test the labels for the wires."""
+    """Test the labels produced by the circuit drawer for the wires."""
 
     @pytest.mark.parametrize("kwargs, labels", label_data)
     def test_labels(self, kwargs, labels):
-        """Test produced labels under different settings.  Check both text value and position"""
+        """Test the labels produced under different settings. Check both text value and position."""
         _, ax = draw_mpl(tape1, **kwargs)
 
         for wire, (text_obj, label) in enumerate(zip(ax.texts, labels)):
@@ -63,7 +63,7 @@ class TestLabelling:
         plt.close()
 
     def test_label_options(self):
-        """Test providing `label_options` alters styling of the text"""
+        """Test that providing the `label_options` argument alters the styling of the text."""
 
         _, ax = draw_mpl(tape1, label_options={"fontsize": 10})
 
@@ -74,7 +74,7 @@ class TestLabelling:
 
 
 class TestWires:
-    """Test wire lines are produced correctly in different situations"""
+    """Test that wire lines are produced correctly in different situations."""
 
     def test_empty_tape_wire_order(self):
         """Test situation with empty tape but specified wires."""
@@ -122,7 +122,7 @@ class TestWires:
         plt.close()
 
     def test_wire_options(self):
-        """Test wires are formatted by provided dictionary."""
+        """Test wires are formatted by providing a wire_options dictionary."""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
@@ -300,8 +300,8 @@ class TestControlledGates:
 
     @pytest.mark.parametrize("op, label", controlled_data)
     def test_control_gates(self, op, label):
-        """Test a variety of non-special gates.  Checks control wires are drawn, and
-        box drawn over target wires."""
+        """Test a variety of non-special gates. Checks control wires are drawn, and
+        that a box is drawn over the target wires."""
 
         with QuantumTape() as tape:
             qml.apply(op)
@@ -360,8 +360,8 @@ class TestGeneralOperations:
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations(self, op):
-        """Test a variety of operations produce a rectangle accross relevant wires
-        and correct label text."""
+        """Test that a variety of operations produce a rectangle across relevant wires
+        and a correct label text."""
 
         with QuantumTape() as tape:
             qml.apply(op)
@@ -380,7 +380,7 @@ class TestGeneralOperations:
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
-        """Check decimals affects text strings when applicable"""
+        """Check that the decimals argument affects text strings when applicable."""
 
         with QuantumTape() as tape:
             qml.apply(op)
@@ -398,7 +398,7 @@ class TestMeasurements:
     """Tests measurements are drawn correctly"""
 
     def test_expval(self):
-        """Test expval produces measure boxes"""
+        """Test expval produces measure boxes."""
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliX(0))
@@ -451,7 +451,8 @@ class TestMeasurements:
 
 
     def test_multiple_measurements(self):
-        """Assert only max one measurement box per wire"""
+        """Assert that a maximum of one measurement box per wire is produced even
+        when we have multiple measurements."""
 
         with QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
@@ -470,7 +471,7 @@ class TestLayering:
     """Tests operations are placed into layers correctly."""
 
     def test_single_layer_multiple_wires(self):
-        """Tests positions when mulitple gates all in the same layer"""
+        """Tests positions when multiple gates are all in the same layer."""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
@@ -479,7 +480,7 @@ class TestLayering:
 
         _, ax = draw_mpl(tape)
 
-        # may enter same layer in any order
+        # may enter the same layer in any order
         # there check just exists in layer
         box_coords = [p.get_xy() for p in ax.patches]
         for wire in range(3):
@@ -489,7 +490,7 @@ class TestLayering:
             assert t.get_text() == "X"
 
     def test_three_layers_one_wire(self):
-        """Tests positions when multiple gates all on the same wire"""
+        """Tests the positions when multiple gates are all on the same wire."""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
@@ -505,7 +506,7 @@ class TestLayering:
             assert t.get_text() == "X"
 
     def test_blocking_IsingXX(self):
-        """Tests positions when multiwire gate blocking another on its empty wire"""
+        """Tests the position of layers when a multiwire gate is blocking another gate on its empty wire."""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
