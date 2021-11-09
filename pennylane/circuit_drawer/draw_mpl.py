@@ -31,15 +31,19 @@ from .utils import convert_wire_order
 # create a private method here and add it to the ``special_cases`` dictionary
 # These methods should accept arguments in the order of ``drawer, layer, mapped_wires, op``
 
-def _add_swap(drawer, layer, mapped_wires, *args):
+# pylint: disable=unused-argument
+def _add_swap(drawer, layer, mapped_wires, op):
     drawer.SWAP(layer, mapped_wires)
 
 
-def _add_cswap(drawer, layer, mapped_wires, *args):
+# pylint: disable=unused-argument
+def _add_cswap(drawer, layer, mapped_wires, op):
     drawer.ctrl(layer, wires=mapped_wires[0], wires_target=mapped_wires[1:])
     drawer.SWAP(layer, wires=mapped_wires[1:])
 
-def _add_cx(drawer, layer, mapped_wires, *args):
+
+# pylint: disable=unused-argument
+def _add_cx(drawer, layer, mapped_wires, op):
     drawer.CNOT(layer, mapped_wires)
 
 
@@ -50,7 +54,9 @@ def _add_multicontrolledx(drawer, layer, mapped_wires, op):
     # pylint: disable=protected-access
     drawer._target_x(layer, mapped_wires[-1])
 
-def _add_cz(drawer, layer, mapped_wires, *args):
+
+# pylint: disable=unused-argument
+def _add_cz(drawer, layer, mapped_wires, op):
     drawer.ctrl(layer, mapped_wires)
 
 
