@@ -484,8 +484,7 @@ class TestDot:
         def cost(t1, t2):
             return fn.dot(t1, t2)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch([t1, t2])
+        with tf.GradientTape() as tape:
             res = cost(t1, t2)
 
         assert fn.allequal(res, [20, 46])
@@ -1406,8 +1405,7 @@ class TestCovMatrix:
         weights = np.array([0.1, 0.2, 0.3])
         weights_t = tf.Variable(weights)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(weights_t)
+        with tf.GradientTape() as tape:
             probs = circuit(weights_t)
             cov = fn.cov_matrix(probs, self.obs_list)
             loss = cov[0, 1]
@@ -1696,7 +1694,7 @@ class TestGetTrainable:
         assert res == {1}
 
         # Watching can be set manually
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
+        with tf.GradientTape() as tape:
             tape.watch([values[2]])
             res = qml.math.get_trainable_indices(values)
 
