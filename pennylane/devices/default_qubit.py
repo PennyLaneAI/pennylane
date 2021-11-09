@@ -630,18 +630,12 @@ class DefaultQubit(QubitDevice):
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
-        if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
+        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        norm_error_message = "Sum of amplitudes-squared does not equal one."
-        if qml.math.get_interface(state) != "jax":
+        if not qml.math.is_abstract(state):
             if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError(norm_error_message)
-        else:
-            # Case for jax without jit, full_lower is an attribute for abstract tracers
-            if not hasattr(qml.math.linalg.norm(state, ord=2), "full_lower"):
-                if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                    raise ValueError(norm_error_message)
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state

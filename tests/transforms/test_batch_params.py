@@ -41,7 +41,7 @@ def test_simple_circuit(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, x, weights)
-    assert res.shape == (batch_size, 1, 4)
+    assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
 
 
@@ -61,7 +61,7 @@ def test_angle_embedding(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data)
-    assert res.shape == (batch_size, 1, 4)
+    assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
 
 
@@ -244,7 +244,7 @@ def test_all_operations(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(x, weights)
-    assert res.shape == (batch_size, 1, 4)
+    assert res.shape == (batch_size, 4)
     assert len(spy.call_args[0][0]) == batch_size
 
 
