@@ -20,6 +20,7 @@ from scipy.linalg import block_diag
 
 import pennylane as qml
 from gate_data import Y, Z
+from pennylane.transforms.metric_tensor import _get_aux_wire
 
 
 class TestMetricTensor:
@@ -1116,6 +1117,30 @@ def test_no_error_missing_aux_wire_not_used():
     qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
+
+
+def aux_wire_ansatz_0(x, y):
+    qml.RX(x, wires=0)
+    qml.RY(x, wires=2)
+
+
+def aux_wire_ansatz_1(x, y):
+    qml.RX(x, wires=0)
+    qml.RY(x, wires=1)
+
+
+@pytest.mark.parametrize("aux_wire", [None, "aux", 3])
+@pytest.mark.parametrize("ansatz", [aux_wire_ansatz_0, aux_wire_ansatz_1])
+def test_get_aux_wire(aux_wire, ansatz):
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.tape.JacobianTape() as tape:
+        ansatz(x, y)
+    out = _get_aux_wire(aux_wire, tape)
+
+    if aux_wire is not None:
+        assert out == aux_wire
+    else:
+        assert out == (1 if 1 not in tape.wires else 2)
 
 
 class TestDeprecatedQNodeMethod:
