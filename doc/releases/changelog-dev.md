@@ -3,6 +3,13 @@
 # Release 0.20.0-dev (development release)
 
 <h3>New features since last release</h3>
+* A thermal relaxation channel is added to the Noisy channels. The channel description can be
+  found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
+  [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
+
+* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
+  returns the default empty wires object.
+  [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
 
 * A `lru_cache` decorated function for computing generalized parameter shift rules for generators'
   whose eigenvalue frequency spectrum is known is available as `qml.gradients.get_shift_rule`.
@@ -69,8 +76,10 @@
   and 2) the eigenvalue frequency spectrum is correct, since these checks become
   prohibitively expensive for large Hamiltonians.
 
+<h3>Documentation</h3>
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Robert A. Lang, Cedric Lin, David Wierichs.
+Josh Izaac, Robert A. Lang, Christina Lee, Cedric Lin, Alejandro Montanez, David Wierichs.
