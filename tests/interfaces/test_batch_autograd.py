@@ -744,7 +744,7 @@ class TestHigherOrderDerivatives:
             np.array([-2.0, 0], requires_grad=True),
         ],
     )
-    def test_parameter_shift_hessian(self, params, tol):
+    def test_parameter_shift_hessian(self, params, tol, recwarn):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -786,7 +786,11 @@ class TestHigherOrderDerivatives:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_adjoint_hessian(self, tol):
+        # Check that no deprecation warnigns are emitted due to trainable
+        # parameters with the Autograd interface
+        assert len(recwarn) == 0
+
+    def test_adjoint_hessian(self, tol, recwarn):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -810,6 +814,10 @@ class TestHigherOrderDerivatives:
             res = qml.jacobian(qml.grad(cost_fn))(params)
 
         assert np.allclose(res, np.zeros([2, 2]), atol=tol, rtol=0)
+
+        # Check that no additional deprecation warnigns are emitted due to trainable
+        # parameters with the Autograd interface
+        assert len(recwarn) == 0
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order

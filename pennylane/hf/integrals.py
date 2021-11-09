@@ -48,7 +48,7 @@ def primitive_norm(l, alpha):
 
     >>> l = (0, 0, 0)
     >>> alpha = np.array([3.425250914])
-    >>> n = gaussian_norm(l, alpha)
+    >>> n = primitive_norm(l, alpha)
     >>> print(n)
     array([1.79444183])
     """
@@ -240,7 +240,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     **Example**
 
     >>> la, lb = (0, 0, 0), (0, 0, 0)
-    >>> ra, rb = np.array(([0., 0., 0.]), np.array(([0., 0., 0.])
+    >>> ra, rb = np.array([0., 0., 0.]), np.array([0., 0., 0.])
     >>> alpha = np.array([np.pi/2])
     >>> beta = np.array([np.pi/2])
     >>> o = gaussian_overlap(la, lb, ra, rb, alpha, beta)
@@ -268,7 +268,7 @@ def generate_overlap(basis_a, basis_b):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = Molecule(symbols, geometry)
+    >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> args = []
     >>> generate_overlap(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
@@ -372,7 +372,8 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     **Example**
 
     >>> la, lb = (0, 0, 0), (0, 0, 0)
-    >>> ra, rb = np.array(([0., 0., 0.]), np.array(([0., 0., 0.])
+    >>> ra = np.array([0., 0., 0.])
+    >>> rb = rb = np.array([0., 0., 0.])
     >>> alpha = np.array([np.pi/2])
     >>> beta = np.array([np.pi/2])
     >>> t = gaussian_kinetic(la, lb, ra, rb, alpha, beta)
@@ -425,7 +426,7 @@ def generate_kinetic(basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
     >>> generate_kinetic(mol.basis_set[0], mol.basis_set[1])(*args)
     0.38325367405312843
@@ -633,7 +634,7 @@ def generate_attraction(r, basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
@@ -783,7 +784,7 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
