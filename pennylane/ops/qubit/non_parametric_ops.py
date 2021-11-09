@@ -30,7 +30,7 @@ INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 class Barrier(Operation):
     r"""Barrier(wires)
-    The Barrier operator
+    The Barrier operator, separates the compilation process into blocks or is used as a visual tool.
 
     **Details:**
 
@@ -38,6 +38,7 @@ class Barrier(Operation):
     * Number of parameters: 0
 
     Args:
+        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
@@ -51,6 +52,7 @@ class Barrier(Operation):
     par_domain = None
 
     def decomposition(self, wires):
+        wires = wires
         if self.only_visual:
             decomp_ops = []
         else:
