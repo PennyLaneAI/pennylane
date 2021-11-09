@@ -21,21 +21,35 @@ try:
 except (ModuleNotFoundError, ImportError) as e:
     has_mpl = False
 
-def black_white_style():
-    """
-    This functions modifies ``plt.rcParams``.  It takes no arguments and returns
-    no outputs.
+
+def black_white_style(inverted=False):
+    """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
+
+    Args:
+        inverted (bool): If ``True``, plots white on black instead of black on white.
 
     The style can be reset with ``plt.style.use('default')``.
     """
 
     if not has_mpl:
-        raise ImportError("``black_white_style`` requires matplotlib."
-                "You can install matplotlib via \n\n   pip install matplotlib"
-            )
+        raise ImportError(
+            "``black_white_style`` requires matplotlib."
+            "You can install matplotlib via \n\n   pip install matplotlib"
+        )
 
-    plt.rcParams['patch.facecolor'] = 'white'
-    plt.rcParams['patch.edgecolor'] = 'black'
-    plt.rcParams['patch.linewidth'] = 2
-    plt.rcParams['patch.force_edgecolor'] = True
-    plt.rcParams['lines.color'] = 'black'
+    if inverted:
+        almost_black = "#151515"  # less harsh than full black
+        plt.rcParams["figure.facecolor"] = almost_black
+        plt.rcParams["axes.facecolor"] = almost_black
+        plt.rcParams["patch.edgecolor"] = "white"
+        plt.rcParams["patch.facecolor"] = almost_black
+        plt.rcParams["patch.force_edgecolor"] = True
+        plt.rcParams["lines.color"] = "white"
+        plt.rcParams["text.color"] = "white"
+    else:
+        plt.rcParams["patch.facecolor"] = "white"
+        plt.rcParams["patch.edgecolor"] = "black"
+        plt.rcParams["patch.linewidth"] = 2
+        plt.rcParams["patch.force_edgecolor"] = True
+        plt.rcParams["lines.color"] = "black"
+        plt.rcParams["text.color"] = "black"
