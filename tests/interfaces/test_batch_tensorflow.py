@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the TensorFlow interface"""
 import functools
-from _pytest.mark import param
 
 import numpy as np
 import pytest
