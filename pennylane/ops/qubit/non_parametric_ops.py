@@ -50,7 +50,7 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def decomposition(self):
+    def decomposition(self, wires):
         if self.only_visual:
             decomp_ops = []
         else:
