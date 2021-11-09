@@ -57,6 +57,7 @@ def test_get_unitary_matrix_multiple_ops():
     def testcircuit():
         qml.PauliX(wires="a")
         qml.S(wires="b")
+        qml.Barrier(wires=["a", "b", "c"])
         qml.Hadamard(wires="c")
         qml.CNOT(wires=["b", "c"])
 

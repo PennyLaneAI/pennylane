@@ -292,7 +292,7 @@ class TestSupportedGates:
             pytest.skip("Device does not support inverse operations.")
 
         assert hasattr(dev, "operations")
-        if operation in dev.operations and operation != "Barrier":
+        if operation in dev.operations:
 
             @qml.qnode(dev)
             def circuit():

@@ -59,6 +59,12 @@ class Barrier(Operation):
             raise NotImplementedError
         return decomp_ops
 
+    def _matrix(self, *params):
+        return np.identity(2 ** len(self.wires))
+
+    def adjoint(self):
+        return Barrier(wires=self.wires)
+
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
