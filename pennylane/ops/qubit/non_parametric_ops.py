@@ -30,7 +30,7 @@ INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 class Barrier(Operation):
     r"""Barrier(wires)
-    The Barrier operator, separates the compilation process into blocks or is used as a visual tool.
+    The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
 
     **Details:**
 
