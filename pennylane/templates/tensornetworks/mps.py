@@ -1,7 +1,6 @@
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
-import elementary_blocks
 
 def compute_indices_MPS(n_wires, loc):
     """
