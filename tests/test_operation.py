@@ -178,7 +178,7 @@ class TestOperation:
             return
 
     def test_barrier(self):
-        r"Test that the barrier influences compilation"
+        r"""Test that the barrier influences compilation."""
 
         def qfunc():
             qml.Hadamard(wires=0)
