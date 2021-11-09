@@ -17,6 +17,41 @@
   [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
   for more information and usage details.
 
+  As an example, consider the QNode
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(weights[2], wires=1)
+      return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+
+  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
+  ```
+
+  Then we can compute the (block) diagonal metric tensor as before, now using the
+  ``approx="block-diag"`` keyword:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
+  [[0.25       0.         0.        ]
+   [0.         0.24013262 0.        ]
+   [0.         0.         0.21846983]]
+  ```
+
+  Instead, we now can also compute the full metric tensor:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit)(weights)
+  [[ 0.25        0.         -0.23300977]
+   [ 0.          0.24013262  0.01763859]
+   [-0.23300977  0.01763859  0.21846983]]
+  ```
+
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be 
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
@@ -26,6 +61,18 @@
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 <h3>Breaking changes</h3>
+
+* The default behaviour of the `qml.metric_tensor` transform has been modified:
+  By default, the full metric tensor is computed, leading to higher cost than the previous
+  default of computing the block diagonal only. At the same time, the Hadamard tests for
+  the full metric tensor require an additional wire on the device, so that 
+
+  ```pycon
+  >>> qml.metric_tensor(some_qnode)(weights)
+  ```
+
+  will raise an error if the used device does not have an additional wire.
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
 
 <h3>Deprecations</h3>
 
