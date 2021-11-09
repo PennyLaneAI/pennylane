@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
-from collections.abc import Collection
 from functools import wraps
 from inspect import signature
 import warnings
@@ -33,10 +32,17 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None):
 
     Args:
         fun (callable): Univariate finite Fourier series to reconstruct.
+            It must have signature ``float -> float`` .
         num_frequency (int): Number of integer frequencies in ``fun``
-        x0 (float): Center with respect to which to reconstruct.
-        f0 (float): Value of ``fun`` at ``x0`` ; Providing ``f0`` saves one
-            evaluation of ``fun``
+            All integer frequencies below ``num_frequency`` are assumed
+            to be present in ``fun`` as well; if they are not, the output
+            is correct put the reconstruction could have been performed
+            with fewer evaluations of ``fun`` .
+        x0 (float): Center to which to shift the reconstruction.
+            The points at which ``fun`` is evaluated are *not* affected
+            by ``x0`` .
+        f0 (float): Value of ``fun`` at zero; Providing ``f0`` saves one
+            evaluation of ``fun``.
 
     Returns:
         callable: Reconstructed Fourier series with ``num_frequency`` frequencies.
@@ -51,16 +57,17 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None):
 
     shifts_pos = qml.math.arange(1, num_frequency + 1) / a
     shifts_neg = -shifts_pos[::-1]
-    x0 = qml.math.array(0.0) if x0 is None else x0
     f0 = fun(0.0) if f0 is None else f0
     evals = list(map(fun, shifts_neg)) + [f0] + list(map(fun, shifts_pos))
     shifts = qml.math.concatenate([shifts_neg, [0.0], shifts_pos])
 
+    x0 = qml.math.array(0.0) if x0 is None else x0
+
     def _reconstruction(x):
         """Univariate reconstruction based on equidistant shifts and Dirichlet kernels."""
-        x = x - x0
+        _x = x - x0 - shifts
         return qml.math.tensordot(
-            qml.math.sinc(a * (x - shifts)) / qml.math.sinc(b * (x - shifts)),
+            qml.math.sinc(a * _x) / qml.math.sinc(b * _x),
             evals,
             axes=[[0], [0]],
         )
@@ -79,19 +86,23 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     r"""Reconstruct a univariate (real-valued) Fourier series with given spectrum.
 
     Args:
-        fun (callable): Fourier series to reconstruct with signature ``float -> float``
-        spectrum (Collection): Frequency spectrum of the Fourier series; non-positive
-            frequencies are ignored
+        fun (callable): Univariate finite Fourier series to reconstruct.
+            It must have signature ``float -> float`` .
+        spectrum (Collection): Frequency spectrum of the Fourier series;
+            non-positive frequencies are ignored.
         shifts (Sequence): Shift angles at which to evaluate ``fun`` for the reconstruction
-            Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{min}]` if ``shifts=None``
-            where :math:`f_\text{min}` is the smallest frequency in ``spectrum``.
-        x0 (float): Center with respect to which to reconstruct.
-        f0 (float): Value of ``fun`` at ``x0`` . If :math:`0` is among the ``shifts``
+            Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{max}]`
+            if ``shifts=None`` , where :math:`f_\text{max}` is the biggest
+            frequency in ``spectrum``.
+        x0 (float): Center to which to shift the reconstruction.
+            The points at which ``fun`` is evaluated are *not* affected
+            by ``x0`` .
+        f0 (float): Value of ``fun`` at zero; If :math:`0` is among the ``shifts``
             and ``f0`` is provided, one evaluation of ``fun`` is saved.
 
     Returns:
-        callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum``,
-        as ``qml.numpy`` based function and coinciding with ``fun`` on :math:`2R+1` points.
+        callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
+        This function is a purely classical function. Furthermore, it is fully differentiable.
     """
     # pylint: disable=unused-argument
 
@@ -161,31 +172,51 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
     return _reconstruction
 
 
-def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
+def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
     r"""For inputs to reconstruct, determine how the given information yields
     function reconstruction tasks and collect them into a dictionary ``jobs``.
     Also determine whether the function at zero is needed.
 
     Args:
-        ids (dict or Collection or key): Indices for the QNode parameters with respect to which
-            the QNode should be reconstructed as a univariate function.
-            If a dictionary, ``ids`` contain the QNode argument names as keys and a ``Collection``
-            for each value, indicating the parameter index in the argument.
-            If a ``Collection``, all parameter indices of the given arguments are considered.
-            If a single key, ``ids`` is interpreted as a ``Collection`` with that key as only entry.
-            If ``None``, all keys of ``nums_frequency``/``spectra`` are considered.
-        spectra (dict[dict]): Frequency spectra per QNode parameter.
-            Ignored if ``nums_frequency!=None``.
-        shifts (dict[dict]): Shift angles for computing the reconstruction per
-            QNode parameter. Ignored if ``nums_frequency!=None``.
+        ids (dict or Sequence or str): Indices for the QNode parameters with respect to which
+            the QNode should be reconstructed as a univariate function, per QNode argument.
+            Each key of the dict, entry of the list, or the single ``str`` has to be the name
+            of an argument of ``qnode`` .
+            If a ``dict`` , the values of ``ids`` have to contain the parameter indices
+            for the respective array-valued QNode argument represented by the key.
+            If a ``list`` , the parameter indices are inferred from ``nums_frequency`` if
+            given or ``spectra`` else.
+            If ``None``, all keys present in ``nums_frequency`` / ``spectra`` are considered.
         nums_frequency (dict[dict]): Numbers of integer frequencies -- and biggest
-            frequency -- per QNode parameter. If the frequencies are not contiguous integers,
-            the argument ``spectra`` should be used. Takes precedence over ``spectra`` and
-            leads to usage of equidistant shifts.
+            frequency -- per QNode parameter. The keys have to be argument names of ``qnode``
+            and the inner dictionaries have to be mappings from parameter indices to the
+            respective integer number of frequencies. If the QNode frequencies are not contiguous
+            integers, the argument ``spectra`` should be used to save evaluations of ``qnode`` .
+            Takes precedence over ``spectra`` and leads to usage of equidistant shifts.
+        spectra (dict[dict]): Frequency spectra per QNode parameter.
+            The keys have to be argument names of ``qnode`` and the inner dictionaries have to
+            be mappings from parameter indices to the respective frequency spectrum for that
+            parameter. Ignored if ``nums_frequency!=None``.
+        shifts (dict[dict]): Shift angles for the reconstruction per QNode parameter.
+            The keys have to be argument names of ``qnode`` and the inner dictionaries have to
+            be mappings from parameter indices to the respective shift angles to be used for that
+            parameter. For :math:`R` non-zero frequencies, there must be :math:`2R+1` shifts
+            given. Ignored if ``nums_frequency!=None``.
         atol (float): Absolute tolerance used to analyze shifts lying close to 0.
 
     Returns:
-
+        dict[dict]: Indices for the QNode parameters with respect to which the QNode
+            will be reconstructed. Cast to the dictionary structure explained above.
+            If the input ``ids`` was a dictionary, it is returned unmodified.
+        callable: The reconstruction method to use, one out of two internal methods.
+        dict[dict[dict]]: Keyword arguments for the reconstruction method specifying
+            how to carry out the reconstruction. The outer-most keys are QNode argument
+            names, the middle keys are parameter indices like the inner keys of
+            ``nums_frequency`` or ``spectra`` and the inner-most dictionary contains the
+            keyword arguments, i.e. the keys are keyword argument names for the
+            reconstruction method
+        bool: Whether any of the reconstruction jobs will require the evaluation
+            of the function at the position of reconstruction itself.
     """
     # pylint: disable=too-many-branches
     if nums_frequency is None:
@@ -217,17 +248,26 @@ def _prepare_jobs(ids, spectra, shifts, nums_frequency, atol):
                 if _shifts is not None:
                     _shifts = _shifts.get(par_idx)
 
+                # Determine spectrum and number of frequencies, discounting for 0
                 _spectrum = spectra[arg_name][par_idx]
-                # Determine whether f0 is needed
+                _R = len(_spectrum) - 1
+                # Determine whether f0 is needed and whether the shifts have the correct shape
+                if _shifts is not None:
+                    need_f0 = True
+                    if len(_shifts) != 2 * _R + 1:
+                        raise ValueError(
+                            f"The number of provided shifts ({len(_shifts)}) does not fit to the "
+                            f"number of frequencies (2R+1={2*_R+1}) for parameter {par_idx} in "
+                            f"argument {arg_name}."
+                        )
                 if _shifts is None or any(qml.math.isclose(_shifts, 0.0, rtol=0, atol=atol)):
                     need_f0 = True
 
-                # Store job; f0 missing
-                if len(_spectrum) > 1:
+                # Store job
+                if _R > 0:
                     _jobs[par_idx] = {"shifts": _shifts, "spectrum": _spectrum}
                 else:
-                    # As we assume 0.0 to be in the spectrum, any spectrum with length 1
-                    # belongs to a constant function
+                    # _R=0 belongs to a constant function
                     _jobs[par_idx] = None
 
             jobs[arg_name] = _jobs
@@ -264,36 +304,175 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     Args:
         qnode (pennylane.QNode): Quantum node to be reconstructed, representing a
             circuit that outputs an expectation value.
-        ids (dict or list or key): Indices for the QNode parameters with respect to which
+        ids (dict or Sequence or str): Indices for the QNode parameters with respect to which
             the QNode should be reconstructed as a univariate function, per QNode argument.
-            Each key of the dict or entry of the list should be a valid key for
-            ``nums_frequency`` if it is provided or ``spectra`` otherwise.
-            Alternatively, a single valid key may be provided.
-            If ``None``, all keys of ``nums_frequency``/``spectra`` are considered.
+            Each key of the dict, entry of the list, or the single ``str`` has to be the name
+            of an argument of ``qnode`` .
+            If a ``dict`` , the values of ``ids`` have to contain the parameter indices
+            for the respective array-valued QNode argument represented by the key.
+            If a ``list`` , the parameter indices are inferred from ``nums_frequency`` if
+            given or ``spectra`` else.
+            If ``None``, all keys present in ``nums_frequency`` / ``spectra`` are considered.
         nums_frequency (dict[dict]): Numbers of integer frequencies -- and biggest
-            frequency -- per QNode parameter. If the frequencies are not contiguous integers,
-            the argument ``spectra`` should be used. Takes precedence over ``spectra`` and
-            leads to usage of equidistant shifts.
+            frequency -- per QNode parameter. The keys have to be argument names of ``qnode``
+            and the inner dictionaries have to be mappings from parameter indices to the
+            respective integer number of frequencies. If the QNode frequencies are not contiguous
+            integers, the argument ``spectra`` should be used to save evaluations of ``qnode`` .
+            Takes precedence over ``spectra`` and leads to usage of equidistant shifts.
         spectra (dict[dict]): Frequency spectra per QNode parameter.
-            Ignored if ``nums_frequency!=None``.
-        shifts (dict[dict]): Shift angles for computing the reconstruction per
-            QNode parameter. Ignored if ``nums_frequency!=None``.
+            The keys have to be argument names of ``qnode`` and the inner dictionaries have to
+            be mappings from parameter indices to the respective frequency spectrum for that
+            parameter. Ignored if ``nums_frequency!=None``.
+        shifts (dict[dict]): Shift angles for the reconstruction per QNode parameter.
+            The keys have to be argument names of ``qnode`` and the inner dictionaries have to
+            be mappings from parameter indices to the respective shift angles to be used for that
+            parameter. For :math:`R` non-zero frequencies, there must be :math:`2R+1` shifts
+            given. Ignored if ``nums_frequency!=None``.
+
     Returns:
         function: Function which accepts the same arguments as the QNode.
             When called, this function will return a dictionary of dictionaries,
-            formatted like ``nums_frequency`` or ``spectra``,
+            formatted like ``nums_frequency`` or ``spectra`` ,
             that contains the univariate reconstructions per QNode parameter.
 
     For each provided ``id`` in ``ids``, the QNode is restricted to varying the single QNode
-    parameter corresponding to the ``id``. This univariate function is then restricted
-    via a Fourier transform or Dirichlet kernels depending on the provided input.
+    parameter corresponding to the ``id`` . This univariate function is then reconstructed
+    via a Fourier transform or Dirichlet kernels, depending on the provided input.
     Either the ``spectra`` of the QNode with respect to its input parameter or the numbers
-    of frequencies, ``nums_frequency``, per parameter must be provided.
+    of frequencies, ``nums_frequency`` , per parameter must be provided.
+
+    **Usage Details**
+
+    *Input formatting*
+
+    As described briefly above, the essential inputs to ``reconstruct`` that provide information
+    about the QNode are given as dictionaries of dictionaries, where the outer keys reference
+    the argument names of ``qnode`` and the inner keys reference the parameter indices within
+    one array-valued QNode argument. For scalar-valued QNode parameters, the parameter index is
+    set to ``0`` by convention (also see the examples below).
+    This applies to ``nums_frequency`` , ``spectra`` , and ``shifts`` .
+
+    Note that the information provided in ``nums_frequency`` / ``spectra`` is essential for
+    the correctness of the reconstruction.
+
+    On the other hand, the input format for ``ids`` is flexible and allows a collection of
+    parameter indices for each QNode argument name (as a ``dict`` ), a collection of argument
+    names (as a ``list``, ``set``, ``tuple`` or similar), or a single argument name
+    (as a ``str`` ) to be defined. For ``ids=None`` , all argument names contained in
+    ``nums_frequency`` -- or ``spectra`` if ``nums_frequency`` is not used -- are considered.
+    For inputs that do not specify parameter indices per QNode argument name (all formats but
+    ``dict`` ), these parameter indices are inferred from ``nums_frequency`` / ``spectra`` .
+
+    *Reconstruction cost*
+
+    The reconstruction cost -- in terms of calls to ``qnode`` -- depend on the number of
+    frequencies given via ``nums_frequency`` or ``spectra`` . A univariate reconstruction
+    for :math:`R` frequencies takes :math:`2R+1` evaluations. If multiple univariate
+    reconstructions are performed at the same point with various numbers of frequencies
+    :math:`R_k` , the cost are :math:`1+2\sum_k R_k` if the shift :math:`0` is used in all
+    of them. This is in particular the case if ``nums_frequency`` or ``spectra`` with
+    ``shifts=None`` is used.
+
+    If the number of frequencies is too large or the given frequency spectrum contains
+    more than the spectrum of ``qnode`` , the reconstruction is performed suboptimally
+    but remains correct.
+    For integer-valued spectra with gaps, the equidistant reconstruction is thus suboptimal
+    and the non-equidistant version method be used.
+
+    *Numerical stability*
+
+    In general, the reconstruction with equidistant shifts for equidistant frequencies
+    (used if ``nums_frequency`` is provided) is more stable numerically than the more
+    general Fourier reconstruction (used if ``nums_frequency=None`` ).
+    If the system of equations to be solved in the Fourier transform is
+    ill-conditioned, a warning is raised as the output might become unstable.
+    Examples for this are shift values or frequencies that lie very close to each other.
+
+    **Examples**
+
+    Consider the following QNode:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, Y, f=1.0):
+            qml.RX(f*x, wires=0)
+            qml.RY(Y[0], wires=0)
+            qml.RY(Y[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(5*Y[1], wires=1)
+            return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+
+        x = 0.4
+        Y = np.array([1.9, -0.5])
+        f = 2.3
+
+        circuit_value = circuit(x, Y)
+
+    It has three variational parameters ``x`` (a scalar) and two entries of ``Y``
+    (an array-like) as well as a tunable frequency ``f`` for the ``qml.RX`` rotation.
+    A first reconstruction job could be with respect to the first entry of ``Y``,
+    which enters the circuit with a single integer frequency:
+
+    >>> nums_frequency = {"Y": {0: 1, 1: 6}}
+    >>> rec = qml.fourier.reconstruct(circuit, {"Y": [0]}, nums_frequency)(x, Y)
+    >>> rec
+    {'Y': {0: <function _reconstruct_equ.<locals>._reconstruction at 0x7f949627d790>}}
+    >>> recon_Y0 = rec["Y"][0]
+    >>> np.isclose(recon_Y0(Y[0]), circuit_value)
+    True
+    >>> np.isclose(recon_Y0(Y[0]+1.3), circuit(x, Y+np.eye(2)[0]*1.3)
+    True
+
+    We successfully reconstructed the dependence on ``Y[0]`` , keeping ``x`` and ``Y[1]``
+    at the values initialized above. Note that even though information about ``Y[1]`` is
+    contained in ``nums_frequency`` , ``ids`` determines which reconstructions are performed.
+    We may do the same for ``Y[1]`` , which enters the circuit with maximal frequency
+    :math:`1+5=4` . We will also track the number of executions needed:
+
+    >>> dev._num_executions = 0
+    >>> rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, nums_frequency)(x, Y)
+    >>> dev.num_executions
+    13
+
+    As expected, we required :math:`2R+1=2\cdot 6+1=13` circuit executions. However, not
+    all frequencies below :math:`f_\text{max}=6` are present in the circuit, so that
+    a reconstruction using knowledge of the spectrum will be cheaper:
+
+    >>> dev._num_executions = 0
+    >>> spectra = {"Y": {1: [0., 1., 4., 5., 6.]}}
+    >>> rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, None, spectra)(x, Y)
+    >>> dev.num_executions
+    9
+
+    If we want to reconstruct the dependence of ``circuit`` on ``x`` , we can not use
+    ``nums_frequency`` if ``f`` is not an integer. One could rescale ``x`` to obtain
+    the frequency :math:`1` again, or directly use ``spectra`` . We will combine this
+    with another reconstruction with respect to ``Y[0]`` :
+
+    >>> dev._num_executions = 0
+    >>> spectra = {"x": {0: [0., f]}, "Y": {0: [0., 1.]}}
+    >>> rec = qml.fourier.reconstruct(circuit, None, None, spectra)(x, Y, f=f)
+    >>> dev.num_executions
+    5
+    >>> recon_x = rec["x"][0]
+    >>> np.isclose(recon_x(x+0.5), circuit(x+0.5, Y, f=f)
+    True
+
+    Note that by convention, the parameter index for a scalar variable is ``0`` and
+    that the frequency :math:`0` always is included in the spectra. Furthermore, we
+    here skipped the input ``ids`` so that the reconstruction was performed for all
+    keys in ``spectra`` . While the reconstruction with a single non-zero frequency
+    costs three evaluations of ``circuit`` for each, ``x`` and ``Y[0]`` , carrying them
+    out at the same position allowed us to save one evaluation and reduce the number
+    of calls to :math:`5`.
     """
     # pylint: disable=cell-var-from-loop, unused-argument
 
     atol = 1e-8
-    ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, spectra, shifts, nums_frequency, atol)
+    ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
     arg_names = list(signature(qnode).parameters.keys())
 
     @wraps(qnode)
