@@ -52,7 +52,7 @@ class Barrier(Operation):
     par_domain = None
 
     def decomposition(self, wires):
-        wires = wires
+        _wires = wires
         if self.only_visual:
             decomp_ops = []
         else:
