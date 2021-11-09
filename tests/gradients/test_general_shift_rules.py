@@ -122,6 +122,7 @@ class TestGetShiftRule:
         assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
 
     def test_non_integer_frequency_default_shifts(self):
+        """Tests the correct four term shift rule is generated given non-integer frequencies."""
 
         frequencies = (1 / 3, 2 / 3)
         n_terms = 4
@@ -138,6 +139,8 @@ class TestGetShiftRule:
         assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
 
     def test_non_integer_frequency_custom_shifts(self):
+        """Tests the correct four term shift rule is generated given non-integer frequencies using
+        explicitly defined shifts."""
 
         frequencies = (1 / 3, 2 / 3, 4 / 3)
         custom_shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
@@ -155,3 +158,19 @@ class TestGetShiftRule:
         generated_terms = get_shift_rule(frequencies, custom_shifts)[0]
 
         assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+
+    def test_near_singular_warning(self):
+        """Tests a warning is raised if the determinant of the matrix to be inverted is near zero
+        for obtaining parameter shift rules for the non-equidistant frequency case."""
+
+        frequencies = (1, 2, 3, 4, 5, 67)
+
+        with pytest.warns(None) as warnings:
+            get_shift_rule(frequencies)
+
+        raised_warning = False
+        for warning in warnings:
+            if "Inverting matrix with near zero determinant" in str(warning):
+                raised_warning = True
+
+        assert raised_warning
