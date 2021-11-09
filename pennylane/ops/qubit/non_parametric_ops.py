@@ -64,7 +64,8 @@ class Barrier(Operation):
     def adjoint(self):
         return Barrier(wires=self.wires)
 
-
+    def label(self, decimals=None):
+        return "||"
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
     The Hadamard operator
