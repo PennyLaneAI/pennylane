@@ -197,8 +197,8 @@ class TestOperation:
         optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
 
         assert optimized_gates == 2
-
-        # check only_visual parameter
+    def test_barrier_only_visual(self):
+        r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
         def qfunc():
             qml.Hadamard(wires=0)
             qml.Barrier(only_visual=True, wires=0)
