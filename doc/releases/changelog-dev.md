@@ -36,6 +36,4 @@ This update reduces the total running time of the Python test-suite up to 12%.
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje
-
-Ali Asadi, Jalani Kanem, Christina Lee, Alejandro Montanez
+Guillermo Alonso-Linaje, Ali Asadi, Jalani Kanem, Christina Lee, Alejandro Montanez

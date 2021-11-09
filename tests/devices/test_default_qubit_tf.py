@@ -1201,8 +1201,7 @@ class TestPassthruIntegration:
             qml.Rot(x[0], x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(p)
+        with tf.GradientTape() as tape:
             res = circuit(p)
 
         expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
@@ -1235,8 +1234,7 @@ class TestPassthruIntegration:
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
         p_tf = tf.Variable(p)
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
-            tape.watch(p_tf)
+        with tf.GradientTape(persistent=True) as tape:
             res = circuit1(p_tf)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
@@ -1280,8 +1278,7 @@ class TestPassthruIntegration:
         b = tf.Variable(0.12)
 
         with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
-            tape.watch(b)
+            tape.watch([a, b])
             # get the probability of wire 1
             prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
@@ -1311,8 +1308,6 @@ class TestPassthruIntegration:
         b_tf = tf.Variable(b, dtype=tf.float64)
 
         with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a_tf)
-            tape.watch(b_tf)
             tape.watch([a_tf, b_tf])
             res = circuit(a_tf, b_tf)
 
@@ -1362,8 +1357,7 @@ class TestPassthruIntegration:
 
         params = tf.Variable([theta, phi, lam], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(params)
+        with tf.GradientTape() as tape:
             res = cost(params)
 
         # check that the result is correct
@@ -1398,8 +1392,7 @@ class TestPassthruIntegration:
 
         x = tf.Variable(0.3)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(x)
+        with tf.GradientTape() as tape:
             res = circuit(x)
 
         assert np.allclose(res, -tf.sin(x), atol=tol, rtol=0)
@@ -1521,8 +1514,7 @@ class TestHighLevelIntegration:
         def cost(weights):
             return tf.reduce_sum(qnodes(weights))
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(weights)
+        with tf.GradientTape() as tape:
             res = qnodes(weights)
 
         grad = tape.gradient(res, weights)

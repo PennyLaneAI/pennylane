@@ -626,7 +626,7 @@ class TestInterfaceDeviceIntegration:
         a = tf.Variable(self.a, dtype=tf.float64)
         b = tf.Variable(self.b, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch([a, b])
             res = circuit(a, b)
 
@@ -725,7 +725,7 @@ class TestHybridInterfaceDeviceIntegration:
 
         params = tf.Variable(self.p, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(params)
             res = cost(params)
 

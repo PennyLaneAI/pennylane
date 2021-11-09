@@ -557,7 +557,8 @@ class TestBatchTransformGradients:
         weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
         x = tf.Variable(0.543, dtype=tf.float64)
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
+            tape.watch([weights, x])
             res = self.my_transform(qnode, weights)(x)
 
         assert np.allclose(res, self.expval(x, weights))

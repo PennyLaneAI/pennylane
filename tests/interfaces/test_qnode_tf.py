@@ -207,7 +207,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(a)
             tape.watch(b)
             res = circuit(a, b)
@@ -220,7 +220,7 @@ class TestQNode:
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [a, b], experimental_use_pfor=False)
+        res = tape.jacobian(res, [a, b])
         expected = [[-tf.sin(a), tf.sin(a) * tf.sin(b)], [0, -tf.cos(a) * tf.cos(b)]]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -249,7 +249,7 @@ class TestQNode:
         circuit.to_tf(dtype=tf.float32)
         assert circuit.dtype is tf.float32
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(a)
             tape.watch(b)
             res = circuit(a, b)
@@ -261,7 +261,7 @@ class TestQNode:
         assert res.shape == (2,)
         assert res.dtype is tf.float32
 
-        res = tape.jacobian(res, [a, b], experimental_use_pfor=False)
+        res = tape.jacobian(res, [a, b])
         assert [r.dtype is tf.float32 for r in res]
 
     def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
@@ -285,7 +285,7 @@ class TestQNode:
             tape.watch(a)
             res = circuit(a)
 
-        tape.jacobian(res, a, experimental_use_pfor=False)
+        tape.jacobian(res, a)
 
         for args in spy.call_args_list:
             assert args[1]["order"] == 2
@@ -322,7 +322,7 @@ class TestQNode:
 
         spy = mocker.spy(JacobianTape, "numeric_pd")
 
-        jac = tape.jacobian(res, [a, b], experimental_use_pfor=False)
+        jac = tape.jacobian(res, [a, b])
         expected = [
             [-tf.sin(a), tf.sin(a) * tf.sin(b)],
             [0, -tf.cos(a) * tf.cos(b)],
@@ -347,7 +347,7 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         spy.call_args_list = []
-        jac = tape.jacobian(res, a, experimental_use_pfor=False)
+        jac = tape.jacobian(res, a)
         expected = [-tf.sin(a), tf.sin(a) * tf.sin(b)]
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
@@ -369,7 +369,7 @@ class TestQNode:
             qml.RX(z + z ** 2 + tf.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(a)
             tape.watch(c)
             res = circuit(a, b, c)
@@ -378,7 +378,7 @@ class TestQNode:
             assert circuit.qtape.trainable_params == {0, 2}
             assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
-        res = tape.jacobian(res, [a, b, c], experimental_use_pfor=False)
+        res = tape.jacobian(res, [a, b, c])
 
         assert isinstance(res[0], tf.Tensor)
         assert res[1] is None
@@ -421,7 +421,7 @@ class TestQNode:
             qml.RY(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(a)
             res = circuit(U, a)
 
@@ -430,7 +430,7 @@ class TestQNode:
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
-        res = tape.jacobian(res, a, experimental_use_pfor=False)
+        res = tape.jacobian(res, a)
         assert np.allclose(res, tf.sin(a), atol=tol, rtol=0)
 
     def test_differentiable_expand(self, dev_name, diff_method, tol):
@@ -458,7 +458,7 @@ class TestQNode:
             U3(p[0], p[1], p[2], wires=0)
             return qml.expval(qml.PauliX(0))
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(p)
             res = circuit(a, p)
 
@@ -471,7 +471,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, p, experimental_use_pfor=False)
+        res = tape.jacobian(res, p)
         expected = np.array(
             [
                 tf.cos(p[1]) * (tf.cos(a) * tf.cos(p[0]) - tf.sin(a) * tf.sin(p[0]) * tf.sin(p[2])),
@@ -502,7 +502,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0]), qml.probs(wires=[1])
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             res = circuit(x, y)
@@ -515,7 +515,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y], experimental_use_pfor=False)
+        res = tape.jacobian(res, [x, y])
         expected = np.array(
             [
                 [
@@ -547,7 +547,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(x)
             tape.watch(y)
             res = circuit(x, y)
@@ -561,7 +561,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = tape.jacobian(res, [x, y], experimental_use_pfor=False)
+        res = tape.jacobian(res, [x, y])
         expected = np.array(
             [
                 [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],

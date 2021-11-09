@@ -269,7 +269,7 @@ class TestEvalation:
         params = Variable([0.5643, -0.45])
         qc = qml.QNodeCollection([qnode1, qnode2])
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(params)
 
             if parallel:
@@ -284,7 +284,7 @@ class TestEvalation:
         # calculate the gradient of the QNodes individually using tf
         params = Variable([0.5643, -0.45])
 
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(params)
             cost = sum(qnode1(params) + qnode2(params))
             expected = tape.gradient(cost, params).numpy()

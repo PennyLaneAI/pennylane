@@ -386,7 +386,7 @@ class TestDifferentiable:
 
         with tf.GradientTape() as tape:
             res = group(coeffs, select=0)
-        grad = tape.jacobian(res, [coeffs])
+        grad = tf.function(tape.jacobian)(res, [coeffs])
         assert np.allclose(grad, pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol)
 
         with tf.GradientTape() as tape:
