@@ -76,29 +76,32 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
+    @tf.custom_gradient
+    def _execute(*parameters):  # pylint:disable=unused-argument
         # store all unwrapped parameters
         params_unwrapped.append(
             [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
         )
 
-    with qml.tape.Unwrap(*tapes, set_trainable=False):
-        # Forward pass: execute the tapes
-        res, jacs = execute_fn(tapes, **gradient_kwargs)
+        with qml.tape.Unwrap(*tapes, set_trainable=False):
+            # Forward pass: execute the tapes
+            res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-    for i, tape in enumerate(tapes):
-        # convert output to TensorFlow tensors
+        for i, tape in enumerate(tapes):
+            # convert output to TensorFlow tensors
 
-        if isinstance(res[i], np.ndarray):
-            # For backwards compatibility, we flatten ragged tape outputs
-            # when there is no sampling
-            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
-            res[i] = tf.convert_to_tensor(r)
+            if isinstance(res[i], np.ndarray):
+                # For backwards compatibility, we flatten ragged tape outputs
+                # when there is no sampling
+                r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+                res[i] = tf.convert_to_tensor(r)
 
-        elif isinstance(res[i], tuple):
-            res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
+            elif isinstance(res[i], tuple):
+                res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
 
-    @tf.custom_gradient
-    def _execute(*parameters):  # pylint:disable=unused-argument
+            else:
+                res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
+
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
@@ -171,4 +174,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
         return res, grad_fn
 
-    return _execute(*parameters)
+    if tf.executing_eagerly():
+        return _execute(*parameters)
+
+    return tf.py_function(func=_execute, inp=parameters, Tout=tf.float64)
