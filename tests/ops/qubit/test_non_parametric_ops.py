@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from gate_data import (
+    I,
     X,
     Y,
     Z,
@@ -43,6 +44,7 @@ from gate_data import (
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
+    (qml.Identity, I),
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
@@ -711,6 +713,7 @@ class TestMultiControlledX:
 
 
 label_data = [
+    (qml.Identity(0), "I", "I"),
     (qml.Hadamard(0), "H", "H"),
     (qml.PauliX(0), "X", "X"),
     (qml.PauliY(0), "Y", "Y"),
@@ -741,6 +744,7 @@ def test_label_method(op, label1, label2):
 
 
 control_data = [
+    (qml.Identity(0), Wires([])),
     (qml.Hadamard(0), Wires([])),
     (qml.PauliX(0), Wires([])),
     (qml.PauliY(0), Wires([])),
