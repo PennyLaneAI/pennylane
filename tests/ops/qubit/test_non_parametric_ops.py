@@ -430,8 +430,8 @@ class TestEigenval:
         res = op.eigvals
         assert np.allclose(res, exp)
 
-class TestBarrier:
 
+class TestBarrier:
     def test_use_barrier(self):
         r"""Test that the barrier influences compilation."""
 
@@ -508,7 +508,7 @@ class TestBarrier:
 
         def qfunc():
             qml.Hadamard(wires=0)
-            qml.Barrier(only_visual = True, wires=0)
+            qml.Barrier(only_visual=True, wires=0)
             qml.Barrier(wires=0)
             qml.Hadamard(wires=0)
 
@@ -519,6 +519,7 @@ class TestBarrier:
         gates = qml.specs(qnode)()["gate_sizes"][1]
 
         assert gates == 3
+
 
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""

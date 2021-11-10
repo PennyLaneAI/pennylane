@@ -21,11 +21,12 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
+
 
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
@@ -1123,6 +1124,7 @@ class MultiControlledX(Operation):
         ]
 
         return gates
+
 
 class Barrier(Operation):
     r"""Barrier(wires)
