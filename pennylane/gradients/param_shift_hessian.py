@@ -20,8 +20,40 @@ import numpy as np
 import pennylane as qml
 
 from .gradient_transform import gradient_transform
-from .parameter_shift import _gradient_analysis, _process_gradient_recipe
-from .finite_difference import generate_shifted_tapes
+from .parameter_shift import _gradient_analysis
+
+from itertools import product
+
+def generate_multishifted_tapes(tape, idx, shifts):
+    r"""Generate a list of tapes where the corresponding trainable parameter
+    indices have been shifted by the values given.
+
+    Args:
+        tape (.QuantumTape): input quantum tape
+        idx (list[int]): trainable parameter indices to shift the parameters of
+        shifts (list[list[float or int]]): nested list of shift values, each
+            list containing a value for each index
+
+    Returns:
+        list[QuantumTape]: List of quantum tapes. Each tape has multiple parameters
+            (indicated by ``idx``) shifted by the values of ``shifts``. The length
+            of the returned list of tapes will match the length of ``shifts``.
+    """
+    params = list(tape.get_parameters())
+    tapes = []
+
+    for shift in shifts:
+        new_params = params.copy()
+        shifted_tape = tape.copy(copy_operations=True)
+
+        for i, s in enumerate(shift):
+            new_params[idx[i]] = new_params[idx[i]] + qml.math.convert_like(s, new_params[idx[i]])
+
+        shifted_tape.set_parameters(new_params)
+        tapes.append(shifted_tape)
+
+    return tapes
+
 
 @gradient_transform
 def param_shift_hessian(tape, f0=None):
@@ -43,13 +75,16 @@ def param_shift_hessian(tape, f0=None):
     if not tape.trainable_params:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # for now assume all operations support the 2-term parameter shift rule
-    for idx, _ in enumerate(tape.trainable_params):
+    # the hessian for 2-term parameter-shift rule can be expressed as
+    recipe = [[ 0.25, [1, 1], [ np.pi/2,  np.pi/2]],
+              [-0.25, [1, 1], [-np.pi/2,  np.pi/2]],
+              [-0.25, [1, 1], [ np.pi/2, -np.pi/2]],
+              [ 0.25, [1, 1], [-np.pi/2, -np.pi/2]]]
+    coeffs = [0.25, -0.25, -0.25, 0.25]
+    shifts = [[np.pi/2, np.pi/2], [-np.pi/2, np.pi/2], [np.pi/2, -np.pi/2], [-np.pi/2, -np.pi/2]]
 
-        # the hessian for 2-term parameter-shift rule can be expressed as
-        recipe = [[0.5, 1, np.pi], [-0.5, 1, 0]]
-        recipe = _process_gradient_recipe(recipe)
-        coeffs, multipliers, shifts = recipe
+    # for now assume all operations support the 2-term parameter shift rule
+    for idx in product(range(len(tape.trainable_params)), repeat=2):
 
         if shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
@@ -66,7 +101,7 @@ def param_shift_hessian(tape, f0=None):
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
-        g_tapes = generate_shifted_tapes(tape, idx, shifts, multipliers)
+        g_tapes = generate_multishifted_tapes(tape, idx, shifts)
 
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))

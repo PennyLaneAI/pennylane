@@ -39,6 +39,8 @@ class TestParameterShiftHessian:
         jacobian = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
+        print(jacobian, '=?', hessian)
+
         assert np.allclose(jacobian, hessian)
 
     def test_2term_shift_rules2(self):
@@ -50,12 +52,14 @@ class TestParameterShiftHessian:
         def circuit(x):
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0,1])
-            return qml.probs(wires=0)
+            return qml.probs(wires=[0,1])
 
         x = np.array(0.1, requires_grad=True)
 
         jacobian = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        print(jacobian, '=?', hessian)
 
         assert np.allclose(jacobian, hessian)
 
@@ -70,6 +74,27 @@ class TestParameterShiftHessian:
             qml.RY(x[1], wires=0)
             qml.CNOT(wires=[0,1])
             return qml.expval(qml.PauliZ(1))
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        print(jacobian, '=?', hessian)
+
+        assert np.allclose(jacobian, hessian)
+
+    def test_2term_shift_rules4(self):
+        """Test that the correct hessian is calculated for two 2-term shift rule operators"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0,1])
+            return qml.probs(wires=1)
 
         x = np.array([0.1, 0.2], requires_grad=True)
 
