@@ -18,7 +18,6 @@ page in the developement guide.
 """
 
 
-
 import pytest
 from pytest_mock import mocker
 import pennylane as qml
@@ -47,12 +46,27 @@ with QuantumTape() as tape1:
     qml.PauliX(1.234)
 
 
-label_data = [({}, ["0", "a", "1.234"]), # default behaviour
-({'wire_order': [1.234, "a", 0]}, ["1.234", "a", "0"]), # provide standard wire order
-({'wire_order': ["a", 1.234]}, ["a", "1.234", "0"]), # wire order that doesn't include all active wires
-({'wire_order': ["nope", "not there", 3]}, ["0", "a", "1.234"]), # wire order includes unused wires
-({'wire_order': ["aux", 0, "a", 1.234], 'show_all_wires': True}, ["aux", "0", "a", ]) # show_all_wires=True
+label_data = [
+    ({}, ["0", "a", "1.234"]),  # default behaviour
+    ({"wire_order": [1.234, "a", 0]}, ["1.234", "a", "0"]),  # provide standard wire order
+    (
+        {"wire_order": ["a", 1.234]},
+        ["a", "1.234", "0"],
+    ),  # wire order that doesn't include all active wires
+    (
+        {"wire_order": ["nope", "not there", 3]},
+        ["0", "a", "1.234"],
+    ),  # wire order includes unused wires
+    (
+        {"wire_order": ["aux", 0, "a", 1.234], "show_all_wires": True},
+        [
+            "aux",
+            "0",
+            "a",
+        ],
+    ),  # show_all_wires=True
 ]
+
 
 class TestLabelling:
     """Test the labels produced by the circuit drawer for the wires."""
@@ -83,14 +97,14 @@ class TestWires:
     """Test that wire lines are produced correctly in different situations."""
 
     def test_empty_tape_wire_order(self):
-        """Test situation with empty tape but specified wires and show_all_wires 
+        """Test situation with empty tape but specified wires and show_all_wires
         still draws wires."""
 
         _, ax = draw_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
-            assert line.get_xdata() == (-1, 1) # from -1 to number of layers
+            assert line.get_xdata() == (-1, 1)  # from -1 to number of layers
             assert line.get_ydata() == (wire, wire)
 
         plt.close()
@@ -108,7 +122,7 @@ class TestWires:
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
-            assert line.get_xdata() == (-1, 1) # from -1 to number of layers
+            assert line.get_xdata() == (-1, 1)  # from -1 to number of layers
             assert line.get_ydata() == (wire, wire)
 
         plt.close()
@@ -124,7 +138,7 @@ class TestWires:
         _, ax = draw_mpl(tape)
 
         assert len(ax.lines) == 1
-        assert ax.lines[0].get_xdata() == (-1, 3) # from -1 to number of layers
+        assert ax.lines[0].get_xdata() == (-1, 3)  # from -1 to number of layers
         assert ax.lines[0].get_ydata() == (0, 0)
 
         plt.close()
@@ -167,16 +181,15 @@ class TestSpecialGates:
         dx = 0.2
         x_lines = ax.lines[3:]
         for line in x_lines:
-            assert line.get_xdata() == (layer-dx, layer+dx)
+            assert line.get_xdata() == (layer - dx, layer + dx)
 
         assert x_lines[0].get_ydata() == (-dx, dx)
         assert x_lines[1].get_ydata() == (dx, -dx)
 
-        assert x_lines[2].get_ydata() == (1-dx, 1+dx)
-        assert x_lines[3].get_ydata() == (1+dx, 1-dx)
+        assert x_lines[2].get_ydata() == (1 - dx, 1 + dx)
+        assert x_lines[3].get_ydata() == (1 + dx, 1 - dx)
 
         plt.close()
-
 
     def test_CSWAP(self):
         """Test CSWAP special call"""
@@ -191,21 +204,21 @@ class TestSpecialGates:
         assert len(ax.lines) == 9
 
         control_line = ax.lines[3]
-        assert control_line.get_data() == ((layer,layer), (0,2))
+        assert control_line.get_data() == ((layer, layer), (0, 2))
 
         # control circle
-        assert ax.patches[0].center == (layer,0)
+        assert ax.patches[0].center == (layer, 0)
 
         # SWAP components
         connecting_line = ax.lines[4]
-        assert connecting_line.get_data() == ((layer,layer), [1,2])
+        assert connecting_line.get_data() == ((layer, layer), [1, 2])
 
         x_lines = ax.lines[5:]
-        assert x_lines[0].get_data() == ((layer-0.2, layer+0.2), (0.8, 1.2))
-        assert x_lines[1].get_data() == ((layer-0.2, layer+0.2), (1.2, 0.8))
+        assert x_lines[0].get_data() == ((layer - 0.2, layer + 0.2), (0.8, 1.2))
+        assert x_lines[1].get_data() == ((layer - 0.2, layer + 0.2), (1.2, 0.8))
 
-        assert x_lines[2].get_data() == ((layer-0.2, layer+0.2), (1.8, 2.2))
-        assert x_lines[3].get_data() == ((layer-0.2, layer+0.2), (2.2, 1.8))
+        assert x_lines[2].get_data() == ((layer - 0.2, layer + 0.2), (1.8, 2.2))
+        assert x_lines[3].get_data() == ((layer - 0.2, layer + 0.2), (2.2, 1.8))
         plt.close()
 
     def test_CNOT(self):
@@ -218,11 +231,11 @@ class TestSpecialGates:
         layer = 0
 
         assert len(ax.patches) == 2
-        assert ax.patches[0].center == (layer,0)
-        assert ax.patches[1].center == (layer,1)
+        assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[1].center == (layer, 1)
 
         control_line = ax.lines[2]
-        assert control_line.get_data() == ((layer,layer), (0,1))
+        assert control_line.get_data() == ((layer, layer), (0, 1))
 
         assert len(ax.lines) == 5
         plt.close()
@@ -275,11 +288,11 @@ class TestSpecialGates:
             qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values="0101")
 
         _, ax = draw_mpl(tape)
-        
-        assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0) # white
-        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams['lines.color'])
+
+        assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0)  # white
+        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
         assert ax.patches[2].get_facecolor() == (1.0, 1.0, 1.0, 1.0)
-        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams['lines.color'])
+        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
 
         plt.close()
 
@@ -295,7 +308,7 @@ class TestSpecialGates:
         # two wires one control line
         assert len(ax.lines) == 3
 
-        assert ax.lines[2].get_data() == ((layer, layer), (0,1))
+        assert ax.lines[2].get_data() == ((layer, layer), (0, 1))
 
         # two control circles
         assert len(ax.patches) == 2
@@ -304,10 +317,13 @@ class TestSpecialGates:
 
         plt.close()
 
-controlled_data = [(qml.CY(wires=(0,1)), "Y"), 
-    (qml.CRX(1.2345, wires=(0,1)), "RX"),
-    (qml.CRot(1.2, 2.2, 3.3, wires=(0,1)), "Rot")
+
+controlled_data = [
+    (qml.CY(wires=(0, 1)), "Y"),
+    (qml.CRX(1.2345, wires=(0, 1)), "RX"),
+    (qml.CRot(1.2, 2.2, 3.3, wires=(0, 1)), "Rot"),
 ]
+
 
 class TestControlledGates:
     """Tests generic controlled gates"""
@@ -324,13 +340,13 @@ class TestControlledGates:
         layer = 0
 
         assert isinstance(ax.patches[0], mpl.patches.Circle)
-        assert ax.patches[0].center == (layer,0)
+        assert ax.patches[0].center == (layer, 0)
 
         control_line = ax.lines[2]
-        assert control_line.get_data() == ((layer,layer), (0,1))
+        assert control_line.get_data() == ((layer, layer), (0, 1))
 
         assert isinstance(ax.patches[1], mpl.patches.Rectangle)
-        assert ax.patches[1].get_xy() == (layer-0.4, 0.6)
+        assert ax.patches[1].get_xy() == (layer - 0.4, 0.6)
 
         # two wire labels, so [2] is box gate label
         assert ax.texts[2].get_text() == label
@@ -354,22 +370,25 @@ class TestControlledGates:
         assert ax.texts[2].get_text() == "RX\n(1.23)"
         plt.close()
 
-general_op_data = [qml.RX(1.234, wires=0),
+
+general_op_data = [
+    qml.RX(1.234, wires=0),
     qml.Hadamard(0),
     qml.S(wires=0),
-    qml.IsingXX(1.234, wires=(0,1)),
-    qml.U3(1.234,2.345,3.456, wires=0),
+    qml.IsingXX(1.234, wires=(0, 1)),
+    qml.U3(1.234, 2.345, 3.456, wires=0),
     # State Prep
-    qml.BasisState([0,1,0], wires=(0,1,2)),
+    qml.BasisState([0, 1, 0], wires=(0, 1, 2)),
     ### Templates
     qml.QFT(wires=range(3)),
-    qml.Permute([4,2,0,1,3], wires=(0,1,2,3,4)),
-    qml.GroverOperator(wires=(0,1,2,3,4,5)),
+    qml.Permute([4, 2, 0, 1, 3], wires=(0, 1, 2, 3, 4)),
+    qml.GroverOperator(wires=(0, 1, 2, 3, 4, 5)),
     ### Continuous Variable
     qml.Kerr(1.234, wires=0),
-    qml.Beamsplitter(1.234,2.345, wires=(0,1)),
-    qml.Rotation(1.234, wires=0)
+    qml.Beamsplitter(1.234, 2.345, wires=(0, 1)),
+    qml.Rotation(1.234, wires=0),
 ]
+
 
 class TestGeneralOperations:
     """Tests general operations."""
@@ -390,7 +409,7 @@ class TestGeneralOperations:
         assert isinstance(ax.patches[0], mpl.patches.Rectangle)
         assert ax.patches[0].get_xy() == (-0.4, -0.4)
         assert ax.patches[0].get_width() == 0.8
-        assert ax.patches[0].get_height() == num_wires-0.2
+        assert ax.patches[0].get_height() == num_wires - 0.2
 
         plt.close()
 
@@ -411,9 +430,10 @@ class TestGeneralOperations:
 
 measure_data = [
     ([qml.expval(qml.PauliX(0))], [0]),
-    ([qml.probs(wires=(0,1,2))], [0,1,2]),
-    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0) @ qml.PauliY(1)), qml.state()], [0,1])
-    ([qml.expval(qml.NumberOperator(wires=0))], [0])   
+    ([qml.probs(wires=(0, 1, 2))], [0, 1, 2]),
+    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0) @ qml.PauliY(1)), qml.state()], [0, 1])(
+        [qml.expval(qml.NumberOperator(wires=0))], [0]
+    ),
 ]
 
 
@@ -433,9 +453,9 @@ class TestMeasurements:
         assert len(ax.patches) == 3 * len(wires)
 
         for ii, w in enumerate(wires):
-            assert ax.patches[3*ii].get_xy() == (0.6, w-0.4) #rectangle
-            assert ax.patches[3*ii+1].center == (1, w+0.05) # arc
-            assert isinstance(ax.patches[2*ii+2], mpl.patches.FancyArrow) # fancy arrow
+            assert ax.patches[3 * ii].get_xy() == (0.6, w - 0.4)  # rectangle
+            assert ax.patches[3 * ii + 1].center == (1, w + 0.05)  # arc
+            assert isinstance(ax.patches[2 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
 
         plt.close()
 
@@ -447,14 +467,14 @@ class TestMeasurements:
 
         _, ax = draw_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
 
-        assert len(ax.patches) == 9 # three measure boxes with 3 patches each
+        assert len(ax.patches) == 9  # three measure boxes with 3 patches each
 
         assert all(isinstance(box, mpl.patches.Rectangle) for box in ax.patches[::3])
         assert all(isinstance(arc, mpl.patches.Arc) for arc in ax.patches[1::3])
         assert all(isinstance(arrow, mpl.patches.FancyArrow) for arrow in ax.patches[2::3])
 
         for layer, box in enumerate(ax.patches[::3]):
-            assert box.get_xy() == (0.6, layer-0.4)
+            assert box.get_xy() == (0.6, layer - 0.4)
 
 
 class TestLayering:
@@ -476,7 +496,7 @@ class TestLayering:
         # independent of order
         box_coords = [p.get_xy() for p in ax.patches]
         for wire in range(3):
-            assert (-0.4, wire-0.4) in box_coords
+            assert (-0.4, wire - 0.4) in box_coords
 
         for t in ax.texts[3:]:
             assert t.get_text() == "X"
@@ -492,7 +512,7 @@ class TestLayering:
         _, ax = draw_mpl(tape)
 
         for layer, box in enumerate(ax.patches):
-            assert box.get_xy() == (layer-0.4, -0.4)
+            assert box.get_xy() == (layer - 0.4, -0.4)
 
         for t in ax.texts[1:]:
             assert t.get_text() == "X"
@@ -507,9 +527,9 @@ class TestLayering:
 
         _, ax = draw_mpl(tape, wire_order=[0, 1, 2])
 
-        assert ax.patches[0].get_xy() == (-0.4, -0.4) # layer=0, wire=0
-        assert ax.patches[1].get_xy() == (0.6, -0.4) # layer=1, wire=0
-        assert ax.patches[2].get_xy() == (1.6, 0.6) # layer=2, wire=1
+        assert ax.patches[0].get_xy() == (-0.4, -0.4)  # layer=0, wire=0
+        assert ax.patches[1].get_xy() == (0.6, -0.4)  # layer=1, wire=0
+        assert ax.patches[2].get_xy() == (1.6, 0.6)  # layer=2, wire=1
 
         assert ax.texts[3].get_text() == "X"
         assert ax.texts[4].get_text() == "IsingXX"
