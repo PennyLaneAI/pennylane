@@ -31,10 +31,12 @@
     def circuit():
     ```
 
-  - Arbitrary :math:`n`-th order derivatives are supported on hardware using
-    gradient transforms such as the parameter-shift rule. To specify that an :math:`n`-th
-    order derivative of a QNode will be computed, the `max_diff` argument should be set.
-    By default, this is set to 1 (first-order derivatives only).
+  - Arbitrary :math:`n`-th order derivatives are supported on hardware using gradient transforms
+    such as the parameter-shift rule. To specify that an :math:`n`-th order derivative of a QNode
+    will be computed, the `max_diff` argument should be set. By default, this is set to 1
+    (first-order derivatives only). Increasing this value allows for higher order derivatives to be
+    extracted, at the cost of additional (classical) computational overhead during the backwards
+    pass.
 
   - When decomposing the circuit, the default decomposition strategy `expansion_strategy="gradient"`
     will prioritize decompositions that result in the smallest number of parametrized operations
