@@ -1251,9 +1251,7 @@ class TestDecomposition:
         omega = -5.43
 
         with pennylane.tape.OperationRecorder() as rec:
-            with qml.tape.stop_recording():
-                op = qml.Rot(phi, theta, omega, wires=0)
-            op.decomposition()
+            qml.Rot._decomposition(phi, theta, omega, wires=0)
 
         assert len(rec.queue) == 3
 
@@ -1272,9 +1270,7 @@ class TestDecomposition:
         phi = 0.432
 
         with pennylane.tape.OperationRecorder() as rec:
-            with qml.tape.stop_recording():
-                op = qml.CRX(phi, wires=[0, 1])
-            op.decomposition()
+            op = qml.CRX._decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
 
@@ -1327,9 +1323,7 @@ class TestDecomposition:
         operation_wires = [0, 1]
 
         with pennylane.tape.OperationRecorder() as rec:
-            with qml.tape.stop_recording():
-                op = qml.CRY(phi, wires=operation_wires)
-            op.decomposition()
+            qml.CRY._decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
 

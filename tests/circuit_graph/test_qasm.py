@@ -133,9 +133,7 @@ class TestToQasmUnitTests:
         qasm1 = circuit1.to_openqasm(wires=Wires([0, 1]))
 
         with qml.tape.QuantumTape() as circuit2:
-            with qml.tape.stop_recording():
-                op = qml.Rot(0.3, 0.1, 0.2, wires=1)
-            op.decomposition()
+            qml.Rot._decomposition(0.3, 0.1, 0.2, wires=1)
 
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
 
@@ -167,9 +165,7 @@ class TestToQasmUnitTests:
         qasm1 = circuit1.to_openqasm()
 
         with qml.tape.QuantumTape() as circuit2:
-            with qml.tape.stop_recording():
-                op = qml.QubitStateVector(psi, wires=[0, 1])
-            op.decomposition()
+            qml.QubitStateVector._decomposition(psi, wires=[0, 1])
 
         qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
 
@@ -205,9 +201,7 @@ class TestToQasmUnitTests:
         qasm1 = circuit1.to_openqasm()
 
         with qml.tape.QuantumTape() as circuit2:
-            with qml.tape.stop_recording():
-                op = qml.BasisState(basis_state, wires=[0, 1, 2, 3])
-            op.decomposition()
+            qml.BasisState._decomposition(basis_state, wires=[0, 1, 2, 3])
 
         qasm2 = circuit2.to_openqasm(wires=[0, 1, 2, 3])
 

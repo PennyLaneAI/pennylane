@@ -247,8 +247,8 @@ class PhaseShift(DiagonalOperation):
         return qml.math.stack([1, exp_part])
 
     @staticmethod
-    def _decomposition(params, wires):
-        decomp_ops = [RZ(params[0], wires=wires)]
+    def _decomposition(phi, wires):
+        decomp_ops = [RZ(phi, wires=wires)]
         return decomp_ops
 
     def adjoint(self):
@@ -319,8 +319,7 @@ class ControlledPhaseShift(DiagonalOperation):
         return qml.math.stack([1, 1, 1, exp_part])
 
     @staticmethod
-    def _decomposition(params, wires):
-        phi = params[0]
+    def _decomposition(phi, wires):
         decomp_ops = [
             qml.PhaseShift(phi / 2, wires=wires[0]),
             qml.CNOT(wires=wires),
@@ -410,8 +409,7 @@ class Rot(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def _decomposition(params, wires):
-        phi, theta, omega = params
+    def _decomposition(phi, theta, omega, wires):
         decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
@@ -513,12 +511,12 @@ class MultiRZ(DiagonalOperation):
         return self._eigvals(*self.parameters, len(self.wires))
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(theta, wires):
         with qml.tape.OperationRecorder() as rec:
             for i in range(len(wires) - 1, 0, -1):
                 qml.CNOT(wires=[wires[i], wires[i - 1]])
 
-            RZ(params[0], wires=wires[0])
+            RZ(theta, wires=wires[0])
 
             for i in range(len(wires) - 1):
                 qml.CNOT(wires=[wires[i + 1], wires[i]])
@@ -732,8 +730,8 @@ class PauliRot(Operation):
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
-    def _decomposition(params, wires):
-        theta, pauli_word = params
+    def _decomposition(theta, pauli_word, wires):
+        #theta, pauli_word = params
 
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
@@ -848,8 +846,7 @@ class CRX(Operation):
         )
 
     @staticmethod
-    def _decomposition(params, wires):
-        theta = params[0]
+    def _decomposition(theta, wires):
         decomp_ops = [
             RZ(np.pi / 2, wires=wires[1]),
             RY(theta / 2, wires=wires[1]),
@@ -935,8 +932,7 @@ class CRY(Operation):
         )
 
     @staticmethod
-    def _decomposition(params, wires):
-        theta = params[0]
+    def _decomposition(theta, wires):
         decomp_ops = [
             RY(theta / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -1031,8 +1027,7 @@ class CRZ(DiagonalOperation):
         return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
-    def _decomposition(params, wires):
-        lam = params[0]
+    def _decomposition(lam, wires):
         decomp_ops = [
             PhaseShift(lam / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -1134,8 +1129,7 @@ class CRot(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def _decomposition(params, wires):
-        phi, theta, omega = params
+    def _decomposition(phi, theta, omega, wires):
         decomp_ops = [
             RZ((phi - omega) / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -1198,8 +1192,8 @@ class U1(Operation):
         return qml.math.diag([1, exp_part])
 
     @staticmethod
-    def _decomposition(params, wires):
-        return [PhaseShift(params[0], wires=wires)]
+    def _decomposition(phi, wires):
+        return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self):
         return U1(-self.data[0], wires=self.wires)
@@ -1263,8 +1257,7 @@ class U2(Operation):
         return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def _decomposition(params, wires):
-        phi, lam = params
+    def _decomposition(phi, lam, wires):
         decomp_ops = [
             Rot(lam, np.pi / 2, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
@@ -1346,8 +1339,7 @@ class U3(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def _decomposition(params, wires):
-        theta, phi, lam = params
+    def _decomposition(theta, phi, lam, wires):
         decomp_ops = [
             Rot(lam, theta, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
@@ -1411,10 +1403,10 @@ class IsingXX(Operation):
         return mat
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(phi, wires):
         decomp_ops = [
             qml.CNOT(wires=wires),
-            RX(params[0], wires=[wires[0]]),
+            RX(phi, wires=[wires[0]]),
             qml.CNOT(wires=wires),
         ]
         return decomp_ops
@@ -1456,10 +1448,10 @@ class IsingYY(Operation):
     ]
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(phi, wires):
         return [
             qml.CY(wires=wires),
-            qml.RY(params[0], wires=[wires[0]]),
+            qml.RY(phi, wires=[wires[0]]),
             qml.CY(wires=wires),
         ]
 
@@ -1515,10 +1507,10 @@ class IsingZZ(Operation):
     ]
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(phi, wires):
         return [
             qml.CNOT(wires=wires),
-            qml.RZ(params[0], wires=[wires[1]]),
+            qml.RZ(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
         ]
 

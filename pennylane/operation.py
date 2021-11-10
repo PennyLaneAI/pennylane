@@ -552,7 +552,7 @@ class Operator(abc.ABC):
         """
         if self.num_params == 0:
             return self._decomposition(self.wires)
-        return self._decomposition(self.parameters, self.wires)
+        return self._decomposition(*self.parameters, wires=self.wires)
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""

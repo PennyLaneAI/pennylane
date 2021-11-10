@@ -99,10 +99,10 @@ class SingleExcitation(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(theta, wires):
         decomp_ops = [
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(params[0], wires=[wires[1], wires[0]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
@@ -167,8 +167,7 @@ class SingleExcitationMinus(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def _decomposition(params, wires):
-        theta = params[0]
+    def _decomposition(theta, wires):
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
@@ -242,8 +241,7 @@ class SingleExcitationPlus(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def _decomposition(params, wires):
-        theta = params[0]
+    def _decomposition(theta, wires):
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
@@ -337,9 +335,8 @@ class DoubleExcitation(Operation):
         return mat
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(theta, wires):
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
-        theta = params[0]
         decomp_ops = [
             qml.CNOT(wires=[wires[2], wires[3]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
@@ -640,9 +637,8 @@ class OrbitalRotation(Operation):
         return U
 
     @staticmethod
-    def _decomposition(params, wires):
+    def _decomposition(phi, wires):
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
-        phi = params[0]
         decomp_ops = [
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
