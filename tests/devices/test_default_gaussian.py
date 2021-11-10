@@ -186,7 +186,9 @@ class TestGates:
         out_cov_mat = O @ inp_cov_mat @ O.T
 
         assert np.allclose(out_means, inp_means, atol=tol)
-        assert np.allclose(out_cov_mat, inp_cov_mat, atol=tol)  # Identity op shouldnt change means or cov mat
+        assert np.allclose(
+            out_cov_mat, inp_cov_mat, atol=tol
+        )  # Identity op shouldn't change means or cov mat
 
     def test_rotation(self, tol):
         """Test the Fourier transform of a displaced state."""
