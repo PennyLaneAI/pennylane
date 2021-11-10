@@ -299,10 +299,12 @@ class batch_transform:
                 gradient_fn = None
 
             elif gradient_fn in ("best", "parameter-shift"):
-                gradient_fn = qml.gradients.param_shift
+                # TODO: remove when the old QNode is removed
+                gradient_fn = qml.gradients.param_shift  # pragma: no cover
 
             elif gradient_fn == "finite-diff":
-                gradient_fn = qml.gradients.finite_diff
+                # TODO: remove when the old QNode is removed
+                gradient_fn = qml.gradients.finite_diff  # pragma: no cover
 
             res = qml.execute(
                 tapes,
