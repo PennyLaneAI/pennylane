@@ -39,7 +39,7 @@ class TestParameterShiftHessian:
         jacobian = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print(jacobian, '=?', hessian)
+        print('\n', jacobian, '=?', hessian)
 
         assert np.allclose(jacobian, hessian)
 
@@ -59,7 +59,7 @@ class TestParameterShiftHessian:
         jacobian = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print(jacobian, '=?', hessian)
+        print('\n', jacobian, '\n\t=?\n', hessian)
 
         assert np.allclose(jacobian, hessian)
 
@@ -80,7 +80,7 @@ class TestParameterShiftHessian:
         jacobian = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print(jacobian, '=?', hessian)
+        print('\n', jacobian, '\n\t=?\n', hessian)
 
         assert np.allclose(jacobian, hessian)
 
@@ -101,7 +101,7 @@ class TestParameterShiftHessian:
         jacobian = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print(jacobian, '=?', hessian)
+        print('\n', jacobian, '\n\t=?\n', hessian)
 
         assert np.allclose(jacobian, hessian)
 
@@ -125,6 +125,6 @@ class TestParameterShiftHessian:
             qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals['executions'] - hessian_qruns
 
-            print(hessian_qruns, '<?', jacobian_qruns)
+            print('\n', hessian_qruns, '<?', jacobian_qruns)
 
             assert hessian_qruns < jacobian_qruns
