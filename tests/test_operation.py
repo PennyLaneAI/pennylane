@@ -177,46 +177,6 @@ class TestOperation:
         if n == 0:
             return
 
-    def test_barrier(self):
-        r"""Test that the barrier influences compilation."""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
-
-        assert gates == 3
-
-        optimized_qfunc = qml.compile()(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
-
-        assert optimized_gates == 2
-
-    def test_barrier_only_visual(self):
-        r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier(only_visual=True, wires=0)
-            qml.Hadamard(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
-
-        optimized_qfunc = qml.compile()(qfunc)
-        optimized_qnode = qml.QNode(optimized_qfunc, dev)
-        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
-
-        assert optimized_gates == 0
-
     def test_controlled_qubit_unitary_init(self):
         """Test for the init of ControlledQubitUnitary"""
         control_wires = [3, 2]

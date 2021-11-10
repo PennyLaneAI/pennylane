@@ -21,51 +21,12 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, AllWires, DiagonalOperation, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
-
-class Barrier(Operation):
-    r"""Barrier(wires)
-    The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
-
-    **Details:**
-
-    * Number of wires: AnyWires
-    * Number of parameters: 0
-
-    Args:
-        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
-        wires (Sequence[int] or int): the wires the operation acts on
-    """
-    num_params = 0
-    num_wires = AnyWires
-    par_domain = None
-
-    def __init__(self, only_visual=False, *params, wires=None, do_queue=True, id=None):
-
-        self.only_visual = only_visual
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-
-    def decomposition(self, wires):
-        _wires = wires
-        if self.only_visual:
-            decomp_ops = []
-        else:
-            raise NotImplementedError
-        return decomp_ops
-
-    def _matrix(self, *params):
-        return np.identity(2 ** len(self.wires))
-
-    def adjoint(self):
-        return Barrier(wires=self.wires)
-
-    def label(self, decimals=None):
-        return "||"
 class Hadamard(Observable, Operation):
     r"""Hadamard(wires)
     The Hadamard operator
@@ -1162,3 +1123,42 @@ class MultiControlledX(Operation):
         ]
 
         return gates
+
+class Barrier(Operation):
+    r"""Barrier(wires)
+    The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
+
+    def __init__(self, only_visual=False, *params, wires=None, do_queue=True, id=None):
+
+        self.only_visual = only_visual
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
+
+    def decomposition(self, wires):
+        _wires = wires
+        if self.only_visual:
+            decomp_ops = []
+        else:
+            raise NotImplementedError
+        return decomp_ops
+
+    def _matrix(self):
+        return np.identity(2 ** len(self.wires))
+
+    def adjoint(self):
+        return Barrier(wires=self.wires)
+
+    def label(self, decimals=None):
+        return "||"
