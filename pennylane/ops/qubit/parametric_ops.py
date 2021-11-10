@@ -487,8 +487,7 @@ class MultiRZ(DiagonalOperation):
     def matrix(self):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
         if self.inverse:
-            # The matrix is diagonal, so there is no need to transpose
-            return qml.math.conj(self._matrix(*self.parameters, len(self.wires)))
+            qml.math.diag(1 / self._eigvals(*self.parameters, len(self.wires)))
 
         return self._matrix(*self.parameters, len(self.wires))
 
@@ -506,7 +505,7 @@ class MultiRZ(DiagonalOperation):
     def eigvals(self):
         # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
         if self.inverse:
-            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
+            return 1 / self._eigvals(*self.parameters, len(self.wires))
 
         return self._eigvals(*self.parameters, len(self.wires))
 
