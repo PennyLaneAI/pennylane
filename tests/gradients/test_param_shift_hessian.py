@@ -1,0 +1,105 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for the gradients.param_shift_hessian module."""
+
+from autograd.differential_operators import jacobian
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.gradients import param_shift_hessian
+from pennylane.ops.qubit.non_parametric_ops import PauliZ
+
+
+class TestParameterShiftHessian:
+    """Tests for the param_shift_hessian method"""
+
+    def test_2term_shift_rules1(self):
+        """Test that the correct hessian is calculated for a single RX operator"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0,1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.1, requires_grad=True)
+
+        jacobian = qml.jacobian(qml.grad(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        assert np.allclose(jacobian, hessian)
+
+    def test_2term_shift_rules2(self):
+        """Test that the correct hessian is calculated for a single RY operator"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0,1])
+            return qml.probs(wires=0)
+
+        x = np.array(0.1, requires_grad=True)
+
+        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        assert np.allclose(jacobian, hessian)
+
+    def test_2term_shift_rules3(self):
+        """Test that the correct hessian is calculated for two 2-term shift rule operators"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0,1])
+            return qml.expval(qml.PauliZ(1))
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        print(jacobian, '=?', hessian)
+
+        assert np.allclose(jacobian, hessian)
+
+    def test_less_quantum_invokations(self):
+        """Test that the hessian invokes less hardware executions than double differentiation"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0,1])
+            return qml.expval(qml.PauliZ(1))
+
+        x = np.array(0.1, requires_grad=True)
+
+        with qml.Tracker(dev) as tracker:
+
+            qml.gradients.param_shift_hessian(circuit)(x)
+            hessian_qruns = tracker.totals['executions']
+            qml.jacobian(qml.jacobian(circuit))(x)
+            jacobian_qruns = tracker.totals['executions'] - hessian_qruns
+
+            print(hessian_qruns, '<?', jacobian_qruns)
+
+            assert hessian_qruns < jacobian_qruns
