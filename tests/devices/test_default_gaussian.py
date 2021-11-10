@@ -174,6 +174,20 @@ class TestAuxillaryFunctions:
 class TestGates:
     """Gate tests."""
 
+    input_state = [vacuum_state(1), coherent_state(a=0.5)]
+
+    @pytest.mark.parametrize("inp_state", input_state)
+    def test_identity(self, inp_state, tol):
+        inp_cov_mat = inp_state[0]
+        inp_means = inp_state[1]
+
+        O = qml.Identity.identity_op()
+        out_means = O @ inp_means
+        out_cov_mat = O @ inp_cov_mat @ O.T
+
+        assert np.allclose(out_means, inp_means, atol=tol)
+        assert np.allclose(out_cov_mat, inp_cov_mat, atol=tol)  # Identity op shouldnt change means or cov mat
+
     def test_rotation(self, tol):
         """Test the Fourier transform of a displaced state."""
         # pylint: disable=invalid-unary-operand-type
