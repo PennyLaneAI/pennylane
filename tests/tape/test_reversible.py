@@ -143,6 +143,18 @@ class TestReversibleTape:
         with pytest.raises(ValueError, match="Probability is not supported"):
             tape.jacobian(dev)
 
+    def test_hamiltonian_error(self):
+        """Tests that an exception is raised when a Hamiltonian
+        is used with the ReversibleTape."""
+        with ReversibleTape() as tape:
+            qml.RX(0.542, wires=0)
+            qml.expval(1.0 * qml.PauliZ(0) @ qml.PauliX(1))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with pytest.raises(qml.QuantumFunctionError, match="does not support Hamiltonian"):
+            tape.jacobian(dev, method="analytic")
+
     def test_phaseshift_exception(self):
         """Tests that an exception is raised when a PhaseShift gate
         is used with the ReversibleTape."""

@@ -16,20 +16,16 @@
 import pennylane as qml
 
 
-def hamiltonian_grad(tape, idx, params=None):
+def hamiltonian_grad(tape, idx):
     """Computes the tapes necessary to get the gradient of a tape with respect to
     a Hamiltonian observable's coefficients.
 
     Args:
         tape (qml.tape.QuantumTape): tape with a single Hamiltonian expectation as measurement
         idx (int): index of parameter that we differentiate with respect to
-        params (array): explicit parameters to set
     """
     op, p_idx = tape.get_operation(idx)
     new_tape = tape.copy(copy_operations=True)
-
-    if params is not None:
-        new_tape.set_parameters(params=params)
 
     # get position in queue
 
