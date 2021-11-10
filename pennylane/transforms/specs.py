@@ -97,12 +97,16 @@ def specs(qnode, max_expansion=None):
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
         initial_max_expansion = qnode.max_expansion
-        qnode.max_expansion = max_expansion or initial_max_expansion
+        qnode.max_expansion = initial_max_expansion if max_expansion is None else max_expansion
 
         try:
             qnode.construct(args, kwargs)
         finally:
             qnode.max_expansion = initial_max_expansion
+
+        if isinstance(qnode, qml.qnode_old.QNode):
+            # TODO: remove when the old QNode is removed
+            return qnode.specs
 
         info = qnode.qtape.specs.copy()
 

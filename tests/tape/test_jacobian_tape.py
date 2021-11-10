@@ -794,10 +794,11 @@ class TestHessian:
             tape.hessian(None)
 
 
+@pytest.mark.parametrize("qn", [qml.qnode, qml.qnode_old.qnode])
 class TestObservableWithObjectReturnType:
     """Unit tests for differentiation of observables returning an object"""
 
-    def test_special_observable_qnode_differentiation(self):
+    def test_special_observable_qnode_differentiation(self, qn):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rathern than a nummber."""
 
@@ -863,12 +864,12 @@ class TestObservableWithObjectReturnType:
 
         # force diff_method='parameter-shift' because otherwise
         # PennyLane swaps out dev for default.qubit.autograd
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qn(dev, diff_method="parameter-shift")
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qn(dev, diff_method="parameter-shift")
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
