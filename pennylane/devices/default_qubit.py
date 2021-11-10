@@ -204,8 +204,8 @@ class DefaultQubit(QubitDevice):
         wires_visited = set()
         input_vectors = []
         input_wires = []
+        aux = 0
         for i, operation in enumerate(operations):
-
             if isinstance(operation, (QubitStateVector, BasisState)):
                 current = set()
                 current = current.union([*operation.wires])
@@ -214,15 +214,16 @@ class DefaultQubit(QubitDevice):
                 wires_visited = wires_visited.union(set([*operation.wires]))
                 input_vectors.append(operation.parameters[0])
                 input_wires.append(operation.wires)
-                continue
+            else:
+                aux += 1
 
-
-            print("hola input vector",input_vectors)
-            print("hola input wires", input_wires)
+            if aux == 1:
+                self._apply_state_vectors(input_vectors, input_wires)
+                first_time = False
 
             if isinstance(operation, QubitStateVector):
-                self._apply_state_vectors(operation.parameters[0], operation.wires)
-            elif isinstance(operation, BasisState):
+                continue
+            if isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             else:
                 self._state = self._apply_operation(self._state, operation)
@@ -677,12 +678,11 @@ class DefaultQubit(QubitDevice):
         state = states[0]
         wires = device_wires[0]
         for s, w in zip(states[1:], device_wires[1:]):
-            state = state @ s
+            state = np.reshape(np.tensordot(state,s,0),newshape=(1,-1))[0]
             wires = wires + w
 
         states = state
         device_wires = wires
-
 
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
@@ -714,7 +714,6 @@ class DefaultQubit(QubitDevice):
         state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
-        print("aaa", self._state)
 
     def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.
