@@ -38,7 +38,7 @@ correct images in a particular location and are sensitive to details we don't ne
 
 Instead of performing per-pixel comparison of saved images, we can instead inspect the  `figure <https://matplotlib.org/stable/api/figure_api.html?highlight=figure#matplotlib.figure.Figure>`__
 and `axes <https://matplotlib.org/stable/api/axes_api.html?highlight=axes#module-matplotlib.axes>`__
-objects to ascertain whether they contain the correct information. The figure should contain the axis object in its `fig.axes` attribute, and the axis object should contain the `Artists <https://matplotlib.org/stable/tutorials/intermediate/artists.html>`__ that get displayed. These artists relevant to us are located in one of three attributes. Each attribute is a list of relevant objects, ordered as they were added:
+objects to ascertain whether they contain the correct information. The figure should contain the axis object in its ``fig.axes`` attribute, and the axis object should contain the `Artists <https://matplotlib.org/stable/tutorials/intermediate/artists.html>`__ that get displayed. These artists relevant to us are located in one of three attributes. Each attribute is a list of relevant objects, ordered as they were added:
 
 * ``ax.texts``
 * ``ax.lines``
@@ -74,9 +74,10 @@ can be a wide variety of different objects, like:
 * `Arc <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Arc.html?highlight=arc#matplotlib.patches.Arc>`__
 * `Fancy Arrow <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrow.html?highlight=fancyarrow#matplotlib.patches.FancyArrow>`__
 
-Each can have it's own getter methods and attributes.  For example, an arc has `theta1` and `theta2`. ``dir(patch_obj)`` can help developers determine which methods and attributes a given object has.
+Each can have it's own getter methods and attributes.  For example, an arc has ``theta1`` and ``theta2``. ``dir(patch_obj)`` can help developers determine which methods and attributes a given object has.
 
 For Rectangles, the most relevant methods are:
-``patch_obj.get_xy()``
-``patch_obj.get_width()``
-``patch_obj.get_height()``
+
+* ``rectangle_obj.get_xy()``
+* ``rectangle_obj.get_width()``
+* ``rectangle_obj.get_height()``
