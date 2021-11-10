@@ -170,7 +170,7 @@ class RZ(DiagonalOperation):
 
         p = qml.math.exp(-0.5j * theta)
 
-        return qml.math.diag([p, qml.math.conj(p)])
+        return qml.math.diag([p, 1/p])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -181,7 +181,7 @@ class RZ(DiagonalOperation):
 
         p = qml.math.exp(-0.5j * theta)
 
-        return qml.math.stack([p, qml.math.conj(p)])
+        return qml.math.stack([p, 1/p])
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -1011,7 +1011,7 @@ class CRZ(DiagonalOperation):
 
         exp_part = qml.math.exp(-0.5j * theta)
 
-        return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
+        return qml.math.diag([1, 1, exp_part, 1/exp_part])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -1022,7 +1022,7 @@ class CRZ(DiagonalOperation):
 
         exp_part = qml.math.exp(-0.5j * theta)
 
-        return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
+        return qml.math.stack([1, 1, exp_part, 1/exp_part])
 
     @staticmethod
     def decomposition(lam, wires):
