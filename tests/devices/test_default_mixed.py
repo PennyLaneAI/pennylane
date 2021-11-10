@@ -665,7 +665,7 @@ class TestApply:
 
     ops_and_true_state = [(None, basis_state(0, 2)), (Hadamard, hadamard_state(2))]
 
-    @pytest.mark.parametrize("op, final_state", ops_and_true_state)
+    @pytest.mark.parametrize("op, true_state", ops_and_true_state)
     def test_identity(self, op, true_state, tol):
         """Tests that applying the identity operator doesn't change the state"""
         num_wires = 2
