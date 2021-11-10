@@ -110,7 +110,7 @@ class TestWires:
         plt.close()
 
     def test_single_layer(self):
-        """Test a single layer with multiple wires.  Check that expected number
+        """Test a single layer with multiple wires. Check that the expected number
         of wires are drawn, and they are in the correct location."""
 
         with QuantumTape() as tape:
@@ -172,13 +172,14 @@ class TestSpecialGates:
         _, ax = draw_mpl(tape)
         layer = 0
 
-        # two wires, SWAP contains 5 lines
+        # two wires produce two lines and SWAP contains 5 more lines
         assert len(ax.lines) == 7
 
         connecting_line = ax.lines[2]
         assert connecting_line.get_data() == ((layer, layer), [0, 1])
 
         dx = 0.2
+        # check the coordinates of the swap lines
         x_lines = ax.lines[3:]
         for line in x_lines:
             assert line.get_xdata() == (layer - dx, layer + dx)
