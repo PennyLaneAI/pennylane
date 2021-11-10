@@ -87,6 +87,8 @@ class TestTorchQuantumTape:
 
     def test_execution_on_tf_device(self):
         """Test execution on a TF device"""
+        tf = pytest.importorskip("tensorflow")
+
         a = torch.tensor(0.1, requires_grad=True)
         dev = qml.device("default.qubit.tf", wires=1)
 
