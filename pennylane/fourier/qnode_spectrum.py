@@ -325,7 +325,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 qml.PhaseShift(x[1]*np.pi, wires=0)
                 return qml.expval(qml.PauliZ(wires=0))
 
-            x = tf.constant([1., 2.])
+            x = tf.Variable([1., 2.])
             res = qml.fourier.qnode_spectrum(circuit)(x)
 
         >>> print(res)
