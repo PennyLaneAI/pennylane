@@ -1,6 +1,7 @@
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
+import re
 
 
 def compute_indices_MPS(wires, loc):
@@ -10,15 +11,11 @@ def compute_indices_MPS(wires, loc):
         loc (int): local wire number of a single quantum gate
         wires (Iterable): the wires on which MPS acts
     Returns:
-        layers (array[int]): arrays of indices of each layer
+        layers (array): array of wire indices or wire labels for each block
     """
-
-    # assert n_wires%2 == 0, "n_wires should be an even integer"
-    # assert loc%2 == 0, "loc should be an even integer"
-    # These two conditions might be obsolete .. e.g. n_wires = 9 and loc = 1
-    assert loc <= len(wires), "loc should be smaller or equal than len(wires)"
-
-    return np.array([[wires[idx] for idx in range(j, j+loc)] for j in range(0, len(wires) - loc // 2, loc // 2)])
+    
+    layers = np.array([[wires[idx] for idx in range(j, j+loc)] for j in range(0, len(wires) - loc // 2, loc // 2)])
+    return layers
 
 
 class MPS_from_function(Operation):
@@ -38,8 +35,10 @@ class MPS_from_function(Operation):
         id=None,
     ):
         n_wires = len(wires)
-        # shape_params_block = allowed_templates[block] # Number of parameter per block
-        # print("shape=", shape_params_block)
+        assert loc >= 2, f"loc must be larger than or equal to 2; got {loc}"
+        assert n_wires >= 3, f"number of wires must be greater than or equal to 3; got {n_wires}"
+        assert loc <= n_wires, f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
+  
         self.n_blocks = int(n_wires / (loc / 2) - 1)
         self.block = block
 
@@ -49,11 +48,8 @@ class MPS_from_function(Operation):
             self.weights = weights
 
         self.ind_gates = compute_indices_MPS(wires, loc)
-        # compute_indices_MPS returns a list of integers that are wires. 
-        # Instead, I want it to return a list of whatever is used to label the wires
 
         # TO DO: raise error if params_block does not match with the input block
-        # TO DO: raise error if the number of wires does not match with the MPS structure
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
