@@ -90,20 +90,21 @@ class QFT(Operation):
 
         return mat / np.sqrt(dimension)
 
-    def decomposition(self):
-        num_wires = len(self.wires)
+    @staticmethod
+    def _decomposition(wires):
+        num_wires = len(wires)
         shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
 
         decomp_ops = []
-        for i, wire in enumerate(self.wires):
+        for i, wire in enumerate(wires):
             decomp_ops.append(qml.Hadamard(wire))
 
-            for shift, control_wire in zip(shifts[: len(shifts) - i], self.wires[i + 1 :]):
+            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
                 op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
-        first_half_wires = self.wires[: num_wires // 2]
-        last_half_wires = self.wires[-(num_wires // 2) :]
+        first_half_wires = wires[: num_wires // 2]
+        last_half_wires = wires[-(num_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
             swap = qml.SWAP(wires=[wire1, wire2])

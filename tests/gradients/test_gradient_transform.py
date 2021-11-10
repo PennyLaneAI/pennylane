@@ -96,8 +96,9 @@ class TestGradientTransformIntegration:
         class NonDiffRXGate(qml.PhaseShift):
             grad_method = None
 
-            def decomposition(self):
-                return [qml.RX(self.parameters[0], wires=self.wires)]
+            @staticmethod
+            def _decomposition(params, wires):
+                return [qml.RX(params[0], wires=wires)]
 
         @qml.qnode(dev)
         def circuit(weights):

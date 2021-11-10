@@ -98,11 +98,12 @@ class SingleExcitation(Operation):
         off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
         return mat + s * qml.math.cast_like(off_diag, s)
 
-    def decomposition(self):
+    @staticmethod
+    def _decomposition(params, wires):
         decomp_ops = [
-            qml.CNOT(wires=[self.wires[0], self.wires[1]]),
-            qml.CRY(self.parameters[0], wires=[self.wires[1], self.wires[0]]),
-            qml.CNOT(wires=[self.wires[0], self.wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(params[0], wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
 
@@ -165,8 +166,9 @@ class SingleExcitationMinus(Operation):
         off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
         return mat + s * qml.math.cast_like(off_diag, s)
 
-    def decomposition(self):
-        theta, wires = self.parameters[0], self.wires
+    @staticmethod
+    def _decomposition(params, wires):
+        theta = params[0]
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
@@ -239,8 +241,9 @@ class SingleExcitationPlus(Operation):
         off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
         return mat + s * qml.math.cast_like(off_diag, s)
 
-    def decomposition(self):
-        theta, wires = self.parameters[0], self.wires
+    @staticmethod
+    def _decomposition(params, wires):
+        theta = params[0]
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
@@ -333,9 +336,10 @@ class DoubleExcitation(Operation):
         mat = qml.math.scatter_element_add(mat, (12, 3), s)
         return mat
 
-    def decomposition(self):
+    @staticmethod
+    def _decomposition(params, wires):
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
-        theta, wires = self.parameters[0], self.wires
+        theta = params[0]
         decomp_ops = [
             qml.CNOT(wires=[wires[2], wires[3]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
@@ -635,9 +639,10 @@ class OrbitalRotation(Operation):
 
         return U
 
-    def decomposition(self):
+    @staticmethod
+    def _decomposition(params, wires):
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
-        phi, wires = self.parameters[0], self.wires
+        phi = params[0]
         decomp_ops = [
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),

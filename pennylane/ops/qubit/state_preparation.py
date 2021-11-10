@@ -49,8 +49,9 @@ class BasisState(Operation):
     par_domain = "A"
     grad_method = None
 
-    def decomposition(self):
-        return BasisStatePreparation(self.parameters[0], self.wires)
+    @staticmethod
+    def _decomposition(params, wires):
+        return BasisStatePreparation(params[0], wires)
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for BasisState operations.")
@@ -82,8 +83,9 @@ class QubitStateVector(Operation):
     par_domain = "A"
     grad_method = None
 
-    def decomposition(self):
-        return MottonenStatePreparation(self.parameters[0], self.wires)
+    @staticmethod
+    def _decomposition(params, wires):
+        return MottonenStatePreparation(params[0], wires)
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitStateVector operations.")

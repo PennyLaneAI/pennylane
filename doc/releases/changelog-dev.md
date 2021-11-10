@@ -60,6 +60,6 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje
+Guillermo Alonso-Linaje, Olivia Di Matteo
 
 Jalani Kanem, Christina Lee, Alejandro Montanez

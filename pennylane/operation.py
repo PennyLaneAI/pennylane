@@ -531,7 +531,8 @@ class Operator(abc.ABC):
         """Current parameter values."""
         return self.data.copy()
 
-    def decomposition(self):
+    @staticmethod
+    def _decomposition(*params, wires):
         """Defines a decomposition of this operator into products of other operators
         
         Returns:
@@ -539,6 +540,16 @@ class Operator(abc.ABC):
         """
         raise NotImplementedError
 
+    def decomposition(self):
+        """Defines a decomposition of this operator into products of other operators
+        
+        Returns:
+            list[Operation]  
+        """
+        if self.num_params == 0:
+            return self._decomposition(self.wires)
+        return self._decomposition(self.parameters, self.wires)
+    
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)

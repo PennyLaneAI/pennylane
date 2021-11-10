@@ -1145,10 +1145,7 @@ class TestPauliRot:
 
         @qml.qnode(dev)
         def decomp_circuit(theta):
-            with qml.tape.stop_recording():
-                op = qml.PauliRot(theta, "XX", wires=[0, 1])
-            op.decomposition()
-
+            qml.PauliRot._decomposition(theta, "XX", wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
