@@ -10,8 +10,8 @@
 
 <h3>Improvements</h3>
 
-* The QNode has been re-written to support across the board batch execution,
-  custom gradients, better decomposition strategies, and higher order derivatives.
+* The QNode has been re-written to support batch execution across the board,
+  custom gradients, better decomposition strategies, and higher-order derivatives.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
   - Internally, if multiple circuits are generated for execution simultaneously, they
@@ -27,7 +27,7 @@
         ...
         return tapes, processing_fn
 
-    @qml.beta.qnode(dev, diff_method=my_gradient_transform)
+    @qml.qnode(dev, diff_method=my_gradient_transform)
     def circuit():
     ```
 
