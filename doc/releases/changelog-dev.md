@@ -8,7 +8,8 @@
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
   
 * Added the identity observable to be an operator. Now we can explicitly call the identity 
-  operation on our quantum circuits. [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
+  operation on our quantum circuits.
+  [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
 <h3>Improvements</h3>
 
