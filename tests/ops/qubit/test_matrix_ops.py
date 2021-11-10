@@ -191,7 +191,7 @@ class TestDiagonalQubitUnitary:
         """Test that DiagonalQubitUnitary falls back to QubitUnitary."""
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
 
-        decomp = qml.DiagonalQubitUnitary._decomposition(D, wires=[0, 1, 2])
+        decomp = qml.DiagonalQubitUnitary._decomposition(D, [0, 1, 2])
 
         assert decomp[0].name == "QubitUnitary"
         assert decomp[0].wires == Wires([0, 1, 2])
