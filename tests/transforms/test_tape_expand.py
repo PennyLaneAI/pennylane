@@ -127,7 +127,7 @@ class TestExpandMultipar:
             name = "_CRX"
 
             @staticmethod
-            def decomposition(theta, wires):
+            def _decomposition(theta, wires):
                 raise NotImplementedError()
 
         with qml.tape.QuantumTape() as tape:
