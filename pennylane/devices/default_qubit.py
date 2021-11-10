@@ -201,21 +201,31 @@ class DefaultQubit(QubitDevice):
         rotations = rotations or []
 
         # apply the circuit operations
+        wires_visited = set()
+        input_vectors = []
+        input_wires = []
         for i, operation in enumerate(operations):
 
-            if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
-                raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
-                )
+            if isinstance(operation, (QubitStateVector, BasisState)):
+                current = set()
+                current = current.union([*operation.wires])
+                if len(wires_visited.intersection(current)) > 0:
+                    raise DeviceError("Operation {} cannot be used after other {} applied in the same qubit ".format(operation.name, operation.name))
+                wires_visited = wires_visited.union(set([*operation.wires]))
+                input_vectors.append(operation.parameters[0])
+                input_wires.append(operation.wires)
+                continue
+
+
+            print("hola input vector",input_vectors)
+            print("hola input wires", input_wires)
 
             if isinstance(operation, QubitStateVector):
-                self._apply_state_vector(operation.parameters[0], operation.wires)
+                self._apply_state_vectors(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             else:
                 self._state = self._apply_operation(self._state, operation)
-
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 
@@ -651,10 +661,60 @@ class DefaultQubit(QubitDevice):
 
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
-
         state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
+
+    def _apply_state_vectors(self, states, device_wires):
+        """Initialize the internal state vector in a specified state.
+
+        Args:
+            state (array[complex]): normalized input state of length
+                ``2**len(wires)``
+            device_wires (Wires): wires that get initialized in the state
+        """
+
+        state = states[0]
+        wires = device_wires[0]
+        for s, w in zip(states[1:], device_wires[1:]):
+            state = state @ s
+            wires = wires + w
+
+        states = state
+        device_wires = wires
+
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(device_wires)
+
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        n_state_vector = state.shape[0]
+
+        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
+            raise ValueError("State vector must be of length 2**wires.")
+
+        if not qml.math.is_abstract(state):
+            if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
+            # Initialize the entire wires with the state
+            self._state = self._reshape(state, [2] * self.num_wires)
+            return
+
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+        unravelled_indices[:, device_wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+        state = self._reshape(state, [2] * self.num_wires)
+        self._state = self._asarray(state, dtype=self.C_DTYPE)
+        print("aaa", self._state)
 
     def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.
