@@ -515,10 +515,11 @@ class TestBarrier:
             return qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][1]
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
 
-        assert gates == 3
+        assert optimized_gates == 2
 
 
 class TestMultiControlledX:
