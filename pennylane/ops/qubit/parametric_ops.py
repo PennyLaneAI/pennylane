@@ -731,8 +731,6 @@ class PauliRot(Operation):
 
     @staticmethod
     def _decomposition(theta, pauli_word, wires):
-        #theta, pauli_word = params
-
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
             wires = [wires]

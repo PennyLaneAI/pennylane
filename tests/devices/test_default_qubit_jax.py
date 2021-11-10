@@ -487,7 +487,7 @@ class TestPassthruIntegration:
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("operation", ["regular", "decomposition"])
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3._decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
@@ -499,12 +499,7 @@ class TestPassthruIntegration:
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
             qml.QubitStateVector(1j * jnp.array([1, -1]) / jnp.sqrt(2), wires=w)
-            if operation == "regular":
-                qml.U3(x, weights[0], weights[1], wires=w)
-            else:
-                with qml.tape.stop_recording():
-                    op = qml.U3(x, weights[0], weights[1], wires=w)
-                op.decomposition()
+            operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
 
         def cost(params):
