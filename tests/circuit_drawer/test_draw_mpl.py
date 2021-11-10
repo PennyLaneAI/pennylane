@@ -11,7 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file tests the ``qml.circuit_drawer.draw_mpl`` function."""
+"""This file tests the ``qml.circuit_drawer.draw_mpl`` function.
+
+See section on "Testing Matplotlib based code" in the "Software Tests"
+page in the developement guide.
+"""
+
+
 
 import pytest
 from pytest_mock import mocker
@@ -77,7 +83,8 @@ class TestWires:
     """Test that wire lines are produced correctly in different situations."""
 
     def test_empty_tape_wire_order(self):
-        """Test situation with empty tape but specified wires."""
+        """Test situation with empty tape but specified wires and show_all_wires 
+        still draws wires."""
 
         _, ax = draw_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
 
@@ -89,7 +96,8 @@ class TestWires:
         plt.close()
 
     def test_single_layer(self):
-        """Test a single layer with multiple wires."""
+        """Test a single layer with multiple wires.  Check that expected number
+        of wires are drawn, and they are in the correct location."""
 
         with QuantumTape() as tape:
             qml.PauliX(0)
@@ -156,11 +164,17 @@ class TestSpecialGates:
         connecting_line = ax.lines[2]
         assert connecting_line.get_data() == ((layer, layer), [0, 1])
 
+        dx = 0.2
         x_lines = ax.lines[3:]
-        assert x_lines[0].get_data() == ((layer-0.2, layer+0.2), (-0.2, 0.2))
-        assert x_lines[1].get_data() == ((layer-0.2, layer+0.2), (0.2, -0.2))
-        assert x_lines[2].get_data() == ((layer-0.2, layer+0.2), (0.8, 1.2))
-        assert x_lines[3].get_data() == ((layer-0.2, layer+0.2), (1.2, 0.8))
+        for line in x_lines:
+            assert line.get_xdata() == (layer-dx, layer+dx)
+
+        assert x_lines[0].get_ydata() == (-dx, dx)
+        assert x_lines[1].get_ydata() == (dx, -dx)
+
+        assert x_lines[2].get_ydata() == (1-dx, 1+dx)
+        assert x_lines[3].get_ydata() == (1+dx, 1-dx)
+
         plt.close()
 
 
@@ -345,6 +359,8 @@ general_op_data = [qml.RX(1.234, wires=0),
     qml.S(wires=0),
     qml.IsingXX(1.234, wires=(0,1)),
     qml.U3(1.234,2.345,3.456, wires=0),
+    # State Prep
+    qml.BasisState([0,1,0], wires=(0,1,2)),
     ### Templates
     qml.QFT(wires=range(3)),
     qml.Permute([4,2,0,1,3], wires=(0,1,2,3,4)),
@@ -393,25 +409,33 @@ class TestGeneralOperations:
         plt.close()
 
 
+measure_data = [
+    ([qml.expval(qml.PauliX(0))], [0]),
+    ([qml.probs(wires=(0,1,2))], [0,1,2]),
+    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0) @ qml.PauliY(1)), qml.state()], [0,1])
+    ([qml.expval(qml.NumberOperator(wires=0))], [0])   
+]
+
 
 class TestMeasurements:
     """Tests measurements are drawn correctly"""
 
-    def test_expval(self):
-        """Test expval produces measure boxes."""
+    @pytest.mark.parametrize("measurements, wires", measure_data)
+    def test_measurements(self, measurements, wires):
+        """Tests a variety of measurements draw measurement boxes on the correct wires."""
 
         with QuantumTape() as tape:
-            qml.expval(qml.PauliX(0))
+            for m in measurements:
+                qml.apply(m)
 
         _, ax = draw_mpl(tape)
 
-        assert isinstance(ax.patches[0], mpl.patches.Rectangle)
-        assert isinstance(ax.patches[1], mpl.patches.Arc)
-        assert isinstance(ax.patches[2], mpl.patches.FancyArrow)
+        assert len(ax.patches) == 3 * len(wires)
 
-        # layer 1, row 0 box
-        assert ax.patches[0].get_xy() == (0.6, -0.4)
-        assert ax.patches[1].center == (1, 0.05)
+        for ii, w in enumerate(wires):
+            assert ax.patches[3*ii].get_xy() == (0.6, w-0.4) #rectangle
+            assert ax.patches[3*ii+1].center == (1, w+0.05) # arc
+            assert isinstance(ax.patches[2*ii+2], mpl.patches.FancyArrow) # fancy arrow
 
         plt.close()
 
@@ -432,40 +456,6 @@ class TestMeasurements:
         for layer, box in enumerate(ax.patches[::3]):
             assert box.get_xy() == (0.6, layer-0.4)
 
-    def test_probs(self):
-        """Test probs with wires produces measurement boxes."""
-
-        with QuantumTape() as tape:
-            qml.probs(wires=(0, 1, 2))
-
-        _, ax = draw_mpl(tape)
-
-        assert len(ax.patches) == 9 # three measure boxes with 3 patches each
-
-        assert all(isinstance(box, mpl.patches.Rectangle) for box in ax.patches[::3])
-        assert all(isinstance(arc, mpl.patches.Arc) for arc in ax.patches[1::3])
-        assert all(isinstance(arrow, mpl.patches.FancyArrow) for arrow in ax.patches[2::3])
-
-        for layer, box in enumerate(ax.patches[::3]):
-            assert box.get_xy() == (0.6, layer-0.4)
-
-
-    def test_multiple_measurements(self):
-        """Assert that a maximum of one measurement box per wire is produced even
-        when we have multiple measurements."""
-
-        with QuantumTape() as tape:
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-            qml.state()
-
-        _, ax = draw_mpl(tape)
-
-        assert len(ax.patches) == 6 # two measure boxes with three patches each
-
-        for layer, box in enumerate(ax.patches[::3]):
-            assert box.get_xy() == (0.6, layer-0.4)
-        
 
 class TestLayering:
     """Tests operations are placed into layers correctly."""
@@ -480,8 +470,10 @@ class TestLayering:
 
         _, ax = draw_mpl(tape)
 
-        # may enter the same layer in any order
-        # there check just exists in layer
+        # As layers are stored in sets, we don't know the
+        # order operations are added to ax.
+        # So we check that each rectangle is in ``patches``
+        # independent of order
         box_coords = [p.get_xy() for p in ax.patches]
         for wire in range(3):
             assert (-0.4, wire-0.4) in box_coords

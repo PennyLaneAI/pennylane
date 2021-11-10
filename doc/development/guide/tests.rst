@@ -32,20 +32,19 @@ file, as well as the line numbers of any lines missing test coverage.
 Testing Matplotlib based code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Matplotlib images can be displayed differently based on the system generating them, such as default resolution and available fonts.
-Even though matplotlib does provide
-`functionality for pointwise comparison of images <https://matplotlib.org/stable/api/testing_api.html#module-matplotlib.testing>`__ , they can be rather fragile and require caching
-correct images in a particular location.
+Matplotlib images can display differently due to various factors outside the standard developer's control, such as image backend and available fonts. Even though matplotlib provides
+`functionality for pointwise comparison of images <https://matplotlib.org/stable/api/testing_api.html#module-matplotlib.testing>`__ , they require caching
+correct images in a particular location and are sensitive to details we don't need to test. 
 
 Instead of performing per-pixel comparison of saved images, we can instead inspect the  `figure <https://matplotlib.org/stable/api/figure_api.html?highlight=figure#matplotlib.figure.Figure>`__
 and `axes <https://matplotlib.org/stable/api/axes_api.html?highlight=axes#module-matplotlib.axes>`__
-objects to ascertain whether they contain the correct objects. The figure should contain the axis object in its `fig.axes` attribute, and the axis object should contain the objects that get displayed. These are stored in one of three attributes. Each attribute is a list of relevant objects, ordered corresponding to when they were added:
+objects to ascertain whether they contain the correct information. The figure should contain the axis object in its `fig.axes` attribute, and the axis object should contain the `Artists <https://matplotlib.org/stable/tutorials/intermediate/artists.html>`__ that get displayed. These artists relevant to us are located in one of three attributes. Each attribute is a list of relevant objects, ordered as they were added:
 
 * ``ax.texts``
 * ``ax.lines``
 * ``ax.patches``
 
-Instead of testing every relevant piece of information for all objects in the graphic, we can just check key pieces of information to make sure everything looks decent.  These key pieces of information can include (but are not limited to):
+Instead of testing every relevant piece of information for all objects in the graphic, we can check key pieces of information to make sure everything looks decent.  These key pieces of information can include (but are not limited to):
 
 * number of objects
 * type of objects
@@ -54,7 +53,7 @@ Instead of testing every relevant piece of information for all objects in the gr
 **Text objects**
 
 `Text objects <https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text>`__
-are stored in ``ax.texts``.  While the text object can contain a great variety of methods for pulling out relevant information, the two most commonly used in testing text objects are:
+are stored in ``ax.texts``.  While the text object has many methods and attributes for relevant information, the two most commonly used in testing text objects are:
 
 * ``text_obj.get_text()`` : Get the string value for the text object
 * ``text_obj.get_position()``: Get the ``(x,y)`` position of the object
@@ -68,11 +67,16 @@ can also use ``line_obj.get_xdata()`` and ``line_obj.get_ydata()``.
 **Patches**
 
 `Patches <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Patch.html?highlight=patch#matplotlib.patches.Patch>`__
-include a wide variety of different objects, like:
+can be a wide variety of different objects, like:
 
 * `Rectangle <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Rectangle.html?highlight=rectangle#matplotlib.patches.Rectangle>`__
 * `Circle <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Circle.html?highlight=circle#matplotlib.patches.Circle>`__
 * `Arc <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Arc.html?highlight=arc#matplotlib.patches.Arc>`__
 * `Fancy Arrow <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrow.html?highlight=fancyarrow#matplotlib.patches.FancyArrow>`__
 
-Each can have it's own getter methods and attributes.  For example, an arc has `theta1` and `theta2`. ``dir(patch_obj)`` can help developers determine which methods an attributes a given object has.
+Each can have it's own getter methods and attributes.  For example, an arc has `theta1` and `theta2`. ``dir(patch_obj)`` can help developers determine which methods and attributes a given object has.
+
+For Rectangles, the most relevant methods are:
+``patch_obj.get_xy()``
+``patch_obj.get_width()``
+``patch_obj.get_height()``

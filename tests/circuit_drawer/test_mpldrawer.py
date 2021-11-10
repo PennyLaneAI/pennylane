@@ -13,13 +13,15 @@
 # limitations under the License.
 """
 Tests the MPLDrawer.
+
+See section on "Testing Matplotlib based code" in the "Software Tests"
+page in the developement guide.
 """
 
 import pytest
 
 plt = pytest.importorskip("matplotlib.pyplot")
 
-import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 from matplotlib.patches import FancyArrow
 
