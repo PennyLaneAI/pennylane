@@ -663,25 +663,22 @@ class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied
     correctly, rather than single operations"""
 
-    def test_identity(self, tol):
+    ops_and_true_state = [(None, basis_state(0, 2)), (Hadamard, hadamard_state(2))]
+
+    @pytest.mark.parametrize("op, final_state", ops_and_true_state)
+    def test_identity(self, op, true_state, tol):
         """Tests that applying the identity operator doesn't change the state"""
         num_wires = 2
-        dev1 = qml.device("default.mixed", wires=num_wires)  # prepare basis state
+        dev = qml.device("default.mixed", wires=num_wires)  # prepare basis state
 
-        dev2 = qml.device("default.mixed", wires=num_wires)  # prepare equal superposition
-        ops = [Hadamard(i) for i in range(num_wires)]
-        dev2.apply(ops)
+        if op is not None:
+            ops = [op(i) for i in range(num_wires)]
+            dev.apply(ops)
 
         # Apply Identity:
-        dev1.apply([Identity(i) for i in range(num_wires)])
-        dev2.apply([Identity(i) for i in range(num_wires)])
+        dev.apply([Identity(i) for i in range(num_wires)])
 
-        # Correct States:
-        basis = basis_state(0, num_wires)
-        hadamard = hadamard_state(num_wires)
-
-        assert np.allclose(dev1.state, basis, atol=tol, rtol=0)
-        assert np.allclose(dev2.state, hadamard, atol=tol, rtol=0)
+        assert np.allclose(dev.state, true_state, atol=tol, rtol=0)
 
     def test_bell_state(self, tol):
         """Tests that we correctly prepare a Bell state by applying a Hadamard then a CNOT"""
