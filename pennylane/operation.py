@@ -533,23 +533,27 @@ class Operator(abc.ABC):
 
     @staticmethod
     def _decomposition(*params, wires):
-        """Defines a decomposition of this operator into products of other operators
-        
+        """Defines a decomposition of this operator into products of other operators.
+
+        Args:
+            params (tuple[float, int, array]): operator parameters
+            wires (Union(Sequence[int], Wires)): wires the operator acts on
+
         Returns:
-            list[Operation]  
+            list[Operation]
         """
         raise NotImplementedError
 
     def decomposition(self):
-        """Defines a decomposition of this operator into products of other operators
-        
+        """Defines a decomposition of this operator into products of other operators.
+
         Returns:
-            list[Operation]  
+            list[Operation]
         """
         if self.num_params == 0:
             return self._decomposition(self.wires)
         return self._decomposition(self.parameters, self.wires)
-    
+
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
