@@ -15,13 +15,15 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
 
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP` 
+* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
 
@@ -33,6 +35,6 @@
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order): 
+This release contains contributions from (in alphabetical order):
 
-Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
+Benjamin Cordier, Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
