@@ -431,9 +431,8 @@ class TestGeneralOperations:
 measure_data = [
     ([qml.expval(qml.PauliX(0))], [0]),
     ([qml.probs(wires=(0, 1, 2))], [0, 1, 2]),
-    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0) @ qml.PauliY(1)), qml.state()], [0, 1])(
-        [qml.expval(qml.NumberOperator(wires=0))], [0]
-    ),
+    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(0) @ qml.PauliY(1)), qml.state()], [0, 1]),
+    ([qml.expval(qml.NumberOperator(wires=0))], [0]),
 ]
 
 
@@ -455,7 +454,7 @@ class TestMeasurements:
         for ii, w in enumerate(wires):
             assert ax.patches[3 * ii].get_xy() == (0.6, w - 0.4)  # rectangle
             assert ax.patches[3 * ii + 1].center == (1, w + 0.05)  # arc
-            assert isinstance(ax.patches[2 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
+            assert isinstance(ax.patches[3 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
 
         plt.close()
 
