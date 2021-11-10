@@ -17,6 +17,7 @@ Unit tests for the :func:`pennylane.math.is_independent` function.
 import pytest
 
 import numpy as np
+from pennylane import numpy as pnp
 
 import pennylane as qml
 from pennylane.math import is_independent
@@ -204,6 +205,33 @@ class TestIsIndependentAutograd:
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
         assert is_independent(jac, self.interface, args, {"kw": True})
+
+    def test_no_trainable_params_deprecation_grad(self, recwarn):
+        """Tests that no deprecation warning arises when using qml.grad with
+        qml.math.is_independent.
+        """
+
+        def lin(x):
+            return pnp.sum(x)
+
+        x = pnp.array([0.2, 9.1, -3.2], requires_grad=True)
+        jac = qml.grad(lin)
+        assert qml.math.is_independent(jac, "autograd", (x,), {})
+
+        assert len(recwarn) == 0
+
+    def test_no_trainable_params_deprecation_jac(self, recwarn):
+        """Tests that no deprecation arises when using qml.jacobian with
+        qml.math.is_independent."""
+
+        def lin(x, weights=None):
+            return np.dot(x, weights)
+
+        x = pnp.array([0.2, 9.1, -3.2], requires_grad=True)
+        weights = pnp.array([1.1, -0.7, 1.8], requires_grad=True)
+        jac = qml.jacobian(lin)
+        assert qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
+        assert len(recwarn) == 0
 
 
 if have_jax:
