@@ -48,6 +48,7 @@ class CircuitDrawer:
         wires (Wires): all wires on the device for which the circuit is drawn
         charset (str, pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
     """
 
     def __init__(
@@ -57,6 +58,7 @@ class CircuitDrawer:
         wires,
         charset=None,
         show_all_wires=False,
+        max_length=80,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -80,6 +82,8 @@ class CircuitDrawer:
             # if the provided wires include empty wires, make sure they are included
             # as active wires
             self.active_wires = wires.all_wires([wires, self.active_wires])
+
+        self.max_length = max_length if type(max_length) == int else 80
 
         self.representation_resolver = RepresentationResolver(self.charset)
         self.operation_representation_grid = Grid()
@@ -354,10 +358,9 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             # format wire name nicely
             wire = self.full_representation_grid.wire(i)
-            s = " {:>" + str(padding) + "}: {}"
+            s = "{:>" + str(padding) + "}: {}"
 
             rendered_string += s.format(wire_names[i], 2 * self.charset.WIRE)
-
             for s in wire:
                 rendered_string += s
 
@@ -370,5 +373,19 @@ class CircuitDrawer:
         ]:
             for idx, matrix in enumerate(cache):
                 rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
+
+        # Restrict CLI print width to max_length
+        wires = rendered_string.split("\n")
+        n_wraps = (len(wires[0]) // self.max_length) + 1
+        rendered_substrings = []
+        for i in range(n_wraps):
+            for j, wire in enumerate(wires):
+                if ((i + 1) * self.max_length) < len(wire):
+                    rendered_substrings.append(
+                        wire[i * self.max_length : (i + 1) * self.max_length]
+                    )
+                else:
+                    rendered_substrings.append(wire[i * self.max_length :])
+        rendered_string = "\n".join(rendered_substrings)
 
         return rendered_string
