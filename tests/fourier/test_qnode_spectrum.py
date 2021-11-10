@@ -338,10 +338,9 @@ class TestCircuits:
 
         class nondecompRot(qml.Rot):
             @staticmethod
-            def _decomposition(self):
+            def _decomposition(phi, theta, omega, wires):
                 """Pseudo-decomposition: Just return the gate itself."""
-                phi, theta, omega = self.parameters
-                return [nondecompRot(phi, theta, omega, wires=self.wires)]
+                return [nondecompRot(phi, theta, omega, wires=wires)]
 
         @qml.qnode(dev)
         def circuit(x):

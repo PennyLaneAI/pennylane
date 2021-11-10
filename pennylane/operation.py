@@ -551,7 +551,7 @@ class Operator(abc.ABC):
             list[Operation]
         """
         if self.num_params == 0:
-            return self._decomposition(self.wires)
+            return self._decomposition(wires=self.wires)
         return self._decomposition(*self.parameters, wires=self.wires)
 
     def queue(self, context=qml.QueuingContext):
