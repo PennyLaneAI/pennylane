@@ -13,6 +13,9 @@
 
 <h3>Improvements</h3>
 
+* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+  [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
+
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 * Several AmplitudeEmbedding can now be instantiated if they affect different qubits. [(#1140)](https://github.com/PennyLaneAI/pennylane/issues/1140)
