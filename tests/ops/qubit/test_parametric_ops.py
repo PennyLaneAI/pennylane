@@ -1368,9 +1368,9 @@ label_data = [
     (
         qml.Rot(1.23456, 2.3456, 3.45678, wires=0),
         "Rot",
-        "Rot\n(1.23,2.35,3.46)",
-        "Rot\n(1,2,3)",
-        "Rot⁻¹\n(1,2,3)",
+        "Rot\n(1.23,\n2.35,\n3.46)",
+        "Rot\n(1,\n2,\n3)",
+        "Rot⁻¹\n(1,\n2,\n3)",
     ),
     (qml.RX(1.23456, wires=0), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
     (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
@@ -1403,18 +1403,18 @@ label_data = [
     (
         qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)),
         "Rot",
-        "Rot\n(1.23,2.35,3.46)",
-        "Rot\n(1,2,3)",
-        "Rot⁻¹\n(1,2,3)",
+        "Rot\n(1.23,\n2.35,\n3.46)",
+        "Rot\n(1,\n2,\n3)",
+        "Rot⁻¹\n(1,\n2,\n3)",
     ),
     (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)", "U1⁻¹\n(1)"),
-    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,2.35)", "U2\n(1,2)", "U2⁻¹\n(1,2)"),
+    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,\n2.35)", "U2\n(1,\n2)", "U2⁻¹\n(1,\n2)"),
     (
         qml.U3(1.2345, 2.345, 3.4567, wires=0),
         "U3",
-        "U3\n(1.23,2.35,3.46)",
-        "U3\n(1,2,3)",
-        "U3⁻¹\n(1,2,3)",
+        "U3\n(1.23,\n2.35,\n3.46)",
+        "U3\n(1,\n2,\n3)",
+        "U3⁻¹\n(1,\n2,\n3)",
     ),
     (
         qml.IsingXX(1.2345, wires=(0, 1)),
@@ -1466,7 +1466,7 @@ class TestLabel:
         assert op2.label(decimals=2) == "RX\n(0.12)"
 
         op3 = qml.Rot(tf.Variable(0.1), tf.Variable(0.2), tf.Variable(0.3), wires=0)
-        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"
+        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
     def test_label_torch(self):
         """Test label methods work with torch tensors"""
@@ -1479,7 +1479,7 @@ class TestLabel:
         assert op2.label(decimals=2) == "RX\n(1.23)"
 
         op3 = qml.Rot(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), wires=0)
-        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"
+        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
     def test_label_jax(self):
         """Test the label method works with jax"""
@@ -1492,7 +1492,7 @@ class TestLabel:
         assert op2.label(decimals=2) == "RX\n(1.23)"
 
         op3 = qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
-        assert op3.label(decimals=2) == "Rot\n(0.10,0.20,0.30)"
+        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
     def test_string_parameter(self):
         """Test labelling works if variable is a string instead of a float."""
@@ -1505,7 +1505,7 @@ class TestLabel:
         assert op2.label(decimals=0) == "RX\n(y)"
 
         op3 = qml.Rot("x", "y", "z", wires=0)
-        assert op3.label(decimals=0) == "Rot\n(x,y,z)"
+        assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
 
 
 control_data = [
