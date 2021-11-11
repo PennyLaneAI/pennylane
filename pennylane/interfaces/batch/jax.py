@@ -27,7 +27,9 @@ import pennylane as qml
 dtype = jnp.float64
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode="backward"
+):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:

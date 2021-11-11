@@ -1359,3 +1359,109 @@ class TestAutograph:
         grad = tape.gradient(loss, [x, y])
         expected = [-tf.sin(x) * tf.sin(y / 2) ** 2, tf.cos(x) * tf.sin(y) / 2]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_autograph_jacobian(self, tol):
+        """Test that a parameter-shift vector-valued QNode can be compiled
+        using @tf.function, and differentiated"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @tf.function
+        @qnode(dev, diff_method="parameter-shift", max_diff=1, interface="tf")
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
+
+        with tf.GradientTape() as tape:
+            res = circuit(x, y)
+
+        expected = np.array(
+            [
+                [tf.cos(x / 2) ** 2, tf.sin(x / 2) ** 2],
+                [(1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [
+                    [-tf.sin(x) / 2, tf.sin(x) / 2],
+                    [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
+                ],
+                [
+                    [0, 0],
+                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+                ],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mode", ["forward", "backward"])
+    def test_autograph_adjoint(self, mode, tol):
+        """Test that a parameter-shift vQNode can be compiled
+        using @tf.function, and differentiated to second order"""
+        dev = qml.device("default.qubit", wires=1)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @tf.function
+        @qnode(dev, diff_method="adjoint", interface="tf", mode=mode)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable([1.0, 2.0], dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+        g = tape.gradient(res, x)
+        a, b = x * 1.0
+
+        expected_res = tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    @pytest.mark.xfail
+    def test_autograph_hessian(self, tol):
+        """Test that a parameter-shift vQNode can be compiled
+        using @tf.function, and differentiated to second order"""
+        dev = qml.device("default.qubit", wires=1)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @tf.function
+        @qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable([1.0, 2.0], dtype=tf.float64)
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(x)
+            g = tape2.gradient(res, x)
+
+        hess = tape1.gradient(g, x)
+        a, b = x * 1.0
+
+        expected_res = tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [-tf.cos(a) * tf.cos(b) + tf.sin(a) * tf.sin(b)],
+            [tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b)],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)

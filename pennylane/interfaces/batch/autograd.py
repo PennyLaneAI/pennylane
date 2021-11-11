@@ -23,7 +23,9 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(
+    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode="backward"
+):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
