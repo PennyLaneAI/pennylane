@@ -131,6 +131,8 @@ class TestApply:
         ),
         (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
         (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
+        (qml.Identity, [1, 0], [1, 0]),
+        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
     ]
 
     test_data_no_parameters_inverses = [
@@ -150,6 +152,8 @@ class TestApply:
         ),
         (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
         (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
+        (qml.Identity, [1, 0], [1, 0]),
+        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters)

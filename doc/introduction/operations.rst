@@ -52,7 +52,8 @@ Non-parametric Ops
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Hadamard
     ~pennylane.PauliX
     ~pennylane.PauliY
@@ -255,7 +256,8 @@ CV Gates
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Beamsplitter
     ~pennylane.ControlledAddition
     ~pennylane.ControlledPhase

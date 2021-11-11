@@ -92,6 +92,7 @@ class DefaultQubit(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Identity",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
