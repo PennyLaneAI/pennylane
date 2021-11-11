@@ -57,6 +57,7 @@ class DefaultMixed(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Identity",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",

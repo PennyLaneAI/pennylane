@@ -6,12 +6,18 @@
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be 
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
+  
+* Added the identity observable to be an operator. Now we can explicitly call the identity 
+  operation on our quantum circuits for both qubit and CV devices.
+  [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
 <h3>Improvements</h3>
 
 * `DiagonalOperations` is not a separate class any more. Instead, devices can register a gate 
   for a `is_diagonal` attribute and use its eigenvalues in simulations.
   [TODO: add usage example]
+
+* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 <h3>Breaking changes</h3>
 
@@ -23,10 +29,14 @@
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
 
+* The `requires_grad` attribute of `qml.numpy.tensor` objects is now
+  preserved when pickling/unpickling the object.
+  [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order):
+This release contains contributions from (in alphabetical order): 
 
-Christina Lee, Alejandro Montanez
+Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
