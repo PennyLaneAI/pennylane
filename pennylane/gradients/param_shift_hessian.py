@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 
-from .gradient_transform import gradient_transform
+from pennylane.transforms.tape_expand import expand_invalid_trainable
 from .parameter_shift import _gradient_analysis
 
 
@@ -55,7 +55,58 @@ def generate_multishifted_tapes(tape, idx, shifts):
     return tapes
 
 
-@gradient_transform
+class hessian_transform(qml.batch_transform):
+    def __init__(
+        self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
+    ):
+        self.hybrid = hybrid
+        super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
+
+    def default_qnode_wrapper(self, qnode, targs, tkwargs):
+        # Here, we overwrite the QNode execution wrapper in order
+        # to take into account that classical processing may be present
+        # inside the QNode.
+        hybrid = tkwargs.pop("hybrid", self.hybrid)
+        _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
+        cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
+
+        def jacobian_wrapper(*args, **kwargs):
+            qjac = _wrapper(*args, **kwargs)
+
+            if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
+                qjac = qml.math.squeeze(qjac)
+
+            if not hybrid:
+                return qjac
+
+            kwargs.pop("shots", False)
+            cjac = cjac_fn(*args, **kwargs)
+
+            if isinstance(cjac, tuple):
+                # Classical processing of multiple arguments is present. Return qjac @ cjac.
+                jacs = [
+                    qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
+                    for c in cjac
+                    if c is not None
+                ]
+                return jacs
+
+            is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+
+            if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+                # Classical Jacobian is the identity. No classical processing
+                # is present inside the QNode.
+                return qjac
+
+            # Classical processing of a single argument is present. Return cjac.T @ qjac @ cjac.
+            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
+            jac = qml.math.tensordot(jac, cjac, [[-2], [0]])
+            return qml.math.swapaxes(jac, -1, -2)
+
+        return jacobian_wrapper
+
+
+@hessian_transform
 def param_shift_hessian(tape):
     """Generate parameter-shift tapes and postprocessing method
     to directly compute the hessian."""
