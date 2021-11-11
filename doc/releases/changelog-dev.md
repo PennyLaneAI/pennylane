@@ -13,7 +13,7 @@
 
 <h3>Improvements</h3>
 
-* `DiagonalOperations` is not a separate subclass any more. 
+* `DiagonalOperation` is not a separate subclass any more. 
   [(#1889)](https://github.com/PennyLaneAI/pennylane/pull/1889) 
 
   Instead, devices can check for the diagonal 
