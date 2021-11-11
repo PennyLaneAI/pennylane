@@ -174,8 +174,8 @@ diagonal_in_z_basis = Attribute(
         "CZ",
         "DiagonalQubitUnitary",
         "RZ",
-        "PhaseShift",
         "ControlledPhaseShift",
+        "PhaseShift",
         "MultiRZ",
         "CRZ",
     ]
