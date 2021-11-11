@@ -226,6 +226,12 @@ class DefaultQubit(QubitDevice):
                 self._apply_state_vectors(input_vectors, input_wires)
                 first_time = False
 
+            if i > aux3 and isinstance(operation, (QubitStateVector, BasisState)):
+                raise DeviceError(
+                    "Operation {} cannot be used after other Operations have already been applied "
+                    "on a {} device.".format(operation.name, self.short_name)
+                )
+
             if isinstance(operation, QubitStateVector):
                 continue
             if isinstance(operation, BasisState):
