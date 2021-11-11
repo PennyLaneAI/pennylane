@@ -15,10 +15,10 @@
 This module contains the ``draw_text`` function
 """
 
+from pennylane.operation import Expectation, Probability, Sample, Variance, State
+
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
-
-from pennylane.operation import Expectation, Probability, Sample, Variance, State
 
 
 measurement_label_map = {
@@ -65,7 +65,7 @@ def _add_measurement(m, layer_str, wire_map, decimals):
     return layer_str
 
 
-def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_length=80):
+def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100):
     """Text based diagram for a Quantum Tape.
     
     Args:
@@ -102,12 +102,60 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
       2: ─╰QFT──RZ─│──┤     State
     aux: ──────────╰X─┤ <Z> State
 
+    .. UsageDetails::
+
+    **Decimals:**
+
+    >>> print(draw_text(tape, decimals=2))
+      0: ─╭QFT──RX(1.23)─╭C─┤     State
+      1: ─├QFT──RY(1.23)─├C─┤     State
+      2: ─╰QFT──RZ(1.23)─│──┤     State
+    aux: ────────────────╰X─┤ <Z> State
+
+    **Max Length:**
+
+    >>> rng = np.random.default_rng(seed=42)
+    >>> shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
+    >>> params = rng.random(shape)
+    >>> tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
+    >>> print(draw_text(tape2, max_length=60))
+    0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
+    1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
+    2: ──Rot────╰X─╭C────│───Rot─╰X─│──╭C─│──│─────Rot─│──│──╰C
+    3: ──Rot───────╰X─╭C─│───Rot────╰X─│──╰C─│─────Rot─╰X─│────
+    4: ──Rot──────────╰X─╰C──Rot───────╰X────╰C────Rot────╰X───
+
+    ───Rot───────────╭C─╭X──Rot──────╭C──────────────╭X─┤  
+    ──╭X────Rot──────│──╰C─╭X────Rot─╰X───╭C─────────│──┤  
+    ──│────╭X────Rot─│─────╰C───╭X────Rot─╰X───╭C────│──┤  
+    ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤  
+    ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤  
+
+    **Wire Order:**
+
+    >>> print(draw_text(tape, wire_order=["aux", 2, 1, 0]))
+    aux: ──────────╭X─┤ <Z> State
+      2: ─╭QFT──RZ─│──┤     State
+      1: ─├QFT──RY─├C─┤     State
+      0: ─╰QFT──RX─╰C─┤     State
+
+    **Show all wires:**
+
+    >>> print(draw_text(tape, wire_order=["a", "b", "aux", 0,1,2], show_all_wires=True))
+      a: ─────────────┤     State
+      b: ─────────────┤     State
+    aux: ──────────╭X─┤ <Z> State
+      0: ─╭QFT──RX─├C─┤     State
+      1: ─├QFT──RY─╰C─┤     State
+      2: ─╰QFT──RZ────┤     State
 
     """
 
     wire_map = convert_wire_order(tape.operations+tape.measurements, wire_order=wire_order,
         show_all_wires=show_all_wires)
     n_wires = len(wire_map)
+    if n_wires == 0:
+        return ""
 
     totals = [f"{wire}: " for wire in wire_map]
     line_length = max(len(s) for s in totals)
