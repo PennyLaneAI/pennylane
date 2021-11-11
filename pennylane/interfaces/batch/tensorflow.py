@@ -70,7 +70,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     lens = []
     trainable = []
 
-    for i, tape in enumerate(tapes):
+    for tape in tapes:
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -168,7 +168,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
 
-        for i, tape in enumerate(tapes):
+        for i, _ in enumerate(tapes):
             # convert output to TensorFlow tensors
 
             if isinstance(res[i], np.ndarray):
