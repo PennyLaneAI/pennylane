@@ -23,6 +23,7 @@ import pennylane as qml
 from .gradient_transform import gradient_transform
 from .parameter_shift import _gradient_analysis
 
+
 def generate_multishifted_tapes(tape, idx, shifts):
     r"""Generate a list of tapes where the corresponding trainable parameter
     indices have been shifted by the values given.
@@ -75,12 +76,19 @@ def param_shift_hessian(tape):
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # the hessian for 2-term parameter-shift rule can be expressed as
-    recipe = [[ 0.25, [1, 1], [ np.pi/2,  np.pi/2]],
-              [-0.25, [1, 1], [-np.pi/2,  np.pi/2]],
-              [-0.25, [1, 1], [ np.pi/2, -np.pi/2]],
-              [ 0.25, [1, 1], [-np.pi/2, -np.pi/2]]]
+    recipe = [
+        [ 0.25, [1, 1], [ np.pi/2,  np.pi/2]],
+        [-0.25, [1, 1], [-np.pi/2,  np.pi/2]],
+        [-0.25, [1, 1], [ np.pi/2, -np.pi/2]],
+        [ 0.25, [1, 1], [-np.pi/2, -np.pi/2]]
+    ]
     coeffs = [0.25, -0.25, -0.25, 0.25]
-    shifts = [[np.pi/2, np.pi/2], [-np.pi/2, np.pi/2], [np.pi/2, -np.pi/2], [-np.pi/2, -np.pi/2]]
+    shifts = [
+        [ np.pi/2,  np.pi/2],
+        [-np.pi/2,  np.pi/2],
+        [ np.pi/2, -np.pi/2],
+        [-np.pi/2, -np.pi/2]
+    ]
 
     # for now assume all operations support the 2-term parameter shift rule
     for idx in product(range(len(tape.trainable_params)), repeat=2):
@@ -104,9 +112,9 @@ def param_shift_hessian(tape):
             res = qml.math.squeeze(qml.math.stack(res))
             g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
 
-            for i, elem in enumerate(qml.math.atleast_1d(g)):
-                if i < len(grads):
-                    grads[i][idx[0], idx[1]] = elem
+            for j, elem in enumerate(qml.math.atleast_1d(g)):
+                if j < len(grads):
+                    grads[j][idx[0], idx[1]] = elem
                 else:
                     hessian = qml.math.empty((dim,dim))
                     hessian[idx[0], idx[1]] = elem

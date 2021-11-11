@@ -105,6 +105,29 @@ class TestParameterShiftHessian:
 
         assert np.allclose(jacobian, hessian)
 
+    def test_2term_shift_rules5(self):
+        """Test that the correct hessian is calculated when reusing parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", hybrid=False)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0,1])
+            qml.RZ(x[2], wires=1)
+            qml.Rot(x[0], x[1], x[2], wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        print('\n', jacobian, '\n\t=?\n', hessian)
+
+        assert np.allclose(jacobian, hessian)
+
     def test_less_quantum_invokations(self):
         """Test that the hessian invokes less hardware executions than double differentiation"""
 
