@@ -2251,9 +2251,7 @@ class TestApplyOperationUnit:
 
         test_state = np.array([1, 0])
         wires = 0
-        op = (
-            qml.PhaseShift(par, wires=wires)
-        )
+        op = qml.PhaseShift(par, wires=wires)
         assert op.name not in dev._apply_ops
 
         # Set the internal _apply_diagonal_unitary
