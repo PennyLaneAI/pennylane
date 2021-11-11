@@ -13,9 +13,18 @@
 
 <h3>Improvements</h3>
 
-* `DiagonalOperations` is not a separate class any more. Instead, devices can register a gate 
-  for a `is_diagonal` attribute and use its eigenvalues in simulations.
-  [TODO: add usage example]
+* `DiagonalOperations` is not a separate subclass any more. 
+  [(#1889)](https://github.com/PennyLaneAI/pennylane/pull/1889) 
+
+  Instead, devices can check for the diagonal 
+  property using attributes:
+
+  ``` python
+  from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
+  if op in diagonal_in_z_basis:
+    # do something
+  ``` 
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
