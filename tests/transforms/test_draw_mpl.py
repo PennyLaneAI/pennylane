@@ -13,6 +13,9 @@
 # limitations under the License.
 """
 Unit tests for the draw_mpl transform.
+
+See section on "Testing Matplotlib based code" in the "Software Tests"
+page in the developement guide.
 """
 
 import pytest

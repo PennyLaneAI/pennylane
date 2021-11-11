@@ -159,7 +159,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
 
         @qml.qnode(dev)
         def circuit(x, z):
-            qml.templates.GroverOperator(wires=(0,1,2,3))
+            qml.QFT(wires=(0,1,2,3))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
@@ -169,7 +169,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
 
         fig, ax = draw_mpl(circuit)(1.2345,1.2345)
 
-    .. figure:: ../../_static/draw_mpl/default.png
+    .. figure:: ../../_static/draw_mpl_qnode/main_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -186,12 +186,12 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
         @qml.qnode(dev)
         def circuit2(x, y):
             qml.RX(x, wires=0)
-            qml.Rot(y, wires=0)
+            qml.Rot(*y, wires=0)
             return qml.expval(qml.PauliZ(0))
 
         fig, ax = draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
 
-    .. figure:: ../../_static/draw_mpl/decimals.png
+    .. figure:: ../../_static/draw_mpl_qnode/decimals.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -238,7 +238,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
         ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
                     arrowprops={'facecolor': 'black'}, fontsize=14)
 
-    .. figure:: ../../_static/draw_mpl/postprocessing.png
+    .. figure:: ../../_static/draw_mpl_qnode/postprocessing.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -258,9 +258,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
         plt.rcParams['patch.force_edgecolor'] = True
         plt.rcParams['lines.color'] = 'black'
 
-        fig, ax = draw_mpl(tape)
+        fig, ax = draw_mpl(circuit)(1.2345,1.2345)
 
-    .. figure:: ../../_static/draw_mpl/rcparams.png
+    .. figure:: ../../_static/draw_mpl_qnode/rcparams.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -274,7 +274,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
         with plt.style.context("Solarize_Light2):
             fig, ax = draw_mpl(circuit)(1.2345,1.2345)
 
-    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
+    .. figure:: ../../_static/draw_mpl_qnode/Solarize_Light2.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
