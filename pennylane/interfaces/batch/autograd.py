@@ -51,6 +51,7 @@ def execute(
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)

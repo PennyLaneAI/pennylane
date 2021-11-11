@@ -67,6 +67,7 @@ def execute(
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
 
     parameters = []
     params_unwrapped = []

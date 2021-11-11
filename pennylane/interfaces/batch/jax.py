@@ -55,6 +55,7 @@ def execute(
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
     if max_diff > 1:
         raise ValueError("The JAX interface only supports first order derivatives.")
 
