@@ -99,7 +99,7 @@ class SingleExcitation(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def _decomposition(theta, wires):
+    def decomposition(theta, wires):
         decomp_ops = [
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(theta, wires=[wires[1], wires[0]]),

@@ -1270,7 +1270,7 @@ class TestDecomposition:
         phi = 0.432
 
         with pennylane.tape.OperationRecorder() as rec:
-            op = qml.CRX.decomposition(phi, wires=[0, 1])
+            qml.CRX.decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
 

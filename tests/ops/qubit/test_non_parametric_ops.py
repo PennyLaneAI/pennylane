@@ -402,7 +402,7 @@ class TestDecompositions:
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
-        decomp = opr.decomposition()
+        decomp = opr.decompose()
 
         mat = []
         for op in reversed(decomp):
