@@ -359,3 +359,38 @@ class TestInterfaces:
         res2 = circuit2(features)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+
+def test_multiple_amplitudes():
+    """Tests the use of many AmplitudeEmbedding."""
+
+    tol = 10e-10
+    dev = qml.device("default.qubit", wires=7)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[1, 2, 3], normalize=True)
+        qml.templates.AmplitudeEmbedding(
+            [1, 1, -1, -1, 0, 0, 0, 0], wires=[4, 5, 6], normalize=True
+        )
+        qml.CSWAP(wires=[0, 1, 4])
+        qml.CSWAP(wires=[0, 2, 5])
+        qml.CSWAP(wires=[0, 3, 6])
+        qml.Hadamard(wires=0)
+        return qml.probs(wires=0)
+
+    assert qml.math.allclose([0.5, 0.5], circuit(), atol=tol, rtol=0)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[1, 2, 3], normalize=True)
+        qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[4, 5, 6], normalize=True)
+        qml.CSWAP(wires=[0, 1, 4])
+        qml.CSWAP(wires=[0, 2, 5])
+        qml.CSWAP(wires=[0, 3, 6])
+        qml.Hadamard(wires=0)
+        return qml.probs(wires=0)
+
+    assert qml.math.allclose([1.0, 0.0], circuit(), atol=tol, rtol=0)

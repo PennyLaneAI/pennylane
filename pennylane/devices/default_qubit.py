@@ -206,12 +206,17 @@ class DefaultQubit(QubitDevice):
         has_qubit_vector_state = False
         n_qubit_state_vector = 0
         for i, operation in enumerate(operations):
-            #TODO: support multi BasisState
+            # TODO: support multi BasisState
+            # TODO: remove apply_state_vector
             if isinstance(operation, QubitStateVector):
                 has_qubit_vector_state = True
                 n_qubit_state_vector += 1
                 if len(wires_visited.intersection(set([*operation.wires]))) > 0:
-                    raise DeviceError("Operation {} cannot be used after other Operation {} applied in the same qubit ".format(operation.name, operation.name))
+                    raise DeviceError(
+                        "Operation {} cannot be used after other Operation {} applied in the same qubit ".format(
+                            operation.name, operation.name
+                        )
+                    )
                 wires_visited = wires_visited.union(set([*operation.wires]))
                 input_vectors.append(operation.parameters[0])
                 input_wires.append(operation.wires)
@@ -679,16 +684,15 @@ class DefaultQubit(QubitDevice):
         """Initialize the internal state vector in a specified state.
 
         Args:
-            state (array[complex]): normalized input state of length
-                ``2**len(wires)``
-            device_wires (Wires): wires that get initialized in the state
+            states (array[array[complex]]): normalized input states.
+            device_wires (array[Wires]): wires that get initialized in the state.
         """
 
         state = states[0]
-
         wires = device_wires[0]
+
         for s, w in zip(states[1:], device_wires[1:]):
-            state = self._reshape(self._tensordot(state,s,0),newshape=(1,-1))[0]
+            state = self._reshape(self._tensordot(state, s, 0), newshape=(1, -1))[0]
             wires = wires + w
         device_wires = wires
         # translate to wire labels used by device
