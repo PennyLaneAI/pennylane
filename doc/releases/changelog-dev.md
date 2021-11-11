@@ -25,7 +25,7 @@
   To obtain a decomposition using the static method, we now use
 
   ```pycon
-  >>> qml.PhaseShift._decomposition(0.3, wires=[0])
+  >>> qml.PhaseShift._decomposition(0.3, wires=0)
   [RZ(0.3, wires=[0])]
   ```
 
