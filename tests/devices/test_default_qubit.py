@@ -765,9 +765,9 @@ class TestApply:
             qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
 
         with pytest.raises(
-                DeviceError,
-                match="Operation QubitStateVector cannot be used after other Operations have already been applied "
-                      "on a default.qubit device.",
+            DeviceError,
+            match="Operation QubitStateVector cannot be used after other Operations have already been applied "
+            "on a default.qubit device.",
         ):
             qubit_device_2_wires.reset()
             qubit_device_2_wires.apply(

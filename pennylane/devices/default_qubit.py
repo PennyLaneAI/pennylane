@@ -227,7 +227,9 @@ class DefaultQubit(QubitDevice):
             if i - n_qubit_state_vector == 0 and has_qubit_vector_state:
                 self._apply_state_vectors(input_vectors, input_wires)
 
-            if i > 0 and isinstance(operation, BasisState):
+            if (i > 0 and isinstance(operation, BasisState)) or (
+                i == n_qubit_state_vector and isinstance(operation, QubitStateVector)
+            ):
                 raise DeviceError(
                     "Operation {} cannot be used after other Operations have already been applied "
                     "on a {} device.".format(operation.name, self.short_name)
