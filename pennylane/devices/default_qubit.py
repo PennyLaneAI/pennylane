@@ -205,8 +205,13 @@ class DefaultQubit(QubitDevice):
         input_vectors = []
         input_wires = []
         aux = 0
+        aux2 = False
+        aux3 = 0
         for i, operation in enumerate(operations):
-            if isinstance(operation, (QubitStateVector, BasisState)):
+            #TODO: support multi BasisState
+            if isinstance(operation, (QubitStateVector)):
+                aux3 += 1
+                aux2 = True
                 current = set()
                 current = current.union([*operation.wires])
                 if len(wires_visited.intersection(current)) > 0:
@@ -217,7 +222,7 @@ class DefaultQubit(QubitDevice):
             else:
                 aux += 1
 
-            if aux == 1:
+            if aux == 1 and aux2:
                 self._apply_state_vectors(input_vectors, input_wires)
                 first_time = False
 
@@ -228,6 +233,8 @@ class DefaultQubit(QubitDevice):
             else:
                 self._state = self._apply_operation(self._state, operation)
         # store the pre-rotated state
+        if aux3 == len(operations) and aux2:
+            self._apply_state_vectors(input_vectors, input_wires)
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
@@ -676,20 +683,17 @@ class DefaultQubit(QubitDevice):
         """
 
         state = states[0]
+
         wires = device_wires[0]
         for s, w in zip(states[1:], device_wires[1:]):
-            state = np.reshape(np.tensordot(state,s,0),newshape=(1,-1))[0]
+            state = self._reshape(self._tensordot(state,s,0),newshape=(1,-1))[0]
             wires = wires + w
-
-        states = state
         device_wires = wires
-
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
 
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
-
         if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
