@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -242,7 +242,7 @@ class ControlledQubitUnitary(QubitUnitary):
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
-class DiagonalQubitUnitary(DiagonalOperation):
+class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
 

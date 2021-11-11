@@ -9,6 +9,10 @@
 
 <h3>Improvements</h3>
 
+* `DiagonalOperations` is not a separate class any more. Instead, devices can register a gate 
+  for a `is_diagonal` attribute and use its eigenvalues in simulations.
+  [TODO: add usage example]
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>

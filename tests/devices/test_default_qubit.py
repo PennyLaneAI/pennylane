@@ -2240,8 +2240,8 @@ class TestApplyOperationUnit:
             assert np.allclose(res, expected_test_output)
 
     def test_diagonal_operation_case(self, inverse, mocker, monkeypatch):
-        """Tests the case when the operation to be applied is a
-        DiagonalOperation and the _apply_diagonal_unitary method is used."""
+        """Tests the case when the operation to be applied is
+        diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
         par = 0.3
 
@@ -2278,7 +2278,7 @@ class TestApplyOperationUnit:
         wires = 0
 
         # Redefine the S gate so that it is an example for a one-qubit gate
-        # that does not inherit from DiagonalOperation
+        # that is not registered in the diagonal_in_z_basis attribute
         class TestSGate(qml.operation.Operation):
             matrix = np.array([[0, 1], [1, 0]])
             num_params = 0

@@ -158,3 +158,23 @@ For example, ``qml.Toffoli(wires=[0, 1, 2])`` has the same effect as
 ``qml.Toffoli(wires=[1, 0, 2])``, but neither are the same as
 ``qml.Toffoli(wires=[0, 2, 1])``.
 """
+
+diagonal_in_z_basis = Attribute(
+    [
+        "PauliZ",
+        "S",
+        "T",
+        "CZ",
+        "DiagonalQubitUnitary",
+        "RZ",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "MultiRZ",
+        "CRZ",
+    ]
+)
+"""Attribute: Operations that are diagonal in the computational basis.
+
+For such operations, the eigenvalues provide all necessary information to 
+construct the matrix representation in the computational basis.
+"""
