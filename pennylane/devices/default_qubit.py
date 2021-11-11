@@ -92,6 +92,7 @@ class DefaultQubit(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Identity",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -487,6 +488,7 @@ class DefaultQubit(QubitDevice):
                 # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
                 # representation of the Pauliword
                 res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+                interface = qml.math.get_interface(self.state)
 
                 # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
                 # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
@@ -502,7 +504,11 @@ class DefaultQubit(QubitDevice):
                         * Hmat
                         * qml.math.gather(self.state, coo.col)
                     )
-                    c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                    c = qml.math.convert_like(coeff, product)
+
+                    if interface == "tensorflow":
+                        c = qml.math.cast(c, "complex128")
+
                     res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
             else:
@@ -625,18 +631,12 @@ class DefaultQubit(QubitDevice):
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
-        if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
+        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        norm_error_message = "Sum of amplitudes-squared does not equal one."
-        if qml.math.get_interface(state) != "jax":
+        if not qml.math.is_abstract(state):
             if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError(norm_error_message)
-        else:
-            # Case for jax without jit, full_lower is an attribute for abstract tracers
-            if not hasattr(qml.math.linalg.norm(state, ord=2), "full_lower"):
-                if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                    raise ValueError(norm_error_message)
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state

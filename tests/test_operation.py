@@ -417,6 +417,19 @@ class TestOperationConstruction:
         op = DummyOp(1.0, wires=0, id="test")
         assert op.id == "test"
 
+    def test_control_wires(self):
+        """Test that control_wires defaults to an empty Wires object."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            par_domain = "N"
+            grad_method = None
+
+        op = DummyOp(1.0, wires=0, id="test")
+        assert op.control_wires == qml.wires.Wires([])
+
 
 class TestObservableConstruction:
     """Test custom observables construction."""

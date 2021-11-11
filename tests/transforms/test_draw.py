@@ -232,11 +232,15 @@ def test_invalid_wires():
         qml.draw(circuit, wire_order=["q2", 5])()
 
 
-def test_draw_batch_transform():
+@pytest.mark.parametrize(
+    "transform",
+    [qml.gradients.param_shift(shift=0.2), functools.partial(qml.gradients.param_shift, shift=0.2)],
+)
+def test_draw_batch_transform(transform):
     """Test that drawing a batch transform works correctly"""
     dev = qml.device("default.qubit", wires=1)
 
-    @functools.partial(qml.gradients.param_shift, shift=0.2)
+    @transform
     @qml.beta.qnode(dev)
     def circuit(x):
         qml.Hadamard(wires=0)

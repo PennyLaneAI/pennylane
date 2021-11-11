@@ -19,7 +19,6 @@ import pennylane as qml
 from pennylane.ops import RX, RY, RZ
 from pennylane.operation import Operation, AnyWires
 
-
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
 
@@ -57,9 +56,7 @@ class AngleEmbedding(Operation):
             raise ValueError(f"Rotation option {rotation} not recognized.")
         self.rotation = ROT[rotation]
 
-        shape = qml.math.shape(features)
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        shape = qml.math.shape(features)[-1:]
         n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
@@ -72,6 +69,9 @@ class AngleEmbedding(Operation):
     def expand(self):
 
         features = self.parameters[0]
+        batched = len(qml.math.shape(features)) > 1
+
+        features = features.T if batched else features
 
         with qml.tape.QuantumTape() as tape:
 

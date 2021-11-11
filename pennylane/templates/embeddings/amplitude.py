@@ -15,7 +15,6 @@ r"""
 Contains the AmplitudeEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import warnings
 import numpy as np
 
 import pennylane as qml
@@ -52,7 +51,6 @@ class AmplitudeEmbedding(Operation):
         wires (Iterable): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
-        pad (float or complex): same as `pad`, to be deprecated
 
     Example:
 
@@ -62,13 +60,12 @@ class AmplitudeEmbedding(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import AmplitudeEmbedding
 
             dev = qml.device('default.qubit', wires=2)
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2))
+                qml.AmplitudeEmbedding(features=f, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[1/2, 1/2, 1/2, 1/2])
@@ -92,7 +89,7 @@ class AmplitudeEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
+                qml.AmplitudeEmbedding(features=f, wires=range(2), normalize=True)
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[15, 15, 15, 15])
@@ -111,7 +108,7 @@ class AmplitudeEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(f=None):
-                AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
+                qml.AmplitudeEmbedding(features=f, wires=range(2), pad_with=0.)
                 return qml.expval(qml.PauliZ(0))
 
             circuit(f=[1/sqrt(2), 1/sqrt(2)])
@@ -126,18 +123,7 @@ class AmplitudeEmbedding(Operation):
     par_domain = "A"
     grad_method = None
 
-    def __init__(
-        self, features, wires, pad_with=None, normalize=False, pad=None, do_queue=True, id=None
-    ):
-
-        # pad is replaced with the more verbose pad_with
-        if pad is not None:
-            warnings.warn(
-                "The pad argument will be replaced by the pad_with option in future versions of PennyLane.",
-                UserWarning,
-            )
-            if pad_with is None:
-                pad_with = pad
+    def __init__(self, features, wires, pad_with=None, normalize=False, do_queue=True, id=None):
 
         wires = Wires(wires)
         self.pad_with = pad_with
@@ -147,9 +133,7 @@ class AmplitudeEmbedding(Operation):
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self):  # pylint: disable=arguments-differ
-        return qml.adjoint(qml.templates.MottonenStatePreparation)(
-            self.parameters[0], wires=self.wires
-        )
+        return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
 
     def expand(self):
 
@@ -166,7 +150,8 @@ class AmplitudeEmbedding(Operation):
         * Check that the features tensor is one-dimensional.
         * If pad_with is None, check that the first dimension of the features tensor
           has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
-          first dimension of the features tensor is not larger than :math:`2^n` and pad features with value if necessary.
+          first dimension of the features tensor is not larger than :math:`2^n` and pad features
+          with value if necessary.
         * If normalize is false, check that first dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
@@ -188,7 +173,7 @@ class AmplitudeEmbedding(Operation):
             if pad_with is None and n_features != 2 ** len(wires):
                 raise ValueError(
                     f"Features must be of length {2 ** len(wires)}; got length {n_features}. "
-                    f"Use the 'pad' argument for automated padding."
+                    f"Use the 'pad_with' argument for automated padding."
                 )
 
             if pad_with is not None and n_features > 2 ** len(wires):
@@ -205,9 +190,13 @@ class AmplitudeEmbedding(Operation):
             # normalize
             norm = qml.math.sum(qml.math.abs(feature_set) ** 2)
 
-            if not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+            if qml.math.is_abstract(norm):
                 if normalize or pad_with:
-                    feature_set = feature_set / np.sqrt(norm)
+                    feature_set = feature_set / qml.math.sqrt(norm)
+
+            elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
+                if normalize or pad_with:
+                    feature_set = feature_set / qml.math.sqrt(norm)
                 else:
                     raise ValueError(
                         f"Features must be a vector of norm 1.0; got norm {norm}."

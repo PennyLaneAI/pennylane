@@ -1829,3 +1829,10 @@ class TestTensorSample:
             )
         ) / 16
         assert np.allclose(var, expected, atol=tol, rtol=0)
+
+
+def test_deprecation_warning():
+    """Test the deprecation warning."""
+
+    with pytest.warns(UserWarning, match="The default.tensor device is deprecated"):
+        qml.device("default.tensor", wires=3)

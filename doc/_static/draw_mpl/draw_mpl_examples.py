@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file automatically generates and saves a series of example pictures for the
-circuit drawer. This will be useful during early stages when the project is still
-undergoing cosmetic changes.
+This file generates the images used in docstrings for``qml.circuit_drawer.draw_mpl``.
+This makes it easier to keep docstrings up to date with the latest styling.
+
+It is not intended to be used in any Continuous Integration, but save time and hassle
+for developers when making any change that might impact the resulting figures.
 """
 
 import pathlib
@@ -38,6 +40,7 @@ def decimals():
     with qml.tape.QuantumTape() as tape2:
         qml.RX(1.23456, wires=0)
         qml.Rot(1.2345,2.3456,3.456, wires=0)
+        qml.expval(qml.PauliZ(0))
 
     fig, ax = draw_mpl(tape2, decimals=2)
     plt.savefig(folder / "decimals.png")
@@ -90,7 +93,6 @@ def postprocessing(tape):
     fig, ax = draw_mpl(tape)
     fig.suptitle("My Circuit", fontsize="xx-large")
 
-    from matplotlib.patches import FancyBboxPatch
     options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
     box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
     ax.add_patch(box1)
