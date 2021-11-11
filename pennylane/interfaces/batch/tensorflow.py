@@ -95,6 +95,21 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
+        for i, _ in enumerate(tapes):
+            # convert output to TensorFlow tensors
+
+            if isinstance(res[i], np.ndarray):
+                # For backwards compatibility, we flatten ragged tape outputs
+                # when there is no sampling
+                r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+                res[i] = tf.convert_to_tensor(r)
+
+            elif isinstance(res[i], tuple):
+                res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
+
+            else:
+                res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
+
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
@@ -167,21 +182,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
-
-        for i, _ in enumerate(tapes):
-            # convert output to TensorFlow tensors
-
-            if isinstance(res[i], np.ndarray):
-                # For backwards compatibility, we flatten ragged tape outputs
-                # when there is no sampling
-                r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
-                res[i] = tf.convert_to_tensor(r)
-
-            elif isinstance(res[i], tuple):
-                res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
-
-            else:
-                res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
 
         return res, grad_fn
 
