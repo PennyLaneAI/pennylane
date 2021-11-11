@@ -85,13 +85,13 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     def _execute(*all_params):  # pylint:disable=unused-argument
         # store all unwrapped parameters
         count = 0
-        unwrapped_params = []
+        params_unwrapped = []
 
         for s in lens:
-            unwrapped_params.append(qml.math.unwrap(all_params[count : count + s]))
+            params_unwrapped.append(qml.math.unwrap(all_params[count : count + s]))
             count += s
 
-        with qml.tape.Unwrap(*tapes, params=unwrapped_params, set_trainable=False):
+        with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
@@ -115,7 +115,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
 
-                        with qml.tape.Unwrap(*tapes, params=unwrapped_params, set_trainable=False):
+                        with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 tapes,
                                 dy,
@@ -159,7 +159,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    with qml.tape.Unwrap(*tapes, params=unwrapped_params, set_trainable=False):
+                    with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
                         vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
             vjps = iter(vjps)
