@@ -65,30 +65,23 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
-
+    all_params = []
     parameters = []
-    tape_shapes = []
 
     for i, tape in enumerate(tapes):
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
+        all_params.append(params)
         tape.trainable_params = qml.math.get_trainable_indices(params)
-        tape_shapes.append(len(tape.trainable_params))
-
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
         # store all unwrapped parameters
+        for i, a in enumerate(all_params):
+            all_params[i] = qml.math.unwrap(a)
 
-        nested_params = []
-        count = 0
-
-        for shape in tape_shapes:
-            nested_params.append(qml.math.unwrap(parameters[count:shape]))
-            count += shape
-
-        with qml.tape.Unwrap(*tapes, params=nested_params, set_trainable=False):
+        with qml.tape.Unwrap(*tapes, params=all_params, set_trainable=False):
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
@@ -112,7 +105,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
 
-                        with qml.tape.Unwrap(*tapes, params=nested_params, set_trainable=False):
+                        with qml.tape.Unwrap(*tapes, params=all_params, set_trainable=False):
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 tapes,
                                 dy,
@@ -156,7 +149,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    with qml.tape.Unwrap(*tapes, params=nested_params, set_trainable=False):
+                    with qml.tape.Unwrap(*tapes, params=all_params, set_trainable=False):
                         vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
             variables = tfkwargs.get("variables", None)
