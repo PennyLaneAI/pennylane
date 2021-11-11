@@ -202,31 +202,24 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit operations
         wires_visited = set()
-        input_vectors = []
-        input_wires = []
-        aux = 0
-        aux2 = False
-        aux3 = 0
+        input_vectors, input_wires = [], []
+        has_qubit_vector_state = False
+        n_qubit_state_vector = 0
         for i, operation in enumerate(operations):
             #TODO: support multi BasisState
-            if isinstance(operation, (QubitStateVector)):
-                aux3 += 1
-                aux2 = True
-                current = set()
-                current = current.union([*operation.wires])
-                if len(wires_visited.intersection(current)) > 0:
-                    raise DeviceError("Operation {} cannot be used after other {} applied in the same qubit ".format(operation.name, operation.name))
+            if isinstance(operation, QubitStateVector):
+                has_qubit_vector_state = True
+                n_qubit_state_vector += 1
+                if len(wires_visited.intersection(set([*operation.wires]))) > 0:
+                    raise DeviceError("Operation {} cannot be used after other Operation {} applied in the same qubit ".format(operation.name, operation.name))
                 wires_visited = wires_visited.union(set([*operation.wires]))
                 input_vectors.append(operation.parameters[0])
                 input_wires.append(operation.wires)
-            else:
-                aux += 1
 
-            if aux == 1 and aux2:
+            if i - n_qubit_state_vector == 0 and has_qubit_vector_state:
                 self._apply_state_vectors(input_vectors, input_wires)
-                first_time = False
 
-            if i > aux3 and isinstance(operation, (QubitStateVector, BasisState)):
+            if i > 0 and isinstance(operation, BasisState):
                 raise DeviceError(
                     "Operation {} cannot be used after other Operations have already been applied "
                     "on a {} device.".format(operation.name, self.short_name)
@@ -234,13 +227,16 @@ class DefaultQubit(QubitDevice):
 
             if isinstance(operation, QubitStateVector):
                 continue
+
             if isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             else:
                 self._state = self._apply_operation(self._state, operation)
-        # store the pre-rotated state
-        if aux3 == len(operations) and aux2:
+
+        if n_qubit_state_vector == len(operations) and has_qubit_vector_state:
             self._apply_state_vectors(input_vectors, input_wires)
+
+        # store the pre-rotated state
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
