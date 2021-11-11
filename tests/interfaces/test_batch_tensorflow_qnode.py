@@ -1329,3 +1329,33 @@ class TestSample:
         assert isinstance(result, tf.Tensor)
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == tf.int64
+
+
+class TestAutograph:
+    """Tests for Autograph mode"""
+
+    def test_autograph_gradients(self, tol):
+        """Test that a parameter-shift QNode can be compiled
+        using @tf.function, and differentiated"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @tf.function
+        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
+
+        with tf.GradientTape() as tape:
+            p0, p1 = circuit(x, y)
+            loss = p0[0] + p1[1]
+
+        expected = tf.cos(x / 2) ** 2 + (1 - tf.cos(x) * tf.cos(y)) / 2
+        assert np.allclose(loss, expected, atol=tol, rtol=0)
+
+        grad = tape.gradient(loss, [x, y])
+        expected = [-tf.sin(x) * tf.sin(y / 2) ** 2, tf.cos(x) * tf.sin(y) / 2]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
