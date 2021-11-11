@@ -11,6 +11,8 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* Several AmplitudeEmbedding can now be instantiated if they affect different qubits. [(#1140)](https://github.com/PennyLaneAI/pennylane/issues/1140)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
