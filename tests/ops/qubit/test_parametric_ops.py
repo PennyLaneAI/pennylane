@@ -1494,7 +1494,6 @@ class TestLabel:
         op3 = qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
         assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
-
     def test_string_parameter(self):
         """Test labelling works if variable is a string instead of a float."""
 
@@ -1507,7 +1506,6 @@ class TestLabel:
 
         op3 = qml.Rot("x", "y", "z", wires=0)
         assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
-
 
 
 control_data = [
@@ -1537,4 +1535,3 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
-
