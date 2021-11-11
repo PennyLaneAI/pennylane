@@ -238,13 +238,13 @@ def dot(tensor1, tensor2):
         return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
 
     if interface == "tensorflow":
-        if x.ndim == 0 and y.ndim == 0:
+        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
             return x * y
 
-        if y.ndim == 1:
+        if len(np.shape(y)) == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=interface)
 
-        if x.ndim == 2 and y.ndim == 2:
+        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)

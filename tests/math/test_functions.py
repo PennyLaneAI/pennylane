@@ -475,6 +475,20 @@ class TestDot:
         res = fn.dot(t1, t1)
         assert fn.allequal(res, np.array([[7, 10], [15, 22]]))
 
+    def test_matrix_vector_product_tensorflow_autograph(self):
+        """Test that the matrix-matrix dot product of two vectors results in a matrix
+        when using TensorFlow autograph mode"""
+        t1, t2 = tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])
+
+        @tf.function
+        def cost(t1, t2):
+            return fn.dot(t1, t2)
+
+        with tf.GradientTape() as tape:
+            res = cost(t1, t2)
+
+        assert fn.allequal(res, [20, 46])
+
     multidim_product_data = [
         [
             np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),

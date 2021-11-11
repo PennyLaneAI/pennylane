@@ -269,7 +269,7 @@ ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
 
 def _to_numpy_torch(x):
-    if x.is_conj():
+    if getattr(x, "is_conj", False) and x.is_conj():
         x = x.resolve_conj()
 
     return x.detach().cpu().numpy()
@@ -282,7 +282,6 @@ ar.register_function(
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
-ar.register_function("torch", "gather", lambda x, indices: x[indices])
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 
 try:

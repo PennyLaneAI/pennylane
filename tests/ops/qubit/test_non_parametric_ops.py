@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from gate_data import (
+    I,
     X,
     Y,
     Z,
@@ -43,6 +44,7 @@ from gate_data import (
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
+    (qml.Identity, I),
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
@@ -711,6 +713,7 @@ class TestMultiControlledX:
 
 
 label_data = [
+    (qml.Identity(0), "I", "I"),
     (qml.Hadamard(0), "H", "H"),
     (qml.PauliX(0), "X", "X"),
     (qml.PauliY(0), "Y", "Y"),
@@ -738,3 +741,30 @@ def test_label_method(op, label1, label2):
 
     op.inv()
     assert op.label() == label2
+
+
+control_data = [
+    (qml.Identity(0), Wires([])),
+    (qml.Hadamard(0), Wires([])),
+    (qml.PauliX(0), Wires([])),
+    (qml.PauliY(0), Wires([])),
+    (qml.S(wires=0), Wires([])),
+    (qml.T(wires=0), Wires([])),
+    (qml.SX(wires=0), Wires([])),
+    (qml.SWAP(wires=(0, 1)), Wires([])),
+    (qml.ISWAP(wires=(0, 1)), Wires([])),
+    (qml.SISWAP(wires=(0, 1)), Wires([])),
+    (qml.CNOT(wires=(0, 1)), Wires(0)),
+    (qml.CZ(wires=(0, 1)), Wires(0)),
+    (qml.CY(wires=(0, 1)), Wires(0)),
+    (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
+    (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
+    (qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4), Wires([0, 1, 2, 3])),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test ``control_wires`` attribute for non-parametrized operations."""
+
+    assert op.control_wires == control_wires
