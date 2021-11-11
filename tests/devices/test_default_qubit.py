@@ -2269,8 +2269,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, np.diag(op.matrix))
             assert np.allclose(res_wires, wires)
 
-    @pytest.mark.parametrize("inverse", [True, False])
-    def test_apply_einsum_case(self, inverse, mocker, monkeypatch):
+    def test_apply_einsum_case(self, mocker, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -2295,9 +2294,6 @@ class TestApplyOperationUnit:
 
         assert op.name in dev.operations
         assert op.name not in dev._apply_ops
-
-        if inverse:
-            op = op.inv()
 
         # Set the internal _apply_unitary_einsum
         history = []
