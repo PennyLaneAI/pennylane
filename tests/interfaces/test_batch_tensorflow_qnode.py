@@ -1429,30 +1429,27 @@ class TestAutograph:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-    @pytest.mark.xfail
     def test_autograph_hessian(self, tol):
         """Test that a parameter-shift vQNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
-        x = tf.Variable(0.543, dtype=tf.float64)
-        y = tf.Variable(-0.654, dtype=tf.float64)
+        a = tf.Variable(0.543, dtype=tf.float64)
+        b = tf.Variable(-0.654, dtype=tf.float64)
 
         @tf.function
         @qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
-        def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=0)
+        def circuit(x, y):
+            qml.RY(x, wires=0)
+            qml.RX(y, wires=0)
             return qml.expval(qml.PauliZ(0))
-
-        x = tf.Variable([1.0, 2.0], dtype=tf.float64)
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape() as tape2:
-                res = circuit(x)
-            g = tape2.gradient(res, x)
+                res = circuit(a, b)
+            g = tape2.gradient(res, [a, b])
+            g = tf.stack(g)
 
-        hess = tape1.gradient(g, x)
-        a, b = x * 1.0
+        hess = tf.stack(tape1.gradient(g, [a, b]))
 
         expected_res = tf.cos(a) * tf.cos(b)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)

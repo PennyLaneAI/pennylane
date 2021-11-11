@@ -81,6 +81,8 @@ def execute(
     if mode == "forward":
         output_types += [tf.float64] * len(tapes)
 
+    output_types += [tf.int32] * len(tapes)
+
     def _unwrap_params(all_params):
         count = 0
         params_unwrapped = []
@@ -93,6 +95,7 @@ def execute(
 
     def _forward(*all_params):
         params_unwrapped = _unwrap_params(all_params)
+        output_sizes = []
 
         with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
             # Forward pass: execute the tapes
@@ -106,27 +109,32 @@ def execute(
                 # when there is no sampling
                 r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
                 res[i] = tf.convert_to_tensor(r)
+                output_sizes.append(tf.size(res[i]))
 
             elif isinstance(res[i], tuple):
                 res[i] = tuple(tf.cast(tf.convert_to_tensor(r), tf.float64) for r in res[i])
             else:
                 res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
+                output_sizes.append(tf.size(res[i]))
 
-        return res + jacs
+        return res + jacs + output_sizes
 
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
+
         res = tf.py_function(func=_forward, inp=all_params, Tout=output_types)
+        output_sizes = res[-len(tapes) :]
 
         if mode == "forward":
-            jacs = res[len(tapes) :]
-            res = res[: len(tapes)]
+            jacs = res[len(tapes) : 2 * len(tapes)]
+
+        res = res[: len(tapes)]
 
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
             parameter values and output gradient dy"""
 
-            dy = [qml.math.T(d) for d in dy]
+            dy = [qml.math.T(d) for d in dy[: len(res)]]
 
             if mode == "forward":
                 # Jacobians were computed on the forward pass (mode="forward")
@@ -144,7 +152,7 @@ def execute(
                     # Gradient function is a gradient transform.
 
                     # Generate and execute the required gradient tapes
-                    if _n == max_diff or not context.executing_eagerly():
+                    if _n == max_diff:
 
                         len_all_params = len(all_params)
 
@@ -165,7 +173,6 @@ def execute(
                                 )
 
                                 vjps = processing_fn(execute_fn(vjp_tapes)[0])
-
                             return vjps
 
                         vjps = tf.py_function(
@@ -179,7 +186,7 @@ def execute(
                             tapes,
                             dy,
                             gradient_fn,
-                            reduction="extend",
+                            reduction="append",
                             gradient_kwargs=gradient_kwargs,
                         )
 
@@ -195,8 +202,11 @@ def execute(
                                 gradient_kwargs,
                                 _n=_n + 1,
                                 max_diff=max_diff,
-                            )
+                            ),
+                            nums=output_sizes,
                         )
+
+                        vjps = tf.unstack(tf.concat(vjps, 0), num=len(parameters))
 
                 else:
                     # Gradient function is not a gradient transform
