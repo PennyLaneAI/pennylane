@@ -16,7 +16,7 @@ This file contains a number of attributes that may be held by operators,
 and lists all operators satisfying those criteria.
 """
 from inspect import isclass
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Tensor
 
 
 class Attribute(set):
@@ -75,6 +75,13 @@ class Attribute(set):
             return super().__contains__(obj)
 
         try:
+
+            # Hotfix: return False for all tensors.
+            # Can be removed or updated when tensor class is
+            # improved.
+            if isinstance(obj, Tensor):
+                return False
+
             if isinstance(obj, Operator):
                 return super().__contains__(obj.name)
 
