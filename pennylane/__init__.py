@@ -56,6 +56,7 @@ from pennylane.transforms import (
     batch_params,
     batch_transform,
     draw,
+    draw_mpl,
     ControlledOperation,
     compile,
     ctrl,

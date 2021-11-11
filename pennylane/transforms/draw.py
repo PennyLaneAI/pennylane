@@ -162,7 +162,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
             qml.templates.GroverOperator(wires=(0,1,2,3))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
-            qml.RX(x wires=0)
+            qml.RX(x, wires=0)
             qml.CRZ(z, wires=(3,0))
             return qml.expval(qml.PauliZ(0))
 
