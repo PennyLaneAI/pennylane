@@ -6,6 +6,10 @@
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be 
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
+  
+* Added the identity observable to be an operator. Now we can explicitly call the identity 
+  operation on our quantum circuits for both qubit and CV devices.
+  [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
 <h3>Improvements</h3>
 
@@ -31,4 +35,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez
+Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
