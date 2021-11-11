@@ -259,7 +259,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                     layer,
                     target_wires,
                     op.label(decimals=decimals),
-                    box_options={"zorder": 4}, # make sure box and text above control wires if controlled
+                    box_options={
+                        "zorder": 4
+                    },  # make sure box and text above control wires if controlled
                     text_options={"zorder": 5},
                 )
 
