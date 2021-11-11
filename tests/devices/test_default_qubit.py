@@ -2216,10 +2216,10 @@ class TestInverseDecomposition:
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_internal_apply_ops_case(self, inverse, monkeypatch):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
@@ -2243,7 +2243,7 @@ class TestApplyOperationUnit:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, inverse, mocker, monkeypatch):
+    def test_diagonal_operation_case(self, mocker, monkeypatch):
         """Tests the case when the operation to be applied is
         diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
@@ -2253,8 +2253,6 @@ class TestApplyOperationUnit:
         wires = 0
         op = (
             qml.PhaseShift(par, wires=wires)
-            if not inverse
-            else qml.PhaseShift(par, wires=wires).inv()
         )
         assert op.name not in dev._apply_ops
 
@@ -2273,6 +2271,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, np.diag(op.matrix))
             assert np.allclose(res_wires, wires)
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_apply_einsum_case(self, inverse, mocker, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
@@ -2316,6 +2315,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix)
             assert np.allclose(res_wires, wires)
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""

@@ -230,7 +230,7 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-class PauliZ(Observable):
+class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
     The Pauli Z operator
 

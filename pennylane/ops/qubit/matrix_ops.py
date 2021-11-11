@@ -262,6 +262,10 @@ class DiagonalQubitUnitary(Operation):
     grad_method = None
 
     @classmethod
+    def _matrix(cls, *params):
+        return qml.math.diag(cls._eigvals(*params))
+
+    @classmethod
     def _eigvals(cls, *params):
         D = qml.math.asarray(params[0])
 
