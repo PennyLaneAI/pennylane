@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import QubitStateVector, BasisState, DeviceError
 from pennylane.devices import DefaultMixed
 from pennylane.ops import (
+    Identity,
     PauliZ,
     CZ,
     PauliX,
@@ -661,6 +662,23 @@ class TestApplyOperation:
 class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied
     correctly, rather than single operations"""
+
+    ops_and_true_state = [(None, basis_state(0, 2)), (Hadamard, hadamard_state(2))]
+
+    @pytest.mark.parametrize("op, true_state", ops_and_true_state)
+    def test_identity(self, op, true_state, tol):
+        """Tests that applying the identity operator doesn't change the state"""
+        num_wires = 2
+        dev = qml.device("default.mixed", wires=num_wires)  # prepare basis state
+
+        if op is not None:
+            ops = [op(i) for i in range(num_wires)]
+            dev.apply(ops)
+
+        # Apply Identity:
+        dev.apply([Identity(i) for i in range(num_wires)])
+
+        assert np.allclose(dev.state, true_state, atol=tol, rtol=0)
 
     def test_bell_state(self, tol):
         """Tests that we correctly prepare a Bell state by applying a Hadamard then a CNOT"""
