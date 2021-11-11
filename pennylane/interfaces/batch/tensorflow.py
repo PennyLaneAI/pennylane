@@ -67,40 +67,30 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     """
 
     parameters = []
-    params_unwrapped = []
+    tape_shapes = []
 
     for i, tape in enumerate(tapes):
         # store the trainable parameters
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape_shapes.append(len(tape.trainable_params))
 
         parameters += [p for i, p in enumerate(params) if i in tape.trainable_params]
 
     @tf.custom_gradient
     def _execute(*parameters):  # pylint:disable=unused-argument
         # store all unwrapped parameters
-        params_unwrapped.append(
-            [i.numpy() if isinstance(i, (tf.Variable, tf.Tensor)) else i for i in params]
-        )
 
-        with qml.tape.Unwrap(*tapes, set_trainable=False):
+        nested_params = []
+        count = 0
+
+        for shape in tape_shapes:
+            nested_params.append(qml.math.unwrap(parameters[count:shape]))
+            count += shape
+
+        with qml.tape.Unwrap(*tapes, params=nested_params, set_trainable=False):
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
-
-        for i, tape in enumerate(tapes):
-            # convert output to TensorFlow tensors
-
-            if isinstance(res[i], np.ndarray):
-                # For backwards compatibility, we flatten ragged tape outputs
-                # when there is no sampling
-                r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
-                res[i] = tf.convert_to_tensor(r)
-
-            elif isinstance(res[i], tuple):
-                res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
-
-            else:
-                res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
 
         def grad_fn(*dy, **tfkwargs):
             """Returns the vector-Jacobian product with given
@@ -122,7 +112,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # Generate and execute the required gradient tapes
                     if _n == max_diff or not context.executing_eagerly():
 
-                        with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
+                        with qml.tape.Unwrap(*tapes, params=nested_params, set_trainable=False):
                             vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                 tapes,
                                 dy,
@@ -166,11 +156,26 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                     # - gradient_fn is not differentiable
                     #
                     # so we cannot support higher-order derivatives.
-                    with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
+                    with qml.tape.Unwrap(*tapes, params=nested_params, set_trainable=False):
                         vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
             variables = tfkwargs.get("variables", None)
             return (vjps, variables) if variables is not None else vjps
+
+        for i, tape in enumerate(tapes):
+            # convert output to TensorFlow tensors
+
+            if isinstance(res[i], np.ndarray):
+                # For backwards compatibility, we flatten ragged tape outputs
+                # when there is no sampling
+                r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+                res[i] = tf.convert_to_tensor(r)
+
+            elif isinstance(res[i], tuple):
+                res[i] = tuple(tf.convert_to_tensor(r) for r in res[i])
+
+            else:
+                res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
 
         return res, grad_fn
 
