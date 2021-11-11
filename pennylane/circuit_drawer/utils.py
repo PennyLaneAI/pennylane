@@ -45,8 +45,12 @@ def convert_wire_order(ops, wire_order=None, show_all_wires=False):
     Returns:
         dict: map from wire labels to sequential positive integers
     """
+    default = default_wire_map(ops)
+
     if wire_order is None:
-        return default_wire_map(ops)
+        return default
+
+    wire_order = list(wire_order) + [wire for wire in default if wire not in wire_order]
 
     if not show_all_wires:
         used_wires = {wire for op in ops for wire in op.wires}
