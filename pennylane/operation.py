@@ -532,7 +532,7 @@ class Operator(abc.ABC):
         return self.data.copy()
 
     @staticmethod
-    def _decomposition(*params, wires):
+    def decomposition(*params, wires):
         """Defines a decomposition of this operator into products of other operators.
 
         Args:
@@ -544,15 +544,15 @@ class Operator(abc.ABC):
         """
         raise NotImplementedError
 
-    def decomposition(self):
-        """Defines a decomposition of this operator into products of other operators.
+    def decompose(self):
+        """Decomposes this operator into products of other operators.
 
         Returns:
             list[Operation]
         """
         if self.num_params == 0:
-            return self._decomposition(wires=self.wires)
-        return self._decomposition(*self.parameters, wires=self.wires)
+            return self.decomposition(wires=self.wires)
+        return self.decomposition(*self.parameters, wires=self.wires)
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -744,7 +744,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition()
+            self.decompose()
 
         if not self.data:
             # original operation has no trainable parameters

@@ -89,7 +89,7 @@ as well as potential further capabilities, by providing the following class attr
   supported by PennyLane.
 
   If your device does not natively support an operation that has the
-  :meth:`~.Operation._decomposition` static method defined, PennyLane will
+  :meth:`~.Operation.decomposition` static method defined, PennyLane will
   attempt to decompose the operation before calling the device. For example,
   the :class:`~.Rot` `decomposition method <../_modules/pennylane/ops/qubit.html#Rot.decomposition>`_ will
   decompose the single-qubit rotation gate to :class:`~.RZ` and :class:`~.RY` gates.
@@ -493,7 +493,7 @@ acts on. For example, to define a custom gate depending on parameter :math:`\phi
             return np.array([[params[0], 1], [1, -params[1]]]) / math.sqrt(2)
 
         @staticmethod
-        def _decomposition(*params, wires):
+        def decomposition(*params, wires):
             """(Optional) Returns a list of PennyLane operations that decompose
             the custom gate."""
             return [qml.RZ(params[0]/2, wires=wires[0]), qml.PauliX(params[1], wires=wires[0])]
@@ -567,7 +567,7 @@ instead of :attr:`_matrix`.
             return np.array([1j, 1j, -1j, -1j])
 
         @staticmethod
-        def _decomposition(*params, wires):
+        def decomposition(*params, wires):
             """(Optional) Returns a list of PennyLane operations that decompose
             the custom gate."""
             return [qml.DiagonalQubitUnitary([1j, 1j, -1j, -1j], wires=wires)]

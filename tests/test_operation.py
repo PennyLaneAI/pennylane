@@ -1237,7 +1237,7 @@ class TestDecomposition:
     def test_U1_decomposition(self):
         """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
         phi = 0.432
-        res = qml.U1(phi, wires=0).decomposition()
+        res = qml.U1(phi, wires=0).decompose()
 
         assert len(res) == 1
         assert res[0].name == "PhaseShift"
@@ -1251,7 +1251,7 @@ class TestDecomposition:
         omega = -5.43
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.Rot._decomposition(phi, theta, omega, wires=0)
+            qml.Rot.decomposition(phi, theta, omega, wires=0)
 
         assert len(rec.queue) == 3
 
@@ -1270,7 +1270,7 @@ class TestDecomposition:
         phi = 0.432
 
         with pennylane.tape.OperationRecorder() as rec:
-            op = qml.CRX._decomposition(phi, wires=[0, 1])
+            op = qml.CRX.decomposition(phi, wires=[0, 1])
 
         assert len(rec.queue) == 6
 
@@ -1323,7 +1323,7 @@ class TestDecomposition:
         operation_wires = [0, 1]
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.CRY._decomposition(phi, wires=operation_wires)
+            qml.CRY.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
 
@@ -1361,7 +1361,7 @@ class TestDecomposition:
         operation_wires = [0, 1]
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.CRZ._decomposition(phi, wires=operation_wires)
+            qml.CRZ.decomposition(phi, wires=operation_wires)
 
         assert len(rec.queue) == 4
 
@@ -1397,7 +1397,7 @@ class TestDecomposition:
         lam = 0.654
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.U2._decomposition(phi, lam, wires=0)
+            qml.U2.decomposition(phi, lam, wires=0)
 
         assert len(rec.queue) == 3
 
@@ -1417,7 +1417,7 @@ class TestDecomposition:
         lam = 0.654
 
         with pennylane.tape.OperationRecorder() as rec:
-            qml.U3._decomposition(theta, phi, lam, wires=0)
+            qml.U3.decomposition(theta, phi, lam, wires=0)
 
         assert len(rec.queue) == 3
 
@@ -1443,7 +1443,7 @@ class TestDecomposition:
             "BasisStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.BasisState(n, wires=wires).decomposition()
+        qml.BasisState(n, wires=wires).decompose()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], n)
@@ -1462,7 +1462,7 @@ class TestDecomposition:
             "MottonenStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.QubitStateVector(state, wires=wires).decomposition()
+        qml.QubitStateVector(state, wires=wires).decompose()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], state)

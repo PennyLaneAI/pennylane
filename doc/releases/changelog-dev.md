@@ -13,36 +13,24 @@
 
 <h3>Improvements</h3>
 
+* A `decompose()` method has been added to the `Operator` class such that we can
+  obtain (and queue) decompositions directly from instances of operations.
+  [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
+
+  ```pycon
+  >>> op = qml.PhaseShift(0.3, wires=0)
+  >>> op.decompose()
+  [RZ(0.3, wires=[0])]
+  ```
+
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 <h3>Breaking changes</h3>
 
-* The `decomposition` method of `Operation` has been updated. Instead of the
-  single static method, one can now also retrieve decompositions of instantiated
-  operations directly.
+* The static method `decomposition()`, formerly in the `Operation` class, has
+  been moved to the base `Operator` class.
   [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
-
-  To obtain a decomposition using the static method, we now use
-
-  ```pycon
-  >>> qml.PhaseShift._decomposition(0.3, wires=0)
-  [RZ(0.3, wires=[0])]
-  ```
-
-  Previously, the static method was named `decomposition`. Following this
-  change, `decomposition` without the `_` is a regular method in the class that
-  we can call from instantiated operations:
-
-  ```pycon
-  >>> op = qml.PhaseShift(0.3, wires=0)
-  >>> op.decomposition()
-  [RZ(0.3, wires=[0])]
-  ```
-
-  New `Operation`s should therefore define the `_decomposition` static method. This
-  change upgrades the `decomposition` functionality to work just like the existing
-  `_matrix` methods, as both are equally valid representations of `Operation`s.
-
+  
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>

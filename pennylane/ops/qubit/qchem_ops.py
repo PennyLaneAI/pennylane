@@ -167,7 +167,7 @@ class SingleExcitationMinus(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def _decomposition(theta, wires):
+    def decomposition(theta, wires):
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
@@ -241,7 +241,7 @@ class SingleExcitationPlus(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def _decomposition(theta, wires):
+    def decomposition(theta, wires):
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
@@ -335,7 +335,7 @@ class DoubleExcitation(Operation):
         return mat
 
     @staticmethod
-    def _decomposition(theta, wires):
+    def decomposition(theta, wires):
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
             qml.CNOT(wires=[wires[2], wires[3]]),
@@ -637,7 +637,7 @@ class OrbitalRotation(Operation):
         return U
 
     @staticmethod
-    def _decomposition(phi, wires):
+    def decomposition(phi, wires):
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
             qml.Hadamard(wires=wires[3]),

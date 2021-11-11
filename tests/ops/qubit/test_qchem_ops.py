@@ -44,7 +44,7 @@ class TestDecomposition:
         and the target is wire 0 in the decomposition. (Not applicable for
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
-        decomp = qml.SingleExcitationPlus(phi, wires=[0, 1]).decomposition()
+        decomp = qml.SingleExcitationPlus(phi, wires=[0, 1]).decompose()
 
         mats = []
         for i in reversed(decomp):
@@ -79,7 +79,7 @@ class TestDecomposition:
         and the target is wire 0 in the decomposition. (Not applicable for
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
-        decomp = qml.SingleExcitationMinus(phi, wires=[0, 1]).decomposition()
+        decomp = qml.SingleExcitationMinus(phi, wires=[0, 1]).decompose()
 
         mats = []
         for i in reversed(decomp):
@@ -122,7 +122,7 @@ class TestSingleExcitation:
 
         Need to consider the matrix of CRY separately, as the control is wire 1
         and the target is wire 0 in the decomposition."""
-        decomp = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
+        decomp = qml.SingleExcitation(phi, wires=[0, 1]).decompose()
 
         mats = []
         for i in reversed(decomp):
@@ -328,7 +328,7 @@ class TestDoubleExcitation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decompose()
 
         from functools import reduce
 
@@ -594,7 +594,7 @@ class TestOrbitalRotation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decompose()
 
         from functools import reduce
 

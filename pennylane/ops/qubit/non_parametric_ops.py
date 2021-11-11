@@ -76,7 +76,7 @@ class Hadamard(Observable, Operation):
         return [qml.RY(-np.pi / 4, wires=self.wires)]
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi / 2, wires=wires),
@@ -139,7 +139,7 @@ class PauliX(Observable, Operation):
         return [Hadamard(wires=self.wires)]
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi, wires=wires),
@@ -211,7 +211,7 @@ class PauliY(Observable, Operation):
         ]
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RY(np.pi, wires=wires),
@@ -266,7 +266,7 @@ class PauliZ(Observable, DiagonalOperation):
         return []
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [qml.PhaseShift(np.pi, wires=wires)]
         return decomp_ops
 
@@ -314,7 +314,7 @@ class S(DiagonalOperation):
         return cls.op_eigvals
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
@@ -359,7 +359,7 @@ class T(DiagonalOperation):
         return cls.op_eigvals
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
 
@@ -404,7 +404,7 @@ class SX(Operation):
         return cls.op_eigvals
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
@@ -555,7 +555,7 @@ class CY(Operation):
         return cls.matrix
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
         return decomp_ops
 
@@ -597,7 +597,7 @@ class SWAP(Operation):
         return cls.matrix
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[1], wires[0]]),
@@ -646,7 +646,7 @@ class ISWAP(Operation):
         return cls.op_eigvals
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             S(wires=wires[0]),
             S(wires=wires[1]),
@@ -702,7 +702,7 @@ class SISWAP(Operation):
         return cls.op_eigvals
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
@@ -776,7 +776,7 @@ class CSWAP(Operation):
         return cls.matrix
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
             qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
@@ -843,7 +843,7 @@ class Toffoli(Operation):
         return cls.matrix
 
     @staticmethod
-    def _decomposition(wires):
+    def decomposition(wires):
         decomp_ops = [
             Hadamard(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),

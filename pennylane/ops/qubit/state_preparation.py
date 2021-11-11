@@ -50,7 +50,7 @@ class BasisState(Operation):
     grad_method = None
 
     @staticmethod
-    def _decomposition(n, wires):
+    def decomposition(n, wires):
         return BasisStatePreparation(n, wires)
 
     def adjoint(self):
@@ -84,7 +84,7 @@ class QubitStateVector(Operation):
     grad_method = None
 
     @staticmethod
-    def _decomposition(state, wires):
+    def decomposition(state, wires):
         return MottonenStatePreparation(state, wires)
 
     def adjoint(self):
