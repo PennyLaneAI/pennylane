@@ -208,6 +208,8 @@ class DefaultQubit(QubitDevice):
         for i, operation in enumerate(operations):
             # TODO: support multi BasisState
             # TODO: remove apply_state_vector
+
+            # All QubitStateVectors are accumulated before applying them.
             if isinstance(operation, QubitStateVector):
                 has_qubit_vector_state = True
                 n_qubit_state_vector += 1
@@ -691,6 +693,7 @@ class DefaultQubit(QubitDevice):
         state = states[0]
         wires = device_wires[0]
 
+        # the final state is calculated as the tensor product of each of the states.
         for s, w in zip(states[1:], device_wires[1:]):
             state = self._reshape(self._tensordot(state, s, 0), newshape=(1, -1))[0]
             wires = wires + w
