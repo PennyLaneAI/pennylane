@@ -172,9 +172,9 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 
         if multipliers is not None:
             m = multipliers[i]
-            new_params[idx] = new_params[idx] * qml.math.convert_like(m, new_params[idx])
+            new_params[idx] = new_params[idx] * m
 
-        new_params[idx] = new_params[idx] + qml.math.convert_like(s, new_params[idx])
+        new_params[idx] = new_params[idx] + s
         shifted_tape.set_parameters(new_params)
         tapes.append(shifted_tape)
 
