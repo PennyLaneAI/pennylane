@@ -17,34 +17,31 @@
 
 <h3>Breaking changes</h3>
 
-* The `decomposition` method of operations has changed from a static
-  class method to an operation-dependent method.
+* The `decomposition` method of `Operation` has been updated. Instead of the
+  single static method, one can now also retrieve decompositions of instantiated
+  operations directly.
   [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
 
-  Instead of the original syntax
+  To obtain a decomposition using the static method, we now use
 
-  ```python
-  >>> qml.CRX.decomposition(0.3, wires=[0, 1])
+  ```pycon
+  >>> qml.PhaseShift._decomposition(0.3, wires=[0])
+  [RZ(0.3, wires=[0])]
   ```
 
-  the decomposition must be called on an instantiated version of the operation:
+  Previously, the static method was named `decomposition`. Following this
+  change, `decomposition` without the `_` is a regular method in the class that
+  we can call from instantiated operations:
 
-  ```python
-  >>> qml.CRX(0.3, wires=[0, 1]).decomposition()
+  ```pycon
+  >>> op = qml.PhaseShift(0.3, wires=0)
+  >>> op.decomposition()
+  [RZ(0.3, wires=[0])]
   ```
 
-  This has consequences when decompositions are called from within a
-  QNode, as the instantiation of the operation itself will be queued in addition
-  to the decomposition. This can be solved by stopping the recording
-  while instantiating an operator, and then calling its decomposition:
-
-  ```python
-  @qml.qnode(dev)
-  def my_qnode(x):
-      with qml.tape.stop_recording():
-          op = qml.CRX(x, wires=[0, 1])
-      op.decomposition()
-  ```
+  New `Operation`s should therefore define the `_decomposition` static method. This
+  change upgrades the `decomposition` functionality to work just like the existing
+  `_matrix` methods, as both are equally valid representations of `Operation`s.
 
 <h3>Deprecations</h3>
 
