@@ -40,8 +40,7 @@ def zyz_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
-    Diagonal operations will be converted to a single :class:`.RZ` gate, while non-diagonal
-    operations will be converted to a :class:`.Rot` gate that implements the original operation
+    Operations will be converted to a :class:`.Rot` gate that implements the original operation
     up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
 
     Args:
@@ -50,7 +49,7 @@ def zyz_decomposition(U, wire):
 
     Returns:
         list[qml.Operation]: A ``Rot`` gate on the specified wire that implements ``U``
-        up to a global phase, or an equivalent ``RZ`` gate if ``U`` is diagonal.
+        up to a global phase.
 
     **Example**
 
@@ -73,27 +72,15 @@ def zyz_decomposition(U, wire):
     """
     U = _convert_to_su2(U)
 
-    # Check if the matrix is diagonal; only need to check one corner.
-    # If it is diagonal, we don't need a full Rot, just return an RZ.
-    if math.allclose(U[0, 1], [0.0]):
-        omega = 2 * math.angle(U[1, 1])
-        return [qml.RZ(omega, wires=wire)]
+    # Derive theta from the diagonal elements; arcsin more accurate than arccos
+    theta = 2 * math.arccos(math.abs(U[0, 0]))
 
-    # If the top left element is 0, can only use the off-diagonal elements. We
-    # have to be very careful with the math here to ensure things that get
-    # multiplied together are of the correct type in the different interfaces.
-    if math.allclose(U[0, 0], [0.0]):
-        phi = 0.0
-        theta = -np.pi
-        omega = 1j * math.log(U[0, 1] / U[1, 0]) - np.pi
-    else:
-        # If not diagonal, compute the angle of the RY
-        cos2_theta_over_2 = math.abs(U[0, 0] * U[1, 1])
-        theta = 2 * math.arccos(math.sqrt(cos2_theta_over_2))
+    # Compute phi and omega from the angles of the top row; use atan2
+    # to keep the angle within -np.pi and np.pi
+    angle_U00 = math.arctan2(math.imag(U[0, 0]), math.real(U[0, 0]))
+    angle_U10 = math.arctan2(math.imag(U[1, 0]), math.real(U[1, 0]))
 
-        el_division = U[0, 0] / U[1, 0]
-        tan_part = math.cast_like(math.tan(theta / 2), el_division)
-        omega = 1j * math.log(tan_part * el_division)
-        phi = -omega - math.cast_like(2 * math.angle(U[0, 0]), omega)
+    phi = -angle_U10 - angle_U00
+    omega = angle_U10 - angle_U00
 
-    return [qml.Rot(math.real(phi), math.real(theta), math.real(omega), wires=wire)]
+    return [qml.Rot(phi, theta, omega, wires=wire)]
