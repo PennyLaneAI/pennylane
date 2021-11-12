@@ -24,7 +24,7 @@ def draw(
     charset="unicode",
     wire_order=None,
     show_all_wires=False,
-    max_length=80,
+    max_length=None,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode.

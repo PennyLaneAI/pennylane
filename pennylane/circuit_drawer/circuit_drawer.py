@@ -58,7 +58,7 @@ class CircuitDrawer:
         wires,
         charset=None,
         show_all_wires=False,
-        max_length=80,
+        max_length=None,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -84,7 +84,7 @@ class CircuitDrawer:
             self.active_wires = wires.all_wires([wires, self.active_wires])
 
         # We add a -2 character offset to account for some downstream formatting
-        self.max_length = max_length - 2 if type(max_length) == int else 78
+        self.max_length = max_length - 2 if type(max_length) == int else None
 
         self.representation_resolver = RepresentationResolver(self.charset)
         self.operation_representation_grid = Grid()
@@ -359,7 +359,7 @@ class CircuitDrawer:
         for i in range(self.full_representation_grid.num_wires):
             # format wire name nicely
             wire = self.full_representation_grid.wire(i)
-            s = "{:>" + str(padding) + "}: {}"
+            s = " {:>" + str(padding) + "}: {}"
 
             rendered_string += s.format(wire_names[i], 2 * self.charset.WIRE)
             for s in wire:
@@ -376,17 +376,28 @@ class CircuitDrawer:
                 rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
 
         # Restrict CLI print width to max_length
-        wires = rendered_string.split("\n")
-        n_wraps = (len(wires[0]) // self.max_length) + 1
-        rendered_substrings = []
-        for i in range(n_wraps):
-            for j, wire in enumerate(wires):
-                if ((i + 1) * self.max_length) < len(wire):
-                    rendered_substrings.append(
-                        f" {wire[i * self.max_length : (i + 1) * self.max_length]}"
-                    )
-                else:
-                    rendered_substrings.append(f" {wire[i * self.max_length:]}")
-        rendered_string = "\n".join(rendered_substrings)
+        if self.max_length is not None:
+            wires = rendered_string.split("\n")
+            n_wraps = (len(wires[0]) // self.max_length) + 1
+            rendered_substrings = []
+            # offset = 0
+            for i in range(n_wraps):
+                # print(i * self.max_length, (i + 1) * self.max_length, offset)
+                for j, wire in enumerate(wires):
+                    if (((i + 1) * self.max_length)) < len(wire):
+                        # This conditional is a bit of a hack. The goal is to
+                        # prepend whitespace to maintain alignment with the
+                        # beginning of the circuit while preventing the breaking
+                        # of the circuit_drawer unit tests.
+                        if i == 0:
+                            rendered_substrings.append(
+                                f"{wire[i * self.max_length : ((i + 1) * self.max_length) + 1]}"
+                            )
+                        else:
+                            rendered_substrings.append(
+                                f" {wire[(i * self.max_length) + 1: ((i + 1) * self.max_length) + 1]}"
+                            )
+                    else:
+                        rendered_substrings.append(f" {wire[i * self.max_length + 1:]}")
 
         return rendered_string

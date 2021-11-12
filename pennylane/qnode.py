@@ -765,7 +765,7 @@ class QNode:
         return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
-        self, charset="unicode", wire_order=None, show_all_wires=False, max_length=80
+        self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None
     ):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 

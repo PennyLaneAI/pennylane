@@ -590,7 +590,7 @@ class CircuitGraph:
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=80):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:

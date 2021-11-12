@@ -1082,7 +1082,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=80):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
         """Draw the quantum tape as a circuit diagram.
 
         Consider the following circuit as an example:
