@@ -83,7 +83,8 @@ class CircuitDrawer:
             # as active wires
             self.active_wires = wires.all_wires([wires, self.active_wires])
 
-        self.max_length = max_length if type(max_length) == int else 80
+        # We add a -2 character offset to account for some downstream formatting
+        self.max_length = max_length - 2 if type(max_length) == int else 78
 
         self.representation_resolver = RepresentationResolver(self.charset)
         self.operation_representation_grid = Grid()
@@ -382,10 +383,10 @@ class CircuitDrawer:
             for j, wire in enumerate(wires):
                 if ((i + 1) * self.max_length) < len(wire):
                     rendered_substrings.append(
-                        wire[i * self.max_length : (i + 1) * self.max_length]
+                        f" {wire[i * self.max_length : (i + 1) * self.max_length]}"
                     )
                 else:
-                    rendered_substrings.append(wire[i * self.max_length :])
+                    rendered_substrings.append(f" {wire[i * self.max_length:]}")
         rendered_string = "\n".join(rendered_substrings)
 
         return rendered_string
