@@ -71,7 +71,8 @@ def generate_multishifted_tapes(tape, idx, shifts):
 
 class hessian_transform(qml.batch_transform):
     """Modified gradient_transform to account for different post-processing when computing
-       the second derivate of a QNode."""
+    the second derivate of a QNode."""
+
     def __init__(
         self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
     ):
@@ -121,11 +122,11 @@ class hessian_transform(qml.batch_transform):
             # While the dimensions x0 and x1, and y0.. and y1.., are the same respectively, they are
             # labeled to keep track of the swapping that occurs during the transformation.
 
-            num_out_dims = len(cjac.shape)-1  # number of dims in y..
-            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])              # -> (z.., x0, y1..)
-            jac = qml.math.tensordot(jac, cjac, [[-1-num_out_dims], [0]])  # -> (z.., y1.., y0..)
+            num_out_dims = len(cjac.shape) - 1  # number of dims in y..
+            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])                # -> (z.., x0, y1..)
+            jac = qml.math.tensordot(jac, cjac, [[-1 - num_out_dims], [0]])  # -> (z.., y1.., y0..)
             for i in range(num_out_dims):
-                jac = qml.math.swapaxes(jac, -1-i, -1-num_out_dims-i)      # -> (z.., y0.., y1..)
+                jac = qml.math.swapaxes(jac, -1 - i, -1 - num_out_dims - i)  # -> (z.., y0.., y1..)
 
             return jac
 
