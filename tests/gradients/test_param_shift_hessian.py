@@ -173,7 +173,7 @@ class TestParameterShiftHessian:
 
         assert np.allclose(jacobian, hessian)
 
-    def test_less_quantum_invokations(self):
+    def test_less_quantum_invocations(self):
         """Test that the hessian invokes less hardware executions than double differentiation"""
 
         dev = qml.device("default.qubit", wires=2)

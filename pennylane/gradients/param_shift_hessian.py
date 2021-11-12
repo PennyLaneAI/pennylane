@@ -24,6 +24,20 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 from .parameter_shift import _gradient_analysis
 
 
+def _process_gradient_recipe(gradient_recipe, tol=1e-10):
+    """Utility function to process gradient recipes."""
+
+    gradient_recipe = np.array(gradient_recipe).T
+    # remove all small coefficients, shifts, and multipliers
+    gradient_recipe[np.abs(gradient_recipe) < tol] = 0
+    # remove columns where the coefficients are 0
+    gradient_recipe = gradient_recipe[:, :, ~(gradient_recipe[0, 0] == 0)]
+    # sort columns according to abs(shift2) then abs(shift1)
+    gradient_recipe = gradient_recipe[:, :, np.lexsort(np.abs(gradient_recipe)[:, -1])]
+
+    return gradient_recipe[0, 0], gradient_recipe[0, 1], gradient_recipe[:, 2].T
+
+
 def generate_multishifted_tapes(tape, idx, shifts):
     r"""Generate a list of tapes where the corresponding trainable parameter
     indices have been shifted by the values given.
@@ -126,23 +140,28 @@ def param_shift_hessian(tape):
     if not tape.trainable_params:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # the hessian for 2-term parameter-shift rule can be expressed as
-    recipe = [
-        [ 0.25, [1, 1], [ np.pi/2,  np.pi/2]],
-        [-0.25, [1, 1], [-np.pi/2,  np.pi/2]],
-        [-0.25, [1, 1], [ np.pi/2, -np.pi/2]],
-        [ 0.25, [1, 1], [-np.pi/2, -np.pi/2]]
+    # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
+    # Off-diagonal elements of the Hessian require shifts to two different parameter indices.
+    # A recipe can thus be expressed via the tape patterns: (dummy values for ndarray creation)
+    #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]
+    # Each corresponding to one term in the parameter-shift formula:
+    #       didj f(x) = coeff * f(mult*x + shift1*ei +shift2*ej) + ...
+    diag_recipe = [
+        [[ 0.5], [1], [np.pi]],
+        [[-0.5], [1], [    0]]
     ]
-    coeffs = [0.25, -0.25, -0.25, 0.25]
-    shifts = [
-        [ np.pi/2,  np.pi/2],
-        [-np.pi/2,  np.pi/2],
-        [ np.pi/2, -np.pi/2],
-        [-np.pi/2, -np.pi/2]
+    off_diag_recipe = [
+        [[ 0.25, 1], [1, 1], [ np.pi/2,  np.pi/2]],
+        [[-0.25, 1], [1, 1], [-np.pi/2,  np.pi/2]],
+        [[-0.25, 1], [1, 1], [ np.pi/2, -np.pi/2]],
+        [[ 0.25, 1], [1, 1], [-np.pi/2, -np.pi/2]]
     ]
 
     # for now assume all operations support the 2-term parameter shift rule
     for idx in product(range(len(tape.trainable_params)), repeat=2):
+
+        recipe = diag_recipe if idx[0] == idx[1] else off_diag_recipe
+        coeffs, multipliers, shifts = _process_gradient_recipe(recipe)
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
