@@ -31,7 +31,7 @@ INTERFACE_NAMES = {
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
     "JAX": ("jax", "JAX"),
     "PyTorch": ("torch", "pytorch"),
-    "TensorFlow": ("tf", "tensorflow"),
+    "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
 }
 """dict[str, str]: maps allowed interface strings to the name of the interface"""
 
@@ -365,10 +365,10 @@ def execute(
         elif interface in INTERFACE_NAMES["TensorFlow"]:
             import tensorflow as tf
 
-            if tf.executing_eagerly():
-                from .tensorflow import execute as _execute
-            else:
+            if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
+            else:
+                from .tensorflow import execute as _execute
 
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute

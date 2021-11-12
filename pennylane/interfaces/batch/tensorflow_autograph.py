@@ -82,18 +82,18 @@ def execute(
 
     output_types += [tf.int32] * len(tapes)
 
-    def _unwrap_params(all_params):
+    def _nest_params(all_params):
         count = 0
         params_unwrapped = []
 
         for s in lens:
-            params_unwrapped.append(qml.math.unwrap(all_params[count : count + s]))
+            params_unwrapped.append(all_params[count : count + s])
             count += s
 
         return params_unwrapped
 
     def _forward(*all_params):
-        params_unwrapped = _unwrap_params(all_params)
+        params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
         with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
@@ -121,7 +121,7 @@ def execute(
     @tf.custom_gradient
     def _execute(*all_params):  # pylint:disable=unused-argument
 
-        res = tf.py_function(func=_forward, inp=all_params, Tout=output_types)
+        res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-len(tapes) :]
 
         if mode == "forward":
@@ -139,7 +139,7 @@ def execute(
                 # Jacobians were computed on the forward pass (mode="forward")
                 # No additional quantum evaluations needed; simply compute the VJPs directly.
                 len_dy = len(dy)
-                vjps = tf.py_function(
+                vjps = tf.numpy_function(
                     func=lambda *args: _compute_vjp(args[:len_dy], args[len_dy:]),
                     inp=dy + jacs,
                     Tout=[tf.float64] * len(parameters),
@@ -158,7 +158,7 @@ def execute(
                         def _backward(*all_params):
                             dy = all_params[len_all_params:]
                             all_params = all_params[:len_all_params]
-                            params_unwrapped = _unwrap_params(all_params)
+                            params_unwrapped = _nest_params(all_params)
 
                             with qml.tape.Unwrap(
                                 *tapes, params=params_unwrapped, set_trainable=False
@@ -221,14 +221,14 @@ def execute(
                     def _backward(*all_params):
                         dy = all_params[len_all_params:]
                         all_params = all_params[:len_all_params]
-                        params_unwrapped = _unwrap_params(all_params)
+                        params_unwrapped = _nest_params(all_params)
 
                         with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
                             vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
                         return vjps
 
-                    vjps = tf.py_function(
+                    vjps = tf.numpy_function(
                         func=_backward,
                         inp=list(all_params) + dy,
                         Tout=[tf.float64] * len(parameters),

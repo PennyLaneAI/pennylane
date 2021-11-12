@@ -1331,18 +1331,31 @@ class TestSample:
         assert result.dtype == tf.int64
 
 
+@pytest.mark.parametrize(
+    "decorator, interface", [(tf.function, "tf"), (lambda x: x, "tf-autograph")]
+)
 class TestAutograph:
-    """Tests for Autograph mode"""
+    """Tests for Autograph mode. This class is parametrized over the combination:
 
-    def test_autograph_gradients(self, tol):
+    1. interface="tf" with the QNode decoratored with @tf.function, and
+    2. interface="tf-autograph" with no QNode decorator.
+
+    Option (1) checks that if the user enables autograph functionality
+    in TensorFlow, the new `tf-autograph` interface is automatically applied.
+
+    Option (2) ensures that the tf-autograph interface can be manually applied,
+    even if in eager execution mode.
+    """
+
+    def test_autograph_gradients(self, decorator, interface, tol):
         """Test that a parameter-shift QNode can be compiled
         using @tf.function, and differentiated"""
         dev = qml.device("default.qubit", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @tf.function
-        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1360,15 +1373,15 @@ class TestAutograph:
         expected = [-tf.sin(x) * tf.sin(y / 2) ** 2, tf.cos(x) * tf.sin(y) / 2]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_autograph_jacobian(self, tol):
+    def test_autograph_jacobian(self, decorator, interface, tol):
         """Test that a parameter-shift vector-valued QNode can be compiled
         using @tf.function, and differentiated"""
         dev = qml.device("default.qubit", wires=2)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @tf.function
-        @qnode(dev, diff_method="parameter-shift", max_diff=1, interface="tf")
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", max_diff=1, interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -1402,15 +1415,15 @@ class TestAutograph:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("mode", ["forward", "backward"])
-    def test_autograph_adjoint(self, mode, tol):
+    def test_autograph_adjoint(self, mode, decorator, interface, tol):
         """Test that a parameter-shift vQNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        @tf.function
-        @qnode(dev, diff_method="adjoint", interface="tf", mode=mode)
+        @decorator
+        @qnode(dev, diff_method="adjoint", interface=interface, mode=mode)
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)
@@ -1429,15 +1442,15 @@ class TestAutograph:
         expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
-    def test_autograph_hessian(self, tol):
+    def test_autograph_hessian(self, decorator, interface, tol):
         """Test that a parameter-shift vQNode can be compiled
         using @tf.function, and differentiated to second order"""
         dev = qml.device("default.qubit", wires=1)
         a = tf.Variable(0.543, dtype=tf.float64)
         b = tf.Variable(-0.654, dtype=tf.float64)
 
-        @tf.function
-        @qnode(dev, diff_method="parameter-shift", max_diff=2, interface="tf")
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", max_diff=2, interface=interface)
         def circuit(x, y):
             qml.RY(x, wires=0)
             qml.RX(y, wires=0)
