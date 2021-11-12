@@ -666,7 +666,7 @@ def drawn_qubit_circuit_with_max_length_kwdarg():
         " 0: ──H──RX(0)────RY(0)────RZ\n"
         + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
         + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
-        + "\n"
+        + " \n"
         + " (0)────┤ ⟨Z⟩ \n"
         + " (0.1)──┤     \n"
         + " (0.2)──┤     \n "
