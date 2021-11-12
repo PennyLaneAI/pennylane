@@ -22,6 +22,9 @@
   >>> op.decompose()
   [RZ(0.3, wires=[0])]
   ```
+  
+* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+  [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
