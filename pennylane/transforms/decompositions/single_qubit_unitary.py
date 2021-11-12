@@ -20,7 +20,7 @@ import numpy as np
 
 
 def _convert_to_su2(U):
-    r"""Check unitarity of a matrix and convert it to :math:`SU(2)` if possible.
+    r"""Convert a 2x2 unitary matrix to :math:`SU(2)`.
 
     Args:
         U (array[complex]): A matrix, presumed to be :math:`2 \times 2` and unitary.
@@ -29,19 +29,11 @@ def _convert_to_su2(U):
         array[complex]: A :math:`2 \times 2` matrix in :math:`SU(2)` that is
         equivalent to U up to a global phase.
     """
-    # Check unitarity
-    if not math.allclose(math.dot(U, math.T(math.conj(U))), math.eye(2), atol=1e-7):
-        raise ValueError("Operator must be unitary.")
-
     # Compute the determinant
     det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
 
-    # Convert to SU(2) if it's not close to 1
-    if not math.allclose(det, [1.0]):
-        exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
-        U = math.cast_like(U, exp_angle) * math.exp(exp_angle)
-
-    return U
+    exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
+    return math.cast_like(U, exp_angle) * math.exp(exp_angle)
 
 
 def zyz_decomposition(U, wire):
