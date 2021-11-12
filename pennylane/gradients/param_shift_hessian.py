@@ -135,7 +135,7 @@ def param_shift_hessian(tape):
     gradient_tapes = []
     gradient_coeffs = []
     shapes = []
-    dim = len(tape.trainable_params)
+    h_dim = len(tape.trainable_params)
 
     if not tape.trainable_params:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
@@ -171,10 +171,15 @@ def param_shift_hessian(tape):
         shapes.append((idx, len(g_tapes)))
 
     def processing_fn(results):
-        grads = []
+        # The first results dimension is the number of terms/tapes in the parameter-shift
+        # rule, the remaining ones are the QNode output dimensions.
+        out_dim = np.shape(results)[1:]
+        # The desired shape is: (QNode output dimensions, # gate args, # gate args)
+        grads = np.empty(out_dim + (h_dim, h_dim))
+        # Keep track of tape results already consumed.
         start = 0
 
-        for i, (idx, s) in enumerate(shapes):
+        for i, (h_idx, s) in enumerate(shapes):
             res = results[start : start + s]
             start = start + s
 
@@ -182,13 +187,8 @@ def param_shift_hessian(tape):
             res = qml.math.squeeze(qml.math.stack(res))
             g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
 
-            for j, elem in enumerate(qml.math.atleast_1d(g)):
-                if j < len(grads):
-                    grads[j][idx[0], idx[1]] = elem
-                else:
-                    hessian = qml.math.empty((dim,dim))
-                    hessian[idx[0], idx[1]] = elem
-                    grads.append(hessian)
+            for out_idx, elem in qml.math.ndenumerate(qml.math.reshape(g, out_dim)):
+                grads[out_idx][h_idx] = elem
 
         return qml.math.squeeze(qml.math.array(grads))
 
