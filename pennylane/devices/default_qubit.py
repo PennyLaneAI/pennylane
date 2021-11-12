@@ -208,7 +208,6 @@ class DefaultQubit(QubitDevice):
         n_qubit_state_vector = 0
         for i, operation in enumerate(operations):
             # TODO: support multi BasisState
-            # TODO: remove apply_state_vector
 
             # All QubitStateVectors are accumulated before applying them.
             if isinstance(operation, QubitStateVector):
@@ -225,7 +224,7 @@ class DefaultQubit(QubitDevice):
                 input_wires.append(operation.wires)
 
             if i - n_qubit_state_vector == 0 and has_qubit_vector_state:
-                self._apply_state_vectors(input_vectors, input_wires)
+                self._apply_state_vector(input_vectors, input_wires)
 
             if (i > 0 and isinstance(operation, BasisState)) or (
                 i == n_qubit_state_vector and isinstance(operation, QubitStateVector)
@@ -244,7 +243,7 @@ class DefaultQubit(QubitDevice):
                 self._state = self._apply_operation(self._state, operation)
 
         if n_qubit_state_vector == len(operations) and has_qubit_vector_state:
-            self._apply_state_vectors(input_vectors, input_wires)
+            self._apply_state_vector(input_vectors, input_wires)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
@@ -649,50 +648,13 @@ class DefaultQubit(QubitDevice):
         """Initialize the internal state vector in a specified state.
 
         Args:
-            state (array[complex]): normalized input state of length
-                ``2**len(wires)``
-            device_wires (Wires): wires that get initialized in the state
-        """
-
-        # translate to wire labels used by device
-        device_wires = self.map_wires(device_wires)
-
-        state = self._asarray(state, dtype=self.C_DTYPE)
-        n_state_vector = state.shape[0]
-
-        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
-            raise ValueError("State vector must be of length 2**wires.")
-
-        if not qml.math.is_abstract(state):
-            if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
-
-        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
-            # Initialize the entire wires with the state
-            self._state = self._reshape(state, [2] * self.num_wires)
-            return
-
-        # generate basis states on subset of qubits via the cartesian product
-        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
-
-        # get basis states to alter on full set of qubits
-        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
-        unravelled_indices[:, device_wires] = basis_states
-
-        # get indices for which the state is changed to input state vector elements
-        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
-        state = self._reshape(state, [2] * self.num_wires)
-        self._state = self._asarray(state, dtype=self.C_DTYPE)
-
-    def _apply_state_vectors(self, states, device_wires):
-        """Initialize the internal state vector in a specified state.
-
-        Args:
             states (array[array[complex]]): normalized input states.
             device_wires (array[Wires]): wires that get initialized in the state.
         """
-
+        states = state
+        if type(device_wires) != list:
+            states = [states]
+            device_wires = [device_wires]
         state = states[0]
         wires = device_wires[0]
         state = self._asarray(state, dtype=self.C_DTYPE)
