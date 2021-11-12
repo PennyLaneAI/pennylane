@@ -19,7 +19,6 @@ from pennylane import numpy as np
 import autograd.numpy as anp
 
 from pennylane.devices import DefaultMixed
-from pennylane.devices import autograd_ops
 
 
 class DefaultMixedAutograd(DefaultMixed):
@@ -82,29 +81,29 @@ class DefaultMixedAutograd(DefaultMixed):
     name = "Default mixed (Autograd) PennyLane plugin"
     short_name = "default.mixed.autograd"
 
-    parametric_ops = {
-        "PhaseShift": autograd_ops.PhaseShift,
-        "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
-        "CPhase": autograd_ops.ControlledPhaseShift,
-        "RX": autograd_ops.RX,
-        "RY": autograd_ops.RY,
-        "RZ": autograd_ops.RZ,
-        "Rot": autograd_ops.Rot,
-        "CRX": autograd_ops.CRX,
-        "CRY": autograd_ops.CRY,
-        "CRZ": autograd_ops.CRZ,
-        "CRot": autograd_ops.CRot,
-        "MultiRZ": autograd_ops.MultiRZ,
-        "IsingXX": autograd_ops.IsingXX,
-        "IsingYY": autograd_ops.IsingYY,
-        "IsingZZ": autograd_ops.IsingZZ,
-        "SingleExcitation": autograd_ops.SingleExcitation,
-        "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
-        "DoubleExcitation": autograd_ops.DoubleExcitation,
-        "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
-    }
+    #parametric_ops = {
+    #    "PhaseShift": autograd_ops.PhaseShift,
+    #    "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
+    #    "CPhase": autograd_ops.ControlledPhaseShift,
+    #    "RX": autograd_ops.RX,
+    #    "RY": autograd_ops.RY,
+    #    "RZ": autograd_ops.RZ,
+    #    "Rot": autograd_ops.Rot,
+    #    "CRX": autograd_ops.CRX,
+    #    "CRY": autograd_ops.CRY,
+    #    "CRZ": autograd_ops.CRZ,
+    #    "CRot": autograd_ops.CRot,
+    #    "MultiRZ": autograd_ops.MultiRZ,
+    #    "IsingXX": autograd_ops.IsingXX,
+    #    "IsingYY": autograd_ops.IsingYY,
+    #    "IsingZZ": autograd_ops.IsingZZ,
+    #    "SingleExcitation": autograd_ops.SingleExcitation,
+    #    "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
+    #    "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
+    #    "DoubleExcitation": autograd_ops.DoubleExcitation,
+    #    "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
+    #    "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
+    #}
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
@@ -167,21 +166,12 @@ class DefaultMixedAutograd(DefaultMixed):
         """
         op_name = operation.name.split(".inv")[0]
 
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*operation.parameters, len(operation.wires))
-            else:
-                mat = self.parametric_ops[op_name](*operation.parameters)
 
+        if isinstance(operation, Channel):
+            return operation.kraus_matrices
+        if isinstance(operation, DiagonalOperation):
             if operation.inverse:
-                mat = self._transpose(self._conj(mat))
-            return self._expand_dims(mat, 0)
-        else:
-            if isinstance(operation, Channel):
-                return operation.kraus_matrices
-            if isinstance(operation, DiagonalOperation):
-                if operation.inverse:
-                    return self._conj(operation.eigvals)
-                else:
-                    return operation.eigvals
+                return self._conj(operation.eigvals)
+            else:
+                return operation.eigvals
         return self._expand_dims(operation.matrix, 0)

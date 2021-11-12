@@ -28,7 +28,7 @@ except ImportError as e:
 
 import numpy as np
 from pennylane.operation import DiagonalOperation, Channel
-from pennylane.devices import torch_ops, DefaultMixed
+from pennylane.devices import DefaultMixed
 
 
 class DefaultMixedTorch(DefaultMixed):
@@ -131,28 +131,28 @@ class DefaultMixedTorch(DefaultMixed):
     name = "Default mixed (Torch) PennyLane plugin"
     short_name = "default.mixed.torch"
 
-    parametric_ops = {
-        "PhaseShift": torch_ops.PhaseShift,
-        "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
-        "RX": torch_ops.RX,
-        "RY": torch_ops.RY,
-        "RZ": torch_ops.RZ,
-        "MultiRZ": torch_ops.MultiRZ,
-        "Rot": torch_ops.Rot,
-        "CRX": torch_ops.CRX,
-        "CRY": torch_ops.CRY,
-        "CRZ": torch_ops.CRZ,
-        "CRot": torch_ops.CRot,
-        "IsingXX": torch_ops.IsingXX,
-        "IsingYY": torch_ops.IsingYY,
-        "IsingZZ": torch_ops.IsingZZ,
-        "SingleExcitation": torch_ops.SingleExcitation,
-        "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
-        "DoubleExcitation": torch_ops.DoubleExcitation,
-        "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
-    }
+    #parametric_ops = {
+    #    "PhaseShift": torch_ops.PhaseShift,
+    #    "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
+    #    "RX": torch_ops.RX,
+    #    "RY": torch_ops.RY,
+    #    "RZ": torch_ops.RZ,
+    #    "MultiRZ": torch_ops.MultiRZ,
+    #    "Rot": torch_ops.Rot,
+    #    "CRX": torch_ops.CRX,
+    #    "CRY": torch_ops.CRY,
+    #    "CRZ": torch_ops.CRZ,
+    #    "CRot": torch_ops.CRot,
+    #    "IsingXX": torch_ops.IsingXX,
+    #    "IsingYY": torch_ops.IsingYY,
+    #    "IsingZZ": torch_ops.IsingZZ,
+    #    "SingleExcitation": torch_ops.SingleExcitation,
+    #    "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
+    #    "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
+    #    "DoubleExcitation": torch_ops.DoubleExcitation,
+    #    "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
+    #    "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
+    #}
 
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
@@ -253,26 +253,14 @@ class DefaultMixedTorch(DefaultMixed):
         """
         op_name = operation.name.split(".inv")[0]
 
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*operation.parameters, len(operation.wires), device=self._torch_device)
-            else:
-                mat = self.parametric_ops[op_name](*operation.parameters, device=self._torch_device)
 
+        if isinstance(operation, Channel):
+            return operation.kraus_matrices
+        if isinstance(operation, DiagonalOperation):
             if operation.inverse:
-                if isinstance(operation, DiagonalOperation):
-                    mat = self._conj(mat)
-                else:
-                    mat = self._transpose(self._conj(mat), axes=[1, 0])
-            return self._expand_dims(mat, 0)
-        else:
-            if isinstance(operation, Channel):
-                return operation.kraus_matrices
-            if isinstance(operation, DiagonalOperation):
-                if operation.inverse:
-                    return self._conj(operation.eigvals)
-                else:
-                    return self._asarray(operation.eigvals, dtype=self.C_DTYPE)
+                return self._conj(operation.eigvals)
+            else:
+                return self._asarray(operation.eigvals, dtype=self.C_DTYPE)
         return self._expand_dims(operation.matrix, 0)
 
     def _create_basis_state(self, index):

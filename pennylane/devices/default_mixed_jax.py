@@ -17,7 +17,6 @@ reference plugin.
 import pennylane as qml
 from pennylane.operation import DiagonalOperation, Channel
 from pennylane.devices import DefaultQubit, DefaultMixed
-from pennylane.devices import jax_ops
 
 import numpy as np
 
@@ -133,29 +132,29 @@ class DefaultMixedJax(DefaultMixed):
     name = "Default mixed (jax) PennyLane plugin"
     short_name = "default.mixed.jax"
 
-    parametric_ops = {
-        "PhaseShift": jax_ops.PhaseShift,
-        "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
-        "CPhase": jax_ops.ControlledPhaseShift,
-        "RX": jax_ops.RX,
-        "RY": jax_ops.RY,
-        "RZ": jax_ops.RZ,
-        "Rot": jax_ops.Rot,
-        "CRX": jax_ops.CRX,
-        "CRY": jax_ops.CRY,
-        "CRZ": jax_ops.CRZ,
-        "CRot": jax_ops.CRot,
-        "MultiRZ": jax_ops.MultiRZ,
-        "IsingXX": jax_ops.IsingXX,
-        "IsingYY": jax_ops.IsingYY,
-        "IsingZZ": jax_ops.IsingZZ,
-        "SingleExcitation": jax_ops.SingleExcitation,
-        "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
-        "DoubleExcitation": jax_ops.DoubleExcitation,
-        "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
-    }
+    #parametric_ops = {
+    #    "PhaseShift": jax_ops.PhaseShift,
+    #    "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
+    #    "CPhase": jax_ops.ControlledPhaseShift,
+    #    "RX": jax_ops.RX,
+    #    "RY": jax_ops.RY,
+    #    "RZ": jax_ops.RZ,
+    #    "Rot": jax_ops.Rot,
+    #    "CRX": jax_ops.CRX,
+    #    "CRY": jax_ops.CRY,
+    #    "CRZ": jax_ops.CRZ,
+    #    "CRot": jax_ops.CRot,
+    #    "MultiRZ": jax_ops.MultiRZ,
+    #    "IsingXX": jax_ops.IsingXX,
+    #    "IsingYY": jax_ops.IsingYY,
+    #    "IsingZZ": jax_ops.IsingZZ,
+    #    "SingleExcitation": jax_ops.SingleExcitation,
+    #    "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
+    #    "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
+    #    "DoubleExcitation": jax_ops.DoubleExcitation,
+    #    "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
+    #    "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
+    #}
 
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
@@ -211,21 +210,11 @@ class DefaultMixedJax(DefaultMixed):
         """
         op_name = operation.name.split(".inv")[0]
 
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*operation.parameters, len(operation.wires))
-            else:
-                mat = self.parametric_ops[op_name](*operation.parameters)
-
+        if isinstance(operation, Channel):
+            return self._asarray(operation.kraus_matrices)
+        if isinstance(operation, DiagonalOperation):
             if operation.inverse:
-                mat = self._transpose(self._conj(mat))
-            return self._expand_dims(mat, 0)
-        else:
-            if isinstance(operation, Channel):
-                return self._asarray(operation.kraus_matrices)
-            if isinstance(operation, DiagonalOperation):
-                if operation.inverse:
-                    return self._conj(operation.eigvals)
-                else:
-                    return self._asarray(operation.eigvals)
+                return self._conj(operation.eigvals)
+            else:
+                return self._asarray(operation.eigvals)
         return self._expand_dims(operation.matrix, 0)
