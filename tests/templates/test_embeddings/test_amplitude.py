@@ -394,3 +394,12 @@ def test_multiple_amplitudes():
         return qml.probs(wires=0)
 
     assert qml.math.allclose([1.0, 0.0], circuit(), atol=tol, rtol=0)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[1, 2, 3], normalize=True)
+        qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[3, 5, 6], normalize=True)
+        return qml.state()
+
+    with pytest.raises(ValueError, match="applied in the same qubit"):
+        circuit()
