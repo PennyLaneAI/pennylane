@@ -70,6 +70,8 @@ def generate_multishifted_tapes(tape, idx, shifts):
 
 
 class hessian_transform(qml.batch_transform):
+    """Modified gradient_transform to account for different post-processing when computing
+       the second derivate of a QNode."""
     def __init__(
         self, transform_fn, expand_fn=expand_invalid_trainable, differentiable=True, hybrid=True
     ):
@@ -112,10 +114,20 @@ class hessian_transform(qml.batch_transform):
                 # is present inside the QNode.
                 return qjac
 
-            # Classical processing of a single argument is present. Return cjac.T @ qjac @ cjac.
-            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
-            jac = qml.math.tensordot(jac, cjac, [[-2], [0]])
-            return qml.math.swapaxes(jac, -1, -2)
+            # Classical processing of a single argument is present.
+            # Given a classical jacobian of shape (x, y..), a quantum jacobian of shape (z.., x, x),
+            # where x = # of gate args, y.. = shape of QNode args, and z.. = shape of QNode outputs,
+            # we apply the following trasformation: (z.., x0, x1) -> (z.., y0.., y1..)
+            # While the dimensions x0 and x1, and y0.. and y1.., are the same respectively, they are
+            # labeled to keep track of the swapping that occurs during the transformation.
+
+            num_out_dims = len(cjac.shape)-1  # number of dims in y..
+            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])              # -> (z.., x0, y1..)
+            jac = qml.math.tensordot(jac, cjac, [[-1-num_out_dims], [0]])  # -> (z.., y1.., y0..)
+            for i in range(num_out_dims):
+                jac = qml.math.swapaxes(jac, -1-i, -1-num_out_dims-i)      # -> (z.., y0.., y1..)
+
+            return jac
 
         return jacobian_wrapper
 
@@ -161,7 +173,7 @@ def param_shift_hessian(tape):
     for idx in product(range(len(tape.trainable_params)), repeat=2):
 
         recipe = diag_recipe if idx[0] == idx[1] else off_diag_recipe
-        coeffs, multipliers, shifts = _process_gradient_recipe(recipe)
+        coeffs, _, shifts = _process_gradient_recipe(recipe)
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)

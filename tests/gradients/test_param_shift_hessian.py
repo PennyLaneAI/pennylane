@@ -174,10 +174,10 @@ class TestParameterShiftHessian:
         assert np.allclose(jacobian, hessian)
 
     def test_2term_shift_rules8(self):
-        """Test that the correct hessian is calculated higher dimensional outputs"""
+        """Test that the correct hessian is calculated for higher dimensional QNode outputs"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.beta.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -185,6 +185,28 @@ class TestParameterShiftHessian:
             return qml.probs(wires=0), qml.probs(wires=1)
 
         x = np.ones([2], requires_grad=True)
+
+        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        print('\n', jacobian, '\n\t=?\n', hessian)
+
+        assert np.allclose(jacobian, hessian)
+
+    def test_2term_shift_rules9(self):
+        """Test that the correct hessian is calculated for higher dimensional cl. jacobians"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.RX(x[0, 0], wires=0)
+            qml.RY(x[0, 1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x[0, 2], wires=0)
+            qml.RY(x[0, 0], wires=0)
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        x = np.ones([1, 3], requires_grad=True)
 
         jacobian = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
