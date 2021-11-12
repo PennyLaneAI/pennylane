@@ -148,33 +148,30 @@ class TestQubitUnitary:
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
 
     @pytest.mark.parametrize(
-        "U,expected_gate,expected_params",
-        [  # First set of gates are diagonal and converted to RZ
-            (I, qml.RZ, [0]),
-            (Z, qml.RZ, [np.pi]),
-            (S, qml.RZ, [np.pi / 2]),
-            (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
-            # Next set of gates are non-diagonal and decomposed as Rots
+        "U,expected_params",
+        [
+            (I, [0.0, 0.0, 0.0]),
+            (Z, [np.pi / 2, 0.0, np.pi / 2]),
+            (S, [np.pi / 4, 0.0, np.pi / 4]),
+            (T, [np.pi / 8, 0.0, np.pi / 8]),
+            (qml.RZ(0.3, wires=0).matrix, [0.15, 0.0, 0.15]),
+            (qml.RZ(-0.5, wires=0).matrix, [-0.25, 0.0, -0.25]),
             (
-                np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
-                qml.Rot,
-                [0, -np.pi, -5.914991017809059],
+                np.array([[0, -0.9831019271 + 0.1830590095j], [0.9831019271 + 0.1830590095j, 0]]),
+                [-0.18409714468526372, np.pi, 0.18409714468526372],
             ),
-            (H, qml.Rot, [np.pi, np.pi / 2, 0]),
-            (X, qml.Rot, [0.0, -np.pi, -np.pi]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
-        ],
+            (H, [np.pi, np.pi / 2, 0.0]),
+            (X, [np.pi / 2, np.pi, -np.pi / 2]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, [0.2, 0.5, -0.3]),
+            (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, [-1.0, 2.0, -3.0]),
+        ]
     )
-    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
+    def test_qubit_unitary_decomposition(self, U, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
         decomp = qml.QubitUnitary.decomposition(U, wires=0)
 
         assert len(decomp) == 1
-        assert isinstance(decomp[0], expected_gate)
-        assert np.allclose(decomp[0].parameters, expected_params)
+        assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
