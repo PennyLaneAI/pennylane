@@ -262,7 +262,9 @@ class MottonenStatePreparation(Operation):
             shape = qml.math.shape(state)
 
             if len(shape) != 1:
-                raise ValueError(f"State vectors must be one-dimensional; vector {i} has shape {shape}.")
+                raise ValueError(
+                    f"State vectors must be one-dimensional; vector {i} has shape {shape}."
+                )
 
             n_amplitudes = shape[0]
             if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):

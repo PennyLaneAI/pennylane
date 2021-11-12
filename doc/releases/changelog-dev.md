@@ -15,6 +15,8 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -35,4 +37,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
+David Ittah, Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni

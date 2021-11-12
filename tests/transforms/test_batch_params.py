@@ -85,7 +85,7 @@ def test_mottonenstate_preparation(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 2**3)
+    assert res.shape == (batch_size, 2 ** 3)
     assert len(spy.call_args[0][0]) == batch_size
 
     # check the results against individually executed circuits (no batching)
