@@ -646,20 +646,22 @@ def drawn_qubit_circuit_with_interesting_wires():
 
 @pytest.fixture
 def qubit_circuit_with_max_length_kwdarg():
+    """A qubit circuit with max_length set to 30"""
+
     with qml.tape.QuantumTape() as tape:
         for i in range(3):
             qml.Hadamard(wires=i)
             qml.RX(i * 0.1, wires=i)
             qml.RY(i * 0.1, wires=i)
             qml.RZ(i * 0.1, wires=i)
-        return qml.expval(qml.PauliZ(0))
+        qml.expval(qml.PauliZ(0))
 
     return tape
 
 
 @pytest.fixture
 def drawn_qubit_circuit_with_max_length_kwdarg():
-    """The renderedd circuit representation of the above qubit circuit with max_length set to 20"""
+    """The renderedd circuit representation of the above qubit circuit with max_length set to 30"""
     return (
         " 0: ──H──RX(0)────RY(0)────RZ\n"
         + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
