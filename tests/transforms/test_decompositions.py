@@ -59,11 +59,6 @@ single_qubit_decomps = [
 class TestQubitUnitaryZYZDecomposition:
     """Test that the decompositions are correct."""
 
-    def test_zyz_decomposition_invalid_input(self):
-        """Test that non-unitary operations throw errors when we try to decompose."""
-        with pytest.raises(ValueError, match="Operator must be unitary"):
-            zyz_decomposition(I + H, Wires("a"))
-
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition(self, U, expected_gate, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
@@ -642,13 +637,6 @@ class TestTwoQubitUnitaryDecomposition:
         # Ensure the determinant is correct and the mats are equivalent up to a phase
         assert qml.math.isclose(qml.math.linalg.det(U_su4), 1.0)
         assert check_matrix_equivalence(np.array(U), U_su4)
-
-    def test_convert_to_su4_invalid(self):
-        """Test a matrix in U(4) is correct converted to SU(4)."""
-        U = np.ones((4, 4))
-
-        with pytest.raises(ValueError, match="Operator must be unitary"):
-            _convert_to_su4(U)
 
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_su2su2_to_tensor_products(self, U_pair):
