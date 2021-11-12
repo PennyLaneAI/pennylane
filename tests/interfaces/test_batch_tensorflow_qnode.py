@@ -1475,3 +1475,42 @@ class TestAutograph:
             [tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b)],
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_autograph_state(self, decorator, interface, tol):
+        """Test that a parameter-shift QNode returning a state can be compiled
+        using @tf.function"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with tf.GradientTape() as tape:
+            state = circuit(x, y)
+            probs = tf.abs(state) ** 2
+            loss = probs[0]
+
+        expected = tf.cos(x / 2) ** 2 * tf.cos(y / 2) ** 2
+        assert np.allclose(loss, expected, atol=tol, rtol=0)
+
+    def test_autograph_dimension(self, decorator, interface, tol):
+        """Test sampling works as expected"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
+
+        res = circuit()
+
+        assert res.shape == (2, 10)
+        assert isinstance(res, tf.Tensor)
