@@ -53,6 +53,9 @@
   Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
   be removed in the next release.
 
+* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+  [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
+
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 <h3>Breaking changes</h3>
