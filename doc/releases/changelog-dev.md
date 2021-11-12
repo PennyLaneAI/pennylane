@@ -11,6 +11,8 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
+* Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
+
 <h3>Improvements</h3>
 
 * ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
@@ -38,4 +40,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
+Jalani Kanem, Shumpei Kobayashi, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni

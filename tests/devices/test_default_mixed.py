@@ -631,6 +631,81 @@ class TestApplyStateVector:
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
+#TODO: TestApplyDensityMatrix
+
+class TestApplyDensityMatrix:
+    """Unit tests for the method `_apply_density_matrix()`"""
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_equal(self, nr_wires, tol):
+        """Checks that an equal superposition state is correctly applied"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        rho = np.outer(state, state.conj())
+        dev._apply_density_matrix(rho, Wires(range(nr_wires)))
+        eq_state = hadamard_state(nr_wires)
+        target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_root(self, nr_wires, tol):
+        """Checks that a root state is correctly applied"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dim = 2 ** nr_wires
+        state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
+        rho = np.outer(state, state.conj())
+        dev._apply_density_matrix(rho, Wires(range(nr_wires)))
+        r_state = root_state(nr_wires)
+        target_state = np.reshape(r_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
+    subset_wires = [(4, 0), (2, 1), (1, 2)]
+
+    @pytest.mark.parametrize("wires", subset_wires)
+    def test_subset_wires(self, wires, tol):
+        """Tests that applying state |1><1| on a subset of wires prepares the correct state
+        |1><1| ⊗ |0><0|"""
+        nr_wires = 3
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.array([0, 1])
+        rho = np.outer(state, state.conj())
+        dev._apply_density_matrix(rho, Wires(wires[1]))
+        b_state = basis_state(wires[0], nr_wires)
+        target_state = np.reshape(b_state, [2] * 2 * nr_wires)
+        print(np.reshape(dev._state, (2 ** nr_wires, 2**nr_wires)))
+        print(np.reshape(target_state, (2 ** nr_wires, 2**nr_wires)))
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
+    def test_wrong_dim(self):
+        """Checks that an error is raised if state has the wrong dimension"""
+        dev = qml.device("default.mixed", wires=3)
+        state = np.ones(7) / np.sqrt(7)
+        rho = np.outer(state, state.conj())
+        with pytest.raises(ValueError, match="Density matrix must be"):
+            dev._apply_density_matrix(rho, Wires(range(3)))
+
+    def test_not_normalized(self):
+        """Checks that an error is raised if state is not normalized"""
+        dev = qml.device("default.mixed", wires=3)
+        state = np.ones(8) / np.sqrt(7)
+        rho = np.outer(state, state.conj())
+        with pytest.raises(ValueError, match="Trace of density matrix"):
+            dev._apply_density_matrix(rho, Wires(range(3)))
+
+    def test_wires_as_list(self, tol):
+        """Checks that state is correctly prepared when device wires are given as a list,
+        not a number. This test helps with coverage"""
+        nr_wires = 2
+        dev = qml.device("default.mixed", wires=[0, 1])
+        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        rho = np.outer(state, state.conj())
+        dev._apply_density_matrix(rho, Wires(range(nr_wires)))
+        eq_state = hadamard_state(nr_wires)
+        target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
+
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
 class TestApplyOperation:
     """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`

@@ -23,7 +23,8 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
-import numpy as np
+import pennylane.numpy as np
+import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
 from pennylane.operation import DiagonalOperation, Channel
 from pennylane.wires import Wires
@@ -107,6 +108,8 @@ class DefaultMixed(QubitDevice):
         "QFT",
         "ThermalRelaxationError",
     }
+
+    _align_device = staticmethod(lambda x, to: x)
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
@@ -393,6 +396,8 @@ class DefaultMixed(QubitDevice):
 
     def _apply_density_matrix(self, state, device_wires):
         """Initialize the internal state in a specified mixed state.
+            If not all the wires are specified, remaining dimension is filled by |0><0|,
+            where leftmost axes has 1 on its element when transposed as |0><0| ⊗ ρ.
 
                Args:
                    state (array[complex]): density matrix of length
@@ -421,21 +426,27 @@ class DefaultMixed(QubitDevice):
             self._state = self._reshape(state, [2] * 2 * self.num_wires)
 
         else:
-            I = self._align_device(qnp.eye(2 ** (self.num_wires - len(device_wires)), dtype=self.C_DTYPE, like=state), state)
-            rho = qnp.kron(state, I).reshape([2] * 2 * self.num_wires)
-            complement_wires = list(set(range(self.num_wires)) - set(device_wires))
+            # Initialize |0><0| ⊗ ρ with transposed wires
+            complement_dim = 2 ** (self.num_wires - len(device_wires))
+            sigma = self._align_device(qnp.zeros((complement_dim, complement_dim), dtype=self.C_DTYPE, like=state), state)
+            sigma[0, 0] = 1
+            rho = qnp.kron(sigma, state.reshape(state_dim, state_dim))
+            rho = rho.reshape([2] * 2 * self.num_wires)
+
+            # Construct transposition axis to revert back to the original wire order
+            complement_wires = list(sorted(list(set(range(self.num_wires)) - set(device_wires))))
             left_axes = []
             right_axes = []
+            complement_wires_count = len(complement_wires)
             for i in range(self.num_wires):
-                index = 0
                 if i in device_wires:
                     index = device_wires.index(i)
-                    left_axes.append(index)
-                    right_axes.append(index + len(device_wires))
+                    left_axes.append(complement_wires_count + index)
+                    right_axes.append(complement_wires_count + index + self.num_wires)
                 elif i in complement_wires:
-                    index = complement_wires.index(i) + 2 * len(device_wires)
+                    index = complement_wires.index(i)
                     left_axes.append(index)
-                    right_axes.append(index + len(complement_wires))
+                    right_axes.append(index + self.num_wires)
             transpose_axes = left_axes + right_axes
             rho = qnp.transpose(rho, axes=transpose_axes)
             assert qnp.allclose(qnp.trace(qnp.reshape(rho, (2**self.num_wires, 2**self.num_wires))), 1.0, atol=tolerance)
