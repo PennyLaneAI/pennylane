@@ -631,7 +631,9 @@ class TestApplyStateVector:
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
-#TODO: TestApplyDensityMatrix
+
+# TODO: TestApplyDensityMatrix
+
 
 class TestApplyDensityMatrix:
     """Unit tests for the method `_apply_density_matrix()`"""
@@ -674,8 +676,8 @@ class TestApplyDensityMatrix:
         dev._apply_density_matrix(rho, Wires(wires[1]))
         b_state = basis_state(wires[0], nr_wires)
         target_state = np.reshape(b_state, [2] * 2 * nr_wires)
-        print(np.reshape(dev._state, (2 ** nr_wires, 2**nr_wires)))
-        print(np.reshape(target_state, (2 ** nr_wires, 2**nr_wires)))
+        print(np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires)))
+        print(np.reshape(target_state, (2 ** nr_wires, 2 ** nr_wires)))
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
     def test_wrong_dim(self):
@@ -706,6 +708,7 @@ class TestApplyDensityMatrix:
         target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
 
 class TestApplyOperation:
     """Unit tests for the method `_apply_operation()`. Since this just calls `_apply_channel()`

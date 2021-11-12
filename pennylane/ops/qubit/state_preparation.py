@@ -121,6 +121,4 @@ class QubitDensityMatrix(Operation):
     grad_method = None
 
     def adjoint(self):
-        raise qml.ops.AdjointError(
-            "No adjoint exists for QubitDensityMatrix operations."
-        )
+        raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")
