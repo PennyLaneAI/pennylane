@@ -313,7 +313,7 @@ class TestApply:
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
         dev = DefaultQubitTF(wires=2)
-        state = np.array([0, 12])
+        state = np.array([0, 1])
 
         with pytest.raises(
             qml.DeviceError,

@@ -263,7 +263,7 @@ class TestApply:
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
         dev = DefaultQubitTorch(wires=2)
-        state = torch.tensor([0, 12])
+        state = torch.tensor([0, 1])
 
         with pytest.raises(
             qml.DeviceError,
