@@ -103,18 +103,12 @@ def execute(
         for i, _ in enumerate(tapes):
             # convert output to TensorFlow tensors
 
-            if isinstance(res[i], np.ndarray):
-                # For backwards compatibility, we flatten ragged tape outputs
-                # when there is no sampling
-                r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
-                res[i] = tf.convert_to_tensor(r)
-                output_sizes.append(tf.size(res[i]))
+            # For backwards compatibility, we flatten ragged tape outputs
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
 
-            elif isinstance(res[i], tuple):
-                res[i] = tuple(tf.cast(tf.convert_to_tensor(r), tf.float64) for r in res[i])
-            else:
-                res[i] = tf.convert_to_tensor(qml.math.toarray(res[i]))
-                output_sizes.append(tf.size(res[i]))
+            res[i] = tf.convert_to_tensor(r)
+            output_sizes.append(tf.size(res[i]))
 
         return res + jacs + output_sizes
 
