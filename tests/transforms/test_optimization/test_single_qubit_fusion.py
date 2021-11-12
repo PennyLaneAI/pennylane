@@ -62,19 +62,6 @@ class TestSingleQubitFusion:
         wires_expected = [Wires(0), Wires(1)]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
-    def test_single_qubit_cancelled_fusion(self):
-        """Test if a sequence of single-qubit gates that all cancel yields no operations."""
-
-        def qfunc():
-            qml.RZ(0.1, wires=0)
-            qml.RX(0.2, wires=0)
-            qml.RX(-0.2, wires=0)
-            qml.RZ(-0.1, wires=0)
-
-        transformed_qfunc = single_qubit_fusion()(qfunc)
-        transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        assert len(transformed_ops) == 0
-
     def test_single_qubit_fusion_not_implemented(self):
         """Test that fusion is correctly skipped for single-qubit gates where
         the rotation angles are not specified."""

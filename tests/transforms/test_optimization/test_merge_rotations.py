@@ -28,7 +28,7 @@ class TestMergeRotations:
         ("theta_1", "theta_2", "expected_ops"),
         [
             (0.3, -0.2, [qml.RZ(0.1, wires=0)]),
-            (0.15, -0.15, []),
+            (0.15, 0.14, [qml.RZ(0.29, wires=0)]),
         ],
     )
     def test_one_qubit_rotation_merge(self, theta_1, theta_2, expected_ops):
@@ -75,35 +75,14 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
-    def test_two_qubits_rotation_merge_tolerance(self):
-        """Test whether tolerance argument is respected for merging."""
-
-        def qfunc():
-            qml.RZ(1e-7, wires=0)
-            qml.RZ(-2e-7, wires=0)
-
-        # Try with default tolerance; these ops should still be applied
-        transformed_qfunc = merge_rotations()(qfunc)
-
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
-
-        assert len(ops) == 1
-        assert ops[0].name == "RZ"
-        assert ops[0].parameters[0] == -1e-7
-
-        # Now try with higher tolerance threshold; the ops should cancel
-        transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        assert len(ops) == 0
-
     @pytest.mark.parametrize(
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
         [
             (0.3, -0.2, 0.5, -0.8, [qml.RX(0.1, wires=0), qml.RY(-0.3, wires=1)]),
-            (0.3, -0.3, 0.7, -0.1, [qml.RY(0.6, wires=1)]),
+            (0.3, 0.3, 0.7, -0.1, [qml.RX(0.6, wires=0), qml.RY(0.6, wires=1)]),
         ],
     )
-    def test_two_qubits_rotation_no_merge(
+    def test_two_qubits_merge(
         self, theta_11, theta_12, theta_21, theta_22, expected_ops
     ):
         """Test that a two-qubit circuit with rotations on different qubits get merged."""
@@ -128,7 +107,7 @@ class TestMergeRotations:
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
         [
             (0.3, -0.2, 0.5, -0.8, [qml.CRX(0.5, wires=[0, 1]), qml.RY(-1.3, wires=1)]),
-            (0.3, 0.3, 0.7, -0.1, [qml.RY(-0.8, wires=1)]),
+            (0.3, -0.4, 0.7, -0.1, [qml.CRX(0.7, wires=[0, 1]),qml.RY(-0.8, wires=1)]),
         ],
     )
     def test_two_qubits_merge_with_adjoint(
@@ -219,7 +198,8 @@ class TestMergeRotations:
         ("theta_1", "theta_2", "expected_ops"),
         [
             (0.3, -0.2, [qml.CRY(0.1, wires=["w1", "w2"])]),
-            (0.15, -0.15, []),
+            (0.15, 0.14, [qml.CRY(0.29, wires=["w1", "w2"])]),
+
         ],
     )
     def test_controlled_rotation_merge(self, theta_1, theta_2, expected_ops):

@@ -16,13 +16,13 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
-from pennylane.math import allclose, cast_like, stack, zeros
+from pennylane.math import cast_like, stack
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
-def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
+def single_qubit_fusion(tape, exclude_gates=None):
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
@@ -32,9 +32,6 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
 
     Args:
         qfunc (function): A quantum function.
-        atol (float): An absolute tolerance for which to apply a rotation after
-            fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
-            :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         exclude_gates (None or list[str]): A list of gates that should be excluded
             from full fusion. If set to ``None``, all single-qubit gates that can
             be fused will be fused.
@@ -139,8 +136,7 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # Only apply if the cumulative angle is not close to 0
-        if not allclose(cumulative_angles, zeros(3), atol=atol, rtol=0):
-            Rot(*cumulative_angles, wires=current_gate.wires)
+        Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
         list_copy.pop(0)
