@@ -19,7 +19,10 @@ with preparing a certain state on the device.
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import (
+    BasisStatePreparation,
+    MottonenStatePreparation,
+)
 
 
 class BasisState(Operation):
@@ -90,31 +93,34 @@ class QubitStateVector(Operation):
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitStateVector operations.")
 
+
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
-       Prepare subsystems using the given density matrix.
-       If not all the wires are specified, remaining dimension is filled by |0><0|,
-       where leftmost axes has 1 on its element when transposed as |0><0| ⊗ ρ.
+    Prepare subsystems using the given density matrix.
+    If not all the wires are specified, remaining dimension is filled by |0><0|,
+    where leftmost axes has 1 on its element when transposed as |0><0| ⊗ ρ.
 
-       **Details:**
+    **Details:**
 
-       * Number of wires: Any (the operation can act on any number of wires)
-       * Number of parameters: 1
-       * Gradient recipe: None
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 1
+    * Gradient recipe: None
 
-       .. note::
+    .. note::
 
-           Exception raised if the ``QubitDensityMatrix`` operation is not supported natively on the
-           target device.
+        Exception raised if the ``QubitDensityMatrix`` operation is not supported natively on the
+        target device.
 
-       Args:
-           state (array[complex]): a density matrix of size (2**len(wires), 2**len(wires))
-           wires (Sequence[int] or int): the wire(s) the operation acts on
-       """
+    Args:
+        state (array[complex]): a density matrix of size (2**len(wires), 2**len(wires))
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+    """
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
 
     def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")
+        raise qml.ops.AdjointError(
+            "No adjoint exists for QubitDensityMatrix operations."
+        )
