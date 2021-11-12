@@ -698,7 +698,7 @@ class DefaultQubit(QubitDevice):
 
         # the final state is calculated as the tensor product of each of the states.
         for s, w in zip(states[1:], device_wires[1:]):
-            state = self._reshape(self._tensordot(state, s, 0), newshape=(-1))
+            state = self._flatten(self._tensordot(state, s, 0))
             wires = wires + w
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
