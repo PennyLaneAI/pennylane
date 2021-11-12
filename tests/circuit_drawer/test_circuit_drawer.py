@@ -632,6 +632,7 @@ def qubit_circuit_with_interesting_wires():
 
     return tape
 
+
 @pytest.fixture
 def drawn_qubit_circuit_with_interesting_wires():
     """The rendered circuit representation of the above qubit circuit."""
@@ -642,17 +643,19 @@ def drawn_qubit_circuit_with_interesting_wires():
         + "  b: ──X──╰C──┤     \n"
     )
 
+
 @pytest.fixture
 def qubit_circuit_with_max_length_kwdarg():
     with qml.tape.QuantumTape() as tape:
         for i in range(3):
-            qml.Hadamard(wires = i)
-            qml.RX(i * 0.1, wires = i)
-            qml.RY(i * 0.1, wires = i)
-            qml.RZ(i * 0.1, wires = i)
+            qml.Hadamard(wires=i)
+            qml.RX(i * 0.1, wires=i)
+            qml.RY(i * 0.1, wires=i)
+            qml.RZ(i * 0.1, wires=i)
         return qml.expval(qml.PauliZ(0))
 
     return tape
+
 
 @pytest.fixture
 def drawn_qubit_circuit_with_max_length_kwdarg():
@@ -666,6 +669,7 @@ def drawn_qubit_circuit_with_max_length_kwdarg():
         + " (0.1)──┤     \n"
         + " (0.2)──┤     \n "
     )
+
 
 class TestCircuitDrawerIntegration:
     """Test that tapes are properly drawn."""
@@ -736,7 +740,7 @@ class TestCircuitDrawerIntegration:
         sef, qubit_circuit_with_max_length_kwdarg, drawn_qubit_circuit_with_max_length_kwdarg
     ):
         """Test that a qubit circuit with a max_length argument set renders correctly."""
-        output = qubit_circuit_with_max_length_kwdarg.draw(max_length = 30)
+        output = qubit_circuit_with_max_length_kwdarg.draw(max_length=30)
 
         assert output == drawn_qubit_circuit_with_max_length_kwdarg
 
