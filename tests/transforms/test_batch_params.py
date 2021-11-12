@@ -74,7 +74,7 @@ def test_mottenstate_preparation(mocker):
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-        return qml.expval(qml.PauliX(0))
+        return qml.probs(wires=[0, 1, 2])
 
     batch_size = 3
 
@@ -85,8 +85,20 @@ def test_mottenstate_preparation(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 1)
+    assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    indiv_res = []
+    for state, weight in zip(data, weights):
+        indiv_res.append(circuit2(state, weight))
+    assert np.allclose(res, indiv_res)
 
 
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])

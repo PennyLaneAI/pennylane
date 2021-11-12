@@ -252,20 +252,27 @@ class MottonenStatePreparation(Operation):
 
     def __init__(self, state_vector, wires, do_queue=True, id=None):
 
-        shape = qml.math.shape(state_vector)
+        # check if the `state_vector` param is batched
+        batched = len(qml.math.shape(state_vector)) > 1
 
-        if len(shape) != 1:
-            raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
+        state_batch = state_vector if batched else [state_vector]
 
-        n_amplitudes = shape[0]
-        if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
-            raise ValueError(
-                f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
-            )
+        # apply checks to each state vector in the batch
+        for i, state in enumerate(state_batch):
+            shape = qml.math.shape(state)
 
-        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
-        if not qml.math.allclose(norm, 1.0, atol=1e-3):
-            raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
+            if len(shape) != 1:
+                raise ValueError(f"State vectors must be one-dimensional; vector {i} has shape {shape}.")
+
+            n_amplitudes = shape[0]
+            if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
+                raise ValueError(
+                    f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
+                )
+
+            norm = qml.math.sum(qml.math.abs(state) ** 2)
+            if not qml.math.allclose(norm, 1.0, atol=1e-3):
+                raise ValueError(f"State vectors have to have norm 1.0, vector {i} has norm {norm}")
 
         super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 
