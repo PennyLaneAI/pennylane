@@ -65,7 +65,7 @@ def test_angle_embedding(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
-def test_mottenstate_preparation(mocker):
+def test_mottonenstate_preparation(mocker):
     """Test that batching works for MottonenStatePreparation"""
     dev = qml.device("default.qubit", wires=3)
 
