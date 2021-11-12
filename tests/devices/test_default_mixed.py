@@ -666,7 +666,7 @@ class TestApplyDensityMatrix:
     subset_wires = [(4, 0), (2, 1), (1, 2)]
 
     @pytest.mark.parametrize("wires", subset_wires)
-    def test_subset_wires(self, wires, tol):
+    def test_subset_wires_with_filling_remaining(self, wires, tol):
         """Tests that applying state |1><1| on a subset of wires prepares the correct state
         |1><1| ⊗ |0><0|"""
         nr_wires = 3
@@ -676,8 +676,26 @@ class TestApplyDensityMatrix:
         dev._apply_density_matrix(rho, Wires(wires[1]))
         b_state = basis_state(wires[0], nr_wires)
         target_state = np.reshape(b_state, [2] * 2 * nr_wires)
-        print(np.reshape(dev._state, (2 ** nr_wires, 2 ** nr_wires)))
-        print(np.reshape(target_state, (2 ** nr_wires, 2 ** nr_wires)))
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+
+    subset_wires = [(7, (0, 1, 2), ()), (5, (0, 2), (1,)), (6, (0, 1), (2,))]
+
+    @pytest.mark.parametrize("wires", subset_wires)
+    def test_subset_wires_without_filling_remaining(self, wires, tol):
+        """Tests that does nothing |1><1| on a subset of wires prepares the correct state
+        |1><1| ⊗ ρ if `fill_remaining=False`"""
+        nr_wires = 3
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state0 = np.array([1, 0])
+        rho0 = np.outer(state0, state0.conj())
+        state1 = np.array([0, 1])
+        rho1 = np.outer(state1, state1.conj())
+        for wire in wires[1]:
+            dev._apply_density_matrix(rho1, Wires(wire))
+        for wire in wires[2]:
+            dev._apply_density_matrix(rho0, Wires(wire))
+        b_state = basis_state(wires[0], nr_wires)
+        target_state = np.reshape(b_state, [2] * 2 * nr_wires)
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
     def test_wrong_dim(self):

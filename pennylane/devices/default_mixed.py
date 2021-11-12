@@ -404,8 +404,8 @@ class DefaultMixed(QubitDevice):
 
     def _apply_density_matrix(self, state, device_wires):
         """Initialize the internal state in a specified mixed state.
-        If not all the wires are specified, remaining dimension is filled by |0><0|,
-        where leftmost axes has 1 on its element when transposed as |0><0| ⊗ ρ.
+        If not all the wires are specified for full state of ρ, remaining dimension is filled by tr_in(ρ),
+        which results in the full system of tr_in(ρ) ⊗ ρ_in.
 
            Args:
                state (array[complex]): density matrix of length
@@ -436,18 +436,14 @@ class DefaultMixed(QubitDevice):
             self._state = self._reshape(state, [2] * 2 * self.num_wires)
 
         else:
-            # Initialize |0><0| ⊗ ρ with transposed wires
-            complement_dim = 2 ** (self.num_wires - len(device_wires))
-            sigma = self._align_device(
-                qnp.zeros((complement_dim, complement_dim), dtype=self.C_DTYPE, like=state),
-                state,
-            )
-            sigma[0, 0] = 1
+            # Initialize tr_in(ρ) ⊗ ρ_in with transposed wires where ρ is the density matrix before this operation.
+
+            complement_wires = list(sorted(list(set(range(self.num_wires)) - set(device_wires))))
+            sigma = self.density_matrix(Wires(complement_wires))
             rho = qnp.kron(sigma, state.reshape(state_dim, state_dim))
             rho = rho.reshape([2] * 2 * self.num_wires)
 
             # Construct transposition axis to revert back to the original wire order
-            complement_wires = list(sorted(list(set(range(self.num_wires)) - set(device_wires))))
             left_axes = []
             right_axes = []
             complement_wires_count = len(complement_wires)
