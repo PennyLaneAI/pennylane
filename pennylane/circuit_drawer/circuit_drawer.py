@@ -383,7 +383,7 @@ class CircuitDrawer:
             # offset = 0
             for i in range(n_wraps):
                 # print(i * self.max_length, (i + 1) * self.max_length, offset)
-                for j, wire in enumerate(wires):
+                for wire in wires:
                     if (((i + 1) * self.max_length)) < len(wire):
                         # This conditional is a bit of a hack. The goal is to
                         # prepend whitespace to maintain alignment with the
@@ -399,5 +399,6 @@ class CircuitDrawer:
                             )
                     else:
                         rendered_substrings.append(f" {wire[i * self.max_length + 1:]}")
+            rendered_string = "\n".join(rendered_substrings)
 
         return rendered_string
