@@ -17,7 +17,7 @@ Tests for the AmplitudeEmbedding template.
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane import numpy as pnp
+from pennylane import numpy as pnp, DeviceError
 
 FEATURES = [
     np.array([0, 1, 0, 0]),
@@ -401,5 +401,5 @@ def test_multiple_amplitudes():
         qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[3, 5, 6], normalize=True)
         return qml.state()
 
-    with pytest.raises(ValueError, match="applied in the same qubit"):
+    with pytest.raises(DeviceError, match="applied in the same qubit"):
         circuit()

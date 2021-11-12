@@ -695,15 +695,15 @@ class DefaultQubit(QubitDevice):
 
         state = states[0]
         wires = device_wires[0]
-
+        state = self._asarray(state, dtype=self.C_DTYPE)
         # the final state is calculated as the tensor product of each of the states.
         for s, w in zip(states[1:], device_wires[1:]):
+            s = self._asarray(s, dtype=self.C_DTYPE)
             state = self._reshape(self._tensordot(state, s, 0), (-1))
             wires = wires + w
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
         if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
