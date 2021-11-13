@@ -3,13 +3,14 @@
 # Release 0.20.0-dev (development release)
 
 <h3>New features since last release</h3>
+
 * The `qml.fourier.reconstruct` function is added. It can be used to
   reconstruct one-dimensional Fourier series with a minimal number of calls
   to the original function.
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
 
-  The used reconstruction technique differs for functions with equidistant frequencies
-  that are reconstructed using the function value at equidistant sampling points and
+  The reconstruction technique differs for functions with equidistant frequencies
+  that are reconstructed using the function value at equidistant sampling points, and
   for functions with arbitrary frequencies reconstructed using arbitrary sampling points.
 
   As an example, consider the following QNode:
@@ -19,12 +20,12 @@
   
   @qml.qnode(dev)
   def circuit(x, Y, f=1.0):
-      qml.RX(f*x, wires=0)
+      qml.RX(f * x, wires=0)
       qml.RY(Y[0], wires=0)
       qml.RY(Y[1], wires=1)
       qml.CNOT(wires=[0, 1])
-      qml.RY(3*Y[1], wires=1)
-      return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+      qml.RY(3 * Y[1], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
 
   It has three variational parameters overall: A scalar input `x`

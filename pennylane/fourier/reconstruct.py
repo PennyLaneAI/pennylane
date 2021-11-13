@@ -115,12 +115,12 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None):
 
     # If no shifts are provided, choose equidistant ones
     if not have_shifts:
-        R = len(spectrum)
+        R = qml.math.shape(spectrum)[0]
         shifts = qml.math.arange(-R, R + 1) * 2 * np.pi / (f_max * (2 * R + 1)) * R
         zero_idx = R
         need_f0 = True
     elif have_f0:
-        zero_idx = qml.math.argwhere(qml.math.isclose(shifts, 0.0)).T[0]
+        zero_idx = qml.math.T(qml.math.argwhere(qml.math.isclose(shifts, 0.0)))[0]
         zero_idx = zero_idx[0] if len(zero_idx) > 0 else None
         need_f0 = zero_idx is not None
 
@@ -401,12 +401,12 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         @qml.qnode(dev)
         def circuit(x, Y, f=1.0):
-            qml.RX(f*x, wires=0)
+            qml.RX(f * x, wires=0)
             qml.RY(Y[0], wires=0)
             qml.RY(Y[1], wires=1)
             qml.CNOT(wires=[0, 1])
-            qml.RY(5*Y[1], wires=1)
-            return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+            qml.RY(5*  Y[1], wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         x = 0.4
         Y = np.array([1.9, -0.5])
@@ -435,22 +435,22 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     We may do the same for ``Y[1]`` , which enters the circuit with maximal frequency
     :math:`1+5=4` . We will also track the number of executions needed:
 
-    >>> dev._num_executions = 0
-    >>> rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, nums_frequency)(x, Y)
-    >>> dev.num_executions
-    13
+    >>> with qml.Tracker(circuit.device) as tracker:
+    ...     rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, nums_frequency)(x, Y)
+    >>> tracker.totals
+    {'executions': 13}
 
     As expected, we required :math:`2R+1=2\cdot 6+1=13` circuit executions. However, not
     all frequencies below :math:`f_\text{max}=6` are present in the circuit, so that
     a reconstruction using knowledge of the spectrum will be cheaper:
 
-    >>> dev._num_executions = 0
     >>> spectra = {"Y": {1: [0., 1., 4., 5., 6.]}}
-    >>> rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, None, spectra)(x, Y)
-    >>> dev.num_executions
-    9
+    >>> with tracker:
+    ...     rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, None, spectra)(x, Y)
+    >>> tracker.totals
+    {'executions': 9}
 
-    If we want to reconstruct the dependence of ``circuit`` on ``x`` , we can not use
+    If we want to reconstruct the dependence of ``circuit`` on ``x`` , we cannot use
     ``nums_frequency`` if ``f`` is not an integer. One could rescale ``x`` to obtain
     the frequency :math:`1` again, or directly use ``spectra`` . We will combine this
     with another reconstruction with respect to ``Y[0]`` :
