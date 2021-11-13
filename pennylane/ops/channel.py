@@ -64,7 +64,7 @@ class AmplitudeDamping(Channel):
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
-        return np.asarray(np.stack([K0, K1]), dtype=cls.C_DTYPE)
+        return np.stack([K0, K1])
 
 
 class GeneralizedAmplitudeDamping(Channel):

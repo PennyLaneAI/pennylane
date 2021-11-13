@@ -131,29 +131,6 @@ class DefaultMixedTorch(DefaultMixed):
     name = "Default mixed (Torch) PennyLane plugin"
     short_name = "default.mixed.torch"
 
-    #parametric_ops = {
-    #    "PhaseShift": torch_ops.PhaseShift,
-    #    "ControlledPhaseShift": torch_ops.ControlledPhaseShift,
-    #    "RX": torch_ops.RX,
-    #    "RY": torch_ops.RY,
-    #    "RZ": torch_ops.RZ,
-    #    "MultiRZ": torch_ops.MultiRZ,
-    #    "Rot": torch_ops.Rot,
-    #    "CRX": torch_ops.CRX,
-    #    "CRY": torch_ops.CRY,
-    #    "CRZ": torch_ops.CRZ,
-    #    "CRot": torch_ops.CRot,
-    #    "IsingXX": torch_ops.IsingXX,
-    #    "IsingYY": torch_ops.IsingYY,
-    #    "IsingZZ": torch_ops.IsingZZ,
-    #    "SingleExcitation": torch_ops.SingleExcitation,
-    #    "SingleExcitationPlus": torch_ops.SingleExcitationPlus,
-    #    "SingleExcitationMinus": torch_ops.SingleExcitationMinus,
-    #    "DoubleExcitation": torch_ops.DoubleExcitation,
-    #    "DoubleExcitationPlus": torch_ops.DoubleExcitationPlus,
-    #    "DoubleExcitationMinus": torch_ops.DoubleExcitationMinus,
-    #}
-
     C_DTYPE = torch.complex128
     R_DTYPE = torch.float64
 
@@ -173,9 +150,6 @@ class DefaultMixedTorch(DefaultMixed):
     _conj = staticmethod(torch.conj)
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
-    _flatten = staticmethod(torch.flatten)
-    _expand_dims = staticmethod(lambda x, dim: x.unsqueeze(dim))
-    _align_device = staticmethod(lambda x, to: x.to(to))
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device="cpu"):
         self._torch_device = torch_device

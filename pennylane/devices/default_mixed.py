@@ -108,12 +108,30 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
-    parametric_ops = {
+    #TODO: how to do this?
+    C_DTYPE = np.complex128
+    R_DTYPE = np.float64
 
-    }
+    _asarray = staticmethod(qnp.asarray)
+    _dot = staticmethod(qnp.dot)
+    _abs = staticmethod(qnp.abs)
+    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
+    _reshape = staticmethod(qnp.reshape)
+    _flatten = staticmethod(lambda array: array.flatten())
+    _gather = staticmethod(lambda array, indices: array[indices])
+    _einsum = staticmethod(qnp.einsum)
+    _cast = staticmethod(qnp.asarray)
+    _transpose = staticmethod(qnp.transpose)
+    _tensordot = staticmethod(qnp.tensordot)
+    _conj = staticmethod(qnp.conj)
+    _imag = staticmethod(qnp.imag)
+    _roll = staticmethod(qnp.roll)
+    _stack = staticmethod(qnp.stack)
+    _outer = staticmethod(qnp.outer)
+    _diag = staticmethod(qnp.diag)
+    _real = staticmethod(qnp.real)
 
-    _expand_dims = staticmethod(qnp.expand_dims)
-    _align_device = staticmethod(lambda x, to: x)
+    _expand_dims = staticmethod(qnp.utils.expand_dims)
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
@@ -152,12 +170,13 @@ class DefaultMixed(QubitDevice):
             supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
-            passthru_devices={
-                "tf": "default.mixed.tf",
-                "torch": "default.mixed.torch",
-                "autograd": "default.mixed.autograd",
-                "jax": "default.mixed.jax",
-            },
+            passthru_interface="auto",
+#            passthru_devices={
+#                "tf": "default.mixed.tf",
+#                "torch": "default.mixed.torch",
+#                "autograd": "default.mixed.autograd",
+#                "jax": "default.mixed.jax",
+#            },
         )
         return capabilities
 

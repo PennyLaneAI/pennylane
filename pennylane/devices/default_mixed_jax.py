@@ -132,30 +132,6 @@ class DefaultMixedJax(DefaultMixed):
     name = "Default mixed (jax) PennyLane plugin"
     short_name = "default.mixed.jax"
 
-    #parametric_ops = {
-    #    "PhaseShift": jax_ops.PhaseShift,
-    #    "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
-    #    "CPhase": jax_ops.ControlledPhaseShift,
-    #    "RX": jax_ops.RX,
-    #    "RY": jax_ops.RY,
-    #    "RZ": jax_ops.RZ,
-    #    "Rot": jax_ops.Rot,
-    #    "CRX": jax_ops.CRX,
-    #    "CRY": jax_ops.CRY,
-    #    "CRZ": jax_ops.CRZ,
-    #    "CRot": jax_ops.CRot,
-    #    "MultiRZ": jax_ops.MultiRZ,
-    #    "IsingXX": jax_ops.IsingXX,
-    #    "IsingYY": jax_ops.IsingYY,
-    #    "IsingZZ": jax_ops.IsingZZ,
-    #    "SingleExcitation": jax_ops.SingleExcitation,
-    #    "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
-    #    "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
-    #    "DoubleExcitation": jax_ops.DoubleExcitation,
-    #    "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
-    #    "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
-    #}
-
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)

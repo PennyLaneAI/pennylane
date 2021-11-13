@@ -128,30 +128,6 @@ class DefaultMixedTF(DefaultMixed):
     name = "Default mixed (TensorFlow) PennyLane plugin"
     short_name = "default.mixed.tf"
 
-   # parametric_ops = {
-   #     "PhaseShift": tf_ops.PhaseShift,
-   #     "ControlledPhaseShift": tf_ops.ControlledPhaseShift,
-   #     "CPhase": tf_ops.ControlledPhaseShift,
-   #     "RX": tf_ops.RX,
-   #     "RY": tf_ops.RY,
-   #     "RZ": tf_ops.RZ,
-   #     "Rot": tf_ops.Rot,
-   #     "MultiRZ": tf_ops.MultiRZ,
-   #     "CRX": tf_ops.CRX,
-   #     "CRY": tf_ops.CRY,
-   #     "CRZ": tf_ops.CRZ,
-   #     "CRot": tf_ops.CRot,
-   #     "IsingXX": tf_ops.IsingXX,
-   #     "IsingYY": tf_ops.IsingYY,
-   #     "IsingZZ": tf_ops.IsingZZ,
-   #     "SingleExcitation": tf_ops.SingleExcitation,
-   #     "SingleExcitationPlus": tf_ops.SingleExcitationPlus,
-   #     "SingleExcitationMinus": tf_ops.SingleExcitationMinus,
-   #     "DoubleExcitation": tf_ops.DoubleExcitation,
-   #     "DoubleExcitationPlus": tf_ops.DoubleExcitationPlus,
-   #     "DoubleExcitationMinus": tf_ops.DoubleExcitationMinus,
-   # }
-
     C_DTYPE = tf.complex128
     R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
