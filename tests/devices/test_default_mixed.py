@@ -632,9 +632,6 @@ class TestApplyStateVector:
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
 
-# TODO: TestApplyDensityMatrix
-
-
 class TestApplyDensityMatrix:
     """Unit tests for the method `_apply_density_matrix()`"""
 
