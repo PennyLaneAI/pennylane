@@ -387,9 +387,12 @@ class PauliError(Channel):
     and :math:`K_wi` denotes the Kraus matrix corresponding to the operator acting on wire i,
     and :math:`p` denotes the probability with which the channel is applied
 
-    **Warning:**
-    Because the Kraus Matrices scale exponentially to the amount of wires, their dimension blow up
-    fast. Use with caution!
+    .. warning::
+
+        The size of the Kraus Matrices for PauliError scale exponentially
+        with the number of wires, the channel acts on. Simulations with
+        PauliError can result in a significant increase in memory and
+        computational usage. Use with caution!
 
     **Details:**
 
@@ -400,7 +403,6 @@ class PauliError(Channel):
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
         wirelist (Sequence[int]): The wires the channel acts on
-        wires (Sequence[int]): The wires the channel acts on
     """
 
     num_params = 3
@@ -429,7 +431,7 @@ class PauliError(Channel):
         if len(operators) != len(wirelist):
             raise ValueError("The number of operators must match the number of wires")
 
-        max_q = max(wirelist)
+        max_q = len(wirelist)
 
         print(
             f"Warning: The resulting Kronecker matrix will have dimensions {2**(max_q+1)} x {2**(max_q+1)}."
