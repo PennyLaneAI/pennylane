@@ -115,7 +115,6 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
-    _align_device = staticmethod(lambda x, to: x)
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
