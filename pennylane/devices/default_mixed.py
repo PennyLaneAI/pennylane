@@ -394,8 +394,10 @@ class DefaultMixed(QubitDevice):
 
     def _apply_density_matrix(self, state, device_wires):
         """Initialize the internal state in a specified mixed state.
-        If not all the wires are specified for full state of ρ, remaining dimension is filled by tr_in(ρ),
-        which results in the full system of tr_in(ρ) ⊗ ρ_in.
+        If not all the wires are specified in the full state :math:`\rho`, remaining subsystem is filled by
+        `\mathrm{tr}_in(\rho)`, which results in the full system state :math:`\mathrm{tr}_{in}(\rho) \otimes \rho_{in}`,
+        where :math:`\rho_{in}` is the argument `state` of this function and :math:`\mathrm{tr}_{in}` is a partial
+        trace over the subsystem to be replaced by this operation.
 
            Args:
                state (array[complex]): density matrix of length

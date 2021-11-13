@@ -94,8 +94,9 @@ class QubitStateVector(Operation):
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix.
-    If not all the wires are specified, remaining dimension is filled by :math:`\vert 0 > < 0 \vert`,
-    where leftmost axes has 1 on its element when transposed as :math:`\vert 0 > < 0 \vert \otimes \rho`.
+    If not all the wires are specified, remaining dimension is filled by :math:`\mathrm{tr}_{in}(\rho)`,
+    where :math:`\rho` is the full system density matrix before this operation and :math:`\mathrm{tr}_{in}` is a
+    partial trace over the subsystem to be replaced by input state.
 
     **Details:**
 
