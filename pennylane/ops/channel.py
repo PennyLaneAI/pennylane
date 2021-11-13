@@ -16,6 +16,8 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import numpy as np
+import os
+import warnings
 
 from pennylane.operation import AnyWires, Channel
 
@@ -367,12 +369,7 @@ class ResetError(Channel):
 
 class PauliError(Channel):
     r"""PauliError(operators, p, wirelist, wires)
-    Arbitrary number qubit, arbitrary Pauli error channel.
-
-    This class models corresponding Kraus matrices to a series of arbitrary Pauli operators on
-    an arbitrary amount of wires. The operators are supplied in a string. The according wires are
-    supplied in an array called wirelist. The probability with which the channel is applied is
-    supplied as a float. Each wire can take one Pauli operator.
+    Arbitrary number qubit, arbitrary Pauli operator error channel.
 
     This channel is modelled by the following Kraus matrices:
 
@@ -380,11 +377,11 @@ class PauliError(Channel):
         K_0 = \sqrt{1-p} * I
 
     .. math::
-        K_1 = \sqrt{p} * (K_{w0} \otimes (K_{w1} \otimes (\dots K_{w_{max}})))
+        K_1 = \sqrt{p} * (K_{w0} \otimes K_{w1} \otimes \dots K_{wn})
 
     Where :math:`I` is the Identity,
     and :math:`\otimes` denotes the Kronecker Product,
-    and :math:`K_wi` denotes the Kraus matrix corresponding to the operator acting on wire i,
+    and :math:`K_{wi}` denotes the Kraus matrix corresponding to the operator acting on wire i,
     and :math:`p` denotes the probability with which the channel is applied
 
     .. warning::
@@ -415,8 +412,8 @@ class PauliError(Channel):
         "Z": np.array([[1, 0], [0, -1]]),
     }
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
+    def __init__(self, *params, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=do_queue)
         operators, p, wirelist = params[0], params[1], params[2]
 
         # check if the specified operators are legal
@@ -431,24 +428,26 @@ class PauliError(Channel):
         if len(operators) != len(wirelist):
             raise ValueError("The number of operators must match the number of wires")
 
-        max_q = len(wirelist)
+        nq = len(wirelist)
 
-        print(
-            f"Warning: The resulting Kronecker matrix will have dimensions {2**(max_q+1)} x {2**(max_q+1)}."
-        )
+        if (2 ** (2 * (nq)) * 8) > 1 / 4 * os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES"):
+            warnings.warn(
+                f"The resulting Kronecker matrix will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals a quarter of your physical memory."
+            )
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        operators, p, wirelist = params[0], params[1], params[2]
+
+        nq = len(wirelist)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p) * np.eye(2 ** (max_q + 1))
+        K0 = np.sqrt(1 - p) * np.eye(2 ** nq)
 
         # K1 is composed by Kraus matrices of operators
         K1 = np.sqrt(p) * np.array([1])
-        for wire in range(max_q, -1, -1):
-            if wire in wirelist:
-                # If operator acting on wire, apply Kraus matrix
-                K1 = np.kron(cls.ops[operators[wirelist.index(wire)]], K1)
-            else:
-                # else, skip (multiply by identity)
-                K1 = np.kron(np.eye(2), K1)
+        for op in operators[::-1]:
+            K1 = np.kron(cls.ops[op], K1)
 
         return [K0, K1]
 
