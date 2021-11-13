@@ -19,10 +19,7 @@ with preparing a certain state on the device.
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.templates.state_preparations import (
-    BasisStatePreparation,
-    MottonenStatePreparation,
-)
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 
 
 class BasisState(Operation):

@@ -25,13 +25,7 @@ from string import ascii_letters as ABC
 
 import pennylane.numpy as np
 import pennylane.math as qnp
-from pennylane import (
-    QubitDevice,
-    QubitStateVector,
-    BasisState,
-    DeviceError,
-    QubitDensityMatrix,
-)
+from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
 from pennylane.operation import DiagonalOperation, Channel
 from pennylane.wires import Wires
 from .._version import __version__
@@ -114,7 +108,6 @@ class DefaultMixed(QubitDevice):
         "QFT",
         "ThermalRelaxationError",
     }
-
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
@@ -324,9 +317,7 @@ class DefaultMixed(QubitDevice):
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
         einsum_indices = "{row_indices},{state_indices},{col_indices}->{state_indices}".format(
-            col_indices=col_indices,
-            state_indices=state_indices,
-            row_indices=row_indices,
+            col_indices=col_indices, state_indices=state_indices, row_indices=row_indices
         )
 
         self._state = self._einsum(einsum_indices, eigvals, self._state, self._conj(eigvals))
