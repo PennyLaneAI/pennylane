@@ -94,8 +94,8 @@ class QubitStateVector(Operation):
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix.
-    If not all the wires are specified, remaining dimension is filled by |0><0|,
-    where leftmost axes has 1 on its element when transposed as |0><0| ⊗ ρ.
+    If not all the wires are specified, remaining dimension is filled by :math:`\vert 0 > < 0 \vert`,
+    where leftmost axes has 1 on its element when transposed as :math:`\vert 0 > < 0 \vert \otimes \rho`.
 
     **Details:**
 
