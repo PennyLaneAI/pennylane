@@ -15,8 +15,8 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
-import numpy as np
 import os
+import numpy as np
 import warnings
 
 from pennylane.operation import AnyWires, Channel
