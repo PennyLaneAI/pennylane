@@ -15,8 +15,6 @@
 import pytest
 import numpy as np
 
-from pennylane.operation import Expectation
-
 tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml
