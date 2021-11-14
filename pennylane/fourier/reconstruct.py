@@ -334,9 +334,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
-            When called, this function will return a dictionary of dictionaries,
-            formatted like ``nums_frequency`` or ``spectra`` ,
-            that contains the univariate reconstructions per QNode parameter.
+        When called, this function will return a dictionary of dictionaries,
+        formatted like ``nums_frequency`` or ``spectra`` ,
+        that contains the univariate reconstructions per QNode parameter.
 
     For each provided ``id`` in ``ids``, the QNode is restricted to varying the single QNode
     parameter corresponding to the ``id`` . This univariate function is then reconstructed
