@@ -134,6 +134,9 @@ class TestOperation:
         if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
             pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
 
+        if test_class == qml.PauliError:
+            pytest.skip("PauliError has a different initialization signature.")
+
         n = test_class.num_params
         w = test_class.num_wires
         ww = list(range(w))
