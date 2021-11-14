@@ -377,7 +377,7 @@ class TestPauliError:
     def test_warning(self):
         """Test if warning is thrown when huge matrix"""
         with pytest.warns(UserWarning):
-            Ks = channel.PauliError("X"*512, 0.5, list(range(512)), wires=list(range(512)))
+            Ks = channel.PauliError("X" * 512, 0.5, list(range(512)), wires=list(range(512)))
 
     def test_p_zero(self, tol):
         """Test resulting Kraus matrices for p=0"""
