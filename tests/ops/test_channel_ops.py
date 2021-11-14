@@ -374,6 +374,11 @@ class TestPauliError:
         with pytest.raises(WireError):
             Ks = channel.PauliError("XXX", 0.5, [1, 1, 3], wires=[1, 1, 3])
 
+    def test_warning(self):
+        """Test if warning is thrown when huge matrix"""
+        with pytest.warns(UserWarning):
+            Ks = channel.PauliError("X"*512, 0.5, list(range(512)), wires=list(range(512)))
+
     def test_p_zero(self, tol):
         """Test resulting Kraus matrices for p=0"""
         expected_Ks = [np.eye(2 ** 5), np.zeros((2 ** 5, 2 ** 5))]
