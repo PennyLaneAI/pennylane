@@ -58,7 +58,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None):
     shifts_pos = qml.math.arange(1, num_frequency + 1) / a
     shifts_neg = -shifts_pos[::-1]
     f0 = fun(0.0) if f0 is None else f0
-    evals = list(map(fun, shifts_neg)) + [f0] + list(map(fun, shifts_pos))
+    evals = qml.math.concatenate([list(map(fun, shifts_neg)), [f0], list(map(fun, shifts_pos))])
     shifts = qml.math.concatenate([shifts_neg, [0.0], shifts_pos])
 
     x0 = qml.math.array(0.0) if x0 is None else x0
@@ -501,12 +501,11 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                 if job is None:
                     _reconstructions[par_idx] = constant_fn
                 else:
-                    shift_vec = qml.math.zeros_like(args[arg_idx])
-                    if len(qml.math.shape(shift_vec)) == 0:
+                    if len(qml.math.shape(args[arg_idx])) == 0:
                         shift_vec = 1.0
                         x0 = args[arg_idx]
                     else:
-                        shift_vec[par_idx] = 1.0
+                        shift_vec = qml.math.eye(qml.math.shape(args[arg_idx])[0])[par_idx]
                         x0 = args[arg_idx][par_idx]
 
                     def _univariate_fn(x):
