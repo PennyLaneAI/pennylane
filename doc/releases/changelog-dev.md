@@ -13,6 +13,10 @@
 
 <h3>Improvements</h3>
 
+* Tests do not loop over automatically imported and instantiated operations any more, 
+  which was opaque and created unnecessarily many tests.
+  [(#1895)](https://github.com/PennyLaneAI/pennylane/pull/1895)
+
 * ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
