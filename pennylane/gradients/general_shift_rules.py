@@ -92,6 +92,7 @@ def get_shift_rule(frequencies, shifts=None):
 
     if shifts is None:  # assume equidistant shifts
         shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
+        equ_shifts = True
     else:
         shifts = qml.math.stack(shifts)
         if len(shifts) != n_freqs:
@@ -103,9 +104,9 @@ def get_shift_rule(frequencies, shifts=None):
         if len(set(shifts)) != n_freqs:
             raise ValueError("Shift values must be unique, instead got {}".format(shifts))
 
-    if len(set(np.round(np.diff(frequencies), 10))) in (0, 1) and all(
-        np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min))
-    ):  # equidistant case
+        equ_shifts = all(np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)))
+
+    if len(set(np.round(np.diff(frequencies), 10))) in (0, 1) and equ_shifts:  # equidistant case
         coeffs = (
             freq_min
             * (-1) ** (mu - 1)
