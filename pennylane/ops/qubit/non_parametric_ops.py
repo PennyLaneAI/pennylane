@@ -1143,8 +1143,7 @@ class Barrier(Operation):
     num_wires = AnyWires
     par_domain = None
 
-    def __init__(self, only_visual=False, *params, wires=None, do_queue=True, id=None):
-
+    def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
         self.only_visual = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 

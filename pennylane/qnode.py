@@ -20,6 +20,8 @@ from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 import warnings
 import inspect
+from pennylane.wires import Wires
+
 
 import numpy as np
 
@@ -580,6 +582,11 @@ class QNode:
 
         with self.qtape:
             self.qfunc_output = self.func(*args, **kwargs)
+
+        with self.qtape as tape:
+            for operation in tape.operations:
+                if operation.wires == Wires([]):
+                    operation._wires = self.device.wires
 
         if not isinstance(self.qfunc_output, Sequence):
             measurement_processes = (self.qfunc_output,)
