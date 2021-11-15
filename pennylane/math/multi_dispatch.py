@@ -365,7 +365,7 @@ def stack(values, axis=0):
     return np.stack(values, axis=axis, like=interface)
 
 
-def where(condition, x, y):
+def where(*args):#condition, x, y):
     """Returns elements chosen from x or y depending on a boolean tensor condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
@@ -387,7 +387,13 @@ def where(condition, x, y):
     >>> math.where(a < 1, a, b)
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
     """
-    return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
+    if len(args)==1:
+        condition = args[0]
+        interface = _multi_dispatch([condition])
+        return [np.where(condition, like=interface)] if interface=="torch" else np.where(condition, like=interface)
+    elif len(args)==3:
+        condition, x, y = args
+        return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
 
 
 def frobenius_inner_product(A, B, normalize=False):

@@ -59,8 +59,8 @@ def get_RX_circuit(scales):
     return circuit
 
 
-def fun_close(fun1, fun2, zero=None, tol=1e-5):
-    X = np.linspace(-np.pi, np.pi, 100)
+def fun_close(fun1, fun2, zero=None, tol=1e-5, samples=100):
+    X = np.linspace(-np.pi, np.pi, samples)
     if zero is not None:
         X = qml.math.convert_like(X, zero)
 
@@ -442,7 +442,7 @@ class TestReconstructGen:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for Torch input variables."""
         torch = pytest.importorskip("torch")
-        spectrum = torch.tensor(spectrum)
+        spectrum = torch.tensor(spectrum, dtype=torch.float64)
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="torch")
         grad = lambda x: torch.autograd.functional.jacobian(rec, x)
@@ -790,7 +790,7 @@ class TestReconstruct:
                 )
                 assert np.isclose(rec(x0), qnode(*params))
                 assert np.isclose(rec(x0 + 0.1), univariate(x0 + 0.1))
-                assert fun_close(rec, univariate)
+                assert fun_close(rec, univariate, 10)
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
@@ -827,10 +827,12 @@ class TestReconstruct:
                 exp_qnode_grad = qml.grad(qnode, argnum=outer_key_num)
                 exp_grad = qml.grad(univariate)
                 grad = qml.grad(rec)
-                # Gradient evaluation at reconstruction point not supported
-                # assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
+                if nums_frequency is None:
+                    # Gradient evaluation at reconstruction point not supported for
+                    # Dirichlet reconstruction
+                    assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad)
+                assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
@@ -844,6 +846,7 @@ class TestReconstruct:
         from jax.config import config
 
         config.update("jax_enable_x64", True)
+        params = tuple(jax.numpy.array(par) for par in params)
         qnode = qml.QNode(qnode, dev_1, interface="jax")
         with qml.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
@@ -856,7 +859,7 @@ class TestReconstruct:
                 if not pnp.isscalar(x0):
                     x0 = x0[inner_key]
                     shift_vec = qml.math.zeros_like(params[outer_key_num])
-                    shift_vec[inner_key] = 1.0
+                    shift_vec = qml.math.scatter_element_add(shift_vec, inner_key, 1.0)
                 shift_vec = 1.0 if pnp.isscalar(params[outer_key_num]) else shift_vec
                 mask = (
                     0.0
@@ -873,7 +876,7 @@ class TestReconstruct:
                 grad = jax.grad(rec)
                 assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad)
+                assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
@@ -895,6 +898,14 @@ class TestReconstruct:
                     for inner_key, val in outer_val.items()
                 }
                 for outer_key, outer_val in spectra.items()
+            }
+        if shifts is not None:
+            shifts = {
+                outer_key: {
+                    inner_key: tf.constant(val, dtype=tf.float64)
+                    for inner_key, val in outer_val.items()
+                }
+                for outer_key, outer_val in shifts.items()
             }
         with qml.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
@@ -923,7 +934,7 @@ class TestReconstruct:
                 )
                 with tf.GradientTape() as tape:
                     out = qnode(*params)
-                exp_qnode_grad = tape.gradient(out, params[outer_key_num][inner_key])
+                exp_qnode_grad = tape.gradient(out, params[outer_key_num])
 
                 def exp_grad(x):
                     x = tf.Variable(x, dtype=tf.float64)
@@ -937,10 +948,12 @@ class TestReconstruct:
                         out = rec(x)
                     return tape.gradient(out, x)
 
-                # Gradient evaluation at reconstruction point not supported
-                # assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
+                if nums_frequency is None:
+                    # Gradient evaluation at reconstruction point not supported for
+                    # Dirichlet reconstruction
+                    assert np.isclose(grad(x0), exp_qnode_grad[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad)
+                assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
@@ -952,7 +965,23 @@ class TestReconstruct:
         """Tests the reconstruction and differentiability with Torch."""
         torch = pytest.importorskip("torch")
         qnode = qml.QNode(qnode, dev_1, interface="torch")
-        params = tuple(torch.tensor(par, requires_grad=True) for par in params)
+        params = tuple(torch.tensor(par, requires_grad=True, dtype=torch.float64) for par in params)
+        if spectra is not None:
+            spectra = {
+                outer_key: {
+                    inner_key: torch.tensor(val, dtype=torch.float64)
+                    for inner_key, val in outer_val.items()
+                }
+                for outer_key, outer_val in spectra.items()
+            }
+        if shifts is not None:
+            shifts = {
+                outer_key: {
+                    inner_key: torch.tensor(val, dtype=torch.float64)
+                    for inner_key, val in outer_val.items()
+                }
+                for outer_key, outer_val in shifts.items()
+            }
         with qml.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
         assert tracker.totals["executions"] == exp_calls
@@ -981,4 +1010,4 @@ class TestReconstruct:
 
                 assert np.isclose(grad(x0), exp_qnode_grad[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, zero=torch.tensor(0.0, requires_grad=True))
+                assert fun_close(grad, exp_grad, zero=torch.tensor(0.0, requires_grad=True), samples=10)

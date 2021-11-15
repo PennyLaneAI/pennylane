@@ -131,8 +131,9 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         zero_idx = R
         need_f0 = True
     elif have_f0:
-        zero_idx = qml.math.T(qml.math.argwhere(qml.math.isclose(shifts, 0.0)))[0]
-        zero_idx = zero_idx[0] if len(zero_idx) > 0 else None
+        zero_idx = qml.math.T(qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0]))))
+        print(zero_idx)
+        zero_idx = zero_idx[0][0] if len(zero_idx) > 0 else None
         need_f0 = zero_idx is not None
 
     # Take care of shifts close to zero if f0 was provided
@@ -168,18 +169,19 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     # Extract the Fourier coefficients
     R = (L - 1) // 2
     a0 = W[0]
-    a = W[1 : R + 1]
-    b = W[R + 1 :]
+    a = anp.asarray(W[1 : R + 1], like=interface)
+    b = anp.asarray(W[R + 1 :], like=interface)
 
     x0 = anp.asarray(np.float64(0.0), like=interface) if x0 is None else x0
     # Construct the Fourier series
     def _reconstruction(x):
         """Univariate reconstruction based on arbitrary shifts."""
         x = x - x0
+        print(spectrum)
         return (
             a0
-            + qml.math.dot(a, qml.math.cos(spectrum * x))
-            + qml.math.dot(b, qml.math.sin(spectrum * x))
+            + qml.math.tensordot(qml.math.cos(spectrum * x), a, axes=[[0], [0]])
+            + qml.math.tensordot(qml.math.sin(spectrum * x), b, axes=[[0], [0]])
         )
 
     return _reconstruction
@@ -268,7 +270,7 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
                 _R = len(_spectrum) - 1
                 if _shifts is not None:
                     # Check whether 0 is among the shifts
-                    if any(qml.math.isclose(_shifts, 0.0, rtol=0, atol=atol)):
+                    if any(qml.math.isclose(_shifts, qml.math.zeros_like(_shifts), rtol=0, atol=atol)):
                         need_f0 = True
                     # Check whether the shifts have the correct size
                     if len(_shifts) != 2 * _R + 1:
@@ -321,6 +323,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     For common quantum gates, such restrictions are finite Fourier series with known
     frequency spectra. Thus they may be reconstructed using Dirichlet kernels or
     a non-uniform Fourier transform.
+
     Args:
         qnode (pennylane.QNode): Quantum node to be reconstructed, representing a
             circuit that outputs an expectation value.
@@ -492,10 +495,12 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         .. warning::
 
-            When using ``TensorFlow`` *and* ``nums_frequency`` , the reconstructed
-            functions are not differentiable at the point of reconstruction.
-            One workaround is to use ``spectra`` as input instead and to thereby
-            use the Fourier transform instead of Dirichlet kernels.
+            When using ``TensorFlow`` or ``Autograd`` *and* ``nums_frequency`` ,
+            the reconstructed functions are not differentiable at the point of 
+            reconstruction. One workaround for this is to use ``spectra`` as
+            input instead and to thereby use the Fourier transform instead of
+            Dirichlet kernels. Alternatively, the original QNode evaluation can
+            be used.
 
         *More examples*
 
@@ -578,6 +583,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         >>> spectra = qml.fourier.qnode_spectrum(circuit)(x, Y)
         >>> spectra.keys()
+
     """
     # pylint: disable=cell-var-from-loop, unused-argument
 
