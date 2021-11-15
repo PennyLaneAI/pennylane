@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -208,10 +208,10 @@ class TestNonGaussian:
 
 label_data = [
     (cv.Rotation(1.2345, wires=0), "R", "R\n(1.23)", "R⁻¹\n(1)"),
-    (cv.Squeezing(1.234, 2.345, wires=0), "S", "S\n(1.23,2.35)", "S⁻¹\n(1,2)"),
-    (cv.Displacement(1.234, 2.345, wires=0), "D", "D\n(1.23,2.35)", "D⁻¹\n(1,2)"),
-    (cv.Beamsplitter(1.234, 2.345, wires=(0, 1)), "BS", "BS\n(1.23,2.35)", "BS⁻¹\n(1,2)"),
-    (cv.TwoModeSqueezing(1.2345, 2.3456, wires=(0, 1)), "S", "S\n(1.23,2.35)", "S⁻¹\n(1,2)"),
+    (cv.Squeezing(1.234, 2.345, wires=0), "S", "S\n(1.23,\n2.35)", "S⁻¹\n(1,\n2)"),
+    (cv.Displacement(1.234, 2.345, wires=0), "D", "D\n(1.23,\n2.35)", "D⁻¹\n(1,\n2)"),
+    (cv.Beamsplitter(1.234, 2.345, wires=(0, 1)), "BS", "BS\n(1.23,\n2.35)", "BS⁻¹\n(1,\n2)"),
+    (cv.TwoModeSqueezing(1.2345, 2.3456, wires=(0, 1)), "S", "S\n(1.23,\n2.35)", "S⁻¹\n(1,\n2)"),
     (cv.QuadraticPhase(1.2345, wires=0), "P", "P\n(1.23)", "P⁻¹\n(1)"),
     (cv.ControlledAddition(1.234, wires=(0, 1)), "X", "X\n(1.23)", "X⁻¹\n(1)"),
     (cv.ControlledPhase(1.2345, wires=(0, 1)), "Z", "Z\n(1.23)", "Z⁻¹\n(1)"),
