@@ -42,6 +42,8 @@ ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
+ar.register_function("numpy", "cast", np.asarray)
+ar.register_function("numpy", "to", lambda tensor, to: tensor)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -72,7 +74,8 @@ ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
-
+ar.register_function("autograd", "cast", np.asarray)
+ar.register_function("autograd", "to", lambda tensor, to: tensor)
 
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
@@ -261,7 +264,7 @@ def _scatter_element_add_tf(tensor, index, value):
 
 
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
-
+ar.register_function("tensorflow", "to", lambda tensor, to: tensor)
 
 # -------------------------------- Torch --------------------------------- #
 
@@ -277,12 +280,13 @@ def _to_numpy_torch(x):
 
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
-    "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
+    "torch", "asarray", lambda x, dtype=None, device=None: _i("torch").as_tensor(x, device=device, dtype=dtype)
 )
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
+ar.register_function("torch", "cast", lambda x, dtype: x.to(dtype))
 
 try:
     if semantic_version.match(">=1.10", _i("torch").__version__):
@@ -395,7 +399,8 @@ def _scatter_element_add_torch(tensor, index, value):
 
 
 ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
-
+ar.register_function("torch", "transpose", lambda a, axes=[1, 0]: a.permute(*axes))
+ar.register_function("torch", "to", lambda tensor, to: tensor.to(to))
 
 def _sort_torch(tensor):
     """Update handling of sort to return only values not indices."""
@@ -438,3 +443,7 @@ ar.register_function(
     lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
+ar.register_function("jax", "cast", _i("jax").numpy.array)
+ar.register_function("jax", "reduce_sum", lambda array, axes: _i("jax").numpy.sum(array, axis=tuple(axes)))
+ar.register_function("jax", "asarray", _i("jax").numpy.array)
+ar.register_function("jax", "to", lambda tensor, to: tensor)

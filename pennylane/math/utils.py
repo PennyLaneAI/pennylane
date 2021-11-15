@@ -17,23 +17,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
 from autoray import numpy as np
 import numpy as _np
-import semantic_version
-
-try:
-    import torch
-
-    VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
-    if not VERSION_SUPPORT:
-        raise ImportError("default.mixed.torch device requires Torch>=1.8.1")
-
-except ImportError as e:
-    pass
-
-try:
-    from jax import numpy as jnp
-except ImportError as e:
-    pass
-
 
 from . import single_dispatch  # pylint:disable=unused-import
 
@@ -415,37 +398,5 @@ def requires_grad(tensor, interface=None):
 
     raise ValueError(f"Argument {tensor} is an unknown object")
 
-
-def expand_dims(tensor, axes):
-    """Adapter for np.expand_dims to allow torch to have same interface as others
-    """
-    if get_interface(tensor) == "torch":
-        return tensor.unsqueeze(axes)
-    else:
-        return np.expand_dims(tensor, axes)
-
-
-def asarray(tensor, dtype=None):
-    """Adapter for np.asarray to allow torch/jax to have same interface as others
-        """
-    interface = get_interface(tensor)
-    if interface == "jax":
-        return jnp.array(tensor, dtype)
-    elif interface == "tf":
-        pass
-    elif interface == "torch":
-        if isinstance(tensor, list):
-            # Handle unexpected cases where we don't have a list of tensors
-            if not isinstance(tensor[0], torch.Tensor):
-                res = np.asarray(tensor)
-                res = torch.from_numpy(res)
-            else:
-                res = torch.cat([torch.reshape(i, (-1,)) for i in tensor], dim=0)
-            res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
-        else:
-            res = torch.as_tensor(tensor, dtype=dtype)
-        return res
-    elif interface == "autograd":
-        pass
-    elif interface == "numpy":
-        pass
+def to_backend_dtype(typename, like):
+    return ar.to_backend_dtype(typename, like=like)

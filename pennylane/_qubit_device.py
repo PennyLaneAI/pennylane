@@ -23,7 +23,7 @@ from collections import OrderedDict
 import itertools
 import warnings
 
-import numpy as np
+import pennylane.math as np
 
 import pennylane as qml
 from pennylane.operation import (
@@ -227,9 +227,12 @@ class QubitDevice(Device):
             results = self.statistics(circuit.observables)
 
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            results = self._asarray(results)
+            if isinstance(results, list):
+                results = np.expand_dims(results[0], 0)
+            else:
+                results = self._asarray(results)
         else:
-            results = tuple(self._asarray(r) for r in results)
+            results = tuple(np.expand_dims(r[0], 0) if isinstance(r, list) else self._asarray(r) for r in results)
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
