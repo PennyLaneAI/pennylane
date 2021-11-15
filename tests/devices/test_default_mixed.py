@@ -639,7 +639,6 @@ class TestApplyDensityMatrix:
         """Checks that the specific density matrix is initialized"""
         dev = qml.device("default.mixed", wires=2)
         initialize_state = basis_state(1, 2)
-        dev = qml.device("default.mixed", wires=2)
         
         @qml.qnode(dev)
         def circuit():
