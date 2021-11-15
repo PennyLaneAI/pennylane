@@ -34,9 +34,8 @@ def get_shift_rule(frequencies, shifts=None):
             frequencies are defined as the unique positive differences obtained from a set of
             eigenvalues.
         shifts (tuple[int or float]): the tuple of shift values. If unspecified, equidistant
-            shifts are assumed. Note that if equidistant frequencies are given, any specified
-            shifts will be ignored, and equidistant shifts will be used instead. If supplied,
-            the length of this tuple should match the number of given frequencies.
+            shifts are assumed. If supplied, the length of this tuple should match the number of
+            given frequencies.
 
     Returns:
          tuple: a tuple of one nested list describing the gradient recipe
@@ -87,9 +86,12 @@ def get_shift_rule(frequencies, shifts=None):
             )
         )
 
+    frequencies = qml.math.sort(qml.math.stack(frequencies))
+    freq_min = frequencies[0]
+
     if shifts is None:  # assume equidistant shifts
         mu = np.arange(1, n_freqs + 1)
-        shifts = (2 * mu - 1) * np.pi / (2 * n_freqs)
+        shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
     else:
         shifts = qml.math.stack(shifts)
         if len(shifts) != n_freqs:
@@ -101,13 +103,12 @@ def get_shift_rule(frequencies, shifts=None):
         if len(set(shifts)) != n_freqs:
             raise ValueError("Shift values must be unique, instead got {}".format(shifts))
 
-    frequencies = qml.math.sort(qml.math.stack(frequencies))
-    freq_min = frequencies[0]
-
-    if len(set(np.diff(frequencies))) == 1:  # equidistant case  # equidistant case
-
-        mu = np.arange(1, n_freqs + 1)
-        shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
+    if len(set(np.round(np.diff(frequencies), 10))) in (0, 1) and len(
+        set(np.round(np.diff(shifts), 10))
+    ) in (
+        0,
+        1,
+    ):  # equidistant case
         coeffs = (
             freq_min
             * (-1) ** (mu - 1)
