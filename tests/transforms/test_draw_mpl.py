@@ -23,21 +23,30 @@ import pytest
 import pennylane as qml
 
 mpl = pytest.importorskip("matplotlib")
+plt = pytest.importorskip("matplotlib.pyplot")
+
+dev = qml.device("default.qubit", wires=(0, "a", 1.23))
+
+
+@qml.qnode(dev)
+def circuit1(x, y):
+    qml.RX(x, wires=0)
+    qml.CNOT(wires=(0, "a"))
+    qml.RY(y, wires=1.23)
+    return qml.expval(qml.PauliZ(0))
+
+
+@qml.qnode(dev)
+def circuit2(x):
+    qml.RX(x, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
 
 def test_default():
-    """Tests default usage"""
-
-    dev = qml.device("default.qubit", wires=(0, "a", 1.23))
-
-    @qml.qnode(dev)
-    def circuit(x, y):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=(0,"a"))
-        qml.RY(y, wires=1.23)
-        return qml.expval(qml.PauliZ(0))
+    """Tests standard usage produces expected figure and axes"""
 
     # not constructed before calling
-    fig, ax = qml.transforms.draw_mpl(circuit)(1.23, 2.34)
+    fig, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
 
     assert isinstance(fig, mpl.figure.Figure)
     assert isinstance(ax, mpl.axes._axes.Axes)
@@ -50,76 +59,120 @@ def test_default():
     assert ax.texts[0].get_text() == "0"
     assert ax.texts[1].get_text() == "a"
     assert ax.texts[2].get_text() == "1.23"
-    assert ax.texts[3].get_text() == "RX"
-    assert ax.texts[4].get_text() == "RY"
+
+    # gates in same layer can be in any order
+
+    texts = [t.get_text() for t in ax.texts[3:]]
+    assert "RX" in texts
+    assert "RY" in texts
+    plt.close()
+
 
 def test_decimals():
     """Test decimals changes operation labelling"""
 
-    dev = qml.device("default.qubit", wires=(0, "a", 1.23))
+    _, ax = qml.draw_mpl(circuit1, decimals=2)(1.23, 2.34)
 
-    @qml.qnode(dev)
-    def circuit(x, y):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=(0,"a"))
-        qml.RY(y, wires=1.23)
-        return qml.expval(qml.PauliZ(0))
+    texts = [t.get_text() for t in ax.texts[3:]]
+    assert "RX\n(1.23)" in texts
+    assert "RY\n(2.34)" in texts
+    plt.close()
 
-    fig, ax = qml.transforms.draw_mpl(circuit, decimals=2)(1.23, 2.34)
 
-    assert ax.texts[3].get_text() == "RX\n(1.23)"
-    assert ax.texts[4].get_text() == "RY\n(2.34)"
+def test_label_options():
+    """Test label options modifies label style."""
 
-def test_wire_order():
-    """Test wire_order changes order of wires"""
+    _, ax = qml.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(1.23, 2.34)
 
-    dev = qml.device("default.qubit", wires=(0, "a", 1.23))
+    for l in ax.texts[0:3]:  # three labels
+        assert l.get_color() == "purple"
+        assert l.get_fontsize() == 20
+    plt.close()
 
-    @qml.qnode(dev)
-    def circuit(x, y):
-        qml.RX(x, wires=0)
-        qml.CNOT(wires=(0,"a"))
-        qml.RY(y, wires=1.23)
-        return qml.expval(qml.PauliZ(0))
 
-    fig, ax = qml.transforms.draw_mpl(circuit, wire_order=(1.23, "a"))(1.23, 2.34)
+class TestWireBehaviour:
+    """Tests that involve how wires are displayed"""
 
-    assert len(ax.texts) == 5
+    def test_wire_order(self):
+        """Test wire_order changes order of wires"""
 
-    assert ax.texts[0].get_text() == "1.23"
-    assert ax.texts[1].get_text() == "a"
-    assert ax.texts[2].get_text() == "0"
+        _, ax = qml.draw_mpl(circuit1, wire_order=(1.23, "a"))(1.23, 2.34)
 
-def test_empty_wires():
-    """Test empty wires do not appear by default"""
+        assert len(ax.texts) == 5
 
-    dev = qml.device('default.qubit', wires=(0,"a", 1.23))
+        assert ax.texts[0].get_text() == "1.23"
+        assert ax.texts[1].get_text() == "a"
+        assert ax.texts[2].get_text() == "0"
+        plt.close()
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.RX(1.23, wires=0)
-        return qml.expval(qml.PauliZ(0))
+    def test_empty_wires(self):
+        """Test empty wires do not appear by default"""
 
-    fig, ax = qml.transforms.draw_mpl(circuit)()
+        _, ax = qml.draw_mpl(circuit2)(1.23)
 
-    assert len(ax.lines) == 2
-    assert ax.texts[0].get_text() == "0"
-    assert ax.texts[1].get_text() == "RX"
+        assert len(ax.lines) == 2  # one wire label, one gate label
+        assert ax.texts[0].get_text() == "0"
+        assert ax.texts[1].get_text() == "RX"
+        plt.close()
 
-def test_show_all_wires():
-    """Test show_all_wires=True displays empty wires."""
+    def test_show_all_wires(self):
+        """Test show_all_wires=True displays empty wires."""
 
-    dev = qml.device('default.qubit', wires=(0,"a", 1.23))
+        _, ax = qml.draw_mpl(circuit2, show_all_wires=True)(1.23)
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.RX(1.23, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        # three wires plus one gate label
+        assert len(ax.lines) == 4
+        assert ax.texts[0].get_text() == "0"
+        assert ax.texts[1].get_text() == "a"
+        assert ax.texts[2].get_text() == "1.23"
+        plt.close()
 
-    fig, ax = qml.transforms.draw_mpl(circuit, show_all_wires=True)()
+    def test_wire_options(self):
+        """Test wire options modifies wire styling"""
 
-    assert len(ax.lines) == 4
-    assert ax.texts[0].get_text() == "0"
-    assert ax.texts[1].get_text() == "a"
-    assert ax.texts[2].get_text() == "1.23"
+        _, ax = qml.draw_mpl(circuit1, wire_options={"color": "black", "linewidth": 4})(1.23, 2.34)
 
+        for w in ax.lines[0:3]:  # three wires
+            assert w.get_color() == "black"
+            assert w.get_linewidth() == 4
+
+        plt.close()
+
+
+class TestMPLIntegration:
+    def test_rcparams(self):
+        """Test setting rcParams modifies style."""
+
+        rgba_red = (1, 0, 0, 1)
+        rgba_green = (0, 1, 0, 1)
+        plt.rcParams["patch.facecolor"] = rgba_red
+        plt.rcParams["lines.color"] = rgba_green
+
+        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+
+        assert ax.patches[0].get_facecolor() == rgba_red
+        assert ax.patches[1].get_facecolor() == rgba_red
+
+        for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
+            assert l.get_color() == rgba_green
+
+        plt.style.use("default")
+        plt.close()
+
+    def test_style(self):
+        """Test matplotlib styles impact figure styling."""
+
+        plt.style.use("fivethirtyeight")
+
+        _, ax = qml.draw_mpl(circuit1)(1.23, 2.34)
+
+        expected_facecolor = mpl.colors.to_rgba(plt.rcParams["patch.facecolor"])
+        assert ax.patches[0].get_facecolor() == expected_facecolor
+        assert ax.patches[1].get_facecolor() == expected_facecolor
+
+        expected_linecolor = mpl.colors.to_rgba(plt.rcParmas["lines.color"])
+        for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
+            assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
+
+        plt.style.use("default")
+        plt.close()

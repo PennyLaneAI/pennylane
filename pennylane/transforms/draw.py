@@ -133,8 +133,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expans
     return wrapper
 
 
-def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
-    wire_options=None, label_options=None):
+def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
     """Draw a qnode with matplotlib
 
     Args:
@@ -295,15 +294,18 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None,
 
     """
 
-
     @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        qnode.construct(args, kwargs)
+    def wrapper(*args, **kwargs_qnode):
+        qnode.construct(args, kwargs_qnode)
 
         _wire_order = wire_order or qnode.device.wires
 
-        return qml.circuit_drawer.draw_mpl(qnode.qtape, wire_order=_wire_order,
-            show_all_wires=show_all_wires, decimals=decimals, wire_options=wire_options,
-            label_options=label_options)
+        return qml.circuit_drawer.draw_mpl(
+            qnode.qtape,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            **kwargs,
+        )
 
     return wrapper
