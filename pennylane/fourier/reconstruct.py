@@ -115,7 +115,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
         This function is a purely classical function. Furthermore, it is fully differentiable.
     """
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument, too-many-arguments
 
     have_f0 = f0 is not None
     have_shifts = shifts is not None
