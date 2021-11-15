@@ -155,6 +155,13 @@ class DefaultTensor(Device):
     _zero_state = np.array([1.0, 0.0], dtype=C_DTYPE)
 
     def __init__(self, wires, shots=None, representation="exact", contraction_method="auto"):
+
+        warnings.warn(
+            f"The {self.short_name} device is deprecated and due to be removed in an upcoming PennyLane release.",
+            UserWarning,
+            stacklevel=2,
+        )
+
         super().__init__(wires, shots)
         if representation not in ["exact", "mps"]:
             raise ValueError("Invalid representation. Must be one of 'exact' or 'mps'.")

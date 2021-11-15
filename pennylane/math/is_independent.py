@@ -23,6 +23,7 @@ a function is independent of its arguments for the interfaces
 import warnings
 
 import numpy as np
+from pennylane import numpy as pnp
 
 from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
@@ -199,6 +200,10 @@ def _get_random_args(args, interface, num, seed, bounds):
             tuple(np.random.random(np.shape(arg)) * width + bounds[0] for arg in args)
             for _ in range(num)
         ]
+        if interface == "autograd":
+
+            # Mark the arguments as trainable with Autograd
+            rnd_args = pnp.array(rnd_args, requires_grad=True)
 
     return rnd_args
 
@@ -296,7 +301,7 @@ def is_independent(
     The analytic and numeric tests used are as follows.
 
     - The analytic test performed depends on the provided ``interface``,
-       both in its method and its degree of reliability.
+      both in its method and its degree of reliability.
 
     - For the numeric test, the function is evaluated at a series of random positions,
       and the outputs numerically compared to verify that the output
@@ -328,8 +333,8 @@ def is_independent(
 
     .. code-block:: pycon
 
-        >>> x = np.array([0.2, 9.1, -3.2])
-        >>> weights = np.array([1.1, -0.7, 1.8])
+        >>> x = np.array([0.2, 9.1, -3.2], requires_grad=True)
+        >>> weights = np.array([1.1, -0.7, 1.8], requires_grad=True)
         >>> qml.math.is_independent(lin, "autograd", (x,), {"weights": weights})
         False
 
