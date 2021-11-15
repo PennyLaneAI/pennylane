@@ -53,7 +53,7 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if U.shape != (dim, dim):
+            if qml.math.shape(U) != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
