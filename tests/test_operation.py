@@ -1237,9 +1237,9 @@ class TestDecomposition:
     def test_decomposition_with_int_wire(self):
         """Test that the decomposition of a non-parametrized Operation works
         when we simply pass an integer as a wire without further specification."""
-        decomp_1 = qml.Hadamard.decomposition(1)
-        decomp_2 = qml.Hadamard.decomposition([1])
-        expected_decomp = qml.Hadamard.decomposition(wires=1)
+        decomp_1 = qml.PauliRot.decomposition(0.1, "X", 1)
+        decomp_2 = qml.PauliRot.decomposition(0.1, "X", [1])
+        expected_decomp = qml.PauliRot.decomposition(0.1, "X", wires=1)
 
         for obtained_1, obtained_2, expected in zip(decomp_1, decomp_2, expected_decomp):
             assert obtained_1.name == expected.name
