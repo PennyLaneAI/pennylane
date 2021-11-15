@@ -649,17 +649,17 @@ class TestApplyDensityMatrix:
         final_state = circuit()    
         assert np.allclose(final_state, initialize_state, atol=tol, rtol=0)
      
-     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-     def test_apply_equal(self, nr_wires, tol):
-         """Checks that an equal superposition state is correctly applied"""
-         dev = qml.device("default.mixed", wires=nr_wires)
-         state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
-         rho = np.outer(state, state.conj())
-         dev._apply_density_matrix(rho, Wires(range(nr_wires)))
-         eq_state = hadamard_state(nr_wires)
-         target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
+    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+    def test_apply_equal(self, nr_wires, tol):
+        """Checks that an equal superposition state is correctly applied"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+        rho = np.outer(state, state.conj())
+        dev._apply_density_matrix(rho, Wires(range(nr_wires)))
+        eq_state = hadamard_state(nr_wires)
+        target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
 
-         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
     def test_apply_root(self, nr_wires, tol):
