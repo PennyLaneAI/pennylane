@@ -639,15 +639,15 @@ class TestApplyDensityMatrix:
         """Checks that the specific density matrix is initialized"""
         dev = qml.device("default.mixed", wires=2)
         initialize_state = basis_state(1, 2)
-        
+
         @qml.qnode(dev)
         def circuit():
             qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
             return qml.state()
-            
-        final_state = circuit()    
+
+        final_state = circuit()
         assert np.allclose(final_state, initialize_state, atol=tol, rtol=0)
-     
+
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
     def test_apply_equal(self, nr_wires, tol):
         """Checks that an equal superposition state is correctly applied"""
