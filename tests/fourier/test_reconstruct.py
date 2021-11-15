@@ -1010,4 +1010,6 @@ class TestReconstruct:
 
                 assert np.isclose(grad(x0), exp_qnode_grad[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, zero=torch.tensor(0.0, requires_grad=True), samples=10)
+                assert fun_close(
+                    grad, exp_grad, zero=torch.tensor(0.0, requires_grad=True), samples=10
+                )

@@ -131,7 +131,9 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         zero_idx = R
         need_f0 = True
     elif have_f0:
-        zero_idx = qml.math.T(qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0]))))
+        zero_idx = qml.math.T(
+            qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0])))
+        )
         print(zero_idx)
         zero_idx = zero_idx[0][0] if len(zero_idx) > 0 else None
         need_f0 = zero_idx is not None
@@ -270,7 +272,9 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
                 _R = len(_spectrum) - 1
                 if _shifts is not None:
                     # Check whether 0 is among the shifts
-                    if any(qml.math.isclose(_shifts, qml.math.zeros_like(_shifts), rtol=0, atol=atol)):
+                    if any(
+                        qml.math.isclose(_shifts, qml.math.zeros_like(_shifts), rtol=0, atol=atol)
+                    ):
                         need_f0 = True
                     # Check whether the shifts have the correct size
                     if len(_shifts) != 2 * _R + 1:
@@ -496,7 +500,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         .. warning::
 
             When using ``TensorFlow`` or ``Autograd`` *and* ``nums_frequency`` ,
-            the reconstructed functions are not differentiable at the point of 
+            the reconstructed functions are not differentiable at the point of
             reconstruction. One workaround for this is to use ``spectra`` as
             input instead and to thereby use the Fourier transform instead of
             Dirichlet kernels. Alternatively, the original QNode evaluation can
