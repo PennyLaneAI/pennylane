@@ -126,14 +126,14 @@ class ExpvalCost:
     """
 
     def __init__(
-            self,
-            ansatz,
-            hamiltonian,
-            device,
-            interface="autograd",
-            diff_method="best",
-            optimize=False,
-            **kwargs,
+        self,
+        ansatz,
+        hamiltonian,
+        device,
+        interface="autograd",
+        diff_method="best",
+        optimize=False,
+        **kwargs,
     ):
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
