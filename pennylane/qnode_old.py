@@ -592,7 +592,7 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
-        state_returns = any([m.return_type is State for m in measurement_processes])
+        state_returns = any(m.return_type is State for m in measurement_processes)
 
         # apply the interface (if any)
 
