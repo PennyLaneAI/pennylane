@@ -394,7 +394,7 @@ class TestVQE:
             qml.templates.StronglyEntanglingLayers,
             hamiltonian,
             dev,
-ze=False,
+            optimize=False,
             interface=interface,
             diff_method="parameter-shift",
         )
