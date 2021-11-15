@@ -448,9 +448,9 @@ class TestApplyDiagonal:
         dev = qml.device("default.mixed", wires=nr_wires)
         kraus = dev._get_kraus(op)
         if op == CZ:
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            dev._apply_diagonal_unitary(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -467,9 +467,9 @@ class TestApplyDiagonal:
         dev._state = max_mixed
         kraus = dev._get_kraus(op)
         if op == CZ:
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            dev._apply_diagonal_unitary(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -500,9 +500,9 @@ class TestApplyDiagonal:
         dev._state = root
         kraus = dev._get_kraus(op)
         if op == CZ:
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            dev._apply_diagonal_unitary(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
