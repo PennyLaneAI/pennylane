@@ -100,7 +100,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the torch interface."""
         torch = pytest.importorskip("torch")
 
-        U = torch.tensor(U, dtype=torch.complex64)
+        U = torch.tensor(U, dtype=torch.complex128)
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
@@ -123,7 +123,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform works in the Tensorflow interface."""
         tf = pytest.importorskip("tensorflow")
 
-        U = tf.Variable(U, dtype=tf.complex64)
+        U = tf.Variable(U, dtype=tf.complex128)
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
@@ -152,7 +152,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         remember = config.read("jax_enable_x64")
         config.update("jax_enable_x64", True)
 
-        U = jax.numpy.array(U, dtype=jax.numpy.complex64)
+        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
         transformed_qfunc = unitary_to_rot(qfunc)
 
@@ -165,9 +165,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
 
         assert isinstance(ops[1], qml.Rot)
         assert ops[1].wires == Wires("a")
-        assert qml.math.allclose(
-            [jax.numpy.asarray(x) for x in ops[1].parameters], expected_params, atol=1e-7
-        )
+        assert qml.math.allclose(qml.math.unwrap(ops[1].parameters), expected_params, atol=1e-7)
 
         assert isinstance(ops[2], qml.CNOT)
         assert ops[2].wires == Wires(["b", "a"])
