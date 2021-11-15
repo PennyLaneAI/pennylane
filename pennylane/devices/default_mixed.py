@@ -26,7 +26,7 @@ from string import ascii_letters as ABC
 import pennylane.numpy as np
 import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
-from pennylane.operation import DiagonalOperation, Channel
+from pennylane.operation import Channel
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from .._version import __version__
@@ -394,7 +394,7 @@ class DefaultMixed(QubitDevice):
             self._state = self._asarray(rho, dtype=self.C_DTYPE)
 
     def _apply_density_matrix(self, state, device_wires):
-        """Initialize the internal state in a specified mixed state.
+        r"""Initialize the internal state in a specified mixed state.
         If not all the wires are specified in the full state :math:`\rho`, remaining subsystem is filled by
         `\mathrm{tr}_in(\rho)`, which results in the full system state :math:`\mathrm{tr}_{in}(\rho) \otimes \rho_{in}`,
         where :math:`\rho_{in}` is the argument `state` of this function and :math:`\mathrm{tr}_{in}` is a partial
