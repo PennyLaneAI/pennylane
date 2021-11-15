@@ -1039,3 +1039,9 @@ class Device(abc.ABC):
         After the reset, the backend should be as if it was just constructed.
         Most importantly the quantum state is reset to its initial value.
         """
+
+    def implement(self, interface):
+        """Polymorphic devices can dynamically implement interface here.
+        This is called after device/interface validation in QNode initialization.
+        """
+        pass

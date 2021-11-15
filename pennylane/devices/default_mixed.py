@@ -109,7 +109,7 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None, interface="numpy", torch_device="cpu"):
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
@@ -118,11 +118,17 @@ class DefaultMixed(QubitDevice):
         # call QubitDevice init
         super().__init__(wires, shots, cache=cache, analytic=analytic)
 
+        # Default to numpy interface, but changed on `implement`
+        self.interface = "numpy"
+
         # Create the initial state.
-        self.interface = interface
-        self.torch_device = torch_device
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+
+    def implement(self, interface):
+        self.interface = interface
+        self._state = qnp.asarray(self._state, like=self._full_interface_name)
+        self._pre_rotated_state = qnp.asarray(self._pre_rotated_state, like=self._full_interface_name)
 
 
     @property
@@ -151,9 +157,8 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = qnp.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=self.C_DTYPE, like=self._full_interface_name)
+        rho = qnp.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=self.C_DTYPE, like=self.interface)
         rho[index, index] = 1
-        rho = qnp.to(qnp.asarray(rho, dtype=self.C_DTYPE), to=self.torch_device)
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
     @classmethod
@@ -308,7 +313,7 @@ class DefaultMixed(QubitDevice):
             )
         )
 
-        self._state = qnp.einsum(einsum_indices, kraus, qnp.to(self._state, kraus), kraus_dagger, like=kraus)
+        self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger, like=self._state)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
@@ -322,7 +327,7 @@ class DefaultMixed(QubitDevice):
         channel_wires = self.map_wires(wires)
 
         # reshape vectors
-        eigvals = qnp.cast(qnp.reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE)
+        eigvals = qnp.cast(qnp.reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE, like=self._state)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[: 2 * self.num_wires]
@@ -338,7 +343,7 @@ class DefaultMixed(QubitDevice):
         einsum_indices = "{row_indices},{state_indices},{col_indices}->{state_indices}".format(
             col_indices=col_indices, state_indices=state_indices, row_indices=row_indices
         )
-        self._state = qnp.einsum(einsum_indices, eigvals, qnp.asarray(self._state), qnp.conj(eigvals))
+        self._state = qnp.einsum(einsum_indices, eigvals, self._state, qnp.conj(eigvals), like=self._state)
 
     def _apply_basis_state(self, state, wires):
         """Initialize the device in a specified computational basis state.

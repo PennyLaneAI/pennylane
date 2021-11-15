@@ -222,6 +222,9 @@ class QNode:
         self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
             device, interface, diff_method
         )
+
+        self.device.implement(self.interface)
+
         # if diff_method is best, then set it to the actual diff method being used
         if self.diff_method == "best":
             self.diff_method_change = True
