@@ -202,20 +202,27 @@ class TaskQubit(QubitDevice):
     def apply():
         pass
 
+    # Since we are using a proxy device, capabilities are handled by chosen backend
+    def capabilities(self):
+        backend_ep = qml.plugin_devices[self._backend].load()
+        return backend_ep.capabilities()
+
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
             supports_finite_shots=False,
-            supports_reversible_diff=True,
-            supports_inverse_operations=True,
-            supports_analytic_computation=True,
+            supports_reversible_diff=False,
+            supports_inverse_operations=False,
+            supports_analytic_computation=False,
             returns_state=False,
-            passthru_devices={
+            passthru_devices={ 
                 "tf": "default.qubit.tf",
-                "torch": "default.qubit.torch",
                 "jax": "default.qubit.jax",
+                "torch": "default.qubit.torch",
+                "lightning": "lightning.qubit",
+                "default": "default.qubit",
             },
         )
         return capabilities
