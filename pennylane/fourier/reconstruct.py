@@ -467,10 +467,10 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     Note that by convention, the parameter index for a scalar variable is ``0`` and
     that the frequency :math:`0` always is included in the spectra. Furthermore, we
     here skipped the input ``ids`` so that the reconstruction was performed for all
-    keys in ``spectra`` . While the reconstruction with a single non-zero frequency
-    costs three evaluations of ``circuit`` for each, ``x`` and ``Y[0]`` , carrying them
-    out at the same position allowed us to save one evaluation and reduce the number
-    of calls to :math:`5`.
+    keys in ``spectra`` . The reconstruction with a single non-zero frequency
+    costs three evaluations of ``circuit`` for each, ``x`` and ``Y[0]`` . Performing
+    both reconstructions at the same position allowed us to save one of the
+    evaluations and reduce the number of calls to :math:`5`.
     """
     # pylint: disable=cell-var-from-loop, unused-argument
 
