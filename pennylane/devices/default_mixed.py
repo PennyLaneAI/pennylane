@@ -28,6 +28,7 @@ import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
 from pennylane.operation import DiagonalOperation, Channel
 from pennylane.wires import Wires
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -211,7 +212,7 @@ class DefaultMixed(QubitDevice):
             the operation is unitary, returns a single Kraus operator. In the case of a diagonal
             unitary, returns a 1D array representing the matrix diagonal.
         """
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             return operation.eigvals
 
         if isinstance(operation, Channel):
@@ -479,7 +480,7 @@ class DefaultMixed(QubitDevice):
 
         matrices = self._get_kraus(operation)
 
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
             self._apply_channel(matrices, wires)

@@ -15,12 +15,39 @@
 
 <h3>Improvements</h3>
 
+* A `decompose()` method has been added to the `Operator` class such that we can
+  obtain (and queue) decompositions directly from instances of operations.
+  [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
+
+  ```pycon
+  >>> op = qml.PhaseShift(0.3, wires=0)
+  >>> op.decompose()
+  [RZ(0.3, wires=[0])]
+  ```
+  
 * ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 <h3>Breaking changes</h3>
+
+* The static method `decomposition()`, formerly in the `Operation` class, has
+  been moved to the base `Operator` class.
+  [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
+  
+* `DiagonalOperation` is not a separate subclass any more. 
+  [(#1889)](https://github.com/PennyLaneAI/pennylane/pull/1889) 
+
+  Instead, devices can check for the diagonal 
+  property using attributes:
+
+  ``` python
+  from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
+  if op in diagonal_in_z_basis:
+      # do something
+  ``` 
 
 <h3>Deprecations</h3>
 
@@ -40,4 +67,5 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Jalani Kanem, Shumpei Kobayashi, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
+Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez, Maria Schuld, Jay Soni
+
