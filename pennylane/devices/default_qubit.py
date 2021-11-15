@@ -27,7 +27,7 @@ from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import DiagonalOperation
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
 
@@ -242,7 +242,7 @@ class DefaultQubit(QubitDevice):
 
         matrix = self._get_unitary_matrix(operation)
 
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             return self._apply_diagonal_unitary(state, matrix, wires)
         if len(wires) <= 2:
             # Einsum is faster for small gates
@@ -544,7 +544,7 @@ class DefaultQubit(QubitDevice):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        if isinstance(unitary, DiagonalOperation):
+        if unitary in diagonal_in_z_basis:
             return unitary.eigvals
 
         return unitary.matrix
