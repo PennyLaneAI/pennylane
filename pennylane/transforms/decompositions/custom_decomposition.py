@@ -13,9 +13,10 @@
 # limitations under the License.
 """Context manager for applying custom decompositions."""
 
-import pennylane as qml
 import contextlib
 import types
+
+import pennylane as qml
 from pennylane.transforms.qfunc_transforms import NonQueuingTape
 
 
@@ -27,23 +28,23 @@ def custom_decomposition(decomp_dict, dev=None):
     """A context manager to enable custom decompositions to be applied to Operations.
 
     Args:
-        decomp_dict (Dict[.Operation, Callable]): a dictionary detailing the 
+        decomp_dict (Dict[.Operator, Callable]): a dictionary detailing the
             pairings of operations and their custom decompositions. The functions
-            must have the signature fn(params, wires).
+            must have the signature fn(*params, wires).
         dev (Device): an optional device on which to apply the decomposition.
 
     **Example**
 
-    Suppose we would like to swap out decompositions of the Hadamard and 
-    CNOT. We must define new decomposition functions with the signature 
+    Suppose we would like to swap out decompositions of the Hadamard and
+    CNOT. We must define new decomposition functions with the signature
     ``decomp(params, wires)``.
 
     .. code-block:: python3
 
         def custom_cnot(params, wires):
             return [
-                qml.Hadamard(wires=wires[1], 
-                qml.CZ(wires=[wires[0], wires[1]]) 
+                qml.Hadamard(wires=wires[1],
+                qml.CZ(wires=[wires[0], wires[1]])
                 qml.Hadamard(wires=wires[1]
             ]
 
@@ -54,11 +55,11 @@ def custom_decomposition(decomp_dict, dev=None):
 
     We can apply these decompositions during the execution of a QNode by passing
     them to the ``custom_decomp`` context manager:
-    
+
     .. code-block:: python3
 
         dev = qml.device("default.qubit", wires=2)
-  
+
         @qml.beta.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
