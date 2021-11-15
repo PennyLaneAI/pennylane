@@ -38,9 +38,10 @@ TOO_MANY_FEATURES = [
 ]
 
 MULTI_FEATURES = [
-    [[1/2, 1/2, 1/2, 1/2, 0, 0, 0, 0], [1/2, 1/2, -1/2, -1/2, 0, 0, 0, 0], 0.8],
-    [[1/2, 1/2, 1/2, 1/2, 0, 0, 0, 0], [1/2, 1/2, 1/2, 1/2, 0, 0, 0, 0], 1.0]
+    [[1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0], [1 / 2, 1 / 2, -1 / 2, -1 / 2, 0, 0, 0, 0], 0.5],
+    [[1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0], [1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0], 1.0],
 ]
+
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
@@ -365,13 +366,14 @@ class TestInterfaces:
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
 
-class MultiAmplitudes:
+class TestMultiAmplitudes:
+    """Tests the use of many AmplitudeEmbedding templates in the same QNode."""
 
     @pytest.mark.parametrize("inpt", MULTI_FEATURES)
-    def test_multiple_amplitudes(self, inpts):
-        """Tests the use of many AmplitudeEmbedding templates in the same QNode."""
-        features1, features2, sol = inpts
+    def test_multiple_amplitudes(self, inpt):
         tol = 10e-10
+        features1, features2, sol = inpt
+
         dev = qml.device("default.qubit", wires=7)
 
         @qml.qnode(dev)
@@ -389,12 +391,34 @@ class MultiAmplitudes:
         assert qml.math.allclose(output, sol, atol=tol, rtol=0)
 
     def test_same_qubits(self):
+        dev = qml.device("default.qubit", wires=7)
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[1, 2, 3], normalize=True)
-            qml.templates.AmplitudeEmbedding([1, 1, 1, 1, 0, 0, 0, 0], wires=[3, 5, 6], normalize=True)
+            qml.templates.AmplitudeEmbedding(
+                [1, 1, 1, 1, 0, 0, 0, 0], wires=[1, 2, 3], normalize=True
+            )
+            qml.templates.AmplitudeEmbedding(
+                [1, 1, 1, 1, 0, 0, 0, 0], wires=[3, 5, 6], normalize=True
+            )
             return qml.state()
 
         with pytest.raises(DeviceError, match="applied in the same qubit"):
             circuit()
+
+    def test_edge_cases(self):
+        tol = 10e-10
+
+        dev = qml.device("default.qubit", wires=7)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=1)
+            qml.templates.AmplitudeEmbedding([1, 1], wires=[1], normalize=True)
+            qml.Hadamard(wires=1)
+            qml.templates.AmplitudeEmbedding([1, -1], wires=[3], normalize=True)
+            qml.templates.AmplitudeEmbedding([1, -1, 1, 1], wires=[4, 5], normalize=True)
+            return qml.probs(wires=0)
+
+        output = circuit()[0]
+        assert qml.math.allclose(output, 1.0, atol=tol, rtol=0)
