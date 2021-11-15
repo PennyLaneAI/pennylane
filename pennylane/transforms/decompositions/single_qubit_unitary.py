@@ -71,7 +71,7 @@ def zyz_decomposition(U, wire):
     """
     U = _convert_to_su2(U)
 
-    # Derive theta from the diagonal elements; arcsin more accurate than arccos
+    # Derive theta from the diagonal elements
     theta = 2 * math.arccos(math.abs(U[0, 0]))
 
     # Compute phi and omega from the angles of the top row; use atan2
