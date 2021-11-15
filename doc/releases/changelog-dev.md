@@ -3,6 +3,50 @@
 # Release 0.20.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+* It is now possible to apply custom decompositions to operations using the
+  `custom_decomposition` context manager.
+  [(#1872)](https://github.com/PennyLaneAI/pennylane/pull/1872)
+
+  For example, suppose we are running on an ion trap machine, and would
+  like to implement a CNOT gate. This can be done using the `IsingXX` gate,
+  but no decomposition is implemented in PennyLane for a CNOT. We can define
+  this decomposition manually:
+
+  ```python
+  def ion_trap_cnot(wires):
+      return [
+          qml.RY(np.pi/2, wires=wires[0]),
+      	  qml.IsingXX(np.pi/2, wires=wires),
+          qml.RX(-np.pi/2, wires=wires[0]),
+          qml.RY(-np.pi/2, wires=wires[0]),
+          qml.RY(-np.pi/2, wires=wires[1])
+      ]
+   ```
+
+   We can now execute this on a device using the context manager. We begin
+   by defining a QNode:
+
+   ```python
+   dev = qml.device('default.qubit', wires=2)
+ 
+   @qml.beta.qnode(dev)
+   def run_cnot():
+       qml.CNOT(wires=[0, 1])
+       return qml.expval(qml.PauliX(wires=1))
+   ```
+
+   Now we can draw or execute the QNode within the context manager, and the
+   device will perform the desired decomposition:
+
+   ```pycon
+   >>> with custom_decomposition({"CNOT" : ion_trap_cnot}, dev):
+   ...    print(qml.draw(run_cnot, expansion_strategy="device")())
+    0: ──RY(1.57)──╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)──┤     
+    1: ────────────╰IsingXX(1.57)──RY(-1.57)─────────────┤ ⟨X⟩ 
+   ```
+
+
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be 
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)

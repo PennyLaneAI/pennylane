@@ -41,20 +41,20 @@ def custom_decomposition(decomp_dict, dev=None):
 
     .. code-block:: python3
 
-        def custom_cnot(params, wires):
+        def custom_cnot(wires):
             return [
-                qml.Hadamard(wires=wires[1],
-                qml.CZ(wires=[wires[0], wires[1]])
-                qml.Hadamard(wires=wires[1]
+                qml.Hadamard(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1])
             ]
 
-        def custom_hadamard(params, wires):
+        def custom_hadamard(wires):
             return [qml.RZ(np.pi, wires=wires), qml.RY(np.pi / 2, wires=wires)]
 
         decomp_dict = {"CNOT" : custom_cnot, "Hadamard" : custom_hadamard}
 
-    We can apply these decompositions during the execution of a QNode by passing
-    them to the ``custom_decomp`` context manager:
+    Suppose we have the following QNode, which involves both of the operations
+    for which we want to apply custom decompositions:
 
     .. code-block:: python3
 
@@ -67,8 +67,22 @@ def custom_decomposition(decomp_dict, dev=None):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        with custom_decomposition(decomp_dict, dev):
-            print(qml.draw(circuit, expansion_strategy="device")(0.5))
+    >>> print(qml.draw(qml.draw(circuit, expansion_strategy="device")(0.5)))
+     0: ──H────────╭C──┤ ⟨Z⟩
+     1: ──RX(0.5)──╰X──┤
+
+    We can apply these decompositions during the execution of a QNode by passing
+    them to the ``custom_decomp`` context manager.
+
+    >>> with custom_decomposition(decomp_dict, dev):
+    ...     print(qml.draw(circuit, expansion_strategy="device")(0.5))
+     0: ──RZ(3.14)──RY(1.57)────────────╭C──────────────────────┤ ⟨Z⟩
+     1: ──RX(0.5)───RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──┤
+
+    Note that in order to view the newly-decomposed circuit, we pass
+    ``expansion_strategy="device"`` to the ``draw`` function. This is because the
+    decomposition is overridden at the level of QNode execution.
+
     """
     try:
         with contextlib.ExitStack() as stack:
