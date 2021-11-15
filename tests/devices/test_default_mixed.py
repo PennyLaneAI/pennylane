@@ -635,17 +635,31 @@ class TestApplyStateVector:
 class TestApplyDensityMatrix:
     """Unit tests for the method `_apply_density_matrix()`"""
 
-    @pytest.mark.parametrize("nr_wires", [1, 2, 3])
-    def test_apply_equal(self, nr_wires, tol):
-        """Checks that an equal superposition state is correctly applied"""
-        dev = qml.device("default.mixed", wires=nr_wires)
-        state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
-        rho = np.outer(state, state.conj())
-        dev._apply_density_matrix(rho, Wires(range(nr_wires)))
-        eq_state = hadamard_state(nr_wires)
-        target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
+    def test_instantiate_density_mat(self, tol):
+        """Checks that the specific density matrix is initialized"""
+        dev = qml.device("default.mixed", wires=2)
+        initialize_state = basis_state(1, 2)
+        dev = qml.device("default.mixed", wires=2)
+        
+        @qml.qnode(dev)
+        def circuit():
+            qml.QubitDensityMatrix(initialize_state, wires=2)
+            return qml.state()
+            
+        final_state = circuit()    
+        assert np.allclose(final_state, initialize_state, atol=tol, rtol=0)
+     
+     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
+     def test_apply_equal(self, nr_wires, tol):
+         """Checks that an equal superposition state is correctly applied"""
+         dev = qml.device("default.mixed", wires=nr_wires)
+         state = np.ones(2 ** nr_wires) / np.sqrt(2 ** nr_wires)
+         rho = np.outer(state, state.conj())
+         dev._apply_density_matrix(rho, Wires(range(nr_wires)))
+         eq_state = hadamard_state(nr_wires)
+         target_state = np.reshape(eq_state, [2] * 2 * nr_wires)
 
-        assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
+         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("nr_wires", [1, 2, 3])
     def test_apply_root(self, nr_wires, tol):
