@@ -20,6 +20,19 @@
 
 <h3>Breaking changes</h3>
 
+* `DiagonalOperation` is not a separate subclass any more. 
+  [(#1889)](https://github.com/PennyLaneAI/pennylane/pull/1889) 
+
+  Instead, devices can check for the diagonal 
+  property using attributes:
+
+  ``` python
+  from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
+  if op in diagonal_in_z_basis:
+      # do something
+  ``` 
+
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
@@ -38,4 +51,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Jay Soni
+Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Maria Schuld, Jay Soni
