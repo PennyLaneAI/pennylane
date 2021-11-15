@@ -318,7 +318,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     r"""Reconstruct univariate restrictions of an expectation value QNode.
     For common quantum gates, such restrictions are finite Fourier series with known
     frequency spectra. Thus they may be reconstructed using Dirichlet kernels or
-    a non-uniform Fourier transformation.
+    a non-uniform Fourier transform.
     Args:
         qnode (pennylane.QNode): Quantum node to be reconstructed, representing a
             circuit that outputs an expectation value.
@@ -463,7 +463,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         more than the spectrum of ``qnode`` , the reconstruction is performed suboptimally
         but remains correct.
         For integer-valued spectra with gaps, the equidistant reconstruction is thus suboptimal
-        and the non-equidistant version method be used.
+        and the non-equidistant version method be used (also see the examples below).
 
         *Numerical stability*
 
@@ -473,6 +473,21 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         If the system of equations to be solved in the Fourier transform is
         ill-conditioned, a warning is raised as the output might become unstable.
         Examples for this are shift values or frequencies that lie very close to each other.
+
+        *Differentiability*
+
+        The returned scalar functions are differentiable in all interfaces with respect
+        to their scalar input variable. They expect these inputs to be in the same
+        interface as the one used by the QNode. More advanced differentiability, for example
+        of the reconstructions with respect to QNode properties, is not supported
+        reliably yet.
+
+        .. warning::
+
+            When using ``TensorFlow`` *and* ``nums_frequency`` , the reconstructed
+            functions are not differentiable at the point of reconstruction.
+            One workaround is to use ``spectra`` as input instead and to thereby
+            use the Fourier transform instead of Dirichlet kernels.
 
         *More examples*
 
