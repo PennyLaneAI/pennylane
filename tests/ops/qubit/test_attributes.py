@@ -75,3 +75,7 @@ class TestAttribute:
         assert "PhaseShift" in new_attribute
         assert "RY" in new_attribute
         assert len(new_attribute) == 8
+
+    def test_tensor_check(self):
+        """Test that we can ask if a tensor is in the attribute."""
+        assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute

@@ -21,7 +21,7 @@ import math
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
@@ -134,7 +134,7 @@ class RY(Operation):
         return [0.0, self.data[0], 0.0]
 
 
-class RZ(DiagonalOperation):
+class RZ(Operation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -194,7 +194,7 @@ class RZ(DiagonalOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class PhaseShift(DiagonalOperation):
+class PhaseShift(Operation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -262,7 +262,7 @@ class PhaseShift(DiagonalOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class ControlledPhaseShift(DiagonalOperation):
+class ControlledPhaseShift(Operation):
     r"""ControlledPhaseShift(phi, wires)
     A qubit controlled phase shift.
 
@@ -428,7 +428,7 @@ class Rot(Operation):
         return self.data
 
 
-class MultiRZ(DiagonalOperation):
+class MultiRZ(Operation):
     r"""MultiRZ(theta, wires)
     Arbitrary multi Z rotation.
 
@@ -947,7 +947,7 @@ class CRY(Operation):
         return Wires(self.wires[0])
 
 
-class CRZ(DiagonalOperation):
+class CRZ(Operation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
