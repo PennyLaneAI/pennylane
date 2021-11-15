@@ -27,7 +27,7 @@ except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
-from pennylane.operation import DiagonalOperation
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from . import DefaultQubit
 
 
@@ -237,7 +237,7 @@ class DefaultQubitTorch(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        if isinstance(unitary, DiagonalOperation):
+        if unitary in diagonal_in_z_basis:
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
 
