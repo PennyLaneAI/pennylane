@@ -88,9 +88,9 @@ def get_shift_rule(frequencies, shifts=None):
 
     frequencies = qml.math.sort(qml.math.stack(frequencies))
     freq_min = frequencies[0]
+    mu = np.arange(1, n_freqs + 1)
 
     if shifts is None:  # assume equidistant shifts
-        mu = np.arange(1, n_freqs + 1)
         shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
     else:
         shifts = qml.math.stack(shifts)
@@ -103,11 +103,8 @@ def get_shift_rule(frequencies, shifts=None):
         if len(set(shifts)) != n_freqs:
             raise ValueError("Shift values must be unique, instead got {}".format(shifts))
 
-    if len(set(np.round(np.diff(frequencies), 10))) in (0, 1) and len(
-        set(np.round(np.diff(shifts), 10))
-    ) in (
-        0,
-        1,
+    if len(set(np.round(np.diff(frequencies), 10))) in (0, 1) and all(
+        np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min))
     ):  # equidistant case
         coeffs = (
             freq_min
