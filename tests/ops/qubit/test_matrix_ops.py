@@ -164,7 +164,7 @@ class TestQubitUnitary:
             (X, [np.pi / 2, np.pi, -np.pi / 2]),
             (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, [0.2, 0.5, -0.3]),
             (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, [-1.0, 2.0, -3.0]),
-        ]
+        ],
     )
     def test_qubit_unitary_decomposition(self, U, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
