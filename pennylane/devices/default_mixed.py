@@ -118,7 +118,7 @@ class DefaultMixed(QubitDevice):
         # call QubitDevice init
         super().__init__(wires, shots, cache=cache, analytic=analytic)
 
-        # Default to numpy interface, but changed on `implement`
+        # Default to numpy interface, but will be changed on `implement`.
         self.interface = "numpy"
 
         # Create the initial state.
