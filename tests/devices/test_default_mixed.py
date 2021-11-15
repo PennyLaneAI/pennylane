@@ -643,7 +643,7 @@ class TestApplyDensityMatrix:
         
         @qml.qnode(dev)
         def circuit():
-            qml.QubitDensityMatrix(initialize_state, wires=2)
+            qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
             return qml.state()
             
         final_state = circuit()    
