@@ -87,6 +87,18 @@ class TestErrors:
         with pytest.raises(ValueError, match="num_frequency must be a non-negative integer"):
             _reconstruct_equ(dummy_qnode, num_frequency=num_frequency)
 
+    @pytest.mark.parametrize(
+        "spectra, shifts",
+        [
+            ({"x": {(): [0.0, 1.0]}}, {"x": {(): [0.3]}}),
+            ({"x": {(): [0.0, 1.0, 2.0]}}, {"x": {(): list(range(20))}}),
+        ],
+    )
+    def test_num_frequency_invalid(self, spectra, shifts):
+        """Tests that an error is raised if the number of provided shifts does not match."""
+        with pytest.raises(ValueError, match="The number of provided shifts"):
+            reconstruct(dummy_qnode, spectra=spectra, shifts=shifts)
+
 
 class TestWarnings:
     """Test that warnings are raised e.g. for an ill-conditioned

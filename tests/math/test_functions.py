@@ -534,6 +534,12 @@ class TestDot:
         assert fn.allequal(res, expected)
 
 
+class TestTensordot:
+    """Tests for the dot product function."""
+
+    pass
+
+
 # the following test data is of the form
 # [original shape, axis to expand, new shape]
 expand_dims_test_data = [
@@ -1059,21 +1065,33 @@ class TestTake:
 
 
 where_data = [
-    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    ("autograd", np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("torch", torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("numpy", onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("tf", tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("tf", tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("jax", jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
 ]
 
 
-@pytest.mark.parametrize("t", where_data)
-def test_where(t):
+@pytest.mark.parametrize("interface, t", where_data)
+def test_where(interface, t):
     """Test that the where function works as expected"""
+    # With output values
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
     expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
     assert fn.allclose(res, expected)
+
+    # Without output values
+    res = fn.where(t > 0)
+    expected = (
+        [0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 1, 1, 2, 0, 0, 2, 2],
+        [0, 1, 0, 1, 1, 0, 1, 0, 1],
+    )
+    if interface == "tf":
+        expected = qml.math.T(expected)
+    assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected))
 
 
 squeeze_data = [

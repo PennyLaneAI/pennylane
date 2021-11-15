@@ -131,11 +131,8 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         zero_idx = R
         need_f0 = True
     elif have_f0:
-        zero_idx = qml.math.T(
-            qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0])))
-        )
-        print(zero_idx)
-        zero_idx = zero_idx[0][0] if len(zero_idx) > 0 else None
+        zero_idx = qml.math.where(qml.math.isclose(shifts, qml.math.zeros_like(shifts[0])))
+        zero_idx = zero_idx[0][0] if (len(zero_idx) > 0 and len(zero_idx[0]) > 0) else None
         need_f0 = zero_idx is not None
 
     # Take care of shifts close to zero if f0 was provided
