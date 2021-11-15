@@ -1,8 +1,8 @@
 Software tests
 ==============
 
-Running the test suite
-~~~~~~~~~~~~~~~~~~~~~~
+Running the tests
+~~~~~~~~~~~~~~~~~
 
 The PennyLane test suite requires the Python ``pytest`` package, as well as ``pytest-cov``
 for test coverage, ``pytest-mock`` for mocking, and ``flaky`` for automatically rerunning flaky tests; these can be installed via ``pip``:
@@ -36,6 +36,15 @@ Pytest supports many other command-line options, which can be found with the com
     pytest --help
 
 Or by visiting the `pytest documentation page <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
+
+PennyLane provides a set of tests for all PennyLane plugins. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__.
+
+All PennyLane tests and the device suite on core devices can be run from the PennyLane root folder via:
+
+.. code-block:: bash
+
+    make test
+
 
 Outside Resources
 ~~~~~~~~~~~~~~~~~
