@@ -1234,10 +1234,23 @@ class TestTensorObservableOperations:
 class TestDecomposition:
     """Test for operation decomposition"""
 
+    def test_decomposition_with_int_wire(self):
+        """Test that the decomposition of a non-parametrized Operation works
+        when we simply pass an integer as a wire without further specification."""
+        decomp_1 = qml.PauliRot.decomposition(0.1, "X", 1)
+        decomp_2 = qml.PauliRot.decomposition(0.1, "X", [1])
+        expected_decomp = qml.PauliRot.decomposition(0.1, "X", wires=1)
+
+        for obtained_1, obtained_2, expected in zip(decomp_1, decomp_2, expected_decomp):
+            assert obtained_1.name == expected.name
+            assert np.allclose(obtained_1.parameters, expected.parameters)
+            assert obtained_2.name == expected.name
+            assert np.allclose(obtained_2.parameters, expected.parameters)
+
     def test_U1_decomposition(self):
         """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
         phi = 0.432
-        res = qml.U1.decomposition(phi, wires=0)
+        res = qml.U1(phi, wires=0).decompose()
 
         assert len(res) == 1
         assert res[0].name == "PhaseShift"
@@ -1443,7 +1456,7 @@ class TestDecomposition:
             "BasisStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.BasisState.decomposition(n, wires=wires)
+        qml.BasisState(n, wires=wires).decompose()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], n)
@@ -1462,7 +1475,7 @@ class TestDecomposition:
             "MottonenStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.QubitStateVector.decomposition(state, wires=wires)
+        qml.QubitStateVector(state, wires=wires).decompose()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], state)
