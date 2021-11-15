@@ -11,23 +11,38 @@ for test coverage, ``pytest-mock`` for mocking, and ``flaky`` for automatically 
 
     pip install pytest pytest-cov pytest-mock flaky
 
-To ensure that PennyLane is working correctly, the test suite can be run by
-navigating to the source code folder and running
+All tests are located in the `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory. Run all tests in this folder via:
 
 .. code-block:: bash
 
-    make test
+    python -m pytest tests
 
-while the test coverage can be checked by running
+Using ``python -m`` helps ensure that the tests are running with the correct version of python if you have multiple python versions and environments.  During development, locally executing only relevant files saves time.  For example, if a develop was adding a new non-parametric operation, they could run just:
 
 .. code-block:: bash
 
-    make coverage
+    python -m pytest tests/ops/qubit/test_non_parametric_ops.py
 
-The output of the above command will show the coverage percentage of each
-file, as well as the line numbers of any lines missing test coverage.
+The slowest tests are marked with ``slow`` and can be deselected by:
 
+.. code-block:: bash
 
+    python -m pytest -m "not slow" tests
+
+Pytest supports many other command-line options, which can be found with the command:
+
+.. code-block:: bash
+
+    pytest --help
+
+Or by visiting the `pytest documentation page <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
+
+Outside Resources
+~~~~~~~~~~~~~~~~~
+
+`Pytest documentation <https://docs.pytest.org/en/6.2.x/index.html>`__
+
+`Real Python tutorial <https://realpython.com/pytest-python-testing/>`__
 
 Testing Matplotlib based code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
