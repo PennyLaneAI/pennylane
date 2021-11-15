@@ -181,7 +181,6 @@ diagonal_in_z_basis = Attribute(
     ]
 )
 """Attribute: Operations that are diagonal in the computational basis.
-
 For such operations, the eigenvalues provide all necessary information to 
 construct the matrix representation in the computational basis.
 """
