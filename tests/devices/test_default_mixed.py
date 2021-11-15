@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import QubitStateVector, BasisState, DeviceError
 from pennylane.devices import DefaultMixed
 from pennylane.ops import (
+    Identity,
     PauliZ,
     CZ,
     PauliX,
@@ -235,6 +236,15 @@ class TestAnalyticProb:
 
         assert dev.analytic_probability() is None
 
+    def test_probability_not_negative(self, nr_wires):
+        """Test that probabilities are always real"""
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dev._state = np.zeros([2 ** nr_wires, 2 ** nr_wires])
+        dev._state[0, 0] = 1
+        dev._state[1, 1] = -5e-17
+
+        assert np.all(dev.analytic_probability() >= 0)
+
 
 class TestKrausOps:
     """Unit tests for the method `_get_kraus_ops()`"""
@@ -438,9 +448,9 @@ class TestApplyDiagonal:
         dev = qml.device("default.mixed", wires=nr_wires)
         kraus = dev._get_kraus(op)
         if op == CZ:
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            dev._apply_diagonal_unitary(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -457,9 +467,9 @@ class TestApplyDiagonal:
         dev._state = max_mixed
         kraus = dev._get_kraus(op)
         if op == CZ:
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            dev._apply_diagonal_unitary(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -490,9 +500,9 @@ class TestApplyDiagonal:
         dev._state = root
         kraus = dev._get_kraus(op)
         if op == CZ:
-            dev._apply_channel(kraus, wires=Wires([0, 1]))
+            dev._apply_diagonal_unitary(kraus, wires=Wires([0, 1]))
         else:
-            dev._apply_channel(kraus, wires=Wires(0))
+            dev._apply_diagonal_unitary(kraus, wires=Wires(0))
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
@@ -652,6 +662,23 @@ class TestApplyOperation:
 class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied
     correctly, rather than single operations"""
+
+    ops_and_true_state = [(None, basis_state(0, 2)), (Hadamard, hadamard_state(2))]
+
+    @pytest.mark.parametrize("op, true_state", ops_and_true_state)
+    def test_identity(self, op, true_state, tol):
+        """Tests that applying the identity operator doesn't change the state"""
+        num_wires = 2
+        dev = qml.device("default.mixed", wires=num_wires)  # prepare basis state
+
+        if op is not None:
+            ops = [op(i) for i in range(num_wires)]
+            dev.apply(ops)
+
+        # Apply Identity:
+        dev.apply([Identity(i) for i in range(num_wires)])
+
+        assert np.allclose(dev.state, true_state, atol=tol, rtol=0)
 
     def test_bell_state(self, tol):
         """Tests that we correctly prepare a Bell state by applying a Hadamard then a CNOT"""

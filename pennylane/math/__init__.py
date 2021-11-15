@@ -42,6 +42,7 @@ from .multi_dispatch import (
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
+    scatter_element_add,
     stack,
     unwrap,
     where,
@@ -54,11 +55,13 @@ from .utils import (
     allequal,
     cast,
     cast_like,
+    is_abstract,
     convert_like,
     get_interface,
     requires_grad,
 )
 
+from .is_independent import is_independent
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -82,11 +85,15 @@ __all__ = [
     "allequal",
     "cast",
     "cast_like",
+    "is_abstract",
     "convert_like",
     "get_interface",
     "requires_grad",
     "cov_matrix",
     "marginal_prob",
+    "scatter_element_add",
     "unwrap",
+    "frobenius_inner_product",
     "get_trainable_indices",
+    "is_independent",
 ]

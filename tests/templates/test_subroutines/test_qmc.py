@@ -246,10 +246,13 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        tape = op.expand().expand()
+        tape = op.expand()
 
+        # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]
-        queue_after_qpe = tape.operations[2:]
+
+        # 2-qubit decomposition has 10 operations, and after is a 3-qubit gate so start at 11
+        queue_after_qpe = tape.expand().operations[11:]
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)
@@ -265,7 +268,7 @@ class TestQuantumMonteCarlo:
         Q = make_Q(A, R)
 
         with qml.tape.QuantumTape() as qpe_tape:
-            qml.templates.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+            qml.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
 
         qpe_tape = qpe_tape.expand()
 
@@ -303,7 +306,7 @@ class TestQuantumMonteCarlo:
 
             @qml.qnode(dev)
             def circuit():
-                qml.templates.QuantumMonteCarlo(
+                qml.QuantumMonteCarlo(
                     probs, func, target_wires=target_wires, estimation_wires=estimation_wires
                 )
                 return qml.probs(estimation_wires)
@@ -346,7 +349,7 @@ class TestQuantumMonteCarlo:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.QuantumMonteCarlo(
+            qml.QuantumMonteCarlo(
                 probs, func, target_wires=target_wires, estimation_wires=estimation_wires
             )
             return qml.probs(estimation_wires)
@@ -367,7 +370,7 @@ class TestQuantumMonteCarlo:
         target_wires = [0, "a", -1.1, -10, "bbb", 1000]
         estimation_wires = ["bob", -3, 42, "penny", "lane", 247, "straw", "berry", 5.5, 6.6]
 
-        template = qml.templates.QuantumMonteCarlo(
+        template = qml.QuantumMonteCarlo(
             probs, func, target_wires=target_wires, estimation_wires=estimation_wires, id="a"
         )
 

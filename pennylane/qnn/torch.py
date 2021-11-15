@@ -114,7 +114,7 @@ class TorchLayer(Module):
         **Full code example**
 
         The code block below shows how a circuit composed of templates from the
-        :doc:`/code/qml_templates` module can be combined with classical
+        :doc:`/introduction/templates` module can be combined with classical
         `Linear <https://pytorch.org/docs/stable/nn.html#linear>`__ layers to learn
         the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
         .datasets.make_moons.html>`__ dataset.
@@ -215,7 +215,12 @@ class TorchLayer(Module):
         # TODO: update the docstring regarding changes to restrictions when tape mode is default.
         self._signature_validation(qnode, weight_shapes)
         self.qnode = qnode
-        self.qnode.to_torch()
+
+        try:
+            # TODO: remove once the beta QNode is default
+            self.qnode.to_torch()
+        except AttributeError:
+            self.qnode.interface = "torch"
 
         if not init_method:
             init_method = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)

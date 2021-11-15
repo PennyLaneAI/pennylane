@@ -62,6 +62,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationPlus,
     DoubleExcitationMinus,
+    OrbitalRotation,
 )
 
 np.random.seed(42)
@@ -122,6 +123,7 @@ four_qubit_param = [
     (qml.DoubleExcitation, DoubleExcitation),
     (qml.DoubleExcitationPlus, DoubleExcitationPlus),
     (qml.DoubleExcitationMinus, DoubleExcitationMinus),
+    (qml.OrbitalRotation, OrbitalRotation),
 ]
 
 
@@ -1038,12 +1040,12 @@ class TestQNodeIntegration:
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
 
-    def test_qubit_circuit(self, tol, torch_device="cpu"):
+    def test_qubit_circuit(self, tol):
         """Test that the torch device provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.tensor([0.543], device=torch_device, dtype=torch.float64)
+        p = torch.tensor(0.543, dtype=torch.float64)
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=1)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -1055,11 +1057,11 @@ class TestQNodeIntegration:
         assert circuit.diff_options["method"] == "backprop"
         assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol, torch_device="cpu"):
+    def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=2)
 
         state = dev.state
         expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
@@ -1123,7 +1125,7 @@ class TestQNodeIntegration:
     @pytest.mark.parametrize("theta", [0.5432, 4.213])
     @pytest.mark.parametrize("op,func", four_qubit_param)
     def test_four_qubit_param_gates(self, theta, op, func, init_state, tol):
-        """Test the integration of the two-qubit single parameter rotations by passing
+        """Test the integration of the four-qubit single parameter rotations by passing
         a Torch data structure as a parameter"""
         dev = qml.device("default.qubit.torch", wires=4)
         state = init_state(4)
@@ -1170,9 +1172,9 @@ class TestPassthruIntegration:
     def test_jacobian_variable_multiply(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
-        x = torch.tensor([0.43316321], dtype=torch.float64, requires_grad=True)
-        y = torch.tensor([0.43316321], dtype=torch.float64, requires_grad=True)
-        z = torch.tensor([0.43316321], dtype=torch.float64, requires_grad=True)
+        x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
+        y = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
+        z = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
 
         dev = qml.device("default.qubit.torch", wires=1)
 
@@ -1294,8 +1296,8 @@ class TestPassthruIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = torch.tensor([0.54], requires_grad=True, dtype=torch.float64)
-        b = torch.tensor([0.12], requires_grad=True, dtype=torch.float64)
+        a = torch.tensor(0.54, requires_grad=True, dtype=torch.float64)
+        b = torch.tensor(0.12, requires_grad=True, dtype=torch.float64)
 
         # get the probability of wire 1
         prob_wire_1 = circuit(a, b)
@@ -1319,8 +1321,8 @@ class TestPassthruIntegration:
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = torch.tensor([-0.234], dtype=torch.float64, requires_grad=True)
-        b = torch.tensor([0.654], dtype=torch.float64, requires_grad=True)
+        a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor(0.654, dtype=torch.float64, requires_grad=True)
 
         res = circuit(a, b)
         res.backward()
@@ -1334,7 +1336,7 @@ class TestPassthruIntegration:
         assert torch.allclose(b.grad, 0.5 * torch.sin(b) * (1 - torch.cos(a)))
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
-    @pytest.mark.parametrize("diff_method", ["backprop", "finite-diff"])
+    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_torch_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the PyTorch interface, using a variety of differentiation methods."""
@@ -1435,12 +1437,12 @@ class TestSamples:
         shots = 100
         dev = qml.device("default.qubit.torch", wires=2, shots=shots)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = torch.tensor(0.54)
+        a = torch.tensor(0.54, dtype=torch.float64)
         res = circuit(a)
 
         assert torch.is_tensor(res)
@@ -1451,7 +1453,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.torch", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
             qml.PauliX(0)
             return qml.probs(wires=[0])
@@ -1467,7 +1469,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.torch", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
@@ -1485,15 +1487,15 @@ class TestSamples:
         of shots produces a numeric tensor"""
         dev = qml.device("default.qubit.torch", wires=3, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a, b):
             qml.RX(a, wires=[0])
             qml.RX(b, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = torch.tensor(0.543)
-        b = torch.tensor(0.43)
+        a = torch.tensor(0.543, dtype=torch.float64)
+        b = torch.tensor(0.43, dtype=torch.float64)
 
         res = circuit(a, b)
         assert torch.is_tensor(res)
@@ -1502,26 +1504,6 @@ class TestSamples:
         # leave it here for completeness.
         # expected = [torch.cos(a), torch.cos(a) * torch.cos(b)]
         # assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_estimating_expectation_values_not_differentiable(self, tol):
-        """Test that finite shots results in non-differentiable QNodes"""
-
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="torch")
-        def circuit(a, b):
-            qml.RX(a, wires=[0])
-            qml.RX(b, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        a = torch.tensor(0.543)
-        b = torch.tensor(0.43)
-
-        res = circuit(a, b)
-
-        with pytest.raises(RuntimeError):
-            res.backward()
 
 
 class TestHighLevelIntegration:

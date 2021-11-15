@@ -78,6 +78,16 @@ PennyLane Documentation
         </div>
     </div>
 
+During the month of November 2021 we're hosting the 
+`Pennylane Quantum Carnival <https://pennylane.ai/carnival/index.html>`_ where you will get to collect 
+tickets like the one below, and exchange them for prizes at the end of the month. 
+Take note of the code in this ticket and try to collect them all!
+
+.. image:: _static/docs_image.png
+    :align: center
+    :width: 250px
+    :target: https://pennylane.ai/carnival/index.html
+
 Features
 --------
 
@@ -202,7 +212,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_init
    code/qml_interfaces
    code/qml_operation
    code/qml_devices
@@ -212,11 +221,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_kernels
    code/qml_math
    code/qml_qaoa
+   code/qml_hf
    code/qml_qchem
    code/qml_qnn
    code/qml_tape
-   code/qml_templates
    code/qml_transforms
+   code/qml_circuit_drawer
    code/qml_utils
    code/qml_wires
    code/qml_beta

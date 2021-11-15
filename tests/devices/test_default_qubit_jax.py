@@ -159,7 +159,7 @@ class TestQNodeIntegration:
         def circuit(key):
             dev = qml.device("default.qubit.jax", wires=1, shots=1000, prng_key=key)
 
-            @qml.qnode(dev, interface="jax", diff_method="backprop")
+            @qml.qnode(dev, interface="jax", diff_method=None)
             def inner_circuit():
                 qml.Hadamard(0)
                 return qml.sample(qml.PauliZ(wires=0))
@@ -172,11 +172,101 @@ class TestQNodeIntegration:
         np.testing.assert_array_equal(a, b)
         assert not np.all(a == c)
 
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_arg_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector as argument works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            wires = list(range(2))
+            qml.QubitStateVector(x, wires=wires)
+            return [qml.expval(qml.PauliX(wires=i)) for i in wires]
+
+        res = circuit(state_vector)
+        assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_arg_jax(self, state_vector, tol):
+        """Test that Qubit state vector as argument works with jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            wires = list(range(2))
+            qml.QubitStateVector(x, wires=wires)
+            return [qml.expval(qml.PauliX(wires=i)) for i in wires]
+
+        res = circuit(state_vector)
+        assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circuit(0.1)
+        assert jnp.allclose(jnp.array(res), 1, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circuit(0.1)
+        assert jnp.allclose(jnp.array(res), 1, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.1 + 0.1j, 0.2 + 0.2j, 0, 0]), jnp.array([0.1 + 0.1j, 0.2 + 0.2j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax_not_normed(self, state_vector, tol):
+        """Test that an error is raised when Qubit state vector is not normed works with a jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+            circuit(0.1)
+
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
         dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.Hadamard(0)
             return qml.sample(qml.PauliZ(wires=0))
@@ -186,27 +276,25 @@ class TestQNodeIntegration:
         assert not np.all(a == b)
 
     def test_sampling_analytic_mode(self):
-        """Test that when sampling with shots=None, dev uses 1000 shots and
-        raises deprecation warning.
-        """
+        """Test that when sampling with shots=None an error is raised."""
         dev = qml.device("default.qubit.jax", wires=1, shots=None)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             return qml.sample(qml.PauliZ(wires=0))
 
-        with pytest.warns(
-            UserWarning, match="The number of shots has to be explicitly set on the jax device"
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The number of shots has to be explicitly set on the device "
+            "when using sample-based measurements.",
         ):
             res = circuit()
-
-        assert len(res) == 1000
 
     def test_gates_dont_crash(self):
         """Test for gates that weren't covered by other tests."""
         dev = qml.device("default.qubit.jax", wires=2, shots=1000)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.CRZ(0.0, wires=[0, 1])
             qml.CRX(0.0, wires=[0, 1])
@@ -222,7 +310,7 @@ class TestQNodeIntegration:
         """Test that diagonal gates can be used."""
         dev = qml.device("default.qubit.jax", wires=1, shots=1000)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.DiagonalQubitUnitary(np.array([1.0, 1.0]), wires=0)
             return qml.sample(qml.PauliZ(wires=0))
@@ -321,35 +409,34 @@ class TestPassthruIntegration:
         expected = jnp.sin(a)
         assert jnp.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
+    def test_CRot_gradient(self, theta, tol):
+        """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
+        gate is correct."""
+        dev = qml.device("default.qubit.jax", wires=2)
+        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
-@pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
-def test_CRot_gradient(theta, tol):
-    """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
-    gate is correct."""
-    dev = qml.device("default.qubit.jax", wires=2)
-    a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit(a, b, c):
+            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.CRot(a, b, c, wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
 
-    @qml.qnode(dev, diff_method="backprop", interface="jax")
-    def circuit(a, b, c):
-        qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
-        qml.CRot(a, b, c, wires=[0, 1])
-        return qml.expval(qml.PauliX(0))
+        res = circuit(a, b, c)
+        expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    res = circuit(a, b, c)
-    expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
-    assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    grad = jax.grad(circuit, argnums=(0, 1, 2))(a, b, c)
-    expected = np.array(
-        [
+        grad = jax.grad(circuit, argnums=(0, 1, 2))(a, b, c)
+        expected = np.array(
             [
-                0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
-                0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
-                0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                [
+                    0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                    0.5 * np.sin(b / 2) * np.cos(0.5 * (a + c)),
+                    0.5 * np.cos(b / 2) * np.sin(0.5 * (a + c)),
+                ]
             ]
-        ]
-    )
-    assert np.allclose(grad, expected, atol=tol, rtol=0)
+        )
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
@@ -375,7 +462,7 @@ def test_CRot_gradient(theta, tol):
 
         grad = jax.jit(jax.grad(cost, argnums=(0, 1)))(a, b)
         expected = [jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)]
-        assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(grad), jnp.array(expected), atol=tol, rtol=0)
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -397,7 +484,8 @@ def test_CRot_gradient(theta, tol):
         expected_grad = jnp.array(
             [-0.5 * jnp.sin(a) * (jnp.cos(b) + 1), 0.5 * jnp.sin(b) * (1 - jnp.cos(a))]
         )
-        assert jnp.allclose(res, expected_grad, atol=tol, rtol=0)
+
+        assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
@@ -461,6 +549,20 @@ def test_CRot_gradient(theta, tol):
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
+    def test_no_jax_interface_applied(self):
+        """Tests that the JAX interface is not applied and no error is raised if qml.probs is used with the Jax
+        interface when diff_method='backprop'
+
+        When the JAX interface is applied, we can only get the expectation value and the variance of a QNode.
+        """
+        dev = qml.device("default.qubit.jax", wires=1, shots=None)
+
+        def circuit():
+            return qml.probs(wires=0)
+
+        qnode = qml.qnode(dev, diff_method="backprop", interface="jax")(circuit)
+        assert jnp.allclose(qnode(), jnp.array([1, 0]))
+
 
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
@@ -474,7 +576,9 @@ class TestHighLevelIntegration:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = jnp.array(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
         grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape

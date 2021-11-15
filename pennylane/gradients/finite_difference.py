@@ -182,12 +182,21 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 
 
 @gradient_transform
-def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forward", f0=None):
+def finite_diff(
+    tape,
+    argnum=None,
+    h=1e-7,
+    approx_order=1,
+    n=1,
+    strategy="forward",
+    f0=None,
+    validate_params=True,
+):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs.
 
     Args:
-        qnode (.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned.
@@ -205,6 +214,10 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
+        validate_params (bool): Whether to validate the tape parameters or not. If ``True``,
+            the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
+            to determine if the trainable parameters support the finite-difference method.
+            If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -237,7 +250,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
 
     .. UsageDetails::
 
-        This gradient transform can also be applied directly to :class:`~.QNode` objects:
+        This gradient transform can also be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
         >>> @qml.qnode(dev)
         ... def circuit(params):
@@ -260,7 +273,7 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
         ...     qml.RX(params[2], wires=0)
         ...     qml.expval(qml.PauliZ(0))
         ...     qml.var(qml.PauliZ(0))
-        >>> gradient_tapes, fn = qml.gradients.finite_diff.grad(tape)
+        >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
         [<JacobianTape: wires=[0, 1], params=3>,
          <JacobianTape: wires=[0, 1], params=3>,
@@ -274,14 +287,16 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
         the gradient:
 
         >>> dev = qml.device("default.qubit", wires=2)
-        >>> from pennylane.interfaces.batch import execute
-        >>> fn(execute(gradient_tapes, dev, None))
+        >>> fn(qml.execute(gradient_tapes, dev, None))
         [[-0.38751721 -0.18884787 -0.38355704]
          [ 0.69916862  0.34072424  0.69202359]]
     """
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
-    diff_methods = tape._grad_method_validation("numeric")
+    if validate_params:
+        diff_methods = tape._grad_method_validation("numeric")
+    else:
+        diff_methods = ["F" for i in tape.trainable_params]
 
     if not tape.trainable_params or all(g == "0" for g in diff_methods):
         # Either all parameters have grad method 0, or there are no trainable

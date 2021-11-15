@@ -18,6 +18,7 @@ import numbers
 
 import autoray as ar
 import numpy as np
+import semantic_version
 
 
 def _i(name):
@@ -46,8 +47,9 @@ ar.register_function("numpy", "unstack", list)
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
-    tensor[tuple(index)] += value
-    return tensor
+    new_tensor = tensor.copy()
+    new_tensor[tuple(index)] += value
+    return new_tensor
 
 
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
@@ -68,9 +70,26 @@ ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
 
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
-ar.register_function("autograd", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("autograd", "unstack", list)
+
+
+def _block_diag_autograd(tensors):
+    """Autograd implementation of scipy.linalg.block_diag"""
+    _np = _i("qml").numpy
+    tensors = [t.reshape((1, len(t))) if len(t.shape) == 1 else t for t in tensors]
+    rsizes, csizes = _np.array([t.shape for t in tensors]).T
+    all_zeros = [[_np.zeros((rsize, csize)) for csize in csizes] for rsize in rsizes]
+
+    res = _np.hstack([tensors[0], *all_zeros[0][1:]])
+    for i, t in enumerate(tensors[1:], start=1):
+        row = _np.hstack([*all_zeros[i][:i], t, *all_zeros[i][i + 1 :]])
+        res = _np.vstack([res, row])
+
+    return res
+
+
+ar.register_function("autograd", "block_diag", _block_diag_autograd)
 
 
 def _unwrap_arraybox(arraybox, max_depth=None, _n=0):
@@ -134,6 +153,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -247,6 +267,15 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
 
+
+def _to_numpy_torch(x):
+    if getattr(x, "is_conj", False) and x.is_conj():
+        x = x.resolve_conj()
+
+    return x.detach().cpu().numpy()
+
+
+ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
     "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
 )
@@ -254,6 +283,17 @@ ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagona
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
+
+try:
+    if semantic_version.match(">=1.10", _i("torch").__version__):
+        # Autoray uses the deprecated torch.symeig as an alias for eigh, however this has
+        # been deprecated in favour of torch.linalg.eigh.
+        # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
+        # and will be removed in a future PyTorch release.
+        del ar.autoray._FUNCS["torch", "linalg.eigh"]
+except ImportError:
+    pass
+
 
 ar.register_function(
     "torch",
@@ -357,6 +397,15 @@ def _scatter_element_add_torch(tensor, index, value):
 ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 
 
+def _sort_torch(tensor):
+    """Update handling of sort to return only values not indices."""
+    sorted_tensor = _i("torch").sort(tensor)
+    return sorted_tensor.values
+
+
+ar.register_function("torch", "sort", _sort_torch)
+
+
 # -------------------------------- JAX --------------------------------- #
 
 
@@ -375,7 +424,9 @@ ar.register_function("jax", "flatten", lambda x: x.flatten())
 ar.register_function(
     "jax",
     "take",
-    lambda x, indices, axis=None: _i("jax").numpy.take(x, indices, axis=axis, mode="wrap"),
+    lambda x, indices, axis=None: _i("jax").numpy.take(
+        x, np.array(indices), axis=axis, mode="wrap"
+    ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
 ar.register_function("jax", "to_numpy", _to_numpy_jax)
@@ -384,6 +435,6 @@ ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
     "jax",
     "scatter_element_add",
-    lambda x, index, value: _i("jax").ops.index_add(x, tuple(index), value),
+    lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)

@@ -475,6 +475,20 @@ class TestDot:
         res = fn.dot(t1, t1)
         assert fn.allequal(res, np.array([[7, 10], [15, 22]]))
 
+    def test_matrix_vector_product_tensorflow_autograph(self):
+        """Test that the matrix-matrix dot product of two vectors results in a matrix
+        when using TensorFlow autograph mode"""
+        t1, t2 = tf.Variable([[1, 2], [3, 4]]), tf.Variable([6, 7])
+
+        @tf.function
+        def cost(t1, t2):
+            return fn.dot(t1, t2)
+
+        with tf.GradientTape() as tape:
+            res = cost(t1, t2)
+
+        assert fn.allequal(res, [20, 46])
+
     multidim_product_data = [
         [
             np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
@@ -675,6 +689,7 @@ class TestRequiresGrad:
         """Vanilla NumPy arrays, sequences, and lists will always return False"""
         assert not fn.requires_grad(t)
 
+    @pytest.mark.slow
     def test_jax(self):
         """JAX DeviceArrays differentiability depends on the argnums argument"""
         res = None
@@ -1096,6 +1111,23 @@ class TestScatterElementAdd:
         assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
         assert fn.allclose(grad[1], 2 * y)
 
+    def test_array_multi(self):
+        """Test that a NumPy array and the addend are differentiable when using
+        scatter addition (multi dispatch)."""
+        x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
+        y = np.array(0.56, requires_grad=True)
+
+        def cost_multi(weight_0, weight_1):
+            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+
+        res = cost_multi(x, y)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+
+        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
+        assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
+
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
         x = tf.Variable([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
@@ -1142,6 +1174,23 @@ class TestScatterElementAdd:
         grad = jax.grad(lambda weights: cost(weights)[1, 2])([x, y])
         assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
         assert fn.allclose(grad[1], 2 * y)
+
+    def test_jax_multi(self):
+        """Test that a NumPy array and the addend are differentiable when using
+        scatter addition (multi dispatch)."""
+        x = jnp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
+        y = jnp.array(0.56)
+
+        def cost_multi(weight_0, weight_1):
+            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+
+        res = cost_multi(x, y)
+        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+
+        jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
+        assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
+        assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
 
 
 class TestDiag:
@@ -1368,6 +1417,7 @@ class TestCovMatrix:
         expected = self.expected_grad(weights)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
@@ -1415,6 +1465,72 @@ def test_block_diag(tensors):
         [[1, 2, 0, 0, 0], [3, 4, 0, 0, 0], [0, 0, 1, 2, 0], [0, 0, -1, -6, 0], [0, 0, 0, 0, 5]]
     )
     assert fn.allclose(res, expected)
+
+
+class TestBlockDiagDiffability:
+
+    expected = lambda self, x, y: np.array(
+        [
+            [[-np.sin(x * y) * y, -np.sin(x * y) * x], [0, 0], [0, 0]],
+            [[0, 0], [1.0, 0.0], [0, 1.2]],
+            [[0, 0], [2 * x, -1 / 3], [-1 / y, x / y ** 2]],
+        ]
+    )
+
+    def test_autograd(self):
+        """Tests for differentiating the block diagonal function with autograd."""
+        tensors = lambda x, y: [
+            np.array([[fn.cos(x * y)]]),
+            np.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+        ]
+        f = lambda x, y: fn.block_diag(tensors(x, y))
+        x, y = 0.2, 1.5
+        res = qml.jacobian(f)(x, y)
+        exp = self.expected(x, y)
+        # Transposes in the following because autograd behaves strangely
+        assert fn.allclose(res[:, :, 0].T, exp[:, :, 0])
+        assert fn.allclose(res[:, :, 1].T, exp[:, :, 1])
+
+    def test_jax(self):
+        """Tests for differentiating the block diagonal function with JAX."""
+        jax = pytest.importorskip("jax")
+        tensors = lambda x, y: [
+            jnp.array([[fn.cos(x * y)]]),
+            jnp.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+        ]
+        f = lambda x, y: fn.block_diag(tensors(x, y))
+        x, y = 0.2, 1.5
+        res = jax.jacobian(f, argnums=[0, 1])(x, y)
+        exp = self.expected(x, y)
+        assert fn.allclose(exp[:, :, 0], res[0])
+        assert fn.allclose(exp[:, :, 1], res[1])
+
+    def test_tf(self):
+        """Tests for differentiating the block diagonal function with Tensorflow."""
+        tf = pytest.importorskip("tensorflow")
+        x, y = [tf.Variable([[0.2]]), tf.Variable([[0.1, 0.2], [0.3, 0.4]])]
+        with tf.GradientTape() as tape:
+            out = fn.block_diag([x, y])
+        res = tape.jacobian(out, (x, y))
+        exp_0 = np.zeros((3, 3, 1, 1))
+        exp_0[0, 0, 0, 0] = 1.0
+        exp_1 = np.zeros((3, 3, 2, 2))
+        exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
+        assert fn.allclose(exp_0, res[0])
+        assert fn.allclose(exp_1, res[1])
+
+    def test_torch(self):
+        """Tests for differentiating the block diagonal function with Torch."""
+        torch = pytest.importorskip("torch")
+        x, y = [torch.tensor([[0.2]]), torch.tensor([[0.1, 0.2], [0.3, 0.4]])]
+        f = lambda x, y: fn.block_diag([x, y])
+        res = torch.autograd.functional.jacobian(f, (x, y))
+        exp_0 = np.zeros((3, 3, 1, 1))
+        exp_0[0, 0, 0, 0] = 1.0
+        exp_1 = np.zeros((3, 3, 2, 2))
+        exp_1[1, 1, 0, 0] = exp_1[1, 2, 0, 1] = exp_1[2, 1, 1, 0] = exp_1[2, 2, 1, 1] = 1.0
+        assert fn.allclose(exp_0, res[0])
+        assert fn.allclose(exp_1, res[1])
 
 
 gather_data = [
@@ -1608,8 +1724,7 @@ class TestGetTrainable:
         values = [[0.1, 0.2], np.tensor(0.1, requires_grad=True), np.tensor([0.5, 0.2])]
         cost_fn(values)
 
-        # Currently, we assume *all* objects are trainable by default in Autograd
-        assert res == {0, 1, 2}
+        assert res == {1, 2}
 
     def test_autograd_unwrapping_backward(self):
         """Test that the trainability indices of a sequence of Autograd arrays
@@ -1629,3 +1744,25 @@ class TestGetTrainable:
         grad = qml.grad(cost_fn)(*values)
 
         assert res == {0, 1}
+
+
+test_sort_data = [
+    ([1, 3, 4, 2], [1, 2, 3, 4]),
+    (onp.array([1, 3, 4, 2]), onp.array([1, 2, 3, 4])),
+    (np.array([1, 3, 4, 2]), np.array([1, 2, 3, 4])),
+    (jnp.array([1, 3, 4, 2]), jnp.array([1, 2, 3, 4])),
+    (torch.tensor([1, 3, 4, 2]), torch.tensor([1, 2, 3, 4])),
+    (tf.Variable([1, 3, 4, 2]), tf.Variable([1, 2, 3, 4])),
+    (tf.constant([1, 3, 4, 2]), tf.constant([1, 2, 3, 4])),
+]
+
+
+class TestSortFunction:
+    """Test the sort function works across all interfaces"""
+
+    @pytest.mark.parametrize("input, test_output", test_sort_data)
+    def test_sort(self, input, test_output):
+        """Test the sort method is outputting only sorted values not indices"""
+        result = fn.sort(input)
+
+        assert all(result == test_output)

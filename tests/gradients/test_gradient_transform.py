@@ -16,97 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients.gradient_transform import gradient_transform, gradient_expand
-
-
-class TestGradientExpand:
-    """Tests for the gradient expand function"""
-
-    def test_no_expansion(self, mocker):
-        """Test that a circuit with differentiable
-        operations is not expanded"""
-        x = np.array(0.2, requires_grad=True)
-        y = np.array(0.1, requires_grad=True)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        spy = mocker.spy(tape, "expand")
-        new_tape = gradient_expand(tape)
-
-        assert new_tape is tape
-        spy.assert_not_called()
-
-    def test_trainable_nondiff_expansion(self, mocker):
-        """Test that a circuit with non-differentiable
-        trainable operations is expanded"""
-        x = np.array(0.2, requires_grad=True)
-        y = np.array(0.1, requires_grad=True)
-
-        class NonDiffPhaseShift(qml.PhaseShift):
-            grad_method = None
-
-        with qml.tape.QuantumTape() as tape:
-            NonDiffPhaseShift(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        spy = mocker.spy(tape, "expand")
-        new_tape = gradient_expand(tape)
-
-        assert new_tape is not tape
-        spy.assert_called()
-
-        new_tape.operations[0].name == "RZ"
-        new_tape.operations[0].grad_method == "A"
-        new_tape.operations[1].name == "RY"
-        new_tape.operations[2].name == "CNOT"
-
-    def test_nontrainable_nondiff(self, mocker):
-        """Test that a circuit with non-differentiable
-        non-trainable operations is not expanded"""
-        x = np.array(0.2, requires_grad=False)
-        y = np.array(0.1, requires_grad=True)
-
-        class NonDiffPhaseShift(qml.PhaseShift):
-            grad_method = None
-
-        with qml.tape.QuantumTape() as tape:
-            NonDiffPhaseShift(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        spy = mocker.spy(tape, "expand")
-        new_tape = gradient_expand(tape)
-
-        assert new_tape is tape
-        spy.assert_not_called()
-
-    def test_trainable_numeric(self, mocker):
-        """Test that a circuit with numeric differentiable
-        trainable operations is *not* expanded"""
-        x = np.array(0.2, requires_grad=True)
-        y = np.array(0.1, requires_grad=True)
-
-        class NonDiffPhaseShift(qml.PhaseShift):
-            grad_method = "F"
-
-        with qml.tape.QuantumTape() as tape:
-            NonDiffPhaseShift(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0))
-
-        spy = mocker.spy(tape, "expand")
-        new_tape = gradient_expand(tape)
-
-        assert new_tape is tape
-        spy.assert_not_called()
+from pennylane.gradients.gradient_transform import gradient_transform
 
 
 class TestGradientTransformIntegration:
@@ -184,7 +94,7 @@ class TestGradientTransformIntegration:
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
         class NonDiffRXGate(qml.PhaseShift):
-            grad_method = "F"
+            grad_method = None
 
             @staticmethod
             def decomposition(x, wires):
@@ -270,7 +180,7 @@ class TestGradientTransformIntegration:
 
         res = qml.gradients.param_shift(circuit)(d, w)
         classical_jac = spy.spy_return(d, w)
-        assert np.allclose(classical_jac, np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
+        assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]).T)
 
         expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -324,6 +234,60 @@ class TestGradientTransformIntegration:
         w = np.array([0.543 ** 2, -0.654], requires_grad=True)
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("strategy", ["gradient", "device"])
+    def test_template_integration(self, strategy, tol):
+        """Test that the gradient transform acts on QNodes
+        correctly when the QNode contains a template"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.beta.qnode(dev, expansion_strategy=strategy)
+        def circuit(weights):
+            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+            return qml.probs(wires=[0, 1])
+
+        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        res = qml.gradients.param_shift(circuit)(weights)
+        assert res.shape == (4, 2, 3, 3)
+
+        expected = qml.jacobian(circuit)(weights)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_setting_shots(self):
+        """Test that setting the number of shots works correctly for
+        a gradient transform"""
+
+        dev = qml.device("default.qubit", wires=1, shots=1000)
+
+        @qml.beta.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.543
+
+        # the gradient function can be called with different shot values
+        grad_fn = qml.gradients.param_shift(circuit)
+        assert grad_fn(x).shape == (1, 1)
+        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000, 1)
+
+        # the original QNode is unaffected
+        assert circuit(x).shape == tuple()
+        assert circuit(x, shots=1000).shape == tuple()
+
+    def test_shots_error(self):
+        """Raise an exception if shots is used within the QNode"""
+        dev = qml.device("default.qubit", wires=1, shots=1000)
+
+        @qml.beta.qnode(dev)
+        def circuit(x, shots):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            ValueError, match="'shots' argument name is reserved for overriding the number of shots"
+        ):
+            qml.gradients.param_shift(circuit)(0.2, shots=100)
 
 
 class TestInterfaceIntegration:
@@ -401,3 +365,27 @@ class TestInterfaceIntegration:
         res.backward()
         expected = -2 * np.cos(2 * x_)
         assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
+
+    def test_jax(self, tol):
+        """Test that a gradient transform remains differentiable
+        with JAX"""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.gradients.param_shift
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RY(x ** 2, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.PauliX(1))
+
+        x = jnp.array(-0.654)
+
+        res = circuit(x)
+        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = jax.grad(circuit)(x)
+        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
+        assert np.allclose(res, expected, atol=tol, rtol=0)

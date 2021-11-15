@@ -42,6 +42,7 @@ class RepresentationResolver:
         "CSWAP": "SWAP",
         "PauliY": "Y",
         "PauliZ": "Z",
+        "CY": "Y",
         "CZ": "Z",
         "Identity": "I",
         "Hadamard": "H",
@@ -76,6 +77,7 @@ class RepresentationResolver:
         "CRY": [0],
         "CRZ": [0],
         "CRot": [0],
+        "CY": [0],
         "CZ": [0],
         "ControlledAddition": [0],
         "ControlledPhase": [0],
@@ -418,7 +420,7 @@ class RepresentationResolver:
             "FockDensityMatrix",
             "FockStateVector",
             "QubitStateVector",
-            "Interferometer",
+            "InterferometerUnitary",
         }:
             representation = name + RepresentationResolver._format_matrix_arguments(
                 op.data, "M", self.matrix_cache

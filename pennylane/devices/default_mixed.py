@@ -25,8 +25,9 @@ from string import ascii_letters as ABC
 
 import numpy as np
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError
-from pennylane.operation import DiagonalOperation, Channel
+from pennylane.operation import Channel
 from pennylane.wires import Wires
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -56,6 +57,7 @@ class DefaultMixed(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Identity",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -101,6 +103,9 @@ class DefaultMixed(QubitDevice):
         "DoubleExcitationMinus",
         "QubitCarry",
         "QubitSum",
+        "OrbitalRotation",
+        "QFT",
+        "ThermalRelaxationError",
     }
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
@@ -192,7 +197,7 @@ class DefaultMixed(QubitDevice):
         probs = self.marginal_prob(self._diag(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
-        return self._real(probs)
+        return self._abs(self._real(probs))
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
@@ -205,7 +210,7 @@ class DefaultMixed(QubitDevice):
             the operation is unitary, returns a single Kraus operator. In the case of a diagonal
             unitary, returns a 1D array representing the matrix diagonal.
         """
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             return operation.eigvals
 
         if isinstance(operation, Channel):
@@ -404,7 +409,7 @@ class DefaultMixed(QubitDevice):
 
         matrices = self._get_kraus(operation)
 
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
             self._apply_channel(matrices, wires)

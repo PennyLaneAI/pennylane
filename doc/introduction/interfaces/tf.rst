@@ -30,7 +30,7 @@ Construction via keyword
 ------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
-:class:`~.QNode` objects in PennyLane. The only change required to construct a TensorFlow-capable
+:class:`QNode <pennylane.QNode>` objects in PennyLane. The only change required to construct a TensorFlow-capable
 QNode is to specify the ``interface='tf'`` keyword argument:
 
 .. code-block:: python
@@ -137,7 +137,7 @@ To include non-differentiable data arguments, simply use ``tf.constant``:
 
     @qml.qnode(dev, interface='tf')
     def circuit3(weights, data):
-        qml.templates.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qml.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
         qml.RX(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         qml.CNOT(wires=[0, 1])

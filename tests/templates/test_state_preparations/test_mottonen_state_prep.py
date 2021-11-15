@@ -59,6 +59,7 @@ class TestDecomposition:
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires,target_state", [
+        ([1, 0], 0, [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
@@ -128,7 +129,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
-            qml.templates.MottonenStatePreparation(state_vector, wires)
+            qml.MottonenStatePreparation(state_vector, wires)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         circuit()
@@ -142,6 +143,7 @@ class TestDecomposition:
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires,target_state", [
+        ([1, 0], 0, [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
         ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
@@ -211,7 +213,7 @@ class TestDecomposition:
 
         @qml.qnode(qubit_device_3_wires)
         def circuit():
-            qml.templates.MottonenStatePreparation(state_vector, wires)
+            qml.MottonenStatePreparation(state_vector, wires)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)), qml.expval(qml.PauliZ(2))
 
         circuit()
@@ -237,7 +239,7 @@ class TestDecomposition:
         ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
     ])
     # fmt: on
-    def test_RZ_skipped(self, state_vector, n_wires):
+    def test_RZ_skipped(self, mocker, state_vector, n_wires):
         """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
         n_CNOT = 2 ** n_wires - 2
@@ -246,13 +248,15 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(state_vector):
-            qml.templates.MottonenStatePreparation(state_vector, wires=range(n_wires))
+            qml.MottonenStatePreparation(state_vector, wires=range(n_wires))
             return qml.expval(qml.PauliX(wires=0))
 
         # when the RZ cascade is skipped, CNOT gates should only be those required for RY cascade
+        spy = mocker.spy(circuit.device, "execute")
         circuit(state_vector)
+        tape = spy.call_args[0][0]
 
-        assert circuit.qtape.specs["gate_types"]["CNOT"] == n_CNOT
+        assert tape.specs["gate_types"]["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -263,12 +267,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.MottonenStatePreparation(state, wires=range(3))
+            qml.MottonenStatePreparation(state, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.MottonenStatePreparation(state, wires=["z", "a", "k"])
+            qml.MottonenStatePreparation(state, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -291,7 +295,7 @@ class TestInputs:
         the given state vector is not normalized."""
 
         with pytest.raises(ValueError, match="State vector has to be of norm"):
-            qml.templates.MottonenStatePreparation(state_vector, wires)
+            qml.MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
     @pytest.mark.parametrize("state_vector,wires", [
@@ -305,7 +309,7 @@ class TestInputs:
         with the number of wires in the system."""
 
         with pytest.raises(ValueError, match="State vector must be of (length|shape)"):
-            qml.templates.MottonenStatePreparation(state_vector, wires)
+            qml.MottonenStatePreparation(state_vector, wires)
 
     @pytest.mark.parametrize(
         "state_vector",
@@ -319,11 +323,11 @@ class TestInputs:
         number of dimensions of features is incorrect."""
 
         with pytest.raises(ValueError, match="State vector must be a one-dimensional"):
-            qml.templates.MottonenStatePreparation(state_vector, 2)
+            qml.MottonenStatePreparation(state_vector, 2)
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")
+        template = qml.MottonenStatePreparation(np.array([0, 1]), wires=[0], id="a")
         assert template.id == "a"
 
 
@@ -344,7 +348,7 @@ class TestGradient:
 
         @qml.qnode(dev)
         def circuit(state_vector):
-            qml.templates.MottonenStatePreparation(state_vector, wires=range(1))
+            qml.MottonenStatePreparation(state_vector, wires=range(1))
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(state_vector)
@@ -370,7 +374,7 @@ class TestCasting:
 
         @qml.qnode(dev, interface="torch")
         def circuit(inputs):
-            qml.templates.MottonenStatePreparation(inputs, wires=[0, 1])
+            qml.MottonenStatePreparation(inputs, wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
         inputs = inputs / torch.linalg.norm(inputs)

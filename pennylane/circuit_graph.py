@@ -24,7 +24,7 @@ import pennylane as qml
 import numpy as np
 
 from pennylane.wires import Wires
-from .circuit_drawer import CHARSETS, CircuitDrawer
+from .circuit_drawer import CircuitDrawer
 
 
 def _by_idx(x):
@@ -233,6 +233,8 @@ class CircuitGraph:
         serialization_string += "|||"
 
         for obs in self.observables_in_order:
+            serialization_string += str(obs.return_type)
+            serialization_string += delimiter
             serialization_string += str(obs.name)
             for param in obs.data:
                 serialization_string += delimiter
@@ -240,7 +242,6 @@ class CircuitGraph:
                 serialization_string += delimiter
 
             serialization_string += str(obs.wires.tolist())
-
         return serialization_string
 
     @property
@@ -507,7 +508,7 @@ class CircuitGraph:
 
         if self.max_simultaneous_measurements == 1:
 
-            # There is a single measurement
+            # There is a single measurement for every wire
             for wire in sorted(self._grid):
                 observables[wire] = list(
                     filter(
@@ -522,12 +523,16 @@ class CircuitGraph:
                     observables[wire] = [None]
         else:
 
-            # There are multiple measurements
-            for wire in sorted(self._grid):
-                mp_map = dict(zip(self.observables, range(self.max_simultaneous_measurements)))
+            # There are wire(s) with multiple measurements.
+            # We are creating a separate "visual block" at the end of the
+            # circuit for each observable and mapping observables with block
+            # indices.
+            num_observables = len(self.observables)
+            mp_map = dict(zip(self.observables, range(num_observables)))
 
+            for wire in sorted(self._grid):
                 # Initialize to None everywhere
-                observables[wire] = [None] * self.max_simultaneous_measurements
+                observables[wire] = [None] * num_observables
 
                 for op in self._grid[wire]:
                     if _is_returned_observable(op):
@@ -604,18 +609,11 @@ class CircuitGraph:
 
         grid, obs = self.greedy_layers(wire_order=wire_order, show_all_wires=show_all_wires)
 
-        if charset not in CHARSETS:
-            raise ValueError(
-                "Charset {} is not supported. Supported charsets: {}.".format(
-                    charset, ", ".join(CHARSETS.keys())
-                )
-            )
-
         drawer = CircuitDrawer(
             grid,
             obs,
             wires=wire_order or self.wires,
-            charset=CHARSETS[charset],
+            charset=charset,
             show_all_wires=show_all_wires,
         )
 

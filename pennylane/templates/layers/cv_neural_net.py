@@ -35,7 +35,7 @@ class CVNeuralNetLayers(Operation):
 
     This example shows a 4-mode CVNeuralNet layer with squeezing gates :math:`S`, displacement gates :math:`D` and
     Kerr gates :math:`K`. The two big blocks are interferometers of type
-    :mod:`pennylane.templates.layers.Interferometer`:
+    :mod:`pennylane.Interferometer`:
 
     .. figure:: ../../_static/layer_cvqnn.png
         :align: center
@@ -83,6 +83,7 @@ class CVNeuralNetLayers(Operation):
     num_params = 11
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(
         self,
@@ -145,7 +146,7 @@ class CVNeuralNetLayers(Operation):
 
             for l in range(self.n_layers):
 
-                qml.templates.Interferometer(
+                qml.Interferometer(
                     theta=self.parameters[0][l],
                     phi=self.parameters[1][l],
                     varphi=self.parameters[2][l],
@@ -157,7 +158,7 @@ class CVNeuralNetLayers(Operation):
                         self.parameters[3][l, i], self.parameters[4][l, i], wires=self.wires[i]
                     )
 
-                qml.templates.Interferometer(
+                qml.Interferometer(
                     theta=self.parameters[5][l],
                     phi=self.parameters[6][l],
                     varphi=self.parameters[7][l],

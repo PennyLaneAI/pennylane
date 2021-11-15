@@ -51,6 +51,7 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     ControlledPhaseShift,
+    OrbitalRotation,
 )
 
 np.random.seed(42)
@@ -99,7 +100,7 @@ two_qubit_param = [
     (qml.ControlledPhaseShift, ControlledPhaseShift),
 ]
 three_qubit = [(qml.Toffoli, Toffoli), (qml.CSWAP, CSWAP)]
-
+four_qubit_param = [(qml.OrbitalRotation, OrbitalRotation)]
 
 #####################################################
 # Fixtures
@@ -134,6 +135,81 @@ def test_analytic_deprecation():
         match=msg,
     ):
         qml.device("default.qubit.tf", wires=1, shots=1, analytic=True)
+
+
+#####################################################
+# Device-level matrix creation tests
+#####################################################
+
+
+class TestTFMatrix:
+    """Test special case of matrix construction in TensorFlow for
+    cases where variables must be casted to complex."""
+
+    @pytest.mark.parametrize(
+        "op,params,wires",
+        [
+            (qml.PhaseShift, [0.1], 0),
+            (qml.ControlledPhaseShift, [0.1], [0, 1]),
+            (qml.CRZ, [0.1], [0, 1]),
+            (qml.U1, [0.1], 0),
+            (qml.U2, [0.1, 0.2], 0),
+            (qml.U3, [0.1, 0.2, 0.3], 0),
+        ],
+    )
+    def test_one_qubit_tf_matrix(self, op, params, wires):
+        tf_params = [tf.Variable(x) for x in params]
+        expected_mat = op(*params, wires=wires).matrix
+        obtained_mat = op(*tf_params, wires=wires).matrix
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
+
+    @pytest.mark.parametrize(
+        "param,pauli,wires",
+        [
+            (0.1, "I", "a"),
+            (0.2, "IX", ["a", "b"]),
+            (-0.3, "III", [0, 1, 2]),
+            (0.5, "ZXI", [0, 1, 2]),
+        ],
+    )
+    def test_pauli_rot_tf_(self, param, pauli, wires):
+        op = qml.PauliRot(param, pauli, wires=wires)
+        expected_mat = op.matrix
+        expected_eigvals = op.eigvals
+
+        tf_op = qml.PauliRot(tf.Variable(param), pauli, wires=wires)
+        obtained_mat = tf_op.matrix
+        obtained_eigvals = tf_op.eigvals
+
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.get_interface(obtained_eigvals) == "tensorflow"
+
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
+        assert qml.math.allclose(qml.math.unwrap(obtained_eigvals), expected_eigvals)
+
+    @pytest.mark.parametrize(
+        "op,param,wires",
+        [
+            (qml.PhaseShift, 0.1, [1]),
+            (qml.ControlledPhaseShift, 0.1, [1, 2]),
+            (qml.CRZ, 0.1, [1, 2]),
+            (qml.U1, 0.1, [1]),
+        ],
+    )
+    def test_expand_tf_matrix(self, op, param, wires):
+        reg_mat = op(param, wires=wires).matrix
+
+        if len(wires) == 1:
+            expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, qml.math.kron(I, I)))
+        else:
+            expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
+
+        tf_mat = op(tf.Variable(param), wires=wires).matrix
+        obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
+
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
 
 
 #####################################################
@@ -379,6 +455,21 @@ class TestApply:
 
         queue = [qml.QubitStateVector(state, wires=[0, 1])]
         queue += [op(theta, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", four_qubit_param)
+    def test_four_qubit_parameters(self, init_state, op, func, theta, tol):
+        """Test four qubit parametrized operations"""
+        dev = DefaultQubitTF(wires=4)
+        state = init_state(4)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1, 2, 3])]
+        queue += [op(theta, wires=[0, 1, 2, 3])]
         dev.apply(queue)
 
         res = dev.state
@@ -1004,6 +1095,27 @@ class TestQNodeIntegration:
         expected = func(theta) @ state
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("theta", [0.5432, 4.213])
+    @pytest.mark.parametrize("op,func", four_qubit_param)
+    def test_four_qubit_param_gates(self, theta, op, func, init_state, tol):
+        """Test the integration of the four-qubit single parameter rotations by passing
+        a TF data structure as a parameter"""
+        dev = qml.device("default.qubit.tf", wires=4)
+        state = init_state(4)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(params):
+            qml.QubitStateVector(state, wires=[0, 1, 2, 3])
+            op(params[0], wires=[0, 1, 2, 3])
+            return qml.expval(qml.PauliZ(0))
+
+        # Pass a TF Variable to the qfunc
+        params = tf.Variable(np.array([theta]))
+        circuit(params)
+        res = dev.state
+        expected = func(theta) @ state
+        assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
     def test_controlled_rotation_integration(self, init_state, tol):
         """Test the integration of the two-qubit controlled rotation by passing
         a TF data structure as a parameter"""
@@ -1312,40 +1424,23 @@ class TestSamples:
         shots = 100
         dev = qml.device("default.qubit.tf", wires=2, shots=shots)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qml.qnode(dev, diff_method="best", interface="tf")
         def circuit(a):
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = tf.Variable(0.54)
+        a = tf.Variable(0.54, dtype=tf.float64)
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (shots,)
         assert set(res.numpy()) == {-1, 1}
 
-    def test_sample_observables_non_differentiable(self):
-        """Test that sampled observables cannot be differentiated."""
-        shots = 100
-        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
-
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(0))
-
-        a = tf.Variable(0.54)
-
-        with tf.GradientTape() as tape:
-            res = circuit(a)
-
-        assert tape.gradient(res, a) is None
-
     def test_estimating_marginal_probability(self, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
             qml.PauliX(0)
             return qml.probs(wires=[0])
@@ -1361,7 +1456,7 @@ class TestSamples:
         """Test that the probability of a subset of wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit():
             qml.PauliX(0)
             qml.PauliX(1)
@@ -1379,15 +1474,15 @@ class TestSamples:
         of shots produces a numeric tensor"""
         dev = qml.device("default.qubit.tf", wires=3, shots=1000)
 
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        @qml.qnode(dev, diff_method=None, interface="tf")
         def circuit(a, b):
             qml.RX(a, wires=[0])
             qml.RX(b, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = tf.Variable(0.543)
-        b = tf.Variable(0.43)
+        a = tf.Variable(0.543, dtype=tf.float64)
+        b = tf.Variable(0.43, dtype=tf.float64)
 
         res = circuit(a, b)
         assert isinstance(res, tf.Tensor)
@@ -1396,28 +1491,6 @@ class TestSamples:
         # leave it here for completeness.
         # expected = [tf.cos(a), tf.cos(a) * tf.cos(b)]
         # assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_estimating_expectation_values_not_differentiable(self, tol):
-        """Test that finite shots results in non-differentiable QNodes"""
-
-        dev = qml.device("default.qubit.tf", wires=3, shots=1000)
-
-        @qml.qnode(dev, diff_method="backprop", interface="tf")
-        def circuit(a, b):
-            qml.RX(a, wires=[0])
-            qml.RX(b, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
-
-        a = tf.Variable(0.543)
-        b = tf.Variable(0.43)
-
-        with tf.GradientTape() as tape:
-            res = circuit(a, b)
-
-        assert isinstance(res, tf.Tensor)
-        grad = tape.gradient(res, [a, b])
-        assert grad == [None, None]
 
 
 class TestHighLevelIntegration:
@@ -1432,7 +1505,9 @@ class TestHighLevelIntegration:
 
         assert qnodes.interface == "tf"
 
-        weights = tf.Variable(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = tf.Variable(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
         @tf.function
         def cost(weights):

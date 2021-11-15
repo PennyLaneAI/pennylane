@@ -18,10 +18,9 @@ accept a hermitian or an unitary matrix as a parameter.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import warnings
 import numpy as np
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -86,13 +85,23 @@ class QubitUnitary(Operation):
             decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
             return decomp_ops
 
-        raise NotImplementedError("Decompositions only supported for single-qubit unitaries")
+        if qml.math.shape(U) == (4, 4):
+            wires = Wires(wires)
+            decomp_ops = qml.transforms.two_qubit_decomposition(U, wires)
+            return decomp_ops
+
+        raise NotImplementedError(
+            "Decompositions only supported for single- and two-qubit unitaries."
+        )
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")
 
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -198,7 +207,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+            interface = qml.math.get_interface(self.U)
+            left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
+            right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
+            self._CU = qml.math.block_diag([left_pad, self.U, right_pad])
 
         params = list(params)
         params[0] = self._CU
@@ -230,7 +242,7 @@ class ControlledQubitUnitary(QubitUnitary):
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
-class DiagonalQubitUnitary(DiagonalOperation):
+class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
 
@@ -250,10 +262,14 @@ class DiagonalQubitUnitary(DiagonalOperation):
     grad_method = None
 
     @classmethod
+    def _matrix(cls, *params):
+        return qml.math.diag(cls._eigvals(*params))
+
+    @classmethod
     def _eigvals(cls, *params):
         D = qml.math.asarray(params[0])
 
-        if not qml.math.allclose(D * D.conj(), qml.math.ones_like(D)):
+        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
         return D
@@ -270,3 +286,6 @@ class DiagonalQubitUnitary(DiagonalOperation):
             qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")

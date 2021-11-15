@@ -210,6 +210,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._update_circuit_info()
+    new_tape._output_dim = tape.output_dim
     return new_tape
 
 
@@ -666,7 +667,9 @@ class QuantumTape(AnnotatedQueue):
             ~.QuantumTape: the adjointed tape
         """
         new_tape = self.copy(copy_operations=True)
-        qml.transforms.invisible(new_tape.inv)()
+
+        with qml.tape.stop_recording():
+            new_tape.inv()
 
         # the current implementation of the adjoint
         # transform requires that the returned inverted object
@@ -738,6 +741,29 @@ class QuantumTape(AnnotatedQueue):
 
         self._trainable_params = param_indices
 
+    def get_operation(self, idx):
+        """Returns the trainable operation, and the corresponding operation argument
+        index, for a specified trainable parameter index.
+
+        Args:
+            idx (int): the trainable parameter index
+
+        Returns:
+            tuple[.Operation, int]: tuple containing the corresponding
+            operation, and an integer representing the argument index,
+            for the provided trainable parameter.
+        """
+        # get the index of the parameter in the tape
+        t_idx = list(self.trainable_params)[idx]
+
+        # get the corresponding operation
+        op = self._par_info[t_idx]["op"]
+
+        # get the corresponding operation parameter index
+        # (that is, index of the parameter within the operation)
+        p_idx = self._par_info[t_idx]["p_idx"]
+        return op, p_idx
+
     def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
@@ -777,13 +803,12 @@ class QuantumTape(AnnotatedQueue):
         [0.432, 0.543, 0.133]
         """
         params = []
-        iterator = self.trainable_params if trainable_only else self._par_info
+        iterator = sorted(self.trainable_params) if trainable_only else self._par_info
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]
             op_idx = self._par_info[p_idx]["p_idx"]
             params.append(op.data[op_idx])
-
         return params
 
     def set_parameters(self, params, trainable_only=True):
@@ -829,7 +854,7 @@ class QuantumTape(AnnotatedQueue):
         [4, 1, 6]
         """
         if trainable_only:
-            iterator = zip(self.trainable_params, params)
+            iterator = zip(sorted(self.trainable_params), params)
             required_length = self.num_params
         else:
             iterator = enumerate(params)

@@ -36,8 +36,7 @@ class BasisStatePreparation(Operation):
 
         @qml.qnode(dev)
         def circuit(basis_state):
-            qml.templates.BasisStatePreparation(basis_state, wires=range(4))
-
+            qml.BasisStatePreparation(basis_state, wires=range(4))
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(4)]
 
         basis_state = [0, 1, 1, 0]
@@ -51,6 +50,7 @@ class BasisStatePreparation(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
 

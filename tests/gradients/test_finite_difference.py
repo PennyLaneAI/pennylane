@@ -504,6 +504,7 @@ class TestFiniteDiffGradients:
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     def test_tf(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
@@ -565,19 +566,18 @@ class TestFiniteDiffGradients:
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         torch = pytest.importorskip("torch")
-        from pennylane.interfaces.torch import TorchInterface
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
-        with TorchInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+        with qml.tape.JacobianTape() as tape:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-        jac = fn([t.execute(dev) for t in tapes])
+        jac = fn(dev.batch_execute(tapes))
         cost = torch.sum(jac)
         cost.backward()
         hess = params.grad
@@ -600,16 +600,15 @@ class TestFiniteDiffGradients:
         can be differentiated using JAX, yielding second derivatives."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
-        from pennylane.interfaces.jax import JAXInterface
         from jax.config import config
 
         config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit.jax", wires=2)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with JAXInterface.apply(qml.tape.QubitParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -617,7 +616,7 @@ class TestFiniteDiffGradients:
 
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn([t.execute(dev) for t in tapes])
+            jac = fn(dev.batch_execute(tapes))
             return jac
 
         res = jax.jacobian(cost_fn)(params)

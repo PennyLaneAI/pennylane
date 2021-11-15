@@ -458,20 +458,9 @@ class TestQNode:
 
         res = circuit(a, p)
 
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1, 2, 3, 4}
-        elif diff_method == "backprop":
-            # For a backprop device, no interface wrapping is performed, and JacobianTape.jacobian()
-            # is never called. As a result, JacobianTape.trainable_params is never set --- the ML
-            # framework uses its own backprop logic and its own bookkeeping re: trainable parameters.
-            assert circuit.qtape.trainable_params == {0, 1, 2, 3, 4}
-
+        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
-
-        if diff_method == "finite-diff":
-            assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
-        elif diff_method == "backprop":
-            assert np.all(circuit.qtape.get_parameters() == [a, p[2], p[0], -p[2], p[1] + p[2]])
+        assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
         expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
             np.cos(p_val[2]) * np.sin(p_val[1])
@@ -785,6 +774,9 @@ class TestQNode:
         ]
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(
+        reason="Test fails on Torch 1.10, however the Tape interfaces are deprecated and will not be fixed."
+    )
     def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         if diff_method not in {"parameter-shift", "backprop"}:

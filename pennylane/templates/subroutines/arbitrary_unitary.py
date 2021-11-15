@@ -82,9 +82,8 @@ class ArbitraryUnitary(Operation):
 
     .. code-block:: python
 
-        @qml.template
         def arbitrary_nearest_neighbour_interaction(weights, wires):
-            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, params=weights)
+            qml.broadcast(unitary=ArbitraryUnitary, pattern="double", wires=wires, parameters=weights)
 
     Args:
         weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
@@ -95,6 +94,7 @@ class ArbitraryUnitary(Operation):
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, weights, wires, do_queue=True, id=None):
 

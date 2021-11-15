@@ -16,15 +16,13 @@ This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import cmath
 import functools
 import math
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.templates.decorator import template
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
@@ -55,7 +53,6 @@ class RX(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
@@ -63,10 +60,19 @@ class RX(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        js = 1j * math.sin(-theta / 2)
 
-        return np.array([[c, js], [js, c]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        if qml.math.get_interface(theta) == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        js = -1j * s
+
+        return qml.math.diag([c, c]) + qml.math.stack(
+            [qml.math.stack([0, js]), qml.math.stack([js, 0])]
+        )
 
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
@@ -102,7 +108,6 @@ class RY(Operation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
@@ -110,10 +115,13 @@ class RY(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array([[c, -s], [s, c]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        return qml.math.diag([c, c]) + qml.math.stack(
+            [qml.math.stack([0, -s]), qml.math.stack([s, 0])]
+        )
 
     def adjoint(self):
         return RY(-self.data[0], wires=self.wires)
@@ -126,7 +134,7 @@ class RY(Operation):
         return [0.0, self.data[0], 0.0]
 
 
-class RZ(DiagonalOperation):
+class RZ(Operation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -149,7 +157,6 @@ class RZ(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
@@ -157,16 +164,24 @@ class RZ(DiagonalOperation):
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        p = cmath.exp(-0.5j * theta)
 
-        return np.array([[p, 0], [0, p.conjugate()]])
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        p = qml.math.exp(-0.5j * theta)
+
+        return qml.math.diag([p, qml.math.conj(p)])
 
     @classmethod
     def _eigvals(cls, *params):
         theta = params[0]
-        p = cmath.exp(-0.5j * theta)
 
-        return np.array([p, p.conjugate()])
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        p = qml.math.exp(-0.5j * theta)
+
+        return qml.math.stack([p, qml.math.conj(p)])
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -179,7 +194,7 @@ class RZ(DiagonalOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class PhaseShift(DiagonalOperation):
+class PhaseShift(Operation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -202,20 +217,34 @@ class PhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.diag([1, exp_part])
 
     @classmethod
     def _eigvals(cls, *params):
         phi = params[0]
-        return np.array([1, cmath.exp(1j * phi)])
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.stack([1, exp_part])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -233,7 +262,7 @@ class PhaseShift(DiagonalOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class ControlledPhaseShift(DiagonalOperation):
+class ControlledPhaseShift(Operation):
     r"""ControlledPhaseShift(phi, wires)
     A qubit controlled phase shift.
 
@@ -260,20 +289,34 @@ class ControlledPhaseShift(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, cmath.exp(1j * phi)]])
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.diag([1, 1, 1, exp_part])
 
     @classmethod
     def _eigvals(cls, *params):
         phi = params[0]
-        return np.array([1, 1, 1, cmath.exp(1j * phi)])
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.stack([1, 1, 1, exp_part])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -330,27 +373,40 @@ class Rot(Operation):
     num_params = 3
     num_wires = 1
     par_domain = "R"
-    is_composable_rotation = True
     grad_method = "A"
 
     @classmethod
     def _matrix(cls, *params):
+        # There are three input parameters to be dealt with
         phi, theta, omega = params
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array(
+        # It might be that they are in different interfaces, e.g.,
+        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # So we need to make sure the matrix comes out having the right type
+        interface = qml.math._multi_dispatch(params)
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        # If anything is not tensorflow, it has to be casted and then
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        mat = [
             [
-                [
-                    cmath.exp(-0.5j * (phi + omega)) * c,
-                    -cmath.exp(0.5j * (phi - omega)) * s,
-                ],
-                [
-                    cmath.exp(-0.5j * (phi - omega)) * s,
-                    cmath.exp(0.5j * (phi + omega)) * c,
-                ],
-            ]
-        )
+                qml.math.exp(-0.5j * (phi + omega)) * c,
+                -qml.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                qml.math.exp(-0.5j * (phi - omega)) * s,
+                qml.math.exp(0.5j * (phi + omega)) * c,
+            ],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
@@ -372,7 +428,7 @@ class Rot(Operation):
         return self.data
 
 
-class MultiRZ(DiagonalOperation):
+class MultiRZ(Operation):
     r"""MultiRZ(theta, wires)
     Arbitrary multi Z rotation.
 
@@ -415,7 +471,7 @@ class MultiRZ(DiagonalOperation):
             array[complex]: The matrix representation
         """
         multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
-        multi_Z_rot_matrix = np.diag(multi_Z_rot_eigs)
+        multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
 
@@ -432,32 +488,39 @@ class MultiRZ(DiagonalOperation):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
         if self.inverse:
             # The matrix is diagonal, so there is no need to transpose
-            return self._matrix(*self.parameters, len(self.wires)).conj()
+            return qml.math.conj(self._matrix(*self.parameters, len(self.wires)))
 
         return self._matrix(*self.parameters, len(self.wires))
 
     @classmethod
     def _eigvals(cls, theta, n):
-        return np.exp(-1j * theta / 2 * pauli_eigs(n))
+        eigs = qml.math.convert_like(pauli_eigs(n), theta)
+
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            eigs = qml.math.cast_like(eigs, 1j)
+
+        return qml.math.exp(-1j * theta / 2 * eigs)
 
     @property
     def eigvals(self):
         # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
         if self.inverse:
-            return self._eigvals(*self.parameters, len(self.wires)).conj()
+            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
 
         return self._eigvals(*self.parameters, len(self.wires))
 
     @staticmethod
-    @template
     def decomposition(theta, wires):
-        for i in range(len(wires) - 1, 0, -1):
-            qml.CNOT(wires=[wires[i], wires[i - 1]])
+        with qml.tape.OperationRecorder() as rec:
+            for i in range(len(wires) - 1, 0, -1):
+                qml.CNOT(wires=[wires[i], wires[i - 1]])
 
-        RZ(theta, wires=wires[0])
+            RZ(theta, wires=wires[0])
 
-        for i in range(len(wires) - 1):
-            qml.CNOT(wires=[wires[i + 1], wires[i]])
+            for i in range(len(wires) - 1):
+                qml.CNOT(wires=[wires[i + 1], wires[i]])
+        return rec.queue
 
     def adjoint(self):
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -523,6 +586,39 @@ class PauliRot(Operation):
                 )
             )
 
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
+        >>> op.label()
+        'R(XYY)'
+        >>> op.label(decimals=2)
+        'R(XYY)\n(0.10)'
+        >>> op.label(base_label="PauliRot")
+        'PauliRot\n(0.10)'
+
+        """
+        op_label = base_label or ("R(" + self.parameters[1] + ")")
+
+        if self.inverse:
+            op_label += "⁻¹"
+
+        if decimals is not None:
+            param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
+            op_label += param_string
+
+        return op_label
+
     @staticmethod
     def _check_pauli_word(pauli_word):
         """Check that the given Pauli word has correct structure.
@@ -537,7 +633,6 @@ class PauliRot(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta = params[0]
         pauli_word = params[1]
 
         if not PauliRot._check_pauli_word(pauli_word):
@@ -546,9 +641,18 @@ class PauliRot(Operation):
                 " Allowed characters are I, X, Y and Z".format(pauli_word)
             )
 
+        theta = params[0]
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
         # Simplest case is if the Pauli is the identity matrix
         if pauli_word == "I" * len(pauli_word):
-            return np.exp(-1j * theta / 2) * np.eye(2 ** len(pauli_word))
+            return qml.math.array(
+                qml.math.exp(-1j * theta / 2) * qml.math.eye(2 ** len(pauli_word)), like=interface
+            )
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -560,12 +664,15 @@ class PauliRot(Operation):
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
-            np.kron,
+            qml.math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
         return expand(
-            conjugation_matrix.T.conj() @ multi_Z_rot_matrix @ conjugation_matrix,
+            qml.math.dot(
+                qml.math.conj(conjugation_matrix),
+                qml.math.dot(multi_Z_rot_matrix, conjugation_matrix),
+            ),
             non_identity_wires,
             list(range(len(pauli_word))),
         )
@@ -589,17 +696,20 @@ class PauliRot(Operation):
             )
 
             # get MultiRZ's generator
-            multi_Z_rot_generator = np.diag(pauli_eigs(len(non_identity_gates)))
+            multi_Z_rot_generator = qml.math.diag(pauli_eigs(len(non_identity_gates)))
 
             # now we conjugate with Hadamard and RX to create the Pauli string
             conjugation_matrix = functools.reduce(
-                np.kron,
+                qml.math.kron,
                 [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
             )
 
             self._generator = [
                 expand(
-                    conjugation_matrix.T.conj() @ multi_Z_rot_generator @ conjugation_matrix,
+                    qml.math.dot(
+                        qml.math.conj(qml.math.T(conjugation_matrix)),
+                        qml.math.dot(multi_Z_rot_generator, conjugation_matrix),
+                    ),
                     non_identity_wires,
                     list(range(len(pauli_word))),
                 ),
@@ -610,40 +720,43 @@ class PauliRot(Operation):
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
         # Identity must be treated specially because its eigenvalues are all the same
         if pauli_word == "I" * len(pauli_word):
-            return np.exp(-1j * theta / 2) * np.ones(2 ** len(pauli_word))
+            return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
 
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
-    @template
     def decomposition(theta, pauli_word, wires):
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
             wires = [wires]
+        with qml.tape.OperationRecorder() as rec:
+            # Check for identity and do nothing
+            if pauli_word == "I" * len(wires):
+                return []
 
-        # Check for identity and do nothing
-        if pauli_word == "I" * len(wires):
-            return
+            active_wires, active_gates = zip(
+                *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+            )
 
-        active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
-        )
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == "X":
+                    Hadamard(wires=[wire])
+                elif gate == "Y":
+                    RX(np.pi / 2, wires=[wire])
 
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                Hadamard(wires=[wire])
-            elif gate == "Y":
-                RX(np.pi / 2, wires=[wire])
+            MultiRZ(theta, wires=list(active_wires))
 
-        MultiRZ(theta, wires=list(active_wires))
-
-        for wire, gate in zip(active_wires, active_gates):
-            if gate == "X":
-                Hadamard(wires=[wire])
-            elif gate == "Y":
-                RX(-np.pi / 2, wires=[wire])
+            for wire, gate in zip(active_wires, active_gates):
+                if gate == "X":
+                    Hadamard(wires=[wire])
+                elif gate == "Y":
+                    RX(-np.pi / 2, wires=[wire])
+        return rec.queue
 
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
@@ -697,7 +810,6 @@ class CRX(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -707,13 +819,29 @@ class CRX(Operation):
         -1 / 2,
     ]
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RX")
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        js = 1j * math.sin(-theta / 2)
+        interface = qml.math.get_interface(theta)
 
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, js], [0, 0, js, c]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+        z = qml.math.zeros([4], like=interface)
+
+        if interface == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+            z = qml.math.cast_like(z, 1j)
+
+        js = -1j * s
+
+        mat = qml.math.diag([1, 1, c, c])
+        return mat + qml.math.stack(
+            [z, z, qml.math.stack([0, 0, 0, js]), qml.math.stack([0, 0, js, 0])]
+        )
 
     @staticmethod
     def decomposition(theta, wires):
@@ -775,7 +903,6 @@ class CRY(Operation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -785,13 +912,22 @@ class CRY(Operation):
         -1 / 2,
     ]
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RY")
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
+        interface = qml.math.get_interface(theta)
 
-        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, c, -s], [0, 0, s, c]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+        z = qml.math.zeros([4], like=interface)
+
+        mat = qml.math.diag([1, 1, c, c])
+        return mat + qml.math.stack(
+            [z, z, qml.math.stack([0, 0, 0, -s]), qml.math.stack([0, 0, s, 0])]
+        )
 
     @staticmethod
     def decomposition(theta, wires):
@@ -811,7 +947,7 @@ class CRY(Operation):
         return Wires(self.wires[0])
 
 
-class CRZ(DiagonalOperation):
+class CRZ(Operation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
@@ -854,7 +990,6 @@ class CRZ(DiagonalOperation):
     num_params = 1
     num_wires = 2
     par_domain = "R"
-    is_composable_rotation = True
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -864,29 +999,30 @@ class CRZ(DiagonalOperation):
         -1 / 2,
     ]
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "RZ")
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        return np.array(
-            [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [0, 0, cmath.exp(-0.5j * theta), 0],
-                [0, 0, 0, cmath.exp(0.5j * theta)],
-            ]
-        )
+
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        exp_part = qml.math.exp(-0.5j * theta)
+
+        return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @classmethod
     def _eigvals(cls, *params):
-        theta = params[0]
-        return np.array(
-            [
-                1,
-                1,
-                cmath.exp(-0.5j * theta),
-                cmath.exp(0.5j * theta),
-            ]
-        )
+        theta = qml.math.flatten(qml.math.stack([params[0]]))[0]
+
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        exp_part = qml.math.exp(-0.5j * theta)
+
+        return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
     def decomposition(lam, wires):
@@ -949,30 +1085,46 @@ class CRot(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rot")
+
     @classmethod
     def _matrix(cls, *params):
         phi, theta, omega = params
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array(
+        # It might be that they are in different interfaces, e.g.,
+        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # So we need to make sure the matrix comes out having the right type
+        interface = qml.math._multi_dispatch(params)
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        # If anything is not tensorflow, it has to be casted
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        mat = [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
             [
-                [1, 0, 0, 0],
-                [0, 1, 0, 0],
-                [
-                    0,
-                    0,
-                    cmath.exp(-0.5j * (phi + omega)) * c,
-                    -cmath.exp(0.5j * (phi - omega)) * s,
-                ],
-                [
-                    0,
-                    0,
-                    cmath.exp(-0.5j * (phi - omega)) * s,
-                    cmath.exp(0.5j * (phi + omega)) * c,
-                ],
-            ]
-        )
+                0,
+                0,
+                qml.math.exp(-0.5j * (phi + omega)) * c,
+                -qml.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                0,
+                0,
+                qml.math.exp(-0.5j * (phi - omega)) * s,
+                qml.math.exp(0.5j * (phi + omega)) * c,
+            ],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, theta, omega, wires):
@@ -990,6 +1142,10 @@ class CRot(Operation):
     def adjoint(self):
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class U1(Operation):
@@ -1025,7 +1181,13 @@ class U1(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        return np.array([[1, 0], [0, cmath.exp(1j * phi)]])
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.diag([1, exp_part])
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1077,12 +1239,20 @@ class U2(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi, lam = params
-        return INV_SQRT2 * np.array(
-            [
-                [1, -cmath.exp(1j * lam)],
-                [cmath.exp(1j * phi), cmath.exp(1j * (phi + lam))],
-            ]
-        )
+
+        interface = qml.math._multi_dispatch(params)
+
+        # If anything is not tensorflow, it has to be casted and then
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+
+        mat = [
+            [1, -qml.math.exp(1j * lam)],
+            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + lam))],
+        ]
+
+        return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(phi, lam, wires):
@@ -1143,15 +1313,28 @@ class U3(Operation):
     @classmethod
     def _matrix(cls, *params):
         theta, phi, lam = params
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array(
-            [
-                [c, -s * cmath.exp(1j * lam)],
-                [s * cmath.exp(1j * phi), c * cmath.exp(1j * (phi + lam))],
-            ]
-        )
+        # It might be that they are in different interfaces, e.g.,
+        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # So we need to make sure the matrix comes out having the right type
+        interface = qml.math._multi_dispatch(params)
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        # If anything is not tensorflow, it has to be casted and then
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        mat = [
+            [c, -s * qml.math.exp(1j * lam)],
+            [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + lam))],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def decomposition(theta, phi, lam, wires):
@@ -1195,6 +1378,7 @@ class IsingXX(Operation):
     num_wires = 2
     par_domain = "R"
     grad_method = "A"
+
     generator = [
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
@@ -1203,17 +1387,18 @@ class IsingXX(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        c = math.cos(phi / 2)
-        s = math.sin(phi / 2)
 
-        return np.array(
-            [
-                [c, 0, 0, -1j * s],
-                [0, c, -1j * s, 0],
-                [0, -1j * s, c, 0],
-                [-1j * s, 0, 0, c],
-            ]
-        )
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        Y = qml.math.convert_like(np.eye(4)[::-1].copy(), phi)
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+            Y = qml.math.cast_like(Y, 1j)
+
+        mat = qml.math.diag([c, c, c, c]) - 1j * s * Y
+        return mat
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1271,17 +1456,17 @@ class IsingYY(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        cos = np.cos(phi / 2)
-        isin = 1.0j * np.sin(phi / 2)
-        return np.array(
-            [
-                [cos, 0.0, 0.0, isin],
-                [0.0, cos, -isin, 0.0],
-                [0.0, -isin, cos, 0.0],
-                [isin, 0.0, 0.0, cos],
-            ],
-            dtype=complex,
-        )
+
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        Y = qml.math.convert_like(np.diag([1, -1, -1, 1])[::-1].copy(), phi)
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+            Y = qml.math.cast_like(Y, 1j)
+
+        return qml.math.diag([c, c, c, c]) + 1j * s * Y
 
     def adjoint(self):
         (phi,) = self.parameters
@@ -1330,9 +1515,14 @@ class IsingZZ(Operation):
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
-        pos_phase = np.exp(1.0j * phi / 2)
-        neg_phase = np.exp(-1.0j * phi / 2)
-        return np.diag([neg_phase, pos_phase, pos_phase, neg_phase])
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
 
     def adjoint(self):
         (phi,) = self.parameters

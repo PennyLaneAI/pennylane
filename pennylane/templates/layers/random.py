@@ -69,19 +69,18 @@ class RandomLayers(Operation):
 
             import pennylane as qml
             import numpy as np
-            from pennylane.templates.layers import RandomLayers
 
             dev = qml.device("default.qubit", wires=2)
             weights = [[0.1, -2.1, 1.4]]
 
             @qml.qnode(dev)
             def circuit1(weights):
-                RandomLayers(weights=weights, wires=range(2))
+                qml.RandomLayers(weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
             @qml.qnode(dev)
             def circuit2(weights):
-                RandomLayers(weights=weights, wires=range(2))
+                qml.RandomLayers(weights=weights, wires=range(2))
                 return qml.expval(qml.PauliZ(0))
 
         >>> np.allclose(circuit1(weights), circuit2(weights))
@@ -89,11 +88,11 @@ class RandomLayers(Operation):
 
         You can verify this by drawing the circuits.
 
-            >>> print(circuit1.draw())
+            >>> print(qml.draw(circuit1)(weights))
             0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
             1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
 
-            >>> print(circuit2.draw())
+            >>> print(qml.draw(circuit2)(weights))
             0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
             1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
 
@@ -107,22 +106,22 @@ class RandomLayers(Operation):
 
             @qml.qnode(dev)
             def circuit_9(weights):
-                RandomLayers(weights=weights, wires=range(2), seed=9)
+                qml.RandomLayers(weights=weights, wires=range(2), seed=9)
                 return qml.expval(qml.PauliZ(0))
 
             @qml.qnode(dev)
             def circuit_12(weights):
-                RandomLayers(weights=weights, wires=range(2), seed=12)
+                qml.RandomLayers(weights=weights, wires=range(2), seed=12)
                 return qml.expval(qml.PauliZ(0))
 
         >>> np.allclose(circuit_9(weights), circuit_12(weights))
         >>> False
 
-        >>> print(circuit_9.draw())
+        >>> print(qml.draw(circuit_9)(weights))
         0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩
         1: ──╰C──RY(-2.1)──RX(1.4)──┤
 
-        >>> print(circuit_12.draw())
+        >>> print(qml.draw(circuit_12)(weights))
         0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩
         1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤
 
@@ -139,7 +138,7 @@ class RandomLayers(Operation):
 
             @qml.qnode(dev)
             def circuit_rnd(weights):
-                RandomLayers(weights=weights, wires=range(2), seed=None)
+                qml.RandomLayers(weights=weights, wires=range(2), seed=None)
                 return qml.expval(qml.PauliZ(0))
 
             first_call = circuit_rnd(weights)
@@ -154,7 +153,7 @@ class RandomLayers(Operation):
 
             @qml.qnode(dev, mutable=False)
             def circuit_rnd(weights):
-                RandomLayers(weights=weights, wires=range(2), seed=None)
+                qml.RandomLayers(weights=weights, wires=range(2), seed=None)
                 return qml.expval(qml.PauliZ(0))
 
             first_call = circuit_rnd(weights)
@@ -171,13 +170,14 @@ class RandomLayers(Operation):
 
         .. code-block:: python
 
-            shape = RandomLayers.shape(n_layers=2, n_rotations=3)
+            shape = qml.RandomLayers.shape(n_layers=2, n_rotations=3)
             weights = np.random.random(size=shape)
     """
 
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(
         self,

@@ -52,7 +52,8 @@ Non-parametric Ops
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Hadamard
     ~pennylane.PauliX
     ~pennylane.PauliY
@@ -121,6 +122,7 @@ Quantum Chemistry Ops
     ~pennylane.DoubleExcitation
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
+    ~pennylane.OrbitalRotation
 
 :html:`</div>`
 
@@ -254,14 +256,15 @@ CV Gates
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Beamsplitter
     ~pennylane.ControlledAddition
     ~pennylane.ControlledPhase
     ~pennylane.CrossKerr
     ~pennylane.CubicPhase
     ~pennylane.Displacement
-    ~pennylane.Interferometer
+    ~pennylane.InterferometerUnitary
     ~pennylane.Kerr
     ~pennylane.QuadraticPhase
     ~pennylane.Rotation

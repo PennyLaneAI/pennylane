@@ -58,6 +58,9 @@ class QNode:
               (floats, ints, lists) as well as NumPy array arguments,
               and returns NumPy arrays.
 
+            * ``"jax"``:  Allows JAX to backpropogate through the QNode.
+              The QNode accepts and returns a single expectation value or variance.
+
             * ``"torch"``: Allows PyTorch to backpropogate
               through the QNode. The QNode accepts and returns Torch tensors.
 
@@ -115,25 +118,24 @@ class QNode:
             quantum structure will only be constructed on the *first* evaluation of the QNode,
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
-
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
-
-    Keyword Args:
-        h=1e-7 (float): step size for the finite difference method
-        order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+        h (float): step size for the finite difference method
+        order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-        shift=pi/2 (float): the size of the shift for two-term parameter-shift gradient computations
-        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+        shift (float): the size of the shift for two-term parameter-shift gradient computations
+        adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
-        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+        argnum (int, list(int), None): Which argument(s) to compute the Jacobian
             with respect to. When there are fewer parameters specified than the
             total number of trainable parameters, the jacobian is being estimated. Note
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
+        kwargs: used to catch all unrecognized keyword arguments and provide a user warning
+            about them
 
     **Example**
 
@@ -154,7 +156,12 @@ class QNode:
         diff_method="best",
         mutable=True,
         max_expansion=10,
-        **diff_options,
+        h=1e-7,
+        order=1,
+        shift=np.pi / 2,
+        adjoint_cache=True,
+        argnum=None,
+        **kwargs,
     ):
 
         if diff_method is None:
@@ -186,6 +193,23 @@ class QNode:
         else:
             self._qfunc_uses_shots_arg = False
 
+        if kwargs:
+            for key in kwargs:
+                warnings.warn(
+                    f"'{key}' is unrecognized, and will not be included in your computation. "
+                    "Please review the QNode class or qnode decorator for the list of available "
+                    "keyword variables.",
+                    UserWarning,
+                )
+
+        diff_options = {
+            "h": h,
+            "order": order,
+            "shift": shift,
+            "adjoint_cache": adjoint_cache,
+            "argnum": argnum,
+        }
+
         self.mutable = mutable
         self.func = func
         self._original_device = device
@@ -204,7 +228,7 @@ class QNode:
             self.diff_method = self._get_best_diff_method(tape_diff_options)
 
         # The arguments to be passed to JacobianTape.jacobian
-        self.diff_options = diff_options or {}
+        self.diff_options = diff_options
         self.diff_options.update(tape_diff_options)
 
         self.dtype = np.float64
@@ -342,6 +366,12 @@ class QNode:
             qml.QuantumFunctionError: if the device does not support backpropagation, or the
             interface provided is not compatible with the device
         """
+        if device.shots is not None:
+            raise qml.QuantumFunctionError(
+                "Devices with finite shots are incompatible with backpropogation. "
+                "Please set shots=None or choose a different diff_method."
+            )
+
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
 
@@ -565,7 +595,14 @@ class QNode:
         state_returns = any([m.return_type is State for m in measurement_processes])
 
         # apply the interface (if any)
-        if self.diff_options["method"] != "backprop" and self.interface is not None:
+
+        explicit_backprop = self.diff_options["method"] == "backprop"
+        best_and_passthru = (
+            self.diff_options["method"] == "best"
+            and "passthru_interface" in self.device.capabilities()
+        )
+        backprop_diff = explicit_backprop or best_and_passthru
+        if not backprop_diff and self.interface is not None:
             # pylint: disable=protected-access
             if state_returns and self.interface in ["torch", "tf"]:
                 # The state is complex and we need to indicate this in the to_torch or to_tf
@@ -617,6 +654,10 @@ class QNode:
         # provide the jacobian options
         self.qtape.jacobian_options = self.diff_options
 
+        if self.diff_options["method"] == "backprop":
+            params = self.qtape.get_parameters(trainable_only=False)
+            self.qtape.trainable_params = qml.math.get_trainable_indices(params)
+
     def __call__(self, *args, **kwargs):
 
         # If shots specified in call but not in qfunc signature,
@@ -632,15 +673,20 @@ class QNode:
             # construct the tape
             self.construct(args, kwargs)
 
-        # If the observable contains a Hamiltonian and the device does not
-        # support Hamiltonians, or if the simulation uses finite shots,
-        # split tape into multiple tapes of diagonalizable known observables.
-        # In future, this logic should be moved to the device
-        # to allow for more efficient batch execution.
-        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
-        finite_shots = self.device.shots is not None
+        # Under certain conditions, split tape into multiple tapes and recombine them.
+        # Else just execute the tape, and let the device take care of things.
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in self.qtape.observables]
-        if hamiltonian_in_obs and (not supports_hamiltonian or finite_shots):
+        # if the device does not support Hamiltonians, we split them
+        supports_hamiltonian = self.device.supports_observable("Hamiltonian")
+        # if the user wants a finite-shots computation we always split Hamiltonians
+        finite_shots = self.device.shots is not None
+        # if a grouping has been computed for all Hamiltonians we assume that they should be split
+        grouping_known = all(
+            obs.grouping_indices is not None
+            for obs in self.qtape.observables
+            if obs.name == "Hamiltonian"
+        )
+        if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             try:
                 tapes, fn = qml.transforms.hamiltonian_expand(self.qtape, group=False)
             except ValueError as e:
@@ -685,7 +731,15 @@ class QNode:
 
         return qml.math.squeeze(res)
 
-    def metric_tensor(self, *args, diag_approx=False, only_construct=False, **kwargs):
+    def metric_tensor(
+        self,
+        *args,
+        allow_nonunitary=True,
+        approx=None,
+        diag_approx=None,
+        only_construct=False,
+        **kwargs,
+    ):
         """Evaluate the value of the metric tensor.
 
         Args:
@@ -698,9 +752,17 @@ class QNode:
         Returns:
             array[float]: metric tensor
         """
-        return qml.metric_tensor(self, diag_approx=diag_approx, only_construct=only_construct)(
-            *args, **kwargs
+        warnings.warn(
+            "The QNode.metric_tensor method has been deprecated. "
+            "Please use the qml.metric_tensor transform instead.",
+            UserWarning,
         )
+
+        if only_construct:
+            self.construct(args, kwargs)
+            return qml.metric_tensor.construct(self.qtape, allow_nonunitary, approx, diag_approx)
+
+        return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False
@@ -773,6 +835,12 @@ class QNode:
           a: ──╰C──RX(0.2)──┤
          -1: ───H───────────┤
         """
+        warnings.warn(
+            "The QNode.draw method has been deprecated. "
+            "Please use the qml.draw(qnode)(*args) function instead.",
+            UserWarning,
+        )
+
         if self.qtape is None:
             raise qml.QuantumFunctionError(
                 "The QNode can only be drawn after its quantum tape has been constructed."
@@ -1016,13 +1084,19 @@ class QNode:
     }
 
 
+# pylint:disable=too-many-arguments
 def qnode(
     device,
     interface="autograd",
     diff_method="best",
     mutable=True,
     max_expansion=10,
-    **diff_options,
+    h=1e-7,
+    order=1,
+    shift=np.pi / 2,
+    adjoint_cache=True,
+    argnum=None,
+    **kwargs,
 ):
     """Decorator for creating QNodes.
 
@@ -1099,24 +1173,24 @@ def qnode(
             quantum structure will only be constructed on the *first* evaluation of the QNode,
             and is stored and re-used for further quantum evaluations. Only set this to False
             if it is known that the underlying quantum structure is **independent of QNode input**.
-
         max_expansion (int): The number of times the internal circuit should be expanded when
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
-
-    Keyword Args:
-        h=1e-7 (float): Step size for the finite difference method.
-        order=1 (int): The order of the finite difference method to use. ``1`` corresponds
+        h (float): step size for the finite difference method
+        order (int): The order of the finite difference method to use. ``1`` corresponds
             to forward finite differences, ``2`` to centered finite differences.
-        adjoint_cache=True (bool): for TensorFlow and PyTorch interfaces and adjoint differentiation,
+        shift (float): the size of the shift for two-term parameter-shift gradient computations
+        adjoint_cache (bool): For TensorFlow and PyTorch interfaces and adjoint differentiation,
             this indicates whether to save the device state after the forward pass.  Doing so saves a
             forward execution. Device state automatically reused with autograd and JAX interfaces.
-        argnum=None (int, list(int), None): Which argument(s) to compute the Jacobian
+        argnum (int, list(int), None): Which argument(s) to compute the Jacobian
             with respect to. When there are fewer parameters specified than the
             total number of trainable parameters, the jacobian is being estimated. Note
             that this option is only applicable for the following differentiation methods:
             ``"parameter-shift"``, ``"finite-diff"`` and ``"reversible"``.
+        kwargs: used to catch all unrecognized keyword arguments and provide a user warning
+            about them
 
     **Example**
 
@@ -1137,7 +1211,12 @@ def qnode(
             diff_method=diff_method,
             mutable=mutable,
             max_expansion=max_expansion,
-            **diff_options,
+            h=h,
+            order=order,
+            shift=shift,
+            adjoint_cache=adjoint_cache,
+            argnum=argnum,
+            **kwargs,
         )
         return update_wrapper(qn, func)
 

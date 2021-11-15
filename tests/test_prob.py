@@ -155,3 +155,320 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
     # Check that they agree up to numeric tolerance
     assert np.allclose(res_F, res_A, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_generalize_param_one_qubit(hermitian, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RZ(x, wires=0)
+        return qml.probs(op=qml.Hermitian(hermitian, wires=0))
+
+    res = circuit(0.56)
+
+    def circuit_rotated(x):
+        qml.RZ(x, wires=0)
+        qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
+
+    state = np.array([1, 0])
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56)
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 1)
+    expected = expected.flatten()
+
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_generalize_param(hermitian, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circuit(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        return qml.probs(op=qml.Hermitian(hermitian, wires=0))
+
+    res = circuit(0.56, 0.1)
+
+    def circuit_rotated(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
+
+    state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 3)
+    expected = np.einsum("ijk->i", expected).flatten()
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_generalize_param_multiple(hermitian, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.qnode(dev)
+    def circuit(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        return (
+            qml.probs(op=qml.Hermitian(hermitian, wires=0)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[2]),
+        )
+
+    res = circuit(0.56, 0.1)
+    res = np.reshape(res, (3, 2))
+
+    def circuit_rotated(x, y):
+        qml.RZ(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(y, wires=1)
+        qml.CNOT(wires=[0, 2])
+        qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
+
+    state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    state = np.dot(matrix, state)
+
+    expected = np.reshape(np.abs(state) ** 2, [2] * 3)
+    expected_0 = np.einsum("ijk->i", expected).flatten()
+    expected_1 = np.einsum("ijk->j", expected).flatten()
+    expected_2 = np.einsum("ijk->k", expected).flatten()
+
+    assert np.allclose(res[0], expected_0, atol=tol, rtol=0)
+    assert np.allclose(res[1], expected_1, atol=tol, rtol=0)
+    assert np.allclose(res[2], expected_2, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+@pytest.mark.parametrize("wire", [0, 1, 2, 3])
+def test_prob_generalize_initial_state(hermitian, wire, init_state, tol):
+    """Test that the correct probability is returned."""
+    dev = qml.device("default.qubit", wires=4)
+    state = init_state(4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.QubitStateVector(state, wires=list(range(4)))
+        qml.PauliX(wires=0)
+        qml.PauliX(wires=1)
+        qml.PauliX(wires=2)
+        qml.PauliX(wires=3)
+        return qml.probs(op=qml.Hermitian(hermitian, wires=wire))
+
+    res = circuit()
+
+    def circuit_rotated():
+        qml.PauliX(wires=0)
+        qml.PauliX(wires=1)
+        qml.PauliX(wires=2)
+        qml.PauliX(wires=3)
+        qml.Hermitian(hermitian, wires=wire).diagonalizing_gates()
+
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
+
+    if wire == 0:
+        expected = np.einsum("ijkl->i", expected).flatten()
+    elif wire == 1:
+        expected = np.einsum("ijkl->j", expected).flatten()
+    elif wire == 2:
+        expected = np.einsum("ijkl->k", expected).flatten()
+    elif wire == 3:
+        expected = np.einsum("ijkl->l", expected).flatten()
+
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
+@pytest.mark.parametrize("wire", [0, 1, 2, 3])
+def test_operation_prob(operation, wire, init_state, tol):
+    "Test the rotated probability with different wires and rotating operations."
+    dev = qml.device("default.qubit", wires=4)
+    state = init_state(4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.QubitStateVector(state, wires=list(range(4)))
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        return qml.probs(op=operation(wires=wire))
+
+    res = circuit()
+
+    def circuit_rotated():
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        operation(wires=wire).diagonalizing_gates()
+
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
+
+    if wire == 0:
+        expected = np.einsum("ijkl->i", expected).flatten()
+    elif wire == 1:
+        expected = np.einsum("ijkl->j", expected).flatten()
+    elif wire == 2:
+        expected = np.einsum("ijkl->k", expected).flatten()
+    elif wire == 3:
+        expected = np.einsum("ijkl->l", expected).flatten()
+
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("operation", [qml.PauliX, qml.PauliY, qml.Hadamard])
+@pytest.mark.parametrize("wire", [0, 1, 2, 3])
+def test_operation_prob(operation, wire, init_state, tol):
+    "Test the rotated probability with different wires and rotating operations."
+    dev = qml.device("default.qubit", wires=4)
+    state = init_state(4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.QubitStateVector(state, wires=list(range(4)))
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        return qml.probs(op=operation(wires=wire))
+
+    res = circuit()
+
+    def circuit_rotated():
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        operation(wires=wire).diagonalizing_gates()
+
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
+
+    if wire == 0:
+        expected = np.einsum("ijkl->i", expected).flatten()
+    elif wire == 1:
+        expected = np.einsum("ijkl->j", expected).flatten()
+    elif wire == 2:
+        expected = np.einsum("ijkl->k", expected).flatten()
+    elif wire == 3:
+        expected = np.einsum("ijkl->l", expected).flatten()
+
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("observable", [(qml.PauliX, qml.PauliY)])
+def test_observable_tensor_prob(observable, init_state, tol):
+    "Test the rotated probability with a tensor observable."
+    dev = qml.device("default.qubit", wires=4)
+    state = init_state(4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.QubitStateVector(state, wires=list(range(4)))
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        return qml.probs(op=observable[0](wires=0) @ observable[1](wires=1))
+
+    res = circuit()
+
+    def circuit_rotated():
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        observable[0](wires=0).diagonalizing_gates()
+        observable[1](wires=1).diagonalizing_gates()
+
+    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    state = np.dot(matrix, state)
+    expected = np.reshape(np.abs(state) ** 2, [2] * 4)
+
+    expected = np.einsum("ijkl->ij", expected).flatten()
+
+    assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("coeffs, obs", [([1, 1], [qml.PauliX(wires=0), qml.PauliX(wires=1)])])
+def test_hamiltonian_error(coeffs, obs, init_state, tol):
+    "Test that an error is returned for hamiltonians."
+    H = qml.Hamiltonian(coeffs, obs)
+
+    dev = qml.device("default.qubit", wires=4)
+    state = init_state(4)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.QubitStateVector(state, wires=list(range(4)))
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        qml.PauliY(wires=2)
+        qml.PauliZ(wires=3)
+        return qml.probs(op=H)
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="Hamiltonians are not supported for rotating probabilities.",
+    ):
+        circuit()
+
+
+@pytest.mark.parametrize(
+    "operation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]
+)
+def test_generalize_prob_not_hermitian(operation):
+    """Test that the Operation or Observables has a diagonalizing_gates attribute."""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.PauliX(wires=0)
+        qml.PauliZ(wires=1)
+        return qml.probs(op=operation(0.56, wires=[0, 1]))
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="has not diagonalizing_gates attribute: cannot be used to rotate the probability",
+    ):
+        circuit()
+
+
+@pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
+def test_prob_wires_and_hermitian(hermitian):
+    """Test that we can cannot give simultaneously wires and a hermitian."""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.PauliX(wires=0)
+        return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="Cannot specify the wires to probs if an observable is "
+        "provided. The wires for probs will be determined directly from the observable.",
+    ):
+        circuit()

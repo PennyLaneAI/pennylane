@@ -16,8 +16,6 @@ This module contains functions for adding the Autograd interface
 to a PennyLane Device class.
 """
 # pylint: disable=too-many-arguments
-import inspect
-
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
@@ -103,15 +101,19 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes):
+    with qml.tape.Unwrap(*tapes, set_trainable=False):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        res[i] = np.tensor(r)
 
-        if res[i].dtype == np.dtype("object"):
+        if isinstance(res[i], np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
-            res[i] = np.hstack(r)
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+            res[i] = np.tensor(r)
+
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(np.tensor(r) for r in res[i])
 
     return res, jacs
 
@@ -160,7 +162,7 @@ def vjp(
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
-        dy = dy[0]
+        dy = [qml.math.T(d) for d in dy[0]]
         jacs = ans[1]
 
         if jacs:
@@ -171,17 +173,12 @@ def vjp(
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-            # Temporary: check if the gradient function is a differentiable transform.
-            # For the moment, simply check if it is part of the `qml.gradients` package.
-            # Longer term, we should have a way of checking this directly
-            # (e.g., isinstance(gradient_fn, GradientTransform))
-            module_name = getattr(inspect.getmodule(gradient_fn), "__name__", "")
-
-            if "pennylane.gradients" in module_name:
+            if isinstance(gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    with qml.tape.Unwrap(*tapes):
+                    with qml.tape.Unwrap(*tapes, set_trainable=False):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,
@@ -190,7 +187,7 @@ def vjp(
                             gradient_kwargs=gradient_kwargs,
                         )
 
-                    vjps = processing_fn(execute_fn(vjp_tapes)[0])
+                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
                     vjp_tapes, processing_fn = qml.gradients.batch_vjp(
@@ -212,26 +209,19 @@ def vjp(
                         )
                     )
 
-            elif (
-                hasattr(gradient_fn, "fn")
-                and inspect.ismethod(gradient_fn.fn)
-                and gradient_fn.fn.__self__ is device
-            ):
-                # Gradient function is a device method.
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
                 # Note that unlike the previous branch:
                 #
                 # - there is no recursion here
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
                 vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
-
-            else:
-                raise ValueError("Unknown gradient function.")
 
         return [qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps]
 

@@ -21,7 +21,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -45,9 +45,11 @@ class Hadamard(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "H"
 
     @classmethod
     def _matrix(cls, *params):
@@ -107,10 +109,12 @@ class PauliX(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -171,10 +175,12 @@ class PauliY(Observable, Operation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -224,7 +230,7 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-class PauliZ(Observable, DiagonalOperation):
+class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
     The Pauli Z operator
 
@@ -241,10 +247,12 @@ class PauliZ(Observable, DiagonalOperation):
     num_params = 0
     num_wires = 1
     par_domain = None
-    is_self_inverse = True
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -273,7 +281,7 @@ class PauliZ(Observable, DiagonalOperation):
         return [np.pi, 0.0, 0.0]
 
 
-class S(DiagonalOperation):
+class S(Operation):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -318,7 +326,7 @@ class S(DiagonalOperation):
         return [np.pi / 2, 0.0, 0.0]
 
 
-class T(DiagonalOperation):
+class T(Operation):
     r"""T(wires)
     The single-qubit T gate
 
@@ -437,9 +445,11 @@ class CNOT(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     @classmethod
     def _matrix(cls, *params):
@@ -456,7 +466,7 @@ class CNOT(Operation):
         return Wires(self.wires[0])
 
 
-class CZ(DiagonalOperation):
+class CZ(Operation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -480,11 +490,12 @@ class CZ(DiagonalOperation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
-    is_symmetric_over_all_wires = True
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Z"
 
     @classmethod
     def _matrix(cls, *params):
@@ -526,7 +537,6 @@ class CY(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
     basis = "Y"
     matrix = np.array(
         [
@@ -536,6 +546,9 @@ class CY(Operation):
             [0, 0, 1j, 0],
         ]
     )
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "Y"
 
     @classmethod
     def _matrix(cls, *params):
@@ -576,8 +589,6 @@ class SWAP(Operation):
     num_params = 0
     num_wires = 2
     par_domain = None
-    is_self_inverse = True
-    is_symmetric_over_all_wires = True
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
@@ -599,10 +610,6 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[:2])
 
 
 class ISWAP(Operation):
@@ -745,6 +752,7 @@ class CSWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_params = 0
+    is_self_inverse = True
     num_wires = 3
     par_domain = None
     matrix = np.array(
@@ -759,6 +767,9 @@ class CSWAP(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "SWAP"
 
     @classmethod
     def _matrix(cls, *params):
@@ -775,6 +786,10 @@ class CSWAP(Operation):
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class Toffoli(Operation):
@@ -806,8 +821,6 @@ class Toffoli(Operation):
     num_params = 0
     num_wires = 3
     par_domain = None
-    is_self_inverse = True
-    is_symmetric_over_control_wires = True
     basis = "X"
     matrix = np.array(
         [
@@ -821,6 +834,9 @@ class Toffoli(Operation):
             [0, 0, 0, 0, 0, 0, 1, 0],
         ]
     )
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     @classmethod
     def _matrix(cls, *params):
@@ -909,6 +925,7 @@ class MultiControlledX(Operation):
 
     """
     num_params = 0
+    is_self_inverse = True
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -964,6 +981,9 @@ class MultiControlledX(Operation):
     @property
     def control_wires(self):
         return self._control_wires
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):

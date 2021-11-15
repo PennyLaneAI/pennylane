@@ -453,7 +453,7 @@ class TestJacobianIntegration:
 
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(p):
             qml.RX(3 * p[0], wires=0)
             qml.RY(p[1], wires=0)
@@ -484,7 +484,7 @@ class TestJacobianIntegration:
         p = np.array([x, y, z])
         dev = qml.device("default.tensor.tf", wires=1, representation=rep)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
@@ -524,8 +524,8 @@ class TestJacobianIntegration:
         dev1 = qml.device("default.tensor.tf", wires=3, representation=rep)
         dev2 = qml.device("default.qubit", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method=diff_method, h=1e-7, interface="tf")
-        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", h=1e-7, interface="tf")
+        circuit1 = qml.QNode(circuit, dev1, diff_method=diff_method, interface="tf")
+        circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift", interface="tf")
 
         with tf.GradientTape() as tape1:
             res1 = circuit1(p)
@@ -567,7 +567,7 @@ class TestInterfaceDeviceIntegration:
 
         dev = qml.device("default.tensor.tf", wires=2, representation=rep)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit_fn(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])

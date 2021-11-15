@@ -1177,7 +1177,7 @@ class TestDefaultTensorIntegration:
 
         assert dev.supports_operation(name)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.QubitStateVector(np.array([1 / 2, 0, 0, math.sqrt(3) / 2]), wires=Wires([0, 1]))
             op(*par, wires=Wires([0, 1]))
@@ -1829,3 +1829,10 @@ class TestTensorSample:
             )
         ) / 16
         assert np.allclose(var, expected, atol=tol, rtol=0)
+
+
+def test_deprecation_warning():
+    """Test the deprecation warning."""
+
+    with pytest.warns(UserWarning, match="The default.tensor device is deprecated"):
+        qml.device("default.tensor", wires=3)

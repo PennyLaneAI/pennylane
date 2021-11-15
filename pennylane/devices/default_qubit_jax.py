@@ -14,12 +14,8 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-
-import warnings
-
-from pennylane.operation import DiagonalOperation
+import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.devices import jax_ops
 
 import numpy as np
 
@@ -135,30 +131,6 @@ class DefaultQubitJax(DefaultQubit):
     name = "Default qubit (jax) PennyLane plugin"
     short_name = "default.qubit.jax"
 
-    parametric_ops = {
-        "PhaseShift": jax_ops.PhaseShift,
-        "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
-        "CPhase": jax_ops.ControlledPhaseShift,
-        "RX": jax_ops.RX,
-        "RY": jax_ops.RY,
-        "RZ": jax_ops.RZ,
-        "Rot": jax_ops.Rot,
-        "CRX": jax_ops.CRX,
-        "CRY": jax_ops.CRY,
-        "CRZ": jax_ops.CRZ,
-        "CRot": jax_ops.CRot,
-        "MultiRZ": jax_ops.MultiRZ,
-        "IsingXX": jax_ops.IsingXX,
-        "IsingYY": jax_ops.IsingYY,
-        "IsingZZ": jax_ops.IsingZZ,
-        "SingleExcitation": jax_ops.SingleExcitation,
-        "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
-        "DoubleExcitation": jax_ops.DoubleExcitation,
-        "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
-    }
-
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
@@ -210,35 +182,6 @@ class DefaultQubitJax(DefaultQubit):
         new_array = new_array.at[indices].set(array)
         return new_array
 
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix
-
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
         probability.
@@ -252,15 +195,13 @@ class DefaultQubitJax(DefaultQubit):
             List[int]: the sampled basis states
         """
         if self.shots is None:
-            warnings.warn(
-                "The number of shots has to be explicitly set on the jax device "
-                "when using sample-based measurements. Since no shots are specified, "
-                "a default of 1000 shots is used.\n"
-                "This warning will be replaced with an error in a future release.",
-                UserWarning,
+
+            raise qml.QuantumFunctionError(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements."
             )
 
-        shots = self.shots or 1000
+        shots = self.shots
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.

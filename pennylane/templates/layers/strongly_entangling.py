@@ -55,26 +55,24 @@ class StronglyEntanglingLayers(Operation):
         **Parameter shape**
 
         The expected shape for the weight tensor can be computed with the static method
-        :meth:`~.SimplifiedTwoDesign.shape` and used when creating randomly
+        :meth:`~.qml.StronglyEntanglingLayers.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
     """
     num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
 
-        shape = qml.math.shape(weights)
+        shape = qml.math.shape(weights)[-3:]
         self.n_layers = shape[0]
-
-        if len(shape) != 3:
-            raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
         if shape[1] != len(wires):
             raise ValueError(
@@ -116,9 +114,9 @@ class StronglyEntanglingLayers(Operation):
 
                 for i in range(len(self.wires)):
                     qml.Rot(
-                        self.parameters[0][l, i, 0],
-                        self.parameters[0][l, i, 1],
-                        self.parameters[0][l, i, 2],
+                        self.parameters[0][..., l, i, 0],
+                        self.parameters[0][..., l, i, 1],
+                        self.parameters[0][..., l, i, 2],
                         wires=self.wires[i],
                     )
 

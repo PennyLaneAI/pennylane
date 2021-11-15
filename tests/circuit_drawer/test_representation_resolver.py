@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.circuit_drawer import RepresentationResolver
+from pennylane.circuit_drawer.representation_resolver import RepresentationResolver
 from pennylane.measure import state
 
 
@@ -32,7 +32,7 @@ def unicode_representation_resolver():
 @pytest.fixture
 def ascii_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
-    return RepresentationResolver(charset=qml.circuit_drawer.AsciiCharSet)
+    return RepresentationResolver(charset=qml.circuit_drawer.charsets.AsciiCharSet)
 
 
 class TestRepresentationResolver:
@@ -139,8 +139,8 @@ class TestRepresentationResolver:
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
             (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 1, "InterferometerUnitary(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 3, "InterferometerUnitary(M0)"),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
             (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
             (
@@ -280,8 +280,8 @@ class TestRepresentationResolver:
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
             (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 1, "Interferometer(M0)"),
-            (qml.Interferometer(np.eye(4), wires=[1, 3]), 3, "Interferometer(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 1, "InterferometerUnitary(M0)"),
+            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 3, "InterferometerUnitary(M0)"),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
             (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
             (
