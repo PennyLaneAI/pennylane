@@ -521,7 +521,6 @@ all_ids = [
 ]
 
 all_spectra = [
-    None,
     {
         "x": {0: [0.0], 1: [4.2, 0.0, 0.2]},
         "y": {3: [0.3, 0.0, 0.2], 1: [0.0, 1.1, 5.2], 5: [0.0, 1.2]},
@@ -530,7 +529,6 @@ all_spectra = [
 ]
 
 all_shifts = [
-    None,
     {
         "x": {0: [-1.3], 1: [1.0, -0.4, 4.2, 2.3, -1.5]},
         "y": {
@@ -543,7 +541,6 @@ all_shifts = [
 ]
 
 all_nums_frequency = [
-    None,
     {
         "x": {0: 1, 1: 4},
         "y": {3: 1, 1: 1, 5: 9},
@@ -556,94 +553,145 @@ class TestPrepareJobs:
     """Tests the subroutine that determines the 1D reconstruction
     jobs to be carried out for a call to ``reconstruct`` ."""
 
+    def nested_dict_ids_match(self, ndict, ids):
+        if ids.keys() != ndict.keys():
+            return False
+        for id_, ids_ in ids.items():
+            if list(ids_) != list(ndict[id_].keys()):
+                return False
+        return True
+
+    def ids_match(self, ids_in, ids_out):
+        if type(ids_in) == dict:
+            return ids_in == ids_out
+        else:
+            return all(id_ in ids_in for id_ in ids_out)
+
+    @pytest.mark.parametrize("ids", all_ids)
+    @pytest.mark.parametrize("shifts", all_shifts)
+    def test_missing_spectra_and_nums_frequency(self, ids, shifts, tol):
+        """Test that an error is raised if both, spectra
+        and nums_frequency are missing."""
+        with pytest.raises(ValueError, match="Either nums_frequency or spectra"):
+            _prepare_jobs(ids, nums_frequency=None, spectra=None, shifts=shifts, atol=tol)
+
+    @pytest.mark.parametrize("ids", all_ids)
+    @pytest.mark.parametrize("spectra", all_spectra)
+    def test_with_spectra(self, ids, spectra, tol):
+        """Test the prepared jobs when using spectra and shifts."""
+        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
+            ids,
+            nums_frequency=None,
+            spectra=spectra,
+            shifts=None,
+            atol=tol,
+        )
+        if ids is None:
+            assert self.nested_dict_ids_match(spectra, ids_)
+        else:
+            assert self.ids_match(ids, ids_)
+
+        # Check function to use for 1D reconstructions
+        assert recon_fn == _reconstruct_gen
+
+        # Check reconstruction jobs to be run
+        assert self.nested_dict_ids_match(jobs, ids_)
+
+        # Check all job details
+        for _id, _jobs in jobs.items():
+            for idx, job in _jobs.items():
+                if len(spectra[_id][idx]) == 1:
+                    assert job is None
+                    continue
+                assert list(job.keys()) == ["shifts", "spectrum"]
+                assert job["shifts"] is None
+                assert job["spectrum"] == spectra[_id][idx]
+        assert need_f0
+
     @pytest.mark.parametrize("ids", all_ids)
     @pytest.mark.parametrize("spectra", all_spectra)
     @pytest.mark.parametrize("shifts", all_shifts)
+    def test_with_spectra_and_shifts(self, ids, spectra, shifts, tol):
+        """Test the prepared jobs when using spectra and shifts."""
+        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
+            ids,
+            nums_frequency=None,
+            spectra=spectra,
+            shifts=shifts,
+            atol=tol,
+        )
+        if ids is None:
+            assert self.nested_dict_ids_match(spectra, ids_)
+        else:
+            assert self.ids_match(ids, ids_)
+
+        # Check function to use for 1D reconstructions
+        assert recon_fn == _reconstruct_gen
+
+        # Check reconstruction jobs to be run
+        assert self.nested_dict_ids_match(jobs, ids_)
+
+        # Check all job details
+        for _id, _jobs in jobs.items():
+            for idx, job in _jobs.items():
+                if len(spectra[_id][idx]) == 1:
+                    assert job is None
+                    continue
+                assert list(job.keys()) == ["shifts", "spectrum"]
+                assert job["shifts"] == shifts[_id][idx]
+                assert job["spectrum"] == spectra[_id][idx]
+        # sometimes need fun at zero if general reconstruction is performed
+        _all_shifts = chain.from_iterable(
+            [
+                sum(
+                    [
+                        __shifts
+                        for par_idx, __shifts in _shifts.items()
+                        if id_ in ids_ and par_idx in ids_[id_]
+                    ],
+                    [],
+                )
+                for id_, _shifts in shifts.items()
+            ],
+        )
+        assert need_f0 == any(np.isclose(_shift, 0.0, atol=tol, rtol=0) for _shift in _all_shifts)
+
+    @pytest.mark.parametrize("ids", all_ids)
+    @pytest.mark.parametrize("spectra", all_spectra)
     @pytest.mark.parametrize("nums_frequency", all_nums_frequency)
-    def test_prepjobs(self, ids, spectra, shifts, nums_frequency, tol):
+    def test_with_nums_frequency(self, ids, spectra, nums_frequency, tol):
+        """Test the prepared jobs when using nums_frequency."""
         """Test ``_prepare_jobs`` with a large variety of test cases (cheap)."""
-        if nums_frequency is None and spectra is None:
-            with pytest.raises(ValueError, match="Either nums_frequency or spectra"):
-                _prepare_jobs(ids, nums_frequency, spectra, shifts, atol=tol)
-            return
 
         ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
             ids,
             nums_frequency,
-            spectra,
-            shifts,
+            None,
+            None,
             atol=tol,
         )
 
         # Check ids
         if ids is None:
-            # Test automatic generation of ids
-            if nums_frequency is None:
-                assert ids_.keys() == spectra.keys()
-                for _id, _ids in ids_.items():
-                    assert _ids == spectra[_id].keys()
-            else:
-                assert ids_.keys() == nums_frequency.keys()
-                for _id, _ids in ids_.items():
-                    assert _ids == nums_frequency[_id].keys()
-
+            assert self.nested_dict_ids_match(nums_frequency, ids_)
         else:
-            assert all(id_ in ids for id_ in ids_.keys())
-            if type(ids) == dict:
-                assert all(ids_[id_] == ids[id_] for id_ in ids_.keys())
+            assert self.ids_match(ids, ids_)
 
         # Check function to use for 1D reconstructions
-        assert recon_fn == _reconstruct_gen if nums_frequency is None else _reconstruct_equ
-        # Check reconstruction jobs to be run
-        assert jobs.keys() == ids_.keys()
-        for _id, _jobs in jobs.items():
-            _jobs.keys() == ids_[_id]
-        # Check all job details
-        if nums_frequency is None:
-            # for spectra given
-            for _id, _jobs in jobs.items():
-                for idx, job in _jobs.items():
-                    if len(spectra[_id][idx]) == 1:
-                        assert job is None
-                        continue
-                    assert list(job.keys()) == ["shifts", "spectrum"]
-                    if shifts is not None:
-                        assert job["shifts"] == shifts[_id][idx]
-                    else:
-                        assert job["shifts"] is None
-                    job["spectrum"] == spectra[_id][idx]
-            if shifts is not None:
-                # sometimes need fun at zero if general reconstruction is performed
-                _all_shifts = chain.from_iterable(
-                    [
-                        sum(
-                            [
-                                __shifts
-                                for par_idx, __shifts in _shifts.items()
-                                if id_ in ids_ and par_idx in ids_[id_]
-                            ],
-                            [],
-                        )
-                        for id_, _shifts in shifts.items()
-                    ],
-                )
-                assert need_f0 == any(
-                    np.isclose(_shift, 0.0, atol=tol, rtol=0) for _shift in _all_shifts
-                )
-            else:
-                assert need_f0
+        assert recon_fn == _reconstruct_equ
 
-        else:
-            # for nums_frequency given
-            for _id, _jobs in jobs.items():
-                for idx, job in _jobs.items():
-                    if nums_frequency[_id][idx] == 0:
-                        assert job is None
-                        continue
-                    assert list(job.keys()) == ["num_frequency"]
-                    assert job["num_frequency"] == nums_frequency[_id][idx]
-            # always need fun at zero if equidistant reconstruction is performed
-            assert need_f0
+        # Check reconstruction jobs to be run
+        assert self.nested_dict_ids_match(jobs, ids_)
+
+        for _id, _jobs in jobs.items():
+            for idx, job in _jobs.items():
+                if nums_frequency[_id][idx] == 0:
+                    assert job is None
+                    continue
+                assert list(job.keys()) == ["num_frequency"]
+                assert job["num_frequency"] == nums_frequency[_id][idx]
+        # always need fun at zero if equidistant reconstruction is performed
+        assert need_f0
 
 
 dev_1 = qml.device("default.qubit", wires=2)
