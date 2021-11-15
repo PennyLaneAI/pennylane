@@ -320,7 +320,7 @@ class TestReconstructGen:
         [0.1712, 20.812],
         [3.2],
         [-0.3, -0.1, 0.0, 0.1, 0.3],
-        np.arange(1, 10),
+        list(np.arange(1, 10)),
         [3.921 * i ** 1.2 for i in np.arange(1, 10)],
     ]
 
@@ -649,13 +649,11 @@ class TestPrepareJobs:
 dev_1 = qml.device("default.qubit", wires=2)
 
 
-@qml.qnode(dev_1)
 def qnode_0(x):
     qml.RX(x, wires=0)
     return qml.expval(qml.PauliZ(0))
 
 
-@qml.qnode(dev_1)
 def qnode_1(X):
     qml.RX(X[0], wires=0)
     qml.RX(X[0], wires=1)
@@ -664,7 +662,6 @@ def qnode_1(X):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-@qml.qnode(dev_1)
 def qnode_2(X, y):
     qml.RX(X[0], wires=0)
     qml.RX(X[2], wires=1)
@@ -673,7 +670,6 @@ def qnode_2(X, y):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-@qml.qnode(dev_1)
 def qnode_3(X, Y):
     for i in range(5):
         qml.RX(X[i], wires=0)
@@ -682,9 +678,17 @@ def qnode_3(X, Y):
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
-@qml.qnode(dev_1)
 def qnode_4(x):
     return qml.expval(qml.PauliX(0))
+
+
+def qnode_5(Z, y):
+    qml.Hadamard(wires=0)
+    qml.Hadamard(wires=1)
+    qml.RZ(Z[0, 1], wires=0)
+    qml.RZ(Z[2, 4], wires=1)
+    qml.RY(y, wires=0)
+    return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
 
 x = 0.1
@@ -692,81 +696,92 @@ y = 2.3
 
 X = pnp.array([i ** 1.2 - 2.0 / i for i in range(1, 6)])
 Y = pnp.array([i ** 0.9 - 1.0 / i for i in range(1, 6)])
+Z = pnp.array(
+    [
+        [0.3, 9.1, -0.2, 0.6, 1.2],
+        [0.9, -0.1, 1.6, 2.3, -1.5],
+        [0.3, 0.1, -0.9, 0.6, 1.8],
+    ]
+)
+
+test_cases_qnodes = [
+    (qnode_0, (x,), "x", None, {"x": {(): [0.0, 1.0]}}, None, 3),
+    (
+        qnode_0,
+        (x,),
+        {"x": [()]},
+        None,
+        {"x": {(): [0.0, 1.0]}},
+        {"x": {(): [-np.pi / 3, 0.0, np.pi / 3]}},
+        3,
+    ),
+    (qnode_0, (x,), "x", {"x": {(): 1}}, None, None, 3),
+    (qnode_1, (X,), {"X"}, None, {"X": {(0,): [0.0, 1.0, 2.0], (1,): [0.0, 2.0]}}, None, 7),
+    (
+        qnode_1,
+        (X,),
+        "X",
+        None,
+        {"X": {(0,): [0.0, 2.0]}},
+        {"X": {(0,): [-np.pi / 2, -0.1, np.pi / 5]}},
+        3,
+    ),
+    (qnode_1, (X,), ["X"], {"X": {(0,): 2, (1,): 2}}, None, None, 9),
+    (
+        qnode_2,
+        (X, y),
+        ["X", "y"],
+        None,
+        {"X": {(0,): [0.0, 0.5, 1.0, 1.5], (2,): [0.0, 1.0]}, "y": {(): [0.0, 1.0]}},
+        None,
+        11,
+    ),
+    (
+        qnode_3,
+        (X, Y),
+        {"X": [(0,), (3,)], "Y": ((4,), (1,))},
+        {"X": {(i,): 2 for i in range(5)}, "Y": {(i,): 1 for i in range(5)}},
+        None,
+        None,
+        13,
+    ),
+    (qnode_4, (x,), ["x"], {"x": {(): 0}}, None, None, 1),
+    (qnode_5, (Z, y), ["Z"], {"Z": {(0, 1): 1, (2, 4): 1, (1, 3): 0}}, None, None, 5),
+]
 
 
 class TestReconstruct:
     """Tests the integration of ``_reconstruct_equ`` and ``_reconstruct_gen`` via
-    the full ``reconstruct`` function."""
+    the full ``reconstruct`` function as well as the differentiability of the
+    reconstructed function with respect to their single scalar argument."""
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        [
-            (qnode_0, (x,), "x", None, {"x": {0: [0.0, 1.0]}}, None, 3),
-            (
-                qnode_0,
-                (x,),
-                {"x": [0]},
-                None,
-                {"x": {0: [0.0, 1.0]}},
-                {"x": {0: [-np.pi / 3, 0.0, np.pi / 3]}},
-                3,
-            ),
-            (qnode_0, (x,), "x", {"x": {0: 1}}, None, None, 3),
-            (qnode_1, (X,), {"X"}, None, {"X": {0: [0.0, 1.0, 2.0], 1: [0.0, 2.0]}}, None, 7),
-            (
-                qnode_1,
-                (X,),
-                "X",
-                None,
-                {"X": {0: [0.0, 2.0]}},
-                {"X": {0: [-np.pi / 2, -0.1, np.pi / 5]}},
-                3,
-            ),
-            (qnode_1, (X,), ["X"], {"X": {0: 2, 1: 2}}, None, None, 9),
-            (
-                qnode_2,
-                (X, y),
-                ["X", "y"],
-                None,
-                {"X": {0: [0.0, 0.5, 1.0, 1.5], 2: [0.0, 1.0]}, "y": {0: [0.0, 1.0]}},
-                None,
-                11,
-            ),
-            (
-                qnode_3,
-                (X, Y),
-                {"X": [0, 3], "Y": (4, 1)},
-                {"X": {i: 2 for i in range(5)}, "Y": {i: 1 for i in range(5)}},
-                None,
-                None,
-                13,
-            ),
-            (qnode_4, (x,), ["x"], {"x": {0: 0}}, None, None, 1),
-        ],
+        test_cases_qnodes,
     )
     def test_with_qnode(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
     ):
         """Run a full reconstruction on a QNode."""
-        dev_1._num_executions = 0
-        recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
-        assert dev_1._num_executions == exp_calls
-        arg_names = list(signature(qnode).parameters.keys())
+        qnode = qml.QNode(qnode, dev_1)
+
+        with qml.Tracker(qnode.device) as tracker:
+            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        assert tracker.totals["executions"] == exp_calls
+        arg_names = list(signature(qnode.func).parameters.keys())
         for outer_key in recons:
             outer_key_num = arg_names.index(outer_key)
             for inner_key, rec in recons[outer_key].items():
                 x0 = params[outer_key_num]
                 if not pnp.isscalar(x0):
                     x0 = x0[inner_key]
-                shift_vec = (
-                    1.0
-                    if pnp.isscalar(params[outer_key_num])
-                    else np.eye(len(params[outer_key_num]))[inner_key]
-                )
+                    shift_vec = qml.math.zeros_like(params[outer_key_num])
+                    shift_vec[inner_key] = 1.0
+                shift_vec = 1.0 if pnp.isscalar(params[outer_key_num]) else shift_vec
                 mask = (
                     0.0
                     if pnp.isscalar(params[outer_key_num])
-                    else pnp.ones(len(params[outer_key_num])) - shift_vec
+                    else pnp.ones(qml.math.shape(params[outer_key_num])) - shift_vec
                 )
                 univariate = lambda x: qnode(
                     *params[:outer_key_num],
@@ -776,3 +791,194 @@ class TestReconstruct:
                 assert np.isclose(rec(x0), qnode(*params))
                 assert np.isclose(rec(x0 + 0.1), univariate(x0 + 0.1))
                 assert fun_close(rec, univariate)
+
+    @pytest.mark.parametrize(
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
+        test_cases_qnodes,
+    )
+    def test_differentiability_autograd(
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+    ):
+        """Tests the reconstruction and differentiability with autograd."""
+        qnode = qml.QNode(qnode, dev_1, interface="autograd")
+        with qml.Tracker(qnode.device) as tracker:
+            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        assert tracker.totals["executions"] == exp_calls
+        arg_names = list(signature(qnode.func).parameters.keys())
+        for outer_key in recons:
+            outer_key_num = arg_names.index(outer_key)
+            for inner_key, rec in recons[outer_key].items():
+                x0 = params[outer_key_num]
+                if not pnp.isscalar(x0):
+                    x0 = x0[inner_key]
+                    shift_vec = qml.math.zeros_like(params[outer_key_num])
+                    shift_vec[inner_key] = 1.0
+                shift_vec = 1.0 if pnp.isscalar(params[outer_key_num]) else shift_vec
+                mask = (
+                    0.0
+                    if pnp.isscalar(params[outer_key_num])
+                    else pnp.ones(qml.math.shape(params[outer_key_num])) - shift_vec
+                )
+                univariate = lambda x: qnode(
+                    *params[:outer_key_num],
+                    params[outer_key_num] * mask + x * shift_vec,
+                    *params[outer_key_num + 1 :],
+                )
+                exp_qnode_grad = qml.grad(qnode, argnum=outer_key_num)
+                exp_grad = qml.grad(univariate)
+                grad = qml.grad(rec)
+                # Gradient evaluation at reconstruction point not supported
+                # assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
+                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
+                assert fun_close(grad, exp_grad)
+
+    @pytest.mark.parametrize(
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
+        test_cases_qnodes,
+    )
+    def test_differentiability_jax(
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+    ):
+        """Tests the reconstruction and differentiability with JAX."""
+        jax = pytest.importorskip("jax")
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+        qnode = qml.QNode(qnode, dev_1, interface="jax")
+        with qml.Tracker(qnode.device) as tracker:
+            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        assert tracker.totals["executions"] == exp_calls
+        arg_names = list(signature(qnode.func).parameters.keys())
+        for outer_key in recons:
+            outer_key_num = arg_names.index(outer_key)
+            for inner_key, rec in recons[outer_key].items():
+                x0 = params[outer_key_num]
+                if not pnp.isscalar(x0):
+                    x0 = x0[inner_key]
+                    shift_vec = qml.math.zeros_like(params[outer_key_num])
+                    shift_vec[inner_key] = 1.0
+                shift_vec = 1.0 if pnp.isscalar(params[outer_key_num]) else shift_vec
+                mask = (
+                    0.0
+                    if pnp.isscalar(params[outer_key_num])
+                    else pnp.ones(qml.math.shape(params[outer_key_num])) - shift_vec
+                )
+                univariate = lambda x: qnode(
+                    *params[:outer_key_num],
+                    params[outer_key_num] * mask + x * shift_vec,
+                    *params[outer_key_num + 1 :],
+                )
+                exp_qnode_grad = jax.grad(qnode, argnums=outer_key_num)
+                exp_grad = jax.grad(univariate)
+                grad = jax.grad(rec)
+                assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
+                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
+                assert fun_close(grad, exp_grad)
+
+    @pytest.mark.parametrize(
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
+        test_cases_qnodes,
+    )
+    def test_differentiability_tensorflow(
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+    ):
+        """Tests the reconstruction and differentiability with TensorFlow."""
+        if qnode == qnode_4:
+            pytest.skip("Gradients are empty in TensorFlow for independent functions.")
+        tf = pytest.importorskip("tensorflow")
+        qnode = qml.QNode(qnode, dev_1, interface="tf")
+        params = tuple(tf.Variable(par, dtype=tf.float64) for par in params)
+        if spectra is not None:
+            spectra = {
+                outer_key: {
+                    inner_key: tf.constant(val, dtype=tf.float64)
+                    for inner_key, val in outer_val.items()
+                }
+                for outer_key, outer_val in spectra.items()
+            }
+        with qml.Tracker(qnode.device) as tracker:
+            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        assert tracker.totals["executions"] == exp_calls
+        arg_names = list(signature(qnode.func).parameters.keys())
+        for outer_key in recons:
+            outer_key_num = arg_names.index(outer_key)
+            for inner_key, rec in recons[outer_key].items():
+                if outer_key == "Z" and inner_key == (1, 3):
+                    # This is a constant function dependence, which can
+                    # not be properly resolved by this test.
+                    continue
+                x0 = params[outer_key_num]
+                if not len(qml.math.shape(x0)) == 0:
+                    x0 = x0[inner_key]
+                    shift_vec = qml.math.zeros_like(params[outer_key_num])
+                    shift_vec = qml.math.scatter_element_add(shift_vec, inner_key, 1.0)
+                    mask = pnp.ones(qml.math.shape(params[outer_key_num])) - shift_vec
+                else:
+                    shift_vec = 1.0
+                    mask = 0.0
+                univariate = lambda x: qnode(
+                    *params[:outer_key_num],
+                    params[outer_key_num] * mask + x * shift_vec,
+                    *params[outer_key_num + 1 :],
+                )
+                with tf.GradientTape() as tape:
+                    out = qnode(*params)
+                exp_qnode_grad = tape.gradient(out, params[outer_key_num][inner_key])
+
+                def exp_grad(x):
+                    x = tf.Variable(x, dtype=tf.float64)
+                    with tf.GradientTape() as tape:
+                        out = univariate(x)
+                    return tape.gradient(out, x)
+
+                def grad(x):
+                    x = tf.Variable(x, dtype=tf.float64)
+                    with tf.GradientTape() as tape:
+                        out = rec(x)
+                    return tape.gradient(out, x)
+
+                # Gradient evaluation at reconstruction point not supported
+                # assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
+                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
+                assert fun_close(grad, exp_grad)
+
+    @pytest.mark.parametrize(
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
+        test_cases_qnodes,
+    )
+    def test_differentiability_torch(
+        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
+    ):
+        """Tests the reconstruction and differentiability with Torch."""
+        torch = pytest.importorskip("torch")
+        qnode = qml.QNode(qnode, dev_1, interface="torch")
+        params = tuple(torch.tensor(par, requires_grad=True) for par in params)
+        with qml.Tracker(qnode.device) as tracker:
+            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
+        assert tracker.totals["executions"] == exp_calls
+        arg_names = list(signature(qnode.func).parameters.keys())
+        for outer_key in recons:
+            outer_key_num = arg_names.index(outer_key)
+            for inner_key, rec in recons[outer_key].items():
+                x0 = params[outer_key_num]
+                if not len(qml.math.shape(x0)) == 0:
+                    x0 = x0[inner_key]
+                    shift_vec = qml.math.zeros_like(params[outer_key_num])
+                    shift_vec = qml.math.scatter_element_add(shift_vec, inner_key, 1.0)
+                    mask = torch.ones(qml.math.shape(params[outer_key_num])) - shift_vec
+                else:
+                    shift_vec = 1.0
+                    mask = 0.0
+                univariate = lambda x: qnode(
+                    *params[:outer_key_num],
+                    params[outer_key_num] * mask + x * shift_vec,
+                    *params[outer_key_num + 1 :],
+                )
+                exp_qnode_grad = torch.autograd.functional.jacobian(qnode, params)[outer_key_num]
+
+                exp_grad = lambda x: torch.autograd.functional.jacobian(univariate, x)
+                grad = lambda x: torch.autograd.functional.jacobian(rec, x)
+
+                assert np.isclose(grad(x0), exp_qnode_grad[inner_key])
+                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
+                assert fun_close(grad, exp_grad, zero=torch.tensor(0.0, requires_grad=True))

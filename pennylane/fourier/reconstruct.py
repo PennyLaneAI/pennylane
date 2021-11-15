@@ -139,15 +139,15 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     if have_f0 and need_f0:
         # Only one shift may be zero at a time
         shifts = qml.math.concatenate(
-            [[shifts[zero_idx]], shifts[:zero_idx], shifts[zero_idx + 1 :]]
+            [shifts[zero_idx : zero_idx + 1], shifts[:zero_idx], shifts[zero_idx + 1 :]]
         )
         shifts = anp.asarray(shifts, like=interface)
-        evals = qml.math.array([f0] + list(map(fun, shifts[1:])))
+        evals = anp.asarray([f0] + list(map(fun, shifts[1:])), like=interface)
     else:
         shifts = anp.asarray(shifts, like=interface)
         if have_f0 and not need_f0:
             warnings.warn(_warn_text_f0_ignored)
-        evals = qml.math.array(list(map(fun, shifts)))
+        evals = anp.asarray(list(map(fun, shifts)), like=interface)
 
     L = len(shifts)
     # Construct the coefficient matrix case by case
@@ -197,6 +197,8 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
             of an argument of ``qnode`` .
             If a ``dict`` , the values of ``ids`` have to contain the parameter indices
             for the respective array-valued QNode argument represented by the key.
+            These indices always are tuples, i.e. ``()`` for scalar and ``(i,)`` for
+            one-dimensional arguments.
             If a ``list`` , the parameter indices are inferred from ``nums_frequency`` if
             given or ``spectra`` else.
             If ``None``, all keys present in ``nums_frequency`` / ``spectra`` are considered.
@@ -328,6 +330,8 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             of an argument of ``qnode`` .
             If a ``dict`` , the values of ``ids`` have to contain the parameter indices
             for the respective array-valued QNode argument represented by the key.
+            These indices always are tuples, i.e. ``()`` for scalar and ``(i,)`` for
+            one-dimensional arguments.
             If a ``list`` , the parameter indices are inferred from ``nums_frequency`` if
             given or ``spectra`` else.
             If ``None``, all keys present in ``nums_frequency`` / ``spectra`` are considered.
@@ -399,18 +403,20 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     It has three variational parameters ``x`` (a scalar) and two entries of ``Y``
     (an array-like).
     A reconstruction job could then be with respect to the two entries of ``Y``,
-    which enter the circuit with one and six integer frequencies, respectively:
+    which enter the circuit with one and six integer frequencies, respectively
+    (see the additional examples below for details on how to obtain the frequency
+    spectrum if it is not known):
 
-    >>> nums_frequency = {"Y": {0: 1, 1: 6}}
+    >>> nums_frequency = {"Y": {(0,): 1, (1,): 6}}
     >>> with qml.Tracker(circuit.device) as tracker:
-    ...     rec = qml.fourier.reconstruct(circuit, {"Y": [0, 1]}, nums_frequency)(x, Y)
+    ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(0,), (1,)]}, nums_frequency)(x, Y)
     >>> rec.keys()
     dict_keys(['Y'])
     >>> print(*rec["Y"].items(), sep="\n")
-    (0, <function _reconstruct_equ.<locals>._reconstruction at 0x7fbd685aee50>)
-    (1, <function _reconstruct_equ.<locals>._reconstruction at 0x7fbd6866eee0>)
-    >>> recon_Y0 = rec["Y"][0]
-    >>> recon_Y1 = rec["Y"][1]
+    ((0,), <function _reconstruct_equ.<locals>._reconstruction at 0x7fbd685aee50>)
+    ((1,), <function _reconstruct_equ.<locals>._reconstruction at 0x7fbd6866eee0>)
+    >>> recon_Y0 = rec["Y"][(0,)]
+    >>> recon_Y1 = rec["Y"][(1,)]
     >>> np.isclose(recon_Y0(Y[0]), circuit_value)
     True
     >>> np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3)
@@ -434,8 +440,10 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         As described briefly above, the essential inputs to ``reconstruct`` that provide information
         about the QNode are given as dictionaries of dictionaries, where the outer keys reference
         the argument names of ``qnode`` and the inner keys reference the parameter indices within
-        one array-valued QNode argument. For scalar-valued QNode parameters, the parameter index is
-        set to ``0`` by convention (also see the examples below).
+        each array-valued QNode argument. These parameter indices always are tuples, so that
+        for scalar-valued QNode parameters, the parameter index is ``()`` by convention and the
+        ``i`` -th parameter of a one-dimensional array can be accessed via ``(i,)`` .
+        (also see the examples below).
         This applies to ``nums_frequency`` , ``spectra`` , and ``shifts`` .
 
         Note that the information provided in ``nums_frequency`` / ``spectra`` is essential for
@@ -515,7 +523,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         ``ids`` determines which reconstructions are performed.
 
         >>> with qml.Tracker(circuit.device) as tracker:
-        ...     rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, nums_frequency)(x, Y)
+        ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
         >>> tracker.totals
         {'executions': 13}
 
@@ -523,9 +531,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         all frequencies below :math:`f_\text{max}=6` are present in the circuit, so that
         a reconstruction using knowledge of the full frequency spectrum will be cheaper:
 
-        >>> spectra = {"Y": {1: [0., 1., 4., 5., 6.]}}
+        >>> spectra = {"Y": {(1,): [0., 1., 4., 5., 6.]}}
         >>> with tracker:
-        ...     rec = qml.fourier.reconstruct(circuit, {"Y": [1]}, None, spectra)(x, Y)
+        ...     rec = qml.fourier.reconstruct(circuit, {"Y": [(1,)]}, None, spectra)(x, Y)
         >>> tracker.totals
         {'executions': 9}
 
@@ -536,7 +544,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         >>> with tracker:
         ...     for Y1 in np.arange(-np.pi, np.pi, 20):
-        ...         rec["Y"][1](-2.1)
+        ...         rec["Y"][(1,)](-2.1)
         >>> tracker.totals
         {}
 
@@ -545,16 +553,16 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         the frequency :math:`1` again, or directly use ``spectra`` . We will combine the
         latter with another reconstruction with respect to ``Y[0]`` :
 
-        >>> spectra = {"x": {0: [0., f]}, "Y": {0: [0., 1.]}}
+        >>> spectra = {"x": {(): [0., f]}, "Y": {(0,): [0., 1.]}}
         >>> with tracker:
         ...     rec = qml.fourier.reconstruct(circuit, None, None, spectra)(x, Y, f=f)
         >>> tracker.totals
         {'executions': 5}
-        >>> recon_x = rec["x"][0]
+        >>> recon_x = rec["x"][()]
         >>> np.isclose(recon_x(x+0.5), circuit(x+0.5, Y, f=f)
         True
 
-        Note that by convention, the parameter index for a scalar variable is ``0`` and
+        Note that by convention, the parameter index for a scalar variable is ``()`` and
         that the frequency :math:`0` always needs to be included in the spectra.
         Furthermore, we here skipped the input ``ids`` so that the reconstruction
         was performed for all keys in ``spectra`` .
@@ -562,12 +570,20 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         costs three evaluations of ``circuit`` for each, ``x`` and ``Y[0]`` . Performing
         both reconstructions at the same position allowed us to save one of the
         evaluations and reduce the number of calls to :math:`5`.
+
+        All examples above used that we already knew the frequency spectra of the
+        QNode of interest. However, this is in general not the case and we may need
+        to compute the spectrum first. This can be done with
+        :func:`.fourier.qnode_spectrum` :
+
+        >>> spectra = qml.fourier.qnode_spectrum(circuit)(x, Y)
+        >>> spectra.keys()
     """
     # pylint: disable=cell-var-from-loop, unused-argument
 
     atol = 1e-8
     ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
-    arg_names = list(signature(qnode).parameters.keys())
+    arg_names = list(signature(qnode.func).parameters.keys())
     arg_idx_from_names = {arg_name: i for i, arg_name in enumerate(arg_names)}
 
     @wraps(qnode)
@@ -577,7 +593,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         else:
             f0 = None
 
-        interface = qml.math.get_interface(f0)
+        interface = qml.math.get_interface(args[0])
 
         def constant_fn(x):
             """Univariate reconstruction of a constant Fourier series."""
@@ -594,11 +610,11 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
                     _reconstructions[par_idx] = constant_fn
                 else:
                     if len(qml.math.shape(args[arg_idx])) == 0:
-                        shift_vec = 1.0
+                        shift_vec = qml.math.ones_like(args[arg_idx])
                         x0 = args[arg_idx]
                     else:
-                        shift_vec = qml.math.eye(qml.math.shape(args[arg_idx])[0])[par_idx]
-                        shift_vec = anp.asarray(shift_vec, like=interface)
+                        shift_vec = qml.math.zeros_like(args[arg_idx])
+                        shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
                         x0 = args[arg_idx][par_idx]
 
                     def _univariate_fn(x):
