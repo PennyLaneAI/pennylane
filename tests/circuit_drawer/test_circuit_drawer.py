@@ -643,6 +643,7 @@ def drawn_qubit_circuit_with_interesting_wires():
         + "  b: ──X──╰C──┤     \n"
     )
 
+
 class TestCircuitDrawerIntegration:
     """Test that tapes are properly drawn."""
 
@@ -766,9 +767,8 @@ class TestCircuitDrawerIntegration:
         )
         assert tape.draw() == expected
 
-    def test_qubit_circuit_with_max_length_kwdarg():
-    """A qubit circuit with max_length set to 30"""
-
+    def test_qubit_circuit_with_max_length_kwdarg(self):
+        """Test that a qubit circuit with max_length set to 30 renders correctly."""
         with qml.tape.QuantumTape() as tape:
             for i in range(3):
                 qml.Hadamard(wires=i)
@@ -786,7 +786,7 @@ class TestCircuitDrawerIntegration:
             + " (0.1)──┤     \n"
             + " (0.2)──┤     \n"
         )
-        assert tape.draw(max_length = 30) == expected
+        assert tape.draw(max_length=30) == expected
 
 
 class TestWireOrdering:

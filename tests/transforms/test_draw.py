@@ -327,6 +327,7 @@ def test_same_wire_multiple_measurements_many_obs():
     )
     assert qml.draw(qnode)(0.3, 0.2) == expected
 
+
 def test_qubit_circuit_with_max_length_kwdarg():
     """Test that drawing a QNode with max_length=30 results in
     correct circuit drawing."""
