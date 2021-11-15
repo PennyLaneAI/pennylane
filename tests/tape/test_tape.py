@@ -234,14 +234,6 @@ class TestConstruction:
         assert tape._prep == [A]
         assert tape.get_parameters() == params
 
-    def test_state_preparation_error(self):
-        """Test that an exception is raised if a state preparation comes
-        after a quantum operation"""
-        with pytest.raises(ValueError, match="must occur prior to any quantum"):
-            with QuantumTape() as tape:
-                B = qml.PauliX(wires=0)
-                qml.BasisState(np.array([0, 1]), wires=[0, 1])
-
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
 
