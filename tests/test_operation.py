@@ -1234,6 +1234,19 @@ class TestTensorObservableOperations:
 class TestDecomposition:
     """Test for operation decomposition"""
 
+    def test_decomposition_with_int_wire(self):
+        """Test that the decomposition of a non-parametrized Operation works
+        when we simply pass an integer as a wire without further specification."""
+        decomp_1 = qml.Hadamard.decomposition(1)
+        decomp_2 = qml.Hadamard.decomposition([1])
+        expected_decomp = qml.Hadamard.decomposition(wires=1)
+
+        for obtained_1, obtained_2, expected in zip(decomp_1, decomp_2, expected_decomp):
+            assert obtained_1.name == expected.name
+            assert np.allclose(obtained_1.parameters, expected.parameters)
+            assert obtained_2.name == expected.name
+            assert np.allclose(obtained_2.parameters, expected.parameters)
+
     def test_U1_decomposition(self):
         """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
         phi = 0.432
