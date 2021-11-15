@@ -648,8 +648,8 @@ class DefaultQubit(QubitDevice):
         """Initialize the internal state vector in a specified state.
 
         Args:
-            states (array[array[complex]]): normalized input states.
-            device_wires (array[Wires]): wires that get initialized in the state.
+            states (array[array[complex]]): normalized input states
+            device_wires (array[Wires]): wires that get initialized in the state
         """
         states = state
         if type(device_wires) != list:
