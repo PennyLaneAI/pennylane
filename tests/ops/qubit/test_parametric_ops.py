@@ -874,8 +874,9 @@ class TestGrad:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
-    def test_state_jacobian_jax(self, par, tol):
-        """Test the gradient for the gate IsingXX."""
+    def test_qnode_with_rx_and_state_jacobian_jax(self, par, tol):
+        """Test the jacobian of a complex valued QNode that contains a rotation
+        using the JAX interface."""
         jax = pytest.importorskip("jax")
 
         dev = qml.device("default.qubit", wires=1)
