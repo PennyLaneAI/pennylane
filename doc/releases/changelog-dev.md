@@ -56,7 +56,7 @@
   according to our specifications:
 
   ```pycon
-  >>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+  >>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
    0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
    1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
    2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
