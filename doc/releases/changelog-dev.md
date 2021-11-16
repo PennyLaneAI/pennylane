@@ -42,7 +42,7 @@
   def custom_hadamard(wires):
       return [
           qml.RZ(np.pi, wires=wires),
-	  qml.RY(np.pi / 2, wires=wires)
+          qml.RY(np.pi / 2, wires=wires)
       ]
 
   # Can pass the operation itself, or a string
