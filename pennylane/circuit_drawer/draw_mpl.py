@@ -253,8 +253,6 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                 control_wires = [wire_map[w] for w in op.control_wires]
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
 
-                extra_width = -1 if op.name == "Barrier" else 0
-
                 if len(control_wires) != 0:
                     drawer.ctrl(layer, control_wires, wires_target=target_wires)
                 drawer.box_gate(
