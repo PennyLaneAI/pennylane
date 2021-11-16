@@ -37,7 +37,7 @@ class TestQFT:
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
         op = qml.QFT(wires=range(n_qubits))
-        decomp = op.decomposition(wires=range(n_qubits))
+        decomp = op.decompose()
 
         dev = qml.device("default.qubit", wires=n_qubits)
 
