@@ -4,20 +4,27 @@ Software tests
 Running the tests
 ~~~~~~~~~~~~~~~~~
 
-The PennyLane test suite requires the Python ``pytest`` package, as well as ``pytest-cov``
-for test coverage, ``pytest-mock`` for mocking, and ``flaky`` for automatically rerunning flaky tests; these can be installed via ``pip``:
+The PennyLane test suite requires the Python ``pytest`` package, as well as:
+
+* ``pytest-cov``: determines test coverage
+* ``pytest-mock``: allows replacing components with dummy objects
+* ``flaky``: manages tests with non-deterministic behaviour
+
+ These requirements can be installed via ``pip``:
 
 .. code-block:: bash
 
     pip install pytest pytest-cov pytest-mock flaky
 
-All tests are located in the `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory. Run all tests in this folder via:
+The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
 
 .. code-block:: bash
 
-    python -m pytest tests
+    python -m pytest --ignore=tests/beta tests
 
-Using ``python -m`` helps ensure that the tests are running with the correct version of python if you have multiple python versions and environments.  During development, locally executing only relevant files saves time.  For example, if a develop was adding a new non-parametric operation, they could run just:
+Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system. The `tests/beta` folder can contain failing tests, so ``--ignore=tests/beta`` excludes them from execution.
+
+As the entire test suite takes some time, locally running only relevant files speeds the debugging cycle.  For example, if a developer was adding a new non-parametric operation, they could run:
 
 .. code-block:: bash
 
@@ -35,7 +42,7 @@ Pytest supports many other command-line options, which can be found with the com
 
     pytest --help
 
-Or by visiting the `pytest documentation page <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
+Or by visiting the `pytest documentation <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
 
 PennyLane provides a set of tests for all PennyLane plugins. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__.
 
@@ -45,13 +52,6 @@ All PennyLane tests and the device suite on core devices can be run from the Pen
 
     make test
 
-
-Outside Resources
-~~~~~~~~~~~~~~~~~
-
-`Pytest documentation <https://docs.pytest.org/en/6.2.x/index.html>`__
-
-`Real Python tutorial <https://realpython.com/pytest-python-testing/>`__
 
 Testing Matplotlib based code
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
