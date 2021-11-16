@@ -484,9 +484,9 @@ class Operator(abc.ABC):
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
         self._num_params = len(params)
-        # Check if the num_params attribute coincides with the number of parameters received.
-        # This test will only raise an error if a subclass overwrites the attribute to define
-        # an expected number of parameters for the operation.
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
         if len(params) != self.num_params:
             raise ValueError(
                 "{}: wrong number of parameters. "

@@ -14,6 +14,10 @@
 
 <h3>Improvements</h3>
 
+* The `num_params` attribute in the operator class is now dynamic. This makes it easier
+  to define operator subclasses with a flexible number of parameters. 
+  [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)
+
 * Tests do not loop over automatically imported and instantiated operations any more, 
   which was opaque and created unnecessarily many tests.
   [(#1895)](https://github.com/PennyLaneAI/pennylane/pull/1895)
