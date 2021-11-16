@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane import math as fn
 from autograd.numpy.numpy_boxes import ArrayBox
 
+import semantic_version
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
@@ -713,6 +714,12 @@ class TestTensordot:
     def test_tensordot_torch_outer(self):
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
         assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
+
+    def test_tensordot_torch_outer_with_old_version(self, monkeypatch):
+        with monkeypatch.context() as m:
+            m.setattr("torch.__version__", "1.9.0")
+            assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
+            assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
 
     @pytest.mark.parametrize(
         "M, v, expected",
