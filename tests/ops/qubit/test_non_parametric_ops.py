@@ -473,21 +473,6 @@ class TestBarrier:
 
         assert optimized_gates == 0
 
-    def test_not_wires(self):
-        """Test that if no wires are specified a total barrier is put in place"""
-
-        def qfunc():
-            qml.Hadamard(wires=0)
-            qml.Barrier()
-            qml.Hadamard(wires=1)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=3)
-        qnode = qml.QNode(qfunc, dev)
-        gates = qml.specs(qnode)()["gate_sizes"][3]
-
-        assert gates == 1
-
     def test_barrier_edge_cases(self):
         r"""Test that the barrier works in edge cases."""
 
