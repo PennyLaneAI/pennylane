@@ -84,7 +84,7 @@ class CircuitDrawer:
             self.active_wires = wires.all_wires([wires, self.active_wires])
 
         # We add a -2 character offset to account for some downstream formatting
-        self.max_length = max_length - 2 if type(max_length) == int else None
+        self.max_length = max_length - 2 if max_length is not None else None
 
         self.representation_resolver = RepresentationResolver(self.charset)
         self.operation_representation_grid = Grid()
