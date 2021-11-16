@@ -70,7 +70,7 @@ def test_mottonenstate_preparation(mocker):
     dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit(data, weights):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -79,7 +79,7 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 8))
+    data = np.random.random((batch_size, 2 ** 3))
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
