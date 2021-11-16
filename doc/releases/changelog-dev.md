@@ -65,8 +65,12 @@
 
 * `QuantumTape.trainable_params` now is a list instead of a set, making
   it more stable in very rare edge cases.
-  [(#1xxx)](https://github.com/PennyLaneAI/pennylane/pull/1xxx)
+  [(#1904)](https://github.com/PennyLaneAI/pennylane/pull/1904)
 
+* `ExpvalCost` now returns corrects results shape when `optimize=True` with 
+  shots batch.
+  [(#1897)](https://github.com/PennyLaneAI/pennylane/pull/1897)
+  
 * `qml.circuit_drawer.MPLDrawer` was slightly modified to work with
   matplotlib version 3.5.
   [(#1899)](https://github.com/PennyLaneAI/pennylane/pull/1899)
@@ -85,5 +89,6 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
+Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
 
