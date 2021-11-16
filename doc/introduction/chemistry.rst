@@ -1,10 +1,10 @@
 Quantum Chemistry
 =================
 
-PennyLane provides a quantum chemistry module ``qchem`` to perform quantum simulations
-of the electronic structure of molecules. ``qchem`` contains tools to construct the
-electronic Hamiltonian of molecules, and uses PennyLane to implement the Variational Quantum
-Eigensolver (VQE) algorithm.
+PennyLane provides a differentiable Hartree-Fock solver module :mod:`~.hf` and a quantum chemistry
+module :mod:`~.qchem` to perform quantum simulations of the electronic structure of molecules. These
+modules contain tools to construct the electronic Hamiltonian of molecules that can be used to
+implement the Variational Quantum Eigensolver (VQE) algorithm.
 
 .. figure:: ../_static/sketch_pennylane_qchem.png
     :width: 80%
@@ -161,26 +161,30 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-We can use :class:`~.ExpvalCost` to automatically create the required PennyLane QNodes and define
-the cost function:
+PennyLane supports treating Hamiltonians just like any other observable, and the 
+expectation value of a Hamiltonian can be calculated using ``qml.expval``:
 
 .. code-block:: python
 
     import pennylane as qml
-    
+
     dev = qml.device('default.qubit', wires=4)
 
-    def circuit(params, wires):
-        qml.BasisState(np.array([1, 1, 0, 0]), wires=wires)
-        for i in wires:
+    hamiltonian = 2.0 * qml.PauliZ(0) @ qml.PauliZ(1)
+
+    @qml.qnode(dev)
+    def circuit(params):
+        qml.BasisState(np.array([1, 1, 0, 0]), wires=[0,1,2,3])
+        for i in range(4):
             qml.Rot(*params[i], wires=i)
         qml.CNOT(wires=[2, 3])
         qml.CNOT(wires=[2, 0])
         qml.CNOT(wires=[3, 1])
+        return qml.expval(hamiltonian)
 
-    cost = qml.ExpvalCost(circuit, hamiltonian, dev, interface="torch")
-    params = torch.rand([4, 3])
-    cost(params)
+    rng = np.random.default_rng(seed=42)
+    params = rng.random([4, 3])
+    circuit(params)
 
 The rotation angles can be optimized using the machine learning interface of choice
 until the energy difference between two consecutive iterations has converged to near zero.

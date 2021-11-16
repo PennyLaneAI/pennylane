@@ -13,13 +13,15 @@
 # limitations under the License.
 """
 Tests the MPLDrawer.
+
+See section on "Testing Matplotlib based code" in the "Software Tests"
+page in the developement guide.
 """
 
 import pytest
 
 plt = pytest.importorskip("matplotlib.pyplot")
 
-import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 from matplotlib.patches import FancyArrow
 
@@ -83,9 +85,9 @@ class TestInitialization:
         options = {"linewidth": 3, "color": rgba_red}
         drawer = MPLDrawer(n_wires=2, n_layers=2, wire_options=options)
 
-        for wire in drawer.ax.lines:
-            assert wire.get_linewidth() == 3
-            assert wire.get_color() == rgba_red
+        for line in drawer.ax.lines:
+            assert line.get_linewidth() == 3
+            assert line.get_color() == rgba_red
 
         plt.close()
 
