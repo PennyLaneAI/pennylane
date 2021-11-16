@@ -380,25 +380,26 @@ class CircuitDrawer:
             wires = rendered_string.split("\n")
             n_wraps = (len(wires[0]) // self.max_length) + 1
             rendered_substrings = []
-            # offset = 0
             for i in range(n_wraps):
-                # print(i * self.max_length, (i + 1) * self.max_length, offset)
                 for wire in wires:
-                    if (((i + 1) * self.max_length)) < len(wire):
-                        # This conditional is a bit of a hack. The goal is to
-                        # prepend whitespace to maintain alignment with the
-                        # beginning of the circuit while preventing the breaking
-                        # of the circuit_drawer unit tests.
+                    # These conditionals are a bit of a hack. Their goal is to
+                    # prepend whitespace to maintain alignment with the
+                    # beginning of the circuit while preventing the breaking
+                    # of the existing circuit_drawer unit tests.
+                    if (self.max_length * (i + 1)) < len(wire):
+                        # First wrap, print beginning of circuit
                         if i == 0:
                             rendered_substrings.append(
                                 f"{wire[i * self.max_length : ((i + 1) * self.max_length) + 1]}"
                             )
+                        # Center wraps, print everything in between
                         else:
                             rendered_substrings.append(
                                 f" {wire[(i * self.max_length) + 1: ((i + 1) * self.max_length) + 1]}"
                             )
+                    # Last wrap, print the tail of the circuit
                     else:
-                        rendered_substrings.append(f" {wire[i * self.max_length + 1:]}")
+                        rendered_substrings.append(f" {wire[i * self.max_length + 1:]}"[:-1])
             rendered_string = "\n".join(rendered_substrings)
 
         return rendered_string
