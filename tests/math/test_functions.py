@@ -537,13 +537,25 @@ class TestDot:
 class TestTensordot:
     """Tests for the dot product function."""
 
-    np.random.seed(42)
     v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
     v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
     _arange = np.arange(0, 54).reshape((9, 6)).astype(np.float64)
+    _shuffled_arange = np.array(
+        [
+            [42.0, 43.0, 44.0, 45.0, 46.0, 47.0],
+            [6.0, 7.0, 8.0, 9.0, 10.0, 11.0],
+            [30.0, 31.0, 32.0, 33.0, 34.0, 35.0],
+            [0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+            [48.0, 49.0, 50.0, 51.0, 52.0, 53.0],
+            [12.0, 13.0, 14.0, 15.0, 16.0, 17.0],
+            [24.0, 25.0, 26.0, 27.0, 28.0, 29.0],
+            [18.0, 19.0, 20.0, 21.0, 22.0, 23.0],
+            [36.0, 37.0, 38.0, 39.0, 40.0, 41.0],
+        ],
+        dtype=np.float64,
+    )
     M1 = torch.tensor(_arange)
-    np.random.shuffle(_arange)
-    M2 = torch.tensor(_arange)
+    M2 = torch.tensor(_shuffled_arange)
     v1_dot_v2 = 9.59
     M1_dot_v1 = torch.tensor(
         [-14.6, -35.0, -55.4, -75.8, -96.2, -116.6, -137.0, -157.4, -177.8], dtype=torch.float64
@@ -583,7 +595,7 @@ class TestTensordot:
         dtype=torch.float64,
     )
     T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
-    np.random.shuffle(T1)
+    T1 = np.array([T1[1], T1[0], T1[2]])
 
     T1_dot_v1 = torch.tensor(
         [
