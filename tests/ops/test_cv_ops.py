@@ -18,9 +18,8 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 
 from scipy.linalg import block_diag
 import pytest
-from copy import copy
 
-import pennylane as qml
+import pennylane
 from pennylane import numpy as np
 import numpy.testing as np_testing
 from pennylane.ops import cv
@@ -30,67 +29,9 @@ s_vals = np.linspace(-3, 3, 13)
 phis = np.linspace(-2 * np.pi, 2 * np.pi, 11)
 mags = np.linspace(0.0, 1.0, 7)
 
-GAUSSIAN_GATES = [
-    qml.Squeezing(1.0, 1.0, wires=0),
-    qml.TwoModeSqueezing(1.0, 1.0, wires=[0, 1]),
-    qml.Beamsplitter(1.0, 1.0, wires=[0, 1]),
-    qml.Displacement(1.0, 1.0, wires=0),
-    qml.ControlledPhase(1.0, wires=[0, 1]),
-    qml.Rotation(1.0, wires=0),
-    qml.ControlledAddition(1.0, wires=[0, 1]),
-    qml.InterferometerUnitary(
-        np.array(
-            [
-                [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-                [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-            ]
-        ),
-        wires=[0, 1],
-    ),
-    qml.QuadraticPhase(1.0, wires=0),
-]
 
-GAUSSIAN_OBS = [
-    qml.QuadOperator(1.0, wires=0),
-    qml.P(wires=0),
-    qml.X(wires=0),
-    qml.NumberOperator(wires=0),
-    qml.PolyXP(np.array([0.1, 0.2, 0.3]), wires=0),
-]
-
-
-class TestGaussian:
-    """Tests Gaussian operators."""
-
-    @pytest.mark.parametrize("op", GAUSSIAN_GATES)
-    def test_gradient_recipe_operations(self, op, tol):
-        """Validate that finite difference and analytic differentiation coincide."""
-
-        if op.grad_recipe is not None:
-            # compare gradient recipe to numerical gradient
-            h = 1e-7
-            U = op.heisenberg_tr(op.wires)
-            temp = copy(op.data)
-
-            for k in range(op.num_params):
-                D = op.heisenberg_pd(k)  # using the recipe
-                # using finite difference
-                op.data[k] += h
-                Up = op.heisenberg_tr(op.wires)
-                op.data = temp
-                G = (Up - U) / h
-                assert D == pytest.approx(G, abs=tol)
-
-    @pytest.mark.parametrize("op", GAUSSIAN_OBS)
-    def test_ev_order(self, op, tol):
-        """Test that for observables, ev_order equals the number of dimensions of the H-rep array"""
-        if op.name != "PolyXP":  # PolyXP is an exception
-            Q = op.heisenberg_obs(op.wires)
-            assert Q.ndim == op.ev_order
-
-
-class TestGaussianHeisenbergReps:
-    """Test the Heisenberg representation of Gaussian gates"""
+class TestCV:
+    """Tests the continuous variable based operations."""
 
     @pytest.mark.parametrize("phi", phis)
     def test_rotation_heisenberg(self, phi):
@@ -100,6 +41,51 @@ class TestGaussianHeisenbergReps:
             [[1, 0, 0], [0, np.cos(phi), -np.sin(phi)], [0, np.sin(phi), np.cos(phi)]]
         )
         assert np.allclose(matrix, true_matrix)
+
+    @pytest.mark.parametrize(
+        "op,size",
+        [
+            (cv.Squeezing(0.123, -0.456, wires=1), 3),
+            (cv.Squeezing(0.668, 10.0, wires=0), 3),  # phi > 2pi
+            (cv.Squeezing(1.992, -9.782, wires=0), 3),  # phi < -2pi
+            (cv.Rotation(2.005, wires=1), 3),
+            (cv.Rotation(-1.365, wires=1), 3),
+            (cv.Displacement(2.841, 0.456, wires=0), 3),
+            (cv.Displacement(3.142, -7.221, wires=0), 3),  # phi < -2pi
+            (cv.Displacement(2.004, 8.673, wires=0), 3),  # phi > 2pi
+            (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
+            (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
+            (
+                cv.InterferometerUnitary(
+                    np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1
+                ),
+                5,
+            ),
+            (cv.ControlledAddition(2.551, wires=[0, 2]), 5),
+            (cv.ControlledPhase(2.189, wires=[3, 1]), 5),
+        ],
+    )
+    def test_adjoint_cv_ops(self, op, size, tol):
+        op_d = op.adjoint()
+        op_heis = op._heisenberg_rep(op.parameters)
+        op_d_heis = op_d._heisenberg_rep(op_d.parameters)
+        res1 = np.dot(op_heis, op_d_heis)
+        res2 = np.dot(op_d_heis, op_heis)
+        np_testing.assert_allclose(res1, np.eye(size), atol=tol)
+        np_testing.assert_allclose(res2, np.eye(size), atol=tol)
+        assert op.wires == op_d.wires
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            cv.CrossKerr(-1.724, wires=[2, 0]),
+            cv.CubicPhase(0.997, wires=2),
+            cv.Kerr(2.568, wires=2),
+        ],
+    )
+    def test_adjoint_no_heisenberg_rep_defined(self, op, tol):
+        op_d = op.adjoint()
+        assert op.parameters[0] == -op_d.parameters[0]
 
     @pytest.mark.parametrize("phi", phis)
     @pytest.mark.parametrize("mag", mags)
@@ -199,95 +185,25 @@ class TestNonGaussian:
         """ops: Tests that the `_heisenberg_rep` for a non-Gaussian gates is
         None
         """
-        assert gate._heisenberg_rep(0.1) is None
+        assert gate._heisenberg_rep(*[0.1] * gate.num_params) is None
 
     def test_heisenberg_transformation_nongaussian(self):
         """ops: Tests that proper exceptions are raised if we try to call the
         Heisenberg transformation of non-Gaussian gates."""
         op = cv.Kerr
         with pytest.raises(RuntimeError, match=r"not a Gaussian operation"):
-            op_ = op(0.1, wires=range(op.num_wires))
+            op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
             op_.heisenberg_tr(Wires(range(op.num_wires)))
 
         op = cv.CrossKerr
         with pytest.raises(RuntimeError):
-            op_ = op(0.1, wires=range(op.num_wires))
+            op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
             op_.heisenberg_tr(Wires(range(op.num_wires)))
 
         op = cv.CubicPhase
         with pytest.raises(RuntimeError):
-            op_ = op(0.1, wires=range(op.num_wires))
+            op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
             op_.heisenberg_tr(Wires(range(op.num_wires)))
-
-
-class TestAdjoint:
-    """Test the adjoint method"""
-
-    @pytest.mark.parametrize(
-        "op,size",
-        [
-            (cv.Squeezing(0.123, -0.456, wires=1), 3),
-            (cv.Squeezing(0.668, 10.0, wires=0), 3),  # phi > 2pi
-            (cv.Squeezing(1.992, -9.782, wires=0), 3),  # phi < -2pi
-            (cv.Rotation(2.005, wires=1), 3),
-            (cv.Rotation(-1.365, wires=1), 3),
-            (cv.Displacement(2.841, 0.456, wires=0), 3),
-            (cv.Displacement(3.142, -7.221, wires=0), 3),  # phi < -2pi
-            (cv.Displacement(2.004, 8.673, wires=0), 3),  # phi > 2pi
-            (cv.Beamsplitter(0.456, -0.789, wires=[0, 2]), 5),
-            (cv.TwoModeSqueezing(2.532, 1.778, wires=[1, 2]), 5),
-            (
-                cv.InterferometerUnitary(
-                    np.array([[1, 1], [1, -1]]) * -1.0j / np.sqrt(2.0), wires=1
-                ),
-                5,
-            ),
-            (cv.ControlledAddition(2.551, wires=[0, 2]), 5),
-            (cv.ControlledPhase(2.189, wires=[3, 1]), 5),
-        ],
-    )
-    def test_adjoint_cv_ops(self, op, size, tol):
-        """Verify that the product of the heisenberg representation of an operator and its adjoint
-        is the identity"""
-        op_d = op.adjoint()
-        op_heis = op._heisenberg_rep(op.parameters)
-        op_d_heis = op_d._heisenberg_rep(op_d.parameters)
-        res1 = np.dot(op_heis, op_d_heis)
-        res2 = np.dot(op_d_heis, op_heis)
-        np_testing.assert_allclose(res1, np.eye(size), atol=tol)
-        np_testing.assert_allclose(res2, np.eye(size), atol=tol)
-        assert op.wires == op_d.wires
-
-    @pytest.mark.parametrize(
-        "op",
-        [
-            cv.CrossKerr(-1.724, wires=[2, 0]),
-            cv.CubicPhase(0.997, wires=2),
-            cv.Kerr(2.568, wires=2),
-        ],
-    )
-    def test_adjoint_no_heisenberg_rep_defined(self, op, tol):
-        """Verify that for some operations, the adjoint simply negates the parameters."""
-        op_d = op.adjoint()
-        assert op.parameters[0] == -op_d.parameters[0]
-
-
-class TestInverse:
-    """Test the inverse of Gaussian operations"""
-
-    @pytest.mark.parametrize("op", GAUSSIAN_GATES)
-    def test_inverse(self, op, tol):
-        """Check that the heisenberg representation and the inverse heisenberg representation
-        multiply to the identity"""
-        V = op.heisenberg_tr(op.wires, inverse=True)
-        U = op.heisenberg_tr(op.wires)
-        I = np.eye(*U.shape)
-
-        # first row is always (1,0,0...)
-        assert np.all(U[0, :] == I[:, 0])
-
-        assert np.linalg.norm(U @ V - I) == pytest.approx(0, abs=tol)
-        assert np.linalg.norm(V @ U - I) == pytest.approx(0, abs=tol)
 
 
 label_data = [

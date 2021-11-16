@@ -519,9 +519,11 @@ class Operator(abc.ABC):
     @property
     def num_params(self):
         """Number of trainable parameters that this operator expects to be fed via the
-        dynamic `*params` argument. By default, this property returns as many parameters as it got.
-        If the expected number of parameters is known, this property can be overwritten to return
-        the expected value, which will be checked against the actual one.
+        dynamic `*params` argument.
+
+        By default, this property returns as many parameters as were used for the
+        operator creation. If the number of parameters for an operator subclass is fixed,
+        this property can be overwritten to return the fixed value.
 
         Returns:
             int: number of parameters

@@ -587,6 +587,49 @@ class TestExpectationQuantumGradients:
 
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
+    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
+    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
+
+    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
+    @pytest.mark.parametrize("op", analytic_cv_ops)
+    def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
+        """Tests that the gradients of circuits of gaussian gates match between the
+        finite difference and analytic methods."""
+        tol = 1e-2
+
+        args = np.linspace(0.2, 0.5, op.num_params)
+
+        with CVParamShiftTape() as tape:
+            qml.Displacement(0.5, 0, wires=0)
+            op(*args, wires=range(op.num_wires))
+            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qml.Displacement(-0.5, 0.1, wires=0)
+            qml.Squeezing(0.5, -1.5, wires=0)
+            qml.Rotation(-1.1, wires=0)
+            qml.expval(obs(wires=0))
+
+        dev = qml.device("default.gaussian", wires=2)
+        res = tape.execute(dev)
+
+        tape._update_gradient_info()
+        tape.trainable_params = set(range(2, 2 + op.num_params))
+
+        # check that every parameter is analytic
+        for i in range(op.num_params):
+            assert tape._par_info[2 + i]["grad_method"][0] == "A"
+
+        spy = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
+        grad_F = tape.jacobian(dev, method="numeric")
+        grad_A2 = tape.jacobian(dev, method="analytic", force_order2=True)
+
+        spy.assert_not_called()
+        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+
+        if obs.ev_order == 1:
+            grad_A = tape.jacobian(dev, method="analytic")
+            spy.assert_called()
+            assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
+
     @pytest.mark.parametrize("t", [0, 1])
     def test_interferometer_unitary(self, t, tol):
         """An integration test for CV gates that support analytic differentiation
@@ -786,6 +829,42 @@ class TestVarianceQuantumGradients:
 
     cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
     analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
+
+    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.Identity])
+    @pytest.mark.parametrize("op", analytic_cv_ops)
+    def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
+        """Tests that the gradients of circuits of gaussian gates match between the
+        finite difference and analytic methods."""
+        tol = 1e-2
+
+        args = np.linspace(0.2, 0.5, op.num_params)
+
+        with CVParamShiftTape() as tape:
+            qml.Displacement(0.5, 0, wires=0)
+            op(*args, wires=range(op.num_wires))
+            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qml.Displacement(-0.5, 0.1, wires=0)
+            qml.Squeezing(0.5, -1.5, wires=0)
+            qml.Rotation(-1.1, wires=0)
+            qml.var(obs(wires=0))
+
+        dev = qml.device("default.gaussian", wires=2)
+        res = tape.execute(dev)
+
+        tape._update_gradient_info()
+        tape.trainable_params = set(range(2, 2 + op.num_params))
+
+        # check that every parameter is analytic
+        for i in range(op.num_params):
+            assert tape._par_info[2 + i]["grad_method"][0] == "A"
+
+        spy = mocker.spy(CVParamShiftTape, "parameter_shift_first_order")
+        grad_F = tape.jacobian(dev, method="numeric")
+        grad_A = tape.jacobian(dev, method="analytic")
+        grad_A2 = tape.jacobian(dev, method="analytic", force_order2=True)
+
+        assert np.allclose(grad_A2, grad_F, atol=tol, rtol=0)
+        assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     def test_squeezed_mean_photon_variance(self, tol):
         """Test gradient of the photon variance of a displaced thermal state"""
