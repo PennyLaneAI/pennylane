@@ -22,6 +22,8 @@ import abc
 from collections import OrderedDict
 import itertools
 import warnings
+import contextlib
+import types
 
 import numpy as np
 
@@ -39,7 +41,6 @@ from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 from pennylane.measure import MeasurementProcess
-
 
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
@@ -81,6 +82,10 @@ class QubitDevice(Device):
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
             executions to keep the cache up to date.
+        custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
+            decompositions to be applied by the device at runtime. When specified, the
+            device will create a custom expand function by combining the regular expansion
+            criteria with those specified by the custom decompositions.
     """
 
     # pylint: disable=too-many-public-methods
@@ -121,7 +126,7 @@ class QubitDevice(Device):
         "Projector",
     }
 
-    def __init__(self, wires=1, shots=None, cache=0, analytic=None):
+    def __init__(self, wires=1, shots=None, cache=0, analytic=None, custom_decomps=None):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         self._samples = None
@@ -135,6 +140,33 @@ class QubitDevice(Device):
         self._cache_execute = OrderedDict()
         """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
         device."""
+
+        self.custom_decomps = custom_decomps
+
+        if custom_decomps:
+            # Get a list of all the operations requiring custom decomps
+            custom_op_names = [
+                op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()
+            ]
+            custom_decomp_condition = lambda obj: obj.name in custom_op_names
+
+            # Combined rule for expansion; our custom rule plus regular device conditions
+            stop_at = qml.BooleanFn(custom_decomp_condition) and self.stopping_condition
+
+            # Create and set the custom expand function for this device
+            self.custom_fn = qml.transforms.create_expand_fn(
+                depth=10,
+                stop_at=stop_at,
+                device=self
+            )
+
+            # Create a new custom expand function that runs the decomposition
+            # within the context.
+            def custom_decomp_expand(self, circuit, max_expansion=10):
+                with self.custom_decomp_context():
+                    return self.custom_fn(circuit, max_expansion)
+
+            self.custom_expand(custom_decomp_expand)
 
     @classmethod
     def capabilities(cls):
@@ -155,6 +187,51 @@ class QubitDevice(Device):
         Most importantly the quantum state is reset to its initial value.
         """
         self._samples = None
+
+    @contextlib.contextmanager
+    def custom_decomp_context(self):
+
+        from pennylane.transforms.qfunc_transforms import NonQueuingTape
+        NonQueuingTape = type("NonQueuingTape", (NonQueuingTape, qml.tape.QuantumTape), {})
+
+        # Creates an individaul context
+        @contextlib.contextmanager
+        def _custom_decomposition(obj, fn):
+            # Covers the case where the user passes a string to indicate the Operator
+            if isinstance(obj, str):
+                obj = getattr(qml, obj)
+
+            original_decomp_method = obj.decomposition
+
+            # This is the method that will override the current .decomposition method of
+            # the given operation; it has the same signature as .decomposition
+            def new_decomp_method(*params, wires):
+                with NonQueuingTape() as tape:
+                    return fn(*params, wires)
+                return tape
+
+            try:
+                # Actually set the new decomp function; note that we set
+                # expand rather than `decomposition` proper.
+                obj.decomposition = new_decomp_method
+                yield
+
+            finally:
+                obj.decomposition = original_decomp_method
+
+        # Now, loop through the decomposition dictionary and create all the contexts
+        try:
+            with contextlib.ExitStack() as stack:
+                for obj, fn in self.custom_decomps.items():
+                    # We enter a new context each decomposition the user passes
+                    stack.enter_context(_custom_decomposition(obj, fn))
+
+                stack = stack.pop_all()
+
+            yield
+
+        finally:
+            stack.close()
 
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
