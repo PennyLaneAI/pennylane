@@ -20,7 +20,6 @@ from collections.abc import Sequence
 from functools import lru_cache, update_wrapper
 import warnings
 import inspect
-from pennylane.wires import Wires
 
 
 import numpy as np
