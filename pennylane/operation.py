@@ -531,6 +531,29 @@ class Operator(abc.ABC):
         """Current parameter values."""
         return self.data.copy()
 
+    @staticmethod
+    def decomposition(*params, wires):
+        """Defines a decomposition of this operator into products of other operators.
+
+        Args:
+            params (tuple[float, int, array]): operator parameters
+            wires (Union(Sequence[int], Wires)): wires the operator acts on
+
+        Returns:
+            list[Operation]
+        """
+        raise NotImplementedError
+
+    def decompose(self):
+        """Decomposes this operator into products of other operators.
+
+        Returns:
+            list[Operation]
+        """
+        if self.num_params == 0:
+            return self.decomposition(wires=self.wires)
+        return self.decomposition(*self.parameters, wires=self.wires)
+
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
@@ -709,12 +732,6 @@ class Operation(Operator):
     def inverse(self, boolean):
         self._inverse = boolean
 
-    @staticmethod
-    def decomposition(*params, wires):
-        """Returns a template decomposing the operation into other
-        quantum operations."""
-        raise NotImplementedError
-
     def expand(self):
         """Returns a tape containing the decomposed operations, rather
         than a list.
@@ -727,7 +744,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition(*self.data, wires=self.wires)
+            self.decompose()
 
         if not self.data:
             # original operation has no trainable parameters
