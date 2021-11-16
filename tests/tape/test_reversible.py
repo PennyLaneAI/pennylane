@@ -289,8 +289,13 @@ class TestGradients:
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("op", [qml.RY(0.3, wires=0),
-                                    qml.Rot(1., 2., 3., wires=[0]),])
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.RY(0.3, wires=0),
+            qml.Rot(1.0, 2.0, 3.0, wires=[0]),
+        ],
+    )
     def test_compare_analytic_and_numeric_gradients(self, op, mocker, tol):
         """Test for selected gates that the gradients of circuits match between the
         finite difference and analytic methods."""

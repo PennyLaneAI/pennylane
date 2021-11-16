@@ -618,8 +618,9 @@ class TestExpectationQuantumGradients:
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("obs", [qml.P, qml.Identity])
-    @pytest.mark.parametrize("op", [qml.Displacement(0.1, 0.2, wires=0),
-                                    qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])])
+    @pytest.mark.parametrize(
+        "op", [qml.Displacement(0.1, 0.2, wires=0), qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
+    )
     def test_gradients_gaussian_circuit(self, op, obs, tol):
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
@@ -872,8 +873,9 @@ class TestVarianceQuantumGradients:
                 param_shift_cv(tape, dev, force_order2=True)
 
     @pytest.mark.parametrize("obs", [qml.X, qml.NumberOperator])
-    @pytest.mark.parametrize("op", [qml.Squeezing(0.1, 0.2, wires=0),
-                                    qml.Beamsplitter(0.1, 0.2, wires=[0, 1])])
+    @pytest.mark.parametrize(
+        "op", [qml.Squeezing(0.1, 0.2, wires=0), qml.Beamsplitter(0.1, 0.2, wires=[0, 1])]
+    )
     def test_gradients_gaussian_circuit(self, op, obs, tol):
         """Tests that the gradients of circuits of selected gaussian gates match between the
         finite difference and analytic methods."""

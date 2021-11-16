@@ -412,8 +412,8 @@ class TestDefaultGaussianDevice:
         # apply the gate
         gaussian_dev.apply("DummyGate", wires=qml.wires.Wires([0]), par=[])
 
-        exp_cov = np.array([[4., 0.], [0., 9.]])
-        exp_mu = np.array([0., 0.])
+        exp_cov = np.array([[4.0, 0.0], [0.0, 9.0]])
+        exp_mu = np.array([0.0, 0.0])
 
         # verify the device is now in the expected state
         assert gaussian_dev._state[0] == pytest.approx(exp_cov, abs=tol)

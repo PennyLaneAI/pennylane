@@ -153,11 +153,9 @@ class TestAdjointJacobian:
     ops = {qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.CRX, qml.CRY, qml.CRZ, qml.Rot}
 
     @pytest.mark.parametrize("obs", [qml.PauliY])
-    @pytest.mark.parametrize("op", [qml.RX(0.4, wires=0),
-                                    qml.CRZ(1., wires=[0, 1]),
-                                    qml.Rot(0.2, -0.1, 0.2, wires=0)
-
-    ])
+    @pytest.mark.parametrize(
+        "op", [qml.RX(0.4, wires=0), qml.CRZ(1.0, wires=[0, 1]), qml.Rot(0.2, -0.1, 0.2, wires=0)]
+    )
     def test_gradients(self, op, obs, tol, dev):
         """Tests that the gradients of circuits match between the finite difference and device
         methods."""

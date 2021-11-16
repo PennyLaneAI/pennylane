@@ -150,8 +150,10 @@ class TestCVGradient:
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
     @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator])
-    @pytest.mark.parametrize("make_gate", [lambda x: qml.Rotation(x, wires=0),
-                                   lambda x: qml.ControlledPhase(x, wires=[0, 1])])
+    @pytest.mark.parametrize(
+        "make_gate",
+        [lambda x: qml.Rotation(x, wires=0), lambda x: qml.ControlledPhase(x, wires=[0, 1])],
+    )
     def test_cv_gradients_gaussian_circuit(self, make_gate, O, gaussian_dev, tol):
         """Tests that the gradients of circuits of gaussian gates match
         between the finite difference and analytic methods."""
