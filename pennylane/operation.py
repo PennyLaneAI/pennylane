@@ -253,7 +253,12 @@ def _process_data(op):
             # only. This can happen for example when differentiating
             # holomorphic functions with JAX: e.g., a complex valued QNode (one
             # that returns the state) requires complex typed inputs.
-            complex_param = hasattr(d, "real")
+            try:
+                complex_param = hasattr(d, "real")
+            except:
+                # Torch tensors raise an error
+                complex_param = False
+
             par_string.append(d % period if not complex_param else d.real % period)
 
         return str(par_string)
