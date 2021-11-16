@@ -58,6 +58,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where differentiating a QNode with `qml.state` using the JAX
+  interface raised an error.
+  [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
+
 * `ExpvalCost` now returns corrects results shape when `optimize=True` with 
   shots batch.
   [(#1897)](https://github.com/PennyLaneAI/pennylane/pull/1897)
@@ -81,4 +85,4 @@
 This release contains contributions from (in alphabetical order): 
 
 Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
-Romain Moyard, Maria Schuld, Jay Soni
+Romain Moyard, Maria Schuld, Jay Soni, Antal Száva
