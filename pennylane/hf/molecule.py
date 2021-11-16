@@ -18,10 +18,9 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 import itertools
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
-import numpy as np
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.basis_set import BasisFunction, mol_basis_data, atom_basis_data
+from pennylane.hf.basis_set import BasisFunction, mol_basis_data
 from pennylane.hf.integrals import primitive_norm, contracted_norm
 
 class Molecule:
@@ -49,7 +48,7 @@ class Molecule:
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = pnp.array([[0.0, 0.0, -0.694349],
+    >>> geometry =  np.array([[0.0, 0.0, -0.694349],
     >>>                       [0.0, 0.0,  0.694349]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry)
     >>> print(mol.n_electrons)
@@ -86,10 +85,10 @@ class Molecule:
             l = [i[0] for i in self.basis_data]
 
         if alpha is None:
-            alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
+            alpha = [np.array(i[1], requires_grad=False) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
+            coeff = [np.array(i[2], requires_grad=False) for i in self.basis_data]
 
         r = list(
             itertools.chain(
@@ -111,32 +110,27 @@ class Molecule:
 
         self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
 
-    def get_atomic_orbital(self,i_atom):
-        '''
-        input : i_atom atom index for the ATOMIC orbital
+    def get_atomic_orbital(self, atom_index, basis_index):
+        """..."""
 
-        output : ATOMIC orbital f(x,y,z)
-        '''
+        atom_symbol = self.symbols[atom_index]
 
-        atom_symbol = self.symbols[i_atom]
-        r = self.r[i_atom]
-        basis_data = atom_basis_data(self.basis_name, atom_symbol)
-        lmn = basis_data[0][0]
-        coeff = basis_data[0][1]
-        alpha = basis_data[0][2]
+        l = self.basis_set[basis_index].l
+        alpha = self.basis_set[basis_index].alpha
+        coeff = self.basis_set[basis_index].coeff
+        r = self.basis_set[basis_index].r
 
-        N = [primitive_norm(lmn,a) for a in alpha]
-        C = [n * c for n, c in zip(N, coeff)]
+        coeff = coeff * primitive_norm(l, alpha)
 
-        x0, y0, z0 = r[0], r[1], r[2]
-        norm = contracted_norm(lmn, np.asarray(alpha), np.asarray(C))
+        coeff = coeff * contracted_norm(l, alpha, coeff)
 
-        l, m, n = lmn
-#         x, y, z = r[0], r[1], r[2]
-        def f_orbital(x,y,z):
-            ang = ((x - x0) ** l) * ((y - y0) ** m) * ((z - z0) ** n)
-            val = ang * np.dot(np.array(C), np.array([np.exp(-a * ((x - x0) ** 2 + (y - y0) ** 2 + (z - z0) ** 2)) for a in alpha]))
-            return norm * val
+        lx, ly, lz = l
+
+        def f_orbital(x, y, z):
+            c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
+            e = [np.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
+            return c * np.dot(coeff, e)
+
         return f_orbital
 
     def get_molecular_orbital(self,i_mo,M=None):
