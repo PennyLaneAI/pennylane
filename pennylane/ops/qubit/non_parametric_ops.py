@@ -21,7 +21,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Observable, Operation
+from pennylane.operation import AnyWires, Observable, Operation
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -239,7 +239,7 @@ class PauliY(Observable, Operation):
         return [0.0, np.pi, 0.0]
 
 
-class PauliZ(Observable, DiagonalOperation):
+class PauliZ(Observable, Operation):
     r"""PauliZ(wires)
     The Pauli Z operator
 
@@ -293,7 +293,7 @@ class PauliZ(Observable, DiagonalOperation):
         return [np.pi, 0.0, 0.0]
 
 
-class S(DiagonalOperation):
+class S(Operation):
     r"""S(wires)
     The single-qubit phase gate
 
@@ -341,7 +341,7 @@ class S(DiagonalOperation):
         return [np.pi / 2, 0.0, 0.0]
 
 
-class T(DiagonalOperation):
+class T(Operation):
     r"""T(wires)
     The single-qubit T gate
 
@@ -490,7 +490,7 @@ class CNOT(Operation):
         return Wires(self.wires[0])
 
 
-class CZ(DiagonalOperation):
+class CZ(Operation):
     r"""CZ(wires)
     The controlled-Z operator
 
@@ -643,10 +643,6 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
-
-    @property
-    def control_wires(self):
-        return Wires(self.wires[:2])
 
 
 class ISWAP(Operation):
@@ -832,6 +828,10 @@ class CSWAP(Operation):
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class Toffoli(Operation):

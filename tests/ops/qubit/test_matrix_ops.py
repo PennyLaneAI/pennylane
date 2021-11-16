@@ -181,7 +181,7 @@ class TestQubitUnitary:
         U = qml.Toffoli(wires=[0, 1, 2]).matrix
 
         with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
-            qml.QubitUnitary.decomposition(U, wires=[0, 1])
+            qml.QubitUnitary.decomposition(U, wires=[0, 1, 2])
 
 
 class TestDiagonalQubitUnitary:
@@ -410,3 +410,16 @@ def test_label(op, label):
     assert op.label(decimals=5) == label
     op.inv()
     assert op.label() == label + "⁻¹"
+
+
+control_data = [
+    (qml.QubitUnitary(X, wires=0), Wires([])),
+    (qml.DiagonalQubitUnitary([1, 1], wires=1), Wires([])),
+    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), Wires([0])),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test ``control_wires`` attribute for matrix operations."""
+    assert op.control_wires == control_wires

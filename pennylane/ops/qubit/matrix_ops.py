@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -52,7 +52,7 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if U.shape != (dim, dim):
+            if qml.math.shape(U) != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
@@ -248,7 +248,7 @@ class ControlledQubitUnitary(QubitUnitary):
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
-class DiagonalQubitUnitary(DiagonalOperation):
+class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
 
@@ -269,6 +269,10 @@ class DiagonalQubitUnitary(DiagonalOperation):
     @property
     def num_params(self):
         return 1
+
+    @classmethod
+    def _matrix(cls, *params):
+        return qml.math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):
