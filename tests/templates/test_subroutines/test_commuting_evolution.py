@@ -76,7 +76,7 @@ class TestGradients:
         hamiltonian = qml.Hamiltonian([1], [qml.PauliX(0)])
         frequencies = (2,)
 
-        @qml.qnode(dev)
+        @qml.beta.qnode(dev)
         def circuit(time):
             qml.PauliX(0)
             qml.CommutingEvolution(hamiltonian, time, frequencies)
@@ -87,7 +87,7 @@ class TestGradients:
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
 
-        assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-7))
+        assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
     def test_four_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
@@ -101,18 +101,18 @@ class TestGradients:
         hamiltonian = qml.Hamiltonian(coeffs, obs)
         frequencies = (2, 4)
 
-        @qml.qnode(dev)
+        @qml.beta.qnode(dev)
         def circuit(time):
             qml.PauliX(0)
             qml.CommutingEvolution(hamiltonian, time, frequencies)
             return qml.expval(qml.PauliZ(0))
 
-        x_vals = np.linspace(-np.pi, np.pi, num=10)
+        x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
 
         grads_finite_diff = [qml.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qml.gradients.param_shift(circuit)(x) for x in x_vals]
 
-        assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-7))
+        assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
     def test_differentiable_hamiltonian(self):
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
@@ -126,7 +126,7 @@ class TestGradients:
         def parameterized_hamiltonian(coeffs):
             return qml.Hamiltonian(coeffs, obs)
 
-        @qml.qnode(dev)
+        @qml.beta.qnode(dev)
         def circuit(time, coeffs):
             qml.PauliX(0)
             qml.CommutingEvolution(parameterized_hamiltonian(coeffs), time, frequencies)

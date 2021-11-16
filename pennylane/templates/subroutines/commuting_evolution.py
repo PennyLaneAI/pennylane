@@ -105,7 +105,7 @@ class CommutingEvolution(Operation):
     num_params = 3
     num_wires = AnyWires
     par_domain = "R"
-    grad_method = "A"
+    grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
         from pennylane.gradients.general_shift_rules import (
@@ -123,6 +123,7 @@ class CommutingEvolution(Operation):
             self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
                 hamiltonian.data
             )
+            self.grad_method = "A"
 
         self.hamiltonian = hamiltonian
         self.num_params = len(hamiltonian.data) + 1
