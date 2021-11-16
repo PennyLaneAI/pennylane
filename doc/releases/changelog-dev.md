@@ -11,8 +11,8 @@
 
   ```python
   def circuit(weights):
-    qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
-    return qml.expval(qml.PauliZ(0))
+      qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.PauliZ(0))
 
   original_dev = qml.device("default.qubit", wires=3)
   original_qnode = qml.beta.QNode(circuit, original_dev)

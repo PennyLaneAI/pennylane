@@ -23,8 +23,6 @@ from collections import OrderedDict
 import itertools
 import warnings
 import contextlib
-import types
-from inspect import signature
 
 import numpy as np
 
@@ -192,6 +190,7 @@ class QubitDevice(Device):
 
     @contextlib.contextmanager
     def custom_decomp_context(self):
+        """A context manager for applying custom decompositions."""
 
         from pennylane.transforms.qfunc_transforms import NonQueuingTape
         NonQueuingTape = type("NonQueuingTape", (NonQueuingTape, qml.tape.QuantumTape), {})
