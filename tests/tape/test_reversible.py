@@ -289,37 +289,15 @@ class TestGradients:
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
-    qubit_ops = [getattr(qml, name) for name in qml.ops._qubit__ops__]
-    analytic_qubit_ops = {cls for cls in qubit_ops if cls.grad_method == "A"}
-    analytic_qubit_ops = analytic_qubit_ops - {
-        qml.CRX,
-        qml.CRY,
-        qml.CRZ,
-        qml.CRot,
-        qml.PhaseShift,
-        qml.ControlledPhaseShift,
-        qml.CPhase,
-        qml.PauliRot,
-        qml.MultiRZ,
-        qml.U1,
-        qml.U2,
-        qml.U3,
-        qml.IsingXX,
-        qml.IsingYY,
-        qml.IsingZZ,
-        qml.SingleExcitation,
-        qml.SingleExcitationPlus,
-        qml.SingleExcitationMinus,
-        qml.DoubleExcitation,
-        qml.DoubleExcitationPlus,
-        qml.DoubleExcitationMinus,
-        qml.OrbitalRotation,
-    }
-
-    @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
-    @pytest.mark.parametrize("op", analytic_qubit_ops)
-    def test_gradients(self, op, obs, mocker, tol):
-        """Tests that the gradients of circuits match between the
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.RY(0.3, wires=0),
+            qml.Rot(1.0, 2.0, 3.0, wires=[0]),
+        ],
+    )
+    def test_compare_analytic_and_numeric_gradients(self, op, mocker, tol):
+        """Test for selected gates that the gradients of circuits match between the
         finite difference and analytic methods."""
         args = np.linspace(0.2, 0.5, op.num_params)
 
@@ -328,14 +306,14 @@ class TestGradients:
             qml.RX(0.543, wires=0)
             qml.CNOT(wires=[0, 1])
 
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
 
             qml.Rot(1.3, -2.3, 0.5, wires=[0])
             qml.RZ(-0.5, wires=0)
             qml.RY(0.5, wires=1)
             qml.CNOT(wires=[0, 1])
 
-            qml.expval(obs(wires=0))
+            qml.expval(qml.PauliX(wires=0))
             qml.expval(qml.PauliZ(wires=1))
 
         dev = qml.device("default.qubit", wires=2)

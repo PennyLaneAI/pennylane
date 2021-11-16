@@ -61,7 +61,13 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
+* Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
+
 <h3>Improvements</h3>
+
+* Tests do not loop over automatically imported and instantiated operations any more, 
+  which was opaque and created unnecessarily many tests.
+  [(#1895)](https://github.com/PennyLaneAI/pennylane/pull/1895)
 
 * A `decompose()` method has been added to the `Operator` class such that we can
   obtain (and queue) decompositions directly from instances of operations.
@@ -101,6 +107,14 @@
 
 <h3>Bug fixes</h3>
 
+* `ExpvalCost` now returns corrects results shape when `optimize=True` with 
+  shots batch.
+  [(#1897)](https://github.com/PennyLaneAI/pennylane/pull/1897)
+  
+* `qml.circuit_drawer.MPLDrawer` was slightly modified to work with
+  matplotlib version 3.5.
+  [(#1899)](https://github.com/PennyLaneAI/pennylane/pull/1899)
+
 * `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP` 
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
@@ -115,5 +129,5 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Christina Lee, Alejandro Montanez, Maria Schuld
-Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
+Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
