@@ -248,10 +248,15 @@ def _process_data(op):
 
         par_string = []
         for d in op.data:
-            complex_param = hasattr(d, "real")
-            string.append(d % period if not complex_param else d.real % period)
 
-        return str(string)
+            # If we got a complex inputs for some reason, take the real part
+            # only. This can happen for example when differentiating
+            # holomorphic functions with JAX: e.g., a complex valued QNode (one
+            # that returns the state) with complex inputs.
+            complex_param = hasattr(d, "real")
+            par_string.append(d % period if not complex_param else d.real % period)
+
+        return str(par_string)
 
     return str(op.data)
 

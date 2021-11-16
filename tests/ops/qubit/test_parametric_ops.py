@@ -873,6 +873,22 @@ class TestGrad:
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
+    def test_state_jacobian_jax(self, par, tol):
+        """Test the gradient for the gate IsingXX."""
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.beta.qnode(dev, diff_method="backprop", interface='jax')
+        def test(x):
+            qml.RX(x, wires=[0])
+            return qml.state()
+
+        res = jax.jacobian(test,holomorphic=True)(par + 0j)
+        expected = -1/2*np.sin(par/2), -1/2*1j*np.cos(par/2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
     (
