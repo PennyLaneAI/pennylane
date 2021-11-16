@@ -566,10 +566,8 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-
-        pauli_word = params[1]
+    def __init__(self, theta, pauli_word, wires=None, do_queue=True):
+        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
