@@ -111,6 +111,8 @@ class Molecule:
 
         self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
 
+        self.mo_coefficients = None
+
     def get_atomic_orbital(self, basis_index):
         """..."""
 
@@ -132,8 +134,10 @@ class Molecule:
 
         return f_orbital
 
-    def get_molecular_orbital(self, c):
+    def get_molecular_orbital(self, mo_index):
         """..."""
+
+        c = self.mo_coefficients[mo_index]
 
         def f_orbital(x, y, z):
             m = 0.0
