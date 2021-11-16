@@ -187,12 +187,9 @@ class ExpvalCost:
 
                     for o, c in zip(obs_groupings, coeffs_groupings):
                         res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-                        if isinstance(res[0], list):
-                            for i, batch_res in enumerate(res):
-                                total[i] += sum([r * c_ for r, c_ in zip(batch_res, c)])
-                        else:
-                            for i, batch_res in enumerate(res):
-                                total[i] += sum(batch_res * c)
+
+                        for i, batch_res in enumerate(res):
+                            total[i] += sum(batch_res * c)
                 else:
                     total = 0
                     for o, c in zip(obs_groupings, coeffs_groupings):
