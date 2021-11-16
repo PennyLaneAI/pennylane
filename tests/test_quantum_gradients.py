@@ -30,9 +30,6 @@ mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
 
-cv_ops = [getattr(qml.ops, name) for name in qml.ops._cv__ops__]
-analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
 
 class PolyN(qml.ops.PolyXP):
     "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
@@ -151,6 +148,40 @@ class TestCVGradient:
         autograd_val = grad_fn_S_Fock(r)
         manualgrad_val = 0.5 * np.tanh(r) ** 3 * (2 / (np.sinh(r) ** 2) - 1) / np.cosh(r)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
+
+    @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator])
+    @pytest.mark.parametrize(
+        "make_gate",
+        [lambda x: qml.Rotation(x, wires=0), lambda x: qml.ControlledPhase(x, wires=[0, 1])],
+    )
+    def test_cv_gradients_gaussian_circuit(self, make_gate, O, gaussian_dev, tol):
+        """Tests that the gradients of circuits of gaussian gates match
+        between the finite difference and analytic methods."""
+
+        tol = 1e-5
+        par = 0.4
+
+        def circuit(x):
+            qml.Displacement(0.5, 0, wires=0)
+            make_gate(x)
+            qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
+            qml.Displacement(-0.5, 0.1, wires=0)
+            qml.Squeezing(0.5, -1.5, wires=0)
+            qml.Rotation(-1.1, wires=0)
+            return qml.expval(O(wires=0))
+
+        q = qml.QNode(circuit, gaussian_dev)
+        val = q(par)
+
+        grad_F = qml.gradients.finite_diff(q)(par)
+        grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(par)
+        if O.ev_order == 1:
+            grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(par)
+            # the different methods agree
+            assert grad_A == pytest.approx(grad_F, abs=tol)
+
+        # the different methods agree
+        assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
