@@ -177,3 +177,19 @@ class TestMolecule:
         assert np.allclose(mol.alpha, alpha)
         assert np.allclose(mol.coeff, coeff)
         assert np.allclose(mol.r, r)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "position", "ref_value"),
+        [
+            (["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), (0.0, 0.0, 0.0), 0.62824688),
+        ],
+    )
+    def test_atomic_orbital(self, symbols, geometry, position, ref_value):
+        r"""Test that the computed atomic orbital value is correct."""
+        mol = Molecule(symbols, geometry)
+
+        x, y, z = position
+        ao = mol.get_atomic_orbital(0, 0)
+        ao_value = ao(x, y, z)
+
+        assert np.allclose(ao_value, ref_value)

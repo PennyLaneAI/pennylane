@@ -23,6 +23,7 @@ from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.basis_set import BasisFunction, mol_basis_data
 from pennylane.hf.integrals import primitive_norm, contracted_norm
 
+
 class Molecule:
     r"""Create a molecule object that stores molecular information and default basis set parameters.
 
