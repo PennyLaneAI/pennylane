@@ -235,11 +235,23 @@ def classproperty(func):
 
 
 def _process_data(op):
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([d % (2 * np.pi) for d in op.data])
 
-    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([d % (4 * np.pi) for d in op.data])
+    period = None
+
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+        period = 2 * np.pi
+
+    elif op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        period = 4 * np.pi
+
+    if period is not None:
+
+        par_string = []
+        for d in op.data:
+            complex_param = hasattr(d, "real")
+            string.append(d % period if not complex_param else d.real % period)
+
+        return str(string)
 
     return str(op.data)
 
