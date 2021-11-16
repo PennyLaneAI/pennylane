@@ -101,7 +101,7 @@ class TestDecompositions:
         """Tests that the decomposition of the Phase gate is correct"""
         phi = 0.3
         op = qml.PhaseShift(phi, wires=0)
-        res = op.decomposition(phi, 0)
+        res = op.decompose()
 
         assert len(res) == 1
 
@@ -119,7 +119,7 @@ class TestDecompositions:
     def test_CRot_decomposition(self, tol, phi, theta, omega, monkeypatch):
         """Tests that the decomposition of the CRot gate is correct"""
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
-        res = op.decomposition(phi, theta, omega, op.wires)
+        res = op.decompose()
 
         mats = []
         for i in reversed(res):
@@ -136,7 +136,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
         op = qml.IsingXX(param, wires=[3, 2])
-        res = op.decomposition(param, op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -164,7 +164,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingYY gate is correct"""
         param = 0.1234
         op = qml.IsingYY(param, wires=[3, 2])
-        res = op.decomposition(param, op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -192,7 +192,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingZZ gate is correct"""
         param = 0.1234
         op = qml.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition(param, op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -222,7 +222,7 @@ class TestDecompositions:
         """Tests that the ControlledPhaseShift and CPhase operation
         calculates the correct decomposition"""
         op = cphase_op(phi, wires=[0, 2])
-        decomp = op.decomposition(phi, wires=[0, 2])
+        decomp = op.decompose()
 
         mats = []
         for i in reversed(decomp):
@@ -1006,7 +1006,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "Z", wires=0)
-        decomp_ops = op.decomposition(theta, "Z", wires=0)
+        decomp_ops = op.decompose()
 
         assert np.allclose(op.eigvals, np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
         assert np.allclose(op.matrix, np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
@@ -1023,7 +1023,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert np.allclose(op.eigvals, np.exp(-1j * theta / 2) * np.ones(4))
         assert np.allclose(op.matrix / op.matrix[0, 0], np.eye(4))
@@ -1035,7 +1035,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 0
 
@@ -1044,7 +1044,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "ZZ", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "ZZ", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 1
 
@@ -1058,7 +1058,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "XY", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "XY", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 5
 
@@ -1087,7 +1087,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
-        decomp_ops = op.decomposition(theta, "XIYZ", wires=[0, 1, 2, 3])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 5
 
@@ -1146,7 +1146,6 @@ class TestPauliRot:
         @qml.qnode(dev)
         def decomp_circuit(theta):
             qml.PauliRot.decomposition(theta, "XX", wires=[0, 1])
-
             return qml.expval(qml.PauliZ(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
@@ -1261,7 +1260,7 @@ class TestMultiRZ:
 
         theta = 0.4
         op = qml.MultiRZ(theta, wires=[0, 1])
-        decomp_ops = op.decomposition(theta, wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == Wires([1, 0])
@@ -1279,7 +1278,7 @@ class TestMultiRZ:
 
         theta = 0.4
         op = qml.MultiRZ(theta, wires=[0, 2, 3])
-        decomp_ops = op.decomposition(theta, wires=[0, 2, 3])
+        decomp_ops = op.decompose()
 
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == Wires([3, 2])

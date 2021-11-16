@@ -193,7 +193,7 @@ class ReversibleTape(JacobianTape):
         between_ops = self.operations[op_idx + 1 :]
 
         if op.name == "Rot":
-            decomp = op.decomposition(*op.parameters, wires=wires)
+            decomp = op.decompose()
             generator, multiplier = decomp[p_idx].generator
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:
