@@ -112,6 +112,30 @@ class QubitDensityMatrix(Operation):
     Args:
         state (array[complex]): a density matrix of size (2**len(wires), 2**len(wires))
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    .. UsageDetails::
+        ** Example: **
+        
+        .. code-block:: python
+            import pennylane as qml
+            
+            nr_wires = 2
+            rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
+            rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
+            dev = qml.device("default.mixed", wires=2) 
+            
+            @qml.qnode(dev)
+            def circuit():
+                qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
+                 return qml.state()
+            
+        Running this circuit: 
+        
+        >>>circuit()
+        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
     num_params = 1
     num_wires = AnyWires
