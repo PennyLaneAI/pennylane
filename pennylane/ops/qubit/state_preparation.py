@@ -133,7 +133,6 @@ class QubitDensityMatrix(Operation):
         Running this circuit:
 
         >>> circuit()
-
         [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
