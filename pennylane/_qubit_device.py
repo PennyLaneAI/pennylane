@@ -148,23 +148,24 @@ class QubitDevice(Device):
             custom_op_names = [
                 op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()
             ]
-            custom_decomp_condition = lambda obj: obj.name in custom_op_names
+            custom_decomp_condition = lambda obj: (
+                obj.name not in custom_op_names and self.stopping_condition
+            )
 
             # Combined rule for expansion; our custom rule plus regular device conditions
-            stop_at = qml.BooleanFn(custom_decomp_condition) and self.stopping_condition
+            stop_at = qml.BooleanFn(custom_decomp_condition)
 
             # Create and set the custom expand function for this device
-            self.custom_fn = qml.transforms.create_expand_fn(
+            custom_fn = qml.transforms.create_expand_fn(
                 depth=10,
-                stop_at=stop_at,
-                device=self
+                stop_at=stop_at
             )
 
             # Create a new custom expand function that runs the decomposition
             # within the context.
             def custom_decomp_expand(self, circuit, max_expansion=10):
                 with self.custom_decomp_context():
-                    return self.custom_fn(circuit, max_expansion)
+                    return custom_fn(circuit, max_expansion)
 
             self.custom_expand(custom_decomp_expand)
 
