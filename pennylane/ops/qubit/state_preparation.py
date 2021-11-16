@@ -123,6 +123,7 @@ class QubitDensityMatrix(Operation):
             nr_wires = 2
             rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
             rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
+
             dev = qml.device("default.mixed", wires=2)
             @qml.qnode(dev)
             def circuit():
