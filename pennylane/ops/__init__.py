@@ -20,7 +20,7 @@ such as gates, state preparations and observables.
 """
 import numpy as np
 
-from pennylane.operation import AnyWires, Observable, CVObservable
+from pennylane.operation import AnyWires, Observable, CVObservable, Operation
 
 from .cv import *
 from .qubit import *
@@ -43,7 +43,7 @@ class AdjointError(Exception):
     pass
 
 
-class Identity(CVObservable):
+class Identity(CVObservable, Operation):
     r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.
 
@@ -55,7 +55,7 @@ class Identity(CVObservable):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
-    num_wires = AnyWires
+    num_wires = 1
     num_params = 0
     par_domain = None
     grad_method = None
@@ -64,7 +64,7 @@ class Identity(CVObservable):
     eigvals = np.array([1, 1])
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "I")
+        return base_label or "I"
 
     @classmethod
     def _eigvals(cls, *params):
@@ -81,7 +81,12 @@ class Identity(CVObservable):
     def diagonalizing_gates(self):
         return []
 
+    @staticmethod
+    def identity_op(*params):
+        """Returns the matrix representation of the identity operator."""
+        return Identity._matrix(*params)
+
 
 __all__ = _cv__all__ + _qubit__all__ + _channel__ops__ + ["Identity"]
-__all_ops__ = list(_cv__ops__ | _qubit__ops__)
+__all_ops__ = list(_cv__ops__ | _qubit__ops__) + ["Identity"]
 __all_obs__ = list(_cv__obs__ | _qubit__obs__) + ["Identity"]

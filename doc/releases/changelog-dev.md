@@ -6,13 +6,15 @@
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
+  
+* Added the identity observable to be an operator. Now we can explicitly call the identity 
+  operation on our quantum circuits for both qubit and CV devices.
+  [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
 * `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
   
-* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
-
 * A `lru_cache` decorated function for computing generalized parameter shift rules for generators'
   whose eigenvalue frequency spectrum is known is available as `qml.gradients.get_shift_rule`.
   Given a generator's frequency spectrum of `R` unique frequencies, `qml.gradients.get_shift_rule`
@@ -24,7 +26,7 @@
 
   For example, a four-term shift rule is generated for the frequency spectrum `[1, 2]`, which
   corresponds to a generator eigenspectrum of e.g. `[-1, 0, 1]`:
-
+  
   ```python
   import pennylane as qml
 
@@ -77,6 +79,42 @@
   Note that there is no internal validation that 1) the input `qml.Hamiltonian` is fully commuting
   and 2) the eigenvalue frequency spectrum is correct, since these checks become
   prohibitively expensive for large Hamiltonians.
+  
+<h3>Improvements</h3>
+
+* A `decompose()` method has been added to the `Operator` class such that we can
+  obtain (and queue) decompositions directly from instances of operations.
+  [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
+
+  ```pycon
+  >>> op = qml.PhaseShift(0.3, wires=0)
+  >>> op.decompose()
+  [RZ(0.3, wires=[0])]
+  ```
+  
+* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+  [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
+
+* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
+* The static method `decomposition()`, formerly in the `Operation` class, has
+  been moved to the base `Operator` class.
+  [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
+  
+* `DiagonalOperation` is not a separate subclass any more. 
+  [(#1889)](https://github.com/PennyLaneAI/pennylane/pull/1889) 
+
+  Instead, devices can check for the diagonal 
+  property using attributes:
+
+  ``` python
+  from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+
+  if op in diagonal_in_z_basis:
+      # do something
+  ``` 
+
+<h3>Deprecations</h3>
 
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
@@ -88,5 +126,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Josh Izaac, Jalani Kanem, Robert Lang, Christina Lee, Guillermo Alonso-Linaje, Cedric Lin, Alejandro Montanez, David Wierichs.
-
+Josh Izaac, Jalani Kanem, Robert Lang, Christina Lee, Guillermo Alonso-Linaje, Cedric Lin, Olivia Di Matteo, Alejandro Montanez, Maria Schuld, Jay Soni, David Wierichs.
