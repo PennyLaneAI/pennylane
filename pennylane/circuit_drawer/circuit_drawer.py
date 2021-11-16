@@ -382,22 +382,17 @@ class CircuitDrawer:
             rendered_substrings = []
             for i in range(n_wraps):
                 for wire in wires:
-                    # These conditionals are a bit of a hack. Their goal is to
-                    # prepend whitespace to maintain alignment with the
-                    # beginning of the circuit while preventing the breaking
-                    # of the existing circuit_drawer unit tests.
+                    # Print body of circuit. We compute some index and whitespace offsets to ensure the rendered wire matches existing unit tests.
                     if (self.max_length * (i + 1)) < len(wire):
-                        # First wrap, print beginning of circuit
-                        if i == 0:
-                            rendered_substrings.append(
-                                f"{wire[i * self.max_length : ((i + 1) * self.max_length) + 1]}"
-                            )
-                        # Center wraps, print everything in between
-                        else:
-                            rendered_substrings.append(
-                                f" {wire[(i * self.max_length) + 1: ((i + 1) * self.max_length) + 1]}"
-                            )
-                    # Last wrap, print the tail of the circuit
+                        offset_white_space = (
+                            int((i != 0) or (self.max_length * (i + 1) >= len(wire))) * " "
+                        )
+                        offset_index = int(i != 0)
+                        rendered_substrings.append(
+                            f"{offset_white_space}"
+                            + f"{wire[(i * self.max_length) + offset_index: ((i + 1) * self.max_length) + 1]}"
+                        )
+                    # Last wrap, print the tail of the circuit. We trim the last character of whitespace at the end.
                     else:
                         rendered_substrings.append(f" {wire[i * self.max_length + 1:]}"[:-1])
             rendered_string = "\n".join(rendered_substrings)
