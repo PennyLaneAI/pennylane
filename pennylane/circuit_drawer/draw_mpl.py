@@ -263,7 +263,6 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                         "zorder": 4
                     },  # make sure box and text above control wires if controlled
                     text_options={"zorder": 5},
-                    extra_width=extra_width,
                 )
 
     # store wires we've already drawn on
