@@ -824,7 +824,7 @@ label_data = [
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
     (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
-    (qml.Barrier(0), "||", "||")
+    (qml.Barrier(0), "||", "||"),
 ]
 
 
