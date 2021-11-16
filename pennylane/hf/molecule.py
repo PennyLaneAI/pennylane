@@ -133,30 +133,13 @@ class Molecule:
 
         return f_orbital
 
-    def get_molecular_orbital(self,i_mo,M=None):
-        '''
-        input : i_atom atom index for the ATOMIC orbital
-                M linear combination for the atomic orbitals
+    def get_molecular_orbital(self, c):
+        """..."""
 
-        output : MOLECULAR orbital f(x,y,z)
-        '''
-
-        if i_mo > self.n_orbitals:
-            print('The molecular orbital number does not exists!')
-            i_mo = self.n_orbitals
-
-        if not M.any(): # RANDOM WEIGHTS
-            M = np.random.rand(self.n_orbitals)
-            M = M/np.linalg.norm(M)
-        # TODO
-        # READ THE LINEAR COMBINATION FROM THE HF CALCULATIONS
-        # else:
-            # M = molecule.D[i_mo]
-
-        def f_orbital(x,y,z):
-            mo = 0.
+        def f_orbital(x, y, z):
+            m = 0.0
             for i in range(self.n_orbitals):
-                mo_t = self.get_atomic_orbital(i)
-                mo = mo + M[i]*mo_t(x,y,z)
-            return mo
+                m = m + c[i] * self.get_atomic_orbital(0, i)(x, y, z)
+            return m
+
         return f_orbital
