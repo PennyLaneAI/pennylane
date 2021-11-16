@@ -94,7 +94,7 @@ class TestErrors:
             ({"x": {(): [0.0, 1.0, 2.0]}}, {"x": {(): list(range(20))}}),
         ],
     )
-    def test_num_frequency_invalid(self, spectra, shifts):
+    def test_wrong_number_of_shifts(self, spectra, shifts):
         """Tests that an error is raised if the number of provided shifts does not match."""
         with pytest.raises(ValueError, match="The number of provided shifts"):
             reconstruct(dummy_qnode, spectra=spectra, shifts=shifts)

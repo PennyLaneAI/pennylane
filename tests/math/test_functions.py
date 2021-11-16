@@ -556,7 +556,22 @@ class TestTensordot:
     )
     M1 = torch.tensor(_arange)
     M2 = torch.tensor(_shuffled_arange)
+    T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
+    T1 = np.array([T1[1], T1[0], T1[2]])
+
     v1_dot_v2 = 9.59
+    v1_outer_v2 = np.array(
+        [
+            [0.43, -0.12, 0.82, 0.06, -0.42, -1.1],
+            [2.15, -0.6, 4.1, 0.3, -2.1, -5.5],
+            [-3.87, 1.08, -7.38, -0.54, 3.78, 9.9],
+            [4.3, -1.2, 8.2, 0.6, -4.2, -11.0],
+            [-18.06, 5.04, -34.44, -2.52, 17.64, 46.2],
+            [0.43, -0.12, 0.82, 0.06, -0.42, -1.1],
+        ],
+        dtype=np.float64,
+    )
+
     M1_dot_v1 = torch.tensor(
         [-14.6, -35.0, -55.4, -75.8, -96.2, -116.6, -137.0, -157.4, -177.8], dtype=torch.float64
     )
@@ -594,8 +609,6 @@ class TestTensordot:
         ],
         dtype=torch.float64,
     )
-    T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
-    T1 = np.array([T1[1], T1[0], T1[2]])
 
     T1_dot_v1 = torch.tensor(
         [
@@ -696,6 +709,10 @@ class TestTensordot:
     @pytest.mark.parametrize("axes", [[[0], [0]], [[-1], [0]], [[0], [-1]], [[-1], [-1]]])
     def test_tensordot_torch_vector_vector(self, axes):
         assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=axes), self.v1_dot_v2)
+
+    def test_tensordot_torch_outer(self):
+        assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
+        assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
 
     @pytest.mark.parametrize(
         "M, v, expected",
