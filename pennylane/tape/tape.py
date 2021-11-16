@@ -425,6 +425,11 @@ class QuantumTape(AnnotatedQueue):
                 obj.inverse = info.get("inverse", False)
 
                 if isinstance(obj, STATE_PREP_OPS):
+                    if self._ops:
+                        raise ValueError(
+                            f"State preparation operation {obj} must occur prior to any quantum operations."
+                        )
+
                     self._prep.append(obj)
                 else:
                     self._ops.append(obj)
