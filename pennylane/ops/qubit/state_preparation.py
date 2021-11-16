@@ -115,7 +115,7 @@ class QubitDensityMatrix(Operation):
 
     .. UsageDetails::
 
-        ** Example: **
+        Example:
 
         .. code-block:: python
 
