@@ -114,8 +114,11 @@ class QubitDensityMatrix(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
     .. UsageDetails::
+
         ** Example: **
+
         .. code-block:: python
+
             import pennylane as qml
             nr_wires = 2
             rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
@@ -125,7 +128,9 @@ class QubitDensityMatrix(Operation):
             def circuit():
                 qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
                  return qml.state()
+
         Running this circuit:
+
         >>>circuit()
         [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]
