@@ -49,6 +49,22 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing dask and dask.distributed") from e
 
 
+class ProxyInstanceCLS(classmethod):
+    """
+    This utility class allows the use of both an instance
+    as well as class method types. For situations where
+    the explicit class method is needed, we can use this as a 
+    decorator, and select the appropriate call dynamically.
+    This is an essential support for accessing backend 
+    functionality supports with the proxy `task.qubit`.
+
+    The implementation is based on the Python descriptor guide
+    as mentioned https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod/28238047#28238047
+    """
+    def __get__(self, instance, type_):
+        descr_get = super().__get__ if instance is None else self.__func__.__get__
+        return descr_get(instance, type_)
+
 class TaskQubit(QubitDevice):
     """Proxy simulator plugin written using Dask.Distributed as a task-distribution scheduling backend.
 
@@ -73,7 +89,7 @@ class TaskQubit(QubitDevice):
     ...     dask_cluster = dist.LocalCluster(n_workers=4, threads_per_worker=1)
     ...     dask_client = dist.Client(dask_cluster)
     ...     dask_backend = "default.qubit.tf"
-    ...     dev = qml.device("task.qubit", wires=6, client=dask_client, backend=dask_backend)
+    ...     dev = qml.device("task.qubit", wires=6, backend=dask_backend)
     ...     @qml.beta.qnode(dev, cache=False, interface="tf") # caching must be disabled due to proxy interface
     ...     def circuit(x):
     ...         qml.RX(x[0], wires=0)
@@ -87,17 +103,13 @@ class TaskQubit(QubitDevice):
 
     ...     with tf.GradientTape() as tape:
     ...         # Use the circuit to calculate the loss value
-    ...         loss = circuit(weights)
+    ...         loss = tf.abs(circuit(weights)-0.5)**2
 
     ...     print(tape.gradient(loss, weights))
     tf.Tensor([-0.39259075 -0.30759767 -0.49561258], shape=(3,), dtype=float64)
 
     Args:
         wires (int): The number of wires to initialize the device with.
-        client (None, str): The dask scheduler client. If not specified, dask will
-            initialize a scheduler local to the system running within the
-            the Python environment. The scheduler is expected to be of the form `dask.distributed`,
-            and have workers using the same (or greater) version of Python and PennyLane.
         backend (None, str): Indicates the PennyLane device type to use for offloading
             computation tasks. The TensorFlow and PyTorch interfaces are the preferred types
             for gradient computations. This is due to existing support in Dask for
@@ -106,12 +118,13 @@ class TaskQubit(QubitDevice):
             to a result. This allows building of dependent workflows, but currently only works with
             explicit calls to `device.batch_execute` with a PennyLane native device type such as
             (`default.qubit`, `lightning.qubit`).
+        gen_report: Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
     """
 
     operations = DefaultQubit.operations
     observables = DefaultQubit.observables
 
-    name = "Task-based qubit PennyLane plugin"
+    name = "Task-based proxy PennyLane plugin"
     short_name = "task.qubit"
     pennylane_requires = __version__
     version = __version__
@@ -135,7 +148,11 @@ class TaskQubit(QubitDevice):
         gen_report: Union[bool, str] = False,
         future=False
     ):
+        super().__init__(0, shots, cache=False)
+
         self._backend = backend
+        self._backend_cls = qml.plugin_devices[backend].load()
+        self._backend_dev = self._backend_cls(wires=0)
         self._wires = wires
         self._gen_report = gen_report
         self.num_wires = wires if isinstance(wires, int) else len(wires)
@@ -148,6 +165,11 @@ class TaskQubit(QubitDevice):
 
         if backend not in TaskQubit.supported_devices:
             raise ("Unsupported device backend.")
+
+    def __get__(self, obj, objtype=None):
+        if obj not in self.__dict__:
+            return self._backend_cls.obj
+        return self.__dict__[obj]
 
     def batch_execute(self, circuits: Union[List[qml.tape.QuantumTape], qml.beta.QNode], **kwargs):
         if self._gen_report:
@@ -203,29 +225,23 @@ class TaskQubit(QubitDevice):
         pass
 
     # Since we are using a proxy device, capabilities are handled by chosen backend
-    def capabilities(self):
-        backend_ep = qml.plugin_devices[self._backend].load()
-        return backend_ep.capabilities()
-
-    @classmethod
-    def capabilities(cls):
-        capabilities = super().capabilities().copy()
-        capabilities.update(
-            model="qubit",
-            supports_finite_shots=False,
-            supports_reversible_diff=False,
-            supports_inverse_operations=False,
-            supports_analytic_computation=False,
-            returns_state=False,
-            passthru_devices={ 
-                "tf": "default.qubit.tf",
-                "jax": "default.qubit.jax",
-                "torch": "default.qubit.torch",
-                "lightning": "lightning.qubit",
-                "default": "default.qubit",
-            },
-        )
-        return capabilities
+    @ProxyInstanceCLS
+    def capabilities(self_cls):
+        if not isinstance(self_cls, type):
+            return self_cls._backend_cls.capabilities()
+        else:
+            capabilities = super().capabilities().copy()
+            capabilities.update(
+                model="qubit",
+                supports_finite_shots=False,
+                supports_reversible_diff=False,
+                supports_inverse_operations=False,
+                supports_analytic_computation=False,
+                returns_state=False,
+                returns_probs=False,
+                passthru_devices={},
+            )
+            return capabilities
 
     @staticmethod
     def _execute_wrapper(
