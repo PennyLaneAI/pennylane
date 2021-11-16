@@ -51,6 +51,10 @@
 
 <h3>Bug fixes</h3>
 
+* `qml.circuit_drawer.MPLDrawer` was slightly modified to work with
+  matplotlib version 3.5.
+  [(#1899)](https://github.com/PennyLaneAI/pennylane/pull/1899)
+
 * `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP` 
   returns the default empty wires object.
   [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
