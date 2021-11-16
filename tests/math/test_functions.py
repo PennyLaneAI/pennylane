@@ -1289,102 +1289,213 @@ def test_squeeze(t):
 class TestScatterElementAdd:
     """Tests for the scatter_element_add function"""
 
+    x = onp.ones((2, 3), dtype=np.float64)
+    y = onp.array(0.56)
+    index = [1, 2]
+    expected_val = onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]])
+    expected_grad_x = onp.array([[0, 0, 0], [0, 0, 1.0]])
+    expected_grad_y = 2 * y
+    expected_jac_x = onp.eye(6).reshape((2, 3, 2, 3))
+    expected_jac_y = onp.array([[0, 0, 0], [0, 0, 2 * y]])
+
     def test_array(self):
         """Test that a NumPy array is differentiable when using scatter addition"""
-        x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
-        y = np.array(0.56, requires_grad=True)
+        x = np.array(self.x, requires_grad=True)
+        y = np.array(self.y, requires_grad=True)
 
         def cost(weights):
-            return fn.scatter_element_add(weights[0], [1, 2], weights[1] ** 2)
+            return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
         assert isinstance(res, np.ndarray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
-        grad = qml.grad(lambda weights: cost(weights)[1, 2])([x, y])
-        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(grad[1], 2 * y)
+        grad = qml.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_array_multi(self):
         """Test that a NumPy array and the addend are differentiable when using
         scatter addition (multi dispatch)."""
-        x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
-        y = np.array(0.56, requires_grad=True)
+        x = np.array(self.x, requires_grad=True)
+        y = np.array(self.y, requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
 
         res = cost_multi(x, y)
         assert isinstance(res, np.ndarray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
         jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
-        assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
-        assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
+        assert fn.allclose(jac[0], self.expected_jac_x)
+        assert fn.allclose(jac[1], self.expected_jac_y)
 
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
-        x = tf.Variable([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        y = tf.Variable(0.56)
+        x = tf.Variable(self.x)
+        y = tf.Variable(self.y)
 
         with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, [1, 2], y ** 2)
-            loss = res[1, 2]
+            res = fn.scatter_element_add(x, self.index, y ** 2)
+            loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, tf.Tensor)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
         grad = tape.gradient(loss, [x, y])
-        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(grad[1], 2 * y)
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_torch(self):
         """Test that a torch tensor is differentiable when using scatter addition"""
-        x = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
-        y = torch.tensor(0.56, requires_grad=True)
+        x = torch.tensor(self.x, requires_grad=True)
+        y = torch.tensor(self.y, requires_grad=True)
 
-        res = fn.scatter_element_add(x, [1, 2], y ** 2)
-        loss = res[1, 2]
+        res = fn.scatter_element_add(x, self.index, y ** 2)
+        loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, torch.Tensor)
-        assert fn.allclose(res.detach(), onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res.detach(), self.expected_val)
 
         loss.backward()
-        assert fn.allclose(x.grad, onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(y.grad, 2 * y)
+        assert fn.allclose(x.grad, self.expected_grad_x)
+        assert fn.allclose(y.grad, self.expected_grad_y)
 
     def test_jax(self):
         """Test that a JAX array is differentiable when using scatter addition"""
-        x = jnp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        y = jnp.array(0.56)
+        x = jnp.array(self.x)
+        y = jnp.array(self.y)
 
         def cost(weights):
-            return fn.scatter_element_add(weights[0], [1, 2], weights[1] ** 2)
+            return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
-        grad = jax.grad(lambda weights: cost(weights)[1, 2])([x, y])
-        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(grad[1], 2 * y)
+        grad = jax.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_jax_multi(self):
         """Test that a NumPy array and the addend are differentiable when using
         scatter addition (multi dispatch)."""
-        x = jnp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        y = jnp.array(0.56)
+        x = jnp.array(self.x)
+        y = jnp.array(self.y)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
 
         res = cost_multi(x, y)
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
         jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
-        assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
-        assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
+        assert fn.allclose(jac[0], self.expected_jac_x)
+        assert fn.allclose(jac[1], self.expected_jac_y)
+
+
+class TestScatterElementAddMultiValue:
+    """Tests for the scatter_element_add function when adding
+    multiple values at multiple positions."""
+
+    x = onp.ones((2, 3), dtype=np.float64)
+    y = onp.array(0.56)
+    indices = [[1, 0], [2, 1]]
+    expected_val = onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.27636]])
+    expected_grad_x = onp.array([[0, 1.0, 0], [0, 0, 1.0]])
+    expected_grad_y = 2 * y + onp.cos(y / 2) / 2
+
+    def test_array(self):
+        """Test that a NumPy array is differentiable when using scatter addition
+        with multiple values."""
+        x = np.array(self.x, requires_grad=True)
+        y = np.array(self.y, requires_grad=True)
+
+        def cost(weights):
+            return fn.scatter_element_add(
+                weights[0], self.indices, [fn.sin(weights[1] / 2), weights[1] ** 2]
+            )
+
+        res = cost([x, y])
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, self.expected_val)
+
+        scalar_cost = (
+            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
+            + cost(weights)[self.indices[0][1], self.indices[1][1]]
+        )
+        grad = qml.grad(scalar_cost)([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
+
+    def test_tensorflow(self):
+        """Test that a TF tensor is differentiable when using scatter addition
+        with multiple values."""
+        x = tf.Variable(self.x)
+        y = tf.Variable(self.y)
+
+        with tf.GradientTape() as tape:
+            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y ** 2])
+            loss = (
+                res[self.indices[0][0], self.indices[1][0]]
+                + res[self.indices[0][1], self.indices[1][1]]
+            )
+
+        assert isinstance(res, tf.Tensor)
+        assert fn.allclose(res, self.expected_val)
+
+        grad = tape.gradient(loss, [x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
+
+    def test_torch(self):
+        """Test that a torch tensor is differentiable when using scatter addition
+        with multiple values."""
+        x = torch.tensor(self.x, requires_grad=True)
+        y = torch.tensor(self.y, requires_grad=True)
+
+        values = torch.zeros(2)
+        values[0] += torch.sin(y / 2)
+        values[1] += y ** 2
+        res = fn.scatter_element_add(x, self.indices, values)
+        loss = (
+            res[self.indices[0][0], self.indices[1][0]]
+            + res[self.indices[0][1], self.indices[1][1]]
+        )
+
+        assert isinstance(res, torch.Tensor)
+        assert fn.allclose(res.detach(), self.expected_val)
+
+        loss.backward()
+        assert fn.allclose(x.grad, self.expected_grad_x)
+        assert fn.allclose(y.grad, self.expected_grad_y)
+
+    def test_jax(self):
+        """Test that a JAX array is differentiable when using scatter addition
+        with multiple values."""
+        x = jnp.array(self.x)
+        y = jnp.array(self.y)
+
+        def cost(weights):
+            return fn.scatter_element_add(
+                weights[0], self.indices, [fn.sin(weights[1] / 2), weights[1] ** 2]
+            )
+
+        res = cost([x, y])
+        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        print(res)
+        print(self.expected_val)
+        assert fn.allclose(res, self.expected_val)
+
+        scalar_cost = (
+            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
+            + cost(weights)[self.indices[0][1], self.indices[1][1]]
+        )
+        grad = jax.grad(scalar_cost)([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
 
 class TestDiag:
