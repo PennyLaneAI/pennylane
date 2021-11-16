@@ -150,22 +150,22 @@ class TestAdjointJacobian:
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(dev_jacobian, expected_jacobian, atol=tol, rtol=0)
 
-    qubit_ops = [getattr(qml, name) for name in qml.ops._qubit__ops__]
     ops = {qml.RX, qml.RY, qml.RZ, qml.PhaseShift, qml.CRX, qml.CRY, qml.CRZ, qml.Rot}
 
-    @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
-    @pytest.mark.parametrize("op", ops)
+    @pytest.mark.parametrize("obs", [qml.PauliY])
+    @pytest.mark.parametrize(
+        "op", [qml.RX(0.4, wires=0), qml.CRZ(1.0, wires=[0, 1]), qml.Rot(0.2, -0.1, 0.2, wires=0)]
+    )
     def test_gradients(self, op, obs, tol, dev):
         """Tests that the gradients of circuits match between the finite difference and device
         methods."""
-        args = np.linspace(0.2, 0.5, op.num_params)
 
         with qml.tape.JacobianTape() as tape:
             qml.Hadamard(wires=0)
             qml.RX(0.543, wires=0)
             qml.CNOT(wires=[0, 1])
 
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
 
             qml.Rot(1.3, -2.3, 0.5, wires=[0])
             qml.RZ(-0.5, wires=0)
