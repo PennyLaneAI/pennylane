@@ -255,7 +255,7 @@ def _process_data(op):
             # that returns the state) requires complex typed inputs.
             try:
                 complex_param = hasattr(d, "real")
-            except:
+            except RuntimeError:
                 # Torch tensors raise an error
                 complex_param = False
 
