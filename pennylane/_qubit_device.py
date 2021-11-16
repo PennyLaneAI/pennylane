@@ -150,10 +150,10 @@ class QubitDevice(Device):
                 op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()
             ]
 
-            # Stop the expansion once operations are no longer in our list of custom
-            # ones AND the device stopping criteria is satisfied
-            custom_decomp_condition = lambda obj: (
-                obj.name not in custom_op_names and self.stopping_condition
+            custom_decomp_condition =  qml.BooleanFn(
+                lambda obj: not isinstance(obj, qml.tape.QuantumTape) # Expand templates
+                and obj.name not in custom_op_names # Expand things that don't have custom decomp
+                and self.supports_operation(obj.name) # Expand things until supported on device
             )
 
             # Create a new expansion function, then set the device's custom expand
@@ -161,7 +161,7 @@ class QubitDevice(Device):
             # the decompositions have been replaced.
             custom_fn = qml.transforms.create_expand_fn(
                 depth=10,
-                stop_at=qml.BooleanFn(custom_decomp_condition)
+                stop_at=custom_decomp_condition
             )
 
             def custom_decomp_expand(self, circuit, max_expansion=10):
