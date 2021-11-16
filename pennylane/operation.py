@@ -389,11 +389,6 @@ class Operator(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def num_params(self):
-        """Number of parameters the operator takes."""
-
-    @property
-    @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on."""
 
