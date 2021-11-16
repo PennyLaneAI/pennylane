@@ -417,7 +417,7 @@ class TestJaxExecuteIntegration:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
+        tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
 
@@ -437,7 +437,7 @@ class TestJaxExecuteIntegration:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
 
@@ -550,7 +550,7 @@ class TestJaxExecuteIntegration:
                 qml.QubitUnitary(U, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            tape.trainable_params = {0}
+            tape.trainable_params = [0]
             return execute([tape], device, interface="jax", **execute_kwargs)[0][0]
 
         dev = qml.device("default.qubit", wires=2)

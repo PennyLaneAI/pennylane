@@ -37,6 +37,11 @@
 
 <h3>Breaking changes</h3>
 
+* `QuantumTape.trainable_params` now is a list instead of a set. This
+  means that `tape.trainable_params` will return a list unlike before,
+  but setting the `trainable_params` with a set works exactly as before.
+  [(#1xxx)](https://github.com/PennyLaneAI/pennylane/pull/1xxx)
+
 * The static method `decomposition()`, formerly in the `Operation` class, has
   been moved to the base `Operator` class.
   [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
@@ -58,6 +63,10 @@
 
 <h3>Bug fixes</h3>
 
+* `QuantumTape.trainable_params` now is a list instead of a set, making
+  it more stable in very rare edge cases.
+  [(#1xxx)](https://github.com/PennyLaneAI/pennylane/pull/1xxx)
+
 * `qml.circuit_drawer.MPLDrawer` was slightly modified to work with
   matplotlib version 3.5.
   [(#1899)](https://github.com/PennyLaneAI/pennylane/pull/1899)
@@ -76,5 +85,5 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez, Maria Schuld, Jay Soni
+Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez, Maria Schuld, Jay Soni, David Wierichs
 
