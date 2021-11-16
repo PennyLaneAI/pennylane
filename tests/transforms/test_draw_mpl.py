@@ -42,7 +42,7 @@ def circuit2(x):
     return qml.expval(qml.PauliZ(0))
 
 
-def test_default():
+def test_standard_use():
     """Tests standard usage produces expected figure and axes"""
 
     # not constructed before calling
@@ -52,9 +52,9 @@ def test_default():
     assert isinstance(ax, mpl.axes._axes.Axes)
 
     # proxy for whether correct things were drawn
-    assert len(ax.patches) == 7
-    assert len(ax.lines) == 7
-    assert len(ax.texts) == 5
+    assert len(ax.patches) == 7  # two boxes, 2 circles for CNOT, 3 patches for measure
+    assert len(ax.lines) == 6  # three wires, three lines for CNOT
+    assert len(ax.texts) == 5  # three wire labels, 2 box labels
 
     assert ax.texts[0].get_text() == "0"
     assert ax.texts[1].get_text() == "a"
@@ -110,7 +110,8 @@ class TestWireBehaviour:
 
         _, ax = qml.draw_mpl(circuit2)(1.23)
 
-        assert len(ax.lines) == 2  # one wire label, one gate label
+        assert len(ax.lines) == 1  # one wire
+        assert len(ax.texts) == 2  # one wire label and one gate label
         assert ax.texts[0].get_text() == "0"
         assert ax.texts[1].get_text() == "RX"
         plt.close()
@@ -120,12 +121,27 @@ class TestWireBehaviour:
 
         _, ax = qml.draw_mpl(circuit2, show_all_wires=True)(1.23)
 
-        # three wires plus one gate label
-        assert len(ax.lines) == 4
+        assert len(ax.lines) == 3  # three wires
+
+        assert len(ax.texts) == 4  # three wire labels and one gate label
         assert ax.texts[0].get_text() == "0"
         assert ax.texts[1].get_text() == "a"
         assert ax.texts[2].get_text() == "1.23"
         plt.close()
+
+    def test_wire_order_not_on_device(self):
+        """Test when ``wire_order`` priority by requesting ``show_all_wires`` with
+        the ``wire_order`` containing wires not on the device. The output should have
+        three wires, one active and two empty wires from the wire order."""
+
+        _, ax = qml.draw_mpl(circuit2, wire_order=[2, "a"], show_all_wires=True)(1.23)
+
+        assert len(ax.lines) == 3  # three wires
+
+        assert len(ax.texts) == 4  # three wire labels and one gate label
+        assert ax.texts[0].get_text() == "2"
+        assert ax.texts[1].get_text() == "a"
+        assert ax.texts[2].get_text() == "0"
 
     def test_wire_options(self):
         """Test wire options modifies wire styling"""
@@ -140,6 +156,8 @@ class TestWireBehaviour:
 
 
 class TestMPLIntegration:
+    """Test using matplotlib styling to modify look of graphic."""
+
     def test_rcparams(self):
         """Test setting rcParams modifies style."""
 
@@ -170,7 +188,7 @@ class TestMPLIntegration:
         assert ax.patches[0].get_facecolor() == expected_facecolor
         assert ax.patches[1].get_facecolor() == expected_facecolor
 
-        expected_linecolor = mpl.colors.to_rgba(plt.rcParmas["lines.color"])
+        expected_linecolor = mpl.colors.to_rgba(plt.rcParams["lines.color"])
         for l in ax.lines[0:-1]:  # final is fancy arrow, has different styling
             assert mpl.colors.to_rgba(l.get_color()) == expected_linecolor
 
