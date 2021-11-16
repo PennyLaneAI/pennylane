@@ -12,6 +12,8 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
 
+* Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
+
 <h3>Improvements</h3>
 
 * Tests do not loop over automatically imported and instantiated operations any more, 
@@ -74,4 +76,5 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Christina Lee, Alejandro Montanez, Maria Schuld, Jay Soni
+Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez, Maria Schuld, Jay Soni
+
