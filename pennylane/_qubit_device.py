@@ -24,6 +24,7 @@ import itertools
 import warnings
 import contextlib
 import types
+from inspect import signature
 
 import numpy as np
 
@@ -148,21 +149,21 @@ class QubitDevice(Device):
             custom_op_names = [
                 op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()
             ]
+
+            # Stop the expansion once operations are no longer in our list of custom
+            # ones AND the device stopping criteria is satisfied
             custom_decomp_condition = lambda obj: (
                 obj.name not in custom_op_names and self.stopping_condition
             )
 
-            # Combined rule for expansion; our custom rule plus regular device conditions
-            stop_at = qml.BooleanFn(custom_decomp_condition)
-
-            # Create and set the custom expand function for this device
+            # Create a new expansion function, then set the device's custom expand
+            # function to one that runs our new expansion function in a context where
+            # the decompositions have been replaced.
             custom_fn = qml.transforms.create_expand_fn(
                 depth=10,
-                stop_at=stop_at
+                stop_at=qml.BooleanFn(custom_decomp_condition)
             )
 
-            # Create a new custom expand function that runs the decomposition
-            # within the context.
             def custom_decomp_expand(self, circuit, max_expansion=10):
                 with self.custom_decomp_context():
                     return custom_fn(circuit, max_expansion)
@@ -202,23 +203,25 @@ class QubitDevice(Device):
             if isinstance(obj, str):
                 obj = getattr(qml, obj)
 
-            original_decomp_method = obj.decomposition
+            original_decomp_method = obj.decompose
 
-            # This is the method that will override the current .decomposition method of
+            # This is the method that will override the current .decompose method of
             # the given operation; it has the same signature as .decomposition
-            def new_decomp_method(*params, wires):
+            def new_decomp_method(self):
                 with NonQueuingTape() as tape:
-                    return fn(*params, wires)
+                    if self.num_params == 0:
+                        return fn(self.wires)
+                    return fn(*self.params, self.wires)
                 return tape
 
             try:
                 # Actually set the new decomp function; note that we set
                 # expand rather than `decomposition` proper.
-                obj.decomposition = new_decomp_method
+                obj.decompose = new_decomp_method
                 yield
 
             finally:
-                obj.decomposition = original_decomp_method
+                obj.decompose = original_decomp_method
 
         # Now, loop through the decomposition dictionary and create all the contexts
         try:
