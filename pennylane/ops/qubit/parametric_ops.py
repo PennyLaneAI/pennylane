@@ -55,10 +55,7 @@ class RX(Operation):
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
+    num_params = 1
 
     @classmethod
     def _matrix(cls, *params):
