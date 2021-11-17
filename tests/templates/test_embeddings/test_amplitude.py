@@ -38,8 +38,18 @@ TOO_MANY_FEATURES = [
 ]
 
 MULTI_FEATURES = [
-    [[1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0], [1 / 2, 1 / 2, -1 / 2, -1 / 2, 0, 0, 0, 0], 0.5],
-    [[1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0], [1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0], 1.0],
+    [
+        [1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0],
+        [1 / 2, 1 / 2, -1 / 2, -1 / 2, 0, 0, 0, 0],
+        0.5,
+        "default.qubit",
+    ],
+    [
+        [1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0],
+        [1 / 2, 1 / 2, 1 / 2, 1 / 2, 0, 0, 0, 0],
+        1.0,
+        "default.mixed",
+    ],
 ]
 
 
@@ -372,9 +382,9 @@ class TestMultiAmplitudes:
     @pytest.mark.parametrize("inpt", MULTI_FEATURES)
     def test_multiple_amplitudes(self, inpt):
         tol = 10e-10
-        features1, features2, sol = inpt
+        features1, features2, sol, device = inpt
 
-        dev = qml.device("default.qubit", wires=7)
+        dev = qml.device(device, wires=7)
 
         @qml.qnode(dev)
         def circuit(features1, features2):

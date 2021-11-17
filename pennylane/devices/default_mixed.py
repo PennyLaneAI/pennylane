@@ -357,9 +357,21 @@ class DefaultMixed(QubitDevice):
                 ``2**len(wires)``
             device_wires (Wires): wires that get initialized in the state
         """
+        states = state
+        if type(device_wires) != list:
+            states = [states]
+            device_wires = [device_wires]
+        state = states[0]
+        wires = device_wires[0]
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        # the final state is calculated as the tensor product of each of the states.
+        for s, w in zip(states[1:], device_wires[1:]):
+            s = self._asarray(s, dtype=self.C_DTYPE)
+            state = self._flatten(self._tensordot(state, s, 0))
+            wires = wires + w
 
         # translate to wire labels used by device
-        device_wires = self.map_wires(device_wires)
+        device_wires = self.map_wires(wires)
 
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
@@ -514,12 +526,15 @@ class DefaultMixed(QubitDevice):
                 self._apply_state_vector(input_vectors, input_wires)
 
             if (i > 0 and isinstance(operation, BasisState)) or (
-                    i == n_qubit_state_vector and isinstance(operation, QubitStateVector)
+                i == n_qubit_state_vector and isinstance(operation, QubitStateVector)
             ):
                 raise DeviceError(
                     "Operation {} cannot be used after other Operations have already been applied "
                     "on a {} device.".format(operation.name, self.short_name)
                 )
+
+        if n_qubit_state_vector == len(operations) and n_qubit_state_vector > 0:
+            self._apply_state_vector(input_vectors, input_wires)
 
         for operation in operations:
             self._apply_operation(operation)
