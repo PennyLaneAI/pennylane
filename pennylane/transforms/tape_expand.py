@@ -208,7 +208,7 @@ def _custom_decomp_context(custom_decomps):
             with NonQueuingTape() as tape:
                 if self.num_params == 0:
                     return fn(self.wires)
-                return fn(*self.params, self.wires)
+                return fn(*self.parameters, self.wires)
             return tape
 
         try:

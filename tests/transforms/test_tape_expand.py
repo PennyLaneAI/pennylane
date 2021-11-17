@@ -17,6 +17,7 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane.wires import Wires
 
 
 class TestCreateExpandFn:
@@ -328,3 +329,229 @@ class TestExpandInvalidTrainable:
 
         assert new_tape is tape
         spy.assert_not_called()
+
+
+# Custom decomposition functions for testing.
+def custom_cnot(wires):
+    return [
+        qml.Hadamard(wires=wires[1]),
+        qml.CZ(wires=[wires[0], wires[1]]),
+        qml.Hadamard(wires=wires[1]),
+    ]
+
+
+def custom_hadamard(wires):
+    return [qml.RZ(np.pi, wires=wires), qml.RY(np.pi / 2, wires=wires)]
+
+
+# Incorrect, for testing purposes only
+def custom_rx(params, wires):
+    return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
+
+
+class TestCreateCustomDecompExpandFn:
+    """Tests for the gradient expand function"""
+
+    def test_no_custom_decomp(self):
+        """Test that sending an empty dictionary results in no decompositions."""
+
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        original_dev = qml.device("default.qubit", wires=3)
+        decomp_dev = qml.device("default.qubit", wires=3, custom_decomps={})
+
+        original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+
+        original_res = original_qnode()
+        decomp_res = decomp_qnode()
+
+        assert np.isclose(original_res, decomp_res)
+        assert [
+            orig_op.name == decomp_op.name
+            for orig_op, decomp_op in zip(
+                original_qnode.qtape.operations, decomp_qnode.qtape.operations
+            )
+        ]
+
+    def test_no_custom_decomp_template(self):
+        """Test that sending an empty dictionary results in no decomposition
+        when a template is involved except that expected from the device."""
+
+        def circuit():
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        original_dev = qml.device("default.qubit", wires=3)
+        decomp_dev = qml.device("default.qubit", wires=3, custom_decomps={})
+
+        original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+
+        original_res = original_qnode()
+        decomp_res = decomp_qnode()
+
+        assert np.isclose(original_res, decomp_res)
+        assert [
+            orig_op.name == decomp_op.name
+            for orig_op, decomp_op in zip(
+                original_qnode.qtape.operations, decomp_qnode.qtape.operations
+            )
+        ]
+
+    def test_one_custom_decomp(self):
+        """Test that specifying a single custom decomposition works as expected."""
+
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        custom_decomps = {"Hadamard": custom_hadamard}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 3
+
+        assert decomp_ops[0].name == "RZ"
+        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
+
+        assert decomp_ops[1].name == "RY"
+        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
+
+        assert decomp_ops[2].name == "CNOT"
+
+    def test_nested_custom_decomp(self):
+        """Test that specifying two custom decompositions that have interdependence
+        works as expected."""
+
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 7
+
+        # Check the RZ gates are in the correct place
+        for idx in [0, 2, 5]:
+            assert decomp_ops[idx].name == "RZ"
+            assert np.isclose(decomp_ops[idx].parameters[0], np.pi)
+
+        assert decomp_ops[0].wires == Wires(0)
+        assert decomp_ops[2].wires == Wires(1)
+        assert decomp_ops[5].wires == Wires(1)
+
+        # Check RY are in the correct place
+        for idx in [1, 3, 6]:
+            assert decomp_ops[idx].name == "RY"
+            assert np.isclose(decomp_ops[idx].parameters[0], np.pi / 2)
+
+        assert decomp_ops[1].wires == Wires(0)
+        assert decomp_ops[3].wires == Wires(1)
+        assert decomp_ops[6].wires == Wires(1)
+
+        assert decomp_ops[4].name == "CZ"
+
+    def test_nested_custom_decomp_with_template(self):
+        """Test that specifying two custom decompositions that have interdependence
+        works as expected even when there is a template."""
+
+        def circuit():
+            # -RX(0.1)-C- -> -RX(0.1)---C--- -> -RX(0.1)-----------------C----------------
+            # -RX(0.2)-X- -> -RX(0.2)-H-Z-H- -> -RX(0.2)-RZ(pi)-RY(pi/2)-Z-RY(pi/2)-RZ(pi)-
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 7
+
+        assert decomp_ops[0].name == "RX"
+        assert decomp_ops[0].parameters[0] == 0.1
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "RX"
+        assert decomp_ops[1].parameters[0] == 0.2
+        assert decomp_ops[1].wires == Wires(1)
+
+        assert decomp_ops[2].name == "RZ"
+        assert np.isclose(decomp_ops[2].parameters[0], np.pi)
+        assert decomp_ops[2].wires == Wires(1)
+
+        assert decomp_ops[3].name == "RY"
+        assert np.isclose(decomp_ops[3].parameters[0], np.pi / 2)
+        assert decomp_ops[3].wires == Wires(1)
+
+        assert decomp_ops[4].name == "CZ"
+        assert decomp_ops[4].wires == Wires([0, 1])
+
+        assert decomp_ops[5].name == "RZ"
+        assert np.isclose(decomp_ops[5].parameters[0], np.pi)
+        assert decomp_ops[5].wires == Wires(1)
+
+        assert decomp_ops[6].name == "RY"
+        assert np.isclose(decomp_ops[6].parameters[0], np.pi / 2)
+        assert decomp_ops[6].wires == Wires(1)
+
+    def test_custom_decomp_with_adjoint(self):
+        """Test that applying an adjoint in the circuit results in the adjoint
+        undergoing the custom decomposition."""
+
+        def circuit():
+            # Adjoint is RX(-0.2), so expect RY(-0.2) H
+            qml.adjoint(qml.RX)(0.2, wires="a")
+            return qml.expval(qml.PauliZ("a"))
+
+        custom_decomps = {qml.RX: custom_rx}
+        decomp_dev = qml.device("default.qubit", wires="a", custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 2
+
+        assert decomp_ops[0].name == "RY"
+        assert decomp_ops[0].parameters[0] == -0.2
+        assert decomp_ops[0].wires == Wires("a")
+
+        assert decomp_ops[1].name == "Hadamard"
+        assert decomp_ops[1].wires == Wires("a")
+
+    def test_custom_decomp_with_control(self):
+        """Test that applying a controlled version of a gate results in the
+        controlled version of a decomposition."""
+
+        def circuit():
+            qml.ctrl(qml.Hadamard, control=0)(wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        custom_decomps = {qml.Hadamard: custom_hadamard}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 2
+
+        assert decomp_ops[0].name == "CRZ"
+        assert np.isclose(decomp_ops[0].parameters[0], np.pi)
+        assert decomp_ops[0].wires == Wires([0, 1])
+
+        assert decomp_ops[1].name == "CRY"
+        assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
+        assert decomp_ops[1].wires == Wires([0, 1])
