@@ -133,7 +133,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        if qml.math.all(theta[..., 0] != 0.0):
+        if qml.math.all(theta[..., i] != 0.0):
             gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
