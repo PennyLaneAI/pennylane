@@ -22,7 +22,7 @@ The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folde
 
     python -m pytest --ignore=tests/beta tests
 
-Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system. The `tests/beta` folder can contain failing tests, so ``--ignore=tests/beta`` excludes them from execution.
+Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system. The ``tests/beta`` folder can contain failing tests, so ``--ignore=tests/beta`` excludes them from execution.
 
 As the entire test suite takes some time, locally running only relevant files speeds the debugging cycle.  For example, if a developer was adding a new non-parametric operation, they could run:
 
