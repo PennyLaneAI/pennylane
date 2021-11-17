@@ -33,6 +33,9 @@ def test_unwrap_tensorflow():
             qml.PhaseShift(p[2], wires=0)
             qml.RZ(p[3], wires=0)
 
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+
         with tape.unwrap() as unwrapped_tape:
             # inside the context manager, all parameters
             # will be unwrapped to NumPy arrays
@@ -62,6 +65,9 @@ def test_unwrap_torch():
         qml.RY(p[1], wires=0)
         qml.PhaseShift(p[2], wires=0)
         qml.RZ(p[3], wires=0)
+
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = qml.math.get_trainable_indices(params)
 
     with tape.unwrap() as unwrapped_tape:
         # inside the context manager, all parameters
@@ -99,7 +105,6 @@ def test_unwrap_autograd():
         params = tape.get_parameters(trainable_only=False)
         assert all(isinstance(i, float) for i in params)
         assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-        assert tape.trainable_params == [0, 3]
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p
@@ -122,6 +127,9 @@ def test_unwrap_autograd_backward():
             qml.RY(p[1], wires=0)
             qml.PhaseShift(p[0][1], wires=0)
             qml.RZ(p[0][2], wires=0)
+
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
         with tape.unwrap() as unwrapped_tape:
             # inside the context manager, all parameters
@@ -160,6 +168,9 @@ def test_unwrap_jax():
         qml.PhaseShift(p[2], wires=0)
         qml.RZ(p[3], wires=0)
 
+    params = tape.get_parameters(trainable_only=False)
+    tape.trainable_params = qml.math.get_trainable_indices(params)
+
     with tape.unwrap() as unwrapped_tape:
         # inside the context manager, all parameters
         # will be unwrapped to NumPy arrays
@@ -194,6 +205,9 @@ def test_unwrap_jax_backward():
             qml.RY(p[1], wires=0)
             qml.PhaseShift(p[0][1], wires=0)
             qml.RZ(p[0][2], wires=0)
+
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
         with tape.unwrap() as unwrapped_tape:
             # inside the context manager, all parameters
@@ -235,6 +249,10 @@ def test_multiple_unwrap():
         qml.RY(p[3], wires=0)
         qml.PhaseShift(p[0], wires=0)
         qml.RZ(p[2], wires=0)
+
+    for t in [tape1, tape2]:
+        params = t.get_parameters(trainable_only=False)
+        t.trainable_params = qml.math.get_trainable_indices(params)
 
     with qml.tape.Unwrap(tape1, tape2):
         # inside the context manager, all parameters

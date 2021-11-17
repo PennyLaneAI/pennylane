@@ -178,6 +178,7 @@ def circuit_gaussian():
     return qml.expval(qml.X(0))
 
 
+@pytest.mark.xfail
 @pytest.mark.parametrize("circuit", (circuit_qubit, circuit_gaussian))
 class TestDefaultTrackerIntegration:
     """Tests integration behavior with 'default.gaussian'.
