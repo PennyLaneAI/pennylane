@@ -100,6 +100,7 @@ def _execute(
     @jax.custom_vjp
     def wrapped_exec(params):
         result = []
+
         def wrapper(p, t, device=None):
             """Compute the forward pass."""
             new_tapes = []
@@ -153,11 +154,7 @@ def _execute(
                 result.extend(res)
 
             args = tuple(params) + (g,)
-            host_callback.id_tap(
-                non_diff_wrapper,
-                args,
-                tap_with_device=True
-            )
+            host_callback.id_tap(non_diff_wrapper, args, tap_with_device=True)
             res = result
 
             # param_idx = 0
@@ -194,7 +191,6 @@ def _execute(
         with qml.tape.Unwrap(*tapes):
             jacs = gradient_fn(tapes, **gradient_kwargs)
 
-
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
@@ -222,6 +218,7 @@ def _execute_with_fwd(
 
         result = []
         jacobian = []
+
         def wrapper(p, t, device):
             """Compute the forward pass by returning the jacobian too."""
             new_tapes = []
@@ -242,11 +239,7 @@ def _execute_with_fwd(
 
         fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
-        host_callback.id_tap(
-            wrapper,
-            params,
-            tap_with_device=True
-        )
+        host_callback.id_tap(wrapper, params, tap_with_device=True)
         return result, jacobian
 
     def wrapped_exec_fwd(params):
