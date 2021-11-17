@@ -124,32 +124,6 @@ class TestOperationConstruction:
         ):
             DummyOp(5, wires=[0, 1])
 
-    def test_analytic_grad_with_array_param(self):
-        """Test that an exception is raised if an analytic gradient is requested with an array param"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            grad_method = "A"
-
-        with pytest.raises(
-            AssertionError,
-            match="Operations that depend on arrays containing free variables may only be differentiated using the F method",
-        ):
-            DummyOp(np.array([1.0]), wires=[0, 1])
-
-    def test_numerical_grad_with_grad_recipe(self):
-        """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            grad_method = "F"
-            grad_recipe = [(0.5, 0.1)]
-
-        with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
-            DummyOp(0.5, wires=[0, 1])
-
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly"""
