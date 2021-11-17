@@ -76,7 +76,7 @@ class TestGradients:
         hamiltonian = qml.Hamiltonian([1], [qml.PauliX(0)])
         frequencies = (2,)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(time):
             qml.PauliX(0)
             qml.CommutingEvolution(hamiltonian, time, frequencies)
@@ -101,7 +101,7 @@ class TestGradients:
         hamiltonian = qml.Hamiltonian(coeffs, obs)
         frequencies = (2, 4)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(time):
             qml.PauliX(0)
             qml.CommutingEvolution(hamiltonian, time, frequencies)
@@ -126,7 +126,7 @@ class TestGradients:
         def parameterized_hamiltonian(coeffs):
             return qml.Hamiltonian(coeffs, obs)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(time, coeffs):
             qml.PauliX(0)
             qml.CommutingEvolution(parameterized_hamiltonian(coeffs), time, frequencies)
