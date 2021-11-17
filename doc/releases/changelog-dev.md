@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* Functions for computing the values of atomic and molecular orbitals at a given position are added
+  to the Hartree-Fock solver module (hf module).
+  [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
+
+  The functions generate_atomic_orbital and generate_molecular_orbital can be used, as shown in the
+  following codeblock, to evaluate the orbitals. By generated values of the orbitals at different
+  positions, one can plot the spatial shape of a desired orbital.
+
+  ```python
+  symbols  = ['H', 'H']
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False) 
+  mol = hf.Molecule(symbols, geometry)
+  _ = hf.generate_scf(mol)()
+
+  ao = mol.generate_atomic_orbital(0)
+  mo = mol.generate_molecular_orbital(1)   
+  ```
+  ```pycon
+  >>> print(ao(0.0, 0.0, 0.0))
+  >>> print(mo(0.0, 0.0, 0.0))
+  0.6282468778183719
+  0.018251285973461928
+  ```
+
 * `qml.math.scatter_element_add` now supports adding multiple values at
   multiple indices with a single function call, in all interfaces
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
