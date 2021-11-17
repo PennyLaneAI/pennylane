@@ -97,7 +97,6 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_params = 3  # template has two trainable parameters
     num_wires = AnyWires
     par_domain = "R"
     grad_method = None
@@ -119,7 +118,6 @@ class ApproxTimeEvolution(Operation):
         # attributes
         self.hamiltonian = hamiltonian
         self.n = n
-        self.num_params = len(hamiltonian.data) + 1
 
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=unique_wires, do_queue=do_queue, id=id)

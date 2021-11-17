@@ -406,7 +406,7 @@ class TestAutogradExecuteIntegration:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
+        tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
 
@@ -485,7 +485,7 @@ class TestAutogradExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
             tape.set_parameters([a, b])

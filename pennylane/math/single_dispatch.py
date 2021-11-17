@@ -43,6 +43,10 @@ ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
+# the following is required to ensure that SciPy sparse Hamiltonians passed to
+# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+ar.register_function("scipy", "to_numpy", lambda x: x)
+
 
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
@@ -277,7 +281,9 @@ def _to_numpy_torch(x):
 
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
-    "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
+    "torch",
+    "asarray",
+    lambda x, device=None: _i("torch").as_tensor(x, device=device),
 )
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
