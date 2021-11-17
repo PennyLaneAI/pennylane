@@ -328,6 +328,79 @@ def test_same_wire_multiple_measurements_many_obs():
     assert qml.draw(qnode)(0.3, 0.2) == expected
 
 
+def test_qubit_circuit_with_max_length_kwdarg():
+    """Test that drawing a QNode with max_length=30 results in
+    correct circuit drawing."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.beta.qnode(dev)
+    def qnode():
+        for i in range(3):
+            qml.Hadamard(wires=i)
+            qml.RX(i * 0.1, wires=i)
+            qml.RY(i * 0.1, wires=i)
+            qml.RZ(i * 0.1, wires=i)
+        return qml.expval(qml.PauliZ(0))
+
+        expected = (
+            " 0: ──H──RX(0)────RY(0)────RZ\n"
+            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
+            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
+            + " \n"
+            + " (0)────┤ ⟨Z⟩ \n"
+            + " (0.1)──┤     \n"
+            + " (0.2)──┤     \n"
+        )
+        assert qml.draw(qnode, max_length=30)() == expected
+
+
+def test_qubit_circuit_with_max_length_kwdarg():
+    """Test that drawing a QNode with max_length=30 results in
+    correct circuit drawing."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.beta.qnode(dev)
+    def qnode():
+        for i in range(3):
+            qml.Hadamard(wires=i)
+            qml.RX(i * 0.1, wires=i)
+            qml.RY(i * 0.1, wires=i)
+            qml.RZ(i * 0.1, wires=i)
+        return qml.expval(qml.PauliZ(0))
+
+        expected = (
+            " 0: ──H──RX(0)────RY(0)────RZ\n"
+            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
+            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
+            + " \n"
+            + " (0)────┤ ⟨Z⟩ \n"
+            + " (0.1)──┤     \n"
+            + " (0.2)──┤     \n"
+        )
+        assert qml.draw(qnode, max_length=30)() == expected
+
+
+def test_qubit_circuit_length_under_max_length_kwdarg():
+    """Test that a qubit circuit with a circuit length less than the max_length renders correctly."""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.beta.qnode(dev)
+    def qnode():
+        for i in range(3):
+            qml.Hadamard(wires=i)
+            qml.RX(i * 0.1, wires=i)
+            qml.RY(i * 0.1, wires=i)
+            qml.RZ(i * 0.1, wires=i)
+        return qml.expval(qml.PauliZ(0))
+
+        expected = (
+            " 0: ──H──RX(0)────RY(0)────RZ(0)────┤ ⟨Z⟩\n"
+            + " 1: ──H──RX(0.1)──RY(0.1)──RZ(0.1)──┤    \n"
+            + " 2: ──H──RX(0.2)──RY(0.2)──RZ(0.2)──┤    \n"
+        )
+        assert qml.draw(qnode, max_length=60)() == expected
+
+
 class TestWireOrdering:
     """Tests for wire ordering functionality"""
 
