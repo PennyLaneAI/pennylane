@@ -120,7 +120,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        if qml.math.all(theta[..., 0] != 0.0):  # only omit gate if angle zero in all batches?
+        if qml.math.all(theta[..., 0] != 0.0):
             gate(theta[..., 0], wires=[target_wire])
         return
 
