@@ -236,32 +236,14 @@ def classproperty(func):
 
 def _process_data(op):
 
-    period = None
-
+    # Use qml.math.real to take the real part. We may get complex inputs for
+    # example when differentiating holomorphic functions with JAX: a complex
+    # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        period = 2 * np.pi
+        return str([qml.math.real(d) % (2 * np.pi) for d in op.data])
 
-    elif op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        period = 4 * np.pi
-
-    if period is not None:
-
-        par_string = []
-        for d in op.data:
-
-            # If we got complex inputs for some reason, take the real part
-            # only. This can happen for example when differentiating
-            # holomorphic functions with JAX: e.g., a complex valued QNode (one
-            # that returns the state) requires complex typed inputs.
-            try:
-                complex_param = hasattr(d, "real")
-            except RuntimeError:
-                # Torch tensors raise an error
-                complex_param = False
-
-            par_string.append(d % period if not complex_param else d.real % period)
-
-        return str(par_string)
+    if op.name in ("CRX", "CRY", "CRZ", "CRot"):
+        return str([qml.math.real(d) % (4 * np.pi) for d in op.data])
 
     return str(op.data)
 
