@@ -81,7 +81,7 @@ class ExecuteTapes(torch.autograd.Function):
         ctx.max_diff = kwargs["max_diff"]
         ctx._n = kwargs.get("_n", 1)
 
-        with qml.tape.Unwrap(*ctx.tapes, set_trainable=False):
+        with qml.tape.Unwrap(*ctx.tapes):
             res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
@@ -160,7 +160,7 @@ class ExecuteTapes(torch.autograd.Function):
                     # The derivative order is at the maximum. Compute the VJP
                     # in a non-differentiable manner to reduce overhead.
 
-                    with qml.tape.Unwrap(*ctx.tapes, set_trainable=False):
+                    with qml.tape.Unwrap(*ctx.tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             ctx.tapes,
                             dy,

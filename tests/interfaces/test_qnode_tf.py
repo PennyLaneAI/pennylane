@@ -19,7 +19,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape
 
 
@@ -834,7 +834,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="tf")
+        @qnode(dev, diff_method="adjoint", interface="tf")
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -871,7 +871,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=True)
+        @qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=True)
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -907,7 +907,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=False)
+        @qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=False)
         def circ(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
