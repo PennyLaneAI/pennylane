@@ -3,17 +3,14 @@
 # Release 0.20.0-dev (development release)
 
 <h3>New features since last release</h3>
-* A thermal relaxation channel is added to the Noisy channels. The channel description can be
+
+* A thermal relaxation channel is added to the Noisy channels. The channel description can be 
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
   
 * Added the identity observable to be an operator. Now we can explicitly call the identity 
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829) 
-
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
-  returns the default empty wires object.
-  [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
   
 * A `lru_cache` decorated function for computing generalized parameter shift rules for generators'
   whose eigenvalue frequency spectrum is known is available as `qml.gradients.get_shift_rule`.
@@ -80,7 +77,13 @@
   and 2) the eigenvalue frequency spectrum is correct, since these checks become
   prohibitively expensive for large Hamiltonians.
   
+* Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
+
 <h3>Improvements</h3>
+
+* Tests do not loop over automatically imported and instantiated operations any more, 
+  which was opaque and created unnecessarily many tests.
+  [(#1895)](https://github.com/PennyLaneAI/pennylane/pull/1895)
 
 * A `decompose()` method has been added to the `Operator` class such that we can
   obtain (and queue) decompositions directly from instances of operations.
@@ -116,6 +119,20 @@
 
 <h3>Deprecations</h3>
 
+<h3>Bug fixes</h3>
+
+* `ExpvalCost` now returns corrects results shape when `optimize=True` with 
+  shots batch.
+  [(#1897)](https://github.com/PennyLaneAI/pennylane/pull/1897)
+  
+* `qml.circuit_drawer.MPLDrawer` was slightly modified to work with
+  matplotlib version 3.5.
+  [(#1899)](https://github.com/PennyLaneAI/pennylane/pull/1899)
+
+* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP` 
+  returns the default empty wires object.
+  [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
+
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
@@ -126,4 +143,5 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Josh Izaac, Jalani Kanem, Robert Lang, Christina Lee, Guillermo Alonso-Linaje, Cedric Lin, Olivia Di Matteo, Alejandro Montanez, Maria Schuld, Jay Soni, David Wierichs.
+Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Robert Lang, Christina Lee, Alejandro Montanez,
+Romain Moyard, Maria Schuld, Jay Soni
