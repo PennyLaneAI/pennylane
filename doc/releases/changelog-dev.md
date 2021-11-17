@@ -37,6 +37,11 @@
 
 <h3>Breaking changes</h3>
 
+* `QuantumTape.trainable_params` now is a list instead of a set. This
+  means that `tape.trainable_params` will return a list unlike before,
+  but setting the `trainable_params` with a set works exactly as before.
+  [(#1xxx)](https://github.com/PennyLaneAI/pennylane/pull/1xxx)
+
 * The `num_params` attribute in the operator class is now dynamic. This makes it easier
   to define operator subclasses with a flexible number of parameters. 
   [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)
@@ -62,6 +67,10 @@
 
 <h3>Bug fixes</h3>
 
+* `QuantumTape.trainable_params` now is a list instead of a set, making
+  it more stable in very rare edge cases.
+  [(#1904)](https://github.com/PennyLaneAI/pennylane/pull/1904)
+
 * `ExpvalCost` now returns corrects results shape when `optimize=True` with 
   shots batch.
   [(#1897)](https://github.com/PennyLaneAI/pennylane/pull/1897)
@@ -85,4 +94,5 @@
 This release contains contributions from (in alphabetical order): 
 
 Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
-Romain Moyard, Maria Schuld, Jay Soni
+Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+

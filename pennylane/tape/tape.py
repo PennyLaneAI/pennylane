@@ -271,7 +271,7 @@ class QuantumTape(AnnotatedQueue):
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:
 
-    >>> tape.trainable_params = {0} # set only the first parameter as free
+    >>> tape.trainable_params = [0] # set only the first parameter as trainable
     >>> tape.set_parameters([0.56])
     >>> tape.get_parameters()
     [0.56]
@@ -318,7 +318,7 @@ class QuantumTape(AnnotatedQueue):
         parameter indices (in the order they appear on the tape), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = set()
+        self._trainable_params = []
         self._graph = None
         self._specs = None
         self._depth = None
@@ -494,8 +494,13 @@ class QuantumTape(AnnotatedQueue):
                 param_count += 1
 
     def _update_trainable_params(self):
-        """Set the trainable parameters"""
-        self._trainable_params = set(self._par_info)
+        """Set the trainable parameters
+
+        self._par_info.keys() is assumed to be sorted
+        As its order is maintained, this assumes that self._par_info
+        is created in a sorted manner, as in _update_par_info
+        """
+        self._trainable_params = list(self._par_info)
 
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
@@ -594,7 +599,7 @@ class QuantumTape(AnnotatedQueue):
 
         Here, let's set some trainable parameters:
 
-        >>> tape.trainable_params = {1, 2}
+        >>> tape.trainable_params = [1, 2]
         >>> tape.get_parameters()
         [0.432, 0.543]
 
@@ -614,7 +619,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters(trainable_only=True)
         [0.543, 0.432]
         >>> tape.trainable_params
-        {1, 4}
+        [1, 4]
         """
         # we must remap the old parameter
         # indices to the new ones after the operation order is reversed.
@@ -645,7 +650,7 @@ class QuantumTape(AnnotatedQueue):
         parameter_mapping = dict(zip(parameter_indices, range(len(parameter_indices))))
 
         # map the params
-        self.trainable_params = {parameter_mapping[i] for i in self.trainable_params}
+        self.trainable_params = [parameter_mapping[i] for i in self.trainable_params]
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
         for idx, op in enumerate(self._ops):
@@ -685,7 +690,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def trainable_params(self):
-        """Store or return a set containing the indices of parameters that support
+        """Store or return a list containing the indices of parameters that support
         differentiability. The indices provided match the order of appearence in the
         quantum circuit.
 
@@ -716,13 +721,10 @@ class QuantumTape(AnnotatedQueue):
                 qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.trainable_params
-        {0, 1, 2}
-        >>> tape.trainable_params = {0} # set only the first parameter as free
+        [0, 1, 2]
+        >>> tape.trainable_params = [0] # set only the first parameter as trainable
         >>> tape.get_parameters()
         [0.432]
-
-        Args:
-            param_indices (set[int]): parameter indices
         """
         return self._trainable_params
 
@@ -731,15 +733,15 @@ class QuantumTape(AnnotatedQueue):
         """Store the indices of parameters that support differentiability.
 
         Args:
-            param_indices (set[int]): parameter indices
+            param_indices (list[int]): parameter indices
         """
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
-            raise ValueError("Argument indices must be positive integers.")
+            raise ValueError("Argument indices must be non-negative integers.")
 
         if any(i > len(self._par_info) for i in param_indices):
             raise ValueError(f"Tape has at most {self.num_params} parameters.")
 
-        self._trainable_params = param_indices
+        self._trainable_params = sorted(set(param_indices))
 
     def get_operation(self, idx):
         """Returns the trainable operation, and the corresponding operation argument
@@ -754,14 +756,17 @@ class QuantumTape(AnnotatedQueue):
             for the provided trainable parameter.
         """
         # get the index of the parameter in the tape
-        t_idx = list(self.trainable_params)[idx]
+        t_idx = self.trainable_params[idx]
+
+        # get the info for the parameter
+        info = self._par_info[t_idx]
 
         # get the corresponding operation
-        op = self._par_info[t_idx]["op"]
+        op = info["op"]
 
         # get the corresponding operation parameter index
         # (that is, index of the parameter within the operation)
-        p_idx = self._par_info[t_idx]["p_idx"]
+        p_idx = info["p_idx"]
         return op, p_idx
 
     def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
@@ -792,7 +797,7 @@ class QuantumTape(AnnotatedQueue):
         Setting the trainable parameter indices will result in only the specified
         parameters being returned:
 
-        >>> tape.trainable_params = {1} # set the second parameter as free
+        >>> tape.trainable_params = [1] # set the second parameter as trainable
         >>> tape.get_parameters()
         [0.543]
 
@@ -803,7 +808,7 @@ class QuantumTape(AnnotatedQueue):
         [0.432, 0.543, 0.133]
         """
         params = []
-        iterator = sorted(self.trainable_params) if trainable_only else self._par_info
+        iterator = self.trainable_params if trainable_only else self._par_info
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]
@@ -841,7 +846,7 @@ class QuantumTape(AnnotatedQueue):
         parameters being modifiable. Note that this only modifies the number of
         parameters that must be passed.
 
-        >>> tape.trainable_params = {0, 2} # set the first and third parameter as free
+        >>> tape.trainable_params = [0, 2] # set the first and third parameter as trainable
         >>> tape.set_parameters([-0.1, 0.5])
         >>> tape.get_parameters(trainable_only=False)
         [-0.1, 0.2, 0.5]
@@ -854,7 +859,7 @@ class QuantumTape(AnnotatedQueue):
         [4, 1, 6]
         """
         if trainable_only:
-            iterator = zip(sorted(self.trainable_params), params)
+            iterator = zip(self.trainable_params, params)
             required_length = self.num_params
         else:
             iterator = enumerate(params)
@@ -888,7 +893,7 @@ class QuantumTape(AnnotatedQueue):
         ...     with tape.unwrap():
         ...         print("Trainable params:", tape.trainable_params)
         ...         print("Unwrapped params:", tape.get_parameters())
-        Trainable params: {0, 2}
+        Trainable params: [0, 2]
         Unwrapped params: [0.1, 0.3]
         >>> print("Original parameters:", tape.get_parameters())
         Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
