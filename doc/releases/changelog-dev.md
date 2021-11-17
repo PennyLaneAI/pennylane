@@ -4,6 +4,27 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now supports drawing a QNode with matplotlib!
+  [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+
+  ```python
+  dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+
+  @qml.qnode(dev)
+  def circuit(x, z):
+      qml.QFT(wires=(0,1,2,3))
+      qml.Toffoli(wires=(0,1,2))
+      qml.CSWAP(wires=(0,2,3))
+      qml.RX(x, wires=0)
+      qml.CRZ(z, wires=(3,0))
+      return qml.expval(qml.PauliZ(0))
+
+
+  fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+  ```
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
+
 * `qml.math.scatter_element_add` now supports adding multiple values at
   multiple indices with a single function call, in all interfaces
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
