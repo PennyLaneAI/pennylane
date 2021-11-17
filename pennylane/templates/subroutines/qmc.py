@@ -327,7 +327,6 @@ class QuantumMonteCarlo(Operation):
         >>> (1 - np.cos(np.pi * phase_estimated)) / 2
         0.4327096457464369
     """
-    num_params = 3
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -359,6 +358,10 @@ class QuantumMonteCarlo(Operation):
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
         super().__init__(A, R, Q, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 3
 
     def expand(self):
         A, R, Q = self.parameters

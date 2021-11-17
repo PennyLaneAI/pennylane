@@ -39,7 +39,7 @@ def test_unwrap_tensorflow():
             params = tape.get_parameters(trainable_only=False)
             assert all(isinstance(i, (float, np.float32)) for i in params)
             assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-            assert tape.trainable_params == {0, 3}
+            assert tape.trainable_params == [0, 3]
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p
@@ -69,7 +69,7 @@ def test_unwrap_torch():
         params = tape.get_parameters(trainable_only=False)
         assert all(isinstance(i, float) for i in params)
         assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-        assert tape.trainable_params == {0, 3}
+        assert tape.trainable_params == [0, 3]
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p
@@ -99,7 +99,7 @@ def test_unwrap_autograd():
         params = tape.get_parameters(trainable_only=False)
         assert all(isinstance(i, float) for i in params)
         assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-        assert tape.trainable_params == {0, 3}
+        assert tape.trainable_params == [0, 3]
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p
@@ -129,7 +129,7 @@ def test_unwrap_autograd_backward():
             params = tape.get_parameters(trainable_only=False)
             assert all(isinstance(i, float) for i in params)
             assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-            assert tape.trainable_params == {0, 2, 3}
+            assert tape.trainable_params == [0, 2, 3]
 
         # outside the context, the original parameters have been restored.
         params = tape.get_parameters(trainable_only=False)
@@ -169,7 +169,7 @@ def test_unwrap_jax():
 
         # During the forward pass, Device arrays are treated as
         # trainable, but no other types are.
-        assert tape.trainable_params == {0, 1, 3}
+        assert tape.trainable_params == [0, 1, 3]
 
     # outside the context, the original parameters have been restored.
     assert tape.get_parameters(trainable_only=False) == p
@@ -201,7 +201,7 @@ def test_unwrap_jax_backward():
             params = tape.get_parameters(trainable_only=False)
             assert all(isinstance(i, float) for i in params)
             assert np.allclose(params, [0.1, 0.2, 0.5, 0.3])
-            assert tape.trainable_params == {0, 2, 3}
+            assert tape.trainable_params == [0, 2, 3]
 
         # outside the context, the original parameters have been restored.
         params = tape.get_parameters(trainable_only=False)
@@ -241,11 +241,11 @@ def test_multiple_unwrap():
         # will be unwrapped to NumPy arrays
         params = tape1.get_parameters(trainable_only=False)
         assert all(isinstance(i, float) for i in params)
-        assert tape1.trainable_params == {0, 3}
+        assert tape1.trainable_params == [0, 3]
 
         params = tape2.get_parameters(trainable_only=False)
         assert all(isinstance(i, float) for i in params)
-        assert tape2.trainable_params == {1, 2}
+        assert tape2.trainable_params == [1, 2]
 
     # outside the context, the original parameters have been restored.
     assert tape1.get_parameters(trainable_only=False) == p

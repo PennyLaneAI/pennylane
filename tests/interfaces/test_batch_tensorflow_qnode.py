@@ -53,7 +53,7 @@ class TestQNode:
 
         # if executing outside a gradient tape, the number of trainable parameters
         # cannot be determined by TensorFlow
-        assert circuit.qtape.trainable_params == set()
+        assert circuit.qtape.trainable_params == []
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -65,7 +65,7 @@ class TestQNode:
         assert res.shape == tuple()
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = tape.gradient(res, a)
@@ -152,7 +152,7 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -192,7 +192,7 @@ class TestQNode:
             res = circuit(a, b)
 
         assert circuit.qtape.interface == "tf"
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -249,7 +249,7 @@ class TestQNode:
             res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -274,7 +274,7 @@ class TestQNode:
             res = circuit(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -306,7 +306,7 @@ class TestQNode:
             res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c])
@@ -333,7 +333,7 @@ class TestQNode:
             res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
@@ -356,7 +356,7 @@ class TestQNode:
             res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
@@ -391,7 +391,7 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, p)
 
-        assert circuit.qtape.trainable_params == {1, 2, 3}
+        assert circuit.qtape.trainable_params == [1, 2, 3]
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
             tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
