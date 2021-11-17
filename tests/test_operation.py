@@ -1379,7 +1379,7 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            
+
         op = DummyOp(wires=1)
 
         with pytest.raises(ValueError, match="do not exist on this device with wires"):
