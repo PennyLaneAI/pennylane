@@ -5,8 +5,11 @@
 <h3>New features since last release</h3>
 
 * The `qml.fourier.reconstruct` function is added. It can be used to
-  reconstruct one-dimensional Fourier series with a minimal number of calls
-  to the original function.
+  reconstruct QNodes outputting expectation values along a specified
+  parameter dimension, with a minimal number of calls to the
+  original QNode. The returned
+  reconstruction is exact and purely classical, and can be evaluated
+  without any quantum executions.
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
 
   The reconstruction technique differs for functions with equidistant frequencies
@@ -51,7 +54,7 @@
   ```
 
   For more details on usage, reconstruction cost and differentiability support, please see the
-  [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.reconstruct.html)
+  [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.reconstruct.html).
 
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be 
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
