@@ -182,7 +182,6 @@ class Projector(Observable):
         wires (Iterable): wires that the projector acts on
     """
     num_wires = AnyWires
-    num_params = 1
     par_domain = "A"
 
     def __init__(self, basis_state, wires, do_queue=True):
@@ -204,6 +203,10 @@ class Projector(Observable):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue)
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.

@@ -37,6 +37,10 @@
 
 <h3>Breaking changes</h3>
 
+* The `num_params` attribute in the operator class is now dynamic. This makes it easier
+  to define operator subclasses with a flexible number of parameters. 
+  [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)
+
 * The static method `decomposition()`, formerly in the `Operation` class, has
   been moved to the base `Operator` class.
   [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
