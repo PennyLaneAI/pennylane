@@ -180,20 +180,51 @@ class TestMolecule:
         assert np.allclose(mol.r, r)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "index", "position", "ref_value"),
+        ("symbols", "geometry", "alpha", "coeff", "index", "position", "ref_value"),
         [
             (
+                # normalized primitive Gaussians centered at 0, G(0, 0, 0) = coeff * exp(alpha * 0)
                 ["H", "H"],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                np.array(
+                    [
+                        [3.425250914, 3.425250914, 3.425250914],
+                        [3.425250914, 3.425250914, 3.425250914],
+                    ],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [[1.79444183, 1.79444183, 1.79444183], [1.79444183, 1.79444183, 1.79444183]],
+                    requires_grad=False,
+                ),
                 0,
                 (0.0, 0.0, 0.0),
-                0.62824688,
+                1.79444183,
+            ),
+            (
+                # normalized primitive Gaussians centered at z=1, G(0, 0, 0) = coeff * exp(alpha *1)
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                np.array(
+                    [
+                        [3.425250914, 3.425250914, 3.425250914],
+                        [3.425250914, 3.425250914, 3.425250914],
+                    ],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [[1.79444183, 1.79444183, 1.79444183], [1.79444183, 1.79444183, 1.79444183]],
+                    requires_grad=False,
+                ),
+                1,
+                (0.0, 0.0, 0.0),
+                0.05839313784917416,
             ),
         ],
     )
-    def test_atomic_orbital(self, symbols, geometry, index, position, ref_value):
+    def test_atomic_orbital(self, symbols, geometry, alpha, coeff, index, position, ref_value):
         r"""Test that the computed atomic orbital value is correct."""
-        mol = Molecule(symbols, geometry)
+        mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
 
         x, y, z = position
         ao = mol.generate_atomic_orbital(index)
