@@ -16,6 +16,9 @@
 
 <h3>Improvements</h3>
 
+* The `par_domain` attribute in the operator class has been removed. 
+  [(#XX)](https://github.com/PennyLaneAI/pennylane/pull/XX)
+
 * The `num_params` attribute in the operator class is now dynamic. This makes it easier
   to define operator subclasses with a flexible number of parameters. 
   [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)

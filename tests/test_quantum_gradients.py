@@ -279,48 +279,36 @@ class TestCVGradient:
         assert grad_A == pytest.approx(grad_F, abs=tol)
         assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
-    @pytest.mark.parametrize("name", qml.ops._cv__ops__)
-    def test_CVOperation_with_heisenberg_and_no_params(self, name, gaussian_dev, tol):
-        """An integration test for CV gates that support analytic differentiation
+    def test_CVOperation_with_heisenberg_and_no_params(self, gaussian_dev, tol):
+        """An integration test for InterferometerUnitary, a gate that supports analytic differentiation
         if succeeding the gate to be differentiated, but cannot be differentiated
-        themselves (for example, they may be Gaussian but accept no parameters).
+        itself.
 
-        This ensures that, assuming their _heisenberg_rep is defined, the quantum
+        This ensures that, assuming the _heisenberg_rep is defined, the quantum
         gradient analytic method can still be used, and returns the correct result.
         """
 
-        cls = getattr(qml.ops, name)
-        if cls.supports_heisenberg and (not cls.supports_parameter_shift):
-            U = np.array(
-                [
-                    [0.51310276 + 0.81702166j, 0.13649626 + 0.22487759j],
-                    [0.26300233 + 0.00556194j, -0.96414101 - 0.03508489j],
-                ]
-            )
+        U = np.array(
+            [
+                [0.51310276 + 0.81702166j, 0.13649626 + 0.22487759j],
+                [0.26300233 + 0.00556194j, -0.96414101 - 0.03508489j],
+            ]
+        )
 
-            if cls.num_wires <= 0:
-                w = list(range(2))
-            else:
-                w = list(range(cls.num_wires))
+        def circuit(x):
+            qml.Displacement(x, 0, wires=0)
+            qml.InterferometerUnitary(U, wires=[0, 1])
+            return qml.expval(qml.X(0))
 
-            def circuit(x):
-                qml.Displacement(x, 0, wires=0)
+        qnode = qml.QNode(circuit, gaussian_dev)
+        qnode(0.5)
+        grad_F = qml.gradients.finite_diff(qnode)(0.5)
+        grad_A = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev)(0.5)
+        grad_A2 = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev, force_order2=True)(0.5)
 
-                if cls.par_domain == "A":
-                    cls(U, wires=w)
-                else:
-                    cls(wires=w)
-                return qml.expval(qml.X(0))
-
-            qnode = qml.QNode(circuit, gaussian_dev)
-            qnode(0.5)
-            grad_F = qml.gradients.finite_diff(qnode)(0.5)
-            grad_A = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev)(0.5)
-            grad_A2 = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev, force_order2=True)(0.5)
-
-            # the different methods agree
-            assert grad_A == pytest.approx(grad_F, abs=tol)
-            assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        # the different methods agree
+        assert grad_A == pytest.approx(grad_F, abs=tol)
+        assert grad_A2 == pytest.approx(grad_F, abs=tol)
 
 
 class TestQubitGradient:

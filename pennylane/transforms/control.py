@@ -87,7 +87,6 @@ class ControlledOperation(Operation):
         control_wires: A wire or set of wires.
     """
 
-    par_domain = "A"
     num_wires = AnyWires
     num_params = property(lambda self: self.subtape.num_params)
 

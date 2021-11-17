@@ -52,7 +52,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = "R"
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             DummyOp(0.5, wires=[0, 1])
@@ -63,7 +62,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = "R"
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
@@ -74,7 +72,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = "R"
             grad_method = "A"
 
             @property
@@ -90,7 +87,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=0)
         op.name = "MyOp"
@@ -106,7 +102,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
             num_wires = 2
-            par_domain = "R"
             grad_method = "A"
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
@@ -121,7 +116,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 2
-            par_domain = "N"
             grad_method = "A"
 
         with pytest.raises(
@@ -136,7 +130,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 2
-            par_domain = "A"
             grad_method = "A"
 
         with pytest.raises(
@@ -151,7 +144,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 2
-            par_domain = "R"
             grad_method = "F"
             grad_recipe = [(0.5, 0.1)]
 
@@ -165,7 +157,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "R"
             grad_method = "A"
 
             @property
@@ -183,7 +174,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
@@ -195,7 +185,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
             @property
@@ -211,7 +200,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyOp(1.0, wires=0, id="test")
@@ -223,7 +211,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyOp(1.0, wires=0, id="test")
@@ -239,7 +226,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         assert DummyObserv(0, wires=[1]).return_type is None
@@ -256,7 +242,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable, qml.operation.Operation):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         assert issubclass(DummyObserv, qml.operation.Operator)
@@ -315,7 +300,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyObserv(1.0, wires=0, id="test")
@@ -328,7 +312,6 @@ class TestObservableInstantiation:
     def test_wire_is_given_in_argument(self):
         class DummyObservable(qml.operation.Observable):
             num_wires = 1
-            par_domain = None
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
@@ -346,7 +329,6 @@ class TestOperatorIntegration:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
             num_wires = qml.operation.WiresEnum.AllWires
-            par_domain = "R"
 
         @qml.qnode(dev1)
         def circuit():
@@ -370,7 +352,6 @@ class TestInverse:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom Operation"""
             num_wires = 1
-            par_domain = "R"
 
         # Check that the name of the Operation is initialized fine
         dummy_op = DummyOp(some_param, wires=[1])
@@ -1336,7 +1317,6 @@ class TestChannel:
             r"""Dummy custom channel"""
             num_wires = 1
             num_params = 1
-            par_domain = "R"
             grad_method = "F"
 
             def _kraus_matrices(self, *params):
@@ -1428,7 +1408,6 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=1)
 
@@ -1440,7 +1419,6 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=1)
 
@@ -1453,7 +1431,6 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=1)
 

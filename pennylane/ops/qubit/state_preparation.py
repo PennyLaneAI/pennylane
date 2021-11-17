@@ -45,7 +45,6 @@ class BasisState(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     @property
@@ -82,7 +81,6 @@ class QubitStateVector(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     @property
@@ -146,7 +144,6 @@ class QubitDensityMatrix(Operation):
     """
     num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def adjoint(self):
