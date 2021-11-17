@@ -200,7 +200,6 @@ class kUpCCGSD(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
 
@@ -241,6 +240,10 @@ class kUpCCGSD(Operation):
         self.init_state_flipped = np.flip(init_state)
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 
