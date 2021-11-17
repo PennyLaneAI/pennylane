@@ -15,7 +15,6 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
-from itertools import product
 import numpy as np
 
 import pennylane as qml
@@ -123,7 +122,7 @@ class hessian_transform(qml.batch_transform):
             # labeled to keep track of the swapping that occurs during the transformation.
 
             num_out_dims = len(cjac.shape) - 1  # number of dims in y..
-            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])                # -> (z.., x0, y1..)
+            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])  # -> (z.., x0, y1..)
             jac = qml.math.tensordot(jac, cjac, [[-1 - num_out_dims], [0]])  # -> (z.., y1.., y0..)
             for i in range(num_out_dims):
                 jac = qml.math.swapaxes(jac, -1 - i, -1 - num_out_dims - i)  # -> (z.., y0.., y1..)
@@ -158,20 +157,17 @@ def param_shift_hessian(tape):
     # A recipe can thus be expressed via the tape patterns: (dummy values for ndarray creation)
     #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]
     # Each corresponding to one term in the parameter-shift formula:
-    #       didj f(x) = coeff * f(mult*x + shift1*ei +shift2*ej) + ...
-    diag_recipe = [
-        [[ 0.5], [1], [np.pi]],
-        [[-0.5], [1], [    0]]
-    ]
+    #       didj f(x) = coeff * f(mult*x + shift1*ei + shift2*ej) + ...
+    diag_recipe = [[[0.5], [1], [np.pi]], [[-0.5], [1], [0]]]
     off_diag_recipe = [
-        [[ 0.25, 1], [1, 1], [ np.pi/2,  np.pi/2]],
-        [[-0.25, 1], [1, 1], [-np.pi/2,  np.pi/2]],
-        [[-0.25, 1], [1, 1], [ np.pi/2, -np.pi/2]],
-        [[ 0.25, 1], [1, 1], [-np.pi/2, -np.pi/2]]
+        [[0.25, 1], [1, 1], [np.pi / 2, np.pi / 2]],
+        [[-0.25, 1], [1, 1], [-np.pi / 2, np.pi / 2]],
+        [[-0.25, 1], [1, 1], [np.pi / 2, -np.pi / 2]],
+        [[0.25, 1], [1, 1], [-np.pi / 2, -np.pi / 2]],
     ]
 
     # for now assume all operations support the 2-term parameter shift rule
-    for i in range(tape.num_params):  # idx in product(range(tape.num_params), repeat=2):
+    for i in range(tape.num_params):
         for j in range(i, tape.num_params):
             recipe = diag_recipe if i == j else off_diag_recipe
             coeffs, _, shifts = _process_gradient_recipe(recipe)

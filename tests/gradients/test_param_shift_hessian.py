@@ -220,7 +220,7 @@ class TestParameterShiftHessian:
     # for operations with two eigenvalues (2-term shift rule):
     # - < jacobian(jacobian())
     # - <= 2^d * (m+d-1)C(d)      see arXiv:2008.06517 p. 4
-    # - <= 2^m                    see arXiv:2008.06517 p. 4
+    # - <= 3^m                    see arXiv:2008.06517 p. 4
     # here d=2 is the derivative order, m is the number of variational parameters (w.r.t. gate args)
 
     def test_less_quantum_invocations1(self):
@@ -243,12 +243,12 @@ class TestParameterShiftHessian:
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(1+2-1, 2), "?")
-        print("\n", hessian_qruns, "<=", 2 ** 1, "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(1 + 2 - 1, 2), "?")
+        print("\n", hessian_qruns, "<=", 3 ** 1, "?")
 
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * math.comb(1+2-1, 2)
-        assert hessian_qruns <= 2 ** 1
+        assert hessian_qruns <= 2 ** 2 * math.comb(1 + 2 - 1, 2)
+        assert hessian_qruns <= 3 ** 1
 
     def test_less_quantum_invocations2(self):
         """Test that the hessian invokes less hardware executions than double differentiation"""
@@ -271,12 +271,12 @@ class TestParameterShiftHessian:
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(2+2-1, 2), "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2, "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(2 + 2 - 1, 2), "?")
+        print("\n", hessian_qruns, "<=", 3 ** 2, "?")
 
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * math.comb(2+2-1, 2)
-        assert hessian_qruns <= 2 ** 2
+        assert hessian_qruns <= 2 ** 2 * math.comb(2 + 2 - 1, 2)
+        assert hessian_qruns <= 3 ** 2
 
     def test_less_quantum_invocations3(self):
         """Test that the hessian invokes less hardware executions than double differentiation"""
@@ -300,9 +300,9 @@ class TestParameterShiftHessian:
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(3+2-1, 2), "?")
-        print("\n", hessian_qruns, "<=", 2 ** 3, "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(3 + 2 - 1, 2), "?")
+        print("\n", hessian_qruns, "<=", 3 ** 3, "?")
 
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * math.comb(3+2-1, 2)
-        assert hessian_qruns <= 2 ** 3
+        assert hessian_qruns <= 2 ** 2 * math.comb(3 + 2 - 1, 2)
+        assert hessian_qruns <= 3 ** 3
