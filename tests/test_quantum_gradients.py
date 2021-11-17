@@ -30,9 +30,6 @@ mag_alphas = np.linspace(0, 1.5, 5)
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
 
-cv_ops = [getattr(qml.ops, name) for name in qml.ops._cv__ops__]
-analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
 
 class PolyN(qml.ops.PolyXP):
     "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
@@ -152,19 +149,21 @@ class TestCVGradient:
         manualgrad_val = 0.5 * np.tanh(r) ** 3 * (2 / (np.sinh(r) ** 2) - 1) / np.cosh(r)
         assert autograd_val == pytest.approx(manualgrad_val, abs=tol)
 
-    @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator, PolyN])
-    @pytest.mark.parametrize("G", analytic_cv_ops)
-    def test_cv_gradients_gaussian_circuit(self, G, O, gaussian_dev, tol):
-        """Tests that the gradients of circuits of gaussian gates match between the finite difference and analytic methods."""
+    @pytest.mark.parametrize("O", [qml.ops.X, qml.ops.NumberOperator])
+    @pytest.mark.parametrize(
+        "make_gate",
+        [lambda x: qml.Rotation(x, wires=0), lambda x: qml.ControlledPhase(x, wires=[0, 1])],
+    )
+    def test_cv_gradients_gaussian_circuit(self, make_gate, O, gaussian_dev, tol):
+        """Tests that the gradients of circuits of gaussian gates match
+        between the finite difference and analytic methods."""
 
         tol = 1e-5
         par = 0.4
 
         def circuit(x):
-            args = [0.3] * G.num_params
-            args[0] = x
             qml.Displacement(0.5, 0, wires=0)
-            G(*args, wires=range(G.num_wires))
+            make_gate(x)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)
