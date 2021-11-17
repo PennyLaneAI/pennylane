@@ -567,10 +567,13 @@ class ThermalRelaxationError(Channel):
         tg (float): the gate time for relaxation error.
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 4
     num_wires = 1
     par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 4
 
     @classmethod
     def _kraus_matrices(cls, *params):

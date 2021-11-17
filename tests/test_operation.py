@@ -1347,7 +1347,6 @@ class TestChannel:
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
             num_wires = 1
-            num_params = 1
             par_domain = "R"
             grad_method = "F"
 
