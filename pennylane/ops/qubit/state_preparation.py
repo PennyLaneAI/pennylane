@@ -44,10 +44,13 @@ class BasisState(Operation):
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(n, wires):
@@ -78,10 +81,13 @@ class QubitStateVector(Operation):
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(state, wires):
