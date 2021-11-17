@@ -765,7 +765,7 @@ class QNode:
         return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
-        self, charset="unicode", wire_order=None, show_all_wires=False
+        self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None
     ):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 
@@ -775,6 +775,7 @@ class QNode:
             wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
                 If not provided, this defaults to the wire order of the device.
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
+            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -860,7 +861,10 @@ class QNode:
             )
 
         return self.qtape.draw(
-            charset=charset, wire_order=wire_order, show_all_wires=show_all_wires
+            charset=charset,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            max_length=max_length,
         )
 
     @property

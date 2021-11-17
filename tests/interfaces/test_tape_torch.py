@@ -97,7 +97,7 @@ class TestTorchQuantumTape:
             qml.RX(torch.tensor(0.2), wires=0)
             qml.expval(qml.PauliZ(0))
 
-        assert tape.trainable_params == {0}
+        assert tape.trainable_params == [0]
         res = tape.execute(dev)
 
         assert isinstance(res, torch.Tensor)

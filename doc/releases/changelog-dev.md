@@ -74,6 +74,8 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
+
 <h3>Breaking changes</h3>
 
 - The `mutable` keyword argument has been removed from the QNode.
@@ -112,6 +114,8 @@
 
 <h3>Bug fixes</h3>
 
+* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
+
 * `QuantumTape.trainable_params` now is a list instead of a set, making
   it more stable in very rare edge cases.
   [(#1904)](https://github.com/PennyLaneAI/pennylane/pull/1904)
@@ -136,8 +140,7 @@
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order): 
+This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
 Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
-
