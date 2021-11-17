@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A thermal relaxation channel is added to the Noisy channels. The channel description can be 
+* A thermal relaxation channel is added to the Noisy channels. The channel description can be
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
   
@@ -15,6 +15,45 @@
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
 <h3>Improvements</h3>
+
+* The QNode has been re-written to support batch execution across the board,
+  custom gradients, better decomposition strategies, and higher-order derivatives.
+  [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+
+  - Internally, if multiple circuits are generated for simultaneous execution, they
+    will be packaged into a single job for execution on the device. This can lead to
+    significant performance improvement when executing the QNode on remote
+    quantum hardware or simulator devices with parallelization capabilities.
+
+  - Custom gradient transforms can be specified as the differentiation method:
+
+    ```python
+    @qml.gradients.gradient_transform
+    def my_gradient_transform(tape):
+        ...
+        return tapes, processing_fn
+
+    @qml.qnode(dev, diff_method=my_gradient_transform)
+    def circuit():
+    ```
+
+  - Arbitrary :math:`n`-th order derivatives are supported on hardware using gradient transforms
+    such as the parameter-shift rule. To specify that an :math:`n`-th order derivative of a QNode
+    will be computed, the `max_diff` argument should be set. By default, this is set to 1
+    (first-order derivatives only). Increasing this value allows for higher order derivatives to be
+    extracted, at the cost of additional (classical) computational overhead during the backwards
+    pass.
+
+  - When decomposing the circuit, the default decomposition strategy `expansion_strategy="gradient"`
+    will prioritize decompositions that result in the smallest number of parametrized operations
+    required to satisfy the differentiation method. While this may lead to a slight increase in
+    classical processing, it significantly reduces the number of circuit evaluations needed to
+    compute gradients of complicated unitaries.
+
+    To return to the old behaviour, `expansion_strategy="device"` can be specified.
+
+  Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
+  be removed in the next release.
 
 * Tests do not loop over automatically imported and instantiated operations any more, 
   which was opaque and created unnecessarily many tests.
@@ -29,7 +68,7 @@
   >>> op.decompose()
   [RZ(0.3, wires=[0])]
   ```
-  
+
 * ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
@@ -39,10 +78,16 @@
 
 <h3>Breaking changes</h3>
 
+- The `mutable` keyword argument has been removed from the QNode.
+  [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+
+- The reversible QNode differentiation method has been removed.
+  [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+
 * `QuantumTape.trainable_params` now is a list instead of a set. This
   means that `tape.trainable_params` will return a list unlike before,
   but setting the `trainable_params` with a set works exactly as before.
-  [(#1xxx)](https://github.com/PennyLaneAI/pennylane/pull/1xxx)
+  [(#1904)](https://github.com/PennyLaneAI/pennylane/pull/1904)
 
 * The `num_params` attribute in the operator class is now dynamic. This makes it easier
   to define operator subclasses with a flexible number of parameters. 
@@ -51,7 +96,7 @@
 * The static method `decomposition()`, formerly in the `Operation` class, has
   been moved to the base `Operator` class.
   [(#1873)](https://github.com/PennyLaneAI/pennylane/pull/1873)
-  
+
 * `DiagonalOperation` is not a separate subclass any more. 
   [(#1889)](https://github.com/PennyLaneAI/pennylane/pull/1889) 
 

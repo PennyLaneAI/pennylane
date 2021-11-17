@@ -451,7 +451,7 @@ class TestTensorSample:
             ]
         )
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method=None)
         def circuit(a, b, c):
             ansatz(a, b, c)
             return sample(qml.PauliZ(0) @ qml.Hermitian(A, [1, 2]))

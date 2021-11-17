@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape, QubitParamShiftTape
 
 
@@ -105,10 +105,6 @@ class TestQNode:
         # without the interface, the QNode simply returns a scalar array
         assert isinstance(res, np.ndarray)
         assert res.shape == tuple()
-
-        # without the interface, the tape is unable to deduce
-        # trainable parameters
-        assert circuit.qtape.trainable_params == [0, 1]
 
         # gradients should cause an error
         with pytest.raises(TypeError, match="must be real number, not ArrayBox"):
@@ -607,7 +603,7 @@ class TestQNode:
         differentiated"""
         dev = qml.device(dev_name, wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode_old.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(data1):
             qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
@@ -622,12 +618,12 @@ class TestQNode:
         """Test that the gradient of chained QNodes works without error"""
         dev = qml.device(dev_name, wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode_old.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit1(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode_old.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(data, wires=[0, 1])
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
@@ -654,7 +650,7 @@ class TestQNode:
         is correct."""
         dev1 = qml.device(dev_name, wires=3)
 
-        @qml.qnode(dev1, diff_method=diff_method)
+        @qml.qnode_old.qnode(dev1, diff_method=diff_method)
         def circuit1(a, b, c):
             qml.RX(a, wires=0)
             qml.RX(b, wires=1)
@@ -665,7 +661,7 @@ class TestQNode:
 
         dev2 = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev2, diff_method=diff_method)
+        @qml.qnode_old.qnode(dev2, diff_method=diff_method)
         def circuit2(data, weights):
             qml.RX(data[0], wires=0)
             qml.RX(data[1], wires=1)
@@ -1078,7 +1074,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode_old.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)
@@ -1120,7 +1116,7 @@ def test_adjoint_reuse_device_state(mocker):
     """Tests that the autograd interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, diff_method="adjoint")
+    @qml.qnode_old.qnode(dev, diff_method="adjoint")
     def circ(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))

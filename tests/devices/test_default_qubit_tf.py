@@ -1026,7 +1026,7 @@ class TestQNodeIntegration:
 
         expected = -tf.math.sin(p)
 
-        assert circuit.diff_options["method"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -1339,11 +1339,11 @@ class TestPassthruIntegration:
 
         # Check that the correct QNode type is being used.
         if diff_method == "backprop":
-            assert circuit.diff_options["method"] == "backprop"
+            assert circuit.gradient_fn == "backprop"
         elif diff_method == "parameter-shift":
-            assert circuit.diff_options["method"] == "analytic"
+            assert circuit.gradient_fn is qml.gradients.param_shift
         elif diff_method == "finite-diff":
-            assert circuit.diff_options["method"] == "numeric"
+            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         def cost(params):
             """Perform some classical processing"""

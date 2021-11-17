@@ -19,7 +19,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.interfaces.autograd import AutogradInterface
 from pennylane.tape import JacobianTape, ReversibleTape
-from pennylane import QNode, qnode
+from pennylane.qnode_old import QNode, qnode
 from pennylane.measure import MeasurementProcess
 
 
@@ -142,6 +142,18 @@ class TestReversibleTape:
 
         with pytest.raises(ValueError, match="Probability is not supported"):
             tape.jacobian(dev)
+
+    def test_hamiltonian_error(self):
+        """Tests that an exception is raised when a Hamiltonian
+        is used with the ReversibleTape."""
+        with ReversibleTape() as tape:
+            qml.RX(0.542, wires=0)
+            qml.expval(1.0 * qml.PauliZ(0) @ qml.PauliX(1))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with pytest.raises(qml.QuantumFunctionError, match="does not support Hamiltonian"):
+            tape.jacobian(dev, method="analytic")
 
     def test_phaseshift_exception(self):
         """Tests that an exception is raised when a PhaseShift gate
@@ -374,7 +386,7 @@ class TestQNodeIntegration:
             match="Requested reversible differentiation to be computed with finite shots.",
         ):
 
-            @qml.qnode(dev, diff_method="reversible")
+            @qml.qnode_old.qnode(dev, diff_method="reversible")
             def circ(x):
                 qml.RX(x, wires=0)
                 return qml.expval(qml.PauliZ(0))

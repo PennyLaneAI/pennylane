@@ -85,6 +85,24 @@ class TestTorchQuantumTape:
         assert isinstance(res, torch.Tensor)
         assert res.shape == (1,)
 
+    def test_execution_on_tf_device(self):
+        """Test execution on a TF device"""
+        tf = pytest.importorskip("tensorflow")
+
+        a = torch.tensor(0.1, requires_grad=True)
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        with TorchInterface.apply(JacobianTape()) as tape:
+            qml.RY(a, wires=0)
+            qml.RX(torch.tensor(0.2), wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        assert tape.trainable_params == [0]
+        res = tape.execute(dev)
+
+        assert isinstance(res, torch.Tensor)
+        assert res.shape == (1,)
+
     def test_jacobian(self, mocker, tol):
         """Test jacobian calculation"""
         spy = mocker.spy(JacobianTape, "jacobian")
