@@ -401,8 +401,8 @@ class TestMultiAmplitudes:
         assert qml.math.allclose(output, sol, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("inpt", MULTI_FEATURES)
-    def test_same_qubits(self):
-        features1, features2, sol, device = inpt
+    def test_same_qubits(self, inpt):
+        features1, features2, _, device = inpt
         dev = qml.device(device, wires=7)
 
         @qml.qnode(dev)
