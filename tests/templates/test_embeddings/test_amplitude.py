@@ -400,17 +400,15 @@ class TestMultiAmplitudes:
         output = circuit(features1, features2)[0]
         assert qml.math.allclose(output, sol, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("inpt", MULTI_FEATURES)
     def test_same_qubits(self):
-        dev = qml.device("default.qubit", wires=7)
+        features1, features2, sol, device = inpt
+        dev = qml.device(device, wires=7)
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.AmplitudeEmbedding(
-                [1, 1, 1, 1, 0, 0, 0, 0], wires=[1, 2, 3], normalize=True
-            )
-            qml.templates.AmplitudeEmbedding(
-                [1, 1, 1, 1, 0, 0, 0, 0], wires=[3, 5, 6], normalize=True
-            )
+            qml.templates.AmplitudeEmbedding(features1, wires=[1, 2, 3], normalize=True)
+            qml.templates.AmplitudeEmbedding(features2, wires=[3, 5, 6], normalize=True)
             return qml.state()
 
         with pytest.raises(DeviceError, match="applied in the same qubit"):
