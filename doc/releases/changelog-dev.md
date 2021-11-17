@@ -20,10 +20,10 @@
   custom gradients, better decomposition strategies, and higher-order derivatives.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
-  - Internally, if multiple circuits are generated for execution simultaneously, they
+  - Internally, if multiple circuits are generated for simultaneous execution, they
     will be packaged into a single job for execution on the device. This can lead to
     significant performance improvement when executing the QNode on remote
-    quantum hardware.
+    quantum hardware or simulator devices with parallelization capabilities.
 
   - Custom gradient transforms can be specified as the differentiation method:
 
@@ -48,7 +48,7 @@
     will prioritize decompositions that result in the smallest number of parametrized operations
     required to satisfy the differentiation method. While this may lead to a slight increase in
     classical processing, it significantly reduces the number of circuit evaluations needed to
-    compute gradients of complex unitaries.
+    compute gradients of complicated unitaries.
 
     To return to the old behaviour, `expansion_strategy="device"` can be specified.
 
