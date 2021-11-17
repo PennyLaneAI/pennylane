@@ -32,7 +32,6 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 
-
 class TestOperatorConstruction:
     """Test custom operators construction."""
 
