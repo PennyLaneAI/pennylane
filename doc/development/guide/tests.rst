@@ -7,10 +7,10 @@ Running the tests
 The PennyLane test suite requires the Python ``pytest`` package, as well as:
 
 * ``pytest-cov``: determines test coverage
-* ``pytest-mock``: allows replacing components with dummy objects
+* ``pytest-mock``: allows replacing components with dummy/mock objects
 * ``flaky``: manages tests with non-deterministic behaviour
 
- These requirements can be installed via ``pip``:
+These requirements can be installed via ``pip``:
 
 .. code-block:: bash
 
@@ -44,7 +44,7 @@ Pytest supports many other command-line options, which can be found with the com
 
 Or by visiting the `pytest documentation <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
 
-PennyLane provides a set of tests for all PennyLane plugins. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__.
+PennyLane provides a set of integration tests for all PennyLane plugins and devices. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__.
 
 All PennyLane tests and the device suite on core devices can be run from the PennyLane root folder via:
 
