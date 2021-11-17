@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
 
+import math
 from autograd.differential_operators import jacobian
 import pennylane as qml
 from pennylane import numpy as np
@@ -215,7 +216,14 @@ class TestParameterShiftHessian:
 
         assert np.allclose(jacobian, hessian)
 
-    def test_less_quantum_invocations(self):
+    # Some bounds we could choose to meet on the efficiency of the hessian implementation
+    # for operations with two eigenvalues (2-term shift rule):
+    # - < jacobian(jacobian())
+    # - <= 2^d * (m+d-1)C(d)      see arXiv:2008.06517 p. 4
+    # - <= 2^m                    see arXiv:2008.06517 p. 4
+    # here d=2 is the derivative order, m is the number of variational parameters (w.r.t. gate args)
+
+    def test_less_quantum_invocations1(self):
         """Test that the hessian invokes less hardware executions than double differentiation"""
 
         dev = qml.device("default.qubit", wires=2)
@@ -229,12 +237,72 @@ class TestParameterShiftHessian:
         x = np.array(0.1, requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
-
             qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
             qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
-            print("\n", hessian_qruns, "<?", jacobian_qruns)
+        print("\n", hessian_qruns, "<", jacobian_qruns, "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(1+2-1, 2), "?")
+        print("\n", hessian_qruns, "<=", 2 ** 1, "?")
 
-            assert hessian_qruns < jacobian_qruns
+        assert hessian_qruns < jacobian_qruns
+        assert hessian_qruns <= 2 ** 2 * math.comb(1+2-1, 2)
+        assert hessian_qruns <= 2 ** 1
+
+    def test_less_quantum_invocations2(self):
+        """Test that the hessian invokes less hardware executions than double differentiation"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x[1], wires=0)
+            return qml.expval(qml.PauliZ(1))
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        with qml.Tracker(dev) as tracker:
+            qml.gradients.param_shift_hessian(circuit)(x)
+            hessian_qruns = tracker.totals["executions"]
+            qml.jacobian(qml.jacobian(circuit))(x)
+            jacobian_qruns = tracker.totals["executions"] - hessian_qruns
+
+        print("\n", hessian_qruns, "<", jacobian_qruns, "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(2+2-1, 2), "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2, "?")
+
+        assert hessian_qruns < jacobian_qruns
+        assert hessian_qruns <= 2 ** 2 * math.comb(2+2-1, 2)
+        assert hessian_qruns <= 2 ** 2
+
+    def test_less_quantum_invocations3(self):
+        """Test that the hessian invokes less hardware executions than double differentiation"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x[1], wires=0)
+            qml.RZ(x[2], wires=1)
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with qml.Tracker(dev) as tracker:
+            qml.gradients.param_shift_hessian(circuit)(x)
+            hessian_qruns = tracker.totals["executions"]
+            qml.jacobian(qml.jacobian(circuit))(x)
+            jacobian_qruns = tracker.totals["executions"] - hessian_qruns
+
+        print("\n", hessian_qruns, "<", jacobian_qruns, "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(3+2-1, 2), "?")
+        print("\n", hessian_qruns, "<=", 2 ** 3, "?")
+
+        assert hessian_qruns < jacobian_qruns
+        assert hessian_qruns <= 2 ** 2 * math.comb(3+2-1, 2)
+        assert hessian_qruns <= 2 ** 3
