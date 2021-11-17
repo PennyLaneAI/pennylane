@@ -43,6 +43,38 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Iterable): wires that the template acts on
         rotation (str): type of rotations used
+
+    Example:
+
+        Angle embedding encodes the features as rotaion angles of the specified rotation angle.
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.AngleEmbedding(features=feature_vector, wires=range(3), rotation='Z')
+                qml.Hadamard(0)
+                return qml.probs(wires=range(3))
+
+        Here, we have also used rotation angles RZ. If not specified, RX is used as default.
+
+        .. code-block:: python
+
+            X = [1,2,3]
+            print(qml.draw(circuit)(X))
+
+        This results in the circuit:
+
+        .. code-block:: python
+
+            0: ──RZ(1)──H──╭┤ Probs 
+            1: ──RZ(2)─────├┤ Probs 
+            2: ──RZ(3)─────╰┤ Probs 
+
     """
 
     num_wires = AnyWires
