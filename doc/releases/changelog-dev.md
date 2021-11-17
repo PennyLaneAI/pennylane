@@ -16,13 +16,6 @@
 
 <h3>Improvements</h3>
 
-* The `par_domain` attribute in the operator class has been removed. 
-  [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
-
-* The `num_params` attribute in the operator class is now dynamic. This makes it easier
-  to define operator subclasses with a flexible number of parameters. 
-  [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)
-
 * Tests do not loop over automatically imported and instantiated operations any more, 
   which was opaque and created unnecessarily many tests.
   [(#1895)](https://github.com/PennyLaneAI/pennylane/pull/1895)
@@ -43,6 +36,13 @@
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 <h3>Breaking changes</h3>
+
+* The `par_domain` attribute in the operator class has been removed. 
+  [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
+
+* The `num_params` attribute in the operator class is now dynamic. This makes it easier
+  to define operator subclasses with a flexible number of parameters. 
+  [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)
 
 * The static method `decomposition()`, formerly in the `Operation` class, has
   been moved to the base `Operator` class.
