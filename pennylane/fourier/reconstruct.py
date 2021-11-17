@@ -34,7 +34,7 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
     Args:
         fun (callable): Univariate finite Fourier series to reconstruct.
             It must have signature ``float -> float`` .
-        num_frequency (int): Number of integer frequencies in ``fun``
+        num_frequency (int): Number of integer frequencies in ``fun``.
             All integer frequencies below ``num_frequency`` are assumed
             to be present in ``fun`` as well; if they are not, the output
             is correct put the reconstruction could have been performed
@@ -98,7 +98,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
             It must have signature ``float -> float`` .
         spectrum (Collection): Frequency spectrum of the Fourier series;
             non-positive frequencies are ignored.
-        shifts (Sequence): Shift angles at which to evaluate ``fun`` for the reconstruction
+        shifts (Sequence): Shift angles at which to evaluate ``fun`` for the reconstruction.
             Chosen equidistantly within the interval :math:`[0, 2\pi/f_\text{max}]`
             if ``shifts=None`` , where :math:`f_\text{max}` is the biggest
             frequency in ``spectrum``.
@@ -176,7 +176,6 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     def _reconstruction(x):
         """Univariate reconstruction based on arbitrary shifts."""
         x = x - x0
-        print(spectrum)
         return (
             a0
             + qml.math.tensordot(qml.math.cos(spectrum * x), a, axes=[[0], [0]])
@@ -334,7 +333,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             of an argument of ``qnode`` .
             If a ``dict`` , the values of ``ids`` have to contain the parameter indices
             for the respective array-valued QNode argument represented by the key.
-            These indices always are tuples, i.e. ``()`` for scalar and ``(i,)`` for
+            These indices always are tuples, i.e., ``()`` for scalar and ``(i,)`` for
             one-dimensional arguments.
             If a ``list`` , the parameter indices are inferred from ``nums_frequency`` if
             given or ``spectra`` else.
@@ -379,7 +378,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     and
     `General parameter-shift rules <https://pennylane.ai/qml/demos/tutorial_general_parshift.html>`__
     demos as well as the
-    `qml.fourier module docstring <https://pennylane.readthedocs.io/en/stable/code/qml_fourier.html>`__ .
+    :mod:`qml.fourier <pennylane.fourier>` module docstring.
 
     **Example**
 
@@ -439,7 +438,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
     .. UsageDetails::
 
-        *Input formatting*
+        **Input formatting**
 
         As described briefly above, the essential inputs to ``reconstruct`` that provide information
         about the QNode are given as dictionaries of dictionaries, where the outer keys reference
