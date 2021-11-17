@@ -249,7 +249,6 @@ class Operator(abc.ABC):
 
     The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
     * :attr:`~.Operator.par_domain`
 
