@@ -119,7 +119,7 @@ class Device(abc.ABC):
     _circuits = {}  #: dict[str->Circuit]: circuit templates associated with this API class
     _asarray = staticmethod(np.asarray)
 
-    def __init__(self, wires=1, shots=1000, *, analytic=None, custom_decomps=None):
+    def __init__(self, wires=1, shots=1000, *, analytic=None):
 
         self.shots = shots
 
@@ -142,7 +142,6 @@ class Device(abc.ABC):
 
         self.tracker = qml.Tracker()
         self.custom_expand_fn = None
-        self.custom_decomps = None
 
     def __repr__(self):
         """String representation."""

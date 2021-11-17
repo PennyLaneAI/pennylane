@@ -41,6 +41,7 @@ from pennylane.wires import Wires
 
 from pennylane.measure import MeasurementProcess
 
+
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
 
@@ -148,20 +149,16 @@ class QubitDevice(Device):
                 op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()
             ]
 
-            custom_decomp_condition =  qml.BooleanFn(
-                lambda obj: not isinstance(obj, qml.tape.QuantumTape) # Expand templates
-                and obj.name not in custom_op_names # Expand things that don't have custom decomp
-                and self.supports_operation(obj.name) # Expand things until supported on device
-            )
-
-            # Create a new expansion function, then set the device's custom expand
-            # function to one that runs our new expansion function in a context where
-            # the decompositions have been replaced.
+            # Create a new expansion function; stop at things that do not have
+            # custom decompositions, or that satisfy the regular device stopping criteria
             custom_fn = qml.transforms.create_expand_fn(
                 depth=10,
-                stop_at=custom_decomp_condition
+                stop_at=qml.BooleanFn(lambda obj: obj.name not in custom_op_names),
+                device=self,
             )
 
+            # Finally, we set the device's custom_expand_fn to a new one that
+            # runs in a context where the decompositions have been replaced.
             def custom_decomp_expand(self, circuit, max_expansion=10):
                 with self.custom_decomp_context():
                     return custom_fn(circuit, max_expansion)
@@ -193,6 +190,7 @@ class QubitDevice(Device):
         """A context manager for applying custom decompositions."""
 
         from pennylane.transforms.qfunc_transforms import NonQueuingTape
+
         NonQueuingTape = type("NonQueuingTape", (NonQueuingTape, qml.tape.QuantumTape), {})
 
         # Creates an individaul context
