@@ -241,7 +241,7 @@ class TestGradientTransformIntegration:
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.beta.qnode(dev, expansion_strategy=strategy)
+        @qml.qnode(dev, expansion_strategy=strategy)
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
@@ -259,7 +259,7 @@ class TestGradientTransformIntegration:
 
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -279,7 +279,7 @@ class TestGradientTransformIntegration:
         """Raise an exception if shots is used within the QNode"""
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x, shots):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
