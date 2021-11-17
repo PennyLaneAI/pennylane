@@ -572,6 +572,16 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=1)
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.PauliRot(0.5, 'X',  wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(example_circuit())
+    0.8775825618903724
     """
     num_wires = AnyWires
     do_check_domain = False
