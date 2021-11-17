@@ -71,7 +71,7 @@ def test_autograd(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -97,7 +97,7 @@ def test_jax(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface="jax", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -123,7 +123,7 @@ def test_jax_jit(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface="jax", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -149,7 +149,7 @@ def test_torch(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="torch", diff_method=diff_method)
+    @qml.qnode(dev, interface="torch", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -177,7 +177,7 @@ def test_tf(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="tf", diff_method=diff_method)
+    @qml.qnode(dev, interface="tf", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -204,7 +204,7 @@ def test_tf_autograph(tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="tf", diff_method="backprop")
+    @qml.qnode(dev, interface="tf", diff_method="backprop")
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -255,7 +255,7 @@ def test_unbatched_parameter():
     dev = qml.device("default.qubit", wires=1)
 
     @qml.batch_params
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit(x, y):
         qml.RY(x, wires=[0])
         qml.RX(y, wires=[0])
@@ -275,7 +275,7 @@ def test_initial_unbatched_parameter():
     dev = qml.device("default.qubit", wires=1)
 
     @qml.batch_params
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit(x, y):
         qml.RY(x, wires=[0])
         qml.RX(y, wires=[0])

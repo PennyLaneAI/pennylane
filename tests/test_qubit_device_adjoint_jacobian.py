@@ -69,7 +69,7 @@ class TestAdjointJacobian:
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
         with qml.tape.JacobianTape() as tape:
-            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -78,7 +78,8 @@ class TestAdjointJacobian:
         calculated_val = dev.adjoint_jacobian(tape)
 
         # compare to finite differences
-        numeric_val = tape.jacobian(dev, method="numeric")
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(qml.execute(tapes, dev, None))
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -88,7 +89,7 @@ class TestAdjointJacobian:
         params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
 
         with qml.tape.JacobianTape() as tape:
-            qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
+            qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
             qml.Rot(*params, wires=[0])
             qml.expval(qml.PauliZ(0))
 
@@ -97,7 +98,8 @@ class TestAdjointJacobian:
         calculated_val = dev.adjoint_jacobian(tape)
 
         # compare to finite differences
-        numeric_val = tape.jacobian(dev, method="numeric")
+        tapes, fn = qml.gradients.finite_diff(tape)
+        numeric_val = fn(qml.execute(tapes, dev, None))
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("par", [1, -2, 1.623, -0.051, 0])  # integers, floats, zero
@@ -112,7 +114,7 @@ class TestAdjointJacobian:
 
         # gradients
         exact = np.cos(par)
-        grad_F = tape.jacobian(dev, method="numeric")
+        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
         grad_A = dev.adjoint_jacobian(tape)
 
         # different methods must agree
@@ -175,11 +177,9 @@ class TestAdjointJacobian:
             qml.expval(obs(wires=0))
             qml.expval(qml.PauliZ(wires=1))
 
-        tape.execute(dev)
-
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
-        grad_F = tape.jacobian(dev, method="numeric")
+        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
         grad_D = dev.adjoint_jacobian(tape)
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
@@ -197,7 +197,7 @@ class TestAdjointJacobian:
         tape.trainable_params = {1, 2, 3}
 
         grad_D = dev.adjoint_jacobian(tape)
-        grad_F = tape.jacobian(dev, method="numeric")
+        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
 
         # gradient has the correct shape and every element is nonzero
         assert grad_D.shape == (1, 3)
@@ -368,7 +368,6 @@ class TestAdjointJacobianQNode:
             qml.Rot(params[1], params[0], 2 * params[0], wires=[0])
             return qml.expval(qml.PauliX(0))
 
-        spy_numeric = mocker.spy(qml.tape.JacobianTape, "numeric_pd")
         spy_analytic = mocker.spy(dev, "adjoint_jacobian")
 
         cost = QNode(circuit, dev, diff_method="finite-diff")
@@ -376,7 +375,6 @@ class TestAdjointJacobianQNode:
         grad_fn = qml.grad(cost)
         grad_F = grad_fn(params)
 
-        spy_numeric.assert_called()
         spy_analytic.assert_not_called()
 
         cost = QNode(circuit, dev, diff_method="adjoint")

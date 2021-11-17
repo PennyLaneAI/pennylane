@@ -91,7 +91,6 @@ class ArbitraryUnitary(Operation):
         wires (Iterable): wires that the template acts on
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -105,6 +104,10 @@ class ArbitraryUnitary(Operation):
             )
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 
