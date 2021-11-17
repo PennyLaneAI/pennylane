@@ -22,7 +22,6 @@ import abc
 from collections import OrderedDict
 import itertools
 import warnings
-import contextlib
 
 import numpy as np
 
@@ -40,7 +39,6 @@ from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 from pennylane.measure import MeasurementProcess
-
 
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.
@@ -143,27 +141,12 @@ class QubitDevice(Device):
 
         self.custom_decomps = custom_decomps
 
-        if custom_decomps:
-            # Get a list of all the operations requiring custom decomps
-            custom_op_names = [
-                op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()
-            ]
-
-            # Create a new expansion function; stop at things that do not have
-            # custom decompositions, or that satisfy the regular device stopping criteria
-            custom_fn = qml.transforms.create_expand_fn(
-                depth=10,
-                stop_at=qml.BooleanFn(lambda obj: obj.name not in custom_op_names),
-                device=self,
+        # If custom decompositions are requested, create and set a custom expand function
+        if self.custom_decomps:
+            custom_decomp_expand_fn = qml.transforms.create_custom_decomp_expand_fn(
+                custom_decomps, self
             )
-
-            # Finally, we set the device's custom_expand_fn to a new one that
-            # runs in a context where the decompositions have been replaced.
-            def custom_decomp_expand(self, circuit, max_expansion=10):
-                with self.custom_decomp_context():
-                    return custom_fn(circuit, max_expansion)
-
-            self.custom_expand(custom_decomp_expand)
+            self.custom_expand(custom_decomp_expand_fn)
 
     @classmethod
     def capabilities(cls):
@@ -184,55 +167,6 @@ class QubitDevice(Device):
         Most importantly the quantum state is reset to its initial value.
         """
         self._samples = None
-
-    @contextlib.contextmanager
-    def custom_decomp_context(self):
-        """A context manager for applying custom decompositions."""
-
-        from pennylane.transforms.qfunc_transforms import NonQueuingTape
-
-        NonQueuingTape = type("NonQueuingTape", (NonQueuingTape, qml.tape.QuantumTape), {})
-
-        # Creates an individaul context
-        @contextlib.contextmanager
-        def _custom_decomposition(obj, fn):
-            # Covers the case where the user passes a string to indicate the Operator
-            if isinstance(obj, str):
-                obj = getattr(qml, obj)
-
-            original_decomp_method = obj.decompose
-
-            # This is the method that will override the current .decompose method of
-            # the given operation; it has the same signature as .decomposition
-            def new_decomp_method(self):
-                with NonQueuingTape() as tape:
-                    if self.num_params == 0:
-                        return fn(self.wires)
-                    return fn(*self.params, self.wires)
-                return tape
-
-            try:
-                # Actually set the new decomp function; note that we set
-                # expand rather than `decomposition` proper.
-                obj.decompose = new_decomp_method
-                yield
-
-            finally:
-                obj.decompose = original_decomp_method
-
-        # Now, loop through the decomposition dictionary and create all the contexts
-        try:
-            with contextlib.ExitStack() as stack:
-                for obj, fn in self.custom_decomps.items():
-                    # We enter a new context each decomposition the user passes
-                    stack.enter_context(_custom_decomposition(obj, fn))
-
-                stack = stack.pop_all()
-
-            yield
-
-        finally:
-            stack.close()
 
     def execute(self, circuit, **kwargs):
         """Execute a queue of quantum operations on the device and then
