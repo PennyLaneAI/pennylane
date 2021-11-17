@@ -220,6 +220,9 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
+* Add documentation example for BasisEmbedding.
+  [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
