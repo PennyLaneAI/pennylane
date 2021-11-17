@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed, too-many-arguments
 import abc
 from collections import OrderedDict
 import itertools
@@ -39,6 +39,7 @@ from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
 from pennylane.measure import MeasurementProcess
+
 
 class QubitDevice(Device):
     """Abstract base class for PennyLane qubit devices.

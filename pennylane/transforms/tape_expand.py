@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
-
+# pylint: disable=unused-argument
 import contextlib
 
 import pennylane as qml

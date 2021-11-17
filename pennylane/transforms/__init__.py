@@ -137,5 +137,5 @@ from .tape_expand import (
     expand_multipar,
     expand_nonunitary_gen,
     create_expand_fn,
-    create_custom_decomp_expand_fn
+    create_custom_decomp_expand_fn,
 )
