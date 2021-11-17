@@ -249,7 +249,6 @@ class Operator(abc.ABC):
 
     The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
     * :attr:`~.Operator.par_domain`
 
@@ -389,11 +388,6 @@ class Operator(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def num_params(self):
-        """Number of parameters the operator takes."""
-
-    @property
-    @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on."""
 
@@ -483,6 +477,16 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
+        self._num_params = len(params)
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            raise ValueError(
+                "{}: wrong number of parameters. "
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+            )
+
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -499,12 +503,6 @@ class Operator(abc.ABC):
                 "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
-        if len(params) != self.num_params:
-            raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
-            )
-
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -516,6 +514,20 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
         return "{}(wires={})".format(self.name, self.wires.tolist())
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters that this operator expects to be fed via the
+        dynamic `*params` argument.
+
+        By default, this property returns as many parameters as were used for the
+        operator creation. If the number of parameters for an operator subclass is fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            int: number of parameters
+        """
+        return self._num_params
 
     @property
     def wires(self):

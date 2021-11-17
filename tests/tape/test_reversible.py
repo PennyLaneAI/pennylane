@@ -299,7 +299,6 @@ class TestGradients:
     def test_compare_analytic_and_numeric_gradients(self, op, mocker, tol):
         """Test for selected gates that the gradients of circuits match between the
         finite difference and analytic methods."""
-        args = np.linspace(0.2, 0.5, op.num_params)
 
         with ReversibleTape() as tape:
             qml.Hadamard(wires=0)
