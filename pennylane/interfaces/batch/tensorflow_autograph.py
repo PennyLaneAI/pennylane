@@ -96,7 +96,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         params_unwrapped = _nest_params(all_params)
         output_sizes = []
 
-        with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
+        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
             # Forward pass: execute the tapes
             res, jacs = execute_fn(tapes, **gradient_kwargs)
 
@@ -154,9 +154,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                             all_params = all_params[:len_all_params]
                             params_unwrapped = _nest_params(all_params)
 
-                            with qml.tape.Unwrap(
-                                *tapes, params=params_unwrapped, set_trainable=False
-                            ):
+                            with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                                     tapes,
                                     dy,
@@ -218,7 +216,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
                         all_params = all_params[:len_all_params]
                         params_unwrapped = _nest_params(all_params)
 
-                        with qml.tape.Unwrap(*tapes, params=params_unwrapped, set_trainable=False):
+                        with qml.tape.Unwrap(*tapes, params=params_unwrapped):
                             vjps = _compute_vjp(dy, gradient_fn(tapes, **gradient_kwargs))
 
                         return vjps
