@@ -44,7 +44,11 @@ Pytest supports many other command-line options, which can be found with the com
 
 Or by visiting the `pytest documentation <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
 
-PennyLane provides a set of integration tests for all PennyLane plugins and devices. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__.
+PennyLane provides a set of integration tests for all PennyLane plugins and devices. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__. These tests can be run from the PennyLane root folder by:
+
+.. code-block:: bash
+
+    pytest pennylane/devices/tests --device=default.qubit --shots=1000
 
 All PennyLane tests and the device suite on core devices can be run from the PennyLane root folder via:
 
