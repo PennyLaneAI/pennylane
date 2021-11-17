@@ -59,6 +59,7 @@ class BasisEmbedding(Operation):
              2: ──X──╰┤ State
 
         And, the output state is:
+
         >>> print(circuit(X))
             [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
 
