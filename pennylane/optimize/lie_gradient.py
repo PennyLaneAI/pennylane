@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Lie gradient optimizers"""
-# pylint: disable=too-many-branches,cell-var-from-loop
+import itertools as it
+import copy
 
 import numpy as np
 import pennylane as qml
 from pennylane.tape import JacobianTape
 from pennylane.transforms import batch_transform
-import itertools as it
-import copy
+
 
 
 @qml.qfunc_transform
 def append_time_evolution(tape, hamiltonian, t):
-    """Append an approximate time evolution to an existising circuit
+    r"""Append an approximate time evolution to an existising circuit
     Trotterize the Hamiltonian and with a single step
 
     .. math:
@@ -54,16 +54,16 @@ class LieGradientOptimizer:
 
     # pylint: disable=too-few-public-methods
     pl_paulis = [
-        lambda x: qml.Identity(x),
-        lambda x: qml.PauliX(x),
-        lambda x: qml.PauliY(x),
-        lambda x: qml.PauliZ(x),
+        qml.Identity,
+        qml.PauliX,
+        qml.PauliY,
+        qml.PauliZ,
     ]
     pauli_int_to_str = {0: "I", 1: "X", 2: "Y", 3: "Z"}
     pauli_str_to_int = {"I": 0, "X": 1, "Y": 2, "Z": 3}
 
     def __init__(self, circuit, hamiltonian, stepsize=0.01, **kwargs):
-        """
+        r"""
         Base class for other gradient-descent-based optimizers.
 
         A step of the Lie gradient iterates the Lie gradient flow on :math:`\text{SU}(2^N)`.
@@ -89,7 +89,7 @@ class LieGradientOptimizer:
             circuit (qml.QNode): the user-defined hyperparameter :math:`\eta`
             hamiltonian (qml.Hamiltonian): the user-defined hyperparameter :math:`\eta`
             stepsize (float): the user-defined hyperparameter :math:`\eta`
-
+            **kwargs
         **Examples:**
 
         >>> @qml.qnode(qml.device("default.qubit", wires=2))
@@ -115,6 +115,7 @@ class LieGradientOptimizer:
             raise TypeError(
                 f"`circuit` must be a `qml.QNode`, " f"received {type(circuit)} "
             )
+
         self.circuit = circuit
         self.circuit.construct([], {})
         self.nqubits = max(circuit.device.wires) + 1
@@ -132,7 +133,7 @@ class LieGradientOptimizer:
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise TypeError(
-                f"`hamiltonian` must be of type `qml.Hamiltonian`, "
+                f"`hamiltonian` must be a `qml.Hamiltonian`, "
                 f"received {type(hamiltonian)} "
             )
 
@@ -262,7 +263,7 @@ class LieGradientOptimizer:
         return None
 
     def get_su_n_operators(self):
-        """Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
+        r"""Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
 
         Returns:
             List of (N^2)x(N^2) numpy complex arrays and corresponding paulis words
@@ -285,7 +286,7 @@ class LieGradientOptimizer:
         ]
 
     def get_pauli_op(self, paulistring):
-        """Create a qml.Observable for a String corresponding to a Pauli word.
+        r"""Create a qml.Observable for a String corresponding to a Pauli word.
 
         Args:
             paulistring: String of the form 'IXYI...Z' corresponding to a Pauli word
@@ -295,16 +296,16 @@ class LieGradientOptimizer:
         """
         for idx, p in enumerate(paulistring):
             if p != 0:
+                op = self.pl_paulis[p](idx)
+                for q in paulistring[idx + 1:]:
+                    idx += 1
+                    if q != 0:
+                        op @= self.pl_paulis[q](idx)
                 break
-        op = self.pl_paulis[p](idx)
-        for p in paulistring[idx + 1 :]:
-            idx += 1
-            if p != 0:
-                op @= self.pl_paulis[p](idx)
         return op
 
     def get_omegas(self):
-        """Measure the coefficients of the Lie gradient with respect to a Pauli word basis
+        r"""Measure the coefficients of the Lie gradient with respect to a Pauli word basis
 
         We want to calculate the components of the Lie gradient with respect to a Pauli word basis
         For a Hamiltonian of the form :math:`H = \sum_i O_i`, this can be achieved by calculating
@@ -328,7 +329,7 @@ class LieGradientOptimizer:
 
         """
 
-        obs_groupings, coeffs_groupings = qml.grouping.group_observables(
+        obs_groupings, _ = qml.grouping.group_observables(
             self.observables, self.coeffs
         )
         # get all circuits we need to calculate the coefficients

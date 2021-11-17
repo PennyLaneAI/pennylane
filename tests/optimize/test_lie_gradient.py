@@ -16,15 +16,16 @@ Unit tests for the ``LieGradientOptimizer``.
 """
 import pytest
 
-import pennylane as qml
-from pennylane import numpy as np
 from scipy.sparse.linalg import expm
 
+import pennylane as qml
+from pennylane import numpy as np
 from pennylane.optimize.lie_gradient import LieGradientOptimizer
 
 
 @qml.qnode(qml.device("default.qubit", wires=2))
 def circuit_1():
+    """Simple circuit"""
     qml.Hadamard(wires=[0])
     qml.Hadamard(wires=[1])
     return qml.state()
@@ -32,6 +33,7 @@ def circuit_1():
 
 @qml.qnode(qml.device("default.qubit", wires=2))
 def circuit_2():
+    """Simply parameterized circuit"""
     qml.RX(0.1, wires=[0])
     qml.RY(0.5, wires=[1])
     qml.CNOT(wires=[0, 1])
@@ -41,6 +43,7 @@ def circuit_2():
 
 @qml.qnode(qml.device("default.qubit", wires=3))
 def circuit_3():
+    """Three-qubit circuit"""
     qml.RY(0.5, wires=[0])
     qml.RY(0.6, wires=[1])
     qml.RY(0.7, wires=[2])
@@ -182,7 +185,7 @@ def test_lie_gradient_hamiltonian_input_1():
 
     hamiltonian = qml.PauliX(0)
     with pytest.raises(
-        TypeError, match="`hamiltonian` must be of type `qml.Hamiltonian`"
+        TypeError, match="`hamiltonian` must be a `qml.Hamiltonian`"
     ):
         LieGradientOptimizer(circuit=circuit, hamiltonian=hamiltonian, stepsize=0.001)
 
@@ -197,5 +200,5 @@ def test_lie_gradient_nqubits(capsys):
 
     hamiltonian = qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)])
     LieGradientOptimizer(circuit=circuit, hamiltonian=hamiltonian, stepsize=0.001)
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert out.startswith("WARNING: The exact Lie gradient is exponentially")
