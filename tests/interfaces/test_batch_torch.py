@@ -420,7 +420,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliY(1))
 
         res = execute([tape], dev, **execute_kwargs)[0]
-        assert tape.trainable_params == {1, 2}
+        assert tape.trainable_params == [1, 2]
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
@@ -491,7 +491,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         res = execute([tape], dev, **execute_kwargs)[0]
         loss = torch.sum(res)
@@ -542,7 +542,7 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        assert tape.trainable_params == {0, 2}
+        assert tape.trainable_params == [0, 2]
 
         tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)
         expected = torch.tensor(
@@ -575,7 +575,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(1))
 
         res = execute([tape], dev, **execute_kwargs)[0]
-        assert tape.trainable_params == set()
+        assert tape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, torch.Tensor)
@@ -606,7 +606,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
 
         res = execute([tape], dev, **execute_kwargs)[0]
-        assert tape.trainable_params == {1}
+        assert tape.trainable_params == [1]
 
         expected = torch.tensor(-np.cos(a_val), dtype=res.dtype, device=torch_device)
         assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
@@ -645,7 +645,7 @@ class TestTorchExecuteIntegration:
         tape = tape.expand()
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        assert tape.trainable_params == {1, 2, 3, 4}
+        assert tape.trainable_params == [1, 2, 3, 4]
         assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
 
         tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)

@@ -129,7 +129,7 @@ class TestQNode:
         assert circuit.interface == "autograd"
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = qml.grad(circuit)(a)
@@ -157,7 +157,7 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
         assert res.shape == (2,)
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
@@ -254,7 +254,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -269,7 +269,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -281,7 +281,7 @@ class TestQNode:
         a = np.array(0.54, requires_grad=False)
         b = np.array(0.8, requires_grad=True)
         circuit(a, b)
-        assert circuit.qtape.trainable_params == {1}
+        assert circuit.qtape.trainable_params == [1]
 
     def test_classical_processing(self, dev_name, diff_method, mode, tol):
         """Test classical processing within the quantum tape"""
@@ -301,7 +301,7 @@ class TestQNode:
         res = qml.jacobian(circuit)(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             tape_params = np.array(circuit.qtape.get_parameters())
             assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
@@ -324,7 +324,7 @@ class TestQNode:
         res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
@@ -356,7 +356,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         res = qml.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
@@ -769,11 +769,11 @@ class TestQubitIntegration:
         if diff_method != "backprop":
             # Check that the gradient was computed
             # for all parameters in circuit2
-            assert circuit2.qtape.trainable_params == {0, 1, 2, 3}
+            assert circuit2.qtape.trainable_params == [0, 1, 2, 3]
 
             # Check that the parameter-shift rule was not applied
             # to the first parameter of circuit1.
-            assert circuit1.qtape.trainable_params == {1, 2}
+            assert circuit1.qtape.trainable_params == [1, 2]
 
     def test_second_derivative(self, dev_name, diff_method, mode, tol):
         """Test second derivative calculation of a scalar valued QNode"""
