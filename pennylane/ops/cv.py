@@ -430,7 +430,6 @@ class ControlledAddition(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-
     grad_method = "A"
 
     shift = 0.1
@@ -487,7 +486,6 @@ class ControlledPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-
     grad_method = "A"
 
     shift = 0.1
