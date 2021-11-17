@@ -333,7 +333,7 @@ def test_qubit_circuit_with_max_length_kwdarg():
     correct circuit drawing."""
     dev = qml.device("default.qubit", wires=3)
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def qnode():
         for i in range(3):
             qml.Hadamard(wires=i)
@@ -359,7 +359,7 @@ def test_qubit_circuit_with_max_length_kwdarg():
     correct circuit drawing."""
     dev = qml.device("default.qubit", wires=3)
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def qnode():
         for i in range(3):
             qml.Hadamard(wires=i)
@@ -384,7 +384,7 @@ def test_qubit_circuit_length_under_max_length_kwdarg():
     """Test that a qubit circuit with a circuit length less than the max_length renders correctly."""
     dev = qml.device("default.qubit", wires=3)
 
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def qnode():
         for i in range(3):
             qml.Hadamard(wires=i)
