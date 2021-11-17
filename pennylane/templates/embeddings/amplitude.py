@@ -118,7 +118,6 @@ class AmplitudeEmbedding(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -131,6 +130,10 @@ class AmplitudeEmbedding(Operation):
 
         features = self._preprocess(features, wires, pad_with, normalize)
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def adjoint(self):  # pylint: disable=arguments-differ
         return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)

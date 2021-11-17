@@ -111,7 +111,6 @@ class AllSinglesDoubles(Operation):
             circuit(params, hf_state, singles=singles, doubles=doubles)
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -159,6 +158,10 @@ class AllSinglesDoubles(Operation):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

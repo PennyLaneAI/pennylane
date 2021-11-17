@@ -19,7 +19,6 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.beta import QNode, qnode
 from pennylane.tape import QuantumTape
 from pennylane.transforms import mitigate_with_zne
 

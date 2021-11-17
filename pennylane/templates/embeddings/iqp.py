@@ -162,7 +162,6 @@ class IQPEmbedding(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -186,6 +185,10 @@ class IQPEmbedding(Operation):
         self.n_repeats = n_repeats
 
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

@@ -245,7 +245,6 @@ class MottonenStatePreparation(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -268,6 +267,10 @@ class MottonenStatePreparation(Operation):
             raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
 
         super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

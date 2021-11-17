@@ -398,79 +398,118 @@ class TestDefaultGaussianDevice:
             gaussian_dev._observable_map
         )
 
-    def test_apply(self, gaussian_dev, tol):
-        """Test the application of gates to a state"""
+    def test_apply_general(self, tol):
+        """Test the application of gates to a state, using gates that use the default logic in
+        the apply function."""
 
-        # loop through all supported operations
-        for gate_name, fn in gaussian_dev._operation_map.items():
-            # log.debug("\tTesting %s gate...", gate_name)
-            gaussian_dev.reset()
+        gaussian_dev = qml.device("default.gaussian", wires=1)
 
-            # start in the displaced squeezed state
-            alpha = 0.542 + 0.123j
-            a = abs(alpha)
-            phi_a = np.angle(alpha)
-            r = 0.652
-            phi_r = -0.124
+        def dummy_gate_fn():
+            # dummy implementation of a symplectic matrix
+            return np.array([[2, 0], [0, 3]])
 
-            gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
-            gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
+        # temporarily add the gate to the device using an arbitrary implementation
+        gaussian_dev._operation_map["DummyGate"] = dummy_gate_fn
 
-            # get the equivalent pennylane operation class
-            op = qml.ops.__getattribute__(gate_name)
-            # the list of wires to apply the operation to
-            w = list(range(op.num_wires))
+        gaussian_dev.apply("DummyGate", wires=qml.wires.Wires([0]), par=[])
 
-            if op.par_domain == "A":
-                # the parameter is an array
-                if gate_name == "GaussianState":
-                    cov = np.diag([0.5234] * 4)
-                    mu = np.array([0.432, 0.123, 0.342, 0.123])
-                    p = [cov, mu]
-                    w = list(range(2))
-                    expected_out = [cov, mu]
-                elif gate_name == "InterferometerUnitary":
-                    w = list(range(2))
-                    p = [U]
-                    S = fn(*p)
-                    expected_out = S @ gaussian_dev._state[0] @ S.T, S @ gaussian_dev._state[1]
-            else:
-                # the parameter is a float
-                p = [0.432423, -0.12312, 0.324, 0.751][: op.num_params]
+        exp_cov = np.array([[4.0, 0.0], [0.0, 9.0]])
+        exp_mu = np.array([0.0, 0.0])
 
-                if gate_name == "Displacement":
-                    alpha = p[0] * np.exp(1j * p[1])
-                    state = gaussian_dev._state
-                    mu = state[1].copy()
-                    mu[w[0]] += alpha.real * np.sqrt(2 * hbar)
-                    mu[w[0] + 2] += alpha.imag * np.sqrt(2 * hbar)
-                    expected_out = state[0], mu
-                elif "State" in gate_name:
-                    cov, mu = fn(*p, hbar=hbar)
-                    expected_out = gaussian_dev._state
-                    expected_out[1][[w[0], w[0] + 2]] = mu
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(exp_cov, abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(exp_mu, abs=tol)
 
-                    ind = np.concatenate([np.array([w[0]]), np.array([w[0]]) + 2])
-                    rows = ind.reshape(-1, 1)
-                    cols = ind.reshape(1, -1)
-                    expected_out[0][rows, cols] = cov
-                else:
-                    # if the default.gaussian is an operation accepting parameters,
-                    # initialise it using the parameters generated above.
-                    S = fn(*p)
+    def test_apply_gaussianstate(self, tol):
+        """Test the application of the GaussianState gate to a state, since it
+        uses a forked logic in the apply function."""
 
-                    # calculate the expected output
-                    if op.num_wires == 1:
-                        # reorder from symmetric ordering to xp-ordering
-                        S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
+        gaussian_dev = qml.device("default.gaussian", wires=2)
 
-                    expected_out = S @ gaussian_dev._state[0] @ S.T, S @ gaussian_dev._state[1]
+        # start in the displaced squeezed state
+        alpha = 0.542 + 0.123j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
+        r = 0.652
+        phi_r = -0.124
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
 
-            gaussian_dev.apply(gate_name, wires=Wires(w), par=p)
+        cov = np.diag([0.5234] * 4)
+        mu = np.array([0.432, 0.123, 0.342, 0.123])
+        p = [cov, mu]
+        w = list(range(2))
+        expected_out = [cov, mu]
 
-            # verify the device is now in the expected state
-            assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
-            assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
+        gaussian_dev.apply("GaussianState", wires=Wires(w), par=p)
+
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
+
+    def test_apply_squeezedstate(self, tol):
+        """Test the application of one of the state preparation gates, since they
+        use a forked logic in the apply function."""
+
+        gaussian_dev = qml.device("default.gaussian", wires=2)
+
+        # start in the displaced squeezed state
+        alpha = 0.542 + 0.123j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
+        r = 0.652
+        phi_r = -0.124
+
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
+
+        w = [0]
+        p = [0.432423, -0.12312]
+        fn = gaussian_dev._operation_map["SqueezedState"]
+        cov, mu = fn(*p, hbar=hbar)
+        expected_out = gaussian_dev._state
+        expected_out[1][[w[0], w[0] + 2]] = mu
+
+        ind = np.concatenate([np.array([w[0]]), np.array([w[0]]) + 2])
+        rows = ind.reshape(-1, 1)
+        cols = ind.reshape(1, -1)
+        expected_out[0][rows, cols] = cov
+
+        gaussian_dev.apply("SqueezedState", wires=Wires(w), par=p)
+
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
+
+    def test_apply_displacement(self, tol):
+        """Test the application of the displacement gate to a state, since it
+        uses a forked logic in the apply function."""
+
+        gaussian_dev = qml.device("default.gaussian", wires=2)
+
+        # start in the displaced squeezed state
+        alpha = 0.542 + 0.123j
+        a = abs(alpha)
+        phi_a = np.angle(alpha)
+        r = 0.652
+        phi_r = -0.124
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([0]), par=[a, phi_a, r, phi_r])
+        gaussian_dev.apply("DisplacedSqueezedState", wires=Wires([1]), par=[a, phi_a, r, phi_r])
+
+        w = [0]
+        p = [0.432423, -0.12312]
+        alpha = p[0] * np.exp(1j * p[1])
+        state = gaussian_dev._state
+        mu = state[1].copy()
+        mu[w[0]] += alpha.real * np.sqrt(2 * hbar)
+        mu[w[0] + 2] += alpha.imag * np.sqrt(2 * hbar)
+        expected_out = state[0], mu
+
+        gaussian_dev.apply("Displacement", wires=Wires(w), par=p)
+
+        # verify the device is now in the expected state
+        assert gaussian_dev._state[0] == pytest.approx(expected_out[0], abs=tol)
+        assert gaussian_dev._state[1] == pytest.approx(expected_out[1], abs=tol)
 
     def test_apply_errors(self, gaussian_dev):
         """Test that apply fails for incorrect state preparation"""
@@ -788,57 +827,3 @@ class TestDefaultGaussianIntegration:
         ):
             circuit()
         assert dev.shots == sum(shots)
-
-    @pytest.mark.parametrize("g, qop", set(DefaultGaussian._operation_map.items()))
-    def test_supported_gates(self, g, qop, gaussian_dev):
-        """Test that all supported gates work correctly"""
-        a = 0.312
-        dev = gaussian_dev
-        dev.reset()
-
-        assert dev.supports_operation(g)
-
-        op = getattr(qml.ops, g)
-        if op.num_wires <= 0:
-            wires = list(range(2))
-        else:
-            wires = list(range(op.num_wires))
-
-        @qml.qnode(gaussian_dev)
-        def circuit(*x):
-            """Reference quantum function"""
-            if "State" not in g:
-                qml.Displacement(a, 0, wires=[0])
-            op(*x, wires=wires)
-            return qml.expval(qml.X(0))
-
-        # compare to reference result
-        def reference(*x):
-            """reference circuit"""
-            if g == "GaussianState":
-                return x[1][0]
-
-            if g == "Displacement":
-                alpha = x[0] * np.exp(1j * x[1])
-                return (alpha + a).real * np.sqrt(2 * hbar)
-
-            if "State" in g:
-                _, mu = qop(*x, hbar=hbar)
-                return mu[0]
-
-            S = qop(*x)
-
-            # calculate the expected output
-            if op.num_wires == 1:
-                S = block_diag(S, np.identity(2))[:, [0, 2, 1, 3]][[0, 2, 1, 3]]
-
-            return (S @ np.array([a.real, a.imag, 0, 0]) * np.sqrt(2 * hbar))[0]
-
-        if g == "GaussianState":
-            p = [np.diag([0.5234] * 4), np.array([0.432, 0.123, 0.342, 0.123])]
-        elif g == "InterferometerUnitary":
-            p = [U]
-        else:
-            p = [0.432423, -0.12312, 0.324, 0.763][: op.num_params]
-
-        assert circuit(*p) == reference(*p)
