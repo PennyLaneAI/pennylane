@@ -117,7 +117,7 @@ class Molecule:
         r"""Return a function that computes the value of a basis function at a given position.
 
         Args:
-            index: index of the basis function
+            index (int): index of the basis function
 
         Returns:
             function: function that computes the basis function
@@ -145,9 +145,9 @@ class Molecule:
             r"""Computes the value of a basis function at a given position.
 
             Args:
-                x: x component of the position
-                y: y component of the position
-                z: z component of the position
+                x (float): x component of the position
+                y (float): y component of the position
+                z (float): z component of the position
 
             Returns:
                 array[float]: value of a basis function
@@ -162,7 +162,7 @@ class Molecule:
         r"""Return a function that computes the value of a molecular orbital at a given position.
 
         Args:
-            index: index of the molecular orbital
+            index (int): index of the molecular orbital
 
         Returns:
             function: function that computes the molecular orbital
@@ -183,9 +183,9 @@ class Molecule:
             r"""Computes the value of a molecular orbital at a given position.
 
             Args:
-                x: x component of the position
-                y: y component of the position
-                z: z component of the position
+                x (float): x component of the position
+                y (float): y component of the position
+                z (float): z component of the position
 
             Returns:
                 array[float]: value of a molecular orbital

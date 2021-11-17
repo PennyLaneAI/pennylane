@@ -16,7 +16,7 @@
   symbols  = ['H', 'H']
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False) 
   mol = hf.Molecule(symbols, geometry)
-  _ = hf.generate_scf(mol)()
+hf.generate_scf(mol)()
 
   ao = mol.generate_atomic_orbital(0)
   mo = mol.generate_molecular_orbital(1)   
