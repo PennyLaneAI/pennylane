@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta import qnode, QNode
+from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
 qubit_device_and_diff_method = [
@@ -129,7 +129,7 @@ class TestQNode:
         assert circuit.interface == "autograd"
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = qml.grad(circuit)(a)
@@ -157,7 +157,7 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
         assert res.shape == (2,)
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
@@ -254,7 +254,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -269,7 +269,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -281,7 +281,7 @@ class TestQNode:
         a = np.array(0.54, requires_grad=False)
         b = np.array(0.8, requires_grad=True)
         circuit(a, b)
-        assert circuit.qtape.trainable_params == {1}
+        assert circuit.qtape.trainable_params == [1]
 
     def test_classical_processing(self, dev_name, diff_method, mode, tol):
         """Test classical processing within the quantum tape"""
@@ -301,7 +301,7 @@ class TestQNode:
         res = qml.jacobian(circuit)(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             tape_params = np.array(circuit.qtape.get_parameters())
             assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
@@ -324,7 +324,7 @@ class TestQNode:
         res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
@@ -356,7 +356,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         res = qml.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
@@ -649,24 +649,6 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_sampling(self, dev_name, diff_method, mode):
-        """Test sampling works as expected"""
-        if mode == "forward":
-            pytest.skip("Sampling not possible with forward mode differentiation.")
-
-        dev = qml.device(dev_name, wires=2, shots=10)
-
-        @qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
-        def circuit():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
-
-        res = circuit()
-
-        assert res.shape == (2, 10)
-        assert isinstance(res, np.ndarray)
-
     def test_chained_qnodes(self, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
         dev = qml.device(dev_name, wires=2)
@@ -787,11 +769,11 @@ class TestQubitIntegration:
         if diff_method != "backprop":
             # Check that the gradient was computed
             # for all parameters in circuit2
-            assert circuit2.qtape.trainable_params == {0, 1, 2, 3}
+            assert circuit2.qtape.trainable_params == [0, 1, 2, 3]
 
             # Check that the parameter-shift rule was not applied
             # to the first parameter of circuit1.
-            assert circuit1.qtape.trainable_params == {1, 2}
+            assert circuit1.qtape.trainable_params == [1, 2]
 
     def test_second_derivative(self, dev_name, diff_method, mode, tol):
         """Test second derivative calculation of a scalar valued QNode"""
@@ -1273,15 +1255,13 @@ class TestTapeExpansion:
         assert input_tape.operations[2].grad_method is None
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, mocker):
-        """Test that the Hamiltonian is not expanded if there
-        are non-commuting groups and the number of shots is None
-        and the first and second order gradients are correctly evaluated"""
+    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff):
+        """Test that if there are non-commuting groups and the number of shots is None
+        the first and second order gradients are correctly evaluated"""
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
 
         dev = qml.device(dev_name, wires=3, shots=None)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(dev, diff_method=diff_method, mode=mode, max_diff=max_diff)
@@ -1299,7 +1279,6 @@ class TestTapeExpansion:
         res = circuit(d, w, c)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected)
-        spy.assert_not_called()
 
         # test gradients
         grad = qml.grad(circuit)(d, w, c)
@@ -1381,3 +1360,89 @@ class TestTapeExpansion:
                 -np.sin(d[1] + w[1]),
             ]
             assert np.allclose(grad2_w_c, expected, atol=0.1)
+
+
+class TestSample:
+    """Tests for the sample integration"""
+
+    def test_backprop_error(self):
+        """Test that sampling in backpropagation mode raises an error"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, diff_method="backprop")
+        def circuit():
+            qml.RX(0.54, wires=0)
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+
+        with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
+            circuit(shots=10)
+
+    def test_sample_dimension(self, tol):
+        """Test that the sample function outputs samples of the right size"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=2, shots=n_sample)
+
+        @qnode(dev)
+        def circuit():
+            qml.RX(0.54, wires=0)
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
+
+        res = circuit()
+        assert res.shape == (2, 10)
+        assert isinstance(res, np.ndarray)
+
+    def test_sample_combination(self, tol):
+        """Test the output of combining expval, var and sample"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+
+        @qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            qml.RX(0.54, wires=0)
+
+            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
+
+        result = circuit()
+
+        assert len(result) == 3
+        assert np.array_equal(result[0].shape, (n_sample,))
+        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[2], np.ndarray)
+        assert result[0].dtype == np.dtype("int")
+
+    def test_single_wire_sample(self, tol):
+        """Test the return type and shape of sampling a single wire"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+
+        @qnode(dev)
+        def circuit():
+            qml.RX(0.54, wires=0)
+
+            return qml.sample(qml.PauliZ(0))
+
+        result = circuit()
+
+        assert isinstance(result, np.ndarray)
+        assert np.array_equal(result.shape, (n_sample,))
+
+    def test_multi_wire_sample_regular_shape(self, tol):
+        """Test the return type and shape of sampling multiple wires
+        where a rectangular array is expected"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+
+        @qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
+
+        result = circuit()
+
+        # If all the dimensions are equal the result will end up to be a proper rectangular array
+        assert isinstance(result, np.ndarray)
+        assert np.array_equal(result.shape, (3, n_sample))
+        assert result.dtype == np.dtype("int")

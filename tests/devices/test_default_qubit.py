@@ -131,6 +131,8 @@ class TestApply:
         ),
         (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
         (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
+        (qml.Identity, [1, 0], [1, 0]),
+        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
     ]
 
     test_data_no_parameters_inverses = [
@@ -150,6 +152,8 @@ class TestApply:
         ),
         (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
         (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
+        (qml.Identity, [1, 0], [1, 0]),
+        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters)
@@ -2173,10 +2177,11 @@ class TestInverseDecomposition:
         expected = np.array([1.0, -1.0j]) / np.sqrt(2)
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
-    def test_inverse_S_decomposition(self, tol, monkeypatch):
+    def test_inverse_S_decomposition(self, tol, mocker, monkeypatch):
         """Test that applying the inverse of the S gate
         works when the inverse S gate is decomposed"""
         dev = qml.device("default.qubit", wires=1)
+        spy = mocker.spy(dev, "execute")
 
         patched_operations = dev.operations.copy()
         patched_operations.remove("S")
@@ -2189,7 +2194,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s()
-        operations = test_s.qtape.operations
+        operations = spy.call_args[0][0].operations
         assert "S" not in [i.name for i in operations]
         assert "PhaseShift" in [i.name for i in operations]
 
@@ -2203,7 +2208,7 @@ class TestInverseDecomposition:
             return qml.probs(wires=0)
 
         test_s_inverse()
-        operations = test_s_inverse.qtape.operations
+        operations = spy.call_args[0][0].operations
         assert "S.inv" not in [i.name for i in operations]
         assert "PhaseShift" in [i.name for i in operations]
 
@@ -2211,10 +2216,10 @@ class TestInverseDecomposition:
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_internal_apply_ops_case(self, inverse, monkeypatch):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
@@ -2238,19 +2243,15 @@ class TestApplyOperationUnit:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, inverse, mocker, monkeypatch):
-        """Tests the case when the operation to be applied is a
-        DiagonalOperation and the _apply_diagonal_unitary method is used."""
+    def test_diagonal_operation_case(self, mocker, monkeypatch):
+        """Tests the case when the operation to be applied is
+        diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
         par = 0.3
 
         test_state = np.array([1, 0])
         wires = 0
-        op = (
-            qml.PhaseShift(par, wires=wires)
-            if not inverse
-            else qml.PhaseShift(par, wires=wires).inv()
-        )
+        op = qml.PhaseShift(par, wires=wires)
         assert op.name not in dev._apply_ops
 
         # Set the internal _apply_diagonal_unitary
@@ -2268,7 +2269,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, np.diag(op.matrix))
             assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case(self, inverse, mocker, monkeypatch):
+    def test_apply_einsum_case(self, mocker, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -2277,7 +2278,7 @@ class TestApplyOperationUnit:
         wires = 0
 
         # Redefine the S gate so that it is an example for a one-qubit gate
-        # that does not inherit from DiagonalOperation
+        # that is not registered in the diagonal_in_z_basis attribute
         class TestSGate(qml.operation.Operation):
             matrix = np.array([[0, 1], [1, 0]])
             num_params = 0
@@ -2294,9 +2295,6 @@ class TestApplyOperationUnit:
         assert op.name in dev.operations
         assert op.name not in dev._apply_ops
 
-        if inverse:
-            op = op.inv()
-
         # Set the internal _apply_unitary_einsum
         history = []
         mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
@@ -2311,6 +2309,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix)
             assert np.allclose(res_wires, wires)
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""

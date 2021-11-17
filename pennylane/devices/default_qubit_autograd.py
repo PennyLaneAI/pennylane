@@ -14,11 +14,9 @@
 """This module contains an autograd implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-from pennylane.operation import DiagonalOperation
 from pennylane import numpy as np
 
 from pennylane.devices import DefaultQubit
-from pennylane.devices import autograd_ops
 
 
 class DefaultQubitAutograd(DefaultQubit):
@@ -52,7 +50,7 @@ class DefaultQubitAutograd(DefaultQubit):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0))
-    >>> weights = np.array([0.2, 0.5, 0.1])
+    >>> weights = np.array([0.2, 0.5, 0.1], requires_grad=True)
     >>> grad_fn = qml.grad(circuit)
     >>> print(grad_fn(weights))
     array([-2.2526717e-01 -1.0086454e+00  1.3877788e-17])
@@ -80,30 +78,6 @@ class DefaultQubitAutograd(DefaultQubit):
 
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
-
-    parametric_ops = {
-        "PhaseShift": autograd_ops.PhaseShift,
-        "ControlledPhaseShift": autograd_ops.ControlledPhaseShift,
-        "CPhase": autograd_ops.ControlledPhaseShift,
-        "RX": autograd_ops.RX,
-        "RY": autograd_ops.RY,
-        "RZ": autograd_ops.RZ,
-        "Rot": autograd_ops.Rot,
-        "CRX": autograd_ops.CRX,
-        "CRY": autograd_ops.CRY,
-        "CRZ": autograd_ops.CRZ,
-        "CRot": autograd_ops.CRot,
-        "MultiRZ": autograd_ops.MultiRZ,
-        "IsingXX": autograd_ops.IsingXX,
-        "IsingYY": autograd_ops.IsingYY,
-        "IsingZZ": autograd_ops.IsingZZ,
-        "SingleExcitation": autograd_ops.SingleExcitation,
-        "SingleExcitationPlus": autograd_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": autograd_ops.SingleExcitationMinus,
-        "DoubleExcitation": autograd_ops.DoubleExcitation,
-        "DoubleExcitationPlus": autograd_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": autograd_ops.DoubleExcitationMinus,
-    }
 
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
@@ -154,32 +128,3 @@ class DefaultQubitAutograd(DefaultQubit):
         new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
         new_array[indices] = array
         return new_array
-
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix

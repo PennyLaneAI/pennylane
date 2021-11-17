@@ -37,9 +37,9 @@ class BasisEmbedding(Operation):
         wires (Iterable): wires that the template acts on
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, features, wires, do_queue=True, id=None):
 
@@ -59,6 +59,10 @@ class BasisEmbedding(Operation):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

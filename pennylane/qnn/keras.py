@@ -128,7 +128,7 @@ class KerasLayer(Layer):
         **Additional example**
 
         The code block below shows how a circuit composed of templates from the
-        :doc:`/code/qml_templates` module can be combined with classical
+        :doc:`/introduction/templates` module can be combined with classical
         `Dense <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense>`__ layers to learn
         the two-dimensional `moons <https://scikit-learn.org/stable/modules/generated/sklearn
         .datasets.make_moons.html>`__ dataset.
@@ -216,8 +216,12 @@ class KerasLayer(Layer):
 
         dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
 
-        if self.qnode.diff_method != "backprop" or self.qnode.diff_method_change:
-            self.qnode.to_tf(dtype=dtype)
+        try:
+            # TODO: remove once the beta QNode is default
+            if self.qnode.diff_method != "backprop" or self.qnode.diff_method_change:
+                self.qnode.to_tf(dtype=dtype)
+        except AttributeError:
+            self.qnode.interface = "tf"
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
         # Note: Single digit values will be considered an int and multiple as a tuple, e.g [5,] or (5,)

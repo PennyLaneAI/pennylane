@@ -233,6 +233,8 @@ class CircuitGraph:
         serialization_string += "|||"
 
         for obs in self.observables_in_order:
+            serialization_string += str(obs.return_type)
+            serialization_string += delimiter
             serialization_string += str(obs.name)
             for param in obs.data:
                 serialization_string += delimiter
@@ -240,7 +242,6 @@ class CircuitGraph:
                 serialization_string += delimiter
 
             serialization_string += str(obs.wires.tolist())
-
         return serialization_string
 
     @property
@@ -507,7 +508,7 @@ class CircuitGraph:
 
         if self.max_simultaneous_measurements == 1:
 
-            # There is a single measurement
+            # There is a single measurement for every wire
             for wire in sorted(self._grid):
                 observables[wire] = list(
                     filter(
@@ -522,12 +523,16 @@ class CircuitGraph:
                     observables[wire] = [None]
         else:
 
-            # There are multiple measurements
-            for wire in sorted(self._grid):
-                mp_map = dict(zip(self.observables, range(self.max_simultaneous_measurements)))
+            # There are wire(s) with multiple measurements.
+            # We are creating a separate "visual block" at the end of the
+            # circuit for each observable and mapping observables with block
+            # indices.
+            num_observables = len(self.observables)
+            mp_map = dict(zip(self.observables, range(num_observables)))
 
+            for wire in sorted(self._grid):
                 # Initialize to None everywhere
-                observables[wire] = [None] * self.max_simultaneous_measurements
+                observables[wire] = [None] * num_observables
 
                 for op in self._grid[wire]:
                     if _is_returned_observable(op):
@@ -585,13 +590,14 @@ class CircuitGraph:
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
             wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
+            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
 
         Raises:
             ValueError: If the given charset is not supported
@@ -610,6 +616,7 @@ class CircuitGraph:
             wires=wire_order or self.wires,
             charset=charset,
             show_all_wires=show_all_wires,
+            max_length=max_length,
         )
 
         return drawer.draw()

@@ -27,7 +27,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
-        op = qml.templates.AngleEmbedding(features=features, wires=range(4))
+        op = qml.AngleEmbedding(features=features, wires=range(4))
         tape = op.expand()
 
         assert len(tape.operations) == len(features)
@@ -39,7 +39,7 @@ class TestDecomposition:
     def test_rotations(self, rotation):
         """Checks the queue for the specified rotation settings."""
 
-        op = qml.templates.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
+        op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
         tape = op.expand()
 
         for gate in tape.operations:
@@ -55,9 +55,9 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
             qml.PauliX(wires=0)
-            qml.templates.AngleEmbedding(features=x, wires=range(4), rotation="X")
+            qml.AngleEmbedding(features=x, wires=range(4), rotation="X")
             return [qml.expval(qml.PauliZ(i)) for i in range(4)]
 
         res = circuit(x=features)
@@ -74,7 +74,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(5))
+            qml.AngleEmbedding(features=x, wires=range(5))
             return [qml.expval(qml.PauliZ(i)) for i in range(5)]
 
         res = circuit(x=features)
@@ -90,12 +90,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.AngleEmbedding(features, wires=range(3))
+            qml.AngleEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.AngleEmbedding(features, wires=["z", "a", "k"])
+            qml.AngleEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -116,7 +116,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(3))
+            qml.AngleEmbedding(features=x, wires=range(3))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Features must be of"):
@@ -130,32 +130,20 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(1), rotation="A")
+            qml.AngleEmbedding(features=x, wires=range(1), rotation="A")
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
 
-    def test_exception_wrong_dim(self):
-        """Verifies that exception is raised if the number of dimensions of features is incorrect."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x=None):
-            qml.templates.AngleEmbedding(features=x, wires=range(1))
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Features must be a one-dimensional"):
-            circuit(x=[[1], [0]])
-
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        template = qml.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.templates.AngleEmbedding(features, range(3))
+    qml.AngleEmbedding(features, range(3))
     qml.CNOT(wires=[2, 1])
     qml.CNOT(wires=[1, 0])
     return qml.expval(qml.PauliZ(0))

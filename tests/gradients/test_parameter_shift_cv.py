@@ -617,21 +617,18 @@ class TestExpectationQuantumGradients:
 
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
-    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
-    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
-    @pytest.mark.parametrize("op", analytic_cv_ops)
-    def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
+    @pytest.mark.parametrize("obs", [qml.P, qml.Identity])
+    @pytest.mark.parametrize(
+        "op", [qml.Displacement(0.1, 0.2, wires=0), qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
+    )
+    def test_gradients_gaussian_circuit(self, op, obs, tol):
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        args = np.linspace(0.2, 0.5, op.num_params)
-
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)
@@ -661,7 +658,7 @@ class TestExpectationQuantumGradients:
             assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("t", [0, 1])
-    def test_interferometer(self, t, tol):
+    def test_interferometer_unitary(self, t, tol):
         """An integration test for CV gates that support analytic differentiation
         if succeeding the gate to be differentiated, but cannot be differentiated
         themselves (for example, they may be Gaussian but accept no parameters,
@@ -670,7 +667,7 @@ class TestExpectationQuantumGradients:
         This ensures that, assuming their _heisenberg_rep is defined, the quantum
         gradient analytic method can still be used, and returns the correct result.
 
-        Currently, the only such operation is qml.Interferometer. In the future,
+        Currently, the only such operation is qml.InterferometerUnitary. In the future,
         we may consider adding a qml.GaussianTransfom operator.
         """
 
@@ -690,7 +687,7 @@ class TestExpectationQuantumGradients:
             # @qml.qnode(dev)
             # def circuit(r, phi):
             #     qml.Displacement(r, phi, wires=0)
-            #     qml.Interferometer(U, wires=[0, 1])
+            #     qml.InterferometerUnitary(U, wires=[0, 1])
             #     return qml.expval(qml.X(0))
             #
             # r = 0.543
@@ -711,7 +708,7 @@ class TestExpectationQuantumGradients:
 
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.543, 0, wires=0)
-            qml.Interferometer(U, wires=[0, 1])
+            qml.InterferometerUnitary(U, wires=[0, 1])
             qml.expval(qml.X(0))
 
         tape.trainable_params = {t}
@@ -873,21 +870,18 @@ class TestVarianceQuantumGradients:
             ):
                 param_shift_cv(tape, dev, force_order2=True)
 
-    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
-    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
-    @pytest.mark.parametrize("op", analytic_cv_ops)
+    @pytest.mark.parametrize("obs", [qml.X, qml.NumberOperator])
+    @pytest.mark.parametrize(
+        "op", [qml.Squeezing(0.1, 0.2, wires=0), qml.Beamsplitter(0.1, 0.2, wires=[0, 1])]
+    )
     def test_gradients_gaussian_circuit(self, op, obs, tol):
-        """Tests that the gradients of circuits of gaussian gates match between the
+        """Tests that the gradients of circuits of selected gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        args = np.linspace(0.2, 0.5, op.num_params)
-
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)
@@ -966,19 +960,19 @@ class TestParamShiftInterfaces:
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.gaussian", wires=1)
-        from pennylane.interfaces.autograd import AutogradInterface
 
         r = 0.12
         phi = 0.105
 
         def cost_fn(x):
-            with AutogradInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(x[0], 0, wires=0)
                 qml.Rotation(x[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
             tapes, fn = param_shift_cv(tape, dev)
-            return fn([t.execute(dev) for t in tapes])[0, 1]
+            jac = fn(qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}))
+            return jac[0, 2]
 
         params = np.array([r, phi], requires_grad=True)
         grad = qml.jacobian(cost_fn)(params)
@@ -991,19 +985,23 @@ class TestParamShiftInterfaces:
         """Tests that the output of the parameter-shift CV transform
         can be executed using TF"""
         tf = pytest.importorskip("tensorflow")
-        from pennylane.interfaces.tf import TFInterface
 
         dev = qml.device("default.gaussian", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with TFInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(params[0], 0, wires=0)
                 qml.Rotation(params[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
-            tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-            jac = fn([tp.execute(dev) for tp in tapes])
+            tape.trainable_params = {0, 2}
+            tapes, fn = param_shift_cv(tape, dev)
+            jac = fn(
+                qml.execute(
+                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="tf"
+                )
+            )
             res = jac[0, 1]
 
         r, phi = 1.0 * params
@@ -1026,18 +1024,20 @@ class TestParamShiftInterfaces:
         """Tests that the output of the parameter-shift CV transform
         can be executed using Torch."""
         torch = pytest.importorskip("torch")
-        from pennylane.interfaces.torch import TorchInterface
 
         dev = qml.device("default.gaussian", wires=1)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
-        with TorchInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+        with qml.tape.JacobianTape() as tape:
             qml.Squeezing(params[0], 0, wires=0)
             qml.Rotation(params[1], wires=0)
             qml.var(qml.X(wires=[0]))
 
+        tape.trainable_params = {0, 2}
         tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-        jac = fn([t.execute(dev) for t in tapes])
+        jac = fn(
+            qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="torch")
+        )
 
         r, phi = params.detach().numpy()
 
@@ -1062,7 +1062,6 @@ class TestParamShiftInterfaces:
         can be differentiated using JAX, yielding second derivatives."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
-        from pennylane.interfaces.jax import JAXInterface
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -1071,14 +1070,18 @@ class TestParamShiftInterfaces:
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with JAXInterface.apply(qml.tape.CVParamShiftTape()) as tape:
+            with qml.tape.JacobianTape() as tape:
                 qml.Squeezing(params[0], 0, wires=0)
                 qml.Rotation(params[1], wires=0)
                 qml.var(qml.X(wires=[0]))
 
             tape.trainable_params = {0, 2}
             tapes, fn = qml.gradients.param_shift_cv(tape, dev)
-            jac = fn([t.execute(dev) for t in tapes])
+            jac = fn(
+                qml.execute(
+                    tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}, interface="jax"
+                )
+            )
             return jac
 
         r, phi = params

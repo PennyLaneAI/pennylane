@@ -215,7 +215,9 @@ def mock_device(monkeypatch):
         m.setattr(
             qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
         )
-        m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
+        m.setattr(
+            qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "QubitStateVector"]
+        )
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )
@@ -363,12 +365,13 @@ class TestVQE:
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.diff_options["h"] == 123
-            assert qnode.diff_options["order"] == 2
+            assert qnode.gradient_kwargs["h"] == 123
+            assert qnode.gradient_kwargs["order"] == 2
 
     @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
-    def test_optimize(self, interface, tf_support, torch_support):
+    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
+    def test_optimize(self, interface, tf_support, torch_support, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
         if interface == "tf" and not tf_support:
@@ -376,7 +379,7 @@ class TestVQE:
         if interface == "torch" and not torch_support:
             pytest.skip("This test requires Torch")
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
         hamiltonian = big_hamiltonian
 
         cost = qml.ExpvalCost(
@@ -410,7 +413,7 @@ class TestVQE:
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
-        assert np.allclose(c1, c2)
+        assert np.allclose(c1, c2, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize_multiple_terms(self, interface, tf_support, torch_support):

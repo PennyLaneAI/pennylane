@@ -17,6 +17,7 @@ Unit tests for the :func:`pennylane.math.is_independent` function.
 import pytest
 
 import numpy as np
+from pennylane import numpy as pnp
 
 import pennylane as qml
 from pennylane.math import is_independent
@@ -171,7 +172,7 @@ class TestIsIndependentAutograd:
     ]
 
     args_dependent = [
-        (0.1, np.array([-2.1, 0.1]), -0.9),
+        (0.1, np.array(-2.1), -0.9),
         (-4.1,),
         (-4.1,),
         (np.ones((3, 8)) * 1.1,),
@@ -204,6 +205,33 @@ class TestIsIndependentAutograd:
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
         assert is_independent(jac, self.interface, args, {"kw": True})
+
+    def test_no_trainable_params_deprecation_grad(self, recwarn):
+        """Tests that no deprecation warning arises when using qml.grad with
+        qml.math.is_independent.
+        """
+
+        def lin(x):
+            return pnp.sum(x)
+
+        x = pnp.array([0.2, 9.1, -3.2], requires_grad=True)
+        jac = qml.grad(lin)
+        assert qml.math.is_independent(jac, "autograd", (x,), {})
+
+        assert len(recwarn) == 0
+
+    def test_no_trainable_params_deprecation_jac(self, recwarn):
+        """Tests that no deprecation arises when using qml.jacobian with
+        qml.math.is_independent."""
+
+        def lin(x, weights=None):
+            return np.dot(x, weights)
+
+        x = pnp.array([0.2, 9.1, -3.2], requires_grad=True)
+        weights = pnp.array([1.1, -0.7, 1.8], requires_grad=True)
+        jac = qml.jacobian(lin)
+        assert qml.math.is_independent(jac, "autograd", (x,), {"weights": weights})
+        assert len(recwarn) == 0
 
 
 if have_jax:
@@ -274,7 +302,7 @@ if have_jax:
         ]
 
         args_dependent = [
-            (0.1, np.array([-2.1, 0.1]), -0.9),
+            (0.1, np.array(-2.1), -0.9),
             (-4.1,),
             (jax.numpy.ones((3, 8)) * 1.1,),
             *args_dependent_lambdas,
@@ -378,7 +406,7 @@ if have_tf:
         ]
 
         args_dependent = [
-            (tf.Variable(0.1), np.array([-2.1, 0.1]), tf.Variable(-0.9)),
+            (tf.Variable(0.1), np.array(-2.1), tf.Variable(-0.9)),
             (
                 tf.Variable(
                     np.ones((3, 8)) * 1.1,
@@ -497,7 +525,7 @@ if have_torch:
         ]
 
         args_dependent = [
-            (0.1, torch.tensor([-2.1, 0.1]), -0.9),
+            (0.1, torch.tensor(-2.1), -0.9),
             (-4.1,),
             (torch.ones((3, 8)) * 1.1,),
             *args_dependent_lambdas,

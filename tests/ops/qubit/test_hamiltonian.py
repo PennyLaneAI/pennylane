@@ -46,7 +46,7 @@ except ImportError:
 try:
     import torch
 
-    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor([1.7]), "torch"))
+    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor(1.7), "torch"))
 except ImportError:
     pass
 
@@ -548,6 +548,10 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object has correct wires."""
         H = qml.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+
+    def test_label(self):
+        H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
+        assert H.label() == "𝓗"
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):
@@ -1104,6 +1108,23 @@ class TestGrouping:
         H.compute_grouping()
         assert H.grouping_indices == [[0, 1], [2]]
 
+    def test_set_grouping(self):
+        """Test that we can set grouping indices."""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
+        H.grouping_indices = [[0, 1], [2]]
+
+        assert H.grouping_indices == [[0, 1], [2]]
+
+    def test_set_grouping_error(self):
+        """Test that grouping indices are validated."""
+        H = qml.Hamiltonian([1.0, 2.0, 3.0], [qml.PauliX(0), qml.PauliX(1), qml.PauliZ(0)])
+
+        with pytest.raises(ValueError, match="The grouped index value"):
+            H.grouping_indices = [[3, 1], [2]]
+
+        with pytest.raises(ValueError, match="The grouped index value"):
+            H.grouping_indices = "a"
+
     def test_grouping_for_non_groupable_hamiltonians(self):
         """Test that grouping is computed correctly, even if no observables commute"""
         a = qml.PauliX(0)
@@ -1626,6 +1647,7 @@ class TestHamiltonianDifferentiation:
         ):
             grad_fn(coeffs, param)
 
+    @pytest.mark.xfail
     def test_not_supported_by_reverse_differentiation(self):
         """Test that error is raised when attempting the reverse differentiation method."""
         dev = qml.device("default.qubit", wires=2)

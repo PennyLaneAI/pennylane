@@ -101,15 +101,22 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes, set_trainable=False):
+    with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        res[i] = np.tensor(r)
 
-        if res[i].dtype == np.dtype("object"):
+        if isinstance(res[i], np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
-            res[i] = np.hstack(r)
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+            res[i] = np.tensor(r)
+
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(np.tensor(r) for r in res[i])
+
+        else:
+            res[i] = qml.math.toarray(res[i])
 
     return res, jacs
 
@@ -174,7 +181,7 @@ def vjp(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    with qml.tape.Unwrap(*tapes, set_trainable=False):
+                    with qml.tape.Unwrap(*tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,

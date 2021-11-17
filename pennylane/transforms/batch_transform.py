@@ -13,12 +13,14 @@
 # limitations under the License.
 """Contains tools and decorators for registering batch transforms."""
 # pylint: disable=too-few-public-methods
+import copy
 import functools
 import inspect
+import os
 import types
+import warnings
 
 import pennylane as qml
-from pennylane.beta import QNode
 
 
 class batch_transform:
@@ -35,6 +37,7 @@ class batch_transform:
             **must** be the input tape.
         expand_fn (function): An expansion function (if required) to be applied to the
             input tape before the transformation takes place.
+            It **must** take the same input arguments as ``transform_fn``.
         differentiable (bool): Specifies whether the transform is differentiable or
             not. A transform may be non-differentiable for several reasons:
 
@@ -146,10 +149,58 @@ class batch_transform:
 
     Batch tape transforms are fully differentiable:
 
-    >>> gradient = qml.grad(circuit)(-0.5)
+    >>> x = np.array(-0.5, requires_grad=True)
+    >>> gradient = qml.grad(circuit)(x)
     >>> print(gradient)
     2.5800122591960153
+
+    .. UsageDetails::
+
+        **Expansion functions**
+
+        Tape expansion, decomposition, or manipulation may always be
+        performed within the custom batch transform. However, by specifying
+        a separate expansion function, PennyLane will be possible to access
+        this separate expansion function where needed via
+
+        >>> my_transform.expand_fn
+
+        The provided ``expand_fn`` must have the same input arguments as
+        ``transform_fn`` and return a ``tape``. Following the example above:
+
+        .. code-block:: python
+
+            def expand_fn(tape, a, b):
+                stopping_crit = lambda obj: obj.name!="PhaseShift"
+                return tape.expand(depth=10, stop_at=stopping_crit)
+
+            my_transform = batch_transform(my_transform, expand_fn)
+
+        Note that:
+
+        - the transform arguments ``a`` and ``b`` must be passed to
+          the expansion function, and
+        - the expansion function must return a single tape.
     """
+
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
+        if os.environ.get("SPHINX_BUILD") == "1":
+            # If called during a Sphinx documentation build,
+            # simply return the original function rather than
+            # instantiating the object. This allows the signature to
+            # be correctly displayed in the documentation.
+
+            warnings.warn(
+                "Batch transformations have been disabled, as a Sphinx "
+                "build has been detected via SPHINX_BUILD='1'. If this is not the "
+                "case, please set the environment variable SPHINX_BUILD='0'.",
+                UserWarning,
+            )
+
+            args[0].custom_qnode_wrapper = lambda x: x
+            return args[0]
+
+        return super().__new__(cls)
 
     def __init__(self, transform_fn, expand_fn=None, differentiable=True):
         if not callable(transform_fn):
@@ -222,6 +273,8 @@ class batch_transform:
         the QNode, and return the output of the applying the tape transform
         to the QNode's constructed tape.
         """
+        transform_max_diff = tkwargs.pop("max_diff", None)
+
         if "shots" in inspect.signature(qnode.func).parameters:
             raise ValueError(
                 "Detected 'shots' as an argument of the quantum function to transform. "
@@ -237,16 +290,21 @@ class batch_transform:
             interface = qnode.interface
             execute_kwargs = getattr(qnode, "execute_kwargs", {})
             max_diff = execute_kwargs.pop("max_diff", 2)
+            max_diff = transform_max_diff or max_diff
+
             gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
+            gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
 
             if interface is None or not self.differentiable:
                 gradient_fn = None
 
             elif gradient_fn in ("best", "parameter-shift"):
-                gradient_fn = qml.gradients.param_shift
+                # TODO: remove when the old QNode is removed
+                gradient_fn = qml.gradients.param_shift  # pragma: no cover
 
             elif gradient_fn == "finite-diff":
-                gradient_fn = qml.gradients.finite_diff
+                # TODO: remove when the old QNode is removed
+                gradient_fn = qml.gradients.finite_diff  # pragma: no cover
 
             res = qml.execute(
                 tapes,
@@ -255,6 +313,7 @@ class batch_transform:
                 interface=interface,
                 max_diff=max_diff,
                 override_shots=shots,
+                gradient_kwargs=gradient_kwargs,
                 **execute_kwargs,
             )
 
@@ -262,20 +321,36 @@ class batch_transform:
 
         return _wrapper
 
-    def __call__(self, qnode, *targs, **tkwargs):
+    def __call__(self, *targs, **tkwargs):
+        qnode = None
+
+        if targs:
+            qnode, *targs = targs
+
+        if isinstance(qnode, qml.Device):
+            # Input is a quantum device.
+            # dev = some_transform(dev, *transform_args)
+            return self._device_wrapper(*targs, **tkwargs)(qnode)
+
         if isinstance(qnode, qml.tape.QuantumTape):
             # Input is a quantum tape.
             # tapes, fn = some_transform(tape, *transform_args)
-            return self.construct(qnode, *targs, **tkwargs)
+            return self._tape_wrapper(*targs, **tkwargs)(qnode)
 
-        if isinstance(qnode, (qml.QNode, QNode, qml.ExpvalCost)):
+        if isinstance(qnode, (qml.QNode, qml.qnode_old.QNode, qml.ExpvalCost)):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
             wrapper = functools.wraps(qnode)(wrapper)
 
+            def _construct(args, kwargs):
+                qnode.construct(args, kwargs)
+                return self.construct(qnode.qtape, *targs, **tkwargs)
+
+            wrapper.construct = _construct
+
         else:
-            # Input is not a QNode nor a quantum tape.
+            # Input is not a QNode nor a quantum tape nor a device.
             # Assume Python decorator syntax:
             #
             # result = some_transform(*transform_args)(qnode)(*qnode_args)
@@ -290,11 +365,24 @@ class batch_transform:
 
             # Prepend the input to the transform args,
             # and create a wrapper function.
-            targs = (qnode,) + targs
+            if qnode is not None:
+                targs = (qnode,) + tuple(targs)
 
             def wrapper(qnode):
+                if isinstance(qnode, qml.Device):
+                    return self._device_wrapper(*targs, **tkwargs)(qnode)
+
+                if isinstance(qnode, qml.tape.QuantumTape):
+                    return self._tape_wrapper(*targs, **tkwargs)(qnode)
+
                 _wrapper = self.qnode_wrapper(qnode, targs, tkwargs)
                 _wrapper = functools.wraps(qnode)(_wrapper)
+
+                def _construct(args, kwargs):
+                    qnode.construct(args, kwargs)
+                    return self.construct(qnode.qtape, *targs, **tkwargs)
+
+                _wrapper.construct = _construct
                 return _wrapper
 
         wrapper.tape_fn = functools.partial(self.transform_fn, *targs, **tkwargs)
@@ -317,7 +405,7 @@ class batch_transform:
         expand = kwargs.pop("_expand", True)
 
         if expand and self.expand_fn is not None:
-            tape = self.expand_fn(tape)
+            tape = self.expand_fn(tape, *args, **kwargs)
 
         tapes, processing_fn = self.transform_fn(tape, *args, **kwargs)
 
@@ -325,3 +413,14 @@ class batch_transform:
             processing_fn = lambda x: x
 
         return tapes, processing_fn
+
+    def _device_wrapper(self, *targs, **tkwargs):
+        def _wrapper(dev):
+            new_dev = copy.deepcopy(dev)
+            new_dev.batch_transform = lambda tape: self.construct(tape, *targs, **tkwargs)
+            return new_dev
+
+        return _wrapper
+
+    def _tape_wrapper(self, *targs, **tkwargs):
+        return lambda tape: self.construct(tape, *targs, **tkwargs)

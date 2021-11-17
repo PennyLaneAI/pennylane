@@ -132,10 +132,7 @@ def _compute_num_cnots(U):
     # To distinguish between 1/2 CNOT cases, we need to look at the eigenvalues
     evs = math.linalg.eigvals(gammaU)
 
-    if math.get_interface(u) == "torch":
-        sorted_evs, _ = math.sort(math.imag(evs))
-    else:
-        sorted_evs = math.sort(math.imag(evs))
+    sorted_evs = math.sort(math.imag(evs))
 
     # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
     # Checking the eigenvalues is needed because of some special 2-CNOT cases that yield
@@ -184,7 +181,7 @@ def _su2su2_to_tensor_products(U):
         a2 *= -1
 
     # Construct A
-    A = math.stack([[a1, a2], [-math.conj(a2), math.conj(a1)]])
+    A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
@@ -366,11 +363,7 @@ def _decomposition_2_cnots(U, wires):
     # some reason this case is not handled properly with the full algorithm, so
     # we treat it separately.
 
-    if math.get_interface(u) == "torch":
-        # Torch's sort function returns both the sorted values and the new order
-        sorted_evs, _ = math.sort(math.real(evs))
-    else:
-        sorted_evs = math.sort(math.real(evs))
+    sorted_evs = math.sort(math.real(evs))
 
     if math.allclose(sorted_evs, [-1, -1, 1, 1]):
         interior_decomp = [
@@ -605,14 +598,15 @@ def two_qubit_decomposition(U, wires):
     # the form of the decomposition.
     num_cnots = _compute_num_cnots(U)
 
-    if num_cnots == 0:
-        decomp = qml.transforms.invisible(_decomposition_0_cnots)(U, wires)
-    elif num_cnots == 1:
-        decomp = qml.transforms.invisible(_decomposition_1_cnot)(U, wires)
-    elif num_cnots == 2:
-        decomp = qml.transforms.invisible(_decomposition_2_cnots)(U, wires)
-    else:
-        decomp = qml.transforms.invisible(_decomposition_3_cnots)(U, wires)
+    with qml.tape.stop_recording():
+        if num_cnots == 0:
+            decomp = _decomposition_0_cnots(U, wires)
+        elif num_cnots == 1:
+            decomp = _decomposition_1_cnot(U, wires)
+        elif num_cnots == 2:
+            decomp = _decomposition_2_cnots(U, wires)
+        else:
+            decomp = _decomposition_3_cnots(U, wires)
 
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.tape.get_active_tape()

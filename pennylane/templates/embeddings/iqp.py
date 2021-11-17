@@ -86,13 +86,12 @@ class IQPEmbedding(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import IQPEmbedding
 
             dev = qml.device('default.qubit', wires=3)
 
             @qml.qnode(dev)
             def circuit(features):
-                IQPEmbedding(features, wires=range(3))
+                qml.IQPEmbedding(features, wires=range(3))
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
@@ -105,7 +104,7 @@ class IQPEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(features):
-                IQPEmbedding(features, wires=range(3), n_repeats=4)
+                qml.IQPEmbedding(features, wires=range(3), n_repeats=4)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
@@ -123,7 +122,7 @@ class IQPEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(features):
-                IQPEmbedding(features, wires=range(3), pattern=pattern)
+                qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
             circuit([1., 2., 3.])
@@ -139,7 +138,7 @@ class IQPEmbedding(Operation):
 
             @qml.qnode(dev)
             def circuit(features, pattern):
-                IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
+                qml.IQPEmbedding(features, wires=range(3), pattern=pattern, n_repeats=3)
                 return [qml.expval(qml.PauliZ(w)) for w in range(3)]
 
             res1 = circuit([1., 2., 3.], pattern=pattern1)
@@ -163,9 +162,9 @@ class IQPEmbedding(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
+    grad_method = None
 
     def __init__(self, features, wires, n_repeats=1, pattern=None, do_queue=True, id=None):
 
@@ -186,6 +185,10 @@ class IQPEmbedding(Operation):
         self.n_repeats = n_repeats
 
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

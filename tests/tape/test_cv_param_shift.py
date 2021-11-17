@@ -587,21 +587,18 @@ class TestExpectationQuantumGradients:
 
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
-    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
-    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
-    @pytest.mark.parametrize("op", analytic_cv_ops)
+    @pytest.mark.parametrize("obs", [qml.X, qml.Identity])
+    @pytest.mark.parametrize(
+        "op", [qml.Displacement(0.1, 0.2, wires=0), qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
+    )
     def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        args = np.linspace(0.2, 0.5, op.num_params)
-
         with CVParamShiftTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)
@@ -631,7 +628,7 @@ class TestExpectationQuantumGradients:
             assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("t", [0, 1])
-    def test_interferometer(self, t, tol):
+    def test_interferometer_unitary(self, t, tol):
         """An integration test for CV gates that support analytic differentiation
         if succeeding the gate to be differentiated, but cannot be differentiated
         themselves (for example, they may be Gaussian but accept no parameters,
@@ -640,7 +637,7 @@ class TestExpectationQuantumGradients:
         This ensures that, assuming their _heisenberg_rep is defined, the quantum
         gradient analytic method can still be used, and returns the correct result.
 
-        Currently, the only such operation is qml.Interferometer. In the future,
+        Currently, the only such operation is qml.InterferometerUnitary. In the future,
         we may consider adding a qml.GaussianTransfom operator.
         """
 
@@ -660,7 +657,7 @@ class TestExpectationQuantumGradients:
             # @qml.qnode(dev)
             # def circuit(r, phi):
             #     qml.Displacement(r, phi, wires=0)
-            #     qml.Interferometer(U, wires=[0, 1])
+            #     qml.InterferometerUnitary(U, wires=[0, 1])
             #     return qml.expval(qml.X(0))
 
             #
@@ -681,7 +678,7 @@ class TestExpectationQuantumGradients:
 
         with CVParamShiftTape() as tape:
             qml.Displacement(0.543, 0, wires=0)
-            qml.Interferometer(U, wires=[0, 1])
+            qml.InterferometerUnitary(U, wires=[0, 1])
             qml.expval(qml.X(0))
 
         tape._update_gradient_info()
@@ -827,11 +824,10 @@ class TestVarianceQuantumGradients:
             ):
                 tape.jacobian(dev, method="analytic", force_order2=True)
 
-    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
     @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.Identity])
-    @pytest.mark.parametrize("op", analytic_cv_ops)
+    @pytest.mark.parametrize(
+        "op", [qml.Squeezing(0.1, 0.2, wires=0), qml.Beamsplitter(0.1, 0.2, wires=[0, 1])]
+    )
     def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
@@ -841,7 +837,7 @@ class TestVarianceQuantumGradients:
 
         with CVParamShiftTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)

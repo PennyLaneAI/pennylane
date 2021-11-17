@@ -15,7 +15,6 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template as temp
 from pennylane.math import shape
 
 
@@ -39,7 +38,6 @@ def _preprocess(args, depth):
             )
 
 
-@temp
 def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.
 
@@ -90,8 +88,7 @@ def layer(template, depth, *args, **kwargs):
 
         This creates the following circuit:
 
-        >>> circuit()
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)())
         0: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
         1: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
 
@@ -121,8 +118,7 @@ def layer(template, depth, *args, **kwargs):
 
         which yields the following circuit:
 
-        >>> circuit()
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)())
         1: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
         2: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
 
@@ -163,8 +159,7 @@ def layer(template, depth, *args, **kwargs):
 
         which yields the following circuit:
 
-        >>> circuit(params)
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)(params))
         0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)───────────┤ ⟨Z⟩
         1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──┤ ⟨Z⟩
 
@@ -205,8 +200,7 @@ def layer(template, depth, *args, **kwargs):
 
         This gives us the following circuit:
 
-        >>> circuit(param1, param2)
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)(param1, param2))
         1: ──RX(0.1)──╭RZ(0.3)──RX(0.2)──╭RZ(0.4)─────┤ ⟨Z⟩
         2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩
     """

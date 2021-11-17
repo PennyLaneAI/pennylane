@@ -1040,12 +1040,12 @@ class TestQNodeIntegration:
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
 
-    def test_qubit_circuit(self, tol, torch_device="cpu"):
+    def test_qubit_circuit(self, tol):
         """Test that the torch device provides correct
         result for a simple circuit using the old QNode."""
-        p = torch.tensor([0.543], device=torch_device, dtype=torch.float64)
+        p = torch.tensor(0.543, dtype=torch.float64)
 
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=1)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -1054,14 +1054,14 @@ class TestQNodeIntegration:
 
         expected = -torch.sin(p)
 
-        assert circuit.diff_options["method"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
         assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
-    def test_correct_state(self, tol, torch_device="cpu"):
+    def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
 
-        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=2)
 
         state = dev.state
         expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
@@ -1172,9 +1172,9 @@ class TestPassthruIntegration:
     def test_jacobian_variable_multiply(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
-        x = torch.tensor([0.43316321], dtype=torch.float64, requires_grad=True)
-        y = torch.tensor([0.43316321], dtype=torch.float64, requires_grad=True)
-        z = torch.tensor([0.43316321], dtype=torch.float64, requires_grad=True)
+        x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
+        y = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
+        z = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
 
         dev = qml.device("default.qubit.torch", wires=1)
 
@@ -1296,8 +1296,8 @@ class TestPassthruIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = torch.tensor([0.54], requires_grad=True, dtype=torch.float64)
-        b = torch.tensor([0.12], requires_grad=True, dtype=torch.float64)
+        a = torch.tensor(0.54, requires_grad=True, dtype=torch.float64)
+        b = torch.tensor(0.12, requires_grad=True, dtype=torch.float64)
 
         # get the probability of wire 1
         prob_wire_1 = circuit(a, b)
@@ -1321,8 +1321,8 @@ class TestPassthruIntegration:
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = torch.tensor([-0.234], dtype=torch.float64, requires_grad=True)
-        b = torch.tensor([0.654], dtype=torch.float64, requires_grad=True)
+        a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor(0.654, dtype=torch.float64, requires_grad=True)
 
         res = circuit(a, b)
         res.backward()
@@ -1352,9 +1352,9 @@ class TestPassthruIntegration:
 
         # Check that the correct QNode type is being used.
         if diff_method == "backprop":
-            assert circuit.diff_options["method"] == "backprop"
+            assert circuit.gradient_fn == "backprop"
         elif diff_method == "finite-diff":
-            assert circuit.diff_options["method"] == "numeric"
+            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         def cost(params):
             """Perform some classical processing"""
@@ -1442,7 +1442,7 @@ class TestSamples:
             qml.RX(a, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        a = torch.tensor(0.54)
+        a = torch.tensor(0.54, dtype=torch.float64)
         res = circuit(a)
 
         assert torch.is_tensor(res)
@@ -1494,8 +1494,8 @@ class TestSamples:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        a = torch.tensor(0.543)
-        b = torch.tensor(0.43)
+        a = torch.tensor(0.543, dtype=torch.float64)
+        b = torch.tensor(0.43, dtype=torch.float64)
 
         res = circuit(a, b)
         assert torch.is_tensor(res)

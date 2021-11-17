@@ -545,22 +545,29 @@ def param_shift(
     _gradient_analysis(tape)
     gradient_tapes = []
 
+    if argnum is None and not tape.trainable_params:
+        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = tape._grad_method_validation(method)
     all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if not tape.trainable_params or all_params_grad_method_zero:
+    if all_params_grad_method_zero:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # TODO: replace the JacobianTape._choose_params_with_methods
     # functionality before deprecation.
     method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
 
-    # If there are unsupported operations, call the callback gradient function
+    # If there are unsupported operations, call the fallback gradient function
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
+    argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     if unsupported_params:
+        if not argnum:
+            return fallback_fn(tape)
+
         g_tapes, fallback_proc_fn = fallback_fn(tape, argnum=unsupported_params)
         gradient_tapes.extend(g_tapes)
         fallback_len = len(g_tapes)
@@ -569,7 +576,6 @@ def param_shift(
         method_map = {t_idx: dm for t_idx, dm in method_map.items() if dm != "F"}
 
     # Generate parameter-shift gradient tapes
-    argnum = [i for i, dm in method_map.items() if dm == "A"]
 
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)

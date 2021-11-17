@@ -406,7 +406,7 @@ class TestAutogradExecuteIntegration:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
+        tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
 
@@ -485,7 +485,7 @@ class TestAutogradExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
             tape.set_parameters([a, b])
@@ -744,7 +744,7 @@ class TestHigherOrderDerivatives:
             np.array([-2.0, 0], requires_grad=True),
         ],
     )
-    def test_parameter_shift_hessian(self, params, tol):
+    def test_parameter_shift_hessian(self, params, tol, recwarn):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -786,7 +786,11 @@ class TestHigherOrderDerivatives:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_adjoint_hessian(self, tol):
+        # Check that no deprecation warnigns are emitted due to trainable
+        # parameters with the Autograd interface
+        assert len(recwarn) == 0
+
+    def test_adjoint_hessian(self, tol, recwarn):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -810,6 +814,10 @@ class TestHigherOrderDerivatives:
             res = qml.jacobian(qml.grad(cost_fn))(params)
 
         assert np.allclose(res, np.zeros([2, 2]), atol=tol, rtol=0)
+
+        # Check that no additional deprecation warnigns are emitted due to trainable
+        # parameters with the Autograd interface
+        assert len(recwarn) == 0
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
@@ -911,6 +919,32 @@ class TestOverridingShots:
         assert spy.call_args_list[0][0] == (dev, 100)
         # shots were then returned to the built-in value
         assert spy.call_args_list[1][0] == (dev, 123)
+
+    def test_overriding_device_with_shot_vector(self):
+        """Overriding a device that has a batch of shots set
+        results in original shots being returned after execution"""
+        dev = qml.device("default.qubit", wires=2, shots=[10, (1, 3), 5])
+
+        assert dev.shots == 18
+        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
+        assert len(res) == 1
+
+        # device is unchanged
+        assert dev.shots == 18
+        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+
+        res = execute([tape], dev, gradient_fn=param_shift)[0]
+        assert len(res) == 5
 
     def test_gradient_integration(self, tol):
         """Test that temporarily setting the shots works

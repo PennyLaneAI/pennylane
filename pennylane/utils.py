@@ -22,7 +22,6 @@ import inspect
 import itertools
 import numbers
 from operator import matmul
-import warnings
 
 import numpy as np
 import scipy
@@ -305,127 +304,6 @@ def pauli_eigs(n):
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
 
 
-def inv(operation_list):
-    """Invert a list of operations or a :doc:`template </introduction/templates>`.
-
-    If the inversion happens inside a QNode, the operations are removed and requeued
-    in the reversed order for proper inversion.
-
-    .. warning::
-        Use of :func:`~.inv()` is deprecated and should be replaced with
-        :func:`~.adjoint()`.
-
-    **Example:**
-
-    The following example illuminates the inversion of a template:
-
-    .. code-block:: python3
-
-        @qml.template
-        def ansatz(weights, wires):
-            for idx, wire in enumerate(wires):
-                qml.RX(weights[idx], wires=[wire])
-
-            for idx in range(len(wires) - 1):
-                qml.CNOT(wires=[wires[idx], wires[idx + 1]])
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.inv(ansatz(weights, wires=[0, 1]))
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    We may also invert an operation sequence:
-
-    .. code-block:: python3
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit1():
-            qml.T(wires=[0]).inv()
-            qml.Hadamard(wires=[0]).inv()
-            qml.S(wires=[0]).inv()
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        @qml.qnode(dev)
-        def circuit2():
-            qml.inv([qml.S(wires=[0]), qml.Hadamard(wires=[0]), qml.T(wires=[0])])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    Double checking that both circuits produce the same output:
-
-    >>> ZZ1 = circuit1()
-    >>> ZZ2 = circuit2()
-    >>> assert ZZ1 == ZZ2
-    True
-
-    Args:
-        operation_list (Iterable[~.Operation]): An iterable of operations
-
-    Returns:
-        List[~.Operation]: The inverted list of operations
-    """
-
-    warnings.warn(
-        "Use of qml.inv() is deprecated and should be replaced with qml.adjoint().",
-        UserWarning,
-    )
-    if isinstance(operation_list, qml.operation.Operation):
-        operation_list = [operation_list]
-    elif operation_list is None:
-        raise ValueError(
-            "None was passed as an argument to inv. "
-            "This could happen if inversion of a template without the template decorator is attempted."
-        )
-    elif callable(operation_list):
-        raise ValueError(
-            "A function was passed as an argument to inv. "
-            "This could happen if inversion of a template function is attempted. "
-            "Please use inv on the function including its arguments, as in inv(template(args))."
-        )
-    elif isinstance(operation_list, qml.tape.QuantumTape):
-        new_tape = operation_list.adjoint()
-        return new_tape
-
-    elif not isinstance(operation_list, Iterable):
-        raise ValueError("The provided operation_list is not iterable.")
-
-    non_ops = [
-        (idx, op)
-        for idx, op in enumerate(operation_list)
-        if not isinstance(op, qml.operation.Operation)
-    ]
-
-    if non_ops:
-        string_reps = [" operation_list[{}] = {}".format(idx, op) for idx, op in non_ops]
-        raise ValueError(
-            "The given operation_list does not only contain Operations."
-            + "The following elements of the iterable were not Operations:"
-            + ",".join(string_reps)
-        )
-
-    for op in operation_list:
-        try:
-            # remove the queued operation to be inverted
-            # from the existing queuing context
-            qml.QueuingContext.remove(op)
-        except KeyError:
-            # operation to be inverted does not
-            # exist on the queuing context
-            pass
-
-    def qfunc():
-        for o in operation_list:
-            o.queue()
-
-    with qml.tape.QuantumTape() as tape:
-        qml.adjoint(qfunc)()
-
-    return tape
-
-
 def expand(matrix, original_wires, expanded_wires):
     r"""Expand a an operator matrix to more wires.
 
@@ -448,20 +326,28 @@ def expand(matrix, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if matrix.shape != (2 ** N, 2 ** N):
+    if qml.math.shape(matrix) != (2 ** N, 2 ** N):
         raise ValueError(
             "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
         )
 
     dims = [2] * (2 * N)
-    tensor = matrix.reshape(dims)
+    tensor = qml.math.reshape(matrix, dims)
+
+    interface = qml.math.get_interface(tensor)
 
     if D > 0:
         extra_dims = [2] * (2 * D)
-        identity = np.eye(2 ** D).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, identity, axes=0)
+        identity = qml.math.reshape(qml.math.eye(2 ** D), extra_dims)
+
+        if interface == "tensorflow":
+            identity = qml.math.cast_like(identity, tensor)
+
+        expanded_tensor = qml.math.tensordot(tensor, identity, axes=0)
         # Fix order of tensor factors
-        expanded_tensor = np.moveaxis(expanded_tensor, range(2 * N, 2 * N + D), range(N, N + D))
+        expanded_tensor = qml.math.moveaxis(
+            expanded_tensor, tuple(range(2 * N, 2 * N + D)), tuple(range(N, N + D))
+        )
     else:
         expanded_tensor = tensor
 
@@ -473,10 +359,14 @@ def expand(matrix, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices + M, wire_indices + M)
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices + M), tuple(wire_indices + M)
+    )
 
-    return expanded_tensor.reshape((2 ** M, 2 ** M))
+    return qml.math.reshape(expanded_tensor, (2 ** M, 2 ** M))
 
 
 def expand_vector(vector, original_wires, expanded_wires):
@@ -501,16 +391,16 @@ def expand_vector(vector, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if vector.shape != (2 ** N,):
+    if qml.math.shape(vector) != (2 ** N,):
         raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
-    tensor = vector.reshape(dims)
+    tensor = qml.math.reshape(vector, dims)
 
     if D > 0:
         extra_dims = [2] * D
-        ones = np.ones(2 ** D).reshape(extra_dims)
-        expanded_tensor = np.tensordot(tensor, ones, axes=0)
+        ones = qml.math.ones(2 ** D).reshape(extra_dims)
+        expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
 
@@ -522,6 +412,8 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     # Order tensor factors according to wires
     original_indices = np.array(range(N))
-    expanded_tensor = np.moveaxis(expanded_tensor, original_indices, wire_indices)
+    expanded_tensor = qml.math.moveaxis(
+        expanded_tensor, tuple(original_indices), tuple(wire_indices)
+    )
 
-    return expanded_tensor.reshape(2 ** M)
+    return qml.math.reshape(expanded_tensor, 2 ** M)

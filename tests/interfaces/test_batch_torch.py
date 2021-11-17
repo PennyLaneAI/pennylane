@@ -420,7 +420,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliY(1))
 
         res = execute([tape], dev, **execute_kwargs)[0]
-        assert tape.trainable_params == {1, 2}
+        assert tape.trainable_params == [1, 2]
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
@@ -462,13 +462,20 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
 
         res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
-        expected = 1 + np.cos(0.5) + np.cos(x) * np.cos(y)
-        assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
+        expected = torch.tensor(
+            1 + np.cos(0.5) + torch.cos(x) * torch.cos(y), dtype=res.dtype, device=res.device
+        )
+
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
         res.backward()
         grad = params.grad.detach()
-        expected = [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)]
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        expected = torch.tensor(
+            [-torch.cos(y) * torch.sin(x), -torch.cos(x) * torch.sin(y)],
+            dtype=grad.dtype,
+            device=grad.device,
+        )
+        assert torch.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_reusing_quantum_tape(self, torch_device, execute_kwargs, tol):
         """Test re-using a quantum tape by passing new parameters"""
@@ -484,7 +491,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         res = execute([tape], dev, **execute_kwargs)[0]
         loss = torch.sum(res)
@@ -535,7 +542,7 @@ class TestTorchExecuteIntegration:
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        assert tape.trainable_params == {0, 2}
+        assert tape.trainable_params == [0, 2]
 
         tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)
         expected = torch.tensor(
@@ -568,7 +575,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(1))
 
         res = execute([tape], dev, **execute_kwargs)[0]
-        assert tape.trainable_params == set()
+        assert tape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, torch.Tensor)
@@ -599,7 +606,7 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
 
         res = execute([tape], dev, **execute_kwargs)[0]
-        assert tape.trainable_params == {1}
+        assert tape.trainable_params == [1]
 
         expected = torch.tensor(-np.cos(a_val), dtype=res.dtype, device=torch_device)
         assert torch.allclose(res.detach(), expected, atol=tol, rtol=0)
@@ -638,7 +645,7 @@ class TestTorchExecuteIntegration:
         tape = tape.expand()
         res = execute([tape], dev, **execute_kwargs)[0]
 
-        assert tape.trainable_params == {1, 2, 3, 4}
+        assert tape.trainable_params == [1, 2, 3, 4]
         assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
 
         tape_params = torch.tensor([i.detach() for i in tape.get_parameters()], device=torch_device)
@@ -1100,9 +1107,9 @@ class TestHamiltonianWorkflows:
         )
 
     def test_multiple_hamiltonians_not_trainable(self, cost_fn, execute_kwargs, tol):
-        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
-        coeffs2 = torch.tensor([0.7], requires_grad=False)
-        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False, dtype=torch.float64)
+        coeffs2 = torch.tensor([0.7], requires_grad=False, dtype=torch.float64)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
         dev = qml.device("default.qubit", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)
@@ -1118,9 +1125,9 @@ class TestHamiltonianWorkflows:
         assert np.allclose(res.detach(), expected, atol=tol, rtol=0)
 
     def test_multiple_hamiltonians_trainable(self, cost_fn, execute_kwargs, tol):
-        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
-        coeffs2 = torch.tensor([0.7], requires_grad=True)
-        weights = torch.tensor([0.4, 0.5], requires_grad=True)
+        coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True, dtype=torch.float64)
+        coeffs2 = torch.tensor([0.7], requires_grad=True, dtype=torch.float64)
+        weights = torch.tensor([0.4, 0.5], requires_grad=True, dtype=torch.float64)
         dev = qml.device("default.qubit", wires=2)
 
         res = cost_fn(weights, coeffs1, coeffs2, dev=dev)

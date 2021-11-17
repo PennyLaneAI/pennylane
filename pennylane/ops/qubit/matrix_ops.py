@@ -18,10 +18,9 @@ accept a hermitian or an unitary matrix as a parameter.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import warnings
 import numpy as np
-from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -38,8 +37,18 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=1)
+    >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.QubitUnitary(U, wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(example_circuit())
+    0.0
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -54,7 +63,7 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if U.shape != (dim, dim):
+            if qml.math.shape(U) != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
@@ -72,6 +81,10 @@ class QubitUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -100,6 +113,9 @@ class QubitUnitary(Operation):
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")
 
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -146,7 +162,6 @@ class ControlledQubitUnitary(QubitUnitary):
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
 
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -203,9 +218,16 @@ class ControlledQubitUnitary(QubitUnitary):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    @property
+    def num_params(self):
+        return 1
+
     def _matrix(self, *params):
         if self._CU is None:
-            self._CU = block_diag(np.eye(self._padding_left), self.U, np.eye(self._padding_right))
+            interface = qml.math.get_interface(self.U)
+            left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
+            right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
+            self._CU = qml.math.block_diag([left_pad, self.U, right_pad])
 
         params = list(params)
         params[0] = self._CU
@@ -237,7 +259,7 @@ class ControlledQubitUnitary(QubitUnitary):
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
-class DiagonalQubitUnitary(DiagonalOperation):
+class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
 
@@ -251,16 +273,23 @@ class DiagonalQubitUnitary(DiagonalOperation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
+
+    @classmethod
+    def _matrix(cls, *params):
+        return qml.math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):
         D = qml.math.asarray(params[0])
 
-        if not qml.math.allclose(D * D.conj(), qml.math.ones_like(D)):
+        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
         return D
@@ -277,3 +306,6 @@ class DiagonalQubitUnitary(DiagonalOperation):
             qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")

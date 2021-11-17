@@ -52,7 +52,7 @@ def compute_vjp(dy, jac):
             # corresponding element of the VJP will be zero.
             num_params = jac.shape[1]
             return math.convert_like(np.zeros([num_params]), dy)
-    except AttributeError:
+    except (AttributeError, TypeError):
         pass
 
     return math.tensordot(jac, dy_row, [[0], [0]])
@@ -167,7 +167,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
             return [], lambda _: math.convert_like(np.zeros([num_params]), dy)
-    except AttributeError:
+    except (AttributeError, TypeError):
         pass
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)

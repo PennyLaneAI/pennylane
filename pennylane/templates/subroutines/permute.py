@@ -65,8 +65,7 @@ class Permute(Operation):
                 qml.templates.Permute([3, 2, 0, 1], dev.wires)
                 return qml.expval(qml.PauliZ(0))
 
-        >>> apply_perm()
-        >>> print(apply_perm.draw(wire_order=[0,1,2,3]))
+        >>> print(qml.draw(apply_perm, wire_order=[0,1,2,3])())
         0: ─────────╭SWAP─────────┤ ⟨Z⟩
         1: ──╭SWAP──│─────────────┤
         2: ──╰SWAP──│──────╭SWAP──┤
@@ -107,8 +106,7 @@ class Permute(Operation):
 
         The permuted circuit is:
 
-        >>> circuit()
-        >>> print(circuit.draw(wire_order=wire_labels))
+        >>> print(qml.draw(circuit, wire_order=wire_labels)())
         3: ──╭SWAP────────────────┤
         2: ──│──────╭SWAP─────────┤
         0: ──│──────│──────╭SWAP──┤
@@ -131,8 +129,7 @@ class Permute(Operation):
 
         will permute only the second, third, and fifth wires as follows:
 
-        >>> circuit()
-        >>> print(circuit.draw(wire_order=wire_labels))
+        >>> print(qml.draw(circuit, wire_order=wire_labels)())
         3: ──╭SWAP────────────────┤
         2: ──│──────╭SWAP─────────┤
         0: ──│──────│──────╭SWAP──┤
@@ -140,7 +137,6 @@ class Permute(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -164,6 +160,10 @@ class Permute(Operation):
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
         super().__init__(permutation, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

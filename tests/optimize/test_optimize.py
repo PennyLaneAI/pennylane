@@ -557,6 +557,22 @@ class TestOptimizer:
                 )
                 assert x_twosteps == pytest.approx(x_twosteps_target, abs=tol)
 
+    def test_adam_optimizer_properties(self, bunch):
+        """Test the adam property interfaces"""
+        bunch.adam_opt.reset()
+        # check if None is returned when accumulation is empty
+        assert bunch.adam_opt.fm == None
+        assert bunch.adam_opt.sm == None
+        assert bunch.adam_opt.t == None
+
+        # Do some calculations to fill accumulation
+        bunch.adam_opt.step(np.sin, np.random.rand(1))
+
+        # Check the properties return the same values, stored in accumulation
+        assert bunch.adam_opt.fm == bunch.adam_opt.accumulation["fm"]
+        assert bunch.adam_opt.sm == bunch.adam_opt.accumulation["sm"]
+        assert bunch.adam_opt.t == bunch.adam_opt.accumulation["t"]
+
     @staticmethod
     def rotosolve_step(f, x):
         """Helper function to test the Rotosolve and Rotoselect optimizers"""
