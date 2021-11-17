@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -38,7 +38,6 @@ class QubitUnitary(Operation):
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -53,7 +52,7 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if U.shape != (dim, dim):
+            if qml.math.shape(U) != (dim, dim):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
@@ -71,6 +70,10 @@ class QubitUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -148,7 +151,6 @@ class ControlledQubitUnitary(QubitUnitary):
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
 
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -205,6 +207,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    @property
+    def num_params(self):
+        return 1
+
     def _matrix(self, *params):
         if self._CU is None:
             interface = qml.math.get_interface(self.U)
@@ -242,7 +248,7 @@ class ControlledQubitUnitary(QubitUnitary):
         ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
 
 
-class DiagonalQubitUnitary(DiagonalOperation):
+class DiagonalQubitUnitary(Operation):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary fixed diagonal unitary matrix.
 
@@ -256,10 +262,17 @@ class DiagonalQubitUnitary(DiagonalOperation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
+
+    @classmethod
+    def _matrix(cls, *params):
+        return qml.math.diag(cls._eigvals(*params))
 
     @classmethod
     def _eigvals(cls, *params):

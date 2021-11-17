@@ -249,7 +249,6 @@ class Operator(abc.ABC):
 
     The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
     * :attr:`~.Operator.par_domain`
 
@@ -389,11 +388,6 @@ class Operator(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def num_params(self):
-        """Number of parameters the operator takes."""
-
-    @property
-    @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on."""
 
@@ -483,6 +477,16 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
+        self._num_params = len(params)
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            raise ValueError(
+                "{}: wrong number of parameters. "
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+            )
+
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -499,12 +503,6 @@ class Operator(abc.ABC):
                 "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
-        if len(params) != self.num_params:
-            raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
-            )
-
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -516,6 +514,20 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
         return "{}(wires={})".format(self.name, self.wires.tolist())
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters that this operator expects to be fed via the
+        dynamic `*params` argument.
+
+        By default, this property returns as many parameters as were used for the
+        operator creation. If the number of parameters for an operator subclass is fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            int: number of parameters
+        """
+        return self._num_params
 
     @property
     def wires(self):
@@ -530,6 +542,29 @@ class Operator(abc.ABC):
     def parameters(self):
         """Current parameter values."""
         return self.data.copy()
+
+    @staticmethod
+    def decomposition(*params, wires):
+        """Defines a decomposition of this operator into products of other operators.
+
+        Args:
+            params (tuple[float, int, array]): operator parameters
+            wires (Union(Sequence[int], Wires)): wires the operator acts on
+
+        Returns:
+            list[Operation]
+        """
+        raise NotImplementedError
+
+    def decompose(self):
+        """Decomposes this operator into products of other operators.
+
+        Returns:
+            list[Operation]
+        """
+        if self.num_params == 0:
+            return self.decomposition(wires=self.wires)
+        return self.decomposition(*self.parameters, wires=self.wires)
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -709,12 +744,6 @@ class Operation(Operator):
     def inverse(self, boolean):
         self._inverse = boolean
 
-    @staticmethod
-    def decomposition(*params, wires):
-        """Returns a template decomposing the operation into other
-        quantum operations."""
-        raise NotImplementedError
-
     def expand(self):
         """Returns a tape containing the decomposed operations, rather
         than a list.
@@ -727,7 +756,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition(*self.data, wires=self.wires)
+            self.decompose()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -819,91 +848,6 @@ class Operation(Operator):
                 ), "Gradient recipe must have one entry for each parameter!"
         else:
             assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
-
-
-class DiagonalOperation(Operation):
-    r"""Base class for diagonal quantum operations supported by a device.
-
-    As with :class:`~.Operation`, the following class attributes must be
-    defined for all operations:
-
-    * :attr:`~.Operator.num_params`
-    * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
-
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
-    * :attr:`~.Operation.generator`
-
-    Args:
-        params (tuple[float, int, array]): operation parameters
-
-    Keyword Args:
-        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
-            is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`BaseQNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a BaseQNode context.
-    """
-    # pylint: disable=abstract-method
-
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the operator.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors.
-
-        This is a *class method* that must be defined for all
-        new diagonal operations, that returns the eigenvalues
-        of the operator in the computational basis.
-
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
-
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
-
-        **Example:**
-
-        >>> qml.RZ._eigvals(0.5)
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
-        Returns:
-            array: eigenvalue representation
-        """
-        raise NotImplementedError
-
-    @property
-    def eigvals(self):
-        r"""Eigenvalues of an instantiated diagonal operation.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors.
-
-        **Example:**
-
-        >>> U = qml.RZ(0.5, wires=1)
-        >>> U.eigvals
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
-        Returns:
-            array: eigvals representation
-        """
-        return super().eigvals
-
-    @classmethod
-    def _matrix(cls, *params):
-        return np.diag(cls._eigvals(*params))
 
 
 class Channel(Operation, abc.ABC):
