@@ -19,8 +19,8 @@
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 * Update the PL test-suite to use the `tf.GradientTape` best-practices. 
-This update reduces the total running time of the Python test-suite up to 8%.
-[(#1869)](https://github.com/PennyLaneAI/pennylane/pull/1869)
+  This update reduces the total running time of the Python test-suite up to 8%.
+  [(#1869)](https://github.com/PennyLaneAI/pennylane/pull/1869)
 
 <h3>Breaking changes</h3>
 
