@@ -257,6 +257,10 @@ class TestObservableConstruction:
         expected = "probs(wires=['a'])"
         assert str(m) == expected
 
+        m = qml.probs(op=qml.PauliZ(wires=["a"]))
+        expected = "probs(PauliZ(wires=['a']))"
+        assert str(m) == expected
+
         m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
         expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
         assert str(m) == expected
@@ -275,10 +279,6 @@ class TestObservableConstruction:
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
-
-
-class TestObservableInstantiation:
-    """Test that wires are specified when a qml.operation.Observable is instantiated"""
 
     def test_wire_is_given_in_argument(self):
         class DummyObservable(qml.operation.Observable):
