@@ -177,8 +177,6 @@ class TestAdjointJacobian:
             qml.expval(obs(wires=0))
             qml.expval(qml.PauliZ(wires=1))
 
-        tape.execute(dev)
-
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
         grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))

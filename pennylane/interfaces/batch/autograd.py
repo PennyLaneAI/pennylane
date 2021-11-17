@@ -101,7 +101,7 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes, set_trainable=False):
+    with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
@@ -181,7 +181,7 @@ def vjp(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    with qml.tape.Unwrap(*tapes, set_trainable=False):
+                    with qml.tape.Unwrap(*tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,
