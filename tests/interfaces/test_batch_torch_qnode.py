@@ -60,7 +60,7 @@ class TestQNode:
         assert res.shape == tuple()
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         res.backward()
@@ -149,7 +149,7 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
@@ -191,7 +191,7 @@ class TestQNode:
         res = circuit(a, b)
 
         assert circuit.interface == "torch"
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
@@ -250,7 +250,7 @@ class TestQNode:
         res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
@@ -279,7 +279,7 @@ class TestQNode:
         res = circuit(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
@@ -311,7 +311,7 @@ class TestQNode:
         res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
 
         res.backward()
@@ -337,7 +337,7 @@ class TestQNode:
         res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, torch.Tensor)
@@ -372,7 +372,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)
 
@@ -407,7 +407,7 @@ class TestQNode:
 
         res = circuit(a, p)
 
-        assert circuit.qtape.trainable_params == {1, 2, 3}
+        assert circuit.qtape.trainable_params == [1, 2, 3]
 
         expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
             np.cos(p_val[2]) * np.sin(p_val[1])

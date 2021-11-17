@@ -467,13 +467,13 @@ class TestParameters:
         """Test that parameters are correctly counted and processed"""
         tape, params = make_tape
         assert tape.num_params == len(params)
-        assert tape.trainable_params == set(range(len(params)))
+        assert tape.trainable_params == list(range(len(params)))
         assert tape.get_parameters() == params
 
     def test_set_trainable_params(self, make_tape):
         """Test that setting trainable parameters works as expected"""
         tape, params = make_tape
-        trainable = {0, 2, 3}
+        trainable = [0, 2, 3]
         tape.trainable_params = trainable
         assert tape._trainable_params == trainable
         assert tape.num_params == 3
@@ -482,16 +482,23 @@ class TestParameters:
         # add additional trainable parameters
         trainable = {1, 2, 3, 4}
         tape.trainable_params = trainable
-        assert tape._trainable_params == trainable
+        assert tape._trainable_params == [1, 2, 3, 4]
         assert tape.num_params == 4
+        assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
+
+        # set trainable_params in wrong order
+        trainable = {3, 4, 1}
+        tape.trainable_params = trainable
+        assert tape._trainable_params == [1, 3, 4]
+        assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
 
     def test_changing_params(self, make_tape):
         """Test that changing trainable parameters works as expected"""
         tape, params = make_tape
-        trainable = {0, 2, 3}
+        trainable = (0, 2, 3)
         tape.trainable_params = trainable
-        assert tape._trainable_params == trainable
+        assert tape._trainable_params == list(trainable)
         assert tape.num_params == 3
         assert tape.get_parameters() == [params[i] for i in tape.trainable_params]
         assert tape.get_parameters(trainable_only=False) == params
@@ -501,11 +508,11 @@ class TestParameters:
         are set as trainable"""
         tape, _ = make_tape
 
-        with pytest.raises(ValueError, match="must be positive integers"):
-            tape.trainable_params = {-1, 0}
+        with pytest.raises(ValueError, match="must be non-negative integers"):
+            tape.trainable_params = [-1, 0]
 
-        with pytest.raises(ValueError, match="must be positive integers"):
-            tape.trainable_params = {0.5}
+        with pytest.raises(ValueError, match="must be non-negative integers"):
+            tape.trainable_params = (0.5,)
 
         with pytest.raises(ValueError, match="has at most 5 parameters"):
             tape.trainable_params = {0, 7}
@@ -535,7 +542,7 @@ class TestParameters:
         tape, params = make_tape
         new_params = [-0.654, 0.3]
 
-        tape.trainable_params = {1, 3}
+        tape.trainable_params = [1, 3]
         tape.set_parameters(new_params)
 
         count = 0
@@ -560,29 +567,24 @@ class TestParameters:
         tape, params = make_tape
         new_params = [-0.654, 0.3]
 
-        with monkeypatch.context() as m:
-            m.setattr(tape, "_trainable_params", {3, 1})
-            tape.set_parameters(new_params)
+        tape.trainable_params = [3, 1]
+        tape.set_parameters(new_params)
 
-            assert tape.get_parameters(trainable_only=True) == [
-                new_params[0],
-                new_params[1],
-            ]
-
-            assert tape.get_parameters(trainable_only=False) == [
-                params[0],
-                new_params[0],
-                params[2],
-                new_params[1],
-                params[4],
-            ]
+        assert tape.get_parameters(trainable_only=True) == new_params
+        assert tape.get_parameters(trainable_only=False) == [
+            params[0],
+            new_params[0],
+            params[2],
+            new_params[1],
+            params[4],
+        ]
 
     def test_setting_all_parameters(self, make_tape):
         """Test that all parameters are correctly modified after construction"""
         tape, params = make_tape
         new_params = [0.6543, -0.654, 0, 0.3, 0.6]
 
-        tape.trainable_params = {1, 3}
+        tape.trainable_params = [1, 3]
         tape.set_parameters(new_params, trainable_only=False)
 
         for pinfo, pval in zip(tape._par_info.values(), new_params):
@@ -599,7 +601,7 @@ class TestParameters:
             tape.set_parameters([0.54])
 
         with pytest.raises(ValueError, match="Number of provided parameters does not match"):
-            tape.trainable_params = {2, 3}
+            tape.trainable_params = [2, 3]
             tape.set_parameters([0.54, 0.54, 0.123])
 
     def test_array_parameter(self):
@@ -678,16 +680,16 @@ class TestInverse:
             m1 = qml.probs(wires=0)
             m2 = qml.probs(wires="a")
 
-        tape.trainable_params = {1, 2}
+        tape.trainable_params = [1, 2]
         tape.inv()
 
         # check that operation order is reversed
-        assert tape.trainable_params == {1, 4}
+        assert tape.trainable_params == [1, 4]
         assert tape.get_parameters() == [p[1], p[0]]
 
         # undo the inverse
         tape.inv()
-        assert tape.trainable_params == {1, 2}
+        assert tape.trainable_params == [1, 2]
         assert tape.get_parameters() == [p[0], p[1]]
         assert [o.name for o in tape._ops] == ["RX", "Rot", "CNOT"]
 
@@ -704,7 +706,7 @@ class TestExpand:
 
         assert len(new_tape.operations) == 3
         assert new_tape.get_parameters() == [0.1, 0.2, 0.3]
-        assert new_tape.trainable_params == {0, 1, 2}
+        assert new_tape.trainable_params == [0, 1, 2]
 
         assert isinstance(new_tape.operations[0], qml.RZ)
         assert isinstance(new_tape.operations[1], qml.RY)
@@ -712,11 +714,11 @@ class TestExpand:
 
         # check that modifying the new tape does not affect the old tape
 
-        new_tape.trainable_params = {0}
+        new_tape.trainable_params = [0]
         new_tape.set_parameters([10])
 
         assert tape.get_parameters() == [0.1, 0.2, 0.3]
-        assert tape.trainable_params == {0, 1, 2}
+        assert tape.trainable_params == [0, 1, 2]
 
     def test_decomposition_removing_parameters(self):
         """Test that decompositions which reduce the number of parameters
@@ -1558,8 +1560,8 @@ class TestHashing:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        tape1.trainable_params = {0}
-        tape2.trainable_params = {0, 1}
+        tape1.trainable_params = [0]
+        tape2.trainable_params = [0, 1]
         assert tape1.hash != tape2.hash
 
     def test_different_parameters(self):
