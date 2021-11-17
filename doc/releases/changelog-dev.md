@@ -280,9 +280,17 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
+* Added documentation example for AngleEmbedding.
+  [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
+<<<<<<< HEAD
 Guillermo Alonso-Linaje, Benjamin Cordier, Josh Izaac, Olivia Di Matteo, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
 Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+=======
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Christina Lee, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+>>>>>>> b74f89297532f8580fc66be20fd971dfac47d61e
