@@ -196,7 +196,6 @@ class QAOAEmbedding(Operation):
 
     """
 
-    num_params = 2
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -214,6 +213,10 @@ class QAOAEmbedding(Operation):
 
         self._preprocess(features, weights, wires)
         super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 2
 
     def expand(self):
 

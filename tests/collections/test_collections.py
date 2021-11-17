@@ -185,12 +185,12 @@ class TestMap:
         assert len(qc) == 2
 
         # Checking the h attribute which contains the step size
-        assert qc[0].diff_options["h"] == 123
-        assert qc[1].diff_options["h"] == 123
+        assert qc[0].gradient_kwargs["h"] == 123
+        assert qc[1].gradient_kwargs["h"] == 123
 
         # Checking that the order is set in each QNode
-        assert qc[0].diff_options["order"] == 2
-        assert qc[1].diff_options["order"] == 2
+        assert qc[0].gradient_kwargs["order"] == 2
+        assert qc[1].gradient_kwargs["order"] == 2
 
 
 class TestApply:

@@ -85,7 +85,7 @@ def mitigate_with_zne(
     .. code-block:: python3
 
         from pennylane import numpy as np
-        from pennylane.beta import qnode
+        from pennylane import qnode
 
         from mitiq.zne.scaling import fold_global
         from mitiq.zne.inference import RichardsonFactory
