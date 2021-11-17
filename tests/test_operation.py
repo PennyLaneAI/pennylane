@@ -110,20 +110,6 @@ class TestOperationConstruction:
         ):
             DummyOp(0.5, wires=[0, 1])
 
-    def test_grad_method_with_integer_params(self):
-        """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            grad_method = "A"
-
-        with pytest.raises(
-            AssertionError,
-            match="An operation may only be differentiated with respect to real scalar parameters",
-        ):
-            DummyOp(5, wires=[0, 1])
-
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly"""
