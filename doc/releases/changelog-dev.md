@@ -220,6 +220,9 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
+* Added documentation example for AngleEmbedding.
+  [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
