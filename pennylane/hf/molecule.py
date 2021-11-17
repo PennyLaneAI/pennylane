@@ -113,36 +113,86 @@ class Molecule:
 
         self.mo_coefficients = None
 
-    def get_atomic_orbital(self, basis_index):
-        """..."""
+    def generate_atomic_orbital(self, index):
+        r"""Return a function that computes the value of a basis function at a given position.
 
-        l = self.basis_set[basis_index].l
-        alpha = self.basis_set[basis_index].alpha
-        coeff = self.basis_set[basis_index].coeff
-        r = self.basis_set[basis_index].r
+        Args:
+            index: index of the basis function
+
+        Returns:
+            function: function that computes the basis function
+
+        **Example**
+
+        >>> symbols  = ['H', 'H']
+        >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+        >>> mol = qml.hf.Molecule(symbols, geometry)
+        >>> ao = mol.generate_atomic_orbital(0)
+        >>> ao(0.0, 0.0, 0.0)
+        0.62824688
+        """
+        l = self.basis_set[index].l
+        alpha = self.basis_set[index].alpha
+        coeff = self.basis_set[index].coeff
+        r = self.basis_set[index].r
 
         coeff = coeff * primitive_norm(l, alpha)
-
         coeff = coeff * contracted_norm(l, alpha, coeff)
 
         lx, ly, lz = l
 
-        def f_orbital(x, y, z):
+        def orbital(x, y, z):
+            r"""Computes the value of a basis function at a given position.
+
+            Args:
+                x: x component of the position
+                y: y component of the position
+                z: z component of the position
+
+            Returns:
+                array[float]: value of a basis function
+            """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
             e = [np.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
             return c * np.dot(coeff, e)
 
-        return f_orbital
+        return orbital
 
-    def get_molecular_orbital(self, mo_index):
-        """..."""
+    def generate_molecular_orbital(self, index):
+        r"""Return a function that computes the value of a molecular orbital at a given position.
 
-        c = self.mo_coefficients[mo_index]
+        Args:
+            index: index of the molecular orbital
 
-        def f_orbital(x, y, z):
+        Returns:
+            function: function that computes the molecular orbital
+
+        **Example**
+
+        >>> symbols  = ['H', 'H']
+        >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+        >>> mol = qml.hf.Molecule(symbols, geometry)
+        >>> _ = generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> mo = mol.generate_molecular_orbital(1)
+        >>> mo(0.0, 0.0, 0.0)
+        0.01825128
+        """
+        c = self.mo_coefficients[index]
+
+        def orbital(x, y, z):
+            r"""Computes the value of a molecular orbital at a given position.
+
+            Args:
+                x: x component of the position
+                y: y component of the position
+                z: z component of the position
+
+            Returns:
+                array[float]: value of a molecular orbital
+            """
             m = 0.0
             for i in range(self.n_orbitals):
-                m = m + c[i] * self.get_atomic_orbital(i)(x, y, z)
+                m = m + c[i] * self.generate_atomic_orbital(i)(x, y, z)
             return m
 
-        return f_orbital
+        return orbital
