@@ -25,9 +25,7 @@ import pennylane as qml
 from .tensorflow import _compute_vjp
 
 
-def execute(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode="backward"
-):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with TensorFlow parameters on a device.
 
     Args:
@@ -48,6 +46,8 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[tf.Tensor]]: A nested list of tape results. Each element in
@@ -195,6 +195,7 @@ def execute(
                                 gradient_kwargs,
                                 _n=_n + 1,
                                 max_diff=max_diff,
+                                mode=mode,
                             ),
                             nums=output_sizes,
                         )

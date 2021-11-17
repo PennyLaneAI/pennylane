@@ -23,9 +23,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def execute(
-    tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode="backward"
-):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
@@ -46,6 +44,8 @@ def execute(
             the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in

@@ -29,6 +29,9 @@ def compute_vjp(dy, jac, num=None):
         jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
             vector, the first n-dimensions of ``jac`` should match
             the shape of ``dy``.
+        num (int): The length of the flattened ``dy`` argument. This is an
+            optional argument, but can be useful to provide if ``dy`` potentially
+            has no shape (for example, due to tracing or just-in-time compilation).
 
     Returns:
         tensor_like: the vector-Jacobian product
