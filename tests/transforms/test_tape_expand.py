@@ -300,7 +300,7 @@ class TestExpandInvalidTrainable:
 
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
-        assert tape.trainable_params == {1}
+        assert tape.trainable_params == [1]
 
         spy = mocker.spy(tape, "expand")
         new_tape = qml.transforms.expand_invalid_trainable(tape)
