@@ -176,34 +176,41 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
+    @pytest.mark.parametrize("phi", phis)
+    def test_quadoperator_heisenberg(self, phi):
+        """ops: Tests the Heisenberg representation of the QuadOperator gate."""
+        matrix = cv.QuadOperator._heisenberg_rep([phi])
+        true_matrix = np.array([0, np.cos(phi), np.sin(phi)])
+        assert np.allclose(matrix, true_matrix)
+
 
 class TestNonGaussian:
     """Tests that non-Gaussian gates are properly handled."""
 
-    @pytest.mark.parametrize("gate", [cv.Kerr, cv.CrossKerr, cv.CubicPhase])
+    @pytest.mark.parametrize(
+        "gate",
+        [cv.Kerr(0.1, wires=0), cv.CrossKerr(0.1, wires=[0, 1]), cv.CubicPhase(0.1, wires=0)],
+    )
     def test_heisenberg_rep_nonguassian(self, gate):
         """ops: Tests that the `_heisenberg_rep` for a non-Gaussian gates is
         None
         """
-        assert gate._heisenberg_rep(*[0.1] * gate.num_params) is None
+        assert gate._heisenberg_rep(0.1) is None
 
     def test_heisenberg_transformation_nongaussian(self):
         """ops: Tests that proper exceptions are raised if we try to call the
         Heisenberg transformation of non-Gaussian gates."""
-        op = cv.Kerr
+        op = cv.Kerr(0.1, wires=0)
         with pytest.raises(RuntimeError, match=r"not a Gaussian operation"):
-            op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
-            op_.heisenberg_tr(Wires(range(op.num_wires)))
+            op.heisenberg_tr(Wires(range(op.num_wires)))
 
-        op = cv.CrossKerr
+        op = cv.CrossKerr(0.1, wires=[0, 1])
         with pytest.raises(RuntimeError):
-            op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
-            op_.heisenberg_tr(Wires(range(op.num_wires)))
+            op.heisenberg_tr(Wires(range(op.num_wires)))
 
-        op = cv.CubicPhase
+        cv.CubicPhase(0.1, wires=0)
         with pytest.raises(RuntimeError):
-            op_ = op(*[0.1] * op.num_params, wires=range(op.num_wires))
-            op_.heisenberg_tr(Wires(range(op.num_wires)))
+            op.heisenberg_tr(Wires(range(op.num_wires)))
 
 
 label_data = [
