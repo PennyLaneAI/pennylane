@@ -60,20 +60,15 @@ class AngleEmbedding(Operation):
                 qml.Hadamard(0)
                 return qml.probs(wires=range(3))
 
-        Here, we have also used rotation angles RZ. If not specified, RX is used as default.
-
-        .. code-block:: python
-
             X = [1,2,3]
-            print(qml.draw(circuit)(X))
 
-        This results in the circuit:
+        Here, we have also used rotation angles RZ. If not specified, RX is used as default.
+        The resulting circuit is:
 
-        .. code-block:: python
-
-            0: ──RZ(1)──H──╭┤ Probs 
-            1: ──RZ(2)─────├┤ Probs 
-            2: ──RZ(3)─────╰┤ Probs 
+        >>> print(qml.draw(circuit)(X))
+            0: ──RZ(1)──H──╭┤ Probs
+            1: ──RZ(2)─────├┤ Probs
+            2: ──RZ(3)─────╰┤ Probs
 
     """
 
