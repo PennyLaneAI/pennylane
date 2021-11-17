@@ -119,7 +119,8 @@ class CommutingEvolution(Operation):
                 )
             )
 
-        if frequencies is not None:
+        trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
+        if frequencies is not None and not trainable_hamiltonian:
             self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
                 hamiltonian.data
             )
@@ -131,9 +132,6 @@ class CommutingEvolution(Operation):
         self.shifts = shifts
 
         super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
-
-        if qml.math.requires_grad(hamiltonian.coeffs):
-            self.grad_method = None  # fallback to decomposition
 
     def expand(self):
         # uses standard PauliRot decomposition through ApproxTimeEvolution.

@@ -21,7 +21,7 @@ import pennylane as qml
 @functools.lru_cache(maxsize=None)
 def get_shift_rule(frequencies, shifts=None):
     r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue frequency
-     spectrum.
+    spectrum.
 
     To compute gradients of circuit parameters in variational quantum algorithms, expressions for
     cost function first derivatives with respect to the variational parameters can be cast into
@@ -39,30 +39,27 @@ def get_shift_rule(frequencies, shifts=None):
 
     Returns:
          tuple: a tuple of one nested list describing the gradient recipe
-            for the parameter-shift method.
-            This is a tuple with one nested list per operation parameter. For
-            parameter :math:`\phi_k`, the nested list contains elements of the form
-            :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
-            term, resulting in a gradient recipe of
+         for the parameter-shift method.
+         This is a tuple with one nested list per operation parameter. For
+         parameter :math:`\phi_k`, the nested list contains elements of the form
+         :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+         term, resulting in a gradient recipe of
 
             .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
 
 
     Raises:
-        ValueError: if `frequencies` is not a list of unique positive values, or if `shifts`
-            (if specified) is not a list of unique values the same length as `frequencies`.
+        ValueError: if ``frequencies`` is not a list of unique positive values, or if ``shifts``
+            (if specified) is not a list of unique values the same length as ``frequencies``.
 
     **Examples**
 
     An example of obtaining the frequencies from a set of unique eigenvalues and obtaining the
     parameter shift rule:
 
-    >>> unique_eigenvals = [1, -1, 0]
-    >>> unique_eigenvals = sorted(unique_eigenvals)
-    >>> frequencies = set()
-    >>> for i in range(len(unique_eigenvals)):
-    >>>     for j in range(i+1, len(unique_eigenvals)):
-    >>>         frequencies.add(unique_eigenvals[j] - unique_eigenvals[i])
+    >>> unique_eigenvals = sorted([1, -1, 0])
+    >>> from itertools import combinations
+    >>> frequencies = {abs(i - j) for i, j in combinations(unique_eigenvals, 2)}
     >>> get_shift_rule(tuple(frequencies))
     ([[0.8535533905932737, 1, 0.7853981633974483], [-0.14644660940672624, 1, 2.356194490192345],
     [-0.8535533905932737, 1, -0.7853981633974483], [0.14644660940672624, 1, -2.356194490192345]],)
@@ -106,7 +103,7 @@ def get_shift_rule(frequencies, shifts=None):
 
         equ_shifts = all(np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)))
 
-    if len(set(np.round(np.diff(frequencies), 10))) in (0, 1) and equ_shifts:  # equidistant case
+    if len(set(np.round(np.diff(frequencies), 10))) <= 1 and equ_shifts:  # equidistant case
         coeffs = (
             freq_min
             * (-1) ** (mu - 1)
@@ -118,12 +115,12 @@ def get_shift_rule(frequencies, shifts=None):
         det_sin_matr = np.linalg.det(sin_matr)
         if abs(det_sin_matr) < 1e-6:
             warnings.warn(
-                "Inverting matrix with near zero determinant ({}) may give unstable results for the parameter shift rules.".format(
+                "Solving linear problem with near zero determinant ({}) may give unstable results for the parameter shift rules.".format(
                     det_sin_matr
                 )
             )
-        sin_matr_inv = np.linalg.inv(sin_matr)
-        coeffs = -2 * np.tensordot(frequencies, sin_matr_inv, axes=1)
+
+        coeffs = -2 * np.linalg.solve(sin_matr.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
     shifts = np.concatenate((shifts, -shifts))

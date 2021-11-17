@@ -170,7 +170,7 @@ class TestGetShiftRule:
 
         raised_warning = False
         for warning in warnings:
-            if "Inverting matrix with near zero determinant" in str(warning):
+            if "Solving linear problem with near zero determinant" in str(warning):
                 raised_warning = True
 
         assert raised_warning
