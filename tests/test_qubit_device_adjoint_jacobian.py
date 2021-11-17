@@ -405,16 +405,12 @@ class TestAdjointJacobianQNode:
         qnode1 = QNode(f, dev, interface="tf", diff_method="adjoint")
         qnode2 = QNode(f, dev, interface="tf", diff_method="finite-diff")
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(params1)
-            tape.watch(params2)
+        with tf.GradientTape() as tape:
             res1 = qnode1(params1, params2)
 
         g1 = tape.gradient(res1, [params1, params2])
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(params1)
-            tape.watch(params2)
+        with tf.GradientTape() as tape:
             res2 = qnode2(params1, params2)
 
         g2 = tape.gradient(res2, [params1, params2])

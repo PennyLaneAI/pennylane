@@ -269,8 +269,7 @@ class TestVJPGradients:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(params)
+        with tf.GradientTape(persistent=True) as t:
             with qml.tape.JacobianTape() as tape:
                 ansatz(params[0], params[1])
 

@@ -911,8 +911,7 @@ class TestParamShiftGradients:
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(params)
+        with tf.GradientTape(persistent=True) as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])

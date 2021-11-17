@@ -1253,8 +1253,7 @@ class TestPassthruIntegration:
 
         a = tf.Variable(0.54)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
+        with tf.GradientTape() as tape:
             circuit(a)
             res = tf.abs(dev.state) ** 2
             res = res[1] - res[0]
@@ -1277,8 +1276,7 @@ class TestPassthruIntegration:
         a = tf.Variable(0.54)
         b = tf.Variable(0.12)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch([a, b])
+        with tf.GradientTape() as tape:
             # get the probability of wire 1
             prob_wire_1 = circuit(a, b)
             # compute Prob(|1>_1) - Prob(|0>_1)
@@ -1307,8 +1305,7 @@ class TestPassthruIntegration:
         a_tf = tf.Variable(a, dtype=tf.float64)
         b_tf = tf.Variable(b, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch([a_tf, b_tf])
+        with tf.GradientTape() as tape:
             res = circuit(a_tf, b_tf)
 
         # the analytic result of evaluating circuit(a, b)

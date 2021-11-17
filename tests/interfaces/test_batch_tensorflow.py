@@ -36,8 +36,7 @@ class TestTensorFlowExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(a)
+        with tf.GradientTape() as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
@@ -105,8 +104,7 @@ class TestTensorFlowExecuteUnitTests:
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
         a = tf.Variable([0.1, 0.2])
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(a)
+        with tf.GradientTape() as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
@@ -125,7 +123,7 @@ class TestTensorFlowExecuteUnitTests:
         spy_execute.assert_called()
         spy_gradients.assert_not_called()
 
-        j = t.jacobian(res, a, experimental_use_pfor=False)
+        j = t.jacobian(res, a)
         spy_gradients.assert_called()
 
 
@@ -138,8 +136,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
         a = tf.Variable([0.1, 0.2])
 
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
+        with tf.GradientTape() as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
@@ -161,8 +158,7 @@ class TestCaching:
         a = tf.Variable([0.1, 0.2])
         custom_cache = {}
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(a)
+        with tf.GradientTape() as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
@@ -193,8 +189,7 @@ class TestCaching:
 
         # Without caching, and non-vectorized, 9 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(a)
+        with tf.GradientTape(persistent=True) as t:
             res = cost(a, cache=None)
         t.jacobian(res, a, experimental_use_pfor=False)
         assert dev.num_executions == 9
@@ -202,8 +197,7 @@ class TestCaching:
         # With caching, and non-vectorized, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
         dev._num_executions = 0
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t:
-            t.watch(a)
+        with tf.GradientTape(persistent=True) as t:
             res = cost(a, cache=True)
         t.jacobian(res, a)
         assert dev.num_executions == 5
@@ -211,8 +205,7 @@ class TestCaching:
         # In vectorized mode, 5 evaluations are required to compute
         # the Jacobian regardless of caching: 1 (forward pass) + (2 shifts * 2 params)
         dev._num_executions = 0
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
+        with tf.GradientTape() as t:
             res = cost(a, cache=None)
         t.jacobian(res, a)
         assert dev.num_executions == 5
@@ -243,13 +236,11 @@ class TestCaching:
             )[0]
 
         # No caching: number of executions is not ideal
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t2:
-            t2.watch(params)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t1:
-                t1.watch(params)
+        with tf.GradientTape() as t2:
+            with tf.GradientTape() as t1:
                 res = cost(params, cache=False)
             grad = t1.gradient(res, params)
-        hess1 = t2.jacobian(grad, params, experimental_use_pfor=False)
+        hess1 = t2.jacobian(grad, params)
 
         if num_params == 2:
             # compare to theoretical result
@@ -266,13 +257,11 @@ class TestCaching:
 
         # Use caching: number of executions is ideal
         dev._num_executions = 0
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t2:
-            t2.watch(params)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t1:
-                t1.watch(params)
+        with tf.GradientTape() as t2:
+            with tf.GradientTape() as t1:
                 res = cost(params, cache=True)
             grad = t1.gradient(res, params)
-        hess2 = t2.jacobian(grad, params, experimental_use_pfor=False)
+        hess2 = t2.jacobian(grad, params)
 
         assert np.allclose(hess1, hess2, atol=tol, rtol=0)
 
@@ -363,8 +352,7 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
-            t.watch(b)
+            t.watch([a, b])
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -422,8 +410,7 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
-            t.watch(b)
+            t.watch([a, b])
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
@@ -441,9 +428,7 @@ class TestTensorFlowExecuteIntegration:
 
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
-            t.watch(b)
+        with tf.GradientTape() as t:
             tape.set_parameters([2 * a, b])
             res2 = execute([tape], dev, **execute_kwargs)[0]
 
@@ -472,9 +457,7 @@ class TestTensorFlowExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
-            t.watch(b)
+        with tf.GradientTape() as t:
             tape.set_parameters([a, b])
             assert tape.trainable_params == {0, 1}
             res = execute([tape], dev, **execute_kwargs)[0]
@@ -484,9 +467,7 @@ class TestTensorFlowExecuteIntegration:
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.Variable(0.8, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
-            t.watch(b)
+        with tf.GradientTape() as t:
             tape.set_parameters([2 * a, b])
             res2 = execute([tape], dev, **execute_kwargs)[0]
 
@@ -509,8 +490,7 @@ class TestTensorFlowExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(a)
-            t.watch(c)
+            t.watch([a, c])
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
@@ -635,9 +615,7 @@ class TestTensorFlowExecuteIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(x)
-            t.watch(y)
+        with tf.GradientTape() as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
@@ -680,9 +658,7 @@ class TestTensorFlowExecuteIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as t:
-            t.watch(x)
-            t.watch(y)
+        with tf.GradientTape() as t:
             with qml.tape.JacobianTape() as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
@@ -745,10 +721,8 @@ class TestHigherOrderDerivatives:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         x, y = params * 1.0
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t2:
-            t2.watch(params)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t1:
-                t1.watch(params)
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape() as t1:
                 with qml.tape.JacobianTape() as tape1:
                     qml.RX(params[0], wires=[0])
                     qml.RY(params[1], wires=[1])
@@ -789,10 +763,8 @@ class TestHigherOrderDerivatives:
         dev = qml.device("default.qubit.tf", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t2:
-            t2.watch(params)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t1:
-                t1.watch(params)
+        with tf.GradientTape() as t2:
+            with tf.GradientTape(persistent=True) as t1:
                 with qml.tape.JacobianTape() as tape:
                     qml.RY(params[0], wires=0)
                     qml.RX(params[1], wires=0)
@@ -838,10 +810,8 @@ class TestHigherOrderDerivatives:
         dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654])
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t2:
-            t2.watch(params)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t1:
-                t1.watch(params)
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape() as t1:
                 with qml.tape.JacobianTape() as tape:
                     qml.RX(params[0], wires=[0])
                     qml.RY(params[1], wires=[1])
@@ -869,10 +839,8 @@ class TestHigherOrderDerivatives:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         x, y = params * 1.0
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t2:
-            t2.watch(params)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as t1:
-                t1.watch(params)
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape() as t1:
                 with qml.tape.JacobianTape() as tape1:
                     qml.RX(params[0], wires=[0])
                     qml.RY(params[1], wires=[1])

@@ -1557,9 +1557,7 @@ class TestHamiltonianDifferentiation:
                 )
             )
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(param)
-            tape.watch(coeffs)
+        with tf.GradientTape() as tape:
             res = circuit(coeffs, param)
         grad = tape.gradient(res, [coeffs, param])
 
@@ -1575,9 +1573,7 @@ class TestHamiltonianDifferentiation:
         def combine(coeffs, param):
             return coeffs[0] * half1(param) + coeffs[1] * half2(param)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape2:
-            tape2.watch(param2)
-            tape2.watch(coeffs2)
+        with tf.GradientTape() as tape2:
             res_expected = combine(coeffs2, param2)
         grad_expected = tape2.gradient(res_expected, [coeffs2, param2])
 

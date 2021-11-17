@@ -332,8 +332,7 @@ class TestInterfaceIntegration:
         x_ = -0.654
         x = tf.Variable(x_, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(x)
+        with tf.GradientTape() as tape:
             res = circuit(x)
 
         expected = -4 * x_ * np.cos(x_ ** 2) * np.sin(x_ ** 2)

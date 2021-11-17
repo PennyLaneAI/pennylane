@@ -796,8 +796,7 @@ class TestGrad:
             )
         )
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(phi)
+        with tf.GradientTape() as tape:
             result = circuit(phi)
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -838,8 +837,7 @@ class TestGrad:
             )
         )
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(phi)
+        with tf.GradientTape() as tape:
             result = circuit(phi)
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -870,8 +868,7 @@ class TestGrad:
 
         expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(phi)
+        with tf.GradientTape() as tape:
             result = circuit(phi)
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)

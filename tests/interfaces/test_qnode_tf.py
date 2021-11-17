@@ -74,8 +74,7 @@ class TestQNode:
 
         a = tf.Variable(0.1)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
+        with tf.GradientTape() as tape:
             res = circuit(a)
 
         assert circuit.qtape.interface == "autograd"
@@ -112,8 +111,7 @@ class TestQNode:
         # cannot be determined by TensorFlow
         assert circuit.qtape.trainable_params == set()
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
+        with tf.GradientTape() as tape:
             res = circuit(a)
 
         assert circuit.qtape.interface == "tf"
@@ -157,8 +155,7 @@ class TestQNode:
 
         a = tf.Variable(0.1, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
+        with tf.GradientTape() as tape:
             res2 = circuit(a)
 
         grad2 = tape.gradient(res2, a)
@@ -207,9 +204,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
-            tape.watch(b)
+        with tf.GradientTape() as tape:
             res = circuit(a, b)
 
         assert circuit.qtape.trainable_params == {0, 1}
@@ -249,9 +244,7 @@ class TestQNode:
         circuit.to_tf(dtype=tf.float32)
         assert circuit.dtype is tf.float32
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
-            tape.watch(b)
+        with tf.GradientTape() as tape:
             res = circuit(a, b)
 
         assert circuit.qtape.interface == "tf"
@@ -281,8 +274,7 @@ class TestQNode:
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
-            tape.watch(a)
+        with tf.GradientTape() as tape:
             res = circuit(a)
 
         tape.jacobian(res, a)
@@ -309,9 +301,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
-            tape.watch(a)
-            tape.watch(b)
+        with tf.GradientTape() as tape:
             res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
@@ -336,7 +326,7 @@ class TestQNode:
         a = tf.Variable(0.54, dtype=tf.float64)
         b = tf.constant(0.8, dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+        with tf.GradientTape(watch_accessed_variables=False) as tape:
             tape.watch(a)
             res = circuit(a, b)
 
@@ -370,8 +360,7 @@ class TestQNode:
             return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(a)
-            tape.watch(c)
+            tape.watch([a, c])
             res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
@@ -502,9 +491,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0]), qml.probs(wires=[1])
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(x)
-            tape.watch(y)
+        with tf.GradientTape() as tape:
             res = circuit(x, y)
 
         expected = np.array(
@@ -547,9 +534,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(x)
-            tape.watch(y)
+        with tf.GradientTape() as tape:
             res = circuit(x, y)
 
         expected = np.array(
@@ -583,7 +568,7 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
+        with tf.GradientTape() as tape:
             res = circuit()
 
         assert res.shape == (2, 10)
@@ -604,10 +589,8 @@ class TestQNode:
 
         x = tf.Variable([1.0, 2.0], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape1:
-            tape1.watch(x)
-            with tf.GradientTape(watch_accessed_variables=False) as tape2:
-                tape2.watch(x)
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
                 res = circuit(x)
             g = tape2.gradient(res, x)
             res2 = tf.reduce_sum(g)
@@ -649,10 +632,8 @@ class TestQNode:
 
         x = tf.Variable([1.0, 2.0], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-            tape1.watch(x)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
-                tape2.watch(x)
+        with tf.GradientTape(persistent=True) as tape1:
+            with tf.GradientTape() as tape2:
                 res = circuit(x)
             g = tape2.gradient(res, x)
 
@@ -693,10 +674,8 @@ class TestQNode:
 
         x = tf.Variable([1.0, 2.0], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-            tape1.watch(x)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
-                tape2.watch(x)
+        with tf.GradientTape(persistent=True) as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(x)
 
             spy = mocker.spy(JacobianTape, "hessian")
@@ -751,10 +730,8 @@ class TestQNode:
 
         x = tf.Variable([0.76, -0.87], dtype=tf.float64)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-            tape1.watch(x)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
-                tape2.watch(x)
+        with tf.GradientTape(persistent=True) as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
                 res = tf.tensordot(x, circuit(x), axes=[0, 0])
 
             spy = mocker.spy(JacobianTape, "hessian")
@@ -808,10 +785,8 @@ class TestQNode:
         x = tf.Variable([1.0, 2.0], dtype=tf.float64)
         res = circuit(x)
 
-        with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape1:
-            tape1.watch(x)
-            with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape2:
-                tape2.watch(x)
+        with tf.GradientTape(persistent=True) as tape1:
+            with tf.GradientTape(persistent=True) as tape2:
                 res = circuit(x)
 
             spy = mocker.spy(JacobianTape, "hessian")
@@ -877,12 +852,10 @@ class Test_adjoint:
         x1 = tf.Variable([0.1, 0.2])
         x2 = tf.Variable([0.3, 0.4])
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape1:
-            tape1.watch(x1)
+        with tf.GradientTape() as tape1:
             res1 = circ(x1)
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape2:
-            tape2.watch(x2)
+        with tf.GradientTape() as tape2:
             res2 = circ(x2)
 
         grad1 = tape1.gradient(res1, x1)
@@ -916,12 +889,10 @@ class Test_adjoint:
         x1 = tf.Variable([0.1, 0.2])
         x2 = tf.Variable([0.3, 0.4])
 
-        with tf.GradientTape(watch_accessed_variables=False) as tape1:
-            tape1.watch(x1)
+        with tf.GradientTape() as tape1:
             res1 = circ(x1)
 
         with tf.GradientTape() as tape2:
-            tape2.watch(x2)
             res2 = circ(x2)
 
         grad1 = tape1.gradient(res1, x1)
@@ -948,8 +919,7 @@ class Test_adjoint:
         spy = mocker.spy(dev, "adjoint_jacobian")
 
         x = tf.Variable(0.1)
-        with tf.GradientTape(watch_accessed_variables=False) as tape:
-            tape.watch(x)
+        with tf.GradientTape() as tape:
             res = circ(x)
 
         grad = tape.gradient(res, x)
@@ -1017,12 +987,10 @@ def test_transform(dev_name, diff_method, tol):
     weights = tf.Variable([0.32, 0.543], dtype=tf.float64)
     a = tf.Variable(0.5, dtype=tf.float64)
 
-    with tf.GradientTape(watch_accessed_variables=False, persistent=True) as tape:
+    with tf.GradientTape() as tape:
         # transform the circuit QNode with trainable weight 'a'
-        tape.watch(a)
         new_qnode = qtransform(circuit, a)
         # evaluate the transformed QNode
-        tape.watch(weights)
         res = new_qnode(weights)
         # evaluate the original QNode with pre-processed parameters
         res2 = circuit(tf.sin(weights))
