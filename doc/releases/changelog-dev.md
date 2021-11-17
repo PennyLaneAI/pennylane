@@ -15,7 +15,7 @@
       return qml.expval(qml.PauliZ(0))
 
   original_dev = qml.device("default.qubit", wires=3)
-  original_qnode = qml.beta.QNode(circuit, original_dev)
+  original_qnode = qml.QNode(circuit, original_dev)
   ```
 
   ```pycon
@@ -49,7 +49,7 @@
   custom_decomps = {qml.CNOT : custom_cnot, "Hadamard" : custom_hadamard}
 
   decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
-  decomp_qnode = qml.beta.QNode(circuit, decomp_dev)
+  decomp_qnode = qml.QNode(circuit, decomp_dev)
   ```
 
   Now when we draw or run a QNode on this device, the gates will be expanded
