@@ -624,22 +624,6 @@ class TestQubitGradient:
 
                 assert grad_eval == pytest.approx(grad_true, abs=tol)
 
-    def test_gradient_exception_on_sample(self):
-        """Tests that the proper exception is raised if differentiation of sampling is attempted."""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=[0])
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Circuits that include sampling can not be differentiated.",
-        ):
-            grad_fn = autograd.jacobian(circuit)
-            grad_fn(1.0)
-
     def test_autograd_positional_non_trainable_warns_grad(self):
         """Test that a warning is raised if a positional argument without the
         requires_grad attribute set is passed when differentiating a QNode with a

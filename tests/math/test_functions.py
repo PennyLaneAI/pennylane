@@ -22,6 +22,7 @@ from pennylane import numpy as np
 from pennylane import math as fn
 from autograd.numpy.numpy_boxes import ArrayBox
 
+import semantic_version
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
@@ -532,6 +533,223 @@ class TestDot:
             ]
         )
         assert fn.allequal(res, expected)
+
+
+class TestTensordot:
+    """Tests for the dot product function."""
+
+    v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
+    v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
+    _arange = np.arange(0, 54).reshape((9, 6)).astype(np.float64)
+    _shuffled_arange = np.array(
+        [
+            [42.0, 43.0, 44.0, 45.0, 46.0, 47.0],
+            [6.0, 7.0, 8.0, 9.0, 10.0, 11.0],
+            [30.0, 31.0, 32.0, 33.0, 34.0, 35.0],
+            [0.0, 1.0, 2.0, 3.0, 4.0, 5.0],
+            [48.0, 49.0, 50.0, 51.0, 52.0, 53.0],
+            [12.0, 13.0, 14.0, 15.0, 16.0, 17.0],
+            [24.0, 25.0, 26.0, 27.0, 28.0, 29.0],
+            [18.0, 19.0, 20.0, 21.0, 22.0, 23.0],
+            [36.0, 37.0, 38.0, 39.0, 40.0, 41.0],
+        ],
+        dtype=np.float64,
+    )
+    M1 = torch.tensor(_arange)
+    M2 = torch.tensor(_shuffled_arange)
+    T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
+    T1 = np.array([T1[1], T1[0], T1[2]])
+
+    v1_dot_v2 = 9.59
+    v1_outer_v2 = np.array(
+        [
+            [0.43, -0.12, 0.82, 0.06, -0.42, -1.1],
+            [2.15, -0.6, 4.1, 0.3, -2.1, -5.5],
+            [-3.87, 1.08, -7.38, -0.54, 3.78, 9.9],
+            [4.3, -1.2, 8.2, 0.6, -4.2, -11.0],
+            [-18.06, 5.04, -34.44, -2.52, 17.64, 46.2],
+            [0.43, -0.12, 0.82, 0.06, -0.42, -1.1],
+        ],
+        dtype=np.float64,
+    )
+
+    M1_dot_v1 = torch.tensor(
+        [-14.6, -35.0, -55.4, -75.8, -96.2, -116.6, -137.0, -157.4, -177.8], dtype=torch.float64
+    )
+    M1_dot_v2 = torch.tensor(
+        [-54.8, -74.6, -94.4, -114.2, -134.0, -153.8, -173.6, -193.4, -213.2], dtype=torch.float64
+    )
+    M2_dot_v1 = torch.tensor(
+        [-157.4, -35.0, -116.6, -14.6, -177.8, -55.4, -96.2, -75.8, -137.0], dtype=torch.float64
+    )
+    M2_dot_v2 = torch.tensor(
+        [-193.4, -74.6, -153.8, -54.8, -213.2, -94.4, -134.0, -114.2, -173.6], dtype=torch.float64
+    )
+    M1_dot_M2T = torch.tensor(
+        [
+            [685, 145, 505, 55, 775, 235, 415, 325, 595],
+            [2287, 451, 1675, 145, 2593, 757, 1369, 1063, 1981],
+            [3889, 757, 2845, 235, 4411, 1279, 2323, 1801, 3367],
+            [5491, 1063, 4015, 325, 6229, 1801, 3277, 2539, 4753],
+            [7093, 1369, 5185, 415, 8047, 2323, 4231, 3277, 6139],
+            [8695, 1675, 6355, 505, 9865, 2845, 5185, 4015, 7525],
+            [10297, 1981, 7525, 595, 11683, 3367, 6139, 4753, 8911],
+            [11899, 2287, 8695, 685, 13501, 3889, 7093, 5491, 10297],
+            [13501, 2593, 9865, 775, 15319, 4411, 8047, 6229, 11683],
+        ],
+        dtype=torch.float64,
+    )
+    M1T_dot_M2 = torch.tensor(
+        [
+            [5256, 5472, 5688, 5904, 6120, 6336],
+            [5472, 5697, 5922, 6147, 6372, 6597],
+            [5688, 5922, 6156, 6390, 6624, 6858],
+            [5904, 6147, 6390, 6633, 6876, 7119],
+            [6120, 6372, 6624, 6876, 7128, 7380],
+            [6336, 6597, 6858, 7119, 7380, 7641],
+        ],
+        dtype=torch.float64,
+    )
+
+    T1_dot_v1 = torch.tensor(
+        [
+            [
+                [-630.0, -633.4],
+                [-636.8, -640.2],
+                [-643.6, -647.0],
+                [-650.4, -653.8],
+                [-657.2, -660.6],
+                [-664.0, -667.4],
+                [-670.8, -674.2],
+                [-677.6, -681.0],
+                [-684.4, -687.8],
+            ],
+            [
+                [-262.8, -266.2],
+                [-269.6, -273.0],
+                [-276.4, -279.8],
+                [-283.2, -286.6],
+                [-290.0, -293.4],
+                [-296.8, -300.2],
+                [-303.6, -307.0],
+                [-310.4, -313.8],
+                [-317.2, -320.6],
+            ],
+            [
+                [-997.2, -1000.6],
+                [-1004.0, -1007.4],
+                [-1010.8, -1014.2],
+                [-1017.6, -1021.0],
+                [-1024.4, -1027.8],
+                [-1031.2, -1034.6],
+                [-1038.0, -1041.4],
+                [-1044.8, -1048.2],
+                [-1051.6, -1055.0],
+            ],
+        ],
+        dtype=torch.float64,
+    )
+
+    T1_dot_v2 = torch.tensor(
+        [
+            [
+                [-1342.8, -1346.1],
+                [-1349.4, -1352.7],
+                [-1356.0, -1359.3],
+                [-1362.6, -1365.9],
+                [-1369.2, -1372.5],
+                [-1375.8, -1379.1],
+                [-1382.4, -1385.7],
+                [-1389.0, -1392.3],
+                [-1395.6, -1398.9],
+            ],
+            [
+                [-986.4, -989.7],
+                [-993.0, -996.3],
+                [-999.6, -1002.9],
+                [-1006.2, -1009.5],
+                [-1012.8, -1016.1],
+                [-1019.4, -1022.7],
+                [-1026.0, -1029.3],
+                [-1032.6, -1035.9],
+                [-1039.2, -1042.5],
+            ],
+            [
+                [-1699.2, -1702.5],
+                [-1705.8, -1709.1],
+                [-1712.4, -1715.7],
+                [-1719.0, -1722.3],
+                [-1725.6, -1728.9],
+                [-1732.2, -1735.5],
+                [-1738.8, -1742.1],
+                [-1745.4, -1748.7],
+                [-1752.0, -1755.3],
+            ],
+        ],
+        dtype=torch.float64,
+    )
+
+    T1_dot_M1 = torch.tensor(
+        [
+            [237546.0, 238977.0],
+            [82998.0, 84429.0],
+            [392094.0, 393525.0],
+        ],
+        dtype=torch.float64,
+    )
+
+    T1_dot_M2 = torch.tensor(
+        [
+            [233370.0, 234801.0],
+            [78822.0, 80253.0],
+            [387918.0, 389349.0],
+        ],
+        dtype=torch.float64,
+    )
+
+    @pytest.mark.parametrize("axes", [[[0], [0]], [[-1], [0]], [[0], [-1]], [[-1], [-1]]])
+    def test_tensordot_torch_vector_vector(self, axes):
+        assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=axes), self.v1_dot_v2)
+
+    def test_tensordot_torch_outer(self):
+        assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
+        assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
+
+    def test_tensordot_torch_outer_with_old_version(self, monkeypatch):
+        with monkeypatch.context() as m:
+            m.setattr("torch.__version__", "1.9.0")
+            assert fn.allclose(fn.tensordot(self.v1, self.v2, axes=0), self.v1_outer_v2)
+            assert fn.allclose(fn.tensordot(self.v2, self.v1, axes=0), qml.math.T(self.v1_outer_v2))
+
+    @pytest.mark.parametrize(
+        "M, v, expected",
+        [(M1, v1, M1_dot_v1), (M1, v2, M1_dot_v2), (M2, v1, M2_dot_v1), (M2, v2, M2_dot_v2)],
+    )
+    @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-1]], [[-1], [-1]]])
+    def test_tensordot_torch_matrix_vector(self, M, v, expected, axes):
+        assert fn.allclose(fn.tensordot(M, v, axes=axes), expected)
+
+    @pytest.mark.parametrize("axes", [[[1], [0]], [[-1], [0]], [[1], [-2]], [[-1], [-2]]])
+    def test_tensordot_torch_matrix_matrix(self, axes):
+        assert fn.allclose(fn.tensordot(self.M1, qml.math.T(self.M2), axes=axes), self.M1_dot_M2T)
+        assert fn.allclose(
+            fn.tensordot(self.M2, qml.math.T(self.M1), axes=axes), qml.math.T(self.M1_dot_M2T)
+        )
+        assert fn.allclose(fn.tensordot(qml.math.T(self.M1), self.M2, axes=axes), self.M1T_dot_M2)
+        assert fn.allclose(
+            fn.tensordot(qml.math.T(self.M2), self.M1, axes=axes), qml.math.T(self.M1T_dot_M2)
+        )
+
+    @pytest.mark.parametrize("axes", [[[1], [0]], [[-3], [0]], [[1], [-1]], [[-3], [-1]]])
+    @pytest.mark.parametrize("v, expected", [(v1, T1_dot_v1), (v2, T1_dot_v2)])
+    def test_tensordot_torch_tensor_vector(self, v, expected, axes):
+        assert fn.allclose(fn.tensordot(self.T1, v, axes=axes), expected)
+
+    @pytest.mark.parametrize("axes1", [[1, 2], [-3, -2], [1, -2], [-3, 2]])
+    @pytest.mark.parametrize("axes2", [[1, 0], [-1, -2], [1, -2]])
+    @pytest.mark.parametrize("M, expected", [(M1, T1_dot_M1), (M2, T1_dot_M2)])
+    def test_tensordot_torch_tensor_matrix(self, M, expected, axes1, axes2):
+        assert fn.allclose(fn.tensordot(self.T1, M, axes=[axes1, axes2]), expected)
 
 
 # the following test data is of the form
@@ -1059,21 +1277,33 @@ class TestTake:
 
 
 where_data = [
-    np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
-    jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
+    ("autograd", np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("torch", torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("numpy", onp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("tf", tf.constant([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("tf", tf.Variable([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
+    ("jax", jnp.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])),
 ]
 
 
-@pytest.mark.parametrize("t", where_data)
-def test_where(t):
+@pytest.mark.parametrize("interface, t", where_data)
+def test_where(interface, t):
     """Test that the where function works as expected"""
+    # With output values
     res = fn.where(t < 0, 100 * fn.ones_like(t), t)
     expected = np.array([[[1, 2], [3, 4], [100, 1]], [[5, 6], [0, 100], [2, 1]]])
     assert fn.allclose(res, expected)
+
+    # Without output values
+    res = fn.where(t > 0)
+    expected = (
+        [0, 0, 0, 0, 0, 1, 1, 1, 1],
+        [0, 0, 1, 1, 2, 0, 0, 2, 2],
+        [0, 1, 0, 1, 1, 0, 1, 0, 1],
+    )
+    if interface == "tf":
+        expected = qml.math.T(expected)
+    assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected))
 
 
 squeeze_data = [
@@ -1095,102 +1325,213 @@ def test_squeeze(t):
 class TestScatterElementAdd:
     """Tests for the scatter_element_add function"""
 
+    x = onp.ones((2, 3), dtype=np.float64)
+    y = onp.array(0.56)
+    index = [1, 2]
+    expected_val = onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]])
+    expected_grad_x = onp.array([[0, 0, 0], [0, 0, 1.0]])
+    expected_grad_y = 2 * y
+    expected_jac_x = onp.eye(6).reshape((2, 3, 2, 3))
+    expected_jac_y = onp.array([[0, 0, 0], [0, 0, 2 * y]])
+
     def test_array(self):
         """Test that a NumPy array is differentiable when using scatter addition"""
-        x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
-        y = np.array(0.56, requires_grad=True)
+        x = np.array(self.x, requires_grad=True)
+        y = np.array(self.y, requires_grad=True)
 
         def cost(weights):
-            return fn.scatter_element_add(weights[0], [1, 2], weights[1] ** 2)
+            return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
         assert isinstance(res, np.ndarray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
-        grad = qml.grad(lambda weights: cost(weights)[1, 2])([x, y])
-        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(grad[1], 2 * y)
+        grad = qml.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_array_multi(self):
         """Test that a NumPy array and the addend are differentiable when using
         scatter addition (multi dispatch)."""
-        x = np.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
-        y = np.array(0.56, requires_grad=True)
+        x = np.array(self.x, requires_grad=True)
+        y = np.array(self.y, requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
 
         res = cost_multi(x, y)
         assert isinstance(res, np.ndarray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
         jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
-        assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
-        assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
+        assert fn.allclose(jac[0], self.expected_jac_x)
+        assert fn.allclose(jac[1], self.expected_jac_y)
 
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
-        x = tf.Variable([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        y = tf.Variable(0.56)
+        x = tf.Variable(self.x)
+        y = tf.Variable(self.y)
 
         with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, [1, 2], y ** 2)
-            loss = res[1, 2]
+            res = fn.scatter_element_add(x, self.index, y ** 2)
+            loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, tf.Tensor)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
         grad = tape.gradient(loss, [x, y])
-        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(grad[1], 2 * y)
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_torch(self):
         """Test that a torch tensor is differentiable when using scatter addition"""
-        x = torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True)
-        y = torch.tensor(0.56, requires_grad=True)
+        x = torch.tensor(self.x, requires_grad=True)
+        y = torch.tensor(self.y, requires_grad=True)
 
-        res = fn.scatter_element_add(x, [1, 2], y ** 2)
-        loss = res[1, 2]
+        res = fn.scatter_element_add(x, self.index, y ** 2)
+        loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, torch.Tensor)
-        assert fn.allclose(res.detach(), onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res.detach(), self.expected_val)
 
         loss.backward()
-        assert fn.allclose(x.grad, onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(y.grad, 2 * y)
+        assert fn.allclose(x.grad, self.expected_grad_x)
+        assert fn.allclose(y.grad, self.expected_grad_y)
 
     def test_jax(self):
         """Test that a JAX array is differentiable when using scatter addition"""
-        x = jnp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        y = jnp.array(0.56)
+        x = jnp.array(self.x)
+        y = jnp.array(self.y)
 
         def cost(weights):
-            return fn.scatter_element_add(weights[0], [1, 2], weights[1] ** 2)
+            return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
         res = cost([x, y])
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
-        grad = jax.grad(lambda weights: cost(weights)[1, 2])([x, y])
-        assert fn.allclose(grad[0], onp.array([[0, 0, 0], [0, 0, 1.0]]))
-        assert fn.allclose(grad[1], 2 * y)
+        grad = jax.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
     def test_jax_multi(self):
         """Test that a NumPy array and the addend are differentiable when using
         scatter addition (multi dispatch)."""
-        x = jnp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]])
-        y = jnp.array(0.56)
+        x = jnp.array(self.x)
+        y = jnp.array(self.y)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, [1, 2], weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
 
         res = cost_multi(x, y)
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
-        assert fn.allclose(res, onp.array([[1.0, 1.0, 1.0], [1.0, 1.0, 1.3136]]))
+        assert fn.allclose(res, self.expected_val)
 
         jac = jax.jacobian(lambda *weights: cost_multi(*weights), argnums=[0, 1])(x, y)
-        assert fn.allclose(jac[0], onp.eye(6).reshape((2, 3, 2, 3)))
-        assert fn.allclose(jac[1], onp.array([[0, 0, 0], [0, 0, 2 * y]]))
+        assert fn.allclose(jac[0], self.expected_jac_x)
+        assert fn.allclose(jac[1], self.expected_jac_y)
+
+
+class TestScatterElementAddMultiValue:
+    """Tests for the scatter_element_add function when adding
+    multiple values at multiple positions."""
+
+    x = onp.ones((2, 3), dtype=np.float64)
+    y = onp.array(0.56)
+    indices = [[1, 0], [2, 1]]
+    expected_val = onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.27636]])
+    expected_grad_x = onp.array([[0, 1.0, 0], [0, 0, 1.0]])
+    expected_grad_y = 2 * y + onp.cos(y / 2) / 2
+
+    def test_array(self):
+        """Test that a NumPy array is differentiable when using scatter addition
+        with multiple values."""
+        x = np.array(self.x, requires_grad=True)
+        y = np.array(self.y, requires_grad=True)
+
+        def cost(weights):
+            return fn.scatter_element_add(
+                weights[0], self.indices, [fn.sin(weights[1] / 2), weights[1] ** 2]
+            )
+
+        res = cost([x, y])
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, self.expected_val)
+
+        scalar_cost = (
+            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
+            + cost(weights)[self.indices[0][1], self.indices[1][1]]
+        )
+        grad = qml.grad(scalar_cost)([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
+
+    def test_tensorflow(self):
+        """Test that a TF tensor is differentiable when using scatter addition
+        with multiple values."""
+        x = tf.Variable(self.x)
+        y = tf.Variable(self.y)
+
+        with tf.GradientTape() as tape:
+            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y ** 2])
+            loss = (
+                res[self.indices[0][0], self.indices[1][0]]
+                + res[self.indices[0][1], self.indices[1][1]]
+            )
+
+        assert isinstance(res, tf.Tensor)
+        assert fn.allclose(res, self.expected_val)
+
+        grad = tape.gradient(loss, [x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
+
+    def test_torch(self):
+        """Test that a torch tensor is differentiable when using scatter addition
+        with multiple values."""
+        x = torch.tensor(self.x, requires_grad=True)
+        y = torch.tensor(self.y, requires_grad=True)
+
+        values = torch.zeros(2)
+        values[0] += torch.sin(y / 2)
+        values[1] += y ** 2
+        res = fn.scatter_element_add(x, self.indices, values)
+        loss = (
+            res[self.indices[0][0], self.indices[1][0]]
+            + res[self.indices[0][1], self.indices[1][1]]
+        )
+
+        assert isinstance(res, torch.Tensor)
+        assert fn.allclose(res.detach(), self.expected_val)
+
+        loss.backward()
+        assert fn.allclose(x.grad, self.expected_grad_x)
+        assert fn.allclose(y.grad, self.expected_grad_y)
+
+    def test_jax(self):
+        """Test that a JAX array is differentiable when using scatter addition
+        with multiple values."""
+        x = jnp.array(self.x)
+        y = jnp.array(self.y)
+
+        def cost(weights):
+            return fn.scatter_element_add(
+                weights[0], self.indices, [fn.sin(weights[1] / 2), weights[1] ** 2]
+            )
+
+        res = cost([x, y])
+        assert isinstance(res, jax.interpreters.xla.DeviceArray)
+        print(res)
+        print(self.expected_val)
+        assert fn.allclose(res, self.expected_val)
+
+        scalar_cost = (
+            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
+            + cost(weights)[self.indices[0][1], self.indices[1][1]]
+        )
+        grad = jax.grad(scalar_cost)([x, y])
+        assert fn.allclose(grad[0], self.expected_grad_x)
+        assert fn.allclose(grad[1], self.expected_grad_y)
 
 
 class TestDiag:
