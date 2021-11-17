@@ -214,6 +214,9 @@
 
 <h3>Documentation</h3>
 
+* Added examples in documentation for some operations.
+  [(#1902)](https://github.com/PennyLaneAI/pennylane/pull/1902)
+
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
@@ -221,5 +224,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Jalani Kanem, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
-Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Christina Lee, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
