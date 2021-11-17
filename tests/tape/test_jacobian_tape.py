@@ -45,7 +45,7 @@ class TestConstruction:
         """Test that parameter information is correctly extracted"""
         tape, ops, obs = make_tape
         tape._update_gradient_info()
-        assert tape._trainable_params == set(range(5))
+        assert tape._trainable_params == list(range(5))
         assert tape._par_info == {
             0: {"op": ops[0], "p_idx": 0, "grad_method": "F"},
             1: {"op": ops[1], "p_idx": 0, "grad_method": "F"},
@@ -148,7 +148,7 @@ class TestJacobian:
             tape.jacobian(None)
 
         # setting trainable parameters avoids this
-        tape.trainable_params = {1, 2}
+        tape.trainable_params = [1, 2]
         dev = qml.device("default.qubit", wires=2)
         res = tape.jacobian(dev)
         assert res.shape == (4, 2)
@@ -303,7 +303,7 @@ class TestJacobian:
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
-        tape.trainable_params = {}
+        tape.trainable_params = []
 
         res = tape.jacobian(dev)
         assert res.size == 0
@@ -656,7 +656,7 @@ class TestJacobianCVIntegration:
             qml.Displacement(a, 0, wires=0)
             qml.var(qml.NumberOperator(0))
 
-        tape.trainable_params = {0, 1}
+        tape.trainable_params = [0, 1]
         res = tape.jacobian(dev)
         assert res.shape == (1, 2)
 
@@ -676,7 +676,7 @@ class TestJacobianCVIntegration:
             qml.expval(qml.NumberOperator(1))
             qml.var(qml.NumberOperator(0))
 
-        tape.trainable_params = {0, 1}
+        tape.trainable_params = [0, 1]
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
 
@@ -693,7 +693,7 @@ class TestJacobianCVIntegration:
             qml.Displacement(a, 0, wires=0)
             qml.expval(qml.QuadOperator(phi, wires=0))
 
-        tape.trainable_params = {2}
+        tape.trainable_params = [2]
         res = tape.jacobian(dev)
         expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
