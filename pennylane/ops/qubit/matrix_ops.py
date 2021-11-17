@@ -37,6 +37,17 @@ class QubitUnitary(Operation):
     Args:
         U (array[complex]): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=1)
+    >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.QubitUnitary(U, wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(example_circuit())
+    0.0
     """
     num_wires = AnyWires
     par_domain = "A"
