@@ -46,11 +46,9 @@ class AngleEmbedding(Operation):
 
     Example:
 
-        Angle embedding encodes the features as rotaion angles of the specified rotation angle.
+        Angle embedding encodes the features by using the specified rotation operation.
 
         .. code-block:: python
-
-            import pennylane as qml
 
             dev = qml.device('default.qubit', wires=3)
 
@@ -62,7 +60,7 @@ class AngleEmbedding(Operation):
 
             X = [1,2,3]
 
-        Here, we have also used rotation angles RZ. If not specified, RX is used as default.
+        Here, we have also used rotation angles :class:`RZ`. If not specified, :class:`RX` is used as default.
         The resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
