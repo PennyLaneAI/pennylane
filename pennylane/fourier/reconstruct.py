@@ -205,6 +205,31 @@ def _parse_ids(ids, info_dict):
     return ids
 
 
+def _parse_shifts(shifts, R, arg_name, par_idx, atol, need_f0):
+    """Processes shifts for a single reconstruction and determines
+    wheter the function at the reconstruction point, ``f0`` will be
+    needed.
+    """
+    _shifts = shifts.get(arg_name)
+    if _shifts is not None:
+        _shifts = _shifts.get(par_idx)
+    if _shifts is not None:
+        # Check whether the _shifts have the correct size
+        if len(_shifts) != 2 * R + 1:
+            raise ValueError(
+                f"The number of provided shifts ({len(_shifts)}) does not fit to the "
+                f"number of frequencies (2R+1={2*R+1}) for parameter {par_idx} in "
+                f"argument {arg_name}."
+            )
+        if any(qml.math.isclose(_shifts, qml.math.zeros_like(_shifts), rtol=0, atol=atol)):
+            # If 0 is among the shifts, f0 is needed
+            return _shifts, True
+        # If 0 is not among the shifts, f0 is not needed
+        return _shifts, (False or need_f0)
+    # If no shifts are given, f0 is needed always
+    return _shifts, True
+
+
 def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
     r"""For inputs to reconstruct, determine how the given information yields
     function reconstruction tasks and collect them into a dictionary ``jobs``.
@@ -272,35 +297,17 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
             _jobs = {}
 
             for par_idx in inner_dict:
-                _shifts = shifts.get(arg_name)
-                if _shifts is not None:
-                    _shifts = _shifts.get(par_idx)
 
                 # Determine spectrum and number of frequencies, discounting for 0
                 _spectrum = spectra[arg_name][par_idx]
-                _R = len(_spectrum) - 1
-                if _shifts is not None:
-                    # Check whether 0 is among the shifts
-                    if any(
-                        qml.math.isclose(_shifts, qml.math.zeros_like(_shifts), rtol=0, atol=atol)
-                    ):
-                        need_f0 = True
-                    # Check whether the shifts have the correct size
-                    if len(_shifts) != 2 * _R + 1:
-                        raise ValueError(
-                            f"The number of provided shifts ({len(_shifts)}) does not fit to the "
-                            f"number of frequencies (2R+1={2*_R+1}) for parameter {par_idx} in "
-                            f"argument {arg_name}."
-                        )
-                else:
-                    # If no shifts are given, f0 is needed always
-                    need_f0 = True
+                R = len(_spectrum) - 1
+                _shifts, need_f0 = _parse_shifts(shifts, R, arg_name, par_idx, atol, need_f0)
 
                 # Store job
-                if _R > 0:
+                if R > 0:
                     _jobs[par_idx] = {"shifts": _shifts, "spectrum": _spectrum}
                 else:
-                    # _R=0 belongs to a constant function
+                    # R=0 belongs to a constant function
                     _jobs[par_idx] = None
 
             jobs[arg_name] = _jobs
