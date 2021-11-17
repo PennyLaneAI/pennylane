@@ -45,7 +45,6 @@ class AngleEmbedding(Operation):
         rotation (str): type of rotations used
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -65,6 +64,10 @@ class AngleEmbedding(Operation):
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

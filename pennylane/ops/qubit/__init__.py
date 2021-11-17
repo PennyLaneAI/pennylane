@@ -75,6 +75,7 @@ ops = {
     "IsingZZ",
     "BasisState",
     "QubitStateVector",
+    "QubitDensityMatrix",
     "QubitUnitary",
     "ControlledQubitUnitary",
     "MultiControlledX",

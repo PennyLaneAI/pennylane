@@ -483,7 +483,6 @@ class FermionicDoubleExcitation(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "R"
     grad_method = "A"
@@ -511,6 +510,10 @@ class FermionicDoubleExcitation(Operation):
         wires = wires1 + wires2
 
         super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 
