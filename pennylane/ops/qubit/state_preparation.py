@@ -54,10 +54,13 @@ class BasisState(Operation):
     >>> print(example_circuit())
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(n, wires):
@@ -98,10 +101,13 @@ class QubitStateVector(Operation):
     >>> print(example_circuit())
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(state, wires):

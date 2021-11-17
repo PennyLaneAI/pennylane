@@ -49,7 +49,6 @@ class QubitUnitary(Operation):
     >>> print(example_circuit())
     0.0
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -82,6 +81,10 @@ class QubitUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -159,7 +162,6 @@ class ControlledQubitUnitary(QubitUnitary):
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
 
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -216,6 +218,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
+    @property
+    def num_params(self):
+        return 1
+
     def _matrix(self, *params):
         if self._CU is None:
             interface = qml.math.get_interface(self.U)
@@ -267,10 +273,13 @@ class DiagonalQubitUnitary(Operation):
         D (array[complex]): diagonal of unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):

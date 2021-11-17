@@ -122,7 +122,6 @@ class FermionicSingleExcitation(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "R"
     grad_method = "A"
@@ -137,6 +136,10 @@ class FermionicSingleExcitation(Operation):
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
         super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 
