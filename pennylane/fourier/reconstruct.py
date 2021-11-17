@@ -72,7 +72,10 @@ def _reconstruct_equ(fun, num_frequency, x0=None, f0=None, interface=None):
     x0 = anp.asarray(np.float64(0.0), like=interface) if x0 is None else x0
 
     def _reconstruction(x):
-        """Univariate reconstruction based on equidistant shifts and Dirichlet kernels."""
+        """Univariate reconstruction based on equidistant shifts and Dirichlet kernels.
+        The derivative at of ``sinc`` are not well-implemented in TensorFlow and Autograd,
+        use the Fourier transform reconstruction if this derivative is needed.
+        """
         _x = x - x0 - shifts
         return qml.math.tensordot(
             qml.math.sinc(a * _x) / qml.math.sinc(b * _x),
@@ -185,6 +188,23 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
     return _reconstruction
 
 
+def _parse_ids(ids, info_dict):
+    """Parse different formats of ``ids`` into the right dictionary format,
+    potentially using the information in ``info_dict`` to complete it.
+    """
+    if ids is None:
+        # Infer all id information from info_dict
+        return {outer_key: inner_dict.keys() for outer_key, inner_dict in info_dict.items()}
+    if isinstance(ids, str):
+        # ids only provides a single argument name but no parameter indices
+        return {ids: info_dict[ids].keys()}
+    if not isinstance(ids, dict):
+        # ids only provides argument names but no parameter indices
+        return {_id: info_dict[_id].keys() for _id in ids}
+
+    return ids
+
+
 def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
     r"""For inputs to reconstruct, determine how the given information yields
     function reconstruction tasks and collect them into a dictionary ``jobs``.
@@ -233,26 +253,19 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
         bool: Whether any of the reconstruction jobs will require the evaluation
             of the function at the position of reconstruction itself.
     """
-    # pylint: disable=too-many-branches
     if nums_frequency is None:
-        jobs = {}
-
         if spectra is None:
             raise ValueError("Either nums_frequency or spectra must be given.")
-        if ids is None:
-            ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in spectra.items()}
-        elif isinstance(ids, str):
-            # ids only provides a single argument name but no parameter indices
-            ids = {ids: spectra[ids].keys()}
-        elif not isinstance(ids, dict):
-            # ids only provides argument names but no parameter indices
-            ids = {_id: spectra[_id].keys() for _id in ids}
+
+        ids = _parse_ids(ids, spectra)
 
         if shifts is None:
             shifts = {}
 
         need_f0 = False
         recon_fn = _reconstruct_gen
+
+        jobs = {}
 
         # If no shifts are provided, compute them
         for arg_name, inner_dict in ids.items():
@@ -295,14 +308,9 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
     else:
         jobs = {}
         need_f0 = True
-        if ids is None:
-            ids = {outer_key: inner_dict.keys() for outer_key, inner_dict in nums_frequency.items()}
-        elif isinstance(ids, str):
-            # ids only provides a single argument name but no parameter indices
-            ids = {ids: nums_frequency[ids].keys()}
-        elif not isinstance(ids, dict):
-            # ids only provides argument names but no parameter indices
-            ids = {_id: nums_frequency[_id].keys() for _id in ids}
+
+        ids = _parse_ids(ids, nums_frequency)
+
         recon_fn = _reconstruct_equ
 
         for arg_name, inner_dict in ids.items():
@@ -310,7 +318,6 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
 
             for par_idx in inner_dict:
                 _num_frequency = nums_frequency[arg_name][par_idx]
-                # Store job; f0 missing
                 _jobs[par_idx] = {"num_frequency": _num_frequency} if _num_frequency > 0 else None
 
             jobs[arg_name] = _jobs
@@ -319,7 +326,8 @@ def _prepare_jobs(ids, nums_frequency, spectra, shifts, atol):
 
 
 def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None):
-    r"""Reconstruct univariate restrictions of an expectation value QNode.
+    r"""Reconstruct an expectation value QNode along a single parameter direction.
+    This means we restrict the QNode to vary only one parameter, a univariate restriction.
     For common quantum gates, such restrictions are finite Fourier series with known
     frequency spectra. Thus they may be reconstructed using Dirichlet kernels or
     a non-uniform Fourier transform.
@@ -433,6 +441,20 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     >>> tracker.totals
     {'executions': 15}
 
+    The example above used that we already knew the frequency spectra of the
+    QNode of interest. However, this is in general not the case and we may need
+    to compute the spectrum first. This can be done with
+    :func:`.fourier.qnode_spectrum` :
+
+    >>> spectra = qml.fourier.qnode_spectrum(circuit)(x, Y)
+    >>> spectra.keys()
+    dict_keys(['x', 'Y'])
+    >>> spectra["x"]
+    {(): [-1.0, 0.0, 1.0]}
+    >>> print(*_spectra["Y"].items(), sep="\n")
+    ((0,), [-1.0, 0.0, 1.0])
+    ((1,), [-6.0, -5.0, -4.0, -1.0, 0.0, 1.0, 4.0, 5.0, 6.0])
+
     For more detailed explanations, usage details and additional examples, see
     the usage details section below.
 
@@ -446,7 +468,12 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         each array-valued QNode argument. These parameter indices always are tuples, so that
         for scalar-valued QNode parameters, the parameter index is ``()`` by convention and the
         ``i`` -th parameter of a one-dimensional array can be accessed via ``(i,)`` .
-        (also see the examples below).
+        For example, providing ``nums_frequency``
+
+        - for a scalar argument: ``nums_frequency = {"x": {(): 4}}``
+        - for a one-dimensional argument: ``nums_frequency = {"Y": {(0,): 2, (1,): 9, (4,): 1}}``
+        - for a three-dimensional argument: ``nums_frequency = {"Z": {(0, 2, 5): 2, (1, 1, 4): 1}}``
+
         This applies to ``nums_frequency`` , ``spectra`` , and ``shifts`` .
 
         Note that the information provided in ``nums_frequency`` / ``spectra`` is essential for
@@ -460,7 +487,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         For inputs that do not specify parameter indices per QNode argument name (all formats but
         ``dict`` ), these parameter indices are inferred from ``nums_frequency`` / ``spectra`` .
 
-        *Reconstruction cost*
+        **Reconstruction cost**
 
         The reconstruction cost -- in terms of calls to ``qnode`` -- depend on the number of
         frequencies given via ``nums_frequency`` or ``spectra`` . A univariate reconstruction
@@ -476,7 +503,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         For integer-valued spectra with gaps, the equidistant reconstruction is thus suboptimal
         and the non-equidistant version method be used (also see the examples below).
 
-        *Numerical stability*
+        **Numerical stability**
 
         In general, the reconstruction with equidistant shifts for equidistant frequencies
         (used if ``nums_frequency`` is provided) is more stable numerically than the more
@@ -485,7 +512,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         ill-conditioned, a warning is raised as the output might become unstable.
         Examples for this are shift values or frequencies that lie very close to each other.
 
-        *Differentiability*
+        **Differentiability**
 
         The returned scalar functions are differentiable in all interfaces with respect
         to their scalar input variable. They expect these inputs to be in the same
@@ -502,7 +529,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             Dirichlet kernels. Alternatively, the original QNode evaluation can
             be used.
 
-        *More examples*
+        **More examples**
 
         Consider the QNode from the example above, now with an additional, tunable frequency
         ``f`` for the Pauli-X rotation that is controlled by ``x`` :
@@ -575,14 +602,6 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         costs three evaluations of ``circuit`` for each, ``x`` and ``Y[0]`` . Performing
         both reconstructions at the same position allowed us to save one of the
         evaluations and reduce the number of calls to :math:`5`.
-
-        All examples above used that we already knew the frequency spectra of the
-        QNode of interest. However, this is in general not the case and we may need
-        to compute the spectrum first. This can be done with
-        :func:`.fourier.qnode_spectrum` :
-
-        >>> spectra = qml.fourier.qnode_spectrum(circuit)(x, Y)
-        >>> spectra.keys()
 
     """
     # pylint: disable=cell-var-from-loop, unused-argument
