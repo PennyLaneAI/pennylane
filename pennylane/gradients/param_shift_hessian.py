@@ -171,17 +171,17 @@ def param_shift_hessian(tape):
     ]
 
     # for now assume all operations support the 2-term parameter shift rule
-    for idx in product(range(len(tape.trainable_params)), repeat=2):
+    for i in range(tape.num_params):  # idx in product(range(tape.num_params), repeat=2):
+        for j in range(i, tape.num_params):
+            recipe = diag_recipe if i == j else off_diag_recipe
+            coeffs, _, shifts = _process_gradient_recipe(recipe)
 
-        recipe = diag_recipe if idx[0] == idx[1] else off_diag_recipe
-        coeffs, _, shifts = _process_gradient_recipe(recipe)
+            # generate the gradient tapes
+            gradient_coeffs.append(coeffs)
+            g_tapes = generate_multishifted_tapes(tape, (i, j), shifts)
 
-        # generate the gradient tapes
-        gradient_coeffs.append(coeffs)
-        g_tapes = generate_multishifted_tapes(tape, idx, shifts)
-
-        gradient_tapes.extend(g_tapes)
-        shapes.append((idx, len(g_tapes)))
+            gradient_tapes.extend(g_tapes)
+            shapes.append(((i, j), len(g_tapes)))
 
     def processing_fn(results):
         # The first results dimension is the number of terms/tapes in the parameter-shift
@@ -202,6 +202,7 @@ def param_shift_hessian(tape):
 
             for out_idx, elem in qml.math.ndenumerate(qml.math.reshape(g, out_dim)):
                 grads[out_idx][h_idx] = elem
+                grads[out_idx][h_idx[1], h_idx[0]] = elem
 
         return qml.math.squeeze(qml.math.array(grads))
 
