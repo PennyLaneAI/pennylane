@@ -236,7 +236,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         ob = DummyObserv([1])
