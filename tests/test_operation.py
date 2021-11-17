@@ -244,6 +244,18 @@ class TestObservableConstruction:
 
         assert DummyObserv(0, wires=[1]).return_type is None
 
+    def test_construction_with_wires_pos_arg(self):
+        """Test that the wires can be given as a positional argument"""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            par_domain = "N"
+            grad_method = None
+
+        ob = DummyObserv([1])
+        assert ob.wires == qml.wires.Wires(1)
+
     def test_observable_is_not_operation_but_operator(self):
         """Check that the Observable class inherits from an Operator, not from an Operation"""
 

@@ -176,6 +176,13 @@ class TestCV:
         )
         assert np.allclose(matrix, true_matrix)
 
+    @pytest.mark.parametrize("phi", phis)
+    def test_quadoperator_heisenberg(self, phi):
+        """ops: Tests the Heisenberg representation of the QuadOperator gate."""
+        matrix = cv.QuadOperator._heisenberg_rep([phi])
+        true_matrix = np.array([0, np.cos(phi), np.sin(phi)])
+        assert np.allclose(matrix, true_matrix)
+
 
 class TestNonGaussian:
     """Tests that non-Gaussian gates are properly handled."""
