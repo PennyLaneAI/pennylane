@@ -210,6 +210,7 @@ def _parse_shifts(shifts, R, arg_name, par_idx, atol, need_f0):
     wheter the function at the reconstruction point, ``f0`` will be
     needed.
     """
+    # pylint: disable=too-many-arguments
     _shifts = shifts.get(arg_name)
     if _shifts is not None:
         _shifts = _shifts.get(par_idx)
