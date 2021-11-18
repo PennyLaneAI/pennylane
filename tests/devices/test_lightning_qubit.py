@@ -15,7 +15,7 @@
 Tests for the accessibility of the Lightning-Qubit device
 """
 import pennylane as qml
-import numpy as np
+from pennylane import numpy as np
 
 
 def test_integration():
@@ -30,7 +30,9 @@ def test_integration():
         return qml.expval(qml.PauliZ(0))
 
     np.random.seed(1967)
-    weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(layers, wires))
+    weights = np.random.random(
+        qml.templates.StronglyEntanglingLayers.shape(layers, wires), requires_grad=True
+    )
 
     qn_l = qml.QNode(circuit, dev_l)
     qn_d = qml.QNode(circuit, dev_d)
