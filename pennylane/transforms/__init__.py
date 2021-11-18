@@ -76,6 +76,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
+    ~transforms.set_decomposition
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -139,4 +140,5 @@ from .tape_expand import (
     expand_nonunitary_gen,
     create_expand_fn,
     create_decomp_expand_fn,
+    set_decompositions
 )
