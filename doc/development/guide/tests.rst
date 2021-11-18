@@ -1,32 +1,60 @@
 Software tests
 ==============
 
-Running the test suite
-~~~~~~~~~~~~~~~~~~~~~~
+Running the tests
+~~~~~~~~~~~~~~~~~
 
-The PennyLane test suite requires the Python ``pytest`` package, as well as ``pytest-cov``
-for test coverage, ``pytest-mock`` for mocking, and ``flaky`` for automatically rerunning flaky tests; these can be installed via ``pip``:
+The PennyLane test suite requires the Python ``pytest`` package, as well as:
+
+* ``pytest-cov``: determines test coverage
+* ``pytest-mock``: allows replacing components with dummy/mock objects
+* ``flaky``: manages tests with non-deterministic behaviour
+
+These requirements can be installed via ``pip``:
 
 .. code-block:: bash
 
     pip install pytest pytest-cov pytest-mock flaky
 
-To ensure that PennyLane is working correctly, the test suite can be run by
-navigating to the source code folder and running
+The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folder of the root PennyLane directory contains the PennyLane test suite. Run all tests in this folder via:
+
+.. code-block:: bash
+
+    python -m pytest --ignore=tests/beta tests
+
+Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system. The ``tests/beta`` folder can contain failing tests, so ``--ignore=tests/beta`` excludes them from execution.
+
+As the entire test suite takes some time, locally running only relevant files speeds the debugging cycle.  For example, if a developer was adding a new non-parametric operation, they could run:
+
+.. code-block:: bash
+
+    python -m pytest tests/ops/qubit/test_non_parametric_ops.py
+
+The slowest tests are marked with ``slow`` and can be deselected by:
+
+.. code-block:: bash
+
+    python -m pytest -m "not slow" tests
+
+Pytest supports many other command-line options, which can be found with the command:
+
+.. code-block:: bash
+
+    pytest --help
+
+Or by visiting the `pytest documentation <https://docs.pytest.org/en/latest/reference/reference.html#id88>`__ . 
+
+PennyLane provides a set of integration tests for all PennyLane plugins and devices. See the documentation on these tests under the section on the `device API <https://pennylane.readthedocs.io/en/latest/code/api/pennylane.devices.tests.html>`__. These tests can be run from the PennyLane root folder by:
+
+.. code-block:: bash
+
+    pytest pennylane/devices/tests --device=default.qubit --shots=1000
+
+All PennyLane tests and the device suite on core devices can be run from the PennyLane root folder via:
 
 .. code-block:: bash
 
     make test
-
-while the test coverage can be checked by running
-
-.. code-block:: bash
-
-    make coverage
-
-The output of the above command will show the coverage percentage of each
-file, as well as the line numbers of any lines missing test coverage.
-
 
 
 Testing Matplotlib based code

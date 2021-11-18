@@ -43,11 +43,23 @@ class BasisState(Operation):
             array of integers from the set :math:`\{0, 1\}`, i.e.,
             if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=2)
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.BasisState(np.array([1, 1]), wires=range(2))
+    ...     return qml.state()
+    >>> print(example_circuit())
+    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(n, wires):
@@ -77,11 +89,23 @@ class QubitStateVector(Operation):
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=2)
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=range(2))
+    ...     return qml.state()
+    >>> print(example_circuit())
+    [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(state, wires):
@@ -140,7 +164,6 @@ class QubitDensityMatrix(Operation):
     """
     num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def adjoint(self):

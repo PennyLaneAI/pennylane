@@ -71,6 +71,7 @@ Non-parametric Ops
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
+    ~pennylane.Barrier
 
 :html:`</div>`
 

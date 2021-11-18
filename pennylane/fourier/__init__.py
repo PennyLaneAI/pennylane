@@ -17,6 +17,7 @@ import warnings
 from .coefficients import coefficients
 from .circuit_spectrum import circuit_spectrum
 from .qnode_spectrum import qnode_spectrum
+from .reconstruct import reconstruct
 from .utils import join_spectra, get_spectrum
 
 
