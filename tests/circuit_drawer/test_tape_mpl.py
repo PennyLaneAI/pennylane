@@ -318,6 +318,20 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_Barrier(self):
+        """Test Barrier gets correct special call."""
+
+        with QuantumTape() as tape:
+            qml.Barrier(wires=(0, 1, 2))
+
+        _, ax = draw_mpl(tape)
+        layer = 0
+
+        assert len(ax.lines) == 3
+        assert len(ax.collections) == 2
+
+        plt.close()
+
 
 controlled_data = [
     (qml.CY(wires=(0, 1)), "Y"),

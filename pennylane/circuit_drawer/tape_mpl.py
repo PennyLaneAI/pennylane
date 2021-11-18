@@ -60,6 +60,14 @@ def _add_cz(drawer, layer, mapped_wires, op):
     drawer.ctrl(layer, mapped_wires)
 
 
+# pylint: disable=unused-argument
+def _add_barrier(drawer, layer, mapped_wires, op):
+    ymin = min(mapped_wires) - 0.5
+    ymax = max(mapped_wires) + 0.5
+    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
+    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+
+
 special_cases = {
     ops.SWAP: _add_swap,
     ops.CSWAP: _add_cswap,
@@ -67,6 +75,7 @@ special_cases = {
     ops.Toffoli: _add_cx,
     ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
+    ops.Barrier: _add_barrier,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
