@@ -153,7 +153,8 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
             )
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
-            stop_at = lambda obj: (obj.name in all_ops) and (obj.name != "Barrier")
+            # expand barriers when `only_visual=True`
+            stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
             expanded_tape = tape.expand(stop_at=stop_at)
 
         # Apply the full set of compilation transforms num_passes times
