@@ -79,6 +79,25 @@ class TestDrawableLayers:
 
         assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
 
+    def test_barrier_only_visual(self):
+        """Test the barrier is always drawn"""
+
+        ops = [
+            qml.PauliX(0),
+            qml.Barrier(wires=0),
+            qml.Barrier(only_visual=True, wires=0),
+            qml.PauliX(0),
+        ]
+        layers = drawable_layers(ops)
+        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}, {ops[3]}]
+
+    def test_barrier_block(self):
+        """Test the barrier blocking operators"""
+
+        ops = [qml.PauliX(0), qml.Barrier(wires=[0, 1]), qml.PauliX(1)]
+        layers = drawable_layers(ops)
+        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+
     @pytest.mark.parametrize(
         "multiwire_gate",
         (
