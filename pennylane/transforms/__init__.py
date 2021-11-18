@@ -32,6 +32,7 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~draw
+    ~draw_mpl
     ~transforms.get_unitary_matrix
     ~metric_tensor
     ~specs
@@ -115,7 +116,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw
+from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
