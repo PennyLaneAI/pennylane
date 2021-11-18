@@ -185,6 +185,9 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
+* The qml.Barrier() operator has been added. With it we can separate blocks in compilation or use it as a visual tool.
+  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+  
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
 <h3>Improvements</h3>
@@ -247,6 +250,8 @@
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
+* MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
@@ -329,6 +334,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Josh Izaac,
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac,
 Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
 Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
