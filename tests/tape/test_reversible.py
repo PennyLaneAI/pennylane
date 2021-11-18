@@ -19,7 +19,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.interfaces.autograd import AutogradInterface
 from pennylane.tape import JacobianTape, ReversibleTape
-from pennylane import QNode, qnode
+from pennylane.qnode_old import QNode, qnode
 from pennylane.measure import MeasurementProcess
 
 
@@ -142,6 +142,18 @@ class TestReversibleTape:
 
         with pytest.raises(ValueError, match="Probability is not supported"):
             tape.jacobian(dev)
+
+    def test_hamiltonian_error(self):
+        """Tests that an exception is raised when a Hamiltonian
+        is used with the ReversibleTape."""
+        with ReversibleTape() as tape:
+            qml.RX(0.542, wires=0)
+            qml.expval(1.0 * qml.PauliZ(0) @ qml.PauliX(1))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        with pytest.raises(qml.QuantumFunctionError, match="does not support Hamiltonian"):
+            tape.jacobian(dev, method="analytic")
 
     def test_phaseshift_exception(self):
         """Tests that an exception is raised when a PhaseShift gate
@@ -289,53 +301,30 @@ class TestGradients:
         expected_jacobian = -np.diag(np.sin(params))
         assert np.allclose(circuit_jacobian, expected_jacobian, atol=tol, rtol=0)
 
-    qubit_ops = [getattr(qml, name) for name in qml.ops._qubit__ops__]
-    analytic_qubit_ops = {cls for cls in qubit_ops if cls.grad_method == "A"}
-    analytic_qubit_ops = analytic_qubit_ops - {
-        qml.CRX,
-        qml.CRY,
-        qml.CRZ,
-        qml.CRot,
-        qml.PhaseShift,
-        qml.ControlledPhaseShift,
-        qml.CPhase,
-        qml.PauliRot,
-        qml.MultiRZ,
-        qml.U1,
-        qml.U2,
-        qml.U3,
-        qml.IsingXX,
-        qml.IsingYY,
-        qml.IsingZZ,
-        qml.SingleExcitation,
-        qml.SingleExcitationPlus,
-        qml.SingleExcitationMinus,
-        qml.DoubleExcitation,
-        qml.DoubleExcitationPlus,
-        qml.DoubleExcitationMinus,
-        qml.OrbitalRotation,
-    }
-
-    @pytest.mark.parametrize("obs", [qml.PauliX, qml.PauliY])
-    @pytest.mark.parametrize("op", analytic_qubit_ops)
-    def test_gradients(self, op, obs, mocker, tol):
-        """Tests that the gradients of circuits match between the
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.RY(0.3, wires=0),
+            qml.Rot(1.0, 2.0, 3.0, wires=[0]),
+        ],
+    )
+    def test_compare_analytic_and_numeric_gradients(self, op, mocker, tol):
+        """Test for selected gates that the gradients of circuits match between the
         finite difference and analytic methods."""
-        args = np.linspace(0.2, 0.5, op.num_params)
 
         with ReversibleTape() as tape:
             qml.Hadamard(wires=0)
             qml.RX(0.543, wires=0)
             qml.CNOT(wires=[0, 1])
 
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
 
             qml.Rot(1.3, -2.3, 0.5, wires=[0])
             qml.RZ(-0.5, wires=0)
             qml.RY(0.5, wires=1)
             qml.CNOT(wires=[0, 1])
 
-            qml.expval(obs(wires=0))
+            qml.expval(qml.PauliX(wires=0))
             qml.expval(qml.PauliZ(wires=1))
 
         dev = qml.device("default.qubit", wires=2)
@@ -397,7 +386,7 @@ class TestQNodeIntegration:
             match="Requested reversible differentiation to be computed with finite shots.",
         ):
 
-            @qml.qnode(dev, diff_method="reversible")
+            @qml.qnode_old.qnode(dev, diff_method="reversible")
             def circ(x):
                 qml.RX(x, wires=0)
                 return qml.expval(qml.PauliZ(0))

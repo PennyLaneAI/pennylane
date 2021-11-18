@@ -77,15 +77,17 @@ class SingleExcitation(Operation):
         circuit(0.1)
     """
 
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -138,14 +140,16 @@ class SingleExcitationMinus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
 
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -212,14 +216,16 @@ class SingleExcitationPlus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
 
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -310,10 +316,7 @@ class DoubleExcitation(Operation):
 
         circuit(0.1)
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -321,6 +324,10 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -405,10 +412,7 @@ class DoubleExcitationPlus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
 
     G = -1 * np.eye(16, dtype=np.complex64)
@@ -417,6 +421,10 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -476,10 +484,7 @@ class DoubleExcitationMinus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
 
     G = np.eye(16, dtype=np.complex64)
@@ -488,6 +493,10 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -569,10 +578,7 @@ class OrbitalRotation(Operation):
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
@@ -598,6 +604,10 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
