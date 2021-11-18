@@ -354,7 +354,7 @@ def custom_rx(params, wires):
     return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
 
 
-# To test the gradient
+# To test the gradient; use circuit identity RY(theta) = X RY(-theta) X
 def custom_rot(phi, theta, omega, wires):
     return [
         qml.RZ(phi, wires=wires),
@@ -365,7 +365,7 @@ def custom_rot(phi, theta, omega, wires):
     ]
 
 
-# To test the gradient; use circuit identity RY(theta) = X RY(-theta) X
+# Decompose a template into another template
 def custom_basic_entangler_layers(weights, wires):
     return [
         qml.AngleEmbedding(weights, wires=wires),
