@@ -105,7 +105,6 @@ class QuantumPhaseEstimation(Operation):
             phase_estimated = 4 * np.pi * (1 - phase_estimated)
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):

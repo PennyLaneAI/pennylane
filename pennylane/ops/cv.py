@@ -95,7 +95,6 @@ class Rotation(CVOperation):
         phi (float): the rotation angle
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
 
     @property
@@ -143,7 +142,6 @@ class Squeezing(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
 
     shift = 0.1
@@ -198,7 +196,6 @@ class Displacement(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
 
     shift = 0.1
@@ -259,7 +256,6 @@ class Beamsplitter(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
 
     @property
@@ -320,7 +316,6 @@ class TwoModeSqueezing(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
 
     grad_method = "A"
 
@@ -382,7 +377,6 @@ class QuadraticPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
 
     grad_method = "A"
 
@@ -436,8 +430,6 @@ class ControlledAddition(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
-
     grad_method = "A"
 
     shift = 0.1
@@ -494,8 +486,6 @@ class ControlledPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
-
     grad_method = "A"
 
     shift = 0.1
@@ -539,7 +529,6 @@ class Kerr(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -568,7 +557,6 @@ class CrossKerr(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -597,7 +585,6 @@ class CubicPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -646,7 +633,6 @@ class InterferometerUnitary(CVOperation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
     grad_recipe = None
 
@@ -700,7 +686,6 @@ class CoherentState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -724,7 +709,6 @@ class SqueezedState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -758,7 +742,6 @@ class DisplacedSqueezedState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -781,7 +764,6 @@ class ThermalState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -809,7 +791,6 @@ class GaussianState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = "F"
 
     @property
@@ -835,7 +816,6 @@ class FockState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "N"
     grad_method = None
 
     @property
@@ -922,7 +902,6 @@ class FockStateVector(CVOperation):
 
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = "F"
 
     @property
@@ -967,7 +946,6 @@ class FockDensityMatrix(CVOperation):
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = "F"
 
     @property
@@ -1002,7 +980,6 @@ class CatState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -1042,7 +1019,6 @@ class NumberOperator(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
 
     ev_order = 2
 
@@ -1097,7 +1073,6 @@ class TensorN(CVObservable):
         2
     """
     num_wires = AnyWires
-    par_domain = None
     ev_order = None
 
     def __new__(cls, *params, wires=None, do_queue=True):
@@ -1143,7 +1118,6 @@ class X(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
 
     ev_order = 1
 
@@ -1177,7 +1151,6 @@ class P(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
 
     ev_order = 1
 
@@ -1213,7 +1186,6 @@ class QuadOperator(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
 
     grad_method = "A"
     ev_order = 1
@@ -1288,7 +1260,6 @@ class PolyXP(CVObservable):
 
     """
     num_wires = AnyWires
-    par_domain = "A"
 
     grad_method = "F"
     ev_order = 2
@@ -1345,7 +1316,6 @@ class FockStateProjector(CVObservable):
             total number of wires in the QNode.
     """
     num_wires = AnyWires
-    par_domain = "A"
 
     grad_method = None
     ev_order = None

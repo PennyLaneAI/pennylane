@@ -56,7 +56,6 @@ class Identity(CVObservable, Operation):
     simulators should always be equal to 1.
     """
     num_wires = 1
-    par_domain = None
     grad_method = None
 
     ev_order = 1

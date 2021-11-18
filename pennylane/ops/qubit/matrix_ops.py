@@ -50,7 +50,6 @@ class QubitUnitary(Operation):
     0.0
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, *params, wires, do_queue=True):
@@ -163,7 +162,6 @@ class ControlledQubitUnitary(QubitUnitary):
 
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(
@@ -274,7 +272,6 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     @property
