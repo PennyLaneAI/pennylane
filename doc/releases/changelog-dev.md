@@ -154,6 +154,9 @@
 
 <h3>Breaking changes</h3>
 
+* The `par_domain` attribute in the operator class has been removed. 
+  [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
+
 - The `mutable` keyword argument has been removed from the QNode.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
