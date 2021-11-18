@@ -86,7 +86,6 @@ class StronglyEntanglingLayers(Operation):
         ``imprimitive`` gate acts on. For example, for ``range=[2,3]`` the
         first layer will have a range parameter of ``2`` and the second layer will
         have a range parameter of ``3``.
-        
         Assuming ``wires=[0, 1, 2, 3]`` and a range parameter of ``2``, there will be
         an imprimitive gate acting on:
 
