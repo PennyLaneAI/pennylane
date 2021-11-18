@@ -8,19 +8,16 @@
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
 
   ```python
-  dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+  dev = qml.device("default.qubit", wires=4)
 
   @qml.qnode(dev)
-  def circuit(x, z):
-      qml.QFT(wires=(0,1,2,3))
-      qml.Toffoli(wires=(0,1,2))
-      qml.CSWAP(wires=(0,2,3))
-      qml.RX(x, wires=0)
-      qml.CRZ(z, wires=(3,0))
-      return qml.expval(qml.PauliZ(0))
-
-
-  fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+  def circuit(x, Y, f=1.0):
+      qml.RX(f * x, wires=0)
+      qml.RY(Y[0], wires=0)
+      qml.RY(Y[1], wires=1)
+      qml.CNOT(wires=[0, 1])
+      qml.RY(3 * Y[1], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
 
   <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
