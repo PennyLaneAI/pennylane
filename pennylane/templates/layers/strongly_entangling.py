@@ -50,6 +50,57 @@ class StronglyEntanglingLayers(Operation):
                                 using :math:`r=l \mod M` for the :math:`l` th layer and :math:`M` wires.
         imprimitive (pennylane.ops.Operation): two-qubit gate to use, defaults to :class:`~pennylane.ops.CNOT`
 
+    Example:
+
+        There are multiple arguments that the user can use to customize the layer.
+
+        The required arguments are ``weights`` and ``wires``.
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=4)
+
+            @qml.qnode(dev)
+            def circuit(parameters):
+                qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
+                return qml.expval(qml.PauliZ(0))
+
+            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+            weights = np.random.random(size=shape)
+
+        The shape of the ``weights`` argument decides the number of layers.
+
+        The resulting circuit:
+
+        >>> print(qml.draw(circuit)(weights))
+            0: ──Rot(0.106, 0.0913, 0.483)──╭C───────────────────────────────────────────────────────────╭X──Rot(0.0691, 0.841, 0.624)──────╭C──────╭X──┤ ⟨Z⟩
+            1: ──Rot(0.0911, 0.249, 0.181)──╰X──╭C───Rot(0.311, 0.692, 0.141)────────────────────────────│──────────────────────────────╭C──│───╭X──│───┤
+            2: ──Rot(0.0597, 0.982, 0.594)──────╰X──╭C─────────────────────────Rot(0.547, 0.349, 0.276)──│──────────────────────────────│───╰X──│───╰C──┤
+            3: ──Rot(0.765, 0.81, 0.99)─────────────╰X───────────────────────────────────────────────────╰C──Rot(0.627, 0.348, 0.476)───╰X──────╰C──────┤
+
+        The default two-qubit gate used is :class:`~pennylane.ops.CNOT`. This can be changed by using the ``imprimitive`` argument.
+        The ``range`` argument takes a integer sequence where each element decides the difference between the two qubits of the ``imprimitive``.
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=4)
+
+            @qml.qnode(dev)
+            def circuit(parameters):
+                qml.StronglyEntanglingLayers(weights=parameters, wires=range(4), ranges=[2, 3], imprimitive=qml.ops.CZ)
+                return qml.expval(qml.PauliZ(0))
+
+            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+            weights = np.random.random(size=shape)
+
+        The resulting circuit:
+
+        >>> print(qml.draw(circuit)(weights))
+            0: ──Rot(0.629, 0.345, 0.566)───────╭C──────╭Z──Rot(0.874, 0.0388, 0.922)──╭C──╭Z──────────┤ ⟨Z⟩
+            1: ──Rot(0.0596, 0.927, 0.807)──╭C──│───╭Z──│───Rot(0.311, 0.644, 0.297)───│───╰C──╭Z──────┤
+            2: ──Rot(0.161, 0.29, 0.498)────│───╰Z──│───╰C──Rot(0.96, 0.79, 0.819)─────│───────╰C──╭Z──┤
+            3: ──Rot(0.589, 0.103, 0.108)───╰Z──────╰C──────Rot(0.869, 0.69, 0.0183)───╰Z──────────╰C──┤
+
     .. UsageDetails::
 
         **Parameter shape**
