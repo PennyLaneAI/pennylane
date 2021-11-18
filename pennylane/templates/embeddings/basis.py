@@ -35,9 +35,38 @@ class BasisEmbedding(Operation):
     Args:
         features (tensor-like): binary input of shape ``(n, )``
         wires (Iterable): wires that the template acts on
+
+    Example:
+
+        Basis embedding encodes the binary feature vector into a basis state.
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.BasisEmbedding(features=feature_vector, wires=range(3))
+                return qml.state()
+
+            X = [1,1,1]
+
+        The resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──X──╭┤ State
+            1: ──X──├┤ State
+            2: ──X──╰┤ State
+
+        And, the output state is:
+
+        >>> print(circuit(X))
+            [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+
+        Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
+
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -60,6 +89,10 @@ class BasisEmbedding(Operation):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

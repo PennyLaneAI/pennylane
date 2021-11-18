@@ -174,7 +174,6 @@ class RandomLayers(Operation):
             weights = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -203,6 +202,10 @@ class RandomLayers(Operation):
         self.ratio_imprimitive = ratio_imprim
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

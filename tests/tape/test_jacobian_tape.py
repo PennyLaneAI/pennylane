@@ -45,7 +45,7 @@ class TestConstruction:
         """Test that parameter information is correctly extracted"""
         tape, ops, obs = make_tape
         tape._update_gradient_info()
-        assert tape._trainable_params == set(range(5))
+        assert tape._trainable_params == list(range(5))
         assert tape._par_info == {
             0: {"op": ops[0], "p_idx": 0, "grad_method": "F"},
             1: {"op": ops[1], "p_idx": 0, "grad_method": "F"},
@@ -148,10 +148,32 @@ class TestJacobian:
             tape.jacobian(None)
 
         # setting trainable parameters avoids this
-        tape.trainable_params = {1, 2}
+        tape.trainable_params = [1, 2]
         dev = qml.device("default.qubit", wires=2)
         res = tape.jacobian(dev)
         assert res.shape == (4, 2)
+
+    def test_non_differentiable_state_error(self):
+        """Test error raised if attempting to differentiate a circuit
+        that returns the state."""
+        with JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.state()
+
+        # by default all parameters are assumed to be trainable
+        with pytest.raises(ValueError, match=r"does not support circuits that return the state"):
+            tape.jacobian(None)
+
+    def test_non_differentiable_sampling_error(self):
+        """Test error raised if attempting to differentiate a circuit
+        that returns samples."""
+        with JacobianTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.sample()
+
+        # by default all parameters are assumed to be trainable
+        with pytest.raises(qml.QuantumFunctionError, match=r"sampling can not be differentiated"):
+            tape.jacobian(None)
 
     def test_analytic_method_with_unsupported_params(self):
         """Test that an exception is raised if method="A" but a parameter
@@ -303,7 +325,7 @@ class TestJacobian:
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
-        tape.trainable_params = {}
+        tape.trainable_params = []
 
         res = tape.jacobian(dev)
         assert res.size == 0
@@ -468,6 +490,34 @@ class TestJacobian:
             match="No trainable parameters",
         ):
             res = tape._choose_params_with_methods(diff_methods, argnum)
+
+    def test_hamiltonian_grad(self):
+        """Test that the gradient of Hamiltonians works as expected."""
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.5, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.Hamiltonian([-1.5, 2.0], [qml.PauliZ(0), qml.PauliZ(1)]))
+
+        tape.trainable_params = {2, 3}
+        res = qml.math.stack(tape.jacobian(dev)[0])
+
+        with qml.tape.JacobianTape() as tape1:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.5, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        with qml.tape.JacobianTape() as tape2:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.5, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(1))
+
+        expected = qml.math.stack(qml.execute([tape1, tape2], dev, None))
+        assert np.allclose(expected, res)
 
 
 class TestJacobianIntegration:
@@ -656,7 +706,7 @@ class TestJacobianCVIntegration:
             qml.Displacement(a, 0, wires=0)
             qml.var(qml.NumberOperator(0))
 
-        tape.trainable_params = {0, 1}
+        tape.trainable_params = [0, 1]
         res = tape.jacobian(dev)
         assert res.shape == (1, 2)
 
@@ -676,7 +726,7 @@ class TestJacobianCVIntegration:
             qml.expval(qml.NumberOperator(1))
             qml.var(qml.NumberOperator(0))
 
-        tape.trainable_params = {0, 1}
+        tape.trainable_params = [0, 1]
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
 
@@ -693,7 +743,7 @@ class TestJacobianCVIntegration:
             qml.Displacement(a, 0, wires=0)
             qml.expval(qml.QuadOperator(phi, wires=0))
 
-        tape.trainable_params = {2}
+        tape.trainable_params = [2]
         res = tape.jacobian(dev)
         expected = np.array([[-2 * a * np.sin(phi)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -744,10 +794,11 @@ class TestHessian:
             tape.hessian(None)
 
 
+@pytest.mark.parametrize("qn", [qml.qnode, qml.qnode_old.qnode])
 class TestObservableWithObjectReturnType:
     """Unit tests for differentiation of observables returning an object"""
 
-    def test_special_observable_qnode_differentiation(self):
+    def test_special_observable_qnode_differentiation(self, qn):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rathern than a nummber."""
 
@@ -813,12 +864,12 @@ class TestObservableWithObjectReturnType:
 
         # force diff_method='parameter-shift' because otherwise
         # PennyLane swaps out dev for default.qubit.autograd
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qn(dev, diff_method="parameter-shift")
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qn(dev, diff_method="parameter-shift")
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))

@@ -104,7 +104,6 @@ class QuantumPhaseEstimation(Operation):
             # Need to rescale phase due to convention of RX gate
             phase_estimated = 4 * np.pi * (1 - phase_estimated)
     """
-    num_params = 1
     num_wires = AnyWires
     par_domain = "A"
     grad_method = None
@@ -121,6 +120,10 @@ class QuantumPhaseEstimation(Operation):
             )
 
         super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
         unitary = self.parameters[0]

@@ -590,13 +590,14 @@ class CircuitGraph:
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
         """Draw the CircuitGraph as a circuit diagram.
 
         Args:
             charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
             wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
+            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
 
         Raises:
             ValueError: If the given charset is not supported
@@ -615,6 +616,7 @@ class CircuitGraph:
             wires=wire_order or self.wires,
             charset=charset,
             show_all_wires=show_all_wires,
+            max_length=max_length,
         )
 
         return drawer.draw()

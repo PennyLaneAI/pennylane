@@ -626,8 +626,6 @@ class TestExpectationQuantumGradients:
         finite difference and analytic methods."""
         tol = 1e-2
 
-        args = np.linspace(0.2, 0.5, op.num_params)
-
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
             qml.apply(op)
@@ -880,8 +878,6 @@ class TestVarianceQuantumGradients:
         """Tests that the gradients of circuits of selected gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
-
-        args = np.linspace(0.2, 0.5, op.num_params)
 
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
