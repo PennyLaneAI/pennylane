@@ -107,7 +107,6 @@ class DefaultMixed(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
-        "Barrier",
         "ThermalRelaxationError",
     }
 
