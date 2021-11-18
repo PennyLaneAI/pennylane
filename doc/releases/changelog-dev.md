@@ -193,6 +193,8 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
+
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
 <h3>Breaking changes</h3>
@@ -274,6 +276,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Josh Izaac,
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac,
 Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
 Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
