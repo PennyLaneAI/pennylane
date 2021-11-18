@@ -1,3 +1,5 @@
+# pylint: disable=too-many-arguments
+
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +21,14 @@ from functools import wraps
 import pennylane as qml
 
 
-def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expansion_strategy=None):
+def draw(
+    qnode,
+    charset="unicode",
+    wire_order=None,
+    show_all_wires=False,
+    max_length=None,
+    expansion_strategy=None,
+):
     """Create a function that draws the given qnode.
 
     Args:
@@ -28,6 +37,7 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expans
             "ascii" are supported.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
             are required.
 
@@ -121,13 +131,21 @@ def draw(qnode, charset="unicode", wire_order=None, show_all_wires=False, expans
 
         if tapes is not None:
             res = [
-                t.draw(charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires)
+                t.draw(
+                    charset=charset,
+                    wire_order=_wire_order,
+                    show_all_wires=show_all_wires,
+                    max_length=max_length,
+                )
                 for t in tapes[0]
             ]
             return "\n".join(res)
 
         return qnode.qtape.draw(
-            charset=charset, wire_order=_wire_order, show_all_wires=show_all_wires
+            charset=charset,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            max_length=max_length,
         )
 
     return wrapper

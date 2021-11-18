@@ -487,7 +487,6 @@ class TestExpectationQuantumGradients:
 
             num_wires = 1
             num_params = 1
-            par_domain = "R"
             grad_method = "A"
 
         alpha = 0.5643
@@ -625,8 +624,6 @@ class TestExpectationQuantumGradients:
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
-
-        args = np.linspace(0.2, 0.5, op.num_params)
 
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
@@ -850,7 +847,6 @@ class TestVarianceQuantumGradients:
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
             num_params = 1
-            par_domain = "R"
             grad_method = "A"
             grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)
 
@@ -880,8 +876,6 @@ class TestVarianceQuantumGradients:
         """Tests that the gradients of circuits of selected gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
-
-        args = np.linspace(0.2, 0.5, op.num_params)
 
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
