@@ -304,7 +304,6 @@ class TestExtractStatistics:
         class SomeObservable(qml.operation.Observable):
             num_params = 0
             num_wires = 1
-            par_domain = "F"
             return_type = returntype
 
         obs = SomeObservable(wires=0)
@@ -333,7 +332,6 @@ class TestExtractStatistics:
         class SomeObservable(qml.operation.Observable):
             num_params = 0
             num_wires = 1
-            par_domain = "F"
             return_type = returntype
 
         obs = SomeObservable(wires=0)
@@ -353,7 +351,6 @@ class TestExtractStatistics:
         class SomeObservable(qml.operation.Observable):
             num_params = 0
             num_wires = 1
-            par_domain = "F"
             return_type = returntype
 
         obs = SomeObservable(wires=0)

@@ -71,7 +71,6 @@ class AngleEmbedding(Operation):
     """
 
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, features, wires, rotation="X", do_queue=True, id=None):

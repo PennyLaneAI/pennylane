@@ -100,7 +100,6 @@ class GroverOperator(Operation):
 
     """
     num_wires = AnyWires
-    par_domain = None
     grad_method = None
 
     def __init__(self, wires=None, work_wires=None, do_queue=True, id=None):

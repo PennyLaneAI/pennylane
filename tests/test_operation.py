@@ -52,7 +52,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = "R"
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             DummyOp(0.5, wires=[0, 1])
@@ -63,7 +62,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = "R"
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
@@ -74,7 +72,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = "R"
             grad_method = "A"
 
             @property
@@ -90,7 +87,6 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=0)
         op.name = "MyOp"
@@ -106,56 +102,12 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
             num_wires = 2
-            par_domain = "R"
             grad_method = "A"
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
         with pytest.raises(
             AssertionError, match="Gradient recipe must have one entry for each parameter"
         ):
-            DummyOp(0.5, wires=[0, 1])
-
-    def test_grad_method_with_integer_params(self):
-        """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            par_domain = "N"
-            grad_method = "A"
-
-        with pytest.raises(
-            AssertionError,
-            match="An operation may only be differentiated with respect to real scalar parameters",
-        ):
-            DummyOp(5, wires=[0, 1])
-
-    def test_analytic_grad_with_array_param(self):
-        """Test that an exception is raised if an analytic gradient is requested with an array param"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            par_domain = "A"
-            grad_method = "A"
-
-        with pytest.raises(
-            AssertionError,
-            match="Operations that depend on arrays containing free variables may only be differentiated using the F method",
-        ):
-            DummyOp(np.array([1.0]), wires=[0, 1])
-
-    def test_numerical_grad_with_grad_recipe(self):
-        """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            par_domain = "R"
-            grad_method = "F"
-            grad_recipe = [(0.5, 0.1)]
-
-        with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
 
     def test_grad_recipe_parameter_dependent(self):
@@ -165,7 +117,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "R"
             grad_method = "A"
 
             @property
@@ -183,7 +134,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
@@ -195,7 +145,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
             @property
@@ -211,7 +160,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyOp(1.0, wires=0, id="test")
@@ -223,7 +171,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyOp(1.0, wires=0, id="test")
@@ -239,7 +186,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         assert DummyObserv(0, wires=[1]).return_type is None
@@ -250,7 +196,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         ob = DummyObserv([1])
@@ -268,7 +213,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable, qml.operation.Operation):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         assert issubclass(DummyObserv, qml.operation.Operator)
@@ -313,6 +257,10 @@ class TestObservableConstruction:
         expected = "probs(wires=['a'])"
         assert str(m) == expected
 
+        m = qml.probs(op=qml.PauliZ(wires=["a"]))
+        expected = "probs(PauliZ(wires=['a']))"
+        assert str(m) == expected
+
         m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
         expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
         assert str(m) == expected
@@ -327,20 +275,14 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
-
-class TestObservableInstantiation:
-    """Test that wires are specified when a qml.operation.Observable is instantiated"""
-
     def test_wire_is_given_in_argument(self):
         class DummyObservable(qml.operation.Observable):
             num_wires = 1
-            par_domain = None
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
@@ -358,7 +300,6 @@ class TestOperatorIntegration:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
             num_wires = qml.operation.WiresEnum.AllWires
-            par_domain = "R"
 
         @qml.qnode(dev1)
         def circuit():
@@ -382,7 +323,6 @@ class TestInverse:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom Operation"""
             num_wires = 1
-            par_domain = "R"
 
         # Check that the name of the Operation is initialized fine
         dummy_op = DummyOp(some_param, wires=[1])
@@ -1348,7 +1288,6 @@ class TestChannel:
             r"""Dummy custom channel"""
             num_wires = 1
             num_params = 1
-            par_domain = "R"
             grad_method = "F"
 
             def _kraus_matrices(self, *params):
@@ -1440,7 +1379,6 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=1)
 
@@ -1452,7 +1390,6 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=1)
 
@@ -1465,7 +1402,6 @@ class TestCVOperation:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            par_domain = None
 
         op = DummyOp(wires=1)
 
