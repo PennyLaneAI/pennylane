@@ -44,7 +44,6 @@ delta = 0.8
 
 # function arguments in various formats
 mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
-mixed_tuple = (np.array([0.2, 0.3]), [0.4, 0.2, 0.4], 0.1)
 flat_list = [0.2, 0.3, 0.1, 0.4, -0.1]
 multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 multid_list = [[0.1, 0.2], [-0.1, -0.4]]
@@ -141,45 +140,6 @@ def bunch():
 
 class TestOptimizer:
     """Basic optimizer tests."""
-
-    def test_mixed_inputs_for_hybrid_optimization(self, bunch, tol):
-        """Tests that gradient descent optimizer treats parameters of mixed types the same
-        for hybrid optimization tasks."""
-
-        def hybrid_fun(variables):
-            return quant_fun(*variables) + variables[0][1]
-
-        hybrid_list = bunch.sgd_opt.step(hybrid_fun, mixed_list)
-        hybrid_tuple = bunch.sgd_opt.step(hybrid_fun, mixed_tuple)
-
-        assert np.allclose(hybrid_list[0], hybrid_tuple[0], atol=tol)
-        assert np.allclose(hybrid_list[1], hybrid_tuple[1], atol=tol)
-        assert np.allclose(hybrid_list[2], hybrid_tuple[2], atol=tol)
-
-    def test_mixed_inputs_for_classical_optimization(self, bunch, tol):
-        """Tests that gradient descent optimizer treats parameters of mixed types the same
-        for purely classical optimization tasks."""
-
-        def class_fun(var):
-            return var[0][1] * 2.0 + var[1][2] + var[2]
-
-        class_list = bunch.sgd_opt.step(class_fun, mixed_list)
-        class_tuple = bunch.sgd_opt.step(class_fun, mixed_tuple)
-
-        assert np.allclose(class_list[0], class_tuple[0], atol=tol)
-        assert np.allclose(class_list[1], class_tuple[1], atol=tol)
-        assert np.allclose(class_list[2], class_tuple[2], atol=tol)
-
-    def test_mixed_inputs_for_quantum_optimization(self, bunch, tol):
-        """Tests that gradient descent optimizer treats parameters of mixed types the same
-        for purely quantum optimization tasks."""
-
-        quant_list = bunch.sgd_opt.step(quant_fun, *mixed_list)
-        quant_tuple = bunch.sgd_opt.step(quant_fun, *mixed_tuple)
-
-        assert np.allclose(quant_list[0], quant_tuple[0], atol=tol)
-        assert np.allclose(quant_list[1], quant_tuple[1], atol=tol)
-        assert np.allclose(quant_list[2], quant_tuple[2], atol=tol)
 
     def test_array_and_list_return_same_update(self, bunch, tol):
         """Tests that gradient descent optimizer has the same output for
