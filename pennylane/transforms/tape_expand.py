@@ -233,7 +233,7 @@ def _custom_decomp_context(custom_decomps):
         stack.close()
 
 
-def create_custom_decomp_expand_fn(custom_decomps, dev):
+def create_decomp_expand_fn(custom_decomps, dev):
     """Creates a custom expansion function for a device that applies
     a set of specified custom decompositions.
 
