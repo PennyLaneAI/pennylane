@@ -108,7 +108,7 @@ class QubitDevice(Device):
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
-        new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
+        new_array = qnp.zeros(new_dimensions, dtype=array.dtype.type, like=array)
         new_array[indices] = array
         return new_array
 
@@ -231,10 +231,10 @@ class QubitDevice(Device):
             if isinstance(results, list):
                 results = qnp.expand_dims(results[0], 0)
             else:
-                results = self._asarray(results)
+                results = qnp.asarray(results)
         else:
             results = tuple(
-                qnp.expand_dims(r[0], 0) if isinstance(r, list) else self._asarray(r)
+                qnp.expand_dims(r[0], 0) if isinstance(r, list) else qnp.asarray(r)
                 for r in results
             )
 
@@ -665,7 +665,7 @@ class QubitDevice(Device):
             prob = qnp.zeros([2 ** len(device_wires)], dtype=np.float64)
             prob[basis_states] = counts / len(samples)
 
-        return self._asarray(prob, dtype=self.R_DTYPE)
+        return qnp.asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
@@ -735,15 +735,15 @@ class QubitDevice(Device):
         inactive_device_wires = self.map_wires(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = self._reshape(prob, [2] * self.num_wires)
+        prob = qnp.reshape(prob, [2] * self.num_wires)
 
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+            prob = qnp.flatten(qnp.sum(prob, inactive_device_wires.labels))
         else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+            prob = qnp.flatten(qnp.sum(prob, inactive_device_wires))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -754,7 +754,7 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** qnp.arange(len(device_wires))[::-1]
         perm = qnp.asarray(basis_states @ powers_of_two, like=prob)
-        return self._gather(prob, perm)
+        return qnp.gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
@@ -771,13 +771,13 @@ class QubitDevice(Device):
 
             prob = self.probability(wires=observable.wires)
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE, like=prob)
+                eigvals = qnp.asarray(observable.eigvals, dtype=self.R_DTYPE, like=prob)
             except NotImplementedError as e:
                 raise ValueError(
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            return self._dot(eigvals, prob)
+            return qnp.dot(eigvals, prob)
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
@@ -796,12 +796,12 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+                eigvals = qnp.asarray(observable.eigvals, dtype=self.R_DTYPE)
             except NotImplementedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise ValueError(f"Cannot compute analytic variance of {observable.name}.") from e
             prob = self.probability(wires=observable.wires)
-            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
+            return qnp.dot((eigvals ** 2), prob) - qnp.dot(eigvals, prob) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
@@ -886,7 +886,7 @@ class QubitDevice(Device):
         """
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
-        dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
+        dot_product_real = lambda b, k: qnp.real(qmlsum(qnp.conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
             if m.return_type is not qml.operation.Expectation:
@@ -912,7 +912,7 @@ class QubitDevice(Device):
 
         # Initialization of state
         if starting_state is not None:
-            ket = self._reshape(starting_state, [2] * self.num_wires)
+            ket = qnp.reshape(starting_state, [2] * self.num_wires)
         else:
             if not use_device_state:
                 self.reset()

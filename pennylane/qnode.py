@@ -196,17 +196,6 @@ class QNode:
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
 
-        self._tape, self.interface, self.device, tape_diff_options = self.get_tape(
-            device, interface, diff_method
-        )
-
-        self.device.implement(self.interface)
-
-        # if diff_method is best, then set it to the actual diff method being used
-        if self.diff_method == "best":
-            self.diff_method_change = True
-            self.diff_method = self._get_best_diff_method(tape_diff_options)
-
         # execution keyword arguments
         self.execute_kwargs = {
             "mode": mode,
@@ -389,6 +378,7 @@ class QNode:
             if interface == backprop_interface or (
                 isinstance(backprop_interface, list) and interface in backprop_interface
             ):
+                device.implement(interface)
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(

@@ -229,7 +229,7 @@ class DefaultMixed(QubitDevice):
         # convert rho from tensor to matrix
         rho = qnp.reshape(self._state, (2 ** self.num_wires, 2 ** self.num_wires))
         # probs are diagonal elements
-        probs = self.marginal_prob(self._diag(rho), wires)
+        probs = self.marginal_prob(qnp.tensor_diag_part(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
         return qnp.abs(qnp.real(probs))
@@ -409,7 +409,7 @@ class DefaultMixed(QubitDevice):
             device_wires.labels
         ):
             # Initialize the entire wires with the state
-            rho = qnp.outer(state, self._conj(state))
+            rho = qnp.outer(state, qnp.conj(state))
             self._state = qnp.reshape(rho, [2] * 2 * self.num_wires)
 
         else:
@@ -444,7 +444,7 @@ class DefaultMixed(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
+        state = qnp.asarray(state, dtype=self.C_DTYPE)
         state = qnp.reshape(state, (-1,))
 
         state_dim = 2 ** len(device_wires)
@@ -461,7 +461,7 @@ class DefaultMixed(QubitDevice):
             device_wires.labels
         ):
             # Initialize the entire wires with the state
-            self._state = self._reshape(state, [2] * 2 * self.num_wires)
+            self._state = qnp.reshape(state, [2] * 2 * self.num_wires)
 
         else:
             # Initialize tr_in(ρ) ⊗ ρ_in with transposed wires where ρ is the density matrix before this operation.
@@ -491,7 +491,7 @@ class DefaultMixed(QubitDevice):
                 1.0,
                 atol=tolerance,
             )
-            self._state = self._asarray(rho, dtype=self.C_DTYPE)
+            self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
