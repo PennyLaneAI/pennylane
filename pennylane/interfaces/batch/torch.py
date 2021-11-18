@@ -191,7 +191,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + tuple(vjps)
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with Torch parameters on a device.
 
     This function may be called recursively, if ``gradient_fn`` is a differentiable
@@ -215,11 +215,14 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[torch.Tensor]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
     parameters = []
     for tape in tapes:
         # set the trainable parameters
