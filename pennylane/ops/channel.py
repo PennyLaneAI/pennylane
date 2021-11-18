@@ -51,7 +51,6 @@ class AmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -115,7 +114,6 @@ class GeneralizedAmplitudeDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -171,7 +169,6 @@ class PhaseDamping(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -233,7 +230,6 @@ class DepolarizingChannel(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
@@ -285,7 +281,6 @@ class BitFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
@@ -355,7 +350,6 @@ class ResetError(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @property
@@ -413,7 +407,6 @@ class PhaseFlip(Channel):
         wires (Sequence[int] or int): the wire the channel acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
@@ -451,7 +444,6 @@ class QubitChannel(Channel):
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "L"
     grad_method = None
 
     def __init__(self, *params, wires=None, do_queue=True):
@@ -569,7 +561,6 @@ class ThermalRelaxationError(Channel):
     """
     num_params = 4
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
 
     @classmethod
