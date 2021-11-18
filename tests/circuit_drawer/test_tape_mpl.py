@@ -324,7 +324,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.Barrier(wires=(0, 1, 2))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         assert len(ax.lines) == 3
