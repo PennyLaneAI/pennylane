@@ -107,7 +107,7 @@ class StronglyEntanglingLayers(Operation):
             shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
             weights = np.random.random(size=shape)
 
-        The resulting circuit:
+        The resulting circuit is:
 
         >>> print(qml.draw(circuit)(weights))
             0: ──Rot(0.629, 0.345, 0.566)───────╭C──────╭Z──Rot(0.874, 0.0388, 0.922)──╭C──╭Z──────────┤ ⟨Z⟩
