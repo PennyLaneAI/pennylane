@@ -17,7 +17,7 @@
     qml.RY(weights[0],wires=wires[0])
     qml.RY(weights[1],wires=wires[1])
 
-  weights = [[1,2],[3,4],[5,6]]
+  weights = np.array([[1,2],[3,4],[5,6]])
   dev = qml.device('default.qubit',wires=4)
   @qml.qnode(dev)
   def circuit(weights):
