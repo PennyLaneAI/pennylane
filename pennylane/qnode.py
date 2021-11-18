@@ -389,7 +389,9 @@ class QNode:
         if backprop_interface is not None:
             # device supports backpropagation natively
 
-            if interface == backprop_interface or (isinstance(backprop_interface, list) and interface in backprop_interface):
+            if interface == backprop_interface or (
+                isinstance(backprop_interface, list) and interface in backprop_interface
+            ):
                 return JacobianTape, interface, device, {"method": "backprop"}
 
             raise qml.QuantumFunctionError(

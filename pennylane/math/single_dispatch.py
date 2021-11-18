@@ -79,6 +79,7 @@ ar.register_function("autograd", "cast", np.asarray)
 ar.register_function("autograd", "to", lambda tensor, to: tensor)
 ar.autoray._FUNC_ALIASES["autograd", "tensor_diag_part"] = "diag"
 
+
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
     _np = _i("qml").numpy
@@ -169,7 +170,9 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-ar.register_function("tensorflow", "asarray", lambda x, dtype=None: _i("tf").convert_to_tensor(x, dtype=dtype))
+ar.register_function(
+    "tensorflow", "asarray", lambda x, dtype=None: _i("tf").convert_to_tensor(x, dtype=dtype)
+)
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -268,7 +271,7 @@ def _scatter_element_add_tf(tensor, index, value):
 
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 ar.register_function("tensorflow", "to", lambda tensor, to: tensor)
-ar.autoray._FUNC_ALIASES["tensorflow", "reduce_sum"] = "sum"
+ar.autoray._FUNC_ALIASES["tensorflow", "sum"] = "reduce_sum"
 
 # -------------------------------- Torch --------------------------------- #
 
@@ -284,7 +287,9 @@ def _to_numpy_torch(x):
 
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
-    "torch", "asarray", lambda x, dtype=None, device=None: _i("torch").as_tensor(x, device=device, dtype=dtype)
+    "torch",
+    "asarray",
+    lambda x, dtype=None, device=None: _i("torch").as_tensor(x, device=device, dtype=dtype),
 )
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
@@ -405,6 +410,7 @@ def _scatter_element_add_torch(tensor, index, value):
 ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 ar.register_function("torch", "transpose", lambda a, axes=[1, 0]: a.permute(*axes))
 ar.register_function("torch", "to", lambda tensor, to: tensor.to(to))
+
 
 def _sort_torch(tensor):
     """Update handling of sort to return only values not indices."""

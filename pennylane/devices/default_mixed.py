@@ -129,8 +129,9 @@ class DefaultMixed(QubitDevice):
     def implement(self, interface):
         self.interface = interface
         self._state = qnp.asarray(self._state, like=self._full_interface_name)
-        self._pre_rotated_state = qnp.asarray(self._pre_rotated_state, like=self._full_interface_name)
-
+        self._pre_rotated_state = qnp.asarray(
+            self._pre_rotated_state, like=self._full_interface_name
+        )
 
     @property
     def _full_interface_name(self):
@@ -141,12 +142,11 @@ class DefaultMixed(QubitDevice):
 
     @property
     def C_DTYPE(self):
-        return qnp.utils.to_backend_dtype('complex128', like=self._full_interface_name)
+        return qnp.utils.to_backend_dtype("complex128", like=self._full_interface_name)
 
     @property
     def R_DTYPE(self):
-        return qnp.utils.to_backend_dtype('float64', like=self._full_interface_name)
-
+        return qnp.utils.to_backend_dtype("float64", like=self._full_interface_name)
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -158,7 +158,11 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = qnp.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=self.C_DTYPE, like=self._full_interface_name)
+        rho = qnp.zeros(
+            (2 ** self.num_wires, 2 ** self.num_wires),
+            dtype=self.C_DTYPE,
+            like=self._full_interface_name,
+        )
         qnp.scatter_element_add(rho, (index, index), 1)
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
@@ -166,7 +170,7 @@ class DefaultMixed(QubitDevice):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            model='qubit',
+            model="qubit",
             returns_state=True,
             supports_reversible_diff=True,
             supports_inverse_operations=True,
@@ -272,7 +276,10 @@ class DefaultMixed(QubitDevice):
         elif kraus.shape[1] == 1 and kraus.shape[2] == 2 and (num_ch_wires == 1):
             kraus = qnp.cast(kraus, dtype=self.C_DTYPE)
             kraus_dagger_shape = list(kraus.shape)
-            kraus_dagger_shape[2], kraus_dagger_shape[1] = kraus_dagger_shape[1], kraus_dagger_shape[2]
+            kraus_dagger_shape[2], kraus_dagger_shape[1] = (
+                kraus_dagger_shape[1],
+                kraus_dagger_shape[2],
+            )
             kraus_dagger = qnp.cast(
                 qnp.reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
             )
@@ -329,7 +336,9 @@ class DefaultMixed(QubitDevice):
         channel_wires = self.map_wires(wires)
 
         # reshape vectors
-        eigvals = qnp.cast(qnp.reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE, like=self._state)
+        eigvals = qnp.cast(
+            qnp.reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE, like=self._state
+        )
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[: 2 * self.num_wires]
@@ -345,7 +354,9 @@ class DefaultMixed(QubitDevice):
         einsum_indices = "{row_indices},{state_indices},{col_indices}->{state_indices}".format(
             col_indices=col_indices, state_indices=state_indices, row_indices=row_indices
         )
-        self._state = qnp.einsum(einsum_indices, eigvals, self._state, qnp.conj(eigvals), like=self._state)
+        self._state = qnp.einsum(
+            einsum_indices, eigvals, self._state, qnp.conj(eigvals), like=self._state
+        )
 
     def _apply_basis_state(self, state, wires):
         """Initialize the device in a specified computational basis state.
@@ -416,7 +427,6 @@ class DefaultMixed(QubitDevice):
             rho = qnp.outer(state, qnp.conj(state))
             rho = qnp.reshape(rho, [2] * 2 * self.num_wires)
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
-
 
     def _apply_density_matrix(self, state, device_wires):
         r"""Initialize the internal state in a specified mixed state.

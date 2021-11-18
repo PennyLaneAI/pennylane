@@ -233,7 +233,10 @@ class QubitDevice(Device):
             else:
                 results = self._asarray(results)
         else:
-            results = tuple(qnp.expand_dims(r[0], 0) if isinstance(r, list) else self._asarray(r) for r in results)
+            results = tuple(
+                qnp.expand_dims(r[0], 0) if isinstance(r, list) else self._asarray(r)
+                for r in results
+            )
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
