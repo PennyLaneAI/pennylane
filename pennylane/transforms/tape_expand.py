@@ -191,8 +191,7 @@ expand_invalid_trainable = create_expand_fn(
 
 @contextlib.contextmanager
 def _custom_decomp_context(custom_decomps):
-    """A context manager for applying custom decompositions of operations. Used by the
-    create_custom_decomp_expand_fn method."""
+    """A context manager for applying custom decompositions of operations."""
 
     # Creates an individual context
     @contextlib.contextmanager
@@ -212,19 +211,18 @@ def _custom_decomp_context(custom_decomps):
             return tape
 
         try:
-            # Actually set the new decomp function; note that we set
-            # expand rather than `decomposition` proper.
+            # Explicitly set the new .decompose method
             obj.decompose = new_decomp_method
             yield
 
         finally:
             obj.decompose = original_decomp_method
 
-    # Now, loop through the decomposition dictionary and create all the contexts
+    # Loop through the decomposition dictionary and create all the contexts
     try:
         with contextlib.ExitStack() as stack:
             for obj, fn in custom_decomps.items():
-                # We enter a new context each decomposition the user passes
+                # We enter a new context for each decomposition the user passes
                 stack.enter_context(_custom_decomposition(obj, fn))
 
             stack = stack.pop_all()
