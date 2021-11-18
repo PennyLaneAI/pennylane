@@ -249,7 +249,7 @@ def create_decomp_expand_fn(custom_decomps, dev):
     **Example**
 
     Suppose we would like a custom expansion function that decomposes all CNOTs
-    into CZs. We first defined a decomposition function:
+    into CZs. We first define a decomposition function:
 
     .. code-block:: python
 
@@ -303,7 +303,7 @@ def set_decomposition(custom_decomps, dev):
     **Example**
 
     Suppose we would like a custom expansion function that decomposes all CNOTs
-    into CZs. We first defined a decomposition function:
+    into CZs. We first define a decomposition function:
 
     .. code-block:: python
 
