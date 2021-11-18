@@ -111,6 +111,7 @@ if __name__ == "__main__":
     main_example(circuit)
     decimals(dev)
     wire_order(circuit)
+    show_all_wires(circuit)
     postprocessing(circuit)
     rcparams(circuit)
     Solarize_Light2(circuit)

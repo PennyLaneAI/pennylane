@@ -160,8 +160,8 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
     Keyword Args:
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.  Default `None` will
-             omit parameters from operation labels.
+        decimals (int): How many decimal points to include when formatting operation parameters.
+            Default ``None`` will omit parameters from operation labels.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
 
