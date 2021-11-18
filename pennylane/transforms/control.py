@@ -102,7 +102,7 @@ class ControlledOperation(Operation):
 
     @property
     def num_params(self):
-        return property(lambda self: self.subtape.num_params)
+        return self.subtape.num_params
 
     @property
     def control_wires(self):

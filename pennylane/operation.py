@@ -1008,7 +1008,7 @@ class Observable(Operator):
         Returns:
             array: eigvals representation
         """
-        return super().eigvals
+        return super().eigvalsCont
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
