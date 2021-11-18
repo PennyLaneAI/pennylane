@@ -426,7 +426,8 @@ class TestCreateCustomDecompExpandFn:
             )
         ]
 
-    def test_one_custom_decomp(self):
+    @pytest.mark.parametrize("device_name", ["default.qubit", "lightning.qubit"])
+    def test_one_custom_decomp(self, device_name):
         """Test that specifying a single custom decomposition works as expected."""
 
         def circuit():
@@ -435,7 +436,7 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         custom_decomps = {"Hadamard": custom_hadamard}
-        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
         decomp_ops = decomp_qnode.qtape.operations
