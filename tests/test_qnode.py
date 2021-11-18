@@ -35,10 +35,7 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = (
-            fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \[None, 'autograd', 'numpy', 'jax', 'JAX', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
-        )
+        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
@@ -54,10 +51,7 @@ class TestValidation:
             qml.RX(wires=0)
             return qml.probs(wires=0)
 
-        expected_error = (
-            fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \[None, 'autograd', 'numpy', 'jax', 'JAX', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
-        )
+        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
@@ -931,6 +925,7 @@ class TestTapeExpansion:
 
         class UnsupportedOp(qml.operation.Operation):
             num_wires = 1
+            num_params = 1
 
             def expand(self):
                 with qml.tape.QuantumTape() as tape:
@@ -962,6 +957,8 @@ class TestTapeExpansion:
 
         class UnsupportedOp(qml.operation.Operation):
             num_wires = 1
+            num_params = 1
+
             grad_method = "A"
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
 
