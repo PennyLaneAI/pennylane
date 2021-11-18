@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed, too-many-arguments
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
 import abc
 from collections import OrderedDict
 import itertools
@@ -81,10 +81,6 @@ class QubitDevice(Device):
             executions. A value of ``0`` indicates that no caching will take place. Once filled,
             older elements of the cache are removed and replaced with the most recent device
             executions to keep the cache up to date.
-        custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
-            decompositions to be applied by the device at runtime. When specified, the
-            device will create a custom expand function by combining the regular expansion
-            criteria with those specified by the custom decompositions.
     """
 
     # pylint: disable=too-many-public-methods
@@ -125,7 +121,7 @@ class QubitDevice(Device):
         "Projector",
     }
 
-    def __init__(self, wires=1, shots=None, cache=0, analytic=None, custom_decomps=None):
+    def __init__(self, wires=1, shots=None, cache=0, analytic=None):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         self._samples = None
@@ -139,15 +135,6 @@ class QubitDevice(Device):
         self._cache_execute = OrderedDict()
         """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
         device."""
-
-        self.custom_decomps = custom_decomps
-
-        # If custom decompositions are requested, create and set a custom expand function
-        if self.custom_decomps is not None:
-            custom_decomp_expand_fn = qml.transforms.create_custom_decomp_expand_fn(
-                custom_decomps, self
-            )
-            self.custom_expand(custom_decomp_expand_fn)
 
     @classmethod
     def capabilities(cls):
