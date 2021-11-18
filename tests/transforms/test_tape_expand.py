@@ -349,6 +349,17 @@ def custom_rx(params, wires):
     return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
 
 
+# To test the gradient; use circuit identity RY(theta) = X RY(-theta) X
+def custom_rot(phi, theta, omega, wires):
+    return [
+        qml.RZ(phi, wires=wires),
+        qml.PauliX(wires=wires),
+        qml.RY(-theta, wires=wires),
+        qml.PauliX(wires=wires),
+        qml.RZ(omega, wires=wires),
+    ]
+
+
 class TestCreateCustomDecompExpandFn:
     """Tests for the gradient expand function"""
 
@@ -425,6 +436,38 @@ class TestCreateCustomDecompExpandFn:
         assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
 
         assert decomp_ops[2].name == "CNOT"
+
+    def test_one_custom_decomp_gradient(self):
+        """Test that gradients are still correctly computed after a decomposition
+        that performs transpilation."""
+
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        original_dev = qml.device("default.qubit", wires=3)
+        decomp_dev = qml.device("default.qubit", wires=3, custom_decomps={"Rot": custom_rot})
+
+        original_qnode = qml.QNode(circuit, original_dev, expansion_strategy="device")
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+
+        x = qml.numpy.array([0.2, 0.3, 0.4], requires_grad=True)
+
+        original_res = original_qnode(x)
+        decomp_res = decomp_qnode(x)
+        assert np.allclose(original_res, decomp_res)
+
+        original_grad = qml.grad(original_qnode)(x)
+        decomp_grad = qml.grad(decomp_qnode)(x)
+        assert np.allclose(original_grad, decomp_grad)
+
+        expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
+        print(decomp_qnode.qtape.operations)
+        assert all(
+            [op.name == name for op, name in zip(decomp_qnode.qtape.operations, expected_ops)]
+        )
 
     def test_nested_custom_decomp(self):
         """Test that specifying two custom decompositions that have interdependence
