@@ -245,6 +245,28 @@ def create_decomp_expand_fn(custom_decomps, dev):
     Returns:
         Callable: A custom expansion function that a device can call to expand
         its tapes within a context manager that applies custom decompositions.
+
+    **Example**
+
+    Suppose we would like a custom expansion function that decomposes all CNOTs
+    into CZs. We first defined a decomposition function:
+
+    .. code-block:: python
+
+        def custom_cnot(wires):
+            return [
+                qml.Hadamard(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1])
+            ]
+
+    We then create the custom function (passing a device, in order to pick up any
+    additional stopping criteria the expansion should have), and then register the
+    result as a custom function of the device:
+
+    >>> custom_decomps = {qml.CNOT : custom_cnot}
+    >>> expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, dev)
+    >>> dev.custom_expand(expand_fn)
     """
     custom_op_names = [op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()]
 

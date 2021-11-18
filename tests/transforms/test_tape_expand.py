@@ -349,11 +349,6 @@ def custom_rx(params, wires):
     return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
 
 
-# Incorrect, for testing purposes only
-def custom_rx(params, wires):
-    return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
-
-
 # To test the gradient; use circuit identity RY(theta) = X RY(-theta) X
 def custom_rot(phi, theta, omega, wires):
     return [
