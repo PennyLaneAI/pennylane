@@ -379,7 +379,7 @@ class TestCreateCustomDecompExpandFn:
 
     def test_no_custom_decomp_template(self):
         """Test that sending an empty dictionary results in no decomposition
-        when a template is involved except that expected from the device."""
+        when a template is involved, except the decomposition expected from the device."""
 
         def circuit():
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])

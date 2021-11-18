@@ -143,7 +143,7 @@ class QubitDevice(Device):
         self.custom_decomps = custom_decomps
 
         # If custom decompositions are requested, create and set a custom expand function
-        if self.custom_decomps:
+        if self.custom_decomps is not None:
             custom_decomp_expand_fn = qml.transforms.create_custom_decomp_expand_fn(
                 custom_decomps, self
             )

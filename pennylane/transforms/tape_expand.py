@@ -191,7 +191,7 @@ expand_invalid_trainable = create_expand_fn(
 
 @contextlib.contextmanager
 def _custom_decomp_context(custom_decomps):
-    """A context manager for applying custom decompositions. Used by the
+    """A context manager for applying custom decompositions of operations. Used by the
     create_custom_decomp_expand_fn method."""
 
     # Creates an individual context
