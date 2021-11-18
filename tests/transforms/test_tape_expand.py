@@ -349,7 +349,12 @@ def custom_rx(params, wires):
     return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
 
 
-# To test the gradient; use circuit identity RY(theta) = X RY(-theta) X
+# Incorrect, for testing purposes only
+def custom_rx(params, wires):
+    return [qml.RY(params, wires=wires), qml.Hadamard(wires=wires)]
+
+
+# To test the gradient
 def custom_rot(phi, theta, omega, wires):
     return [
         qml.RZ(phi, wires=wires),
@@ -357,6 +362,14 @@ def custom_rot(phi, theta, omega, wires):
         qml.RY(-theta, wires=wires),
         qml.PauliX(wires=wires),
         qml.RZ(omega, wires=wires),
+    ]
+
+
+# To test the gradient; use circuit identity RY(theta) = X RY(-theta) X
+def custom_basic_entangler_layers(weights, wires):
+    return [
+        qml.AngleEmbedding(weights, wires=wires),
+        qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
     ]
 
 
@@ -550,6 +563,40 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[6].name == "RY"
         assert np.isclose(decomp_ops[6].parameters[0], np.pi / 2)
         assert decomp_ops[6].wires == Wires(1)
+
+    def test_custom_decomp_template_to_template(self):
+        """Test that decomposing a template into another template and some
+        gates yields the correct results."""
+
+        def circuit():
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # BasicEntanglerLayers custom decomposition involves AngleEmbedding
+        custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
+        decomp_dev = qml.device("default.qubit", wires=2, custom_decomps=custom_decomps)
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 5
+
+        assert decomp_ops[0].name == "RY"
+        assert decomp_ops[0].parameters[0] == 0.1
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "Hadamard"
+        assert decomp_ops[1].wires == Wires(0)
+
+        assert decomp_ops[2].name == "RY"
+        assert np.isclose(decomp_ops[2].parameters[0], 0.2)
+        assert decomp_ops[2].wires == Wires(1)
+
+        assert decomp_ops[3].name == "Hadamard"
+        assert decomp_ops[3].wires == Wires(1)
+
+        assert decomp_ops[4].name == "CNOT"
+        assert decomp_ops[4].wires == Wires([0, 1])
 
     def test_custom_decomp_with_adjoint(self):
         """Test that applying an adjoint in the circuit results in the adjoint
