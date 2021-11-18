@@ -15,7 +15,7 @@
 This module a function for generating matplotlib images from a tape.
 
 Developer note: when making changes to this file, you can run
-`pennylane/doc/_static/draw_mpl/draw_mpl_examples.py` to generate docstring
+`pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
 
@@ -71,7 +71,7 @@ special_cases = {
 """Dictionary mapping special case classes to functions for drawing them."""
 
 
-def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
     """Produces a matplotlib graphic from a tape.
 
     Args:
@@ -101,9 +101,10 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             qml.CRZ(1.2345, wires=(3,0))
             qml.expval(qml.PauliZ(0))
 
-        fig, ax = draw_mpl(tape)
+        fig, ax = tape_mpl(tape)
+        fig.show()
 
-    .. figure:: ../../_static/draw_mpl/default.png
+    .. figure:: ../../_static/tape_mpl/default.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -122,9 +123,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             qml.Rot(1.2345,2.3456, 3.456, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        fig, ax = draw_mpl(tape2, decimals=2)
+        fig, ax = tape_mpl(tape2, decimals=2)
 
-    .. figure:: ../../_static/draw_mpl/decimals.png
+    .. figure:: ../../_static/tape_mpl/decimals.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -135,9 +136,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     .. code-block:: python
 
-        fig, ax = draw_mpl(tape, wire_order=[3,2,1,0])
+        fig, ax = tape_mpl(tape, wire_order=[3,2,1,0])
 
-    .. figure:: ../../_static/draw_mpl/wire_order.png
+    .. figure:: ../../_static/tape_mpl/wire_order.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -147,9 +148,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     .. code-block:: python
 
-        fig, ax = draw_mpl(tape, wire_order=["aux"], show_all_wires=True)
+        fig, ax = tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
 
-    .. figure:: ../../_static/draw_mpl/show_all_wires.png
+    .. figure:: ../../_static/tape_mpl/show_all_wires.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -161,7 +162,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     .. code-block:: python
 
-        fig, ax = draw_mpl(tape)
+        fig, ax = tape_mpl(tape)
         fig.suptitle("My Circuit", fontsize="xx-large")
 
         options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
@@ -171,7 +172,7 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
                     arrowprops={'facecolor': 'black'}, fontsize=14)
 
-    .. figure:: ../../_static/draw_mpl/postprocessing.png
+    .. figure:: ../../_static/tape_mpl/postprocessing.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -191,9 +192,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         plt.rcParams['patch.force_edgecolor'] = True
         plt.rcParams['lines.color'] = 'black'
 
-        fig, ax = draw_mpl(tape)
+        fig, ax = tape_mpl(tape)
 
-    .. figure:: ../../_static/draw_mpl/rcparams.png
+    .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -205,9 +206,9 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     .. code-block:: python
 
         with plt.style.context("Solarize_Light2):
-            fig, ax = draw_mpl(tape)
+            fig, ax = tape_mpl(tape)
 
-    .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
+    .. figure:: ../../_static/tape_mpl/Solarize_Light2.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -218,10 +219,10 @@ def draw_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     .. code-block:: python
 
-        fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+        fig, ax = tape_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
                     label_options={'size': 20})
 
-    .. figure:: ../../_static/draw_mpl/wires_labels.png
+    .. figure:: ../../_static/tape_mpl/wires_labels.png
             :align: center
             :width: 60%
             :target: javascript:void(0);

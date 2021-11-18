@@ -158,10 +158,13 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         qnode (.QNode): the input QNode that is to be drawn.
 
     Keyword Args:
-        wire_order (Sequence[Any])
-        show_all_wires (bool)
-        wire_options (dict)
-        label_options (dict)
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        decimals (int): How many decimal points to include when formatting operation parameters.  Default `None` will
+             omit parameters from operation labels.
+        wire_options (dict): matplotlib formatting options for the wire lines
+        label_options (dict): matplotlib formatting options for the wire labels
+
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -184,9 +187,10 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             return qml.expval(qml.PauliZ(0))
 
 
-        fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+        fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+        fig.show()
 
-    .. figure:: ../../_static/draw_mpl_qnode/main_example.png
+    .. figure:: ../../_static/draw_mpl/main_example.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -206,9 +210,10 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
                 qml.Rot(*y, wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-            fig, ax = draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
+            fig, ax = qml.draw_mpl(circuit2, decimals=2)(1.23456, [1.2345,2.3456,3.456])
+            fig.show()
 
-        .. figure:: ../../_static/draw_mpl_qnode/decimals.png
+        .. figure:: ../../_static/draw_mpl/decimals.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -219,7 +224,8 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         .. code-block:: python
 
-            fig, ax = draw_mpl(circuit, wire_order=[3,2,1,0])(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, wire_order=[3,2,1,0])(1.2345,1.2345)
+            fig.show()
 
         .. figure:: ../../_static/draw_mpl/wire_order.png
                 :align: center
@@ -231,7 +237,8 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         .. code-block:: python
 
-            fig, ax = draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345,1.2345)
+            fig.show()
 
         .. figure:: ../../_static/draw_mpl/show_all_wires.png
                 :align: center
@@ -245,7 +252,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         .. code-block:: python
 
-            fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.suptitle("My Circuit", fontsize="xx-large")
 
             options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
@@ -254,8 +261,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
             ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
                         arrowprops={'facecolor': 'black'}, fontsize=14)
+            fig.show()
 
-        .. figure:: ../../_static/draw_mpl_qnode/postprocessing.png
+        .. figure:: ../../_static/draw_mpl/postprocessing.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
@@ -275,9 +283,10 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             plt.rcParams['patch.force_edgecolor'] = True
             plt.rcParams['lines.color'] = 'black'
 
-            fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig.show()
 
-        .. figure:: ../../_static/draw_mpl_qnode/rcparams.png
+        .. figure:: ../../_static/draw_mpl/rcparams.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
@@ -290,8 +299,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
             with plt.style.context("Solarize_Light2):
                 fig, ax = draw_mpl(circuit)(1.2345,1.2345)
+            fig.show()
 
-        .. figure:: ../../_static/draw_mpl_qnode/Solarize_Light2.png
+        .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
@@ -302,8 +312,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         .. code-block:: python
 
-            fig, ax = draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
+            fig, ax = qml.draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
                         label_options={'size': 20})(1.2345,1.2345)
+            fig.show()
 
         .. figure:: ../../_static/draw_mpl/wires_labels.png
                 :align: center
@@ -318,7 +329,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         _wire_order = wire_order or qnode.device.wires
 
-        return qml.circuit_drawer.draw_mpl(
+        return qml.circuit_drawer.tape_mpl(
             qnode.qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
