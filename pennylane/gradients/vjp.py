@@ -20,7 +20,7 @@ import numpy as np
 from pennylane import math
 
 
-def compute_vjp(dy, jac):
+def compute_vjp(dy, jac, num=None):
     """Convenience function to compute the vector-Jacobian product for a given
     vector of gradient outputs and a Jacobian.
 
@@ -29,6 +29,9 @@ def compute_vjp(dy, jac):
         jac (tensor_like): Jacobian matrix. For an n-dimensional ``dy``
             vector, the first n-dimensions of ``jac`` should match
             the shape of ``dy``.
+        num (int): The length of the flattened ``dy`` argument. This is an
+            optional argument, but can be useful to provide if ``dy`` potentially
+            has no shape (for example, due to tracing or just-in-time compilation).
 
     Returns:
         tensor_like: the vector-Jacobian product
@@ -38,10 +41,13 @@ def compute_vjp(dy, jac):
 
     dy_row = math.reshape(dy, [-1])
 
+    if num is None:
+        num = math.shape(dy_row)[0]
+
     if not isinstance(dy_row, np.ndarray):
         jac = math.convert_like(jac, dy_row)
 
-    jac = math.reshape(jac, [dy_row.shape[0], -1])
+    jac = math.reshape(jac, [num, -1])
 
     try:
         if math.allclose(dy, 0):
@@ -156,23 +162,23 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     if num_params == 0:
         # The tape has no trainable parameters; the VJP
         # is simply none.
-        return [], lambda _: None
+        return [], lambda _, num=None: None
 
     try:
         if math.allclose(dy, 0):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
-            return [], lambda _: math.convert_like(np.zeros([num_params]), dy)
+            return [], lambda _, num=None: math.convert_like(np.zeros([num_params]), dy)
     except (AttributeError, TypeError):
         pass
 
     gradient_tapes, fn = gradient_fn(tape, **gradient_kwargs)
 
-    def processing_fn(results):
+    def processing_fn(results, num=None):
         # postprocess results to compute the Jacobian
         jac = fn(results)
-        return compute_vjp(dy, jac)
+        return compute_vjp(dy, jac, num=num)
 
     return gradient_tapes, processing_fn
 
@@ -304,9 +310,12 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
         processing_fns.append(fn)
         gradient_tapes.extend(g_tapes)
 
-    def processing_fn(results):
+    def processing_fn(results, nums=None):
         vjps = []
         start = 0
+
+        if nums is None:
+            nums = [None] * len(tapes)
 
         for t_idx in range(len(tapes)):
             # extract the correct results from the flat list
@@ -315,7 +324,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             start += res_len
 
             # postprocess results to compute the VJP
-            vjp_ = processing_fns[t_idx](res_t)
+            vjp_ = processing_fns[t_idx](res_t, num=nums[t_idx])
 
             if vjp_ is None:
                 if reduction == "append":
