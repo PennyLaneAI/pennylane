@@ -407,8 +407,8 @@ class TestMultiAmplitudes:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.AmplitudeEmbedding(features1, wires=[1, 2, 3], normalize=True)
-            qml.templates.AmplitudeEmbedding(features2, wires=[3, 5, 6], normalize=True)
+            qml.templates.AmplitudeEmbedding(np.array(features1), wires=[1, 2, 3], normalize=True)
+            qml.templates.AmplitudeEmbedding(np.array(features2), wires=[3, 5, 6], normalize=True)
             return qml.state()
 
         with pytest.raises(DeviceError, match="applied in the same qubit"):
