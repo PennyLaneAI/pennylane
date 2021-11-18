@@ -79,7 +79,21 @@ class StronglyEntanglingLayers(Operation):
             3: ──Rot(0.765, 0.81, 0.99)─────────────╰X───────────────────────────────────────────────────╰C──Rot(0.627, 0.348, 0.476)───╰X──────╰C──────┤
 
         The default two-qubit gate used is :class:`~pennylane.ops.CNOT`. This can be changed by using the ``imprimitive`` argument.
-        The ``ranges`` argument takes a integer sequence where each element decides the difference between the two qubits of the ``imprimitive``.
+
+        The ``ranges`` argument takes an integer sequence where each element
+        determines the range hyperparameter for each layer. This range hyperparameter
+        is the difference of the wire indices representing the two qubits the
+        ``imprimitive`` gate acts on. For example, for ``range=[2,3]`` the
+        first layer will have a range parameter of ``2`` and the second layer will
+        have a range parameter of ``3``.
+        
+        Assuming ``wires=[0, 1, 2, 3]`` and a range parameter of ``2``, there will be
+        an imprimitive gate acting on:
+
+        * qubits ``(0, 2)``;
+        * qubits ``(1, 3)``;
+        * qubits ``(2, 0)``;
+        * qubits ``(3, 1)``.
 
         .. code-block:: python
 
