@@ -157,6 +157,9 @@
 
 <h3>Breaking changes</h3>
 
+* The `par_domain` attribute in the operator class has been removed. 
+  [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
+
 - The `mutable` keyword argument has been removed from the QNode.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
@@ -222,6 +225,10 @@
 
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
+
+* Add documentation example for AngleEmbedding and BasisEmbedding.
+  [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
+  [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
 
 <h3>Contributors</h3>
 
