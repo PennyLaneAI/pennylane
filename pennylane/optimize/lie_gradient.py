@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Lie gradient optimizers"""
-import itertools as it
 import copy
 
 import numpy as np
@@ -90,16 +89,8 @@ class LieGradientOptimizer:
     r"""Exact Lie gradient optimizer"""
 
     # pylint: disable=too-few-public-methods
-    pl_paulis = [
-        qml.Identity,
-        qml.PauliX,
-        qml.PauliY,
-        qml.PauliZ,
-    ]
-    pauli_int_to_str = {0: "I", 1: "X", 2: "Y", 3: "Z"}
-    pauli_str_to_int = {"I": 0, "X": 1, "Y": 2, "Z": 3}
 
-    def __init__(self, circuit, hamiltonian, stepsize=0.01, **kwargs):
+    def __init__(self, circuit, stepsize=0.01, **kwargs):
         r"""
         Base class for other gradient-descent-based optimizers.
 
@@ -124,28 +115,30 @@ class LieGradientOptimizer:
 
         Args:
             circuit (qml.QNode): the user-defined hyperparameter :math:`\eta`
-            hamiltonian (qml.Hamiltonian): the user-defined hyperparameter :math:`\eta`
             stepsize (float): the user-defined hyperparameter :math:`\eta`
             **kwargs
         **Examples:**
 
+        Define a Hamiltonian cost function to minimize.
+        >>> hamiltonian = qml.Hamiltonian(coeffs=[-1.]*3,
+        ...observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0)@qml.PauliX(1)])
+        Create an initial state and return the expectation value of the Hamiltonian.
         >>> @qml.qnode(qml.device("default.qubit", wires=2))
         ... def quant_fun():
         ...     qml.RX(0.1, wires=[0])
         ...     qml.RY(0.5, wires=[1])
         ...     qml.CNOT(wires=[0,1])
         ...     qml.RY(0.6, wires=[0])
-        ...     return qml.state()
-        Define a Hamiltonian cost function to minimize.
-        >>> hamiltonian = qml.Hamiltonian(coeffs=[-1.]*3, observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0)@qml.PauliX(1)])
+        ...     return qml.expval(hamiltonian)
+
         Instatiate the optimizer with the initial circuit and the cost function. Set the stepsize
         accordingly.
-        >>> opt = LieGradientOptimizer(circuit = quant_fun, hamiltonian=hamiltonian, stepsize=0.1)
+        >>> opt = LieGradientOptimizer(circuit = quant_fun, stepsize=0.1)
         Applying 10 steps gets us close the ground state of E=-2.23
         >>> for step in range(10):
         ...    print(step)
-        ...    state = opt.step_and_cost()
-        ...    print(np.trace(H @ np.outer(state, state.conj())))
+        ...    cost = opt.step_and_cost()
+        ...    print(cost)
 
         """
         if not isinstance(circuit, qml.QNode):
@@ -155,6 +148,11 @@ class LieGradientOptimizer:
 
         self.circuit = circuit
         self.circuit.construct([], {})
+        if not isinstance(circuit.func().obs, qml.Hamiltonian):
+            raise TypeError(
+                f"`circuit` must return the expectation value of a `qml.Hamiltonian`,"
+                f" " f"received {type(circuit.func().obs)} "
+            )
         self.nqubits = max(circuit.device.wires) + 1
 
         if self.nqubits > 4:
@@ -168,13 +166,7 @@ class LieGradientOptimizer:
             self.lie_algebra_basis_names,
         ) = self.get_su_n_operators()
 
-        if not isinstance(hamiltonian, qml.Hamiltonian):
-            raise TypeError(
-                f"`hamiltonian` must be a `qml.Hamiltonian`, "
-                f"received {type(hamiltonian)} "
-            )
-
-        self.hamiltonian = hamiltonian
+        self.hamiltonian = circuit.func().obs
         self.coeffs, self.observables = self.hamiltonian.terms
         self.stepsize = stepsize
 
@@ -199,21 +191,18 @@ class LieGradientOptimizer:
         non_zero_omegas = []
         for i, element in enumerate(omegas):
             if not np.isclose(element, 0):
-                non_zero_lie_algebra_elements.append(
-                    tuple(
-                        self.pauli_str_to_int[p]
-                        for p in self.lie_algebra_basis_names[i]
-                    )
+                non_zero_lie_algebra_elements.append(self.lie_algebra_basis_names[i]
                 )
                 non_zero_omegas.append(-omegas[i])
         lie_gradient = qml.Hamiltonian(
             non_zero_omegas,
-            [self.get_pauli_op(ps) for ps in non_zero_lie_algebra_elements],
+            [qml.grouping.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
         )
-        temp_circuit = copy.copy(self.circuit)
 
-        new_circuit = append_time_evolution(temp_circuit.func, lie_gradient)
-        self.new_qnode = qml.QNode(new_circuit, temp_circuit.device)
+        new_circuit = append_time_evolution(lie_gradient, self.stepsize)(self.circuit.func)
+        self.circuit = qml.QNode(new_circuit, self.circuit.device)
+        return self.circuit()
+
 
     def step(
         self,
@@ -234,8 +223,6 @@ class LieGradientOptimizer:
             **kwargs,
         )
 
-        return None
-
     def get_su_n_operators(self):
         r"""Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
 
@@ -251,25 +238,6 @@ class LieGradientOptimizer:
             operators.append(ps)
             names.append(qml.grouping.pauli_word_to_string(ps, wire_map=wire_map))
         return operators, names
-
-    def get_pauli_op(self, paulistring):
-        r"""Create a qml.Observable for a String corresponding to a Pauli word.
-
-        Args:
-            paulistring: String of the form 'IXYI...Z' corresponding to a Pauli word
-
-        Returns:
-            qml.Observable
-        """
-        for idx, p in enumerate(paulistring):
-            if p != 0:
-                op = self.pl_paulis[p](idx)
-                for q in paulistring[idx + 1:]:
-                    idx += 1
-                    if q != 0:
-                        op @= self.pl_paulis[q](idx)
-                break
-        return op
 
     def get_omegas(self):
         r"""Measure the coefficients of the Lie gradient with respect to a Pauli word basis
