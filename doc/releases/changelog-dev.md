@@ -62,6 +62,17 @@
    2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
   ```
 
+  A separate context manager, `set_decomposition`, has also been implemented to enable
+  application of custom decompositions on devices that have already been created.
+
+  ```pycon
+  >>> with qml.transforms.set_decomposition(custom_decomps, original_dev):
+  ...     print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
 
