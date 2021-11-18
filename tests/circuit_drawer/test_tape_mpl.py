@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file tests the ``qml.circuit_drawer.draw_mpl`` function.
+"""This file tests the ``qml.circuit_drawer.tape_mpl`` function.
 
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
@@ -22,7 +22,7 @@ import pytest
 from pytest_mock import mocker
 import pennylane as qml
 
-from pennylane.circuit_drawer import draw_mpl
+from pennylane.circuit_drawer import tape_mpl
 from pennylane.tape import QuantumTape
 
 mpl = pytest.importorskip("matplotlib")
@@ -32,7 +32,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 def test_empty_tape():
     """Edge case where the tape is empty. Use this to test return types."""
 
-    fig, ax = draw_mpl(QuantumTape())
+    fig, ax = tape_mpl(QuantumTape())
 
     assert isinstance(fig, mpl.figure.Figure)
     assert isinstance(ax, mpl.axes._axes.Axes)
@@ -74,7 +74,7 @@ class TestLabelling:
     @pytest.mark.parametrize("kwargs, labels", label_data)
     def test_labels(self, kwargs, labels):
         """Test the labels produced under different settings. Check both text value and position."""
-        _, ax = draw_mpl(tape1, **kwargs)
+        _, ax = tape_mpl(tape1, **kwargs)
 
         for wire, (text_obj, label) in enumerate(zip(ax.texts, labels)):
             assert text_obj.get_text() == label
@@ -85,7 +85,7 @@ class TestLabelling:
     def test_label_options(self):
         """Test that providing the `label_options` argument alters the styling of the text."""
 
-        _, ax = draw_mpl(tape1, label_options={"fontsize": 10})
+        _, ax = tape_mpl(tape1, label_options={"fontsize": 10})
 
         for text_obj in ax.texts[0:3]:
             assert text_obj.get_fontsize() == 10.0
@@ -100,7 +100,7 @@ class TestWires:
         """Test situation with empty tape but specified wires and show_all_wires
         still draws wires."""
 
-        _, ax = draw_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
+        _, ax = tape_mpl(QuantumTape(), wire_order=[0, 1, 2], show_all_wires=True)
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
@@ -118,7 +118,7 @@ class TestWires:
             qml.PauliY(1)
             qml.PauliZ(2)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         assert len(ax.lines) == 3
         for wire, line in enumerate(ax.lines):
@@ -135,7 +135,7 @@ class TestWires:
             qml.PauliX(0)
             qml.PauliX(0)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         assert len(ax.lines) == 1
         assert ax.lines[0].get_xdata() == (-1, 3)  # from -1 to number of layers
@@ -151,7 +151,7 @@ class TestWires:
             qml.PauliX(1)
 
         rgba_red = (1, 0, 0, 1)
-        _, ax = draw_mpl(tape, wire_options={"linewidth": 5, "color": rgba_red})
+        _, ax = tape_mpl(tape, wire_options={"linewidth": 5, "color": rgba_red})
 
         for line in ax.lines:
             assert line.get_linewidth() == 5
@@ -169,7 +169,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.SWAP(wires=(0, 1))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         # two wires produce two lines and SWAP contains 5 more lines
@@ -198,7 +198,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.CSWAP(wires=(0, 1, 2))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         # three wires, one control, 5 swap
@@ -228,7 +228,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.CNOT(wires=(0, 1))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         assert len(ax.patches) == 2
@@ -247,7 +247,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.Toffoli(wires=(0, 1, 2))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         assert len(ax.patches) == 3
@@ -268,7 +268,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         assert len(ax.patches) == 5
@@ -288,7 +288,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values="0101")
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         assert ax.patches[0].get_facecolor() == (1.0, 1.0, 1.0, 1.0)  # white
         assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
@@ -303,7 +303,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.CZ(wires=(0, 1))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         # two wires one control line
@@ -324,7 +324,7 @@ class TestSpecialGates:
         with QuantumTape() as tape:
             qml.Barrier(wires=(0, 1, 2))
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         assert len(ax.lines) == 3
@@ -351,7 +351,7 @@ class TestControlledGates:
         with QuantumTape() as tape:
             qml.apply(op)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
         layer = 0
 
         assert isinstance(ax.patches[0], mpl.patches.Circle)
@@ -379,7 +379,7 @@ class TestControlledGates:
         with QuantumTape() as tape:
             qml.CRX(1.234, wires=(0, 1))
 
-        _, ax = draw_mpl(tape, decimals=2)
+        _, ax = tape_mpl(tape, decimals=2)
 
         # two wire labels, so CRX is third text object
         assert ax.texts[2].get_text() == "RX\n(1.23)"
@@ -416,7 +416,7 @@ class TestGeneralOperations:
         with QuantumTape() as tape:
             qml.apply(op)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         num_wires = len(op.wires)
         assert ax.texts[num_wires].get_text() == op.label()
@@ -435,7 +435,7 @@ class TestGeneralOperations:
         with QuantumTape() as tape:
             qml.apply(op)
 
-        _, ax = draw_mpl(tape, decimals=2)
+        _, ax = tape_mpl(tape, decimals=2)
 
         num_wires = len(op.wires)
         assert ax.texts[num_wires].get_text() == op.label(decimals=2)
@@ -462,7 +462,7 @@ class TestMeasurements:
             for m in measurements:
                 qml.apply(m)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         assert len(ax.patches) == 3 * len(wires)
 
@@ -479,7 +479,7 @@ class TestMeasurements:
         with QuantumTape() as tape:
             qml.state()
 
-        _, ax = draw_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
+        _, ax = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
 
         assert len(ax.patches) == 9  # three measure boxes with 3 patches each
 
@@ -502,7 +502,7 @@ class TestLayering:
             qml.PauliX(1)
             qml.PauliX(2)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         # As layers are stored in sets, we don't know the
         # order operations are added to ax.
@@ -523,7 +523,7 @@ class TestLayering:
             qml.PauliX(0)
             qml.PauliX(0)
 
-        _, ax = draw_mpl(tape)
+        _, ax = tape_mpl(tape)
 
         for layer, box in enumerate(ax.patches):
             assert box.get_xy() == (layer - 0.4, -0.4)
@@ -539,7 +539,7 @@ class TestLayering:
             qml.IsingXX(1.234, wires=(0, 2))
             qml.PauliX(1)
 
-        _, ax = draw_mpl(tape, wire_order=[0, 1, 2])
+        _, ax = tape_mpl(tape, wire_order=[0, 1, 2])
 
         assert ax.patches[0].get_xy() == (-0.4, -0.4)  # layer=0, wire=0
         assert ax.patches[1].get_xy() == (0.6, -0.4)  # layer=1, wire=0
