@@ -79,7 +79,7 @@ class StronglyEntanglingLayers(Operation):
             3: ──Rot(0.765, 0.81, 0.99)─────────────╰X───────────────────────────────────────────────────╰C──Rot(0.627, 0.348, 0.476)───╰X──────╰C──────┤
 
         The default two-qubit gate used is :class:`~pennylane.ops.CNOT`. This can be changed by using the ``imprimitive`` argument.
-        The ``range`` argument takes a integer sequence where each element decides the difference between the two qubits of the ``imprimitive``.
+        The ``ranges`` argument takes a integer sequence where each element decides the difference between the two qubits of the ``imprimitive``.
 
         .. code-block:: python
 
