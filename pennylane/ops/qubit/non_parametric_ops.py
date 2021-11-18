@@ -43,7 +43,6 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
@@ -110,7 +109,6 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
@@ -179,7 +177,6 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
@@ -254,7 +251,6 @@ class PauliZ(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
@@ -311,7 +307,6 @@ class S(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     basis = "Z"
     op_eigvals = np.array([1, 1j])
     op_matrix = np.array([[1, 0], [0, 1j]])
@@ -359,7 +354,6 @@ class T(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     basis = "Z"
     op_matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
     op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
@@ -407,7 +401,6 @@ class SX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = None
     basis = "X"
     op_matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
     op_eigvals = np.array([1, 1j])
@@ -464,7 +457,6 @@ class CNOT(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    par_domain = None
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
@@ -512,7 +504,6 @@ class CZ(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    par_domain = None
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
@@ -562,7 +553,6 @@ class CY(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    par_domain = None
     basis = "Y"
     matrix = np.array(
         [
@@ -617,7 +607,6 @@ class SWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    par_domain = None
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
@@ -665,7 +654,6 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    par_domain = None
     op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
     op_eigvals = np.array([1j, -1j, 1, 1])
 
@@ -717,7 +705,6 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    par_domain = None
     op_matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -792,7 +779,6 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-    par_domain = None
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -861,7 +847,6 @@ class Toffoli(Operation):
         wires (Sequence[int]): the subsystem the gate acts on
     """
     num_wires = 3
-    par_domain = None
     basis = "X"
     matrix = np.array(
         [
@@ -971,7 +956,6 @@ class MultiControlledX(Operation):
     """
     is_self_inverse = True
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     # pylint: disable=too-many-arguments
