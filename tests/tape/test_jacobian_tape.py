@@ -841,7 +841,6 @@ class TestObservableWithObjectReturnType:
             """SpecialObservable"""
 
             num_wires = AnyWires
-            par_domain = None
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""

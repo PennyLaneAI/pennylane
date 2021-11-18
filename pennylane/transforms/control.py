@@ -87,7 +87,6 @@ class ControlledOperation(Operation):
         control_wires: A wire or set of wires.
     """
 
-    par_domain = "A"
     num_wires = AnyWires
 
     def __init__(self, tape, control_wires, do_queue=True):

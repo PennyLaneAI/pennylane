@@ -88,7 +88,6 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
-    par_domain = None
     _mat = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -186,7 +185,6 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
-    par_domain = None
     _mat = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],

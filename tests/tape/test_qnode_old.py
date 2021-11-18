@@ -408,7 +408,6 @@ class TestValidation:
         # Custom operation which has grad_method="finite_diff"
         class MyRX(qml.operation.Operation):
             num_wires = 1
-            par_domain = "R"
             is_composable_rotation = True
             basis = "X"
             grad_method = "F"

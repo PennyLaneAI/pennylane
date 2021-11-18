@@ -55,7 +55,6 @@ class BasisState(Operation):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     @property
@@ -102,7 +101,6 @@ class QubitStateVector(Operation):
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     @property
@@ -165,7 +163,6 @@ class QubitDensityMatrix(Operation):
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     @property
