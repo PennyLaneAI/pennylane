@@ -24,7 +24,7 @@ from pennylane.transforms import batch_transform
 
 @qml.qfunc_transform
 def append_time_evolution(tape, hamiltonian, t):
-    r"""Append an approximate time evolution to an existising circuit
+    r"""Append an approximate time evolution to an existing circuit.
     Trotterize the Hamiltonian and with a single step
 
     .. math:
