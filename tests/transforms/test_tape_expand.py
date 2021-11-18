@@ -660,7 +660,7 @@ class TestCreateCustomDecompExpandFn:
         assert dev.custom_expand_fn is None
 
         # Test within the context manager
-        with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
+        with qml.transforms.set_decomposition({qml.CNOT: custom_cnot}, dev):
             _ = circuit()
             ops_in_context = circuit.qtape.operations
 
