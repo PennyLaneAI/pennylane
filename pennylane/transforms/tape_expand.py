@@ -296,10 +296,6 @@ def set_decomposition(custom_decomps, dev):
             decompositions to be applied by the device at runtime.
         dev (qml.Device): A quantum device.
 
-    Returns:
-        Callable: A custom expansion function that a device can call to expand
-        its tapes within a context manager that applies custom decompositions.
-
     **Example**
 
     Suppose we would like a custom expansion function that decomposes all CNOTs
