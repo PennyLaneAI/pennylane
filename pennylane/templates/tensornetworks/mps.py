@@ -9,7 +9,7 @@ def compute_indices_MPS(wires, loc):
     Generate a list of wire indices that quantum gates acts on
     Args:
         loc (int): local wire number of a single quantum gate
-        wires (Iterable): the wires on which MPS acts
+        wires (Iterable): the total set of wires
     Returns:
         layers (array): array of wire indices or wire labels for each block
     """

@@ -8,7 +8,7 @@
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
-* The tensor networks module is added to templates. Quantum circuits with the shape of a matrix product state tensor network can be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
+* A tensor network template has been added. Quantum circuits with the shape of a matrix product state tensor network can now be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
   An example circuit that uses the `MPS` template is:
   ```python
@@ -59,4 +59,4 @@
 
 This release contains contributions from (in alphabetical order): 
 
-Juan Miguel Arrazola, Esther Cruz, Diego Guala, Jalani Kanem, Christina Lee, Guillermo Alonso-Linaje, Alejandro Montanez, Shaoming Zhang
+Guillermo Alonso-Linaje, Juan Miguel Arrazola, Esther Cruz, Diego Guala, Jalani Kanem, Christina Lee, Alejandro Montanez, Shaoming Zhang
