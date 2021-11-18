@@ -149,7 +149,6 @@ class ParticleConservingU2(Operation):
     """
 
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):

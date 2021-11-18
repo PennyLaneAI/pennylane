@@ -122,13 +122,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def prep_par(par, op):
-    "Convert par into a list of parameters that op expects."
-    if op.par_domain == "A":
-        return [np.diag([x, 1]) for x in par]
-    return par
-
-
 def nodes_and_edges_valid(dev, num_nodes, node_names, rep):
     """Asserts that nodes in a device ``dev`` are properly initialized, when there
     are ``num_nodes`` nodes expected, with names ``node_names``, using representation ``rep``."""
