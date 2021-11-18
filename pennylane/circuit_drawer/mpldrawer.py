@@ -222,7 +222,7 @@ class MPLDrawer:
     _swap_dx = 0.2
     """Half the width/height of the SWAP X-symbol."""
 
-    _fontsize = 14
+    fontsize = 14
     """The default fontsize."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
@@ -308,7 +308,7 @@ class MPLDrawer:
 
         """
         if text_options is None:
-            text_options = {"ha": "center", "va": "center", "fontsize": self._fontsize}
+            text_options = {"ha": "center", "va": "center", "fontsize": self.fontsize}
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
@@ -391,7 +391,7 @@ class MPLDrawer:
         if "zorder" not in box_options:
             box_options["zorder"] = 2
 
-        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self._fontsize}
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self.fontsize}
         if text_options is not None:
             new_text_options.update(text_options)
 
@@ -401,18 +401,32 @@ class MPLDrawer:
         box_max = max(wires)
         box_center = (box_max + box_min) / 2.0
 
-        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0
-        y_loc = box_min - self._box_length / 2.0
-        box_height = box_max - box_min + self._box_length
-        box_width = self._box_length + extra_width
+        pad = 0.2
+        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0 + pad
+        y_loc = box_min - self._box_length / 2.0 + pad
+        box_height = box_max - box_min + self._box_length - 2*pad
+        box_width = self._box_length + extra_width - 2*pad
 
-        box = plt.Rectangle(
+        box = patches.FancyBboxPatch(
             (x_loc, y_loc),
             box_width,
             box_height,
+            boxstyle=f"round, pad={pad}",
             **box_options,
         )
         self._ax.add_patch(box)
+
+        for wire in wires:
+            w = 0.07
+            h = 0.25
+            box1 = plt.Rectangle((layer-self._box_length/2.0-w, wire-h/2), w, h)
+            self._ax.add_patch(box1)
+            box2 = plt.Rectangle((layer+self._box_length/2.0, wire-h/2), w, h)
+            self._ax.add_patch(box2)
+            # self._ax.add_patch(plt.Rectangle((layer+self._box_length/2.0, wire), 0.15, 0.4))
+            # self._ax.add_patch(patches.Ellipse((layer-self._box_length/2.0, wire), width=0.15, height=0.4))
+            # self._ax.add_patch(patches.Ellipse((layer+self._box_length/2.0, wire), width=0.15, height=0.4))
+
 
         text_obj = self._ax.text(
             layer,
@@ -423,9 +437,9 @@ class MPLDrawer:
 
         if autosize:
             margin = 0.1
-            max_width = box_width - margin
+            max_width = box_width - margin + 2*pad
             # factor of 2 makes it look nicer
-            max_height = box_height - 2 * margin
+            max_height = box_height - 2 * margin + 2*pad
 
             w, h = self._text_dims(text_obj)
 
@@ -562,11 +576,13 @@ class MPLDrawer:
 
         self._ax.add_patch(circ_ctrlo)
 
-    def CNOT(self, layer, wires, options=None):
+    def CNOT(self, layer, wires, control_values=None, options=None):
         """Draws a CNOT gate.
 
         Args:
             layer (int): layer to draw in
+            control_values=None (Union[bool, Iterable[bool]]): for each control wire, denotes whether to control
+                on ``False=0`` or ``True=1``
             wires (Union[int, Iterable[int]]): wires to use. Last wire is the target.
 
         Keyword Args:
@@ -591,7 +607,7 @@ class MPLDrawer:
 
         """
 
-        self.ctrl(layer, wires[:-1], wires[-1], options=options)
+        self.ctrl(layer, wires[:-1], wires[-1], control_values=control_values, options=options)
         self._target_x(layer, wires[-1], options=options)
 
     def _target_x(self, layer, wires, options=None):
@@ -751,10 +767,15 @@ class MPLDrawer:
         if "zorder" not in lines_options:
             lines_options["zorder"] = 3
 
-        box = plt.Rectangle(
-            (layer - self._box_length / 2.0, wires - self._box_length / 2.0),
-            self._box_length,
-            self._box_length,
+        pad = 0.2
+        x_loc = layer-self._box_length / 2.0 + pad
+        y_loc = wires - self._box_length / 2.0 + pad
+
+        box = patches.FancyBboxPatch(
+            (x_loc, y_loc),
+            self._box_length-2*pad,
+            self._box_length-2*pad,
+            boxstyle=f"round, pad={pad}",
             **box_options,
         )
         self._ax.add_patch(box)
