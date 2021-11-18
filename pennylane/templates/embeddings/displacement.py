@@ -45,9 +45,7 @@ class DisplacementEmbedding(Operation):
         ValueError: if inputs do not have the correct format
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
@@ -73,6 +71,10 @@ class DisplacementEmbedding(Operation):
             raise ValueError(f"did not recognize method {method}")
 
         super().__init__(pars, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

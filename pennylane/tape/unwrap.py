@@ -28,7 +28,6 @@ class Unwrap:
         params (List[List[tensor_like or float]] or None): Nested list of parameters
             for each tape in the input sequence. If provided, these parameter
             values will be applied to each tape within the context.
-        set_trainable (bool): whether to infer the trainable parameters of the tapes
 
     Returns:
         Sequence[.QuantumTape]: a sequence of unwrapped quantum tapes
@@ -72,21 +71,16 @@ class Unwrap:
       tensor(0.3000, dtype=torch.float64, grad_fn=<SelectBackward>)]
     """
 
-    def __init__(self, *tapes, params=None, set_trainable=True):
+    def __init__(self, *tapes, params=None):
         self.tapes = tapes
         self.stack = None
         self.params = params
-        self.set_trainable = set_trainable
 
     def __enter__(self):
         with contextlib.ExitStack() as stack:
             for i, tape in enumerate(self.tapes):
                 stack.enter_context(
-                    UnwrapTape(
-                        tape,
-                        params=self.params[i] if self.params is not None else None,
-                        set_trainable=self.set_trainable,
-                    )
+                    UnwrapTape(tape, params=self.params[i] if self.params is not None else None)
                 )
 
             self.stack = stack.pop_all()
@@ -107,7 +101,6 @@ class UnwrapTape:
         tape (.QuantumTape): the quantum tape to unwrap
         params (List[tensor_like or float] or None): List of parameters.
             If provided, these parameters will be applied to the tape within the context.
-        set_trainable (bool): whether to infer the trainable parameters of the tape
 
     Returns:
 
@@ -130,22 +123,15 @@ class UnwrapTape:
       <tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.3>]
     """
 
-    def __init__(self, tape, params=None, set_trainable=True):
+    def __init__(self, tape, params=None):
         self.tape = tape
         self._original_params = None
         self._unwrapped_params = params or None
-        self.set_trainable = set_trainable
 
     def __enter__(self):
         self._original_params = self.tape.get_parameters(trainable_only=False)
         self._unwrapped_params = self._unwrapped_params or qml.math.unwrap(self._original_params)
         self.tape.set_parameters(self._unwrapped_params, trainable_only=False)
-
-        if self.set_trainable:
-            # In addition to unwrapping the tape parameters, we also infer the
-            # trainable parameter indices, so that information regarding which
-            # parameters are trainable and which are constant is not lost.
-            self.tape.trainable_params = qml.math.get_trainable_indices(self._original_params)
 
         return self.tape
 

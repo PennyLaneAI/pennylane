@@ -18,7 +18,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape, QubitParamShiftTape
 
 
@@ -26,7 +26,7 @@ def test_qnode_intergration():
     """Test a simple use of qnode with a JAX interface and non-JAX device"""
     dev = qml.device("default.mixed", wires=2)  # A non-JAX device
 
-    @qml.qnode(dev, interface="jax")
+    @qnode(dev, interface="jax")
     def circuit(weights):
         qml.RX(weights[0], wires=0)
         qml.RZ(weights[1], wires=1)
@@ -41,7 +41,7 @@ def test_to_jax():
     """Test the to_jax method"""
     dev = qml.device("default.mixed", wires=2)
 
-    @qml.qnode(dev, interface="autograd")
+    @qnode(dev, interface="autograd")
     def circuit(weights):
         qml.RX(weights[0], wires=0)
         qml.RZ(weights[1], wires=1)
@@ -57,7 +57,7 @@ def test_simple_jacobian(tol):
     """Test the use of jax.jaxrev"""
     dev = qml.device("default.mixed", wires=2)  # A non-JAX device.
 
-    @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+    @qnode(dev, interface="jax", diff_method="parameter-shift")
     def circuit(weights):
         qml.RX(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
@@ -76,7 +76,7 @@ def test_simple_grad():
     """Test the use of jax.grad"""
     dev = qml.device("default.mixed", wires=2)  # A non-JAX device.
 
-    @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+    @qnode(dev, interface="jax", diff_method="parameter-shift")
     def circuit(weights):
         qml.RX(weights[0], wires=0)
         qml.RZ(weights[1], wires=1)
@@ -137,7 +137,7 @@ def test_adjoint_reuse_device_state(mocker):
     """Tests that the jax interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, interface="jax", diff_method="adjoint")
+    @qnode(dev, interface="jax", diff_method="adjoint")
     def circ(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
