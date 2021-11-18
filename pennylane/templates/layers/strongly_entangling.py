@@ -70,7 +70,7 @@ class StronglyEntanglingLayers(Operation):
 
         The shape of the ``weights`` argument decides the number of layers.
 
-        The resulting circuit:
+        The resulting circuit is:
 
         >>> print(qml.draw(circuit)(weights))
             0: ──Rot(0.106, 0.0913, 0.483)──╭C───────────────────────────────────────────────────────────╭X──Rot(0.0691, 0.841, 0.624)──────╭C──────╭X──┤ ⟨Z⟩
