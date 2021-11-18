@@ -23,7 +23,8 @@ from collections import OrderedDict
 import itertools
 import warnings
 
-import pennylane.math as np
+import pennylane.numpy as np
+import pennylane.math as qnp
 
 import pennylane as qml
 from pennylane.operation import (
@@ -86,24 +87,24 @@ class QubitDevice(Device):
     # pylint: disable=too-many-public-methods
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
-    _asarray = staticmethod(np.asarray)
-    _dot = staticmethod(np.dot)
-    _abs = staticmethod(np.abs)
-    _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
-    _reshape = staticmethod(np.reshape)
-    _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
-    _einsum = staticmethod(np.einsum)
-    _cast = staticmethod(np.asarray)
-    _transpose = staticmethod(np.transpose)
-    _tensordot = staticmethod(np.tensordot)
-    _conj = staticmethod(np.conj)
-    _imag = staticmethod(np.imag)
-    _roll = staticmethod(np.roll)
-    _stack = staticmethod(np.stack)
-    _outer = staticmethod(np.outer)
-    _diag = staticmethod(np.diag)
-    _real = staticmethod(np.real)
+    _asarray = staticmethod(qnp.asarray)
+    _dot = staticmethod(qnp.dot)
+    _abs = staticmethod(qnp.abs)
+    _reduce_sum = staticmethod(qnp.sum)
+    _reshape = staticmethod(qnp.reshape)
+    _flatten = staticmethod(qnp.flatten)
+    _gather = staticmethod(qnp.gather)
+    _einsum = staticmethod(qnp.einsum)
+    _cast = staticmethod(qnp.asarray)
+    _transpose = staticmethod(qnp.transpose)
+    _tensordot = staticmethod(qnp.tensordot)
+    _conj = staticmethod(qnp.conj)
+    _imag = staticmethod(qnp.imag)
+    _roll = staticmethod(qnp.roll)
+    _stack = staticmethod(qnp.stack)
+    _outer = staticmethod(qnp.outer)
+    _diag = staticmethod(qnp.tensor_diag_part)
+    _real = staticmethod(qnp.real)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -206,7 +207,7 @@ class QubitDevice(Device):
             s1 = 0
 
             for shot_tuple in self._shot_vector:
-                s2 = s1 + np.prod(shot_tuple)
+                s2 = s1 + qnp.prod(shot_tuple)
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
@@ -228,11 +229,11 @@ class QubitDevice(Device):
 
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
             if isinstance(results, list):
-                results = np.expand_dims(results[0], 0)
+                results = qnp.expand_dims(results[0], 0)
             else:
                 results = self._asarray(results)
         else:
-            results = tuple(np.expand_dims(r[0], 0) if isinstance(r, list) else self._asarray(r) for r in results)
+            results = tuple(qnp.expand_dims(r[0], 0) if isinstance(r, list) else self._asarray(r) for r in results)
 
         if self._cache and circuit_hash not in self._cache_execute:
             self._cache_execute[circuit_hash] = results
@@ -500,7 +501,7 @@ class QubitDevice(Device):
 
         shots = self.shots
 
-        basis_states = np.arange(number_of_states)
+        basis_states = qnp.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
@@ -531,7 +532,7 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if 2 < num_wires < 32:
-            states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
+            states_base_ten = qnp.arange(2 ** num_wires, dtype=dtype)
             return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
@@ -556,7 +557,7 @@ class QubitDevice(Device):
         Returns:
             array[int]: basis states in binary representation
         """
-        powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
+        powers_of_two = 1 << qnp.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
 
@@ -641,7 +642,7 @@ class QubitDevice(Device):
         samples = self._samples[sample_slice, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        powers_of_two = 2 ** qnp.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_two
 
         # count the basis state occurrences, and construct the probability vector
@@ -649,16 +650,16 @@ class QubitDevice(Device):
             bins = len(samples) // bin_size
 
             indices = indices.reshape((bins, -1))
-            prob = np.zeros([2 ** len(device_wires), bins], dtype=np.float64)
+            prob = qnp.zeros([2 ** len(device_wires), bins], dtype=np.float64)
 
             # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
-                basis_states, counts = np.unique(idx, return_counts=True)
+                basis_states, counts = qnp.unique(idx, return_counts=True)
                 prob[basis_states, b] = counts / bin_size
 
         else:
-            basis_states, counts = np.unique(indices, return_counts=True)
-            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
+            basis_states, counts = qnp.unique(indices, return_counts=True)
+            prob = qnp.zeros([2 ** len(device_wires)], dtype=np.float64)
             prob[basis_states] = counts / len(samples)
 
         return self._asarray(prob, dtype=self.R_DTYPE)
@@ -746,10 +747,10 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+        basis_states = basis_states[:, qnp.argsort(qnp.argsort(device_wires))]
 
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        perm = basis_states @ powers_of_two
+        powers_of_two = 2 ** qnp.arange(len(device_wires))[::-1]
+        perm = qnp.asarray(basis_states @ powers_of_two, like=prob)
         return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
@@ -764,19 +765,20 @@ class QubitDevice(Device):
 
         # exact expectation value
         if self.shots is None:
+
+            prob = self.probability(wires=observable.wires)
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE, like=prob)
             except NotImplementedError as e:
                 raise ValueError(
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.mean(samples, axis=0))
+        return qnp.squeeze(qnp.mean(samples, axis=0))
 
     def var(self, observable, shot_range=None, bin_size=None):
 
@@ -800,7 +802,7 @@ class QubitDevice(Device):
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.var(samples, axis=0))
+        return qnp.squeeze(qnp.var(samples, axis=0))
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
@@ -819,7 +821,7 @@ class QubitDevice(Device):
             if (
                 len(observable.wires) != 0
             ):  # if wires are provided, then we only return samples from those wires
-                samples = self._samples[sample_slice, np.array(device_wires)]
+                samples = self._samples[sample_slice, qnp.array(device_wires)]
             else:
                 samples = self._samples[sample_slice]
 
@@ -828,9 +830,9 @@ class QubitDevice(Device):
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
             samples = self._samples[
-                sample_slice, np.array(device_wires)
+                sample_slice, qnp.array(device_wires)
             ]  # Add np.array here for Jax support.
-            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+            powers_of_two = 2 ** qnp.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             try:
                 samples = observable.eigvals[indices]
@@ -915,7 +917,7 @@ class QubitDevice(Device):
             ket = self._pre_rotated_state
 
         n_obs = len(tape.observables)
-        bras = np.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
+        bras = qnp.empty([n_obs] + [2] * self.num_wires, dtype=np.complex128)
         for kk in range(n_obs):
             bras[kk, ...] = self._apply_operation(ket, tape.observables[kk])
 
@@ -934,7 +936,7 @@ class QubitDevice(Device):
                 if op.name not in ("QubitStateVector", "BasisState"):
                     expanded_ops.append(op)
 
-        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
+        jac = qnp.zeros((len(tape.observables), len(tape.trainable_params)))
 
         param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1

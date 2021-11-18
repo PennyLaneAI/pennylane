@@ -158,8 +158,8 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = qnp.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=self.C_DTYPE, like=self.interface)
-        rho[index, index] = 1
+        rho = qnp.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=self.C_DTYPE, like=self._full_interface_name)
+        qnp.scatter_element_add(rho, (index, index), 1)
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
     @classmethod
@@ -260,6 +260,7 @@ class DefaultMixed(QubitDevice):
         num_ch_wires = len(channel_wires)
 
         # Computes K^\dagger, needed for the transformation K \rho K^\dagger
+        kraus = qnp.asarray(kraus, like=self._full_interface_name)
         kraus_dagger = qnp.conj(qnp.transpose(kraus, [0, 2, 1]))
         # Changes tensor shape
         if kraus.shape[1] == kraus.shape[2]:

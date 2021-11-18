@@ -44,6 +44,7 @@ ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 ar.register_function("numpy", "cast", np.asarray)
 ar.register_function("numpy", "to", lambda tensor, to: tensor)
+ar.autoray._FUNC_ALIASES["numpy", "tensor_diag_part"] = "diag"
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -76,6 +77,7 @@ ar.register_function("autograd", "gather", lambda x, indices: x[np.array(indices
 ar.register_function("autograd", "unstack", list)
 ar.register_function("autograd", "cast", np.asarray)
 ar.register_function("autograd", "to", lambda tensor, to: tensor)
+ar.autoray._FUNC_ALIASES["autograd", "tensor_diag_part"] = "diag"
 
 def _block_diag_autograd(tensors):
     """Autograd implementation of scipy.linalg.block_diag"""
@@ -157,6 +159,7 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "tensor_diag_part"] = "tensorflow.linalg"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -166,7 +169,7 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
+ar.register_function("tensorflow", "asarray", lambda x, dtype=None: _i("tf").convert_to_tensor(x, dtype=dtype))
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -265,6 +268,7 @@ def _scatter_element_add_tf(tensor, index, value):
 
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 ar.register_function("tensorflow", "to", lambda tensor, to: tensor)
+ar.autoray._FUNC_ALIASES["tensorflow", "reduce_sum"] = "sum"
 
 # -------------------------------- Torch --------------------------------- #
 
@@ -285,9 +289,9 @@ ar.register_function(
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
-ar.register_function("torch", "gather", lambda x, indices: x[indices])
+ar.register_function("torch", "gather", lambda x, indices: _i("torch").gather(x, 0, indices))
 ar.register_function("torch", "cast", lambda x, dtype: x.to(dtype))
-
+ar.autoray._FUNC_ALIASES["torch", "tensor_diag_part"] = "diag"
 try:
     if semantic_version.match(">=1.10", _i("torch").__version__):
         # Autoray uses the deprecated torch.symeig as an alias for eigh, however this has
@@ -444,6 +448,6 @@ ar.register_function(
 )
 ar.register_function("jax", "unstack", list)
 ar.register_function("jax", "cast", _i("jax").numpy.array)
-ar.register_function("jax", "reduce_sum", lambda array, axes: _i("jax").numpy.sum(array, axis=tuple(axes)))
 ar.register_function("jax", "asarray", _i("jax").numpy.array)
 ar.register_function("jax", "to", lambda tensor, to: tensor)
+ar.autoray._FUNC_ALIASES["jax", "tensor_diag_part"] = "diag"
