@@ -52,7 +52,6 @@ class Hermitian(Observable):
     """
     num_wires = AnyWires
     num_params = 1
-    par_domain = "A"
     grad_method = "F"
     _eigs = {}
 
@@ -141,7 +140,6 @@ class SparseHamiltonian(Observable):
     """
     num_wires = AllWires
     num_params = 1
-    par_domain = None
     grad_method = None
 
     def label(self, decimals=None, base_label=None):
@@ -182,7 +180,6 @@ class Projector(Observable):
         wires (Iterable): wires that the projector acts on
     """
     num_wires = AnyWires
-    par_domain = "A"
 
     def __init__(self, basis_state, wires, do_queue=True):
         wires = Wires(wires)
