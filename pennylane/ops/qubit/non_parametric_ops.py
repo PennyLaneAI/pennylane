@@ -1156,3 +1156,31 @@ class MultiControlledX(Operation):
         ]
 
         return gates
+
+
+class Barrier(Operation):
+    r"""Barrier(wires)
+    The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_params = 0
+    num_wires = AnyWires
+    par_domain = None
+
+    def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
+        self.only_visual = only_visual
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
+
+    def decomposition(self, wires):
+        return []
+
+    def label(self, decimals=None):
+        return "||"
