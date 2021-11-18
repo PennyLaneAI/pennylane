@@ -4,6 +4,46 @@
 
 <h3>New features since last release</h3>
 
+* It is now possible to use TensorFlow's [AutoGraph
+  mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
+  differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
+  will result in significantly more performant model execution, at the cost of a more expensive
+  initial compilation. [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1886)
+
+  Use AutoGraph to convert your QNodes or cost functions into TensorFlow
+  graphs by decorating them with `@tf.function`:
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliZ(0))
+
+  @tf.function
+  def cost(x):
+      return tf.reduce_sum(circuit(x))
+
+  x = tf.Variable([0.5, 0.7], dtype=tf.float64)
+
+  with tf.GradientTape() as tape:
+      loss = cost(x)
+
+  grad = tape.gradient(loss, x)
+  ```
+
+  The initial execution may take slightly longer than when executing the circuit in
+  eager mode; this is because TensorFlow is tracing the function to create the graph.
+  Subsequent executions will be much more performant.
+
+  Note that using AutoGraph with backprop-enabled devices, such as `default.qubit`,
+  will yield the best performance.
+
+  For more details, please see the [TensorFlow AutoGraph
+  documentation](https://www.tensorflow.org/guide/function).
+
 * `qml.math.scatter_element_add` now supports adding multiple values at
   multiple indices with a single function call, in all interfaces
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
@@ -87,6 +127,9 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
+* The qml.Barrier() operator has been added. With it we can separate blocks in compilation or use it as a visual tool.
+  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+  
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
 <h3>Improvements</h3>
@@ -231,5 +274,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Christina Lee, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Josh Izaac,
+Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
+Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
