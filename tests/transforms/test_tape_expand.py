@@ -641,3 +641,39 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].name == "CRY"
         assert np.isclose(decomp_ops[1].parameters[0], np.pi / 2)
         assert decomp_ops[1].wires == Wires([0, 1])
+
+    def test_custom_decomp_in_separate_context(self):
+        """Test that the set_decomposition context manager works."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, expansion_strategy="device")
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=0))
+
+        # Initial test
+        _ = circuit()
+
+        assert len(circuit.qtape.operations) == 1
+        assert circuit.qtape.operations[0].name == "CNOT"
+        assert dev.custom_expand_fn is None
+
+        # Test within the context manager
+        with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
+            _ = circuit()
+            ops_in_context = circuit.qtape.operations
+
+            assert dev.custom_expand_fn is not None
+
+        assert len(ops_in_context) == 3
+        assert ops_in_context[0].name == "Hadamard"
+        assert ops_in_context[1].name == "CZ"
+        assert ops_in_context[2].name == "Hadamard"
+
+        # Check that afterwards, the device has gone back to normal
+        _ = circuit()
+
+        assert len(circuit.qtape.operations) == 1
+        assert circuit.qtape.operations[0].name == "CNOT"
+        assert dev.custom_expand_fn is None

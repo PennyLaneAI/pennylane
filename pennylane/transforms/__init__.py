@@ -140,5 +140,5 @@ from .tape_expand import (
     expand_nonunitary_gen,
     create_expand_fn,
     create_decomp_expand_fn,
-    set_decompositions
+    set_decomposition
 )
