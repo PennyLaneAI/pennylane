@@ -381,6 +381,7 @@ class TestRegularization:
         """Test obtaining the closest positive semi-definite matrix using a semi-definite program."""
         try:
             import cvxpy as cp
+
             output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
         except cp.error.SolverError:
             pytest.skip(
@@ -399,7 +400,11 @@ class TestRegularization:
         The small perturbation ensures that the solver does not get stuck.
 
         """
-        input, fix_diagonal, expected_output = np.array([[0, 1.000001], [1, 0]]), True, np.array([[1, 1], [1, 1]])
+        input, fix_diagonal, expected_output = (
+            np.array([[0, 1.000001], [1, 0]]),
+            True,
+            np.array([[1, 1], [1, 1]]),
+        )
         try:
             import cvxpy as cp
 
