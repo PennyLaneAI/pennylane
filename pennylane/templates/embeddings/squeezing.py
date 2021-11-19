@@ -95,9 +95,6 @@ class SqueezingEmbedding(Operation):
             0: ──S(0.5, 1)──────────┤
             1: ──S(0.5, 2)──P(0.1)──┤ ⟨n⟩
             2: ──S(0.5, 3)──────────┤
-
-    Raises:
-        ValueError: if inputs do not have the correct format
     """
 
     num_wires = AnyWires
