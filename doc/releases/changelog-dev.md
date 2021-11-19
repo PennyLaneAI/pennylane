@@ -259,7 +259,8 @@
 
 <h3>Bug fixes</h3>
 
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
+* `qml.draw` now supports arbitrary templates with matrix parameters.
+  [(#1917)](https://github.com/PennyLaneAI/pennylane/pull/1917)
 
 * `QuantumTape.trainable_params` now is a list instead of a set, making
   it more stable in very rare edge cases.
