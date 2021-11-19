@@ -18,7 +18,11 @@
       qml.RX(x, wires=0)
       qml.CRZ(z, wires=(3,0))
       return qml.expval(qml.PauliZ(0))
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> 20f920a1323294e33088c457b86f63bfaff8e469
   fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
   fig.show()
   ```

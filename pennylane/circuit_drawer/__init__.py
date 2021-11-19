@@ -23,7 +23,7 @@ as circuit diagrams.
 
 from .circuit_drawer import CircuitDrawer
 from .charsets import CHARSETS
-from .draw_mpl import draw_mpl
+from .tape_mpl import tape_mpl
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers, drawable_grid
 from .utils import convert_wire_order
