@@ -745,10 +745,14 @@ class QubitDevice(Device):
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
+        summing_axis = tuple(inactive_device_wires)
         if isinstance(inactive_device_wires, Wires):
-            prob = qnp.flatten(qnp.sum(prob, tuple(inactive_device_wires.labels)))
+            summing_axis = tuple(inactive_device_wires.labels)
+        if len(summing_axis) > 0:
+            prob = qnp.flatten(qnp.sum(prob, summing_axis))
         else:
-            prob = qnp.flatten(qnp.sum(prob, tuple(inactive_device_wires)))
+            #Avoid torch to sum up all if axis is blank
+            prob = qnp.flatten(prob)
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
