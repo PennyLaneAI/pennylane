@@ -282,7 +282,7 @@
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
   
 * Device tests no longer throw warnings about the `requires_grad`
-  attriubte of variational parameters.
+  attribute of variational parameters.
   [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
 
 <h3>Documentation</h3>
