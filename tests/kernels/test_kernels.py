@@ -400,7 +400,6 @@ class TestRegularization:
         semi-definite program with a small perturbation input.
 
         The small perturbation ensures that the solver does not get stuck.
-
         """
         input, fix_diagonal, expected_output = (
             np.array([[0, 1.000001], [1, 0]]),
