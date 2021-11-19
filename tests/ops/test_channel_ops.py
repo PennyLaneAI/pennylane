@@ -374,7 +374,7 @@ class TestPauliError:
         with pytest.raises(WireError):
             Ks = channel.PauliError("XXX", 0.5, [1, 1, 3], wires=[1, 1, 3])
 
-    def test_warning(self):
+    def test_warning_many_qubits(self):
         """Test if warning is thrown when huge matrix"""
         with pytest.warns(UserWarning):
             Ks = channel.PauliError("X" * 512, 0.5, list(range(512)), wires=list(range(512)))

@@ -381,12 +381,12 @@ class PauliError(Channel):
 
     Where :math:`I` is the Identity,
     and :math:`\otimes` denotes the Kronecker Product,
-    and :math:`K_{wi}` denotes the Kraus matrix corresponding to the operator acting on wire i,
-    and :math:`p` denotes the probability with which the channel is applied
+    and :math:`K_{wi}` denotes the Kraus matrix corresponding to the operator acting on wire :math:`wi`,
+    and :math:`p` denotes the probability with which the channel is applied.
 
     .. warning::
 
-        The size of the Kraus Matrices for PauliError scale exponentially
+        The size of the Kraus matrices for PauliError scale exponentially
         with the number of wires, the channel acts on. Simulations with
         PauliError can result in a significant increase in memory and
         computational usage. Use with caution!
@@ -399,7 +399,7 @@ class PauliError(Channel):
     Args:
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
-        wirelist (Sequence[int]): The wires the channel acts on
+        wires (Sequence[int]): The wires the channel acts on
     """
 
     num_params = 3
