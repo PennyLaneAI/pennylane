@@ -141,7 +141,7 @@ def integration(style="default", savefile="example_basic.png"):
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers", text_options={"rotation": "vertical"})
+    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
     drawer.box_gate(1, [0, 1], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
@@ -176,7 +176,7 @@ def integration_rcParams(savefile="example_rcParams.png"):
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers", text_options={"rotation": "vertical"})
+    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
     drawer.box_gate(1, [0, 1], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")

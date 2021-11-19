@@ -76,7 +76,7 @@ class MPLDrawer:
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
+        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers")
         drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
         drawer.box_gate(layer=1, wires=4, text="Z")
@@ -207,8 +207,12 @@ class MPLDrawer:
             :target: javascript:void(0);
     """
 
-    _box_length = 0.8
+    _box_length = 0.75
     """The width/height of the rectangle drawn by ``box_gate``"""
+
+    _notch_width = 0.04
+
+    _notch_height = 0.25
 
     _circ_rad = 0.3
     """The radius of CNOT's target symbol."""
@@ -222,7 +226,7 @@ class MPLDrawer:
     _swap_dx = 0.2
     """Half the width/height of the SWAP X-symbol."""
 
-    fontsize = 14
+    _fontsize = 14
     """The default fontsize."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
@@ -270,6 +274,15 @@ class MPLDrawer:
     def ax(self):
         """Matplotlib axes"""
         return self._ax
+
+    @property
+    def fontsize(self):
+        """Default fontsize for text"""
+        return self._fontsize
+
+    @fontsize.setter
+    def fontsize(self, value):
+        self._fontsize = value
 
     def label(self, labels, text_options=None):
         """Label each wire.
@@ -416,16 +429,9 @@ class MPLDrawer:
         )
         self._ax.add_patch(box)
 
-        for wire in wires:
-            w = 0.07
-            h = 0.25
-            box1 = plt.Rectangle((layer-self._box_length/2.0-w, wire-h/2), w, h)
-            self._ax.add_patch(box1)
-            box2 = plt.Rectangle((layer+self._box_length/2.0, wire-h/2), w, h)
-            self._ax.add_patch(box2)
-            # self._ax.add_patch(plt.Rectangle((layer+self._box_length/2.0, wire), 0.15, 0.4))
-            # self._ax.add_patch(patches.Ellipse((layer-self._box_length/2.0, wire), width=0.15, height=0.4))
-            # self._ax.add_patch(patches.Ellipse((layer+self._box_length/2.0, wire), width=0.15, height=0.4))
+        if len(wires) != (box_max-box_min+1):
+            for wire in wires:
+                self._add_notch(layer, wire, extra_width)
 
 
         text_obj = self._ax.text(
@@ -455,6 +461,24 @@ class MPLDrawer:
                     break
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
+
+    def _add_notch(self, layer, wire, extra_width):
+        """Add a wire used marker to both sides of a box.
+
+        Args:
+            layer (int): x coordinate for the box center
+            wire (int): y cordinate for the notches
+            extra_width (float): extra box width
+        """
+        pad = 0.05
+        w = 0.03
+        h = 0.25
+        y = wire-h/2
+
+        box1 = patches.FancyBboxPatch((layer-self._box_length/2.0-self._notch, y), w, h, boxstyle=f"round, pad={pad}")
+        self._ax.add_patch(box1)
+        box2 = patches.FancyBboxPatch((layer+self._box_length/2.0, y), w, h, boxstyle=f"round, pad={pad}")
+        self._ax.add_patch(box2)
 
     def _text_dims(self, text_obj):
         """Get width and height of text object in data coordinates.
