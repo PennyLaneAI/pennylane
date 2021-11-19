@@ -21,6 +21,7 @@ try:
 except (ModuleNotFoundError, ImportError) as e:
     has_mpl = False
 
+"""Lists all available styling functions""" 
 available = ['black_white_style', 'black_white_style_dark']
 
 def black_white_style():
