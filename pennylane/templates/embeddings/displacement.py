@@ -83,7 +83,7 @@ class DisplacementEmbedding(Operation):
 
             X = [1, 2, 3]
 
-        >>> print(circuit(X)
+        >>> print(circuit(X))
             0.23401288309122226
 
         And, the resulting circuit is:
