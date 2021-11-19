@@ -163,7 +163,7 @@ class DefaultMixed(QubitDevice):
             dtype=self.C_DTYPE,
             like=self._full_interface_name,
         )
-        qnp.scatter_element_add(rho, (index, index), 1)
+        rho = qnp.scatter_element_add(rho, (index, index), 1)
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
     @classmethod

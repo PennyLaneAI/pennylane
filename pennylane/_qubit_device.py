@@ -227,11 +227,20 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit.observables)
 
+        def _is_blank_or_scalar(results):
+            return (isinstance(results, list) and len(results) == 0) or (
+                    not isinstance(results, list) and qnp.shape(results) in [(), (0,)])
+
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            results = qnp.asarray(results, like=results[0])
+            # We want to infer its real type enclosed in the list, but if it is a scalar or a blank list, no real type are there.
+            # If it is not list but blank tensor or a scalar, return as is.
+            if _is_blank_or_scalar(results):
+                results = qnp.asarray(results)
+            else:
+                results = qnp.stack(results)
         else:
             results = tuple(
-                qnp.asarray(r, like=r[0])
+                qnp.asarray(r) if _is_blank_or_scalar(r) else qnp.stack(r)
                 for r in results
             )
 
@@ -493,7 +502,6 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-
             raise qml.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
@@ -816,10 +824,10 @@ class QubitDevice(Device):
             samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
 
         elif isinstance(
-            observable, MeasurementProcess
+                observable, MeasurementProcess
         ):  # if no observable was provided then return the raw samples
             if (
-                len(observable.wires) != 0
+                    len(observable.wires) != 0
             ):  # if wires are provided, then we only return samples from those wires
                 samples = self._samples[sample_slice, qnp.array(device_wires)]
             else:
@@ -952,7 +960,6 @@ class QubitDevice(Device):
 
             if op.grad_method is not None:
                 if param_number in tape.trainable_params:
-
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
