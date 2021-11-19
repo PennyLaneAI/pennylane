@@ -71,17 +71,15 @@ def zyz_decomposition(U, wire):
     """
     U = _convert_to_su2(U)
 
-    # Derive theta from the off-diagonal element
-    # We use the arcsin, and very very carefully rescale the value to make sure it's
-    # between -1 and 1.
+    # Derive theta from the off-diagonal element. We very very carefully rescale
+    # the value to make sure it's between -1 and 1.
     inside = math.abs(U[0, 1])
     theta = 2 * math.arcsin(inside - math.sign(inside) * 1e-16)
 
-    # Compute phi and omega from the angles of the top row; use atan2
-    # to keep the angle within -np.pi and np.pi, and add very small values to avoid
-    # the undefined case of 0/0. We add a smaller value to the imaginary part than
-    # the real part because it is imag / real in the definition of atan2, and we want
-    # to make sure we do get effectively 0 when needed.
+    # Compute phi and omega from the angles of the top row; use atan2 to keep
+    # the angle within -np.pi and np.pi, and add very small values to avoid the
+    # undefined case of 0/0. We add a smaller value to the imaginary part than
+    # the real part because it is imag / real in the definition of atan2.
     angle_U00 = math.arctan2(math.imag(U[0, 0]) + 1e-128, math.real(U[0, 0]) + 1e-64)
     angle_U10 = math.arctan2(math.imag(U[1, 0]) + 1e-128, math.real(U[1, 0]) + 1e-64)
 
