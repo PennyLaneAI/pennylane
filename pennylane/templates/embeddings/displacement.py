@@ -41,6 +41,9 @@ class DisplacementEmbedding(Operation):
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
             the amplitude of all displacement gates if ``execution='phase'``
 
+    Raises:
+        ValueError: if inputs do not have the correct format
+
     Example:
 
         Depending on the ``method`` argument, the feature vector will be encoded in the phase or the amplitude.
