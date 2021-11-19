@@ -228,13 +228,10 @@ class QubitDevice(Device):
             results = self.statistics(circuit.observables)
 
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            if isinstance(results, list):
-                results = qnp.expand_dims(results[0], 0)
-            else:
-                results = qnp.asarray(results)
+            results = qnp.asarray(results, like=results[0])
         else:
             results = tuple(
-                qnp.expand_dims(r[0], 0) if isinstance(r, list) else qnp.asarray(r)
+                qnp.asarray(r, like=r[0])
                 for r in results
             )
 
