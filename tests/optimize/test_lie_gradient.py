@@ -23,35 +23,20 @@ from pennylane import numpy as np
 from pennylane.optimize.lie_gradient import LieGradientOptimizer
 
 
-@qml.qnode(qml.device("default.qubit", wires=2))
 def circuit_1():
     """Simple circuit"""
     qml.Hadamard(wires=[0])
     qml.Hadamard(wires=[1])
-    return qml.expval(qml.Hamiltonian(
-        coeffs=[-1.0] * 3,
-        observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
-    ))
 
 
-@qml.qnode(qml.device("default.qubit", wires=2))
 def circuit_2():
     """Simply parameterized circuit"""
     qml.RX(0.1, wires=[0])
     qml.RY(0.5, wires=[1])
     qml.CNOT(wires=[0, 1])
     qml.RY(0.6, wires=[0])
-    return qml.expval(qml.Hamiltonian(
-        coeffs=[-0.2, 0.3, -0.15],
-        observables=[
-            qml.PauliY(1),
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliX(0) @ qml.PauliX(1),
-        ],
-    ))
 
 
-@qml.qnode(qml.device("default.qubit", wires=3))
 def circuit_3():
     """Three-qubit circuit"""
     qml.RY(0.5, wires=[0])
@@ -62,23 +47,58 @@ def circuit_3():
     qml.RX(-0.6, wires=[0])
     qml.RX(-0.3, wires=[1])
     qml.RX(-0.2, wires=[2])
-    return qml.expval(qml.Hamiltonian(
-        coeffs=[-2.0], observables=[qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2)]
-    ))
+
+
+hamiltonian_1 = qml.Hamiltonian(
+    coeffs=[-1.0] * 3,
+    observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+)
+
+hamiltonian_2 = qml.Hamiltonian(
+    coeffs=[-0.2, 0.3, -0.15],
+    observables=[
+        qml.PauliY(1),
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.PauliX(0) @ qml.PauliX(1),
+    ],
+)
+
+hamiltonian_3 = qml.Hamiltonian(
+    coeffs=[-2.0], observables=[qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2)]
+)
 
 
 @pytest.mark.parametrize(
-    "circuit",
-    [circuit_1, circuit_2, circuit_3],
+    "circuit,hamiltonian",
+    [
+        (circuit_1, hamiltonian_1),
+        (circuit_1, hamiltonian_2),
+        (circuit_2, hamiltonian_1),
+        (circuit_2, hamiltonian_2),
+        (circuit_3, hamiltonian_3),
+    ],
 )
-def test_lie_gradient_omegas(circuit):
+def test_lie_gradient_omegas(circuit, hamiltonian):
     """Test that we calculate the lie gradient coefficients Tr{[rho, H] P_j} correctly"""
-    wires = circuit.device.wires
-    phi = circuit.state
+    nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
+    wires = range(nqubits)
+    dev = qml.device("default.qubit", wires=nqubits)
+
+    @qml.qnode(dev=dev)
+    def get_state():
+        circuit()
+        return qml.state()
+
+    @qml.qnode(dev=dev)
+    def lie_circuit():
+        circuit()
+        return qml.expval(hamiltonian)
+
+    phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(circuit.func().obs, wires).toarray()
+    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
-    opt = LieGradientOptimizer(circuit=circuit)
+    opt = LieGradientOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators()[0]
     omegas_np = []
     for op in ops:
@@ -89,36 +109,69 @@ def test_lie_gradient_omegas(circuit):
 
 
 @pytest.mark.parametrize(
-    "circuit",
-    [circuit_1, circuit_2, circuit_3]
+    "circuit,hamiltonian",
+    [
+        (circuit_1, hamiltonian_1),
+        (circuit_1, hamiltonian_2),
+        (circuit_2, hamiltonian_1),
+        (circuit_2, hamiltonian_2),
+    ],
 )
-def test_lie_gradient_evolution(circuit):
+def test_lie_gradient_evolution(circuit, hamiltonian):
     """Test that the optimizer produces the correct unitary to append"""
-    wires = circuit.device.wires
-    phi =  circuit.func().state
+    nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
+    wires = range(nqubits)
+    dev = qml.device("default.qubit", wires=nqubits)
+
+    @qml.qnode(dev=dev)
+    def get_state():
+        circuit()
+        return qml.state()
+
+    @qml.qnode(dev=dev)
+    def lie_circuit():
+        circuit()
+        return qml.expval(hamiltonian)
+
+    phi = get_state()
     rho = np.outer(phi, phi.conj())
-    hamiltonian_np = qml.utils.sparse_hamiltonian(circuit.func().obs, wires).toarray()
-    print(hamiltonian_np)
+    hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    phi_exact = expm(0.001 * lie_gradient_np) @ phi
+    phi_exact = expm(-0.001 * lie_gradient_np) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
-    opt = LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+    opt = LieGradientOptimizer(circuit=lie_circuit, stepsize=0.001)
     opt.step()
 
-    phi_pl = opt.circuit()
-
-    rho_pl = np.outer(phi_pl, phi.conj())
-    assert np.allclose(rho_exact, rho_pl, atol=1e-2)
+    cost_pl = opt.circuit()
+    cost_exact = np.trace(rho_exact @ hamiltonian_np)
+    print(cost_exact)
+    print(cost_pl)
+    assert np.allclose(cost_pl, cost_exact, atol=1e-2)
 
 
 @pytest.mark.parametrize(
-    "circuit",
-    [circuit_1, circuit_2, circuit_3]
+    "circuit,hamiltonian",
+    [
+        (circuit_1, hamiltonian_1),
+        (circuit_1, hamiltonian_2),
+        (circuit_2, hamiltonian_1),
+        (circuit_2, hamiltonian_2),
+        (circuit_3, hamiltonian_3),
+    ],
 )
-def test_list_gradient_step(circuit):
+def test_list_gradient_step(circuit, hamiltonian):
     """Test that we can take subsequent steps with the optimizer"""
-    opt = LieGradientOptimizer(circuit=circuit, stepsize=0.1)
+    nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
+
+    dev = qml.device("default.qubit", wires=nqubits)
+
+    @qml.qnode(dev=dev)
+    def lie_circuit():
+        circuit()
+        return qml.expval(hamiltonian)
+
+    opt = LieGradientOptimizer(circuit=lie_circuit)
     opt.step()
     opt.step()
 
@@ -155,7 +208,8 @@ def test_lie_gradient_hamiltonian_input_1():
 
     hamiltonian = qml.PauliX(0)
     with pytest.raises(
-            TypeError, match="`circuit` must return the expectation value of a `qml.Hamiltonian`"
+        TypeError,
+        match="`circuit` must return the expectation value of a `qml.Hamiltonian`",
     ):
         LieGradientOptimizer(circuit=circuit, hamiltonian=hamiltonian, stepsize=0.001)
 

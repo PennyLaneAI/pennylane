@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Lie gradient optimizers"""
-import copy
-
 import numpy as np
 import pennylane as qml
 from pennylane.tape import JacobianTape
 from pennylane.transforms import batch_transform
-
 
 
 @qml.qfunc_transform
@@ -47,17 +44,14 @@ def append_time_evolution(tape, hamiltonian, t):
     for obj in tape.measurements:
         qml.apply(obj)
 
+
 @batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     """Calculate the Lie gradient with the parameter shift rule (see `get_omegas`)"""
     tapes = []
     for obs in observables:
-        tapes_plus = [
-            JacobianTape(p + "_p") for p in lie_algebra_basis_names
-        ]
-        tapes_min = [
-            JacobianTape(p + "_m") for p in lie_algebra_basis_names
-        ]
+        tapes_plus = [JacobianTape(p + "_p") for p in lie_algebra_basis_names]
+        tapes_min = [JacobianTape(p + "_m") for p in lie_algebra_basis_names]
 
         # loop through all operations on the input tape
         for op in tape.operations:
@@ -84,6 +78,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                     qml.expval(o)
         tapes.append((tapes_plus, tapes_min))
     return tapes, None
+
 
 class LieGradientOptimizer:
     r"""Exact Lie gradient optimizer"""
@@ -114,7 +109,7 @@ class LieGradientOptimizer:
         gradient and grow the circuit.
 
         Args:
-            circuit (qml.QNode): the user-defined hyperparameter :math:`\eta`
+            circuit (Any): the user-defined hyperparameter :math:`\eta`
             stepsize (float): the user-defined hyperparameter :math:`\eta`
             **kwargs
         **Examples:**
@@ -151,7 +146,8 @@ class LieGradientOptimizer:
         if not isinstance(circuit.func().obs, qml.Hamiltonian):
             raise TypeError(
                 f"`circuit` must return the expectation value of a `qml.Hamiltonian`,"
-                f" " f"received {type(circuit.func().obs)} "
+                f" "
+                f"received {type(circuit.func().obs)} "
             )
         self.nqubits = max(circuit.device.wires) + 1
 
@@ -169,7 +165,6 @@ class LieGradientOptimizer:
         self.hamiltonian = circuit.func().obs
         self.coeffs, self.observables = self.hamiltonian.terms
         self.stepsize = stepsize
-
 
     def step_and_cost(
         self,
@@ -191,18 +186,21 @@ class LieGradientOptimizer:
         non_zero_omegas = []
         for i, element in enumerate(omegas):
             if not np.isclose(element, 0):
-                non_zero_lie_algebra_elements.append(self.lie_algebra_basis_names[i]
-                )
+                non_zero_lie_algebra_elements.append(self.lie_algebra_basis_names[i])
                 non_zero_omegas.append(-omegas[i])
         lie_gradient = qml.Hamiltonian(
             non_zero_omegas,
-            [qml.grouping.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
+            [
+                qml.grouping.string_to_pauli_word(ps)
+                for ps in non_zero_lie_algebra_elements
+            ],
         )
 
-        new_circuit = append_time_evolution(lie_gradient, self.stepsize)(self.circuit.func)
+        new_circuit = append_time_evolution(lie_gradient, self.stepsize)(
+            self.circuit.func
+        )
         self.circuit = qml.QNode(new_circuit, self.circuit.device)
         return self.circuit()
-
 
     def step(
         self,
@@ -264,22 +262,21 @@ class LieGradientOptimizer:
 
         """
 
-        obs_groupings, _ = qml.grouping.group_observables(
-            self.observables, self.coeffs
-        )
+        obs_groupings, _ = qml.grouping.group_observables(self.observables, self.coeffs)
         # get all circuits we need to calculate the coefficients
-        circuits = algebra_commutator(self.circuit.qtape, obs_groupings, self.lie_algebra_basis_names, self.nqubits)[0]
+        circuits = algebra_commutator(
+            self.circuit.qtape,
+            obs_groupings,
+            self.lie_algebra_basis_names,
+            self.nqubits,
+        )[0]
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
         omegas = np.zeros((len(self.coeffs), len(self.lie_algebra_basis_names)))
         idx = 0
 
         for circuit_plus, circuit_min in circuits:
-            out_plus = qml.execute(
-                circuit_plus, self.circuit.device, gradient_fn=None
-            )
-            out_min = qml.execute(
-                circuit_min, self.circuit.device, gradient_fn=None
-            )
+            out_plus = qml.execute(circuit_plus, self.circuit.device, gradient_fn=None)
+            out_min = qml.execute(circuit_min, self.circuit.device, gradient_fn=None)
             # depending on the length of the grouped observable, store the omegas in the array
             omegas[idx : idx + len(out_plus[0]), :] = 0.5 * (
                 np.array(out_plus).T - np.array(out_min).T
