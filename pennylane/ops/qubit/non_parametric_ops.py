@@ -1180,6 +1180,7 @@ class Barrier(Operation):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     def decomposition(self, wires):
+        # pylint: disable=unused-argument
         return []
 
     def label(self, decimals=None):
