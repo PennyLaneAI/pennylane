@@ -86,13 +86,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def prep_par(par, op):
-    "Convert par into a list of parameters that op expects."
-    if op.par_domain == "A":
-        return [np.diag([x, 1]) for x in par]
-    return par
-
-
 def include_inverses_with_test_data(test_data):
     return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
@@ -2216,10 +2209,10 @@ class TestInverseDecomposition:
         assert np.allclose(dev.state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("inverse", [True, False])
 class TestApplyOperationUnit:
     """Unit tests for the internal _apply_operation method."""
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_internal_apply_ops_case(self, inverse, monkeypatch):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
@@ -2243,19 +2236,15 @@ class TestApplyOperationUnit:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, inverse, mocker, monkeypatch):
-        """Tests the case when the operation to be applied is a
-        DiagonalOperation and the _apply_diagonal_unitary method is used."""
+    def test_diagonal_operation_case(self, mocker, monkeypatch):
+        """Tests the case when the operation to be applied is
+        diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
         par = 0.3
 
         test_state = np.array([1, 0])
         wires = 0
-        op = (
-            qml.PhaseShift(par, wires=wires)
-            if not inverse
-            else qml.PhaseShift(par, wires=wires).inv()
-        )
+        op = qml.PhaseShift(par, wires=wires)
         assert op.name not in dev._apply_ops
 
         # Set the internal _apply_diagonal_unitary
@@ -2273,7 +2262,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, np.diag(op.matrix))
             assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case(self, inverse, mocker, monkeypatch):
+    def test_apply_einsum_case(self, mocker, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -2282,12 +2271,11 @@ class TestApplyOperationUnit:
         wires = 0
 
         # Redefine the S gate so that it is an example for a one-qubit gate
-        # that does not inherit from DiagonalOperation
+        # that is not registered in the diagonal_in_z_basis attribute
         class TestSGate(qml.operation.Operation):
             matrix = np.array([[0, 1], [1, 0]])
             num_params = 0
             num_wires = 1
-            par_domain = None
 
             @classmethod
             def _matrix(cls, *params):
@@ -2298,9 +2286,6 @@ class TestApplyOperationUnit:
 
         assert op.name in dev.operations
         assert op.name not in dev._apply_ops
-
-        if inverse:
-            op = op.inv()
 
         # Set the internal _apply_unitary_einsum
         history = []
@@ -2316,6 +2301,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.matrix)
             assert np.allclose(res_wires, wires)
 
+    @pytest.mark.parametrize("inverse", [True, False])
     def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
@@ -2329,7 +2315,6 @@ class TestApplyOperationUnit:
         class TestToffoli(qml.operation.Operation):
             num_params = 0
             num_wires = 3
-            par_domain = None
             matrix = U_toffoli
 
             @classmethod

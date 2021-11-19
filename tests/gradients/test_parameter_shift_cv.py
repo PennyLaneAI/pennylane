@@ -487,7 +487,6 @@ class TestExpectationQuantumGradients:
 
             num_wires = 1
             num_params = 1
-            par_domain = "R"
             grad_method = "A"
 
         alpha = 0.5643
@@ -617,21 +616,18 @@ class TestExpectationQuantumGradients:
 
         assert np.allclose(grad_A2, expected, atol=tol, rtol=0)
 
-    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
-    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
-    @pytest.mark.parametrize("op", analytic_cv_ops)
-    def test_gradients_gaussian_circuit(self, op, obs, mocker, tol):
+    @pytest.mark.parametrize("obs", [qml.P, qml.Identity])
+    @pytest.mark.parametrize(
+        "op", [qml.Displacement(0.1, 0.2, wires=0), qml.TwoModeSqueezing(0.1, 0.2, wires=[0, 1])]
+    )
+    def test_gradients_gaussian_circuit(self, op, obs, tol):
         """Tests that the gradients of circuits of gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        args = np.linspace(0.2, 0.5, op.num_params)
-
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)
@@ -851,7 +847,6 @@ class TestVarianceQuantumGradients:
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
             num_params = 1
-            par_domain = "R"
             grad_method = "A"
             grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)
 
@@ -873,21 +868,18 @@ class TestVarianceQuantumGradients:
             ):
                 param_shift_cv(tape, dev, force_order2=True)
 
-    cv_ops = [getattr(qml, name) for name in qml.ops._cv__ops__]
-    analytic_cv_ops = [cls for cls in cv_ops if cls.supports_parameter_shift]
-
-    @pytest.mark.parametrize("obs", [qml.X, qml.P, qml.NumberOperator, qml.Identity])
-    @pytest.mark.parametrize("op", analytic_cv_ops)
+    @pytest.mark.parametrize("obs", [qml.X, qml.NumberOperator])
+    @pytest.mark.parametrize(
+        "op", [qml.Squeezing(0.1, 0.2, wires=0), qml.Beamsplitter(0.1, 0.2, wires=[0, 1])]
+    )
     def test_gradients_gaussian_circuit(self, op, obs, tol):
-        """Tests that the gradients of circuits of gaussian gates match between the
+        """Tests that the gradients of circuits of selected gaussian gates match between the
         finite difference and analytic methods."""
         tol = 1e-2
 
-        args = np.linspace(0.2, 0.5, op.num_params)
-
         with qml.tape.JacobianTape() as tape:
             qml.Displacement(0.5, 0, wires=0)
-            op(*args, wires=range(op.num_wires))
+            qml.apply(op)
             qml.Beamsplitter(1.3, -2.3, wires=[0, 1])
             qml.Displacement(-0.5, 0.1, wires=0)
             qml.Squeezing(0.5, -1.5, wires=0)

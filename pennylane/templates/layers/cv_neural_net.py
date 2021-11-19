@@ -80,9 +80,7 @@ class CVNeuralNetLayers(Operation):
 
     """
 
-    num_params = 11
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(
@@ -139,6 +137,10 @@ class CVNeuralNetLayers(Operation):
             do_queue=do_queue,
             id=id,
         )
+
+    @property
+    def num_params(self):
+        return 11
 
     def expand(self):
 

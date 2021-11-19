@@ -137,9 +137,7 @@ class Permute(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, permutation, wires, do_queue=True, id=None):
@@ -161,6 +159,10 @@ class Permute(Operation):
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
         super().__init__(permutation, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

@@ -81,7 +81,7 @@ class TestDecompositions:
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -104,7 +104,7 @@ class TestDecompositions:
     def test_y_decomposition(self, tol):
         """Tests that the decomposition of the PauliY is correct"""
         op = qml.PauliY(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -127,7 +127,7 @@ class TestDecompositions:
     def test_z_decomposition(self, tol):
         """Tests that the decomposition of the PauliZ is correct"""
         op = qml.PauliZ(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 1
 
@@ -142,7 +142,7 @@ class TestDecompositions:
     def test_s_decomposition(self, tol):
         """Tests that the decomposition of the S gate is correct"""
         op = qml.S(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 1
 
@@ -157,7 +157,7 @@ class TestDecompositions:
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the T gate is correct"""
         op = qml.T(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 1
 
@@ -172,7 +172,7 @@ class TestDecompositions:
     def test_sx_decomposition(self, tol):
         """Tests that the decomposition of the SX gate is correct"""
         op = qml.SX(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 4
 
@@ -194,7 +194,7 @@ class TestDecompositions:
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the Hadamard gate is correct"""
         op = qml.Hadamard(wires=0)
-        res = op.decomposition(0)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -217,7 +217,7 @@ class TestDecompositions:
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
         op = qml.CY(wires=[0, 1])
-        res = op.decomposition(op.wires)
+        res = op.decompose()
 
         mats = []
         for i in reversed(res):
@@ -232,7 +232,7 @@ class TestDecompositions:
     def test_ISWAP_decomposition(self, tol):
         """Tests that the decomposition of the ISWAP gate is correct"""
         op = qml.ISWAP(wires=[0, 1])
-        res = op.decomposition(op.wires)
+        res = op.decompose()
 
         assert len(res) == 6
 
@@ -269,7 +269,7 @@ class TestDecompositions:
     def test_SISWAP_decomposition(self, siswap_op, tol):
         """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
         op = siswap_op(wires=[0, 1])
-        res = op.decomposition(op.wires)
+        res = op.decompose()
 
         assert len(res) == 12
 
@@ -317,7 +317,7 @@ class TestDecompositions:
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
         op = qml.Toffoli(wires=[0, 1, 2])
-        res = op.decomposition(op.wires)
+        res = op.decompose()
 
         assert len(res) == 15
 
@@ -357,7 +357,7 @@ class TestDecompositions:
     def test_CSWAP_decomposition(self, tol):
         """Tests that the decomposition of the CSWAP gate is correct"""
         op = qml.CSWAP(wires=[0, 1, 2])
-        res = op.decomposition(op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -402,7 +402,7 @@ class TestDecompositions:
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
-        decomp = opr.decomposition([0, 1])
+        decomp = opr.decompose()
 
         mat = []
         for op in reversed(decomp):
@@ -431,6 +431,99 @@ class TestEigenval:
         exp = np.linalg.eigvals(op.matrix)
         res = op.eigvals
         assert np.allclose(res, exp)
+
+
+class TestBarrier:
+    """Tests that the Barrier gate is correct"""
+
+    def test_use_barrier(self):
+        r"""Test that the barrier influences compilation."""
+
+        def qfunc():
+            qml.Hadamard(wires=0)
+            qml.Barrier(wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+        gates = qml.specs(qnode)()["gate_sizes"][1]
+
+        assert gates == 3
+
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+
+        assert optimized_gates == 2
+
+    def test_barrier_only_visual(self):
+        r"""Test that the barrier doesn't influence compilation when the only_visual parameter is True."""
+
+        def qfunc():
+            qml.Hadamard(wires=0)
+            qml.Barrier(only_visual=True, wires=0)
+            qml.Hadamard(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+
+        assert optimized_gates == 0
+
+    def test_barrier_edge_cases(self):
+        r"""Test that the barrier works in edge cases."""
+
+        def qfunc():
+            qml.Barrier(wires=0)
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=0)
+            qml.Barrier(wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+        gates = qml.specs(qnode)()["gate_sizes"][1]
+
+        assert gates == 4
+
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+
+        assert optimized_gates == 0
+
+        def qfunc():
+
+            qml.Hadamard(wires=0)
+            qml.Barrier(wires=0)
+            qml.Barrier(wires=0)
+            qml.Hadamard(wires=0)
+
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+        gates = qml.specs(qnode)()["gate_sizes"][1]
+
+        assert gates == 4
+
+        def qfunc():
+            qml.Hadamard(wires=0)
+            qml.Barrier(only_visual=True, wires=0)
+            qml.Barrier(wires=0)
+            qml.Hadamard(wires=0)
+
+            return qml.expval(qml.PauliZ(0))
+
+        dev = qml.device("default.qubit", wires=3)
+        optimized_qfunc = qml.compile()(qfunc)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_gates = qml.specs(optimized_qnode)()["gate_sizes"][1]
+
+        assert optimized_gates == 2
 
 
 class TestMultiControlledX:
@@ -595,7 +688,7 @@ class TestMultiControlledX:
             f"At least one work wire is required to decompose operation: {re.escape(op.__repr__())}"
         )
         with pytest.raises(ValueError, match=match):
-            op.decomposition()
+            op.decompose()
 
     def test_not_unique_wires(self):
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
@@ -731,6 +824,7 @@ label_data = [
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
     (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
+    (qml.Barrier(0), "||", "||"),
 ]
 
 

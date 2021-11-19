@@ -69,7 +69,7 @@ class TestTFQuantumTape:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliX(0))
 
-        assert qtape.trainable_params == {0, 2}
+        assert qtape.trainable_params == [0, 2]
         assert np.all(qtape.get_parameters() == [a, c])
 
     def test_execution(self):
@@ -83,7 +83,7 @@ class TestTFQuantumTape:
                 qml.RX(0.2, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            assert qtape.trainable_params == {0}
+            assert qtape.trainable_params == [0]
             res = qtape.execute(dev)
 
         assert isinstance(res, tf.Tensor)
@@ -105,7 +105,7 @@ class TestTFQuantumTape:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
 
-            assert qtape.trainable_params == {0, 1}
+            assert qtape.trainable_params == [0, 1]
             res = qtape.execute(dev)
 
         assert isinstance(res, tf.Tensor)
@@ -136,7 +136,7 @@ class TestTFQuantumTape:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
 
-            assert qtape.trainable_params == {0, 1}
+            assert qtape.trainable_params == [0, 1]
             res = qtape.execute(dev)
 
         assert isinstance(res, tf.Tensor)
@@ -186,7 +186,7 @@ class TestTFQuantumTape:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
 
-            assert qtape.trainable_params == {0, 1}
+            assert qtape.trainable_params == [0, 1]
 
             res = qtape.execute(dev)
 
@@ -226,7 +226,7 @@ class TestTFQuantumTape:
         with tf.GradientTape() as tape:
             qtape.set_parameters([a, b], trainable_only=False)
             qtape._update_trainable_params()
-            assert qtape.trainable_params == {0, 1}
+            assert qtape.trainable_params == [0, 1]
             res = qtape.execute(dev)
 
         jac = tape.jacobian(res, [a, b])
@@ -262,7 +262,7 @@ class TestTFQuantumTape:
                 qml.RX(c + c ** 2 + tf.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            assert qtape.trainable_params == {0, 2}
+            assert qtape.trainable_params == [0, 2]
             assert qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
             res = qtape.execute(dev)
 
@@ -284,7 +284,7 @@ class TestTFQuantumTape:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            assert qtape.trainable_params == set()
+            assert qtape.trainable_params == []
 
             res = qtape.execute(dev)
 
@@ -306,7 +306,7 @@ class TestTFQuantumTape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            assert qtape.trainable_params == {1}
+            assert qtape.trainable_params == [1]
             res = qtape.execute(dev)
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
@@ -344,7 +344,7 @@ class TestTFQuantumTape:
 
             qtape = TFInterface.apply(qtape.expand())
 
-            assert qtape.trainable_params == {1, 2, 3, 4}
+            assert qtape.trainable_params == [1, 2, 3, 4]
             assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
             assert np.all(qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
