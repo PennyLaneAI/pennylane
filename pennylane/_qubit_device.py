@@ -741,9 +741,9 @@ class QubitDevice(Device):
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            prob = qnp.flatten(qnp.sum(prob, inactive_device_wires.labels))
+            prob = qnp.flatten(qnp.sum(prob, tuple(inactive_device_wires.labels)))
         else:
-            prob = qnp.flatten(qnp.sum(prob, inactive_device_wires))
+            prob = qnp.flatten(qnp.sum(prob, tuple(inactive_device_wires)))
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
