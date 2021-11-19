@@ -188,7 +188,7 @@ def test_lie_gradient_evolution(circuit, hamiltonian):
 
     phi_exact = expm(-0.001 * lie_gradient_np) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
-    opt = LieGradientOptimizer(circuit=lie_circuit, stepsize=0.001)
+    opt = LieGradientOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
     opt.step()
 
     cost_pl = opt.circuit()

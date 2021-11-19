@@ -13,25 +13,35 @@
 # limitations under the License.
 """Lie gradient optimizers"""
 import numpy as np
+from scipy.sparse.linalg import expm
 import pennylane as qml
 from pennylane.tape import JacobianTape
 from pennylane.transforms import batch_transform
 
 
 @qml.qfunc_transform
-def append_time_evolution(tape, hamiltonian, t):
+def append_time_evolution(tape, lie_gradient, t, exact=False):
     r"""Append an approximate time evolution to an existing circuit.
-    Trotterize the Hamiltonian and with a single step
+    If `exact` is `False`, we Trotterize the Hamiltonian and with a single step
 
     .. math:
 
-        U = \prod_i \exp{-it O_i}
+        U' = \prod_i \exp{-it O_i}
 
     Then this unitary is appended to the current circuit.
 
+    If `exact` is `True`, we calculate the exact time evolution for the Lie gradient by way of the
+    matrix exponential.
+
+    .. math:
+
+        U' = \exp{-it \text{grad} f(U)}
+
+    and append this unitary.
+
     Args:
         tape: qml.QuantumTape of circuit
-        hamiltonian: qml.Hamiltonian object
+        lie_gradient: qml.Hamiltonian object
         t: time evolution size
 
     Returns:
@@ -39,11 +49,14 @@ def append_time_evolution(tape, hamiltonian, t):
     """
     for obj in tape.operations:
         qml.apply(obj)
-    qml.templates.ApproxTimeEvolution(hamiltonian, t, 1)
+    if exact:
+        qml.QubitUnitary(expm(t * qml.utils.sparse_hamiltonian(lie_gradient)).toarray(),
+                         wires=range(max(lie_gradient.wires) + 1))
+    else:
+        qml.templates.ApproxTimeEvolution(lie_gradient, t, 1)
 
     for obj in tape.measurements:
         qml.apply(obj)
-
 
 @batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
@@ -85,7 +98,7 @@ class LieGradientOptimizer:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, circuit, stepsize=0.01, **kwargs):
+    def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, **kwargs):
         r"""
         Base class for other gradient-descent-based optimizers.
 
@@ -111,7 +124,15 @@ class LieGradientOptimizer:
         Args:
             circuit (Any): the user-defined hyperparameter :math:`\eta`
             stepsize (float): the user-defined hyperparameter :math:`\eta`
-            **kwargs
+            restriction (qml.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
+            the full Lie algebra. This restriction should be passed in the form of a
+            `qml.Hamiltonian`.
+            exact (bool): Flag that indicates wether we approximate the Lie gradient with a
+            Trotterization or calculate the exact evolution via a matrix exponential. The latter is
+            not quantum friendly and can only be done in simulation.
+
+            **kwargs:
+
         **Examples:**
 
         Define a Hamiltonian cost function to minimize.
@@ -161,15 +182,13 @@ class LieGradientOptimizer:
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
         ) = self.get_su_n_operators(restriction)
-
+        self.exact = kwargs.get('exact', False)
         self.hamiltonian = circuit.func().obs
         self.coeffs, self.observables = self.hamiltonian.terms
         self.stepsize = stepsize
 
     def step_and_cost(
-        self,
-        *args,
-        **kwargs,
+        self
     ):
         r"""Update the circuit with one step of the optimizer and return the corresponding
         objective function value prior to the step.
@@ -195,17 +214,15 @@ class LieGradientOptimizer:
                 for ps in non_zero_lie_algebra_elements
             ],
         )
-
-        new_circuit = append_time_evolution(lie_gradient, self.stepsize)(
-            self.circuit.func
+        new_circuit = append_time_evolution(lie_gradient, self.stepsize, self.exact)(
+                self.circuit.func
         )
+
         self.circuit = qml.QNode(new_circuit, self.circuit.device)
         return self.circuit()
 
     def step(
-        self,
-        *args,
-        **kwargs,
+        self
     ):
         r"""Update the circuit with one step of the optimizer
 
@@ -217,8 +234,6 @@ class LieGradientOptimizer:
 
         """
         self.step_and_cost(
-            *args,
-            **kwargs,
         )
 
     def get_su_n_operators(self, restriction):
