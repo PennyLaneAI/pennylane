@@ -446,6 +446,26 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[2].name == "CNOT"
 
+    def test_no_decomp_with_depth_zero(self):
+        """Test that specifying a single custom decomposition works as expected."""
+
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        custom_decomps = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
+        decomp_dev = qml.device(
+            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=0
+        )
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 2
+        assert decomp_ops[0].name == "Hadamard"
+        assert decomp_ops[1].name == "CNOT"
+
     def test_one_custom_decomp_gradient(self):
         """Test that gradients are still correctly computed after a decomposition
         that performs transpilation."""
@@ -593,6 +613,38 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([0, 1])
+
+    def test_custom_decomp_different_depth(self):
+        """Test that alternative expansion depths can be specified."""
+
+        def circuit():
+            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        # BasicEntanglerLayers custom decomposition involves AngleEmbedding If
+        # expansion depth is 1, the AngleEmbedding will still be decomposed into
+        # RX (since it's not a supported operation on the device), but the RX will
+        # not be further decomposed even though the custom decomposition is specified.
+        custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
+        decomp_dev = qml.device(
+            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=1
+        )
+        decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
+        _ = decomp_qnode()
+        decomp_ops = decomp_qnode.qtape.operations
+
+        assert len(decomp_ops) == 3
+
+        assert decomp_ops[0].name == "RX"
+        assert np.isclose(decomp_ops[0].parameters[0], 0.1)
+        assert decomp_ops[0].wires == Wires(0)
+
+        assert decomp_ops[1].name == "RX"
+        assert np.isclose(decomp_ops[1].parameters[0], 0.2)
+        assert decomp_ops[1].wires == Wires(1)
+
+        assert decomp_ops[2].name == "CNOT"
+        assert decomp_ops[2].wires == Wires([0, 1])
 
     def test_custom_decomp_with_adjoint(self):
         """Test that applying an adjoint in the circuit results in the adjoint

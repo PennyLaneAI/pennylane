@@ -208,7 +208,6 @@ def _custom_decomp_context(custom_decomps):
                 if self.num_params == 0:
                     return fn(self.wires)
                 return fn(*self.parameters, self.wires)
-            return tape
 
         try:
             # Explicitly set the new .decompose method
@@ -233,7 +232,7 @@ def _custom_decomp_context(custom_decomps):
         stack.close()
 
 
-def create_decomp_expand_fn(custom_decomps, dev):
+def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
     """Creates a custom expansion function for a device that applies
     a set of specified custom decompositions.
 
@@ -241,6 +240,7 @@ def create_decomp_expand_fn(custom_decomps, dev):
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
         dev (qml.Device): A quantum device.
+        decomp_depth: The maximum depth of the expansion.
 
     Returns:
         Callable: A custom expansion function that a device can call to expand
@@ -273,28 +273,29 @@ def create_decomp_expand_fn(custom_decomps, dev):
     # Create a new expansion function; stop at things that do not have
     # custom decompositions, or that satisfy the regular device stopping criteria
     custom_fn = qml.transforms.create_expand_fn(
-        depth=10,
+        decomp_depth,
         stop_at=qml.BooleanFn(lambda obj: obj.name not in custom_op_names),
         device=dev,
     )
 
     # Finally, we set the device's custom_expand_fn to a new one that
     # runs in a context where the decompositions have been replaced.
-    def custom_decomp_expand(self, circuit, max_expansion=10):
+    def custom_decomp_expand(self, circuit, max_expansion=decomp_depth):
         with _custom_decomp_context(custom_decomps):
-            return custom_fn(circuit, max_expansion)
+            return custom_fn(circuit, max_expansion=max_expansion)
 
     return custom_decomp_expand
 
 
 @contextlib.contextmanager
-def set_decomposition(custom_decomps, dev):
+def set_decomposition(custom_decomps, dev, decomp_depth=10):
     """Context manager for setting custom decompositions.
 
     Args:
         custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
             decompositions to be applied by the device at runtime.
         dev (qml.Device): A quantum device.
+        decomp_depth: The maximum depth of the expansion.
 
     **Example**
 
@@ -337,7 +338,9 @@ def set_decomposition(custom_decomps, dev):
 
     # Create a new expansion function; stop at things that do not have
     # custom decompositions, or that satisfy the regular device stopping criteria
-    new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, dev)
+    new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
+        custom_decomps, dev, decomp_depth=decomp_depth
+    )
 
     # Set the custom expand function within this context only
     try:

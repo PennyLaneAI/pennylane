@@ -179,6 +179,8 @@ def device(name, *args, **kwargs):
             that contains global and/or device specific configurations.
         custom_decomps (Dict[Union(str, qml.Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
+        decomp_depth (int): For when custom decompositions are specified,
+            the maximum expansion depth used by the expansion function.
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The *wires*
@@ -303,6 +305,7 @@ def device(name, *args, **kwargs):
         # Pop the custom decomposition keyword argument; we will use it here
         # only and not pass it to the device.
         custom_decomps = kwargs.pop("custom_decomps", None)
+        decomp_depth = kwargs.pop("decomp_depth", 10)
 
         kwargs.pop("config", None)
         options.update(kwargs)
@@ -325,7 +328,7 @@ def device(name, *args, **kwargs):
         # any custom decompositions were specified.
         if custom_decomps is not None:
             custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
-                custom_decomps, dev
+                custom_decomps, dev, decomp_depth=decomp_depth
             )
             dev.custom_expand(custom_decomp_expand_fn)
 
