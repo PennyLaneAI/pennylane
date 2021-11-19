@@ -84,7 +84,7 @@ class SqueezingEmbedding(Operation):
 
             X = [1, 2, 3]
 
-        >>> print(circuit(X)
+        >>> print(circuit(X))
             0.22319028857312428
 
         And, the resulting circuit is:
