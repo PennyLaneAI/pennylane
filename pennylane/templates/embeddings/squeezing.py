@@ -46,7 +46,7 @@ class SqueezingEmbedding(Operation):
 
         Depending on the ``method`` argument, the feature vector will be encoded in the phase or the amplitude.
         The argument ``c`` will define the value of the other quantity.
-        The default values are :math:`0.1` for ``c`` and amplitude for ``method``.
+        The default values are :math:`0.1` for ``c`` and ``'amplitude'`` for ``method``.
 
         .. code-block:: python
 
