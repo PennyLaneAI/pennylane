@@ -146,7 +146,7 @@ class TaskQubit(QubitDevice):
         analytic=None,
         backend="default.qubit",
         gen_report: Union[bool, str] = False,
-        future=False
+        future=False,
     ):
         super().__init__(0, shots, cache=False)
 
