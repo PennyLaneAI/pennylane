@@ -643,18 +643,3 @@ class TestAutosize:
         assert self.text_in_box(drawer)
 
         plt.close()
-
-
-def test_matplotlib_import_error(monkeypatch):
-    """Test that an error is raised if the MPLDrawer would be used without
-    an installed version of matplotlib.
-
-    This test needs to be the last in the suite because it makes a permanent change
-    to the system configuration.
-    """
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "matplotlib", None)
-        reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
-        assert not pennylane.circuit_drawer.mpldrawer.has_mpl
-        with pytest.raises(ImportError, match="Module matplotlib is required for"):
-            MPLDrawer(1, 1)
