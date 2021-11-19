@@ -4,42 +4,24 @@ from pennylane import numpy as np
 from pennylane.optimize import AdagradOptimizer
 
 
-x_vals = np.linspace(-10, 10, 16, endpoint=False)
-
-# Hyperparameters for optimizers
-stepsize = 0.1
-
-# functions and their gradients
-fnames = ["test_function_1", "test_function_2", "test_function_3"]
-univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
-grad_uni_fns = [lambda x: (np.cos(x),), lambda x: (np.exp(x / 10.0) / 10.0,), lambda x: (2 * x,)]
-
-multivariate_funcs = [
-    lambda x: np.sin(x[0]) + np.cos(x[1]),
-    lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-    lambda x: np.sum([x_ ** 2 for x_ in x]),
-]
-grad_multi_funcs = [
-    lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
-    lambda x: (
-        np.array(
-            [np.exp(x[0] / 3) / 3 * np.tanh(x[1]), np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2)]
-        ),
-    ),
-    lambda x: (np.array([2 * x_ for x_ in x]),),
-]
-
-
 class TestAdagradOptimizer:
     """Test the AdaGrad (adaptive gradient) optimizer"""
 
-    @pytest.mark.parametrize("x_start", x_vals)
+    @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
     def test_adagrad_optimizer_univar(self, x_start, tol):
         """Tests that adagrad optimizer takes one and two steps correctly
         for univariate functions."""
+        stepsize = 0.1
         adag_opt = AdagradOptimizer(stepsize)
 
-        for gradf, f, _ in zip(grad_uni_fns, univariate_funcs, fnames):
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
+        grad_uni_fns = [
+            lambda x: (np.cos(x),),
+            lambda x: (np.exp(x / 10.0) / 10.0,),
+            lambda x: (2 * x,),
+        ]
+
+        for gradf, f in zip(grad_uni_fns, univariate_funcs):
             adag_opt.reset()
 
             x_onestep = adag_opt.step(f, x_start)
@@ -59,9 +41,30 @@ class TestAdagradOptimizer:
     def test_adagrad_optimizer_multivar(self, tol):
         """Tests that adagrad optimizer takes one and two steps correctly
         for multivariate functions."""
+        stepsize = 0.1
         adag_opt = AdagradOptimizer(stepsize)
 
-        for gradf, f, _ in zip(grad_multi_funcs, multivariate_funcs, fnames):
+        multivariate_funcs = [
+            lambda x: np.sin(x[0]) + np.cos(x[1]),
+            lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+            lambda x: np.sum([x_ ** 2 for x_ in x]),
+        ]
+        grad_multi_funcs = [
+            lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
+            lambda x: (
+                np.array(
+                    [
+                        np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                    ]
+                ),
+            ),
+            lambda x: (np.array([2 * x_ for x_ in x]),),
+        ]
+
+        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+
+        for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
             for jdx in range(len(x_vals[:-1])):
                 adag_opt.reset()
 

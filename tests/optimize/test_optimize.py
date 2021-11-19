@@ -29,14 +29,11 @@ from pennylane.optimize import (
     RotosolveOptimizer,
 )
 
-# Hyperparameters for optimizers
-stepsize = 0.1
-gamma = 0.5
-delta = 0.8
-
 
 @pytest.fixture
 def opt(opt_name):
+    stepsize, gamma, delta = 0.1, 0.5, 0.8
+
     if opt_name == "gd":
         return GradientDescentOptimizer(stepsize)
 
@@ -134,7 +131,7 @@ class TestOverOpts:
 
         assert np.allclose(cost, wrapper.func(x, y, z), atol=tol)
 
-    def test_nontrainable_data(self, opt, opt_name, tol):
+    def test_nontrainable_data(self, opt, tol):
         """Check non-trainable argument does not get updated"""
 
         def func(x, data):
@@ -154,7 +151,7 @@ class TestOverOpts:
 
         assert np.allclose(cost, func(*args_new), atol=tol)
 
-    def test_steps_the_same(self, opt, opt_name, tol):
+    def test_steps_the_same(self, opt, tol):
         """Tests whether separating the args into different inputs affects their
         optimization step. Assumes single argument optimization is correct, as tested elsewhere."""
 
@@ -179,7 +176,7 @@ class TestOverOpts:
         assert np.allclose(y_seperate, args_new[1], atol=tol)
         assert np.allclose(z_seperate, args_new[2], atol=tol)
 
-    def test_one_trainable_one_non_trainable(self, opt, opt_name, tol):
+    def test_one_trainable_one_non_trainable(self, opt):
         """Tests that a cost function that takes one trainable and one
         non-trainable parameter executes well."""
         dev = qml.device("default.qubit", wires=2)
@@ -203,7 +200,7 @@ class TestOverOpts:
         assert x == 0
         assert ev == original_ev
 
-    def test_one_non_trainable_one_trainable(self, opt, opt_name, tol):
+    def test_one_non_trainable_one_trainable(self, opt):
         """Tests that a cost function that takes one non-trainable and one
         trainable parameter executes well."""
         dev = qml.device("default.qubit", wires=2)
@@ -226,7 +223,7 @@ class TestOverOpts:
         assert x == 0
         assert ev == original_ev
 
-    def test_two_trainable_args(self, opt, opt_name, tol):
+    def test_two_trainable_args(self, opt):
         """Tests that a cost function that takes at least two trainable
         arguments executes well."""
         dev = qml.device("default.qubit", wires=2)
