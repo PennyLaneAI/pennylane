@@ -409,7 +409,6 @@ class TestValidation:
         class MyRX(qml.operation.Operation):
             num_params = 1
             num_wires = 1
-            par_domain = "R"
             is_composable_rotation = True
             basis = "X"
             grad_method = "F"

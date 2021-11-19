@@ -328,7 +328,6 @@ class QuantumMonteCarlo(Operation):
         0.4327096457464369
     """
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, probs, func, target_wires, estimation_wires, do_queue=True, id=None):
