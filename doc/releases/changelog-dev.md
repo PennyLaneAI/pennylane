@@ -4,6 +4,67 @@
 
 <h3>New features since last release</h3>
 
+* PennyLane now supports drawing a QNode with matplotlib!
+  [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+
+  ```python
+  dev = qml.device("default.qubit", wires=4)
+
+  @qml.qnode(dev)
+  def circuit(x, z):
+      qml.QFT(wires=(0,1,2,3))
+      qml.Toffoli(wires=(0,1,2))
+      qml.CSWAP(wires=(0,2,3))
+      qml.RX(x, wires=0)
+      qml.CRZ(z, wires=(3,0))
+      return qml.expval(qml.PauliZ(0))
+  
+  fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
+  fig.show()
+  ```
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
+
+* It is now possible to use TensorFlow's [AutoGraph
+  mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
+  differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
+  will result in significantly more performant model execution, at the cost of a more expensive
+  initial compilation. [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1886)
+
+  Use AutoGraph to convert your QNodes or cost functions into TensorFlow
+  graphs by decorating them with `@tf.function`:
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliZ(0))
+
+  @tf.function
+  def cost(x):
+      return tf.reduce_sum(circuit(x))
+
+  x = tf.Variable([0.5, 0.7], dtype=tf.float64)
+
+  with tf.GradientTape() as tape:
+      loss = cost(x)
+
+  grad = tape.gradient(loss, x)
+  ```
+
+  The initial execution may take slightly longer than when executing the circuit in
+  eager mode; this is because TensorFlow is tracing the function to create the graph.
+  Subsequent executions will be much more performant.
+
+  Note that using AutoGraph with backprop-enabled devices, such as `default.qubit`,
+  will yield the best performance.
+
+  For more details, please see the [TensorFlow AutoGraph
+  documentation](https://www.tensorflow.org/guide/function).
+
 * `qml.math.scatter_element_add` now supports adding multiple values at
   multiple indices with a single function call, in all interfaces
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
@@ -87,6 +148,9 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
+* The qml.Barrier() operator has been added. With it we can separate blocks in compilation or use it as a visual tool.
+  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+  
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
 <h3>Improvements</h3>
@@ -145,13 +209,15 @@
   [RZ(0.3, wires=[0])]
   ```
 
-* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+* ``qml.circuit_drawer.tape_mpl`` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
 * Several AmplitudeEmbedding can now be instantiated if they affect different qubits.
   [(#1890)](https://github.com/PennyLaneAI/pennylane/issues/1890)
+
+* MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
@@ -196,7 +262,8 @@
 
 <h3>Bug fixes</h3>
 
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
+* `qml.draw` now supports arbitrary templates with matrix parameters.
+  [(#1917)](https://github.com/PennyLaneAI/pennylane/pull/1917)
 
 * `QuantumTape.trainable_params` now is a list instead of a set, making
   it more stable in very rare edge cases.
@@ -226,13 +293,15 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding and BasisEmbedding.
+* Add documentation example for AngleEmbedding, BasisEmbedding and StronglyEntanglingLayers.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
+  [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Christina Lee, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac,
+Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
+Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
