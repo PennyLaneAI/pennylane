@@ -27,15 +27,17 @@ def get_shift_rule(frequencies, shifts=None):
     cost function first derivatives with respect to the variational parameters can be cast into
     linear combinations of expectation values at shifted parameter values. These "gradient recipes"
     can be obtained from the unitary generator's eigenvalue frequency spectrum. Details can be
-    found in https://arxiv.org/abs/2107.12390.
+    found in `arXiv:2107.12390 <https://arxiv.org/abs/2107.12390>`__.
 
     Args:
         frequencies (tuple[int or float]): the tuple of eigenvalue frequencies. Eigenvalue
             frequencies are defined as the unique positive differences obtained from a set of
             eigenvalues.
-        shifts (tuple[int or float]): the tuple of shift values. If unspecified, equidistant
-            shifts are assumed. If supplied, the length of this tuple should match the number of
-            given frequencies.
+        shifts (tuple[int or float]): the tuple of shift values. If unspecified, the equidistant
+            shifts `(2 * mu - 1) * pi / (2 * n_freqs * freq_min)` are assumed, where `n_freqs` is
+            the number of frequencies, `freq_min` is the smallest frequency, and
+            `mu = 1, ..., n_freqs`. If supplied, the length of this tuple should match the number
+            of given frequencies.
 
     Returns:
          tuple: a tuple of one nested list describing the gradient recipe

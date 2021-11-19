@@ -41,7 +41,7 @@ class CommutingEvolution(Operation):
     .. math:: \langle 0 | W(t)^\dagger O W(t) | 0 \rangle,
 
     where :math:`W(t) = V U(t) Y` for some :math:`V` and :math:`Y`, taken with respect to
-    :math:`t` may be efficiently computed through generalized parameter shift rules. rules. When
+    :math:`t` may be efficiently computed through generalized parameter shift rules. When
     initialized, this template will automatically compute the parameter-shift rule if given the
     Hamiltonian's eigenvalue frequencies, i.e., the unique positive differences between
     eigenvalues.
@@ -69,9 +69,9 @@ class CommutingEvolution(Operation):
 
     Keyword args:
         frequencies (list[int or float]): The unique positive differences between eigenvalues in
-            the Hamiltonian's spectrum. If frequencies are not given, cost function partial
-            derivative will be computed using the standard two-term shift rule applied to the
-            constituent Pauli words in the Hamiltonian individually.
+            the spectrum of the Hamiltonian. If the frequencies are not given, the cost function
+            partial derivative will be computed using the standard two-term shift rule applied to
+            the constituent Pauli words in the Hamiltonian individually.
 
         shifts (list[int or float]): The parameter shifts to use in obtaining the
             generalized parameter shift rules. If unspecified, equidistant shifts are used.
