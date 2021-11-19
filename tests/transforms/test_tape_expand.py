@@ -621,7 +621,7 @@ class TestCreateCustomDecompExpandFn:
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        # BasicEntanglerLayers custom decomposition involves AngleEmbedding If
+        # BasicEntanglerLayers custom decomposition involves AngleEmbedding. If
         # expansion depth is 1, the AngleEmbedding will still be decomposed into
         # RX (since it's not a supported operation on the device), but the RX will
         # not be further decomposed even though the custom decomposition is specified.

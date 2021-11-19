@@ -204,7 +204,7 @@ def _custom_decomp_context(custom_decomps):
 
         # This is the method that will override the operations .decompose method
         def new_decomp_method(self):
-            with NonQueuingTape() as tape:
+            with NonQueuingTape():
                 if self.num_params == 0:
                     return fn(self.wires)
                 return fn(*self.parameters, self.wires)
