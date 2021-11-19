@@ -73,7 +73,8 @@ def zyz_decomposition(U, wire):
 
     # Derive theta from the off-diagonal element. We very very carefully rescale
     # the value to make sure it's between -1 and 1.
-    theta = 2 * math.arcsin(math.abs(U[0, 1]) - 1e-16)
+    element = math.abs(U[0, 1])
+    theta = 2 * math.arcsin(inside - math.sign(element) * 1e-16)
 
     # Compute phi and omega from the angles of the top row; use atan2 to keep
     # the angle within -np.pi and np.pi, and add very small values to avoid the
