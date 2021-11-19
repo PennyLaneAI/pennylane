@@ -41,6 +41,7 @@ class SqueezingEmbedding(Operation):
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
             amplitude of all squeezing gates if ``execution='phase'``
+
     Raises:
         ValueError: if inputs do not have the correct format
 
