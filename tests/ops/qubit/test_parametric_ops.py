@@ -881,7 +881,7 @@ class TestGrad:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.beta.qnode(dev, diff_method="backprop", interface="jax")
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
         def test(x):
             qml.RX(x, wires=[0])
             return qml.state()
