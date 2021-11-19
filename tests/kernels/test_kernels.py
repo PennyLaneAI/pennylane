@@ -377,6 +377,7 @@ class TestRegularization:
             (np.array([[1, 1], [1, -1]]), True, np.array([[1.0, 1.0], [1.0, 1.0]])),
         ],
     )
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix(self, input, fix_diagonal, expected_output):
         """Test obtaining the closest positive semi-definite matrix using a semi-definite program."""
         try:
