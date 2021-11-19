@@ -156,9 +156,9 @@
   a function that computes the generalized parameter shift rules for the time evolution.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
 
-  Given a generator's frequency spectrum of `R` unique frequencies, `qml.gradients.get_shift_rule`
-  returns the parameter shift rules to compute expectation value gradients of the generator's
-  variational parameter using `2R` shifted cost function evaluations. This becomes cheaper than
+  Given a Hamiltonian's frequency spectrum of `R` unique frequencies, `qml.gradients.get_shift_rule`
+  returns the parameter shift rules to compute expectation value gradients of the Hamiltonian's
+  time parameter using `2R` shifted cost function evaluations. This becomes cheaper than
   the standard application of the chain rule and two-term shift rule when `R` is less than the
   number of Pauli words in the Hamiltonian generator.
 
