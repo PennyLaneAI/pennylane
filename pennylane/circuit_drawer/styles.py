@@ -21,14 +21,38 @@ try:
 except (ModuleNotFoundError, ImportError) as e:
     has_mpl = False
 
+available = ['black_white_style', 'black_white_style_dark']
 
-def black_white_style(inverted=False):
+def black_white_style():
     """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
 
-    Args:
-        inverted (bool): If ``True``, plots white on black instead of black on white.
-
     The style can be reset with ``plt.style.use('default')``.
+
+    **Example**:
+
+    .. code-block:: python
+
+        qml.styles.black_white_style()
+
+        dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+        @qml.qnode(dev)
+        def circuit(x, z):
+            qml.QFT(wires=(0,1,2,3))
+            qml.Toffoli(wires=(0,1,2))
+            qml.CSWAP(wires=(0,2,3))
+            qml.RX(x, wires=0)
+            qml.CRZ(z, wires=(3,0))
+            return qml.expval(qml.PauliZ(0))
+
+
+        fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+        fig.show()
+
+    .. figure:: ../../_static/styles/black_white_style.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
     """
 
     if not has_mpl:
@@ -37,19 +61,58 @@ def black_white_style(inverted=False):
             "You can install matplotlib via \n\n   pip install matplotlib"
         )
 
-    if inverted:
-        almost_black = "#151515"  # less harsh than full black
-        plt.rcParams["figure.facecolor"] = almost_black
-        plt.rcParams["axes.facecolor"] = almost_black
-        plt.rcParams["patch.edgecolor"] = "white"
-        plt.rcParams["patch.facecolor"] = almost_black
-        plt.rcParams["patch.force_edgecolor"] = True
-        plt.rcParams["lines.color"] = "white"
-        plt.rcParams["text.color"] = "white"
-    else:
-        plt.rcParams["patch.facecolor"] = "white"
-        plt.rcParams["patch.edgecolor"] = "black"
-        plt.rcParams["patch.linewidth"] = 2
-        plt.rcParams["patch.force_edgecolor"] = True
-        plt.rcParams["lines.color"] = "black"
-        plt.rcParams["text.color"] = "black"
+    plt.rcParams["patch.facecolor"] = "white"
+    plt.rcParams["patch.edgecolor"] = "black"
+    plt.rcParams["patch.linewidth"] = 2
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "black"
+    plt.rcParams["text.color"] = "black"
+
+
+def black_white_style_dark():
+    """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
+
+    The style can be reset with ``plt.style.use('default')``.
+
+    **Example**:
+
+    .. code-block:: python
+
+        qml.styles.black_white_style_dark()
+
+        dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+        @qml.qnode(dev)
+        def circuit(x, z):
+            qml.QFT(wires=(0,1,2,3))
+            qml.Toffoli(wires=(0,1,2))
+            qml.CSWAP(wires=(0,2,3))
+            qml.RX(x, wires=0)
+            qml.CRZ(z, wires=(3,0))
+            return qml.expval(qml.PauliZ(0))
+
+
+        fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+        fig.show()
+
+    .. figure:: ../../_static/styles/black_white_style_dark.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    """
+
+    if not has_mpl:
+        raise ImportError(
+            "``black_white_style`` requires matplotlib."
+            "You can install matplotlib via \n\n   pip install matplotlib"
+        )
+
+
+    almost_black = "#151515"  # less harsh than full black
+    plt.rcParams["figure.facecolor"] = almost_black
+    plt.rcParams["axes.facecolor"] = almost_black
+    plt.rcParams["patch.edgecolor"] = "white"
+    plt.rcParams["patch.facecolor"] = almost_black
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "white"
+    plt.rcParams["text.color"] = "white"

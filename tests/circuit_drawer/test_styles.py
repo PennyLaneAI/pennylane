@@ -22,6 +22,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 
 
 def test_black_white_style():
+    """Tests the black white style sets ``plt.rcParams`` with correct values"""
 
     styles.black_white_style()
 
@@ -33,9 +34,8 @@ def test_black_white_style():
     assert plt.rcParams["text.color"] == "black"
 
 
-def test_black_white_style_inverted():
-
-    styles.black_white_style(inverted=True)
+def test_black_white_style_dark():
+    """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
 
     almost_black = "#151515"
     assert plt.rcParams["figure.facecolor"] == almost_black

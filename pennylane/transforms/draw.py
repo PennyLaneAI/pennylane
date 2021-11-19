@@ -270,6 +270,21 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         **Formatting:**
 
+        PennyLane has inbuilt styles.  The function names are listed in ``qml.styles.available``.
+        The functions modify ``plt.rcParams``, and thus the styling can be reset with ``plt.style.use('default')``.
+
+        .. code-block:: python
+
+            qml.styles.black_white_style()
+            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig.show()
+
+
+        .. figure:: ../../_static/styles/black_white_style_dark.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
         You can globally control the style with ``plt.rcParams`` and styles, see the
         `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
         If we customize ``plt.rcParams``, we get a
