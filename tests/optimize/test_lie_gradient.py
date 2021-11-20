@@ -144,7 +144,7 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
         observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
     )
 
-    opt = LieGradientOptimizer(circuit=lie_circuit,restriction=restriction)
+    opt = LieGradientOptimizer(circuit=lie_circuit, restriction=restriction)
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
@@ -153,7 +153,6 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
     omegas = opt.get_omegas()
 
     assert np.allclose(omegas, omegas_np)
-
 
 
 @pytest.mark.parametrize(
@@ -271,6 +270,7 @@ def test_lie_gradient_nqubits_check(capsys):
     out, _ = capsys.readouterr()
     assert out.startswith("WARNING: The exact Lie gradient is exponentially")
 
+
 def test_lie_gradient_restriction_check():
     """Test that a type error is raise for non-QNode circuits"""
 
@@ -279,7 +279,7 @@ def test_lie_gradient_restriction_check():
         qml.RY(0.5, wires=0)
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
-    restriction = 'not_a_hamiltonian'
+    restriction = "not_a_hamiltonian"
     with pytest.raises(
         TypeError,
         match="`restriction` must be a `qml.Hamiltonian`",
