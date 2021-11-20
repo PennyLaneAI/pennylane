@@ -180,12 +180,13 @@ class LieGradientOptimizer:
                 "WARNING: The exact Lie gradient is exponentially expensive in the number of qubits,"
                 f"optimizing a {self.nqubits} qubit circuit may be slow."
             )
-        restriction = kwargs.get("restriction", None)
+        if restriction!=None and not isinstance(restriction, qml.Hamiltonian):
+                raise TypeError(f"`restriction` must be a `qml.Hamiltonian`, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
         ) = self.get_su_n_operators(restriction)
-        self.exact = kwargs.get("exact", False)
+        self.exact = exact
         self.hamiltonian = circuit.func().obs
         self.coeffs, self.observables = self.hamiltonian.terms
         self.stepsize = stepsize
@@ -250,11 +251,10 @@ class LieGradientOptimizer:
                 operators.append(ps)
                 names.append(qml.grouping.pauli_word_to_string(ps, wire_map=wire_map))
         else:
-            if not isinstance(restriction, qml.Hamiltonian):
-                raise TypeError("`restriction` must be a `qml.Hamiltonian`")
             for ps in set(restriction.ops):
                 operators.append(ps)
                 names.append(qml.grouping.pauli_word_to_string(ps, wire_map=wire_map))
+        print(names)
         return operators, names
 
     def get_omegas(self):
