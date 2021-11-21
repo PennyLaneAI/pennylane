@@ -1181,6 +1181,7 @@ class Barrier(Operation):
 
     # pylint: disable=unused-argument
     def decomposition(self, wires):
+        # pylint: disable=unused-argument
         return []
 
     def label(self, decimals=None):

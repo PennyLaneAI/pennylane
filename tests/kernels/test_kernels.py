@@ -375,13 +375,37 @@ class TestRegularization:
             (np.array([[0, 1], [1, 0]]), False, np.array([[1, 1], [1, 1]]) / 2),
             (np.diag([1, -1]), True, np.diag([1, 1])),
             (np.array([[1, 1], [1, -1]]), True, np.array([[1.0, 1.0], [1.0, 1.0]])),
-            # the small perturbation ensures that the solver does not get stuck
-            (np.array([[0, 1.000001], [1, 0]]), True, np.array([[1, 1], [1, 1]])),
         ],
     )
     @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix(self, input, fix_diagonal, expected_output):
         """Test obtaining the closest positive semi-definite matrix using a semi-definite program."""
+        try:
+            import cvxpy as cp
+
+            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
+        except cp.error.SolverError:
+            pytest.skip(
+                "The cvxopt solver seems to not be installed on the system."
+                "It is the default solver for qml.kernels.closest_psd_matrix"
+                " and can be installed via `pip install cvxopt`."
+            )
+
+        assert np.allclose(output, expected_output, atol=1e-5)
+
+    @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
+    @pytest.mark.xfail(raises=RuntimeError, reason="solver did not converge")
+    def test_closest_psd_matrix_small_perturb(self):
+        """Test obtaining the closest positive semi-definite matrix using a
+        semi-definite program with a small perturbation input.
+
+        The small perturbation ensures that the solver does not get stuck.
+        """
+        input, fix_diagonal, expected_output = (
+            np.array([[0, 1.000001], [1, 0]]),
+            True,
+            np.array([[1, 1], [1, 1]]),
+        )
         try:
             import cvxpy as cp
 
