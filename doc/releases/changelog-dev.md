@@ -21,7 +21,7 @@
   dev = qml.device('default.qubit',wires=4)
   @qml.qnode(dev)
   def circuit(weights):
-    qml.templates.MPS_from_function(wires=range(4),loc=2,block=block,n_params_block=2,weights=weights)
+    qml.MPS(wires=range(4),loc=2,block=block,n_params_block=2,weights=weights)
     return qml.expval(qml.PauliZ(wires=3))
   ```
   Running this circuit gives:

@@ -1,15 +1,14 @@
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
-import re
 
 
 def compute_indices_MPS(wires, loc):
     """
     Generate a list of wire indices that quantum gates acts on
     Args:
-        loc (int): local wire number of a single quantum gate
         wires (Iterable): the total set of wires
+        loc (int): local wire number of a single quantum gate        
     Returns:
         layers (array): array of wire indices or wire labels for each block
     """
@@ -18,7 +17,8 @@ def compute_indices_MPS(wires, loc):
     return layers
 
 
-class MPS_from_function(Operation):
+class MPS(Operation):
+    
 
     num_params = 1
     num_wires = AnyWires
@@ -39,25 +39,38 @@ class MPS_from_function(Operation):
         assert n_wires >= 3, f"number of wires must be greater than or equal to 3; got {n_wires}"
         assert loc <= n_wires, f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
   
+
+        shape = qml.math.shape(weights)[-4:] # (n_params_block, n_blocks)
+        self.n_params_block = n_params_block
         self.n_blocks = int(n_wires / (loc / 2) - 1)
         self.block = block
 
         if weights is None:
-            self.weights = np.random.rand(n_params_block, int(self.n_blocks))
+            self.weights = np.random.rand(n_params_block, int(self.n_blocks)) # Obsolet
+
         else:
+
+            if shape[-1] != self.n_blocks:
+                raise ValueError(
+                    f"Weights tensor must have last dimension of length {self.n_blocks}; got {shape[-1]}"
+                )
+            if shape[0] != self.n_params_block:
+                raise ValueError(
+                    f"Weights tensor must have first dimension of length {self.n_params_block}; got {shape[0]}"
+                )                
+
             self.weights = weights
 
         self.ind_gates = compute_indices_MPS(wires, loc)
 
-        # TO DO: raise error if params_block does not match with the input block
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
         with qml.tape.QuantumTape() as tape:
             for idx, w in enumerate(self.ind_gates):
-                self.block(weights=self.weights[idx], wires=w.tolist())
-                # In this ordering, remember we need to measure the last qubit
+                self.block(weights=self.weights[...,idx], wires=w.tolist())
+                # Different ordering compared to [arXiv:1803.11537v2] -> measurement of the last instead of the first qubit
 
         return tape
 
