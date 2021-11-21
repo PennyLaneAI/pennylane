@@ -86,13 +86,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def prep_par(par, op):
-    "Convert par into a list of parameters that op expects."
-    if op.par_domain == "A":
-        return [np.diag([x, 1]) for x in par]
-    return par
-
-
 def include_inverses_with_test_data(test_data):
     return test_data + [(item[0] + ".inv", item[1], item[2]) for item in test_data]
 
@@ -2283,7 +2276,6 @@ class TestApplyOperationUnit:
             matrix = np.array([[0, 1], [1, 0]])
             num_params = 0
             num_wires = 1
-            par_domain = None
 
             @classmethod
             def _matrix(cls, *params):
@@ -2323,7 +2315,6 @@ class TestApplyOperationUnit:
         class TestToffoli(qml.operation.Operation):
             num_params = 0
             num_wires = 3
-            par_domain = None
             matrix = U_toffoli
 
             @classmethod

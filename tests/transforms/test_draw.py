@@ -401,6 +401,19 @@ def test_qubit_circuit_length_under_max_length_kwdarg():
         assert qml.draw(qnode, max_length=60)() == expected
 
 
+def test_matrix_parameter_template():
+    """Assert draw method handles templates with matrix valued parameters."""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.AmplitudeEmbedding(np.array([0, 1]), wires=0)
+        return qml.state()
+
+    expected = " 0: ──AmplitudeEmbedding(M0)──┤ State \nM0 =\n[0.+0.j 1.+0.j]\n"
+    assert qml.draw(circuit)() == expected
+
+
 class TestWireOrdering:
     """Tests for wire ordering functionality"""
 
