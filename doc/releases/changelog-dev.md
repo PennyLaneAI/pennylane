@@ -319,7 +319,8 @@
 
 <h3>Bug fixes</h3>
 
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
+* `qml.draw` now supports arbitrary templates with matrix parameters.
+  [(#1917)](https://github.com/PennyLaneAI/pennylane/pull/1917)
 
 * `QuantumTape.trainable_params` now is a list instead of a set, making
   it more stable in very rare edge cases.
@@ -340,6 +341,10 @@
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+  
+* Device tests no longer throw warnings about the `requires_grad`
+  attribute of variational parameters.
+  [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
 
 <h3>Documentation</h3>
 
@@ -349,9 +354,10 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding and BasisEmbedding.
+* Add documentation example for AngleEmbedding, BasisEmbedding and StronglyEntanglingLayers.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
+  [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
 
 <h3>Contributors</h3>
 
