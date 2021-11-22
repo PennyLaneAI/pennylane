@@ -249,9 +249,7 @@ class Operator(abc.ABC):
 
     The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     Args:
         params (tuple[float, int, array]): operator parameters
@@ -389,25 +387,8 @@ class Operator(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def num_params(self):
-        """Number of parameters the operator takes."""
-
-    @property
-    @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on."""
-
-    @property
-    @abc.abstractmethod
-    def par_domain(self):
-        """Domain of the gate parameters.
-
-        * ``'N'``: natural numbers (including zero).
-        * ``'R'``: floats.
-        * ``'A'``: arrays of real or complex values.
-        * ``'L'``: list of arrays of real or complex values.
-        * ``None``: if there are no parameters.
-        """
 
     @property
     def name(self):
@@ -423,6 +404,57 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.RX(1.23456, wires=0)
+        >>> op.label()
+        "RX"
+        >>> op.label(decimals=2)
+        "RX\n(1.23)"
+        >>> op.label(base_label="my_label")
+        "my_label"
+        >>> op.label(decimals=2, base_label="my_label")
+        "my_label\n(1.23)"
+        >>> op.inv()
+        >>> op.label()
+        "RX⁻¹"
+
+        """
+        op_label = base_label or self.__class__.__name__
+
+        if decimals is None or self.num_params == 0:
+            return op_label
+
+        params = self.parameters
+
+        # matrix parameters not rendered
+        if len(qml.math.shape(params[0])) != 0:
+            return op_label
+
+        def _format(x):
+            try:
+                return format(qml.math.toarray(x), f".{decimals}f")
+            except ValueError:
+                # If the parameter can't be displayed as a float
+                return format(x)
+
+        if self.num_params == 1:
+            return op_label + f"\n({_format(params[0])})"
+
+        param_string = ",\n".join(_format(p) for p in params)
+        return op_label + f"\n({param_string})"
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
         self._name = self.__class__.__name__  #: str: name of the operator
@@ -431,6 +463,16 @@ class Operator(abc.ABC):
 
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
+
+        self._num_params = len(params)
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            raise ValueError(
+                "{}: wrong number of parameters. "
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+            )
 
         if isinstance(wires, Wires):
             self._wires = wires
@@ -448,12 +490,6 @@ class Operator(abc.ABC):
                 "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
-        if len(params) != self.num_params:
-            raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
-            )
-
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -465,6 +501,20 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
         return "{}(wires={})".format(self.name, self.wires.tolist())
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters that this operator expects to be fed via the
+        dynamic `*params` argument.
+
+        By default, this property returns as many parameters as were used for the
+        operator creation. If the number of parameters for an operator subclass is fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            int: number of parameters
+        """
+        return self._num_params
 
     @property
     def wires(self):
@@ -479,6 +529,29 @@ class Operator(abc.ABC):
     def parameters(self):
         """Current parameter values."""
         return self.data.copy()
+
+    @staticmethod
+    def decomposition(*params, wires):
+        """Defines a decomposition of this operator into products of other operators.
+
+        Args:
+            params (tuple[float, int, array]): operator parameters
+            wires (Union(Sequence[int], Wires)): wires the operator acts on
+
+        Returns:
+            list[Operation]
+        """
+        raise NotImplementedError
+
+    def decompose(self):
+        """Decomposes this operator into products of other operators.
+
+        Returns:
+            list[Operation]
+        """
+        if self.num_params == 0:
+            return self.decomposition(wires=self.wires)
+        return self.decomposition(*self.parameters, wires=self.wires)
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -497,9 +570,7 @@ class Operation(Operator):
     As with :class:`~.Operator`, the following class attributes must be
     defined for all operations:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
@@ -559,48 +630,6 @@ class Operation(Operator):
     is_controlled = None
     """str or None: Return the name ``Str`` of the target gate if the operation is controlled."""
 
-    is_self_inverse = None
-    """bool or None: ``True`` if the operation is its own inverse.
-
-    If ``None``, all instances of the given operation will be ignored during
-    compilation transforms involving inverse cancellation.
-    """
-
-    is_symmetric_over_all_wires = None
-    """bool or None: ``True`` if the operation is the same if you exchange the order
-    of wires.
-
-    For example, ``qml.CZ(wires=[0, 1])`` has the same effect as ``qml.CZ(wires=[1,
-    0])`` due to symmetry of the operation.
-
-    If ``None``, all instances of the operation will be ignored during
-    compilation transforms that check for wire symmetry.
-    """
-
-    is_symmetric_over_control_wires = None
-    """bool or None: ``True`` if the operation is the same if you exchange the order
-    of all but the last wire.
-
-    For example, ``qml.Toffoli(wires=[0, 1, 2])`` has the same effect as
-    ``qml.Toffoli(wires=[1, 0, 2])``, but neither are the same as
-    ``qml.Toffoli(wires=[0, 2, 1])``.
-
-    If ``None``, all instances of the operation will be ignored during
-    compilation transforms that check for control-wire symmetry.
-    """
-
-    is_composable_rotation = None
-    """bool or None: ``True`` if composing multiple copies of the operation
-    results in an addition (or alternative accumulation) of parameters.
-
-    For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
-    wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
-    a single rotation ``qml.RZ(0.3, wires=0)``.
-
-    If set to ``None``, the operation will be ignored during compilation
-    transforms that merge adjacent rotations.
-    """
-
     basis = None
     """str or None: The basis of an operation, or for controlled gates, of the
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
@@ -610,27 +639,15 @@ class Operation(Operator):
     ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
     """
 
-    has_unitary_generator = None
-    """bool or None: ``True`` if the operation has a ``generator`` and the first
-    entry of that ``generator`` is unitary.
-
-    For example, ``qml.RZ.generator = [qml.PauliZ, -1/2]`` and ``qml.PauliZ`` is
-    unitary, so that ``qml.RZ.has_unitary_generator = True``. Contrary,
-    ``qml.PhaseShift.generator = [np.array([[0, 0], [0, 1]]), 1]`` where the
-    array in the first entry is not unitary, so that
-    ``qml.PhaseShift.has_unitary_generator = False``. This flag is used for
-    decompositions in algorithms using the Hadamard test like ``qml.metric_tensor``
-    when used without approximation.
-    """
-
     @property
     def control_wires(self):  # pragma: no cover
-        r"""For operations that are controlled, returns the set of control wires.
+        r"""Returns the control wires.  For operations that are not controlled,
+        this is an empty ``Wires`` object of length ``0``.
 
         Returns:
-            Wires: The set of control wires of the operation.
+            Wires: The control wires of the operation.
         """
-        raise NotImplementedError
+        return Wires([])
 
     @property
     def target_wires(self):  # pragma: no cover
@@ -725,12 +742,6 @@ class Operation(Operator):
     def inverse(self, boolean):
         self._inverse = boolean
 
-    @staticmethod
-    def decomposition(*params, wires):
-        """Returns a template decomposing the operation into other
-        quantum operations."""
-        raise NotImplementedError
-
     def expand(self):
         """Returns a tape containing the decomposed operations, rather
         than a list.
@@ -743,7 +754,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition(*self.data, wires=self.wires)
+            self.decompose()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -802,21 +813,16 @@ class Operation(Operator):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
+    def label(self, decimals=None, base_label=None):
+        if self.inverse:
+            base_label = base_label or self.__class__.__name__
+            base_label += "⁻¹"
+        return super().label(decimals=decimals, base_label=base_label)
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
         self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
-
-        # check the grad_method validity
-        if self.par_domain == "N":
-            assert (
-                self.grad_method is None
-            ), "An operation may only be differentiated with respect to real scalar parameters."
-        elif self.par_domain == "A":
-            assert self.grad_method in (
-                None,
-                "F",
-            ), "Operations that depend on arrays containing free variables may only be differentiated using the F method."
 
         # check the grad_recipe validity
         if self.grad_method == "A":
@@ -831,100 +837,13 @@ class Operation(Operator):
             assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
 
-class DiagonalOperation(Operation):
-    r"""Base class for diagonal quantum operations supported by a device.
-
-    As with :class:`~.Operation`, the following class attributes must be
-    defined for all operations:
-
-    * :attr:`~.Operator.num_params`
-    * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
-
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
-    * :attr:`~.Operation.generator`
-
-    Args:
-        params (tuple[float, int, array]): operation parameters
-
-    Keyword Args:
-        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
-            is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`BaseQNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a BaseQNode context.
-    """
-    # pylint: disable=abstract-method
-
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the operator.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors.
-
-        This is a *class method* that must be defined for all
-        new diagonal operations, that returns the eigenvalues
-        of the operator in the computational basis.
-
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
-
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
-
-        **Example:**
-
-        >>> qml.RZ._eigvals(0.5)
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
-        Returns:
-            array: eigenvalue representation
-        """
-        raise NotImplementedError
-
-    @property
-    def eigvals(self):
-        r"""Eigenvalues of an instantiated diagonal operation.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors.
-
-        **Example:**
-
-        >>> U = qml.RZ(0.5, wires=1)
-        >>> U.eigvals
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
-        Returns:
-            array: eigvals representation
-        """
-        return super().eigvals
-
-    @classmethod
-    def _matrix(cls, *params):
-        return np.diag(cls._eigvals(*params))
-
-
 class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
 
     As with :class:`~.Operation`, the following class attributes must be
     defined for all channels:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     To define a noisy channel, the following attribute of :class:`~.Channel`
     can be used to list the corresponding Kraus matrices.
@@ -1011,9 +930,7 @@ class Observable(Operator):
     As with :class:`~.Operator`, the following class attributes must be
     defined for all observables:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     Args:
         params (tuple[float, int, array]): observable parameters
@@ -1225,13 +1142,43 @@ class Tensor(Observable):
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
-    par_domain = None
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
         self.obs = []
         self._args = args
         self.queue(init=True)
+
+    def label(self, decimals=None, base_label=None):
+        r"""How the operator is represented in diagrams and drawings.
+
+        Args:
+            decimals=None (Int): If ``None``, no parameters are included. Else,
+                how to round the parameters.
+            base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
+                Must be same length as ``obs`` attribute.
+
+        Returns:
+            str: label to use in drawings
+
+        >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+        >>> T.label()
+        'X⊗H'
+        >>> T.label(base_label=["X0", "H2"])
+        'X0⊗H2'
+
+        """
+        if base_label is not None:
+            if len(base_label) != len(self.obs):
+                raise ValueError(
+                    "Tensor label requires ``base_label`` keyword to be same length"
+                    " as tensor components."
+                )
+            return "⊗".join(
+                ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
+            )
+
+        return "⊗".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
@@ -1801,10 +1748,10 @@ class CVOperation(CV, Operation):
         """
         p = [qml.math.toarray(a) for a in self.parameters]
         if inverse:
-            if self.par_domain == "A":
+            try:
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
                 p[0] = np.linalg.inv(p[0])
-            else:
+            except np.linalg.LinAlgError:
                 p[0] = -p[0]  # negate first parameter
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
 
@@ -1904,6 +1851,12 @@ def operation_derivative(operation) -> np.ndarray:
 
 
 @qml.BooleanFn
+def not_tape(obj):
+    """Returns ``True`` if the object is not a quantum tape"""
+    return isinstance(obj, qml.tape.QuantumTape)
+
+
+@qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
     return hasattr(obj, "generator") and obj.generator[0] is not None
@@ -1933,7 +1886,7 @@ def has_nopar(obj):
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
     according to the ``has_unitary_generator`` flag."""
-    return obj.has_unitary_generator
+    return obj in qml.ops.qubit.attributes.has_unitary_generator
 
 
 @qml.BooleanFn

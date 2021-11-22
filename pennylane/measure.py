@@ -299,6 +299,14 @@ def sample(op=None, wires=None):
     If no observable is provided then basis state samples are returned directly
     from the device.
 
+    Args:
+        op (Observable or None): a quantum observable object
+        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
+
+    Raises:
+        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
+        ValueError: Cannot set wires if an observable is provided
+
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
@@ -346,14 +354,13 @@ def sample(op=None, wires=None):
            [1, 1],
            [0, 0]])
 
+    .. note::
 
-    Args:
-        op (Observable or None): a quantum observable object
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
-
-    Raises:
-        QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-        ValueError: Cannot set wires if an observable is provided
+        QNodes that return samples cannot, in general, be differentiated, since the derivative
+        with respect to a sample --- a stochastic process --- is ill-defined. The one exception
+        is if the QNode uses the parameter-shift method (``diff_method="parameter-shift"``), in which
+        case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
+        observable ``obs``.
     """
     if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
@@ -479,9 +486,26 @@ def state():
 
     .. note::
 
-        Calculating the derivative of :func:`~.state` is currently only supported when using the
+        Differentiating :func:`~.state` is currently only supported when using the
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
+
+    .. UsageDetails::
+
+        A QNode with the ``qml.state`` output can be used in a cost function with
+        is then differentiated:
+
+        >>> dev = qml.device('default.qubit', wires=2)
+        >>> qml.qnode(dev, diff_method="backprop")
+        ... def test(x):
+        ...     qml.RY(x, wires=[0])
+        ...     return qml.state()
+        >>> def cost(x):
+        ...     return np.abs(test(x)[0])
+        >>> cost(x)
+        tensor(0.98877108, requires_grad=True)
+        >>> qml.grad(cost)(x)
+        -0.07471906623679961
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State)

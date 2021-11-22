@@ -15,7 +15,7 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,protected-access
 import contextlib
 from functools import wraps
 import itertools
@@ -31,7 +31,7 @@ INTERFACE_NAMES = {
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
     "JAX": ("jax", "JAX"),
     "PyTorch": ("torch", "pytorch"),
-    "TensorFlow": ("tf", "tensorflow"),
+    "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
 }
 """dict[str, str]: maps allowed interface strings to the name of the interface"""
 
@@ -64,6 +64,7 @@ def set_shots(device, shots):
         return
 
     original_shots = device.shots
+    original_shot_vector = device._shot_vector
 
     try:
         if shots is not False and device.shots != shots:
@@ -71,6 +72,7 @@ def set_shots(device, shots):
         yield
     finally:
         device.shots = original_shots
+        device._shot_vector = original_shot_vector
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
@@ -320,6 +322,7 @@ def execute(
 
     # the default execution function is batch_execute
     execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    _mode = "backward"
 
     if gradient_fn == "device":
         # gradient function is a device method
@@ -336,6 +339,7 @@ def execute(
             # both results and gradients
             execute_fn = set_shots(device, override_shots)(device.execute_and_gradients)
             gradient_fn = None
+            _mode = "forward"
 
         elif mode == "backward":
             # disable caching on the forward pass
@@ -359,7 +363,13 @@ def execute(
         if interface in INTERFACE_NAMES["Autograd"]:
             from .autograd import execute as _execute
         elif interface in INTERFACE_NAMES["TensorFlow"]:
-            from .tensorflow import execute as _execute
+            import tensorflow as tf
+
+            if not tf.executing_eagerly() or "autograph" in interface:
+                from .tensorflow_autograph import execute as _execute
+            else:
+                from .tensorflow import execute as _execute
+
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
@@ -377,6 +387,8 @@ def execute(
             f"version of {interface_name} to enable the '{interface}' interface."
         ) from e
 
-    res = _execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff)
+    res = _execute(
+        tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
+    )
 
     return res

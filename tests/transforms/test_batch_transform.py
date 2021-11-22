@@ -144,7 +144,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=2)
         cache = {}
 
-        @qml.beta.qnode(dev, max_diff=3, cache=cache)
+        @qml.qnode(dev, max_diff=3, cache=cache)
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RY(x, wires=0)
@@ -277,6 +277,93 @@ class TestBatchTransform:
             qml.expval(qml.PauliX(0))
 
         tapes, fn = self.my_transform(tape, a, b)
+
+        assert len(tapes[0].operations) == 2
+        assert tapes[0].operations[0].name == "Hadamard"
+        assert tapes[0].operations[1].name == "RY"
+        assert tapes[0].operations[1].parameters == [a * np.abs(x)]
+
+        assert len(tapes[1].operations) == 2
+        assert tapes[1].operations[0].name == "Hadamard"
+        assert tapes[1].operations[1].name == "RZ"
+        assert tapes[1].operations[1].parameters == [b * np.sin(x)]
+
+    def test_parametrized_transform_tape_decorator(self):
+        """Test that a parametrized transform can be applied
+        to a tape"""
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliX(0))
+
+        tapes, fn = self.my_transform(a, b)(tape)
+
+        assert len(tapes[0].operations) == 2
+        assert tapes[0].operations[0].name == "Hadamard"
+        assert tapes[0].operations[1].name == "RY"
+        assert tapes[0].operations[1].parameters == [a * np.abs(x)]
+
+        assert len(tapes[1].operations) == 2
+        assert tapes[1].operations[0].name == "Hadamard"
+        assert tapes[1].operations[1].name == "RZ"
+        assert tapes[1].operations[1].parameters == [b * np.sin(x)]
+
+    def test_parametrized_transform_device(self, mocker):
+        """Test that a parametrized transform can be applied
+        to a device"""
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        dev = qml.device("default.qubit", wires=1)
+        dev = self.my_transform(dev, a, b)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        circuit(x)
+        tapes = spy.call_args[0][0]
+
+        assert len(tapes[0].operations) == 2
+        assert tapes[0].operations[0].name == "Hadamard"
+        assert tapes[0].operations[1].name == "RY"
+        assert tapes[0].operations[1].parameters == [a * np.abs(x)]
+
+        assert len(tapes[1].operations) == 2
+        assert tapes[1].operations[0].name == "Hadamard"
+        assert tapes[1].operations[1].name == "RZ"
+        assert tapes[1].operations[1].parameters == [b * np.sin(x)]
+
+    def test_parametrized_transform_device_decorator(self, mocker):
+        """Test that a parametrized transform can be applied
+        to a device"""
+
+        a = 0.1
+        b = 0.4
+        x = 0.543
+
+        dev = qml.device("default.qubit", wires=1)
+        dev = self.my_transform(a, b)(dev)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        spy = mocker.spy(circuit.device, "batch_execute")
+        circuit(x)
+        tapes = spy.call_args[0][0]
 
         assert len(tapes[0].operations) == 2
         assert tapes[0].operations[0].name == "Hadamard"
@@ -486,8 +573,8 @@ class TestBatchTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-        weights = torch.tensor([0.1, 0.2], requires_grad=True)
-        x = torch.tensor(0.543, requires_grad=True)
+        weights = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
+        x = torch.tensor(0.543, requires_grad=True, dtype=torch.float64)
 
         res = self.my_transform(qnode, weights)(x)
         expected = self.expval(x.detach().numpy(), weights.detach().numpy())
@@ -501,15 +588,12 @@ class TestBatchTransformGradients:
     def test_differentiable_jax(self, diff_method):
         """Test that a batch transform is differentiable when using
         jax"""
-        if diff_method in ("parameter-shift", "finite-diff"):
-            pytest.skip("Does not support parameter-shift mode")
-
         jax = pytest.importorskip("jax")
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
 
         def cost(x, weights):
-            return self.my_transform(qnode, weights)(x)
+            return self.my_transform(qnode, weights, max_diff=1)(x)
 
         weights = jax.numpy.array([0.1, 0.2])
         x = jax.numpy.array(0.543)

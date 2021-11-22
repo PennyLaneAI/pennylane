@@ -53,6 +53,18 @@ def test_adjoint_directly_on_op():
     np.testing.assert_allclose(my_circuit(), np.array([0.92388, 0.382683j]), atol=1e-6, rtol=1e-6)
 
 
+def test_barrier_adjoint():
+    """Check that the adjoint for the Barrier is working"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        qml.adjoint(qml.Barrier)(wires=0)
+        return qml.state()
+
+    assert my_circuit()[0] == 1.0
+
+
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)
@@ -148,17 +160,13 @@ class TestOutsideOfQueuing:
             assert o1.wires == o2.wires
 
 
-test_functions = [
-    lambda fn, *args, **kwargs: adjoint(fn)(*args, **kwargs),
-    lambda fn, *args, **kwargs: qml.inv(fn(*args, **kwargs)),
-]
+fn = lambda func, *args, **kwargs: adjoint(func)(*args, **kwargs)
 
 
-@pytest.mark.parametrize("fn", test_functions)
 class TestTemplateIntegration:
     """Test that templates work correctly with the adjoint transform"""
 
-    def test_angle_embedding(self, fn):
+    def test_angle_embedding(self):
         """Test that the adjoint correctly inverts angle embedding"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.AngleEmbedding
@@ -173,7 +181,7 @@ class TestTemplateIntegration:
         res = circuit(weights)
         assert len(np.nonzero(res)) == 1
 
-    def test_amplitude_embedding(self, fn):
+    def test_amplitude_embedding(self):
         """Test that the adjoint correctly inverts amplitude embedding"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.AmplitudeEmbedding
@@ -188,7 +196,7 @@ class TestTemplateIntegration:
         res = circuit(weights)
         assert len(np.nonzero(res)) == 1
 
-    def test_basis_embedding(self, fn):
+    def test_basis_embedding(self):
         """Test that the adjoint correctly inverts basis embedding"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.BasisEmbedding
@@ -205,7 +213,7 @@ class TestTemplateIntegration:
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
-    def test_displacement_embedding(self, fn):
+    def test_displacement_embedding(self):
         """Test that the adjoint correctly inverts displacement embedding"""
         dev = qml.device("default.gaussian", wires=3)
         template = qml.templates.DisplacementEmbedding
@@ -220,7 +228,7 @@ class TestTemplateIntegration:
         res = circuit(weights)
         assert np.allclose(res, 0.0)
 
-    def test_squeezing_embedding(self, fn):
+    def test_squeezing_embedding(self):
         """Test that the adjoint correctly inverts squeezing embedding"""
         dev = qml.device("default.gaussian", wires=3)
         template = qml.templates.SqueezingEmbedding
@@ -235,7 +243,7 @@ class TestTemplateIntegration:
         res = circuit(weights)
         assert np.allclose(res, 0.0)
 
-    def test_qaoa_embedding(self, fn):
+    def test_qaoa_embedding(self):
         """Test that the adjoint correctly inverts qaoa embedding"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.QAOAEmbedding
@@ -255,7 +263,7 @@ class TestTemplateIntegration:
 
         assert np.allclose(res, expected)
 
-    def test_iqp_embedding(self, fn):
+    def test_iqp_embedding(self):
         """Test that the adjoint correctly inverts iqp embedding"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.IQPEmbedding
@@ -281,7 +289,7 @@ class TestTemplateIntegration:
             qml.templates.RandomLayers,
         ],
     )
-    def test_layers(self, fn, template):
+    def test_layers(self, template):
         """Test that the adjoint correctly inverts layers"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -305,7 +313,7 @@ class TestTemplateIntegration:
             qml.templates.ParticleConservingU2,
         ],
     )
-    def test_particle_conserving(self, fn, template):
+    def test_particle_conserving(self, template):
         """Test that the adjoint correctly inverts particle conserving layers"""
         dev = qml.device("default.qubit", wires=3)
         init_state = np.array([0, 1, 1])
@@ -323,7 +331,7 @@ class TestTemplateIntegration:
 
         assert np.allclose(res, expected)
 
-    def test_simplified_two_design(self, fn):
+    def test_simplified_two_design(self):
         """Test that the adjoint correctly inverts the simplified two design"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.SimplifiedTwoDesign
@@ -341,7 +349,7 @@ class TestTemplateIntegration:
 
         assert np.allclose(res, expected)
 
-    def test_approx_time_evolution(self, fn):
+    def test_approx_time_evolution(self):
         """Test that the adjoint correctly inverts the approx time evolution"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.ApproxTimeEvolution
@@ -361,7 +369,7 @@ class TestTemplateIntegration:
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
-    def test_arbitrary_unitary(self, fn):
+    def test_arbitrary_unitary(self):
         """Test that the adjoint correctly inverts the arbitrary unitary"""
         dev = qml.device("default.qubit", wires=3)
         template = qml.templates.ArbitraryUnitary
@@ -379,10 +387,10 @@ class TestTemplateIntegration:
 
         assert np.allclose(res, expected)
 
-    def test_single_excitation(self, fn):
+    def test_single_excitation(self):
         """Test that the adjoint correctly inverts the single excitation unitary"""
         dev = qml.device("default.qubit", wires=3)
-        template = qml.templates.SingleExcitationUnitary
+        template = qml.templates.FermionicSingleExcitation
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -396,10 +404,10 @@ class TestTemplateIntegration:
 
         assert np.allclose(res, expected)
 
-    def test_double_excitation(self, fn):
+    def test_double_excitation(self):
         """Test that the adjoint correctly inverts the double excitation unitary"""
         dev = qml.device("default.qubit", wires=4)
-        template = qml.templates.DoubleExcitationUnitary
+        template = qml.templates.FermionicDoubleExcitation
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -413,7 +421,7 @@ class TestTemplateIntegration:
 
         assert np.allclose(res, expected)
 
-    def test_interferometer(self, fn):
+    def test_interferometer(self):
         """Test that the adjoint correctly inverts squeezing embedding"""
         dev = qml.device("default.gaussian", wires=3)
         template = qml.templates.Interferometer
@@ -436,7 +444,7 @@ class TestTemplateIntegration:
         res = circuit(weights)
         assert np.allclose(res, np.sinh(r) ** 2)
 
-    def test_gate_fabric(self, fn):
+    def test_gate_fabric(self):
         """Test that the adjoint correctly inverts the gate fabric template"""
         dev = qml.device("default.qubit", wires=4)
         template = qml.templates.GateFabric

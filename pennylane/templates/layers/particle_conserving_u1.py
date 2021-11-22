@@ -189,7 +189,6 @@ class ParticleConservingU1(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ParticleConservingU1
             import numpy as np
             from functools import partial
 
@@ -205,14 +204,14 @@ class ParticleConservingU1(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(ParticleConservingU1, init_state=ref_state)
+            ansatz = partial(qml.ParticleConservingU1, init_state=ref_state)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h'
             layers = 2
-            shape = ParticleConservingU1.shape(layers, qubits)
+            shape = qml.ParticleConservingU1.shape(layers, qubits)
             params = np.random.random(shape)
             print(cost_fn(params))
 
@@ -224,13 +223,11 @@ class ParticleConservingU1(Operation):
 
         .. code-block:: python
 
-            shape = ParticleConservingU1.shape(n_layers=2, n_wires=2)
+            shape = qml.ParticleConservingU1.shape(n_layers=2, n_wires=2)
             params = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
@@ -263,6 +260,10 @@ class ParticleConservingU1(Operation):
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
+    @property
+    def num_params(self):
+        return 1
+
     def expand(self):
 
         nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
@@ -270,7 +271,7 @@ class ParticleConservingU1(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
+            qml.BasisEmbedding(self.init_state, wires=self.wires)
 
             for l in range(self.n_layers):
                 for i, wires_ in enumerate(nm_wires):

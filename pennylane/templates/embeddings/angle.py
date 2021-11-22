@@ -19,7 +19,6 @@ import pennylane as qml
 from pennylane.ops import RX, RY, RZ
 from pennylane.operation import Operation, AnyWires
 
-
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
 
@@ -44,11 +43,34 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Iterable): wires that the template acts on
         rotation (str): type of rotations used
+
+    Example:
+
+        Angle embedding encodes the features by using the specified rotation operation.
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.AngleEmbedding(features=feature_vector, wires=range(3), rotation='Z')
+                qml.Hadamard(0)
+                return qml.probs(wires=range(3))
+
+            X = [1,2,3]
+
+        Here, we have also used rotation angles :class:`RZ`. If not specified, :class:`RX` is used as default.
+        The resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──RZ(1)──H──╭┤ Probs
+            1: ──RZ(2)─────├┤ Probs
+            2: ──RZ(3)─────╰┤ Probs
+
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
@@ -57,9 +79,7 @@ class AngleEmbedding(Operation):
             raise ValueError(f"Rotation option {rotation} not recognized.")
         self.rotation = ROT[rotation]
 
-        shape = qml.math.shape(features)
-        if len(shape) != 1:
-            raise ValueError(f"Features must be a one-dimensional tensor; got shape {shape}.")
+        shape = qml.math.shape(features)[-1:]
         n_features = shape[0]
         if n_features > len(wires):
             raise ValueError(
@@ -69,9 +89,16 @@ class AngleEmbedding(Operation):
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
+    @property
+    def num_params(self):
+        return 1
+
     def expand(self):
 
         features = self.parameters[0]
+        batched = len(qml.math.shape(features)) > 1
+
+        features = features.T if batched else features
 
         with qml.tape.QuantumTape() as tape:
 

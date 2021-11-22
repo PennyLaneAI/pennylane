@@ -95,9 +95,11 @@ class Rotation(CVOperation):
         phi (float): the rotation angle
     """
     num_wires = 1
-    num_params = 1
-    par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -105,6 +107,9 @@ class Rotation(CVOperation):
 
     def adjoint(self, do_queue=False):
         return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "R")
 
 
 class Squeezing(CVOperation):
@@ -137,14 +142,16 @@ class Squeezing(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 2
-    par_domain = "R"
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    @property
+    def num_params(self):
+        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -155,6 +162,9 @@ class Squeezing(CVOperation):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "S")
 
 
 class Displacement(CVOperation):
@@ -186,14 +196,16 @@ class Displacement(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 2
-    par_domain = "R"
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    @property
+    def num_params(self):
+        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -206,6 +218,9 @@ class Displacement(CVOperation):
         a, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "D")
 
 
 class Beamsplitter(CVOperation):
@@ -240,10 +255,12 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 2
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 2
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -260,6 +277,9 @@ class Beamsplitter(CVOperation):
     def adjoint(self, do_queue=False):
         theta, phi = self.parameters
         return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "BS")
 
 
 class TwoModeSqueezing(CVOperation):
@@ -295,9 +315,7 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 2
     num_wires = 2
-    par_domain = "R"
 
     grad_method = "A"
 
@@ -305,6 +323,10 @@ class TwoModeSqueezing(CVOperation):
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    @property
+    def num_params(self):
+        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -322,6 +344,9 @@ class TwoModeSqueezing(CVOperation):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "S")
 
 
 class QuadraticPhase(CVOperation):
@@ -351,9 +376,7 @@ class QuadraticPhase(CVOperation):
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
 
     grad_method = "A"
 
@@ -362,11 +385,18 @@ class QuadraticPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
+    @property
+    def num_params(self):
+        return 1
+
     @staticmethod
     def _heisenberg_rep(p):
         U = np.identity(3)
         U[2, 1] = p[0]
         return U
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "P")
 
 
 class ControlledAddition(CVOperation):
@@ -400,15 +430,16 @@ class ControlledAddition(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    num_params = 1
-    par_domain = "R"
-
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -419,6 +450,9 @@ class ControlledAddition(CVOperation):
 
     def adjoint(self, do_queue=False):
         return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "X")
 
 
 class ControlledPhase(CVOperation):
@@ -452,15 +486,16 @@ class ControlledPhase(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 2
-    num_params = 1
-    par_domain = "R"
-
     grad_method = "A"
 
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -471,6 +506,9 @@ class ControlledPhase(CVOperation):
 
     def adjoint(self, do_queue=False):
         return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Z")
 
 
 class Kerr(CVOperation):
@@ -490,10 +528,12 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
 
     def adjoint(self, do_queue=False):
         return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -516,10 +556,12 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
 
     def adjoint(self, do_queue=False):
         return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -542,13 +584,18 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
 
     def adjoint(self, do_queue=False):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "V")
 
 
 class InterferometerUnitary(CVOperation):
@@ -585,12 +632,13 @@ class InterferometerUnitary(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
     grad_recipe = None
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -610,6 +658,9 @@ class InterferometerUnitary(CVOperation):
         return InterferometerUnitary(
             qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue
         )
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "U")
 
 
 # =============================================================================
@@ -635,9 +686,11 @@ class CoherentState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 2
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 2
 
 
 class SqueezedState(CVOperation):
@@ -656,9 +709,11 @@ class SqueezedState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 2
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 2
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -687,9 +742,11 @@ class DisplacedSqueezedState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 4
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 4
 
 
 class ThermalState(CVOperation):
@@ -707,9 +764,14 @@ class ThermalState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Thermal")
 
 
 class GaussianState(CVOperation):
@@ -726,11 +788,17 @@ class GaussianState(CVOperation):
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = AnyWires
-    num_params = 2
-    par_domain = "A"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 2
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Gaussian")
 
 
 class FockState(CVOperation):
@@ -748,9 +816,35 @@ class FockState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 1
-    par_domain = "N"
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
+
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockState(7, wires=0).label()
+        '|7⟩'
+
+        """
+        if base_label is not None:
+            if decimals is None:
+                return base_label
+            p = format(qml_math.asarray(self.parameters[0]), ".0f")
+            return base_label + f"\n({p})"
+        return f"|{qml_math.asarray(self.parameters[0])}⟩"
 
 
 class FockStateVector(CVOperation):
@@ -808,9 +902,33 @@ class FockStateVector(CVOperation):
 
     """
     num_wires = AnyWires
-    num_params = 1
-    par_domain = "A"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
+
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockStateVector([1,2,3], wires=(0,1,2)).label()
+        '|123⟩'
+
+        """
+        if base_label is not None:
+            return base_label
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩"
 
 
 class FockDensityMatrix(CVOperation):
@@ -828,9 +946,11 @@ class FockDensityMatrix(CVOperation):
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
     num_wires = AnyWires
-    num_params = 1
-    par_domain = "A"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
 
 
 class CatState(CVOperation):
@@ -860,9 +980,11 @@ class CatState(CVOperation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 3
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 3
 
 
 # =============================================================================
@@ -897,15 +1019,20 @@ class NumberOperator(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 0
-    par_domain = None
 
     ev_order = 2
+
+    @property
+    def num_params(self):
+        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
         hbar = 2
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "n"
 
 
 class TensorN(CVObservable):
@@ -946,8 +1073,6 @@ class TensorN(CVObservable):
         2
     """
     num_wires = AnyWires
-    num_params = 0
-    par_domain = None
     ev_order = None
 
     def __new__(cls, *params, wires=None, do_queue=True):
@@ -961,6 +1086,15 @@ class TensorN(CVObservable):
         if wires is not None and (isinstance(wires, int) or len(wires) == 1):
             return NumberOperator(*params, wires=wires, do_queue=do_queue)
         return super().__new__(cls)
+
+    @property
+    def num_params(self):
+        return 0
+
+    def label(self, decimals=None, base_label=None):
+        if base_label is not None:
+            return base_label
+        return "⊗".join("n" for _ in self.wires)
 
 
 class X(CVObservable):
@@ -984,10 +1118,12 @@ class X(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 0
-    par_domain = None
 
     ev_order = 1
+
+    @property
+    def num_params(self):
+        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1015,10 +1151,12 @@ class P(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 0
-    par_domain = None
 
     ev_order = 1
+
+    @property
+    def num_params(self):
+        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1048,16 +1186,50 @@ class QuadOperator(CVObservable):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    num_params = 1
-    par_domain = "R"
 
     grad_method = "A"
     ev_order = 1
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
         phi = p[0]
         return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
+
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qml.QuadOperator(1.234, wires=0)
+        >>> op.label()
+        'cos(φ)x\n+sin(φ)p'
+        >>> op.label(decimals=2)
+        'cos(1.23)x\n+sin(1.23)p'
+        >>> op.label(base_label="Quad", decimals=2)
+        'Quad\n(1.23)'
+
+        """
+
+        if base_label is not None:
+            return super().label(decimals=decimals, base_label=base_label)
+
+        if decimals is None:
+            p = "φ"
+        else:
+            p = format(qml_math.array(self.parameters[0]), f".{decimals}f")
+        return f"cos({p})x\n+sin({p})p"
 
 
 class PolyXP(CVObservable):
@@ -1088,11 +1260,13 @@ class PolyXP(CVObservable):
 
     """
     num_wires = AnyWires
-    num_params = 1
-    par_domain = "A"
 
     grad_method = "F"
     ev_order = 2
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1142,11 +1316,37 @@ class FockStateProjector(CVObservable):
             total number of wires in the QNode.
     """
     num_wires = AnyWires
-    num_params = 1
-    par_domain = "A"
 
     grad_method = None
     ev_order = None
+
+    @property
+    def num_params(self):
+        return 1
+
+    def label(self, decimals=None, base_label=None):
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): If ``None``, no parameters are included. Else,
+                specifies how to round the parameters.
+            base_label=None (str): overwrite the non-parameter component of the label
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> qml.FockStateProjector([1,2,3], wires=(0,1,2)).label()
+        '|123⟩⟨123|'
+
+        """
+
+        if base_label is not None:
+            return super().label(decimals=decimals, base_label=base_label)
+
+        basis_string = "".join(str(int(i)) for i in self.parameters[0])
+        return f"|{basis_string}⟩⟨{basis_string}|"
 
 
 ops = {

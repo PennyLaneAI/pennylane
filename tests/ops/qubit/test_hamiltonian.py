@@ -46,7 +46,7 @@ except ImportError:
 try:
     import torch
 
-    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor([1.7]), "torch"))
+    COEFFS_PARAM_INTERFACE.append((torch.tensor([-0.05, 0.17]), torch.tensor(1.7), "torch"))
 except ImportError:
     pass
 
@@ -548,6 +548,10 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object has correct wires."""
         H = qml.Hamiltonian(coeffs, ops)
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
+
+    def test_label(self):
+        H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
+        assert H.label() == "𝓗"
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):
@@ -1643,6 +1647,7 @@ class TestHamiltonianDifferentiation:
         ):
             grad_fn(coeffs, param)
 
+    @pytest.mark.xfail
     def test_not_supported_by_reverse_differentiation(self):
         """Test that error is raised when attempting the reverse differentiation method."""
         dev = qml.device("default.qubit", wires=2)

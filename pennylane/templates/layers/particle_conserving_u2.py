@@ -111,7 +111,6 @@ class ParticleConservingU2(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ParticleConservingU2
             import numpy as np
             from functools import partial
 
@@ -126,32 +125,30 @@ class ParticleConservingU2(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(ParticleConservingU2, init_state=ref_state)
+            ansatz = partial(qml.ParticleConservingU2, init_state=ref_state)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h' for a given set of parameters
             layers = 1
-            shape = ParticleConservingU2.shape(layers, qubits)
+            shape = qml.ParticleConservingU2.shape(layers, qubits)
             params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
         The shape of the trainable weights tensor can be computed by the static method
-        :meth:`~.ParticleConservingU2.shape` and used when creating randomly
+        :meth:`~qml.ParticleConservingU2.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = ParticleConservingU2.shape(n_layers=2, n_wires=2)
+            shape = qml.ParticleConservingU2.shape(n_layers=2, n_wires=2)
             params = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
@@ -179,6 +176,10 @@ class ParticleConservingU2(Operation):
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
+    @property
+    def num_params(self):
+        return 1
+
     def expand(self):
 
         nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
@@ -186,7 +187,7 @@ class ParticleConservingU2(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
+            qml.BasisEmbedding(self.init_state, wires=self.wires)
 
             for l in range(self.n_layers):
 

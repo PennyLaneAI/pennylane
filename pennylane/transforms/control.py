@@ -87,9 +87,7 @@ class ControlledOperation(Operation):
         control_wires: A wire or set of wires.
     """
 
-    par_domain = "A"
     num_wires = AnyWires
-    num_params = property(lambda self: self.subtape.num_params)
 
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
@@ -105,6 +103,10 @@ class ControlledOperation(Operation):
 
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
+
+    @property
+    def num_params(self):
+        return self.subtape.num_params
 
     @property
     def control_wires(self):

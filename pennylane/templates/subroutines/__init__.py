@@ -17,9 +17,10 @@ any of the characteristics of other templates (i.e. to prepare a specific state,
 """
 
 from .arbitrary_unitary import ArbitraryUnitary
-from .double_excitation_unitary import DoubleExcitationUnitary
+from .commuting_evolution import CommutingEvolution
+from .fermionic_double_excitation import FermionicDoubleExcitation
 from .interferometer import Interferometer
-from .single_excitation_unitary import SingleExcitationUnitary
+from .fermionic_single_excitation import FermionicSingleExcitation
 from .uccsd import UCCSD
 from .approx_time_evolution import ApproxTimeEvolution
 from .permute import Permute
@@ -28,3 +29,4 @@ from .qmc import QuantumMonteCarlo
 from .all_singles_doubles import AllSinglesDoubles
 from .grover import GroverOperator
 from .qft import QFT
+from .kupccgsd import kUpCCGSD

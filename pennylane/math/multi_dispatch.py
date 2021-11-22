@@ -235,16 +235,16 @@ def dot(tensor1, tensor2):
         if x.ndim <= 2 and y.ndim <= 2:
             return x @ y
 
-        return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     if interface == "tensorflow":
-        if x.ndim == 0 and y.ndim == 0:
+        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
             return x * y
 
-        if y.ndim == 1:
+        if len(np.shape(y)) == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=interface)
 
-        if x.ndim == 2 and y.ndim == 2:
+        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
@@ -274,11 +274,25 @@ def get_trainable_indices(values):
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
     """
+    trainable = requires_grad
     interface = _multi_dispatch(values)
     trainable_params = set()
 
+    if interface == "jax":
+        import jax
+
+        if not any(isinstance(v, jax.core.Tracer) for v in values):
+            # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
+            trainable = lambda p, **kwargs: isinstance(p, jax.numpy.DeviceArray)
+        else:
+            # JAX tracing is occuring; use the default behaviour (only traced arrays
+            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
+            # works correctly, as the argnums argnument determines which parameters are
+            # traced arrays.
+            trainable = requires_grad
+
     for idx, p in enumerate(values):
-        if requires_grad(p, interface=interface):
+        if trainable(p, interface=interface):
             trainable_params.add(idx)
 
     return trainable_params
@@ -351,28 +365,73 @@ def stack(values, axis=0):
     return np.stack(values, axis=axis, like=interface)
 
 
-def where(condition, x, y):
-    """Returns elements chosen from x or y depending on a boolean tensor condition.
+def where(condition, x=None, y=None):
+    """Returns elements chosen from x or y depending on a boolean tensor condition,
+    or the indices of entries satisfying the condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
 
     Args:
-        condition (tensor_like[bool]): A boolean tensor. Where True, elements from
-            ``x`` will be chosen, otherwise ``y``.
+        condition (tensor_like[bool]): A boolean tensor. Where ``True`` , elements from
+            ``x`` will be chosen, otherwise ``y``. If ``x`` and ``y`` are ``None`` the
+            indices where ``condition==True`` holds will be returned.
         x (tensor_like): values from which to choose if the condition evaluates to ``True``
         y (tensor_like): values from which to choose if the condition evaluates to ``False``
 
     Returns:
-        tensor_like: A tensor with elements from ``x`` where the condition is ``True``, and
-        ``y`` otherwise. The output tensor has the same shape as the input tensors.
+        tensor_like or tuple[tensor_like]: If ``x is None`` and ``y is None``, a tensor
+        or tuple of tensors with the indices where ``condition`` is ``True`` .
+        Else, a tensor with elements from ``x`` where the ``condition`` is ``True``,
+        and ``y`` otherwise. In this case, the output tensor has the same shape as
+        the input tensors.
 
-    **Example**
+    **Example with three arguments**
 
     >>> a = torch.tensor([0.6, 0.23, 0.7, 1.5, 1.7], requires_grad=True)
     >>> b = torch.tensor([-1., -2., -3., -4., -5.], requires_grad=True)
     >>> math.where(a < 1, a, b)
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
+
+    .. warning::
+
+        The output format for ``x=None`` and ``y=None`` follows the respective
+        interface and differs between TensorFlow and all other interfaces:
+        For TensorFlow, the output is a tensor with shape
+        ``(num_true, len(condition.shape))`` where ``num_true`` is the number
+        of entries in ``condition`` that are ``True`` .
+        The entry at position ``(i, j)`` is the ``j`` th entry of the ``i`` th
+        index.
+        For all other interfaces, the output is a tuple of tensor-like objects,
+        with the ``j`` th object indicating the ``j`` th entries of all indices.
+        Also see the examples below.
+
+    **Example with single argument**
+
+    For Torch, Autograd, JAX and NumPy, the output formatting is as follows:
+
+    >>> a = [[0.6, 0.23, 1.7],[1.5, 0.7, -0.2]]
+    >>> math.where(torch.tensor(a) < 1)
+    (tensor([0, 0, 1, 1]), tensor([0, 1, 1, 2]))
+
+    This is not a single tensor-like object but corresponds to the shape
+    ``(2, 4)`` . For TensorFlow, on the other hand:
+
+    >>> math.where(tf.constant(a) < 1)
+    tf.Tensor(
+    [[0 0]
+     [0 1]
+     [1 1]
+     [1 2]], shape=(4, 2), dtype=int64)
+
+    As we can see, the dimensions are swapped and the output is a single Tensor.
+    Note that the number of dimensions of the output does *not* depend on the input
+    shape, it is always two-dimensional.
+
     """
+    if x is None and y is None:
+        interface = _multi_dispatch([condition])
+        return np.where(condition, like=interface)
+
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
 
 
@@ -411,6 +470,41 @@ def frobenius_inner_product(A, B, normalize=False):
         inner_product = inner_product / norm
 
     return inner_product
+
+
+def scatter_element_add(tensor, index, value, like=None):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor.
+
+    Args:
+        tensor (tensor_like[float]): Tensor to add the value to
+        index (tuple or list[tuple]): Indices to which to add the value
+        value (float or tensor_like[float]): Value to add to ``tensor``
+        like (str): Manually chosen interface to dispatch to.
+    Returns:
+        tensor_like[float]: The tensor with the value added at the given indices.
+
+    **Example**
+
+    >>> tensor = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    >>> index = (1, 2)
+    >>> value = -3.1
+    >>> qml.math.scatter_element_add(tensor, index, value)
+    tensor([[ 0.1000,  0.2000,  0.3000],
+            [ 0.4000,  0.5000, -2.5000]])
+
+    If multiple indices are given, in the form of a list of tuples, the
+    ``k`` th tuple is interpreted to contain the ``k`` th entry of all indices:
+
+    >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
+    >>> values = torch.tensor([10, 20])
+    >>> qml.math.scatter_element_add(tensor, indices, values)
+    tensor([[ 0.1000, 20.2000,  0.3000],
+            [ 0.4000,  0.5000, 10.6000]])
+    """
+
+    interface = like or _multi_dispatch([tensor, value])
+    return np.scatter_element_add(tensor, index, value, like=interface)
 
 
 def unwrap(values, max_depth=None):

@@ -62,7 +62,6 @@ class BasicEntanglerLayers(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import BasicEntanglerLayers
             from math import pi
 
             n_wires = 3
@@ -70,7 +69,7 @@ class BasicEntanglerLayers(Operation):
 
             @qml.qnode(dev)
             def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi, pi]])
@@ -84,7 +83,7 @@ class BasicEntanglerLayers(Operation):
 
         .. code-block:: python
 
-            shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
+            shape = qml.BasicEntanglerLayers.shape(n_layers=2, n_wires=2)
             weights = np.random.random(size=shape)
 
         **No periodic boundary for two wires**
@@ -99,7 +98,7 @@ class BasicEntanglerLayers(Operation):
 
             @qml.qnode(dev)
             def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires))
+                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires))
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         >>> circuit([[pi, pi]])
@@ -114,16 +113,14 @@ class BasicEntanglerLayers(Operation):
 
             @qml.qnode(dev)
             def circuit(weights):
-                BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
+                qml.BasicEntanglerLayers(weights=weights, wires=range(n_wires), rotation=qml.RZ)
                 return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
         Accidentally using a gate that expects more parameters throws a
         ``ValueError: Wrong number of parameters``.
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, weights, wires=None, rotation=None, do_queue=True, id=None):
@@ -139,6 +136,10 @@ class BasicEntanglerLayers(Operation):
             )
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

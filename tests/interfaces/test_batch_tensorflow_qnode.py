@@ -18,7 +18,7 @@ import numpy as np
 tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml
-from pennylane.beta import qnode, QNode
+from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
 
@@ -53,7 +53,7 @@ class TestQNode:
 
         # if executing outside a gradient tape, the number of trainable parameters
         # cannot be determined by TensorFlow
-        assert circuit.qtape.trainable_params == set()
+        assert circuit.qtape.trainable_params == []
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -65,7 +65,7 @@ class TestQNode:
         assert res.shape == tuple()
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = tape.gradient(res, a)
@@ -152,7 +152,7 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -192,7 +192,7 @@ class TestQNode:
             res = circuit(a, b)
 
         assert circuit.qtape.interface == "tf"
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -249,7 +249,7 @@ class TestQNode:
             res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -274,7 +274,7 @@ class TestQNode:
             res = circuit(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -306,7 +306,7 @@ class TestQNode:
             res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c])
@@ -333,7 +333,7 @@ class TestQNode:
             res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
@@ -356,7 +356,7 @@ class TestQNode:
             res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
@@ -391,7 +391,7 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, p)
 
-        assert circuit.qtape.trainable_params == {1, 2, 3}
+        assert circuit.qtape.trainable_params == [1, 2, 3]
 
         expected = tf.cos(a) * tf.cos(p[1]) * tf.sin(p[0]) + tf.sin(a) * (
             tf.cos(p[2]) * tf.sin(p[1]) + tf.cos(p[0]) * tf.cos(p[1]) * tf.sin(p[2])
@@ -679,25 +679,6 @@ class TestQubitIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_sampling(self, dev_name, diff_method, mode):
-        """Test sampling works as expected"""
-        if mode == "forward":
-            pytest.skip("Sampling not possible with forward mode differentiation.")
-
-        dev = qml.device(dev_name, wires=2, shots=10)
-
-        @qnode(dev, diff_method=diff_method, mode=mode, interface="tf")
-        def circuit():
-            qml.Hadamard(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
-
-        with tf.GradientTape() as tape:
-            res = circuit()
-
-        assert res.shape == (2, 10)
-        assert isinstance(res, tf.Tensor)
 
     def test_second_derivative(self, dev_name, diff_method, mode, tol):
         """Test second derivative calculation of a scalar valued QNode"""
@@ -1256,3 +1237,280 @@ class TestTapeExpansion:
                 -np.sin(d[1] + w[1]),
             ]
             assert np.allclose(grad2_w_c, expected, atol=0.1)
+
+
+class TestSample:
+    """Tests for the sample integration"""
+
+    def test_sample_dimension(self):
+        """Test sampling works as expected"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
+
+        res = circuit()
+
+        assert res.shape == (2, 10)
+        assert isinstance(res, tf.Tensor)
+
+    def test_sampling_expval(self):
+        """Test sampling works as expected if combined with expectation values"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+        res = circuit()
+
+        assert len(res) == 2
+        assert isinstance(res, tuple)
+        assert res[0].shape == (10,)
+        assert isinstance(res[0], tf.Tensor)
+        assert isinstance(res[1], tf.Tensor)
+
+    def test_sample_combination(self, tol):
+        """Test the output of combining expval, var and sample"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+
+        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit():
+            qml.RX(0.54, wires=0)
+
+            return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
+
+        result = circuit()
+
+        assert len(result) == 3
+        assert np.array_equal(result[0].shape, (n_sample,))
+        assert isinstance(result[1], tf.Tensor)
+        assert isinstance(result[2], tf.Tensor)
+        assert result[0].dtype is tf.int64
+
+    def test_single_wire_sample(self, tol):
+        """Test the return type and shape of sampling a single wire"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+
+        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit():
+            qml.RX(0.54, wires=0)
+
+            return qml.sample(qml.PauliZ(0))
+
+        result = circuit()
+
+        assert isinstance(result, tf.Tensor)
+        assert np.array_equal(result.shape, (n_sample,))
+
+    def test_multi_wire_sample_regular_shape(self, tol):
+        """Test the return type and shape of sampling multiple wires
+        where a rectangular array is expected"""
+        n_sample = 10
+
+        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+
+        @qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit():
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
+
+        result = circuit()
+
+        # If all the dimensions are equal the result will end up to be a proper rectangular array
+        assert isinstance(result, tf.Tensor)
+        assert np.array_equal(result.shape, (3, n_sample))
+        assert result.dtype == tf.int64
+
+
+@pytest.mark.parametrize(
+    "decorator, interface", [(tf.function, "tf"), (lambda x: x, "tf-autograph")]
+)
+class TestAutograph:
+    """Tests for Autograph mode. This class is parametrized over the combination:
+
+    1. interface="tf" with the QNode decoratored with @tf.function, and
+    2. interface="tf-autograph" with no QNode decorator.
+
+    Option (1) checks that if the user enables autograph functionality
+    in TensorFlow, the new `tf-autograph` interface is automatically applied.
+
+    Option (2) ensures that the tf-autograph interface can be manually applied,
+    even if in eager execution mode.
+    """
+
+    def test_autograph_gradients(self, decorator, interface, tol):
+        """Test that a parameter-shift QNode can be compiled
+        using @tf.function, and differentiated"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
+
+        with tf.GradientTape() as tape:
+            p0, p1 = circuit(x, y)
+            loss = p0[0] + p1[1]
+
+        expected = tf.cos(x / 2) ** 2 + (1 - tf.cos(x) * tf.cos(y)) / 2
+        assert np.allclose(loss, expected, atol=tol, rtol=0)
+
+        grad = tape.gradient(loss, [x, y])
+        expected = [-tf.sin(x) * tf.sin(y / 2) ** 2, tf.cos(x) * tf.sin(y) / 2]
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_autograph_jacobian(self, decorator, interface, tol):
+        """Test that a parameter-shift vector-valued QNode can be compiled
+        using @tf.function, and differentiated"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", max_diff=1, interface=interface)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
+
+        with tf.GradientTape() as tape:
+            res = circuit(x, y)
+
+        expected = np.array(
+            [
+                [tf.cos(x / 2) ** 2, tf.sin(x / 2) ** 2],
+                [(1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [
+                    [-tf.sin(x) / 2, tf.sin(x) / 2],
+                    [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
+                ],
+                [
+                    [0, 0],
+                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+                ],
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mode", ["forward", "backward"])
+    def test_autograph_adjoint(self, mode, decorator, interface, tol):
+        """Test that a parameter-shift vQNode can be compiled
+        using @tf.function, and differentiated to second order"""
+        dev = qml.device("default.qubit", wires=1)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="adjoint", interface=interface, mode=mode)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable([1.0, 2.0], dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            res = circuit(x)
+        g = tape.gradient(res, x)
+        a, b = x * 1.0
+
+        expected_res = tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    def test_autograph_hessian(self, decorator, interface, tol):
+        """Test that a parameter-shift vQNode can be compiled
+        using @tf.function, and differentiated to second order"""
+        dev = qml.device("default.qubit", wires=1)
+        a = tf.Variable(0.543, dtype=tf.float64)
+        b = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", max_diff=2, interface=interface)
+        def circuit(x, y):
+            qml.RY(x, wires=0)
+            qml.RX(y, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape() as tape1:
+            with tf.GradientTape() as tape2:
+                res = circuit(a, b)
+            g = tape2.gradient(res, [a, b])
+            g = tf.stack(g)
+
+        hess = tf.stack(tape1.gradient(g, [a, b]))
+
+        expected_res = tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-tf.sin(a) * tf.cos(b), -tf.cos(a) * tf.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+        expected_hess = [
+            [-tf.cos(a) * tf.cos(b) + tf.sin(a) * tf.sin(b)],
+            [tf.sin(a) * tf.sin(b) - tf.cos(a) * tf.cos(b)],
+        ]
+        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+
+    def test_autograph_state(self, decorator, interface, tol):
+        """Test that a parameter-shift QNode returning a state can be compiled
+        using @tf.function"""
+        dev = qml.device("default.qubit", wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        with tf.GradientTape() as tape:
+            state = circuit(x, y)
+            probs = tf.abs(state) ** 2
+            loss = probs[0]
+
+        expected = tf.cos(x / 2) ** 2 * tf.cos(y / 2) ** 2
+        assert np.allclose(loss, expected, atol=tol, rtol=0)
+
+    def test_autograph_dimension(self, decorator, interface, tol):
+        """Test sampling works as expected"""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+
+        @decorator
+        @qnode(dev, diff_method="parameter-shift", interface=interface)
+        def circuit():
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return [qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))]
+
+        res = circuit()
+
+        assert res.shape == (2, 10)
+        assert isinstance(res, tf.Tensor)

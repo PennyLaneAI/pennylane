@@ -182,7 +182,16 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
 
 
 @gradient_transform
-def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forward", f0=None):
+def finite_diff(
+    tape,
+    argnum=None,
+    h=1e-7,
+    approx_order=1,
+    n=1,
+    strategy="forward",
+    f0=None,
+    validate_params=True,
+):
     r"""Transform a QNode to compute the finite-difference gradient of all gate
     parameters with respect to its inputs.
 
@@ -205,6 +214,10 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
+        validate_params (bool): Whether to validate the tape parameters or not. If ``True``,
+            the ``Operation.grad_method`` attribute and the circuit structure will be analyzed
+            to determine if the trainable parameters support the finite-difference method.
+            If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
@@ -280,7 +293,10 @@ def finite_diff(tape, argnum=None, h=1e-7, approx_order=1, n=1, strategy="forwar
     """
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
-    diff_methods = tape._grad_method_validation("numeric")
+    if validate_params:
+        diff_methods = tape._grad_method_validation("numeric")
+    else:
+        diff_methods = ["F" for i in tape.trainable_params]
 
     if not tape.trainable_params or all(g == "0" for g in diff_methods):
         # Either all parameters have grad method 0, or there are no trainable

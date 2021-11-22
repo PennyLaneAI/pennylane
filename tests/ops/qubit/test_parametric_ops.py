@@ -101,7 +101,7 @@ class TestDecompositions:
         """Tests that the decomposition of the Phase gate is correct"""
         phi = 0.3
         op = qml.PhaseShift(phi, wires=0)
-        res = op.decomposition(phi, 0)
+        res = op.decompose()
 
         assert len(res) == 1
 
@@ -119,7 +119,7 @@ class TestDecompositions:
     def test_CRot_decomposition(self, tol, phi, theta, omega, monkeypatch):
         """Tests that the decomposition of the CRot gate is correct"""
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
-        res = op.decomposition(phi, theta, omega, op.wires)
+        res = op.decompose()
 
         mats = []
         for i in reversed(res):
@@ -136,7 +136,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
         op = qml.IsingXX(param, wires=[3, 2])
-        res = op.decomposition(param, op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -164,7 +164,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingYY gate is correct"""
         param = 0.1234
         op = qml.IsingYY(param, wires=[3, 2])
-        res = op.decomposition(param, op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -192,7 +192,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingZZ gate is correct"""
         param = 0.1234
         op = qml.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition(param, op.wires)
+        res = op.decompose()
 
         assert len(res) == 3
 
@@ -222,7 +222,7 @@ class TestDecompositions:
         """Tests that the ControlledPhaseShift and CPhase operation
         calculates the correct decomposition"""
         op = cphase_op(phi, wires=[0, 2])
-        decomp = op.decomposition(phi, wires=[0, 2])
+        decomp = op.decompose()
 
         mats = []
         for i in reversed(decomp):
@@ -1006,7 +1006,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "Z", wires=0)
-        decomp_ops = op.decomposition(theta, "Z", wires=0)
+        decomp_ops = op.decompose()
 
         assert np.allclose(op.eigvals, np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
         assert np.allclose(op.matrix, np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
@@ -1023,7 +1023,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert np.allclose(op.eigvals, np.exp(-1j * theta / 2) * np.ones(4))
         assert np.allclose(op.matrix / op.matrix[0, 0], np.eye(4))
@@ -1035,7 +1035,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "II", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 0
 
@@ -1044,7 +1044,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "ZZ", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "ZZ", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 1
 
@@ -1058,7 +1058,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "XY", wires=[0, 1])
-        decomp_ops = op.decomposition(theta, "XY", wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 5
 
@@ -1087,7 +1087,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
-        decomp_ops = op.decomposition(theta, "XIYZ", wires=[0, 1, 2, 3])
+        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 5
 
@@ -1146,7 +1146,6 @@ class TestPauliRot:
         @qml.qnode(dev)
         def decomp_circuit(theta):
             qml.PauliRot.decomposition(theta, "XX", wires=[0, 1])
-
             return qml.expval(qml.PauliZ(0))
 
         assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
@@ -1261,7 +1260,7 @@ class TestMultiRZ:
 
         theta = 0.4
         op = qml.MultiRZ(theta, wires=[0, 1])
-        decomp_ops = op.decomposition(theta, wires=[0, 1])
+        decomp_ops = op.decompose()
 
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == Wires([1, 0])
@@ -1279,7 +1278,7 @@ class TestMultiRZ:
 
         theta = 0.4
         op = qml.MultiRZ(theta, wires=[0, 2, 3])
-        decomp_ops = op.decomposition(theta, wires=[0, 2, 3])
+        decomp_ops = op.decompose()
 
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == Wires([3, 2])
@@ -1362,3 +1361,176 @@ class TestMultiRZ:
 
         op.generator
         spy.assert_not_called()
+
+
+label_data = [
+    (
+        qml.Rot(1.23456, 2.3456, 3.45678, wires=0),
+        "Rot",
+        "Rot\n(1.23,\n2.35,\n3.46)",
+        "Rot\n(1,\n2,\n3)",
+        "Rot⁻¹\n(1,\n2,\n3)",
+    ),
+    (qml.RX(1.23456, wires=0), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
+    (qml.RY(1.23456, wires=0), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
+    (qml.RZ(1.23456, wires=0), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),
+    (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
+    (
+        qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
+        "R(XYZ)",
+        "R(XYZ)\n(1.23)",
+        "R(XYZ)\n(1)",
+        "R(XYZ)⁻¹\n(1)",
+    ),
+    (
+        qml.PhaseShift(1.2345, wires=0),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
+        "Rϕ⁻¹\n(1)",
+    ),
+    (
+        qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
+        "Rϕ⁻¹\n(1)",
+    ),
+    (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
+    (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
+    (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),
+    (
+        qml.CRot(1.234, 2.3456, 3.456, wires=(0, 1)),
+        "Rot",
+        "Rot\n(1.23,\n2.35,\n3.46)",
+        "Rot\n(1,\n2,\n3)",
+        "Rot⁻¹\n(1,\n2,\n3)",
+    ),
+    (qml.U1(1.2345, wires=0), "U1", "U1\n(1.23)", "U1\n(1)", "U1⁻¹\n(1)"),
+    (qml.U2(1.2345, 2.3456, wires=0), "U2", "U2\n(1.23,\n2.35)", "U2\n(1,\n2)", "U2⁻¹\n(1,\n2)"),
+    (
+        qml.U3(1.2345, 2.345, 3.4567, wires=0),
+        "U3",
+        "U3\n(1.23,\n2.35,\n3.46)",
+        "U3\n(1,\n2,\n3)",
+        "U3⁻¹\n(1,\n2,\n3)",
+    ),
+    (
+        qml.IsingXX(1.2345, wires=(0, 1)),
+        "IsingXX",
+        "IsingXX\n(1.23)",
+        "IsingXX\n(1)",
+        "IsingXX⁻¹\n(1)",
+    ),
+    (
+        qml.IsingYY(1.2345, wires=(0, 1)),
+        "IsingYY",
+        "IsingYY\n(1.23)",
+        "IsingYY\n(1)",
+        "IsingYY⁻¹\n(1)",
+    ),
+    (
+        qml.IsingZZ(1.2345, wires=(0, 1)),
+        "IsingZZ",
+        "IsingZZ\n(1.23)",
+        "IsingZZ\n(1)",
+        "IsingZZ⁻¹\n(1)",
+    ),
+]
+
+
+class TestLabel:
+    """Test the label method on parametric ops"""
+
+    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data)
+    def test_label_method(self, op, label1, label2, label3, label4):
+        """Test label method with plain scalers."""
+
+        assert op.label() == label1
+        assert op.label(decimals=2) == label2
+        assert op.label(decimals=0) == label3
+
+        op.inv()
+        assert op.label(decimals=0) == label4
+        op.inv()
+
+    def test_label_tf(self):
+        """Test label methods work with tensorflow variables"""
+        tf = pytest.importorskip("tensorflow")
+
+        op1 = qml.RX(tf.Variable(0.123456), wires=0)
+        assert op1.label(decimals=2) == "RX\n(0.12)"
+
+        op2 = qml.CRX(tf.Variable(0.12345), wires=(0, 1))
+        assert op2.label(decimals=2) == "RX\n(0.12)"
+
+        op3 = qml.Rot(tf.Variable(0.1), tf.Variable(0.2), tf.Variable(0.3), wires=0)
+        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
+
+    def test_label_torch(self):
+        """Test label methods work with torch tensors"""
+        torch = pytest.importorskip("torch")
+
+        op1 = qml.RX(torch.tensor(1.23456), wires=0)
+        assert op1.label(decimals=2) == "RX\n(1.23)"
+
+        op2 = qml.CRX(torch.tensor(1.23456), wires=(0, 1))
+        assert op2.label(decimals=2) == "RX\n(1.23)"
+
+        op3 = qml.Rot(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), wires=0)
+        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
+
+    def test_label_jax(self):
+        """Test the label method works with jax"""
+        jax = pytest.importorskip("jax")
+
+        op1 = qml.RX(jax.numpy.array(1.23456), wires=0)
+        assert op1.label(decimals=2) == "RX\n(1.23)"
+
+        op2 = qml.CRX(jax.numpy.array(1.23456), wires=(0, 1))
+        assert op2.label(decimals=2) == "RX\n(1.23)"
+
+        op3 = qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
+        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
+
+    def test_string_parameter(self):
+        """Test labelling works if variable is a string instead of a float."""
+
+        op1 = qml.RX("x", wires=0)
+        assert op1.label() == "RX"
+        assert op1.label(decimals=0) == "RX\n(x)"
+
+        op2 = qml.CRX("y", wires=(0, 1))
+        assert op2.label(decimals=0) == "RX\n(y)"
+
+        op3 = qml.Rot("x", "y", "z", wires=0)
+        assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
+
+
+control_data = [
+    (qml.Rot(1, 2, 3, wires=0), Wires([])),
+    (qml.RX(1.23, wires=0), Wires([])),
+    (qml.RY(1.23, wires=0), Wires([])),
+    (qml.MultiRZ(1.234, wires=(0, 1, 2)), Wires([])),
+    (qml.PauliRot(1.234, "IXY", wires=(0, 1, 2)), Wires([])),
+    (qml.PhaseShift(1.234, wires=0), Wires([])),
+    (qml.U1(1.234, wires=0), Wires([])),
+    (qml.U2(1.234, 2.345, wires=0), Wires([])),
+    (qml.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
+    (qml.IsingXX(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingYY(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
+    ### Controlled Ops
+    (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhase(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRX(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRY(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRZ(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CRot(1.234, 2.2345, 3.456, wires=(0, 1)), Wires(0)),
+]
+
+
+@pytest.mark.parametrize("op, control_wires", control_data)
+def test_control_wires(op, control_wires):
+    """Test the ``control_wires`` attribute for parametrized operations."""
+    assert op.control_wires == control_wires

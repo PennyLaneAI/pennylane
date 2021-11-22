@@ -19,7 +19,7 @@ torch = pytest.importorskip("torch", minversion="1.3")
 import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape
 from torch.autograd.functional import hessian, jacobian
 
@@ -84,7 +84,7 @@ class TestQNode:
 
         # without the interface, the tape is unable to deduce
         # trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
     def test_execution_with_interface(self, dev_name, diff_method):
         """Test execution works with the interface"""
@@ -110,7 +110,7 @@ class TestQNode:
         assert res.shape == tuple()
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         res.backward()
@@ -196,7 +196,7 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
@@ -242,7 +242,7 @@ class TestQNode:
         res = circuit(a, b)
 
         assert circuit.qtape.interface == "torch"
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == (2,)
@@ -301,7 +301,7 @@ class TestQNode:
         res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
@@ -330,7 +330,7 @@ class TestQNode:
         res = circuit(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [np.cos(a_val), -np.cos(a_val) * np.sin(b_val)]
         assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
@@ -362,7 +362,7 @@ class TestQNode:
         res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
 
         res.backward()
@@ -388,7 +388,7 @@ class TestQNode:
         res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, torch.Tensor)
@@ -423,7 +423,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res.detach(), -np.cos(a_val), atol=tol, rtol=0)
 
@@ -458,7 +458,7 @@ class TestQNode:
 
         res = circuit(a, p)
 
-        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        assert circuit.qtape.trainable_params == [1, 2, 3, 4]
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
         assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
@@ -774,6 +774,9 @@ class TestQNode:
         ]
         assert np.allclose(hess.detach(), expected_hess, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(
+        reason="Test fails on Torch 1.10, however the Tape interfaces are deprecated and will not be fixed."
+    )
     def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         if diff_method not in {"parameter-shift", "backprop"}:
@@ -835,7 +838,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="torch")
+        @qnode(dev, diff_method="adjoint", interface="torch")
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -869,7 +872,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="torch", adjoint_cache=True)
+        @qnode(dev, diff_method="adjoint", interface="torch", adjoint_cache=True)
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -903,7 +906,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="torch", adjoint_cache=False)
+        @qnode(dev, diff_method="adjoint", interface="torch", adjoint_cache=False)
         def circ(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))

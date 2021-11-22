@@ -15,10 +15,11 @@
 from collections import defaultdict
 import pytest
 import numpy as np
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.beta import qnode, QNode
+from pennylane import qnode, QNode
 from pennylane.transforms import draw
 from pennylane.tape import JacobianTape
 
@@ -34,10 +35,7 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = (
-            fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \[None, 'autograd', 'numpy', 'jax', 'JAX', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
-        )
+        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
@@ -53,10 +51,7 @@ class TestValidation:
             qml.RX(wires=0)
             return qml.probs(wires=0)
 
-        expected_error = (
-            fr"Unknown interface {test_interface}\. Interface must be "
-            r"one of \[None, 'autograd', 'numpy', 'jax', 'JAX', 'torch', 'pytorch', 'tf', 'tensorflow'\]\."
-        )
+        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
@@ -228,13 +223,13 @@ class TestValidation:
         diff method."""
         dev = qml.device("default.qubit", wires=1)
 
-        mock_best = mocker.patch("pennylane.beta.QNode.get_best_method")
+        mock_best = mocker.patch("pennylane.QNode.get_best_method")
         mock_best.return_value = ("best", {}, dev)
 
-        mock_backprop = mocker.patch("pennylane.beta.QNode._validate_backprop_method")
+        mock_backprop = mocker.patch("pennylane.QNode._validate_backprop_method")
         mock_backprop.return_value = ("backprop", {}, dev)
 
-        mock_device = mocker.patch("pennylane.beta.QNode._validate_device_method")
+        mock_device = mocker.patch("pennylane.QNode._validate_device_method")
         mock_device.return_value = ("device", {}, dev)
 
         qn = QNode(dummyfunc, dev, diff_method="best")
@@ -329,6 +324,23 @@ class TestValidation:
             @qnode(dev, diff_method="adjoint")
             def circ():
                 return qml.expval(qml.PauliZ(0))
+
+    def test_sparse_diffmethod_error(self):
+        """Test that an error is raised when the observable is SparseHamiltonian and the
+        differentiation method is not parameter-shift."""
+        dev = qml.device("default.qubit", wires=2, shots=None)
+
+        @qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.RX(param, wires=0)
+            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="SparseHamiltonian observable must be"
+            " used with the parameter-shift differentiation method",
+        ):
+            qml.grad(circuit)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -913,8 +925,6 @@ class TestTapeExpansion:
 
         class UnsupportedOp(qml.operation.Operation):
             num_wires = 1
-            num_params = 1
-            par_domain = "R"
 
             def expand(self):
                 with qml.tape.QuantumTape() as tape:
@@ -946,8 +956,6 @@ class TestTapeExpansion:
 
         class UnsupportedOp(qml.operation.Operation):
             num_wires = 1
-            num_params = 1
-            par_domain = "R"
 
             grad_method = "A"
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)

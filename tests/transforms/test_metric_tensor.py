@@ -249,7 +249,7 @@ class TestMetricTensor:
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.beta.qnode(dev, expansion_strategy=strategy)
+        @qml.qnode(dev, expansion_strategy=strategy)
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
@@ -437,7 +437,7 @@ class TestMetricTensor:
             qml.RY(y, wires=1)
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
-            return qml.expval(qml.Hermitian(np.kron(Z, Y), wires=[2, 1]))
+            return qml.expval(qml.PauliY(1) @ qml.PauliZ(2))
 
         layer2_off_diag_second_order = qml.QNode(layer2_off_diag_second_order, dev)
 
@@ -742,7 +742,7 @@ class TestDeprecatedQNodeMethod:
         """Test that a warning is emitted"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode_old.qnode(dev)
         def circuit(a, b, c):
             qml.RX(a, wires=0)
             qml.RY(b, wires=0)
@@ -771,7 +771,7 @@ class TestDeprecatedQNodeMethod:
         """Test that a warning is emitted"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode_old.qnode(dev)
         def circuit(a, b, c):
             qml.RX(a, wires=0)
             qml.RY(b, wires=0)
