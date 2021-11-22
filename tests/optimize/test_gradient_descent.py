@@ -24,39 +24,6 @@ from pennylane.optimize import GradientDescentOptimizer
 class TestGradientDescentOptimizer:
     """Test the Gradient Descent optimizer"""
 
-    def test_array_and_list_return_same_update(self, tol):
-        """Tests that gradient descent optimizer has the same output for
-        lists and arrays."""
-        stepsize = 0.1
-        sgd_opt = GradientDescentOptimizer(stepsize)
-        multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
-        multid_list = [[0.1, 0.2], [-0.1, -0.4]]
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def quant_fun_mdarr(var):
-            qml.RX(var[0, 1], wires=[0])
-            qml.RY(var[1, 0], wires=[0])
-            qml.RY(var[1, 1], wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def quant_fun_mdlist(var):
-            qml.RX(var[0][1], wires=[0])
-            qml.RY(var[1][0], wires=[0])
-            qml.RY(var[1][1], wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        def hybrid_fun_mdarr(var):
-            return quant_fun_mdarr(var) + var[0, 0]
-
-        def hybrid_fun_mdlist(var):
-            return quant_fun_mdlist(var) + var[0][0]
-
-        array = sgd_opt.step(hybrid_fun_mdarr, multid_array)
-        ls = sgd_opt.step(hybrid_fun_mdlist, multid_list)
-
-        assert np.allclose(array, np.asarray(ls), atol=tol)
-
     @pytest.mark.parametrize("var", [0, -3, 42])
     def test_step_and_cost_supplied_grad(self, var):
         """Test that returned cost is correct if gradient function is supplied"""
@@ -75,12 +42,11 @@ class TestGradientDescentOptimizer:
             expected = f(var)
             assert np.all(res == expected)
 
-    def test_step_and_cost_autograd_sgd_mixed_list(self):
+    def test_step_and_cost_autograd_sgd_multiple_inputs(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         gradient-descent optimizer"""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
-        mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun(*variables):
@@ -89,12 +55,18 @@ class TestGradientDescentOptimizer:
             qml.RY(variables[2], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        _, res = sgd_opt.step_and_cost(quant_fun, *mixed_list)
-        expected = quant_fun(*mixed_list)
+        inputs = [
+            np.array((0.2, 0.3), requires_grad=True),
+            np.array([0.4, 0.2, 0.4], requires_grad=True),
+            np.array(0.1, requires_grad=True),
+        ]
+
+        _, res = sgd_opt.step_and_cost(quant_fun, *inputs)
+        expected = quant_fun(*inputs)
 
         assert np.all(res == expected)
 
-    def test_step_and_cost_autograd_sgd_multid_array(self):
+    def test_step_and_cost_autograd_sgd_single_multid_input(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         gradient-descent optimizer"""
         stepsize = 0.1

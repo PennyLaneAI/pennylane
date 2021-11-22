@@ -24,12 +24,11 @@ from pennylane.optimize import NesterovMomentumOptimizer
 class TestNesterovMomentumOptimizer:
     """Test the Nesterov Momentum optimizer"""
 
-    def test_step_and_cost_autograd_nesterov_mixed_list(self):
+    def test_step_and_cost_autograd_nesterov_multiple_inputs(self):
         """Test that the correct cost is returned via the step_and_cost method for the
         Nesterov momentum optimizer"""
         stepsize, gamma = 0.1, 0.5
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
-        mixed_list = [(0.2, 0.3), np.array([0.4, 0.2, 0.4]), 0.1]
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun(*variables):
@@ -38,8 +37,14 @@ class TestNesterovMomentumOptimizer:
             qml.RY(variables[2], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        _, res = nesmom_opt.step_and_cost(quant_fun, *mixed_list)
-        expected = quant_fun(*mixed_list)
+        inputs = [
+            np.array((0.2, 0.3), requires_grad=True),
+            np.array([0.4, 0.2, 0.4], requires_grad=True),
+            np.array(0.1, requires_grad=True),
+        ]
+
+        _, res = nesmom_opt.step_and_cost(quant_fun, *inputs)
+        expected = quant_fun(*inputs)
 
         assert np.all(res == expected)
 

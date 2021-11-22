@@ -68,7 +68,7 @@ class TestOverOpts:
             def func(x, c=1.0):
                 return (x - c) ** 2
 
-        x = 1.0
+        x = np.array(1.0, requires_grad=True)
 
         wrapper = func_wrapper()
         spy = mocker.spy(wrapper, "func")
@@ -161,10 +161,10 @@ class TestOverOpts:
         def func2(args):
             return args[0][0] * args[1][0] * args[2][0]
 
-        x = np.array([1.0])
-        y = np.array([2.0])
-        z = np.array([3.0])
-        args = (x, y, z)
+        x = np.array([1.0], requires_grad=True)
+        y = np.array([2.0], requires_grad=True)
+        z = np.array([3.0], requires_grad=True)
+        args = np.array((x, y, z), requires_grad=True)
 
         x_seperate, y_seperate, z_seperate = opt.step(func1, x, y, z)
         self.reset(opt)
