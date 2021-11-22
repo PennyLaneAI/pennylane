@@ -159,12 +159,8 @@ class TaskQubit(QubitDevice):
         self._wires = wires
         self._gen_report = gen_report
         self.num_wires = wires if isinstance(wires, int) else len(wires)
-        self._shots = None
-        self._cache = None
         self._future = future
         self.expand_fn = self.default_expand_fn
-        self._shot_vector = None
-        self._num_executions = 0
 
         if backend not in TaskQubit.supported_devices:
             raise ("Unsupported device backend.")
