@@ -120,23 +120,23 @@ def frequencies_to_period(frequencies):
 @functools.lru_cache(maxsize=None)
 def _get_shift_rule(frequencies, shifts=None):
     n_freqs = len(frequencies)
+    frequencies = qml.math.sort(qml.math.stack(frequencies))
+    freq_min = frequencies[0]
 
-    if len(set(frequencies)) != n_freqs or any(freq <= 0 for freq in frequencies):
+    if len(set(frequencies)) != n_freqs or freq_min <= 0:
         raise ValueError(
             "Expected frequencies to be a list of unique positive values, instead got {}.".format(
                 frequencies
             )
         )
 
-    frequencies = qml.math.sort(qml.math.stack(frequencies))
-    freq_min = frequencies[0]
     mu = np.arange(1, n_freqs + 1)
 
     if shifts is None:  # assume equidistant shifts
         shifts = (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)
         equ_shifts = True
     else:
-        shifts = qml.math.stack(shifts)
+        shifts = qml.math.sort(qml.math.stack(shifts))
         if len(shifts) != n_freqs:
             raise ValueError(
                 "Expected number of shifts to equal the number of frequencies ({}), instead got {}.".format(
