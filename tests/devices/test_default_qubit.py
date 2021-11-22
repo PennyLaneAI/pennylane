@@ -2274,7 +2274,6 @@ class TestApplyOperationUnit:
         # that is not registered in the diagonal_in_z_basis attribute
         class TestSGate(qml.operation.Operation):
             matrix = np.array([[0, 1], [1, 0]])
-            num_params = 0
             num_wires = 1
 
             @classmethod
@@ -2313,7 +2312,6 @@ class TestApplyOperationUnit:
         # Redefine the Toffoli gate so that it is an example for a gate with
         # more than two wires
         class TestToffoli(qml.operation.Operation):
-            num_params = 0
             num_wires = 3
             matrix = U_toffoli
 

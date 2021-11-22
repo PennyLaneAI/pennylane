@@ -24,6 +24,7 @@ import math
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_qubit_torch import DefaultQubitTorch
@@ -1240,7 +1241,7 @@ class TestPassthruIntegration:
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
