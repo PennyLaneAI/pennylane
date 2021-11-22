@@ -22,6 +22,7 @@ import pytest
 tf = pytest.importorskip("tensorflow", minversion="2.0")
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_qubit_tf import DefaultQubitTF
@@ -1217,7 +1218,7 @@ class TestPassthruIntegration:
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
