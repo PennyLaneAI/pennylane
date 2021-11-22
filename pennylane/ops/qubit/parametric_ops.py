@@ -111,6 +111,7 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):

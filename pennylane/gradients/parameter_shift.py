@@ -21,6 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from .gradient_transform import gradient_transform
+from .general_shift_rules import general_shift_rule, _process_gradient_recipe
 from .finite_difference import finite_diff, generate_shifted_tapes
 
 
@@ -67,18 +68,18 @@ def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     the default two-term parameter-shift rule is assumed.
     """
     op, p_idx = tape.get_operation(t_idx)
-    return op.get_parameter_shift(p_idx, shift=shift)
 
+    if hasattr(op, "gen_frequencies"):
+        freq = op.gen_frequencies[p_idx]
+        shifts = getattr(op, "shifts", [None] * (p_idx + 1))[p_idx]
 
-def _process_gradient_recipe(gradient_recipe, tol=1e-10):
-    """Utility function to process gradient recipes."""
-    gradient_recipe = np.array(gradient_recipe).T
-    # remove all small coefficients, shifts, and multipliers
-    gradient_recipe[np.abs(gradient_recipe) < tol] = 0
-    # remove columns where the coefficients are 0
-    gradient_recipe = gradient_recipe[:, ~(gradient_recipe[0] == 0)]
-    # sort columns according to abs(shift)
-    return gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
+        coeffs, shifts = general_shift_rule(freq)
+        mults = np.ones_like(coeffs)
+
+        return np.stack([coeffs, mults, shifts])
+
+    gradient_recipe = op.get_parameter_shift(p_idx, shift=shift)
+    return _process_gradient_recipe(np.array(gradient_recipe).T)
 
 
 def _gradient_analysis(tape, use_graph=True):
@@ -169,8 +170,12 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
 
         # get the gradient recipe for the trainable parameter
         recipe = gradient_recipes[argnum.index(idx)]
-        recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
-        recipe = _process_gradient_recipe(recipe)
+
+        if recipe is not None:
+            recipe = _process_gradient_recipe(np.array(recipe).T)
+        else:
+            recipe = _get_operation_recipe(tape, idx, shift=shift)
+
         coeffs, multipliers, shifts = recipe
         fns.append(None)
 

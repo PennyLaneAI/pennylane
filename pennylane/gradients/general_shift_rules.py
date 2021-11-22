@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 
 
-def _process_gradient_recipe(coeffs, shifts, tol=1e-10):
+def _process_gradient_recipe(gradient_recipe, tol=1e-10):
     """Utility function to process gradient recipes.
 
     This utility function accepts coefficients and shift values, and performs the following
@@ -35,8 +35,6 @@ def _process_gradient_recipe(coeffs, shifts, tol=1e-10):
     - Finally, the terms are sorted according to the absolute value of ``shift``,
       ensuring that, if there is a zero-shift term, this is returned first.
     """
-    gradient_recipe = np.stack([coeffs, shifts])
-
     # remove all small coefficients and shifts
     gradient_recipe[np.abs(gradient_recipe) < tol] = 0
 
@@ -45,16 +43,16 @@ def _process_gradient_recipe(coeffs, shifts, tol=1e-10):
 
     # sort columns according to abs(shift)
     gradient_recipe = gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
-    unique_shifts = np.unique(gradient_recipe[1, :])
+    unique_shifts = np.unique(gradient_recipe[-1, :])
 
-    if gradient_recipe.shape[1] != len(unique_shifts):
+    if gradient_recipe.shape[-1] != len(unique_shifts):
         # sum columns that have the same shift value
         gradient_recipe = np.stack(
             [
                 np.stack(
                     [
                         np.sum(
-                            gradient_recipe[:, np.nonzero(gradient_recipe[1, :] == b)[0]], axis=1
+                            gradient_recipe[:, np.nonzero(gradient_recipe[-1, :] == b)[0]], axis=1
                         )[0]
                         for b in unique_shifts
                     ]
@@ -253,7 +251,7 @@ def general_shift_rule(frequencies, shifts=None, order=1):
 
         recipe = zip(*all_shifts)
 
-    return _process_gradient_recipe(*recipe, tol=1e-10)
+    return _process_gradient_recipe(recipe, tol=1e-10)
 
 
 def off_diagonal_shift_rule(freq1, freq2=None, shifts1=None, shifts2=None):
@@ -305,8 +303,8 @@ def off_diagonal_shift_rule(freq1, freq2=None, shifts1=None, shifts2=None):
         \frac{\partial^2 f}{\partial x\partial y}
         = \frac{1}{4} \left[f(x+\np/2, y+\np/2) - f(x+\np/2, y-\np/2) - f(x-\np/2, y+\np/2) + f(x-\np/2, y-\np/2)].
     """
-    recipe1 = _process_gradient_recipe(*_get_shift_rule(freq1, shifts=shifts1))
-    recipe2 = _process_gradient_recipe(*_get_shift_rule(freq2, shifts=shifts2))
+    recipe1 = _process_gradient_recipe(_get_shift_rule(freq1, shifts=shifts1))
+    recipe2 = _process_gradient_recipe(_get_shift_rule(freq2, shifts=shifts2))
 
     all_shifts = []
 
