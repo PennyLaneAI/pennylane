@@ -14,12 +14,12 @@
 """Tests that the different measurement types work correctly on a device."""
 # pylint: disable=no-self-use
 # pylint: disable=pointless-statement
-import numpy as np
 import pytest
 from flaky import flaky
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
+from pennylane import numpy as np
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -109,7 +109,7 @@ class TestHamiltonianSupport:
         device_kwargs["wires"] = 1
         dev = qml.device(**device_kwargs)
         coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        param = np.array(1.7, requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(coeffs, param):
