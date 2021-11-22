@@ -62,7 +62,8 @@ Utility functions
 
     finite_diff_coeffs
     generate_shifted_tapes
-    get_shift_rule
+    general_shift_rule
+    off_diagonal_shift_rule
     compute_vjp
     batch_vjp
     vjp
@@ -288,4 +289,4 @@ from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
 from .vjp import compute_vjp, batch_vjp, vjp
 from .hamiltonian_grad import hamiltonian_grad
-from .general_shift_rules import get_shift_rule
+from .general_shift_rules import general_shift_rule, off_diagonal_shift_rule
