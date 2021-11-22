@@ -422,7 +422,6 @@ class QubitDevice(Device):
             elif obs.return_type is CustomPostProcess:
                 post_process_func = obs.kwargs["func"]
                 base_measurement = obs.kwargs["b_measure"]
-
                 results.append(self.custom_process(post_process_func, base_measurement, observable=obs.obs,
                                                    wires=obs.wires, shot_range=shot_range, bin_size=bin_size))
 
@@ -972,7 +971,6 @@ class QubitDevice(Device):
     def custom_process(self, post_processing_func, base_measurement, observable=None,
                        wires=None, shot_range=None, bin_size=None):
         """ """
-
         if base_measurement == "expval":
             res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
 
@@ -980,7 +978,8 @@ class QubitDevice(Device):
             res = self.var(observable, shot_range=shot_range, bin_size=bin_size)
 
         elif base_measurement == "sample":
-            res = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+            measurement_obj = qml.sample(op=observable, wires=wires)
+            res = self.sample(measurement_obj, shot_range=shot_range, bin_size=bin_size)
 
         elif base_measurement == "prob":
             res = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)

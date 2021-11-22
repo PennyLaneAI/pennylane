@@ -557,5 +557,5 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
     """Something ..."""
     # add some validation checks ...
 
-    return MeasurementProcess(CustomPostProcess, obs=op, wires=wires, func=post_process_func,
+    return MeasurementProcess(CustomPostProcess, obs=op, wires=qml.wires.Wires(wires), func=post_process_func,
                               b_measure=base_measurement)

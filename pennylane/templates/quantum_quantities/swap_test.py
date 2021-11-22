@@ -62,6 +62,6 @@ class SwapTest(Operation):
             num_samples = len(samples)
             sum_measurements = np.sum(samples)
 
-            return 1 - (num_samples / 2) * sum_measurements
+            return 1 - (2 / num_samples) * sum_measurements
 
         return custom_process(compute_ip_from_samples, base_measurement, wires=self.ac)
