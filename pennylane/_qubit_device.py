@@ -32,6 +32,7 @@ from pennylane.operation import (
     Expectation,
     Probability,
     State,
+    CustomPostProcess,
     operation_derivative,
 )
 from pennylane import Device
@@ -417,6 +418,13 @@ class QubitDevice(Device):
                 # Check if the state is accessible and decide to return the state or the density
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
+
+            elif obs.return_type is CustomPostProcess:
+                post_process_func = obs.kwargs["func"]
+                base_measurement = obs.kwargs["b_measure"]
+
+                results.append(self.custom_process(post_process_func, base_measurement, observable=obs.obs,
+                                                   wires=obs.wires, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -960,3 +968,39 @@ class QubitDevice(Device):
             op.inv()
 
         return jac
+
+    def custom_process(self, post_processing_func, base_measurement, observable=None,
+                       wires=None, shot_range=None, bin_size=None):
+        """ """
+
+        if base_measurement == "expval":
+            res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
+
+        elif base_measurement == "var":
+            res = self.var(observable, shot_range=shot_range, bin_size=bin_size)
+
+        elif base_measurement == "sample":
+            res = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+
+        elif base_measurement == "prob":
+            res = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
+
+        elif base_measurement == "state":
+            if self.wires.labels != tuple(range(self.num_wires)):
+                raise qml.QuantumFunctionError(
+                    "Returning the state is not supported when using custom wire labels"
+                )
+            res = self.access_state(wires=observable.wires)
+
+        else:
+            raise ValueError(f"base_measurement should be one of [expval, var,sample, prob, state], "
+                             f"got: {base_measurement}")
+
+        try:
+            post_processed_res = post_processing_func(res)
+        except BaseException as e:
+            print("Encountered the following exception when applying the post-processing function"
+                  f" to the measured {base_measurement}:\n {e} \n")
+            return None
+
+        return post_processed_res

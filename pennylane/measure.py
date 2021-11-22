@@ -22,7 +22,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance, CustomPostProcess
 from pennylane.wires import Wires
 
 
@@ -44,9 +44,10 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, **kwargs):
         self.return_type = return_type
         self.obs = obs
+        self.kwargs = kwargs
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -550,3 +551,11 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State, wires=qml.wires.Wires(wires))
+
+
+def custom_process(post_process_func, base_measurement, op=None, wires=None):
+    """Something ..."""
+    # add some validation checks ...
+
+    return MeasurementProcess(CustomPostProcess, obs=op, wires=wires, func=post_process_func,
+                              b_measure=base_measurement)

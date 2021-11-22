@@ -1032,6 +1032,19 @@ class Device(abc.ABC):
             "Returning probability not currently supported by {}".format(self.short_name)
         )
 
+    def custom_process(self, post_processing_func, base_measurement, observable=None, wires=None):
+        """Return the func.
+
+        Args:
+            arg type: discrp
+
+        Returns:
+            type: discrp
+        """
+        raise NotImplementedError(
+            "Returning custom_process not currently supported by {}".format(self.short_name)
+        )
+
     @abc.abstractmethod
     def reset(self):
         """Reset the backend state.

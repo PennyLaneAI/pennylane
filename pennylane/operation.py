@@ -165,6 +165,7 @@ class ObservableReturnTypes(Enum):
     Expectation = "expval"
     Probability = "probs"
     State = "state"
+    CustomPostProcess = "cpp"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -188,6 +189,9 @@ of all computational basis states."""
 
 State = ObservableReturnTypes.State
 """Enum: An enumeration which represents returning the state in the computational basis."""
+
+CustomPostProcess = ObservableReturnTypes.CustomPostProcess
+"""Enum: An enumeration which represents performing classical post processing on measured quantities."""
 
 # =============================================================================
 # Class property
