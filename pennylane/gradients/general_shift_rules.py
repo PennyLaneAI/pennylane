@@ -21,10 +21,23 @@ import pennylane as qml
 
 
 def _process_gradient_recipe(coeffs, shifts, tol=1e-10):
-    """Utility function to process gradient recipes."""
+    """Utility function to process gradient recipes.
+
+    This utility function accepts coefficients and shift values, and performs the following
+    processing:
+
+    - Removes all small (within absolute tolerance `tol`) coefficients and shifts
+
+    - Removes terms with the coefficients are 0
+
+    - Terms with the same shift value are combined into a single term.
+
+    - Finally, the terms are sorted according to the absolute value of ``shift``,
+      ensuring that, if there is a zero-shift term, this is returned first.
+    """
     gradient_recipe = np.stack([coeffs, shifts])
 
-    # remove all small coefficients, shifts, and multipliers
+    # remove all small coefficients and shifts
     gradient_recipe[np.abs(gradient_recipe) < tol] = 0
 
     # remove columns where the coefficients are 0
@@ -53,19 +66,56 @@ def _process_gradient_recipe(coeffs, shifts, tol=1e-10):
         # sort columns according to abs(shift)
         gradient_recipe = gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
 
-    # sort columns according to abs(shift)
     return gradient_recipe
 
 
 @functools.lru_cache(maxsize=None)
 def spectra_to_frequencies(spectra):
+    """Convert an eigenvalue spectra to frequency values, defined
+    as the the set of positive, unique, differences of the spectra.
+
+    Args:
+        spectra (tuple[int, float]): eigenvalue spectra
+
+    Returns:
+        tuple[int, float]: frequencies
+
+    **Example**
+
+    >>> spectra = (-0.5, 0, 0, 0.5)
+    >>> spectra_to_frequencies(spectra)
+    (0.5, 1.0)
+    """
     unique_eigvals = sorted(set(spectra))
     return tuple({abs(i - j) for i, j in itertools.combinations(unique_eigvals, 2)})
 
 
 @functools.lru_cache(maxsize=None)
 def frequencies_to_period(frequencies):
-    f_min = sorted(frequencies)[0]
+    """Returns the period of a Fourier series as defined
+    by a set of frequencies. The period is simply :math:`2\pi/f_min`,
+    where :math:`f_min` is the smallest positive frequency value.
+
+    Args:
+        spectra (tuple[int, float]): eigenvalue spectra
+
+    Returns:
+        tuple[int, float]: frequencies
+
+    **Example**
+
+    >>> frequencies = (0.5, 1.0)
+    >>> frequencies_to_period(frequencies)
+    12.566370614359172
+    """
+    frequencies = sorted(frequencies)
+
+    try:
+        frequencies.remove(0)
+    except ValueError:
+        pass
+
+    f_min = frequencies[0]
     return 2 * np.pi / f_min
 
 
@@ -142,16 +192,18 @@ def general_shift_rule(frequencies, shifts=None, order=1):
         shifts (tuple[int or float]): the tuple of shift values. If unspecified, equidistant
             shifts are assumed. If supplied, the length of this tuple should match the number of
             given frequencies.
+        order (int): the order of differentiation to compute the shift rule for
 
     Returns:
-         tuple: a tuple of one nested list describing the gradient recipe
-         for the parameter-shift method.
-         This is a tuple with one nested list per operation parameter. For
-         parameter :math:`\phi_k`, the nested list contains elements of the form
-         :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
-         term, resulting in a gradient recipe of
+        tuple: a tuple of coefficients and shifts describing the gradient recipe
+        for the parameter-shift method. For parameter :math:`\phi`, the
+        coefficients :math:`c_i` and the shifts :math:`s_i` combine to give a gradient
+        recipe of the following form:
 
-            .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+        .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i).
+
+        where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
+        for some observable :math:`\hat{O}` and some unitary :math:`U(\phi)`.
 
     Raises:
         ValueError: if ``frequencies`` is not a list of unique positive values, or if ``shifts``
@@ -159,24 +211,34 @@ def general_shift_rule(frequencies, shifts=None, order=1):
 
     **Examples**
 
-    An example of obtaining the frequencies from a set of unique eigenvalues and obtaining the
+    An example of obtaining the frequencies from generator eigenvalues, and obtaining the
     parameter shift rule:
 
-    >>> unique_eigenvals = sorted([1, -1, 0])
-    >>> from itertools import combinations
-    >>> frequencies = {abs(i - j) for i, j in combinations(unique_eigenvals, 2)}
-    >>> get_shift_rule(tuple(frequencies))
-    ([[0.8535533905932737, 1, 0.7853981633974483], [-0.14644660940672624, 1, 2.356194490192345],
-    [-0.8535533905932737, 1, -0.7853981633974483], [0.14644660940672624, 1, -2.356194490192345]],)
+    >>> eigvals = (-0.5, 0, 0, 0.5)
+    >>> frequencies = spectra_to_frequencies(eigvals)
+    >>> general_shift_rule(frequencies)
+    [[ 0.85355339, -0.85355339, -0.14644661,  0.14644661],
+     [ 0.78539816, -0.78539816,  2.35619449, -2.35619449]]
 
     An example with explicitly specified shift values:
 
     >>> frequencies = (1, 2, 4)
     >>> shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
-    >>> get_shift_rule(frequencies, shifts)
-    ([[-2.0907702751760278, 1, 1.0471975511965976], [0.2186308015824754, 1, 2.0943951023931953],
-    [3.0000000000000004, 1, 0.7853981633974483], [2.0907702751760278, 1, -1.0471975511965976],
-    [-0.2186308015824754, 1, -2.0943951023931953], [-3.0000000000000004, 1, -0.7853981633974483]],)
+    >>> general_shift_rule(frequencies, shifts)
+    [[ 3.        , -3.        , -2.09077028,  2.09077028, 0.2186308, -0.2186308 ],
+     [ 0.78539816, -0.78539816,  1.04719755, -1.04719755, 2.0943951, -2.0943951 ]]
+
+    Higher order shift rules (corresponding to the :math:`n`-th derivative of the parameter)
+    can be requested via the ``order`` argument. For example, to extract the
+    second order shift rule for a gate with generator :math:`X/2`:
+
+    >>> eigvals = (0.5, -0.5)
+    >>> frequencies = spectra_to_frequencies(eigvals)
+    >>> general_shift_rule(frequencies, order=2)
+    [[-0.5       ,  0.5       ],
+     [ 0.        , -3.14159265]]
+
+    This corresponds to :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)]`.
     """
     recipe = _get_shift_rule(frequencies, shifts=shifts)
 
@@ -194,7 +256,55 @@ def general_shift_rule(frequencies, shifts=None, order=1):
     return _process_gradient_recipe(*recipe, tol=1e-10)
 
 
-def off_diagonal_shift_rule(freq1, freq2, shifts1=None, shifts2=None):
+def off_diagonal_shift_rule(freq1, freq2=None, shifts1=None, shifts2=None):
+    r"""Computes the parameter shift rule with respect to two parametrized unitaries,
+    given their generator's eigenvalue frequency spectrum. This corresponds to a
+    shift rule that computes off-diagonal elements of the Hessian.
+
+    Args:
+        freq1 (tuple[int or float]): The tuple of eigenvalue frequencies corresponding
+            to the first parametrized unitary. Eigenvalue frequencies are defined as
+            the unique positive differences obtained from a set of eigenvalues.
+        freq2 (tuple[int or float]): the tuple of eigenvalue frequencies corresponding
+            to the second parametrized unitary
+        shifts1 (tuple[int or float]): The tuple of shift values for the first parametrized
+            unitary. If unspecified, equidistant shifts are assumed. If supplied, the length
+            of this tuple must be the same as ``len(freq1)``.
+        shifts2 (tuple[int or float]): The tuple of shift values for the second parametrized
+            unitary. If unspecified, equidistant shifts are assumed. If supplied, the length
+            of this tuple must be the same as ``len(freq2)``.
+
+    Returns:
+        tuple: a tuple of coefficients, shifts for the first parameter, and shifts for the
+        second parameter, describing the gradient recipe
+        for the parameter-shift method.
+
+        For parameters :math:`\phi_a` and :math:`\phi_b`, the
+        coefficients :math:`c_i` and the shifts :math:`s^{(a)}_i`, :math:`s^{(b)}_i`,
+        combine to give a gradient recipe of the following form:
+
+        .. math::
+
+            \frac{\partial^2}{\partial\phi_a \partial\phi_b}f
+            = \sum_{i} c_i \left[ f(\phi_a + s^{(a)}_i) + f(\phi_b + s^{(b)}_i) \right].
+
+        where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
+        for some observable :math:`\hat{O}` and some unitary :math:`U(\phi)`.
+
+    **Example**
+
+    >>> off_diagonal_shift_rule((1,), (1,))
+    [[ 0.25      , -0.25      , -0.25      ,  0.25      ],
+     [ 1.57079633,  1.57079633, -1.57079633, -1.57079633],
+     [ 1.57079633, -1.57079633,  1.57079633, -1.57079633]])
+
+    This corresponds to the gradient recipe
+
+    .. math::
+
+        \frac{\partial^2 f}{\partial x\partial y}
+        = \frac{1}{4} \left[f(x+\np/2, y+\np/2) - f(x+\np/2, y-\np/2) - f(x-\np/2, y+\np/2) + f(x-\np/2, y-\np/2)].
+    """
     recipe1 = _process_gradient_recipe(*_get_shift_rule(freq1, shifts=shifts1))
     recipe2 = _process_gradient_recipe(*_get_shift_rule(freq2, shifts=shifts2))
 
