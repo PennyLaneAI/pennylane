@@ -72,8 +72,9 @@ class RX(Operation):
 
         js = -1j * s
 
+        zeros = qml.math.zeros_like(js)
         return qml.math.diag([c, c]) + qml.math.stack(
-            [qml.math.stack([0, js]), qml.math.stack([js, 0])]
+            [qml.math.stack([zeros, js]), qml.math.stack([js, zeros])]
         )
 
     def adjoint(self):
