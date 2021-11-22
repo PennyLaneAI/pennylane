@@ -294,10 +294,11 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding, BasisEmbedding and StronglyEntanglingLayers.
+* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding and DisplacementEmbedding.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
   [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
+  [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
 
 <h3>Contributors</h3>
 
