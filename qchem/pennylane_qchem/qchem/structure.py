@@ -548,13 +548,13 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     (array([0.1, 0.2]), [PauliX(wires=['w0']), PauliY(wires=['w0']) @ PauliZ(wires=['w2'])])
     """
     n_wires = (
-        1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms])
-        if qubit_operator.terms
+        1 + max([max([i for i, _ in t]) if t else 1 for t in qubit_operator.terms()])
+        if qubit_operator.terms()
         else 1
     )
     wires = _process_wires(wires, n_wires=n_wires)
 
-    if not qubit_operator.terms:  # added since can't unpack empty zip to (coeffs, ops) below
+    if not qubit_operator.terms():  # added since can't unpack empty zip to (coeffs, ops) below
         return np.array([0.0]), [qml.Identity(wires[0])]
 
     xyz2pauli = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}

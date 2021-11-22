@@ -553,6 +553,14 @@ class Operator(abc.ABC):
             return self.decomposition(wires=self.wires)
         return self.decomposition(*self.parameters, wires=self.wires)
 
+    def terms(self):
+        """Defines a representation of this operator as a linear combination of other operators.
+
+        Returns:
+            tuple[list[tensor_like], ~.Operator]: tuple of scalar coefficients and their respective operators
+        """
+        return NotImplementedError
+
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
