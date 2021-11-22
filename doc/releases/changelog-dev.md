@@ -4,6 +4,75 @@
 
 <h3>New features since last release</h3>
 
+* Custom decompositions can now be applied to operations at the device level.
+  [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
+
+  For example, suppose we would like to implement the following QNode:
+
+  ```python
+  def circuit(weights):
+      qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.PauliZ(0))
+
+  original_dev = qml.device("default.qubit", wires=3)
+  original_qnode = qml.QNode(circuit, original_dev)
+  ```
+
+  ```pycon
+  >>> weights = np.array([[0.4, 0.5, 0.6]])
+  >>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──╭C──────╭X──┤ ⟨Z⟩
+   1: ──RX(0.5)──╰X──╭C──│───┤
+   2: ──RX(0.6)──────╰X──╰C──┤
+  ```
+
+  Now, let's swap out the decomposition of the `CNOT` gate into `CZ`
+  and `Hadamard`, and furthermore the decomposition of `Hadamard` into
+  `RZ` and `RY` rather than the decomposition already available in PennyLane.
+  We define the two decompositions like so, and pass them to a device:
+
+  ```python
+  def custom_cnot(wires):
+      return [
+          qml.Hadamard(wires=wires[1]),
+          qml.CZ(wires=[wires[0], wires[1]]),
+          qml.Hadamard(wires=wires[1])
+      ]
+
+  def custom_hadamard(wires):
+      return [
+          qml.RZ(np.pi, wires=wires),
+          qml.RY(np.pi / 2, wires=wires)
+      ]
+
+  # Can pass the operation itself, or a string
+  custom_decomps = {qml.CNOT : custom_cnot, "Hadamard" : custom_hadamard}
+
+  decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
+  decomp_qnode = qml.QNode(circuit, decomp_dev)
+  ```
+
+  Now when we draw or run a QNode on this device, the gates will be expanded
+  according to our specifications:
+
+  ```pycon
+  >>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
+  A separate context manager, `set_decomposition`, has also been implemented to enable
+  application of custom decompositions on devices that have already been created.
+
+  ```pycon
+  >>> with qml.transforms.set_decomposition(custom_decomps, original_dev):
+  ...     print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
 
