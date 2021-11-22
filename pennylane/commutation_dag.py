@@ -86,6 +86,21 @@ commutation_map = OrderedDict(
 )
 
 
+def intersection(wires1, wires2):
+    r"""Check if two operations are commuting
+
+        Args:
+            wires1 (pennylane.wires.Wires): First set of wires.
+            wires2 (pennylane.wires.Wires: Second set of wires.
+
+        Returns:
+             bool: True if the two sets of wires are not disjoint and False if disjoint.
+        """
+    if len(qml.wires.Wires.shared_wires([wires1, wires2])) == 0:
+        return False
+    return True
+
+
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting
 
@@ -105,23 +120,15 @@ def is_commuting(operation1, operation2):
     # pylint: disable=too-many-return-statements
 
     # Case 1 operations are disjoints
-    if not bool(operation1.wires.toset().intersection(operation2.wires.toset())):
+    if not intersection(operation1.wires, operation2.wires):
         return True
 
     # Case 2 both operations are controlled
     if operation1.is_controlled and operation2.is_controlled:
-        control_control = bool(
-            operation1.control_wires.toset().intersection(operation2.control_wires.toset())
-        )
-        target_target = bool(
-            operation1.target_wires.toset().intersection(operation2.target_wires.toset())
-        )
-        control_target = bool(
-            operation1.control_wires.toset().intersection(operation2.target_wires.toset())
-        )
-        target_control = bool(
-            operation1.target_wires.toset().intersection(operation2.control_wires.toset())
-        )
+        control_control = intersection(operation1.control_wires, operation2.control_wires)
+        target_target = intersection(operation1.target_wires, operation2.target_wires)
+        control_target = intersection(operation1.control_wires, operation2.target_wires)
+        target_control = intersection(operation1.target_wires, operation2.control_wires)
 
         # Case 2.1: disjoint targets
         if control_control and not target_target and not control_target and not target_control:
@@ -168,20 +175,18 @@ def is_commuting(operation1, operation2):
         # Case 2.9: targets and controls overlap with targets and controls
         if target_control and control_target and target_target:
             return (
-                bool(commutation_map[operation1.is_controlled][position["ctrl"]])
-                and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
-                and bool(
-                    commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-                )
+                    bool(commutation_map[operation1.is_controlled][position["ctrl"]])
+                    and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
+                    and bool(
+                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
+            )
             )
 
     # Case 3: only operation 1 is controlled
     elif operation1.is_controlled:
 
-        control_target = bool(
-            operation1.control_wires.toset().intersection(operation2.wires.toset())
-        )
-        target_target = bool(operation1.target_wires.toset().intersection(operation2.wires.toset()))
+        control_target = intersection(operation1.control_wires, operation2.wires)
+        target_target = intersection(operation1.target_wires, operation2.wires)
 
         # Case 3.1: control and target 1 overlap with target 2
         if control_target and target_target:
@@ -199,10 +204,8 @@ def is_commuting(operation1, operation2):
 
     # Case 4: only operation 2 is controlled
     elif operation2.is_controlled:
-        target_control = bool(
-            operation1.wires.toset().intersection(operation2.control_wires.toset())
-        )
-        target_target = bool(operation1.wires.toset().intersection(operation2.target_wires.toset()))
+        target_control = intersection(operation1.wires, operation2.control_wires)
+        target_target = intersection(operation1.wires, operation2.target_wires)
 
         # Case 4.1: control and target 2 overlap with target 1
         if target_control and target_target:
@@ -223,7 +226,7 @@ def is_commuting(operation1, operation2):
     return bool(commutation_map[operation1.name][position[operation2.name]])
 
 
-def merge_no_duplicates(*iterables):
+def _merge_no_duplicates(*iterables):
     """Merge K list without duplicate using python heapq ordered merging
 
     Args:
@@ -245,7 +248,6 @@ class CommutationDAGNode:
 
     Args:
         op (qml.Operation): PennyLane operation.
-        name (str): Name of the operation.
         wires (qml.Wires): Wires on which the operation acts on.
         node_id (int): Id of the node in the DAG.
         successors (array[int]): List of the node's successors in the DAG.
@@ -262,8 +264,9 @@ class CommutationDAGNode:
 
     __slots__ = [
         "op",
-        "name",
         "wires",
+        "target_wires",
+        "control_wires",
         "node_id",
         "successors",
         "predecessors",
@@ -274,21 +277,23 @@ class CommutationDAGNode:
     ]
 
     def __init__(
-        self,
-        op=None,
-        name=None,
-        wires=None,
-        successors=None,
-        predecessors=None,
-        reachable=None,
-        matchedwith=None,
-        successorstovisit=None,
-        isblocked=None,
-        node_id=-1,
+            self,
+            op=None,
+            wires=None,
+            target_wires=None,
+            control_wires=None,
+            successors=None,
+            predecessors=None,
+            reachable=None,
+            matchedwith=None,
+            successorstovisit=None,
+            isblocked=None,
+            node_id=-1,
     ):
         self.op = op
-        self.name = name
         self.wires = wires
+        self.target_wires = target_wires
+        self.control_wires = control_wires if control_wires is not None else []
         self.node_id = node_id
         self.successors = successors if successors is not None else []
         self.predecessors = predecessors if predecessors is not None else []
@@ -329,14 +334,23 @@ class CommutationDAG:
         Args:
             operation (qml.operation): PennyLane quantum operation to add to the DAG.
         """
-
-        new_node = qml.commutation_dag.CommutationDAGNode(
-            op=operation,
-            wires=operation.wires,
-            name=operation.name,
-            successors=[],
-            predecessors=[],
-        )
+        if operation.is_controlled:
+            new_node = qml.commutation_dag.CommutationDAGNode(
+                op=operation,
+                wires=operation.wires.tolist(),
+                target_wires= operation.target_wires.tolist(),
+                control_wires=operation.control_wires.tolist(),
+                successors=[],
+                predecessors=[],
+            )
+        else:
+            new_node = qml.commutation_dag.CommutationDAGNode(
+                op=operation,
+                wires=operation.wires.tolist(),
+                target_wires=operation.wires.tolist(),
+                successors=[],
+                predecessors=[],
+            )
         self._add_node(new_node)
         self._update_edges()
 
@@ -401,7 +415,7 @@ class CommutationDAG:
 
         for prev_node_id in range(max_node_id - 1, -1, -1):
             if self.get_node(prev_node_id).reachable and not is_commuting(
-                self.get_node(prev_node_id).op, max_node
+                    self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)
                 self._pred_update(max_node_id)
@@ -478,7 +492,7 @@ class CommutationDAG:
             self.get_node(node_id).predecessors.append(self.get_node(d_pred).predecessors)
 
         self.get_node(node_id).predecessors = list(
-            merge_no_duplicates(*(self.get_node(node_id).predecessors))
+            _merge_no_duplicates(*self.get_node(node_id).predecessors)
         )
 
     def _add_successors(self):
@@ -491,5 +505,5 @@ class CommutationDAG:
                 self.get_node(node_id).successors.append(self.get_node(d_succ).successors)
 
             self.get_node(node_id).successors = list(
-                merge_no_duplicates(*(self.get_node(node_id).successors))
+                _merge_no_duplicates(*self.get_node(node_id).successors)
             )

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A transform to obtain the matrix representation of a quantum circuit.
+A transform to obtain the commutation DAG of a quantum circuit.
 """
 from collections import OrderedDict
 from functools import wraps
@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 def get_dag_commutation(circuit):
-    r"""Construct the matrix representation of a quantum circuit.
+    r"""Construct the commutation DAG representation of a quantum circuit.
 
     Args:
         circuit (pennylane.QNode, .QuantumTape, or Callable): A quantum node, tape,
@@ -38,7 +38,6 @@ def get_dag_commutation(circuit):
     >>> get_dag(theta)
 
     """
-
     # pylint: disable=protected-access
 
     @wraps(circuit)

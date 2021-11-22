@@ -32,7 +32,7 @@ class TestCommutingFunction:
             ([[0, 1], [3, 1]], True),
         ],
     )
-    def test_cnot(self, wires, res, tol):
+    def test_cnot(self, wires, res):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -45,7 +45,7 @@ class TestCommutingFunction:
             ([[0, 1], [0, 1, 2]], False),
         ],
     )
-    def test_cnot_toffoli(self, wires, res, tol):
+    def test_cnot_toffoli(self, wires, res):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.Toffoli(wires=wires[1]))
         assert commutation == res
 
@@ -58,7 +58,7 @@ class TestCommutingFunction:
             ([[0, 1], [0, 2]], True),
         ],
     )
-    def test_cnot_cz(self, wires, res, tol):
+    def test_cnot_cz(self, wires, res):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CZ(wires=wires[1]))
         assert commutation == res
 
@@ -70,7 +70,7 @@ class TestCommutingFunction:
             ([[0, 2], [0, 2, 1]], True),
         ],
     )
-    def test_cz_mcz(self, wires, res, tol):
+    def test_cz_mcz(self, wires, res):
         def z():
             qml.PauliZ(wires=wires[1][1])
 
@@ -89,7 +89,7 @@ class TestCommutingFunction:
             ([[0, 3], [1, 2, 0]], True),
         ],
     )
-    def test_cnot_mcz(self, wires, res, tol):
+    def test_cnot_mcz(self, wires, res):
         def z():
             qml.PauliZ(wires=wires[1][2])
 
@@ -106,7 +106,7 @@ class TestCommutingFunction:
             ([[2], [0, 1]], True),
         ],
     )
-    def test_x_cnot(self, wires, res, tol):
+    def test_x_cnot(self, wires, res):
         commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -118,7 +118,7 @@ class TestCommutingFunction:
             ([[2], [0, 1]], True),
         ],
     )
-    def test_cnot_x(self, wires, res, tol):
+    def test_cnot_x(self, wires, res):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[1]), qml.PauliX(wires=wires[0]))
         assert commutation == res
 
@@ -130,7 +130,7 @@ class TestCommutingFunction:
             ([[2], [0, 1]], True),
         ],
     )
-    def test_x_cy(self, wires, res, tol):
+    def test_x_cy(self, wires, res):
         commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CY(wires=wires[1]))
         assert commutation == res
 
@@ -143,7 +143,7 @@ class TestCommutingFunction:
             ([[1, 2], [0, 1, 2]], False),
         ],
     )
-    def test_cnot_cswap(self, wires, res, tol):
+    def test_cnot_cswap(self, wires, res):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CSWAP(wires=wires[1]))
         assert commutation == res
 
@@ -153,7 +153,7 @@ class TestCommutingFunction:
             ([[0, 1, 2], [1, 2]], False),
         ],
     )
-    def test_cswap_cnot(self, wires, res, tol):
+    def test_cswap_cnot(self, wires, res):
         commutation = qml.is_commuting(qml.CSWAP(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -163,7 +163,7 @@ class TestCommutingFunction:
             ([[0, 1, 2], [2, 1, 0]], False),
         ],
     )
-    def test_cswap_cswap(self, wires, res, tol):
+    def test_cswap_cswap(self, wires, res):
         commutation = qml.is_commuting(qml.CSWAP(wires=wires[0]), qml.CSWAP(wires=wires[1]))
         assert commutation == res
 
@@ -173,7 +173,7 @@ class TestCommutingFunction:
             ([[0, 1], [0, 1]], False),
         ],
     )
-    def test_cnot_swap(self, wires, res, tol):
+    def test_cnot_swap(self, wires, res):
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.SWAP(wires=wires[1]))
         assert commutation == res
 
@@ -183,7 +183,7 @@ class TestCommutingFunction:
             ([[0, 1], [0, 1]], False),
         ],
     )
-    def test_swap_cnot(self, wires, res, tol):
+    def test_swap_cnot(self, wires, res):
         commutation = qml.is_commuting(qml.SWAP(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -195,7 +195,7 @@ class TestCommutingFunction:
             ([[0, 3], [0, 1, 2]], True),
         ],
     )
-    def test_cz_cswap(self, wires, res, tol):
+    def test_cz_cswap(self, wires, res):
         commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.CSWAP(wires=wires[1]))
         assert commutation == res
 
@@ -207,7 +207,7 @@ class TestCommutingFunction:
             ([[0, 3], [0, 1, 2, 3]], True),
         ],
     )
-    def test_cnot_multix(self, wires, res, tol):
+    def test_cnot_multix(self, wires, res):
         commutation = qml.is_commuting(
             qml.CNOT(wires=wires[0]),
             qml.MultiControlledX(
