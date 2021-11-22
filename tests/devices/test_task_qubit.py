@@ -21,9 +21,10 @@ import pytest
 tf = pytest.importorskip("tensorflow", minversion="2.4")
 dist = pytest.importorskip("dask.distributed")
 
+
 def test_integration(tol=1e-5):
     """Test that the execution of task.qubit is possible and agrees with general use of default.qubit.tf"""
-    tol=1e-5
+    tol = 1e-5
     wires = 3
     dev_tf = qml.device("default.qubit", wires=wires)
     dev_task = qml.device("task.qubit", wires=wires, backend="default.qubit")
@@ -57,7 +58,7 @@ def test_integration(tol=1e-5):
             qml.RY(x[i + 1], wires=1)
         for i in range(2):
             qml.CNOT(wires=[i, i + 1])
-        return qml.expval(qml.PauliZ(0)) 
+        return qml.expval(qml.PauliZ(0))
 
     @qml.qnode(dev_task, cache=False, interface="tf", diff_method="parameter-shift")
     def circuit_task_ps(x):
