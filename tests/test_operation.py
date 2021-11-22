@@ -1287,7 +1287,6 @@ class TestChannel:
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
             num_wires = 1
-            num_params = 1
             grad_method = "F"
 
             def _kraus_matrices(self, *params):
