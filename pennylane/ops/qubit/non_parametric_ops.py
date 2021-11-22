@@ -797,7 +797,7 @@ class CSWAP(Operation):
     is_self_inverse = True
     num_wires = 3
     is_controlled = "SWAP"
-  
+
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -1046,6 +1046,7 @@ class MultiControlledX(Operation):
     @property
     def target_wires(self):
         return qml.wires.Wires(self._target_wire)
+
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
