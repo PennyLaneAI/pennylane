@@ -416,13 +416,7 @@ class RepresentationResolver:
             )
 
         # Operations that only have matrix arguments
-        elif base_name in {
-            "GaussianState",
-            "FockDensityMatrix",
-            "FockStateVector",
-            "QubitStateVector",
-            "InterferometerUnitary",
-        }:
+        elif len(qml.math.shape(op.data[0])) != 0:
             representation = name + RepresentationResolver._format_matrix_arguments(
                 op.data, "M", self.matrix_cache
             )

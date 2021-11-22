@@ -80,15 +80,15 @@ def _compute_theta(alpha):
     Returns:
         (tensor_like): rotation angles theta
     """
-    ln = alpha.shape[0]
-    k = np.log2(alpha.shape[0])
+    ln = alpha.shape[-1]
+    k = np.log2(ln)
 
     M_trans = np.zeros(shape=(ln, ln))
     for i in range(len(M_trans)):
         for j in range(len(M_trans[0])):
             M_trans[i, j] = _matrix_M_entry(j, i)
 
-    theta = qml.math.dot(M_trans, alpha)
+    theta = qml.math.dot(M_trans, alpha.T).T
 
     return theta / 2 ** k
 
@@ -120,8 +120,8 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
-        if theta[0] != 0.0:
-            gate(theta[0], wires=[target_wire])
+        if qml.math.all(theta[..., 0] != 0.0):
+            gate(theta[..., 0], wires=[target_wire])
         return
 
     code = gray_code(gray_code_rank)
@@ -133,8 +133,8 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     ]
 
     for i, control_index in enumerate(control_indices):
-        if theta[i] != 0.0:
-            gate(theta[i], wires=[target_wire])
+        if qml.math.all(theta[..., i] != 0.0):
+            gate(theta[..., i], wires=[target_wire])
         qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
@@ -163,11 +163,11 @@ def _get_alpha_z(omega, n, k):
         for j in range(1, 2 ** (n - k) + 1)
     ]
 
-    term1 = qml.math.take(omega, indices=indices1)
-    term2 = qml.math.take(omega, indices=indices2)
+    term1 = qml.math.take(omega, indices=indices1, axis=-1)
+    term2 = qml.math.take(omega, indices=indices2, axis=-1)
     diff = (term1 - term2) / 2 ** (k - 1)
 
-    return qml.math.sum(diff, axis=1)
+    return qml.math.sum(diff, axis=-1)
 
 
 def _get_alpha_y(a, n, k):
@@ -190,12 +190,12 @@ def _get_alpha_y(a, n, k):
         [(2 * (j + 1) - 1) * 2 ** (k - 1) + l for l in range(2 ** (k - 1))]
         for j in range(2 ** (n - k))
     ]
-    numerator = qml.math.take(a, indices=indices_numerator)
-    numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=1)
+    numerator = qml.math.take(a, indices=indices_numerator, axis=-1)
+    numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=-1)
 
     indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
-    denominator = qml.math.take(a, indices=indices_denominator)
-    denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=1)
+    denominator = qml.math.take(a, indices=indices_denominator, axis=-1)
+    denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=-1)
 
     # Divide only where denominator is zero, else leave initial value of zero.
     # The equation guarantees that the numerator is also zero in the corresponding entries.
@@ -250,20 +250,31 @@ class MottonenStatePreparation(Operation):
 
     def __init__(self, state_vector, wires, do_queue=True, id=None):
 
-        shape = qml.math.shape(state_vector)
+        # check if the `state_vector` param is batched
+        batched = len(qml.math.shape(state_vector)) > 1
 
-        if len(shape) != 1:
-            raise ValueError(f"State vector must be a one-dimensional vector; got shape {shape}.")
+        state_batch = state_vector if batched else [state_vector]
 
-        n_amplitudes = shape[0]
-        if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
-            raise ValueError(
-                f"State vector must be of length {2 ** len(wires)} or less; got length {n_amplitudes}."
-            )
+        # apply checks to each state vector in the batch
+        for i, state in enumerate(state_batch):
+            shape = qml.math.shape(state)
 
-        norm = qml.math.sum(qml.math.abs(state_vector) ** 2)
-        if not qml.math.allclose(norm, 1.0, atol=1e-3):
-            raise ValueError("State vector has to be of norm 1.0, got {}".format(norm))
+            if len(shape) != 1:
+                raise ValueError(
+                    f"State vectors must be one-dimensional; vector {i} has shape {shape}."
+                )
+
+            n_amplitudes = shape[0]
+            if n_amplitudes != 2 ** len(qml.wires.Wires(wires)):
+                raise ValueError(
+                    f"State vectors must be of length {2 ** len(wires)} or less; vector {i} has length {n_amplitudes}."
+                )
+
+            norm = qml.math.sum(qml.math.abs(state) ** 2)
+            if not qml.math.allclose(norm, 1.0, atol=1e-3):
+                raise ValueError(
+                    f"State vectors have to be of norm 1.0, vector {i} has norm {norm}"
+                )
 
         super().__init__(state_vector, wires=wires, do_queue=do_queue, id=id)
 

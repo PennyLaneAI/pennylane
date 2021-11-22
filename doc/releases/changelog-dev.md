@@ -4,6 +4,96 @@
 
 <h3>New features since last release</h3>
 
+* Custom decompositions can now be applied to operations at the device level.
+  [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
+
+  For example, suppose we would like to implement the following QNode:
+
+  ```python
+  def circuit(weights):
+      qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.PauliZ(0))
+
+  original_dev = qml.device("default.qubit", wires=3)
+  original_qnode = qml.QNode(circuit, original_dev)
+  ```
+
+  ```pycon
+  >>> weights = np.array([[0.4, 0.5, 0.6]])
+  >>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──╭C──────╭X──┤ ⟨Z⟩
+   1: ──RX(0.5)──╰X──╭C──│───┤
+   2: ──RX(0.6)──────╰X──╰C──┤
+  ```
+
+  Now, let's swap out the decomposition of the `CNOT` gate into `CZ`
+  and `Hadamard`, and furthermore the decomposition of `Hadamard` into
+  `RZ` and `RY` rather than the decomposition already available in PennyLane.
+  We define the two decompositions like so, and pass them to a device:
+
+  ```python
+  def custom_cnot(wires):
+      return [
+          qml.Hadamard(wires=wires[1]),
+          qml.CZ(wires=[wires[0], wires[1]]),
+          qml.Hadamard(wires=wires[1])
+      ]
+
+  def custom_hadamard(wires):
+      return [
+          qml.RZ(np.pi, wires=wires),
+          qml.RY(np.pi / 2, wires=wires)
+      ]
+
+  # Can pass the operation itself, or a string
+  custom_decomps = {qml.CNOT : custom_cnot, "Hadamard" : custom_hadamard}
+
+  decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
+  decomp_qnode = qml.QNode(circuit, decomp_dev)
+  ```
+
+  Now when we draw or run a QNode on this device, the gates will be expanded
+  according to our specifications:
+
+  ```pycon
+  >>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
+  A separate context manager, `set_decomposition`, has also been implemented to enable
+  application of custom decompositions on devices that have already been created.
+
+  ```pycon
+  >>> with qml.transforms.set_decomposition(custom_decomps, original_dev):
+  ...     print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
+* PennyLane now supports drawing a QNode with matplotlib!
+  [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+
+  ```python
+  dev = qml.device("default.qubit", wires=4)
+
+  @qml.qnode(dev)
+  def circuit(x, z):
+      qml.QFT(wires=(0,1,2,3))
+      qml.Toffoli(wires=(0,1,2))
+      qml.CSWAP(wires=(0,2,3))
+      qml.RX(x, wires=0)
+      qml.CRZ(z, wires=(3,0))
+      return qml.expval(qml.PauliZ(0))
+  
+  fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
+  fig.show()
+  ```
+
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
+
 * It is now possible to use TensorFlow's [AutoGraph
   mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
   differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
@@ -188,10 +278,12 @@
   [RZ(0.3, wires=[0])]
   ```
 
-* ``qml.circuit_drawer.draw_mpl`` produces a matplotlib figure and axes given a tape.
+* ``qml.circuit_drawer.tape_mpl`` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
+* MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
@@ -236,7 +328,8 @@
 
 <h3>Bug fixes</h3>
 
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP`
+* `qml.draw` now supports arbitrary templates with matrix parameters.
+  [(#1917)](https://github.com/PennyLaneAI/pennylane/pull/1917)
 
 * `QuantumTape.trainable_params` now is a list instead of a set, making
   it more stable in very rare edge cases.
@@ -257,6 +350,10 @@
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+  
+* Device tests no longer throw warnings about the `requires_grad`
+  attribute of variational parameters.
+  [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
 
 <h3>Documentation</h3>
 
@@ -266,14 +363,16 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding and BasisEmbedding.
+* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding and DisplacementEmbedding.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
+  [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
+  [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, Josh Izaac,
+Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac,
 Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi, Christina Lee, Alejandro Montanez,
 Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
