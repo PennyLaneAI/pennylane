@@ -89,11 +89,11 @@ class TaskQubit(QubitDevice):
     >>> import dask.distributed as dist
 
     >>> if __name__ == '__main__': # Required for LocalCluster
-    ...     dask_cluster = dist.LocalCluster(n_workers=4, threads_per_worker=1)
-    ...     dask_client = dist.Client(dask_cluster)
-    ...     dask_backend = "default.qubit.tf"
-    ...     dev = qml.device("task.qubit", wires=6, backend=dask_backend)
-    ...     @qml.qnode(dev, cache=False, interface="tf") # caching must be disabled due to proxy interface
+    ...     cluster = dist.LocalCluster(n_workers=4, threads_per_worker=1)
+    ...     client = dist.Client(cluster)
+    ...     backend = "default.qubit"
+    ...     dev = qml.device("task.qubit", wires=6, backend=backend)
+    ...     @qml.qnode(dev, cache=False, interface="tf", diff_method="parameter-shift) # caching must be disabled due to proxy interface
     ...     def circuit(x):
     ...         qml.RX(x[0], wires=0)
     ...         qml.RY(x[1], wires=0)
@@ -103,13 +103,14 @@ class TaskQubit(QubitDevice):
     ...         qml.RY(x[2], wires=1)
     ...         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
     ...     weights = tf.Variable(qml.numpy.random.rand(3))
+    ...     def f_submit(weights):
+    ...         with tf.GradientTape() as tape:
+    ...             # Use the circuit to calculate the loss value
+    ...             loss = tf.abs(circuit(weights)-0.5)**2
+    ...         return tape.gradient(loss, weights)
 
-    ...     with tf.GradientTape() as tape:
-    ...         # Use the circuit to calculate the loss value
-    ...         loss = tf.abs(circuit(weights)-0.5)**2
-
-    ...     print(tape.gradient(loss, weights))
-    tf.Tensor([-0.39259075 -0.30759767 -0.49561258], shape=(3,), dtype=float64)
+    ...     print(client.submit(f_submit, weights).result())
+    tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
 
     Args:
         wires (int): The number of wires to initialize the device with.
@@ -170,7 +171,8 @@ class TaskQubit(QubitDevice):
             return self._backend_cls.obj
         return self.__dict__[obj]
 
-    def batch_execute(self, circuits: Union[List[qml.tape.QuantumTape], qml.QNode], **kwargs):
+    def batch_execute(self, circuits: List[qml.tape.QuantumTape], **kwargs):
+        "This overloads the backt_execute functionality of QubitDevice to offload computations to a user-chosen backend device. This allows scaling of the available workers to instantiate a given number of backends for concurrent circuit evaluations."
         if self._gen_report:
             filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
             cm = performance_report(filename=filename)
@@ -179,17 +181,7 @@ class TaskQubit(QubitDevice):
 
         with cm:
             results = []
-            if isinstance(circuits, qml.QNode):
-                with worker_client() as client:
-                    results.append(
-                        client.submit(
-                            TaskQubit._execute_wrapper,
-                            self._backend,
-                            self._wires,
-                            circuit,
-                        )
-                    )
-            elif isinstance(circuits, dask.distributed.client.Future):
+            if isinstance(circuits, dask.distributed.client.Future):
                 with worker_client() as client:
                     results = client.submit(
                         lambda backend, wires, tapes: [
@@ -218,16 +210,12 @@ class TaskQubit(QubitDevice):
             return res
 
     def apply(self, operations, **kwargs):
+        "The apply method of task.qubit should not be explicitly used."
         pass
-        #self.batch_execute(operations)
-        
-        #raise Exception(
-        #    "The apply method of task.qubit should not be explicitly used. Please use the #`batch_execute` method for tape evaluations."
-        #)
 
-    # Since we are using a proxy device, capabilities are handled by chosen backend
     @ProxyInstanceCLS
     def capabilities(self_cls):
+        "Since we are using a proxy device, capabilities are handled by chosen backend upon instantiation. If accessing class attributes, a limited set is provided."
         if not isinstance(self_cls, type):
             return self_cls._backend_cls.capabilities()
         capabilities = super().capabilities().copy()
@@ -247,7 +235,8 @@ class TaskQubit(QubitDevice):
     def _execute_wrapper(
         backend: str,
         wires: int,
-        circuit: Union[qml.QNode, qml.tape.QuantumTape],
+        circuit: qml.tape.QuantumTape,
     ):
+        "This function provides a carrier function for instantiating and evaluating a tape on a given backend device."
         dev = qml.device(backend, wires=wires)
         return dev.execute(circuit)
