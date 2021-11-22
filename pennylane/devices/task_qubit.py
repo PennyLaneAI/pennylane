@@ -49,7 +49,6 @@ try:
 except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing dask and dask.distributed") from e
 
-
 class ProxyInstanceCLS(classmethod):
     """
     This utility class allows the use of both an instance
@@ -67,7 +66,7 @@ class ProxyInstanceCLS(classmethod):
         descr_get = super().__get__ if instance is None else self.__func__.__get__
         return descr_get(instance, type_)
 
-
+# pylint: too-few-public-methods, bad-classmethod-argument
 class TaskQubit(QubitDevice):
     """Proxy simulator plugin written using Dask.Distributed as a task-distribution scheduling backend.
 
@@ -164,14 +163,14 @@ class TaskQubit(QubitDevice):
         self.expand_fn = self.default_expand_fn
 
         if backend not in TaskQubit.supported_devices:
-            raise ("Unsupported device backend.")
+            raise Exception("Unsupported device backend.")
 
     def __get__(self, obj, objtype=None):
         if obj not in self.__dict__:
             return self._backend_cls.obj
         return self.__dict__[obj]
 
-    def batch_execute(self, circuits: List[qml.tape.QuantumTape], **kwargs):
+    def batch_execute(self, circuits: List[qml.tape.QuantumTape]):
         "This overloads the backt_execute functionality of QubitDevice to offload computations to a user-chosen backend device. This allows scaling of the available workers to instantiate a given number of backends for concurrent circuit evaluations."
         if self._gen_report:
             filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
