@@ -20,8 +20,14 @@ import numpy as np
 import pytest
 import cmath
 import math
+import functools
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
+
+#TODO: make this togglable via the command line
+use_cuda = torch.cuda.is_available()
+if use_cuda:
+    torch.tensor = functools.partial(torch.tensor, device='cuda')
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -142,7 +148,7 @@ def init_state(scope="session"):
         torch.manual_seed(42)
         state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
         state /= torch.linalg.norm(state)
-        return state
+        return torch.tensor(state) # converting to tensor will set the device to CUDA if enabled
 
     return _init_state
 
@@ -171,8 +177,9 @@ class TestApply:
 
     def test_basis_state(self, tol):
         """Test basis state initialization"""
+
         dev = DefaultQubitTorch(wires=4)
-        state = torch.tensor([0, 0, 1, 0])
+        state = torch.tensor([0, 0, 1, 0], dtype=torch.complex128)
 
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
@@ -206,6 +213,7 @@ class TestApply:
     def test_qubit_state_vector(self, init_state, tol):
         """Test qubit state vector application"""
         dev = DefaultQubitTorch(wires=1)
+        dev._torch_device = 'cuda' if use_cuda else 'cpu'
         state = init_state(1)
 
         dev.apply([qml.QubitStateVector(state, wires=[0])])
@@ -218,6 +226,7 @@ class TestApply:
     def test_full_subsystem_statevector(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultQubitTorch(wires=["a", "b", "c"])
+        dev._torch_device = 'cuda' if use_cuda else 'cpu'
         state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -230,7 +239,8 @@ class TestApply:
     def test_partial_subsystem_statevector(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
         dev = DefaultQubitTorch(wires=["a", "b", "c"])
-        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / math.sqrt(2.0)
+        dev._torch_device = 'cuda' if use_cuda else 'cpu'
+        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / torch.tensor(math.sqrt(2.0))
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
@@ -276,6 +286,7 @@ class TestApply:
     def test_single_qubit_no_parameters(self, init_state, op, mat, tol):
         """Test non-parametrized single qubit operations"""
         dev = DefaultQubitTorch(wires=1)
+        dev._torch_device = 'cuda' if use_cuda else 'cpu'
         state = init_state(1)
 
         queue = [qml.QubitStateVector(state, wires=[0])]
@@ -293,6 +304,7 @@ class TestApply:
     def test_single_qubit_parameters(self, init_state, op, func, theta, tol):
         """Test parametrized single qubit operations"""
         dev = DefaultQubitTorch(wires=1)
+        dev._torch_device = 'cuda' if use_cuda else 'cpu'
         state = init_state(1)
 
         queue = [qml.QubitStateVector(state, wires=[0])]
