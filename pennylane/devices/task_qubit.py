@@ -93,7 +93,7 @@ class TaskQubit(QubitDevice):
     ...     dask_client = dist.Client(dask_cluster)
     ...     dask_backend = "default.qubit.tf"
     ...     dev = qml.device("task.qubit", wires=6, backend=dask_backend)
-    ...     @qml.beta.qnode(dev, cache=False, interface="tf") # caching must be disabled due to proxy interface
+    ...     @qml.qnode(dev, cache=False, interface="tf") # caching must be disabled due to proxy interface
     ...     def circuit(x):
     ...         qml.RX(x[0], wires=0)
     ...         qml.RY(x[1], wires=0)
@@ -174,7 +174,7 @@ class TaskQubit(QubitDevice):
             return self._backend_cls.obj
         return self.__dict__[obj]
 
-    def batch_execute(self, circuits: Union[List[qml.tape.QuantumTape], qml.beta.QNode], **kwargs):
+    def batch_execute(self, circuits: Union[List[qml.tape.QuantumTape], qml.QNode], **kwargs):
         if self._gen_report:
             filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
             cm = performance_report(filename=filename)
@@ -183,7 +183,7 @@ class TaskQubit(QubitDevice):
 
         with cm:
             results = []
-            if isinstance(circuits, qml.beta.QNode):
+            if isinstance(circuits, qml.QNode):
                 with worker_client() as client:
                     results.append(
                         client.submit(
@@ -222,9 +222,12 @@ class TaskQubit(QubitDevice):
             return res
 
     def apply(self, operations, **kwargs):
-        raise Exception(
-            "The apply method of task.qubit should not be explicitly used. Please use the `batch_execute` method for tape evaluations."
-        )
+        pass
+        #self.batch_execute(operations)
+        
+        #raise Exception(
+        #    "The apply method of task.qubit should not be explicitly used. Please use the #`batch_execute` method for tape evaluations."
+        #)
 
     # Since we are using a proxy device, capabilities are handled by chosen backend
     @ProxyInstanceCLS
