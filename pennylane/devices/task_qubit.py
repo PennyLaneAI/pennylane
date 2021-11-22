@@ -49,6 +49,7 @@ try:
 except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing dask and dask.distributed") from e
 
+
 class ProxyInstanceCLS(classmethod):
     """
     This utility class allows the use of both an instance
@@ -65,6 +66,7 @@ class ProxyInstanceCLS(classmethod):
     def __get__(self, instance, type_):
         descr_get = super().__get__ if instance is None else self.__func__.__get__
         return descr_get(instance, type_)
+
 
 # pylint: too-few-public-methods, bad-classmethod-argument
 class TaskQubit(QubitDevice):
