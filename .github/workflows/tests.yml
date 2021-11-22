@@ -57,7 +57,7 @@ jobs:
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
         if: contains(matrix.config.interfaces, 'jax')
-        run: pip3 install jax jaxlib
+        run: pip3 install jax==0.2.10 jaxlib==0.1.64
 
       - name: Install PennyLane
         run: |
