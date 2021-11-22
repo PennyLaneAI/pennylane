@@ -17,23 +17,23 @@ a given qubit type for run on a background scheduler.
 from typing import List, Union, Tuple, Dict
 from contextlib import nullcontext
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice
 from .default_qubit import DefaultQubit
 from .._version import __version__
 
 try:
     import dask
     import dask.distributed as dist
-    from distributed import get_client, secede, rejoin, worker_client
+    from dask.distributed import worker_client, performance_report
+
     from distributed.protocol import (
         dask_serialize,
         dask_deserialize,
-        serialize,
-        deserialize,
     )
 
     @dask_serialize.register(qml.numpy.tensor)
     def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
+        "Defines a serializer for the Dask backend"
         header, frames = dist.protocol.numpy.serialize_numpy_ndarray(tensor)
         header["type"] = "qml.numpy.tensor"
         header["requires_grad"] = tensor.requires_grad
@@ -42,6 +42,7 @@ try:
 
     @dask_deserialize.register(qml.numpy.tensor)
     def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
+        "Defines a deserializer for the Dask backend"
         return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
 
 
@@ -53,17 +54,19 @@ class ProxyInstanceCLS(classmethod):
     """
     This utility class allows the use of both an instance
     as well as class method types. For situations where
-    the explicit class method is needed, we can use this as a 
+    the explicit class method is needed, we can use this as a
     decorator, and select the appropriate call dynamically.
-    This is an essential support for accessing backend 
+    This is an essential support for accessing backend
     functionality supports with the proxy `task.qubit`.
 
     The implementation is based on the Python descriptor guide
     as mentioned https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod/28238047#28238047
     """
+
     def __get__(self, instance, type_):
         descr_get = super().__get__ if instance is None else self.__func__.__get__
         return descr_get(instance, type_)
+
 
 class TaskQubit(QubitDevice):
     """Proxy simulator plugin written using Dask.Distributed as a task-distribution scheduling backend.
@@ -174,8 +177,6 @@ class TaskQubit(QubitDevice):
     def batch_execute(self, circuits: Union[List[qml.tape.QuantumTape], qml.beta.QNode], **kwargs):
         if self._gen_report:
             filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
-            from dask.distributed import performance_report
-
             cm = performance_report(filename=filename)
         else:
             cm = nullcontext()
@@ -204,7 +205,7 @@ class TaskQubit(QubitDevice):
                     )
             else:
                 with worker_client() as client:
-                    for idx, circuit in enumerate(circuits):
+                    for circuit in circuits:
                         results.append(
                             client.submit(
                                 TaskQubit._execute_wrapper,
@@ -216,32 +217,32 @@ class TaskQubit(QubitDevice):
 
             if self._future:
                 return results
-            else:
-                with worker_client() as client:
-                    res = client.gather(results)
-                return res
+            with worker_client() as client:
+                res = client.gather(results)
+            return res
 
-    def apply():
-        pass
+    def apply(self, operations, **kwargs):
+        raise Exception(
+            "The apply method of task.qubit should not be explicitly used. Please use the `batch_execute` method for tape evaluations."
+        )
 
     # Since we are using a proxy device, capabilities are handled by chosen backend
     @ProxyInstanceCLS
     def capabilities(self_cls):
         if not isinstance(self_cls, type):
             return self_cls._backend_cls.capabilities()
-        else:
-            capabilities = super().capabilities().copy()
-            capabilities.update(
-                model="qubit",
-                supports_finite_shots=False,
-                supports_reversible_diff=False,
-                supports_inverse_operations=False,
-                supports_analytic_computation=False,
-                returns_state=False,
-                returns_probs=False,
-                passthru_devices={},
-            )
-            return capabilities
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            model="qubit",
+            supports_finite_shots=False,
+            supports_reversible_diff=False,
+            supports_inverse_operations=False,
+            supports_analytic_computation=False,
+            returns_state=False,
+            returns_probs=False,
+            passthru_devices={},
+        )
+        return capabilities
 
     @staticmethod
     def _execute_wrapper(
