@@ -156,7 +156,7 @@ class DefaultQubitTorch(DefaultQubit):
 
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
-        self._torch_device_requested = torch_device is not None
+        self._torch_device_specified = torch_device is not None
         self._torch_device = torch_device
 
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
@@ -169,14 +169,17 @@ class DefaultQubitTorch(DefaultQubit):
     def execute(self, circuit, **kwargs):
         ops_and_obs = circuit.operations + circuit.observables
 
-        if not self._torch_device_requested:
+        if not self._torch_device_specified:
             if any(
                 data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")
             ):
+
                 self._torch_device = "cuda"
             else:
+
                 # need to reset in case last execution moved to cuda
                 self._torch_device = "cpu"
+
         return super().execute(circuit, **kwargs)
 
     def _asarray(self, a, dtype=None):
