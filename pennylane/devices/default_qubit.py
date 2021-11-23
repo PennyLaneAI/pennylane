@@ -665,6 +665,7 @@ class DefaultQubit(QubitDevice):
             s = self._asarray(s, dtype=self.C_DTYPE)
             state = self._flatten(self._tensordot(state, s, 0))
             wires = wires + w
+
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
