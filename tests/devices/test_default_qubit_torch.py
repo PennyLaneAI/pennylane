@@ -1251,9 +1251,6 @@ class TestQNodeIntegration:
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
-    # TODO: this test warns with CUDA (maybe CPU too) on res.backward(): [W
-    # Copy.cpp:244] Warning: Casting complex values to real discards the
-    # imaginary part (function operator())
     def test_jacobian_variable_multiply(self, device, torch_device, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
