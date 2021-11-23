@@ -679,7 +679,8 @@ class DefaultQubit(QubitDevice):
 
         # get computational basis state number
         basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
-        num = int(np.dot(state, basis_states))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 

@@ -150,7 +150,7 @@ def init_state(scope="session"):
         torch.manual_seed(42)
         state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
         state /= torch.linalg.norm(state)
-        return torch.tensor(state)  # converting to tensor will set the device to CUDA if enabled
+        return state.to(torch_device)
 
     return _init_state
 
@@ -576,7 +576,6 @@ class TestExpval:
         res = dev.execute(tape)
 
         expected_res = expected(theta, phi)
-        print(res.device, expected_res.device)
         assert torch.allclose(res, expected_res, atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, device, theta, phi, varphi, tol):
@@ -1079,7 +1078,7 @@ class TestQNodeIntegration:
 
         expected = -torch.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
+        assert circuit.diff_options["method"] == "backprop"
         assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, device, tol):
@@ -1371,7 +1370,7 @@ class TestPassthruIntegration:
         using the PyTorch interface, using a variety of differentiation methods."""
         dev = qml.device("default.qubit.torch", wires=1)
 
-        input_state = torch.tensor(1j * torch.tensor([1, -1]) / math.sqrt(2))
+        input_state = torch.tensor(1j * np.array([1, -1]) / math.sqrt(2))
 
         @qml.qnode(dev, diff_method=diff_method, interface="torch")
         def circuit(x, weights, w):
@@ -1383,9 +1382,9 @@ class TestPassthruIntegration:
 
         # Check that the correct QNode type is being used.
         if diff_method == "backprop":
-            assert circuit.gradient_fn == "backprop"
+            assert circuit.diff_options["method"] == "backprop"
         elif diff_method == "finite-diff":
-            assert circuit.gradient_fn is qml.gradients.finite_diff
+            assert circuit.diff_options["method"] == "numeric"
 
         def cost(params):
             """Perform some classical processing"""
@@ -1482,7 +1481,7 @@ class TestSamples:
 
     def test_estimating_marginal_probability(self, device, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000)
+        dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
@@ -1498,7 +1497,7 @@ class TestSamples:
 
     def test_estimating_full_probability(self, device, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
-        dev = qml.device("default.qubit.torch", wires=2, shots=1000)
+        dev = qml.device("default.qubit.torch", wires=2, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit():
