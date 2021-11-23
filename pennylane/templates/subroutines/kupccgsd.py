@@ -201,7 +201,6 @@ class kUpCCGSD(Operation):
     """
 
     num_wires = AnyWires
-    par_domain = "A"
 
     def __init__(self, weights, wires, k=1, delta_sz=0, init_state=None, do_queue=True, id=None):
 
