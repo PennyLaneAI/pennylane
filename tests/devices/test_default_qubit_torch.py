@@ -1448,7 +1448,7 @@ class TestPassthruIntegration:
                     torch.cos(theta) * torch.sin(lam) * torch.cos(phi)
                     + torch.cos(lam) * torch.sin(phi),
                 ]
-            )
+            , device=torch_device)
             * 2
             * (torch.sin(lam) * torch.sin(phi) - torch.cos(theta) * torch.cos(lam) * torch.cos(phi))
         )
