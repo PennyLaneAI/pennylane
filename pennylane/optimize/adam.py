@@ -27,24 +27,19 @@ class AdamOptimizer(GradientDescentOptimizer):
     the momentum and velocity of a particle:
 
     .. math::
-        x^{(t+1)} = x^{(t)} - \eta \frac{a^{(t+1)}}{\sqrt{b^{(t+1)}} + \epsilon },
+        x^{(t+1)} = x^{(t)} - \eta^{(t)} \frac{a^{(t+1)}}{\sqrt{b^{(t+1)}} + \epsilon },
 
     where the update rules for the two moments are given by
 
     .. math::
-        a^{(t+1)} &= \frac{\beta_1 a^{(t)} + (1-\beta_1)\nabla f(x^{(t)})}{(1- \beta_1)},\\
-        b^{(t+1)} &= \frac{\beta_2 b^{(t)} + (1-\beta_2) ( \nabla f(x^{(t)}))^{\odot 2} }{(1- \beta_2)}.
-
-    Above, :math:`( \nabla f(x^{(t-1)}))^{\odot 2}` denotes the element-wise square operation,
-    which means that each element in the gradient is multiplied by itself. The divisors
-    :math:`(1-\beta_{1,2}` correct for bias in the calculations of the first and second moment.
-    Alternatively, they can be omitted from the moments and absorbed into a time dependant step size
-
-    .. math::
+        a^{(t+1)} &= \beta_1 a^{(t)} + (1-\beta_1) \nabla f(x^{(t)}),\\
+        b^{(t+1)} &= \beta_2 b^{(t)} + (1-\beta_2) ( \nabla f(x^{(t)}))^{\odot 2}.
         \eta^{(t+1)} &= \eta^{(t)} \frac{\sqrt{(1-\beta_2)}}{(1-\beta_1)}.
 
-    The hyperparameters :math:`\beta_1` and :math:`\beta_2` can also be step-dependent.
-    Initially, the first and second moment are zero.
+    Above, :math:`( \nabla f(x^{(t-1)}))^{\odot 2}` denotes the element-wise square operation,
+    which means that each element in the gradient is multiplied by itself. The hyperparameters
+    :math:`\beta_1` and :math:`\beta_2` can also be step-dependent. Initially, the first and
+    second moment are zero and :math:`\eta^{(0)}` is given by the provided stepsize argument.
 
     The shift :math:`\epsilon` avoids division by zero.
 
