@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains styles for using matplotlib graphics
+This module contains styles for using matplotlib graphics.
+
+See available styles in the variable ``qml.styles.available``. Styles can be reset
+with ``plt.style.use('default')``.
 """
 
 has_mpl = True
@@ -21,10 +24,11 @@ try:
 except (ModuleNotFoundError, ImportError) as e:
     has_mpl = False
 
-"""Lists all available styling functions""" 
-available = ['black_white_style', 'black_white_style_dark']
+available = ["black_white", "black_white_dark"]
+"""Lists all available styling functions"""
 
-def black_white_style():
+
+def black_white():
     """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
 
     The style can be reset with ``plt.style.use('default')``.
@@ -33,7 +37,7 @@ def black_white_style():
 
     .. code-block:: python
 
-        qml.styles.black_white_style()
+        qml.styles.black_white()
 
         dev = qml.device('lightning.qubit', wires=(0,1,2,3))
         @qml.qnode(dev)
@@ -56,7 +60,7 @@ def black_white_style():
 
     """
 
-    if not has_mpl:
+    if not has_mpl:  # pragma: no cover
         raise ImportError(
             "``black_white_style`` requires matplotlib."
             "You can install matplotlib via \n\n   pip install matplotlib"
@@ -70,7 +74,7 @@ def black_white_style():
     plt.rcParams["text.color"] = "black"
 
 
-def black_white_style_dark():
+def black_white_dark():
     """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
 
     The style can be reset with ``plt.style.use('default')``.
@@ -79,7 +83,7 @@ def black_white_style_dark():
 
     .. code-block:: python
 
-        qml.styles.black_white_style_dark()
+        qml.styles.black_white_dark()
 
         dev = qml.device('lightning.qubit', wires=(0,1,2,3))
         @qml.qnode(dev)
@@ -102,12 +106,11 @@ def black_white_style_dark():
 
     """
 
-    if not has_mpl:
+    if not has_mpl:  # pragma: no cover
         raise ImportError(
             "``black_white_style`` requires matplotlib."
             "You can install matplotlib via \n\n   pip install matplotlib"
         )
-
 
     almost_black = "#151515"  # less harsh than full black
     plt.rcParams["figure.facecolor"] = almost_black

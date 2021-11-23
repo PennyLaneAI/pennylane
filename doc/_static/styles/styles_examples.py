@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 folder = pathlib.Path(__file__).parent
 
 def black_white_style_example():
-    qml.styles.black_white_style()
+    qml.styles.black_white()
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
     @qml.qnode(dev)
@@ -46,7 +46,7 @@ def black_white_style_example():
 
 def black_white_style_dark_example():
 
-    qml.styles.black_white_style_dark()
+    qml.styles.black_white_dark()
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
     @qml.qnode(dev)
