@@ -608,7 +608,15 @@ class OrbitalRotation(Operation):
         phi = params[0]
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        z = qml.math.convert_like(qml.math.zeros([16]), phi)
+
+        interface = qml.math.get_interface(phi)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([16]), phi)
+        else:
+            z = qml.math.zeros([16], like=interface)
 
         diag = qml.math.diag([1, c, c, c ** 2, c, 1, c ** 2, c, c, c ** 2, 1, c, c ** 2, c, c, 1])
 
