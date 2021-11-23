@@ -227,7 +227,7 @@ class TestMolecule:
         mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
 
         x, y, z = position
-        ao = mol.generate_atomic_orbital(index)
+        ao = mol.atomic_orbital(index)
         ao_value = ao(x, y, z)
 
         assert np.allclose(ao_value, ref_value)
@@ -250,7 +250,7 @@ class TestMolecule:
 
         x, y, z = position
         _ = generate_scf(mol)()
-        mo = mol.generate_molecular_orbital(index)
+        mo = mol.molecular_orbital(index)
         mo_value = mo(x, y, z)
 
         assert np.allclose(mo_value, ref_value)

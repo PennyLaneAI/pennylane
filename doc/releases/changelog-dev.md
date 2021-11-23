@@ -8,7 +8,7 @@
   to the Hartree-Fock solver module (hf module).
   [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
 
-  The functions `generate_atomic_orbital` and `generate_molecular_orbital` can be used, as shown in the
+  The functions `atomic_orbital` and `molecular_orbital` can be used, as shown in the
   following codeblock, to evaluate the orbitals. By generating values of the orbitals at different
   positions, one can plot the spatial shape of a desired orbital.
 
@@ -18,8 +18,8 @@
   mol = hf.Molecule(symbols, geometry)
 hf.generate_scf(mol)()
 
-  ao = mol.generate_atomic_orbital(0)
-  mo = mol.generate_molecular_orbital(1)   
+  ao = mol.atomic_orbital(0)
+  mo = mol.molecular_orbital(1)
   ```
   ```pycon
   >>> print(ao(0.0, 0.0, 0.0))

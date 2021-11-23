@@ -113,8 +113,8 @@ class Molecule:
 
         self.mo_coefficients = None
 
-    def generate_atomic_orbital(self, index):
-        r"""Return a function that computes the value of a basis function at a given position.
+    def atomic_orbital(self, index):
+        r"""Return a function that evaluates a basis function at a given position.
 
         Args:
             index (int): index of the basis function
@@ -127,7 +127,7 @@ class Molecule:
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
         >>> mol = qml.hf.Molecule(symbols, geometry)
-        >>> ao = mol.generate_atomic_orbital(0)
+        >>> ao = mol.atomic_orbital(0)
         >>> ao(0.0, 0.0, 0.0)
         0.62824688
         """
@@ -142,7 +142,7 @@ class Molecule:
         lx, ly, lz = l
 
         def orbital(x, y, z):
-            r"""Evaluates the basis function at a given position.
+            r"""Evaluate a basis function at a given position.
 
             Args:
                 x (float): x component of the position
@@ -158,8 +158,8 @@ class Molecule:
 
         return orbital
 
-    def generate_molecular_orbital(self, index):
-        r"""Return a function to evaluate a molecular orbital at a given position.
+    def molecular_orbital(self, index):
+        r"""Return a function that evaluates a molecular orbital at a given position.
 
         Args:
             index (int): index of the molecular orbital
@@ -173,14 +173,14 @@ class Molecule:
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
         >>> mol = qml.hf.Molecule(symbols, geometry)
         >>> _ = generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
-        >>> mo = mol.generate_molecular_orbital(1)
+        >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128
         """
         c = self.mo_coefficients[index]
 
         def orbital(x, y, z):
-            r"""Evaluates a molecular orbital at a given position.
+            r"""Evaluate a molecular orbital at a given position.
 
             Args:
                 x (float): x component of the position
@@ -192,7 +192,7 @@ class Molecule:
             """
             m = 0.0
             for i in range(self.n_orbitals):
-                m = m + c[i] * self.generate_atomic_orbital(i)(x, y, z)
+                m = m + c[i] * self.atomic_orbital(i)(x, y, z)
             return m
 
         return orbital
