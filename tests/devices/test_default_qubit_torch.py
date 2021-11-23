@@ -25,11 +25,11 @@ import functools
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
 use_cuda = torch.cuda.is_available()
-#torch_device = "cuda" if use_cuda else "cpu"
+# torch_device = "cuda" if use_cuda else "cpu"
 
-#torch.tensor = functools.partial(torch.tensor, device=torch_device)
-#torch.zeros = functools.partial(torch.zeros, device=torch_device)
-#torch.linspace = functools.partial(torch.linspace, device=torch_device)
+# torch.tensor = functools.partial(torch.tensor, device=torch_device)
+# torch.zeros = functools.partial(torch.zeros, device=torch_device)
+# torch.linspace = functools.partial(torch.linspace, device=torch_device)
 
 torch_devices = [None]
 
@@ -86,10 +86,12 @@ np.random.seed(42)
 # Test matrices
 #####################################################
 
-U = np.array([
+U = np.array(
+    [
         [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
         [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-    ])
+    ]
+)
 
 U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
 
@@ -340,7 +342,9 @@ class TestApply:
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
     @pytest.mark.parametrize("op,func", single_qubit_param)
-    def test_single_qubit_parameters_inverse(self, device, torch_device, init_state, op, func, theta, tol):
+    def test_single_qubit_parameters_inverse(
+        self, device, torch_device, init_state, op, func, theta, tol
+    ):
         """Test parametrized single qubit operations"""
         dev = device(wires=1, torch_device=torch_device)
         state = init_state(1, torch_device=torch_device)
@@ -552,7 +556,11 @@ class TestExpval:
 
     # test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
     single_wire_expval_test_data = [
-        (qml.RX, qml.Identity, lambda t, p, t_device: torch.tensor([1.0, 1.0], dtype=torch.float64, device=t_device)),
+        (
+            qml.RX,
+            qml.Identity,
+            lambda t, p, t_device: torch.tensor([1.0, 1.0], dtype=torch.float64, device=t_device),
+        ),
         (
             qml.RX,
             qml.PauliZ,
@@ -570,7 +578,9 @@ class TestExpval:
         (
             qml.RX,
             qml.PauliY,
-            lambda t, p, t_device: torch.tensor([0, -torch.cos(t) * torch.sin(p)], dtype=torch.float64, device=t_device),
+            lambda t, p, t_device: torch.tensor(
+                [0, -torch.cos(t) * torch.sin(p)], dtype=torch.float64, device=t_device
+            ),
         ),
         (
             qml.RY,
@@ -581,14 +591,16 @@ class TestExpval:
                     torch.cos(t) * torch.cos(p) + torch.sin(p),
                 ],
                 dtype=torch.float64,
-                device=t_device
+                device=t_device,
             )
             / math.sqrt(2),
         ),
     ]
 
     @pytest.mark.parametrize("gate,obs,expected", single_wire_expval_test_data)
-    def test_single_wire_expectation(self, device, torch_device, gate, obs, expected, theta, phi, varphi, tol):
+    def test_single_wire_expectation(
+        self, device, torch_device, gate, obs, expected, theta, phi, varphi, tol
+    ):
         """Test that single qubit gates with single qubit expectation values"""
         dev = device(wires=2, torch_device=torch_device)
 
@@ -609,7 +621,8 @@ class TestExpval:
 
         Hermitian_mat = torch.tensor(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
-            dtype=torch.complex128, device=torch_device
+            dtype=torch.complex128,
+            device=torch_device,
         )
 
         with qml.tape.QuantumTape() as tape:
@@ -856,7 +869,9 @@ class TestExpval:
 
         assert torch.allclose(res, torch.real(expected), atol=tol, rtol=0)
 
-    def test_hermitian_two_wires_identity_expectation(self, device, torch_device, theta, phi, varphi, tol):
+    def test_hermitian_two_wires_identity_expectation(
+        self, device, torch_device, theta, phi, varphi, tol
+    ):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = device(wires=3, torch_device=torch_device)
 
@@ -1137,7 +1152,9 @@ class TestQNodeIntegration:
 
         amplitude = cmath.exp(-1j * cmath.pi / 8) / cmath.sqrt(2)
 
-        expected = torch.tensor([amplitude, 0, amplitude.conjugate(), 0], dtype=torch.complex128, device=torch_device)
+        expected = torch.tensor(
+            [amplitude, 0, amplitude.conjugate(), 0], dtype=torch.complex128, device=torch_device
+        )
         assert torch.allclose(state, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -1430,7 +1447,9 @@ class TestPassthruIntegration:
         phi = torch.tensor(-0.234, dtype=torch.float64, device=torch_device)
         lam = torch.tensor(0.654, dtype=torch.float64, device=torch_device)
 
-        params = torch.tensor([theta, phi, lam], dtype=torch.float64, requires_grad=True, device=torch_device)
+        params = torch.tensor(
+            [theta, phi, lam], dtype=torch.float64, requires_grad=True, device=torch_device
+        )
 
         res = cost(params)
         res.backward()
@@ -1450,8 +1469,9 @@ class TestPassthruIntegration:
                     + torch.sin(lam) * torch.cos(phi),
                     torch.cos(theta) * torch.sin(lam) * torch.cos(phi)
                     + torch.cos(lam) * torch.sin(phi),
-                ]
-            , device=torch_device)
+                ],
+                device=torch_device,
+            )
             * 2
             * (torch.sin(lam) * torch.sin(phi) - torch.cos(theta) * torch.cos(lam) * torch.cos(phi))
         )
@@ -1514,7 +1534,9 @@ class TestSamples:
 
         assert torch.is_tensor(res)
         assert res.shape == (shots,)
-        assert torch.allclose(torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device))
+        assert torch.allclose(
+            torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
+        )
 
     def test_estimating_marginal_probability(self, device, torch_device, tol):
         """Test that the probability of a subset of wires is accurately estimated."""

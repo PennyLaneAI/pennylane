@@ -165,8 +165,11 @@ class DefaultQubitTorch(DefaultQubit):
 
     def execute(self, circuit, **kwargs):
         ops_and_obs = circuit.operations + circuit.observables
-        cuda_was_set = self._torch_device == 'cuda'
-        if any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")) or cuda_was_set:
+        cuda_was_set = self._torch_device == "cuda"
+        if (
+            any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda"))
+            or cuda_was_set
+        ):
             self._torch_device = "cuda"
         else:
             # need to reset in case last execution moved to cuda
