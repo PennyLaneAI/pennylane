@@ -142,7 +142,7 @@ class Molecule:
         lx, ly, lz = l
 
         def orbital(x, y, z):
-            r"""Computes the value of a basis function at a given position.
+            r"""Evaluates the basis function at a given position.
 
             Args:
                 x (float): x component of the position
@@ -159,13 +159,13 @@ class Molecule:
         return orbital
 
     def generate_molecular_orbital(self, index):
-        r"""Return a function that computes the value of a molecular orbital at a given position.
+        r"""Return a function to evaluate a molecular orbital at a given position.
 
         Args:
             index (int): index of the molecular orbital
 
         Returns:
-            function: function that computes the molecular orbital
+            function: function to evaluate the molecular orbital
 
         **Example**
 
@@ -180,7 +180,7 @@ class Molecule:
         c = self.mo_coefficients[index]
 
         def orbital(x, y, z):
-            r"""Computes the value of a molecular orbital at a given position.
+            r"""Evaluates a molecular orbital at a given position.
 
             Args:
                 x (float): x component of the position
