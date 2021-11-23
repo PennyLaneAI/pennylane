@@ -24,8 +24,8 @@ import functools
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
-use_cuda = torch.cuda.is_available() #TODO: make this togglable via the command line
-torch_device = 'cuda' if use_cuda else 'cpu'
+use_cuda = torch.cuda.is_available()  # TODO: make this togglable via the command line
+torch_device = "cuda" if use_cuda else "cpu"
 
 torch.tensor = functools.partial(torch.tensor, device=torch_device)
 torch.zeros = functools.partial(torch.zeros, device=torch_device)
@@ -150,9 +150,10 @@ def init_state(scope="session"):
         torch.manual_seed(42)
         state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
         state /= torch.linalg.norm(state)
-        return torch.tensor(state) # converting to tensor will set the device to CUDA if enabled
+        return torch.tensor(state)  # converting to tensor will set the device to CUDA if enabled
 
     return _init_state
+
 
 @pytest.fixture
 def device(scope="function"):
@@ -161,10 +162,11 @@ def device(scope="function"):
     def _dev(wires):
         """Torch device"""
         dev = DefaultQubitTorch(wires=wires)
-        dev._torch_device = 'cuda' if use_cuda else 'cpu'
+        dev._torch_device = "cuda" if use_cuda else "cpu"
         return dev
 
     return _dev
+
 
 #####################################################
 # Initialization test
@@ -192,7 +194,7 @@ class TestApply:
         """Test basis state initialization"""
 
         dev = device(wires=4)
-        #dev = DefaultQubitTorch(wires=4)
+        # dev = DefaultQubitTorch(wires=4)
         state = torch.tensor([0, 0, 1, 0], dtype=torch.complex128)
 
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
