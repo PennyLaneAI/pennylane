@@ -657,6 +657,7 @@ class DefaultQubit(QubitDevice):
         state = states[0]
         wires = device_wires[0]
         state = self._asarray(state, dtype=self.C_DTYPE)
+
         # the final state is calculated as the tensor product of each of the states.
         for s, w in zip(states[1:], device_wires[1:]):
             s = self._asarray(s, dtype=self.C_DTYPE)
