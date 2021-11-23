@@ -606,10 +606,9 @@ class OrbitalRotation(Operation):
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
 
         phi = params[0]
-        interface = qml.math.get_interface(phi)
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        z = qml.math.zeros([16], like=interface)
+        z = qml.math.convert_like(qml.math.zeros([16]), phi)
 
         diag = qml.math.diag([1, c, c, c ** 2, c, 1, c ** 2, c, c, c ** 2, 1, c, c ** 2, c, c, 1])
 
