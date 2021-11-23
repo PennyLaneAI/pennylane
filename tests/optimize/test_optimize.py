@@ -516,7 +516,7 @@ class TestOptimizer:
             assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
             x_twosteps = bunch.adam_opt.step(f, x_onestep)
-            adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma))**2
+            adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma)) ** 2
             firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
             secondmoment = (
                 delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
@@ -545,7 +545,7 @@ class TestOptimizer:
                 assert x_onestep == pytest.approx(x_onestep_target, abs=tol)
 
                 x_twosteps = bunch.adam_opt.step(f, x_onestep)
-                adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma))**2
+                adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma)) ** 2
                 firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
                 secondmoment = (
                     delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
