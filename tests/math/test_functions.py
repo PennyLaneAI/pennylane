@@ -1571,6 +1571,23 @@ class TestCoercion:
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
 
+    def test_torch_coercion_error(self):
+        """Test Torch coercion error if multiple devices were specified."""
+
+        if not torch.cuda.is_available():
+            pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
+
+        tensors = [
+            torch.tensor([0.2], device='cpu'),
+            np.array([1, 2, 3]),
+            torch.tensor(1 + 3j, dtype=torch.complex64, device='cuda'),
+        ]
+        pytest.mark
+
+        with pytest.raises(
+            ValueError, match="Multiple Torch devices were specified"
+        ):
+            res = qml.math.coerce(tensors, like="torch")
 
 class TestUnwrap:
     """Test tensor unwrapping"""
