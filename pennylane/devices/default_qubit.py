@@ -655,6 +655,7 @@ class DefaultQubit(QubitDevice):
             states = [states]
             device_wires = [device_wires]
 
+
         state = states[0]
         wires = device_wires[0]
         state = self._asarray(state, dtype=self.C_DTYPE)
