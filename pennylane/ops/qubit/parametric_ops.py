@@ -54,6 +54,7 @@ class RX(Operation):
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -163,6 +164,7 @@ class RZ(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -225,6 +227,7 @@ class PhaseShift(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -299,6 +302,7 @@ class ControlledPhaseShift(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -383,6 +387,7 @@ class Rot(Operation):
     """
     num_wires = 1
     grad_method = "A"
+    gen_frequencies = [(1,), (1,), (1,)]
 
     @property
     def num_params(self):
@@ -467,6 +472,7 @@ class MultiRZ(Operation):
     """
     num_wires = AnyWires
     grad_method = "A"
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -580,6 +586,7 @@ class PauliRot(Operation):
     num_wires = AnyWires
     do_check_domain = False
     grad_method = "A"
+    gen_frequencies = [(1,)]
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -836,6 +843,7 @@ class CRX(Operation):
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    gen_frequencies = [(0.5, 1)]
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
@@ -931,6 +939,7 @@ class CRY(Operation):
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    gen_frequencies = [(0.5, 1)]
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
@@ -1020,6 +1029,7 @@ class CRZ(Operation):
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    gen_frequencies = [(0.5, 1)]
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
@@ -1113,6 +1123,7 @@ class CRot(Operation):
     num_wires = 2
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+    gen_frequencies = [(0.5, 1), (0.5, 1), (0.5, 1)]
 
     @property
     def num_params(self):
@@ -1208,6 +1219,7 @@ class U1(Operation):
     num_wires = 1
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -1268,6 +1280,7 @@ class U2(Operation):
     """
     num_wires = 1
     grad_method = "A"
+    gen_frequencies = [(1,), (1,)]
 
     @property
     def num_params(self):
@@ -1344,6 +1357,7 @@ class U3(Operation):
     """
     num_wires = 1
     grad_method = "A"
+    gen_frequencies = [(1,), (1,), (1,)]
 
     @property
     def num_params(self):
@@ -1415,6 +1429,7 @@ class IsingXX(Operation):
     """
     num_wires = 2
     grad_method = "A"
+    gen_frequencies = [(1,)]
 
     generator = [
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
@@ -1483,6 +1498,7 @@ class IsingYY(Operation):
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
@@ -1544,6 +1560,7 @@ class IsingZZ(Operation):
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+    gen_frequencies = [(1,)]
 
     @property
     def num_params(self):
