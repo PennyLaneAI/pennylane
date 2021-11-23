@@ -192,9 +192,13 @@ def test_analytic_deprecation():
 
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestApply:
-    """Test application of PennyLane operations."""
+    """Test application of PennyLane operations.
 
-
+    Note: the following tests use the DefaultQubitTorch.apply method that
+    contains no logic to transfer tensors created by default on the CPU to the
+    GPU. Therefore, every torch tensor has to be put on the correct device in
+    the test cases.
+    """
 
     def test_basis_state(self, device, torch_device, tol):
         """Test basis state initialization"""
@@ -538,7 +542,13 @@ VARPHI = torch.linspace(0.02, 1, 3, dtype=torch.float64)
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
-    """Test expectation values"""
+    """Test expectation values
+
+    Note: the following tests use DefaultQubitTorch.execute that contains logic
+    to transfer tensors created by default on the CPU to the GPU. Therefore, gate
+    parameters do not have to explicitly be put on the GPU, it suffices to
+    specify torch_device='cuda' when creating the PennyLane device.
+    """
 
     # test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
     single_wire_expval_test_data = [
@@ -874,7 +884,13 @@ class TestExpval:
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
-    """Tests for the variance"""
+    """Tests for the variance
+
+    Note: the following tests use DefaultQubitTorch.execute that contains logic
+    to transfer tensors created by default on the CPU to the GPU. Therefore, gate
+    parameters do not have to explicitly be put on the GPU, it suffices to
+    specify torch_device='cuda' when creating the PennyLane device.
+    """
 
     def test_var(self, device, torch_device, theta, phi, varphi, tol):
         """Tests for variance calculation"""
@@ -1077,7 +1093,7 @@ class TestQNodeIntegration:
         assert dev.shots is None
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
-        assert dev.torch_device == torch_device
+        assert dev._torch_device == torch_device
 
     def test_qubit_circuit(self, device, torch_device, tol):
         """Test that the torch device provides correct
@@ -1102,10 +1118,10 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
         state = dev.state
-        expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128)
+        expected = torch.tensor([1, 0, 0, 0], dtype=torch.complex128, device=torch_device)
         assert torch.allclose(state, expected, atol=tol, rtol=0)
 
-        input_param = torch.tensor(math.pi / 4)
+        input_param = torch.tensor(math.pi / 4, device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit():
@@ -1118,7 +1134,7 @@ class TestQNodeIntegration:
 
         amplitude = cmath.exp(-1j * cmath.pi / 8) / cmath.sqrt(2)
 
-        expected = torch.tensor([amplitude, 0, amplitude.conjugate(), 0], dtype=torch.complex128)
+        expected = torch.tensor([amplitude, 0, amplitude.conjugate(), 0], dtype=torch.complex128, device=torch_device)
         assert torch.allclose(state, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -1138,7 +1154,7 @@ class TestQNodeIntegration:
         params = torch.tensor([theta])
         circuit(params)
         res = dev.state
-        expected = torch.tensor(func(theta), dtype=torch.complex128) @ state
+        expected = torch.tensor(func(theta), dtype=torch.complex128, device=torch_device) @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, 4.213])
@@ -1156,10 +1172,10 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.tensor([theta])
+        params = torch.tensor([theta], device=torch_device)
         circuit(params)
         res = dev.state
-        expected = torch.tensor(func(theta), dtype=torch.complex128) @ state
+        expected = torch.tensor(func(theta), dtype=torch.complex128, device=torch_device) @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, 4.213])
@@ -1177,10 +1193,10 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.tensor([theta])
+        params = torch.tensor([theta], device=torch_device)
         circuit(params)
         res = dev.state
-        expected = torch.tensor(func(theta), dtype=torch.complex128) @ state
+        expected = torch.tensor(func(theta), dtype=torch.complex128, device=torch_device) @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_controlled_rotation_integration(self, torch_device, init_state, tol):
@@ -1200,10 +1216,10 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliZ(0))
 
         # Pass a Torch Variable to the qfunc
-        params = torch.tensor([a, b, c])
+        params = torch.tensor([a, b, c], device=torch_device)
         circuit(params)
         res = dev.state
-        expected = torch.tensor(CRot3(a, b, c), dtype=torch.complex128) @ state
+        expected = torch.tensor(CRot3(a, b, c), dtype=torch.complex128, device=torch_device) @ state
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 

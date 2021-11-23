@@ -829,7 +829,7 @@ class CRX(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        z = qml.math.zeros([4], like=interface)
+        z = qml.math.convert_like(qml.math.zeros([4]), theta)
 
         if interface == "tensorflow":
             c = qml.math.cast_like(c, 1j)
@@ -922,7 +922,7 @@ class CRY(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        z = qml.math.zeros([4], like=interface)
+        z = qml.math.convert_like(qml.math.zeros([4]), theta)
 
         mat = qml.math.diag([1, 1, c, c])
         return mat + qml.math.stack(
