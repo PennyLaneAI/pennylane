@@ -4,10 +4,9 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes several bugs with using parametric operations with the
-  `default.qubit.tensor` device on GPU.
-  The device takes the `torch_device` argument to allow running
-  non-parametric QNodes on the GPU.
+* Fixes several bugs when using parametric operations with the
+  `default.qubit.tensor` device on GPU. The device takes the `torch_device`
+  argument once again to allow running non-parametric QNodes on the GPU.
   [(#1927)](https://github.com/PennyLaneAI/pennylane/pull/1927)
 
 * Fixes a bug where using JAX's jit function on certain QNodes that contain
