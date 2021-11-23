@@ -27,14 +27,14 @@ class AdamOptimizer(GradientDescentOptimizer):
     the momentum and velocity of a particle:
 
     .. math::
-        x^{(t+1)} = x^{(t)} - \eta^{(t)} \frac{a^{(t+1)}}{\sqrt{b^{(t+1)}} + \epsilon },
+        x^{(t+1)} = x^{(t)} - \eta^{(t+1)} \frac{a^{(t+1)}}{\sqrt{b^{(t+1)}} + \epsilon },
 
     where the update rules for the two moments are given by
 
     .. math::
         a^{(t+1)} &= \beta_1 a^{(t)} + (1-\beta_1) \nabla f(x^{(t)}),\\
-        b^{(t+1)} &= \beta_2 b^{(t)} + (1-\beta_2) ( \nabla f(x^{(t)}))^{\odot 2}.
-        \eta^{(t+1)} &= \eta^{(t)} \frac{\sqrt{(1-\beta_2)}}{(1-\beta_1)}.
+        b^{(t+1)} &= \beta_2 b^{(t)} + (1-\beta_2) (\nabla f(x^{(t)}))^{\odot 2},\\
+        \eta^{(t+1)} &= \eta \frac{\sqrt{(1-\beta_2^{t+1})}}{(1-\beta_1^{t+1})}.
 
     Above, :math:`( \nabla f(x^{(t-1)}))^{\odot 2}` denotes the element-wise square operation,
     which means that each element in the gradient is multiplied by itself. The hyperparameters
@@ -81,7 +81,9 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         # Update step size (instead of correcting for bias)
         new_stepsize = (
-            self.stepsize * (math.sqrt(1 - self.beta2) / (1 - self.beta1)) ** self.accumulation["t"]
+            self.stepsize
+            * math.sqrt(1 - self.beta2 ** self.accumulation["t"])
+            / (1 - self.beta1 ** self.accumulation["t"])
         )
 
         trained_index = 0
