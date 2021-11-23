@@ -275,12 +275,12 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         .. code-block:: python
 
-            qml.styles.black_white_style()
+            qml.styles.black_white()
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()
 
 
-        .. figure:: ../../_static/styles/black_white_style_dark.png
+        .. figure:: ../../_static/styles/black_white_style.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
