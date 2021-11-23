@@ -24,13 +24,6 @@ import functools
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
-use_cuda = torch.cuda.is_available()
-# torch_device = "cuda" if use_cuda else "cpu"
-
-# torch.tensor = functools.partial(torch.tensor, device=torch_device)
-# torch.zeros = functools.partial(torch.zeros, device=torch_device)
-# torch.linspace = functools.partial(torch.linspace, device=torch_device)
-
 torch_devices = [None]
 
 if torch.cuda.is_available():
@@ -603,8 +596,6 @@ class TestExpval:
     ):
         """Test that single qubit gates with single qubit expectation values"""
         dev = device(wires=2, torch_device=torch_device)
-
-        par = torch.tensor(theta, device=torch_device)
 
         with qml.tape.QuantumTape() as tape:
             queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
