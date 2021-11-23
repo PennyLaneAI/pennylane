@@ -210,10 +210,6 @@ class MPLDrawer:
     _box_length = 0.75
     """The width/height of the rectangle drawn by ``box_gate``"""
 
-    _notch_width = 0.04
-
-    _notch_height = 0.25
-
     _circ_rad = 0.3
     """The radius of CNOT's target symbol."""
 
@@ -228,6 +224,12 @@ class MPLDrawer:
 
     _fontsize = 14
     """The default fontsize."""
+
+    _pad = 0.2
+    """Padding for FancyBboxPatch objects."""
+
+    _boxstyle = "round, pad=0.2"
+    """Style for FancyBboxPatch objects."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
@@ -277,7 +279,7 @@ class MPLDrawer:
 
     @property
     def fontsize(self):
-        """Default fontsize for text"""
+        """Default fontsize for text. Defaults to 14."""
         return self._fontsize
 
     @fontsize.setter
@@ -414,24 +416,20 @@ class MPLDrawer:
         box_max = max(wires)
         box_center = (box_max + box_min) / 2.0
 
-        pad = 0.2
-        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0 + pad
-        y_loc = box_min - self._box_length / 2.0 + pad
-        box_height = box_max - box_min + self._box_length - 2*pad
-        box_width = self._box_length + extra_width - 2*pad
+        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0 + self._pad
+        y_loc = box_min - self._box_length / 2.0 + self._pad
+        box_height = box_max - box_min + self._box_length - 2*self._pad
+        box_width = self._box_length + extra_width - 2*self._pad
 
         box = patches.FancyBboxPatch(
             (x_loc, y_loc),
             box_width,
             box_height,
-            boxstyle=f"round, pad={pad}",
+            boxstyle=self._boxstyle,
             **box_options,
         )
         self._ax.add_patch(box)
 
-        if len(wires) != (box_max-box_min+1):
-            for wire in wires:
-                self._add_notch(layer, wire, extra_width)
 
 
         text_obj = self._ax.text(
@@ -443,9 +441,9 @@ class MPLDrawer:
 
         if autosize:
             margin = 0.1
-            max_width = box_width - margin + 2*pad
+            max_width = box_width - margin + 2*self._pad
             # factor of 2 makes it look nicer
-            max_height = box_height - 2 * margin + 2*pad
+            max_height = box_height - 2 * margin + 2*self._pad
 
             w, h = self._text_dims(text_obj)
 
@@ -461,24 +459,6 @@ class MPLDrawer:
                     break
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
-
-    def _add_notch(self, layer, wire, extra_width):
-        """Add a wire used marker to both sides of a box.
-
-        Args:
-            layer (int): x coordinate for the box center
-            wire (int): y cordinate for the notches
-            extra_width (float): extra box width
-        """
-        pad = 0.05
-        w = 0.03
-        h = 0.25
-        y = wire-h/2
-
-        box1 = patches.FancyBboxPatch((layer-self._box_length/2.0-self._notch, y), w, h, boxstyle=f"round, pad={pad}")
-        self._ax.add_patch(box1)
-        box2 = patches.FancyBboxPatch((layer+self._box_length/2.0, y), w, h, boxstyle=f"round, pad={pad}")
-        self._ax.add_patch(box2)
 
     def _text_dims(self, text_obj):
         """Get width and height of text object in data coordinates.
@@ -791,15 +771,14 @@ class MPLDrawer:
         if "zorder" not in lines_options:
             lines_options["zorder"] = 3
 
-        pad = 0.2
-        x_loc = layer-self._box_length / 2.0 + pad
-        y_loc = wires - self._box_length / 2.0 + pad
+        x_loc = layer-self._box_length / 2.0 + self._pad
+        y_loc = wires - self._box_length / 2.0 + self._pad
 
         box = patches.FancyBboxPatch(
             (x_loc, y_loc),
-            self._box_length-2*pad,
-            self._box_length-2*pad,
-            boxstyle=f"round, pad={pad}",
+            self._box_length-2*self._pad,
+            self._box_length-2*self._pad,
+            boxstyle=self._boxstyle,
             **box_options,
         )
         self._ax.add_patch(box)
