@@ -43,6 +43,58 @@ class DisplacementEmbedding(Operation):
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    Example:
+
+        Depending on the ``method`` argument, the feature vector will be encoded in the phase or the amplitude.
+        The argument ``c`` will define the value of the other quantity.
+        The default values are :math:`0.1` for ``c`` and ``'amplitude'`` for ``method``.
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.DisplacementEmbedding(features=feature_vector, wires=range(3))
+                qml.QuadraticPhase(0.1, wires=1)
+                return qml.expval(qml.NumberOperator(wires=1))
+
+            X = [1, 2, 3]
+
+        >>> print(circuit(X))
+            4.1215690638748494
+
+        And, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──D(1, 0.1)──────────┤
+            1: ──D(2, 0.1)──P(0.1)──┤ ⟨n⟩
+            2: ──D(3, 0.1)──────────┤
+
+        Using different parameters:
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.DisplacementEmbedding(features=feature_vector, wires=range(3), method='phase', c=0.5)
+                qml.QuadraticPhase(0.1, wires=1)
+                return qml.expval(qml.NumberOperator(wires=1))
+
+            X = [1, 2, 3]
+
+        >>> print(circuit(X))
+            0.23401288309122226
+
+        And, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──D(0.5, 1)──────────┤
+            1: ──D(0.5, 2)──P(0.1)──┤ ⟨n⟩
+            2: ──D(0.5, 3)──────────┤
     """
 
     num_wires = AnyWires
