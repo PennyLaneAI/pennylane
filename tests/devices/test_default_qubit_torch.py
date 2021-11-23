@@ -34,7 +34,7 @@ use_cuda = torch.cuda.is_available()
 torch_devices = [None]
 
 if torch.cuda.is_available():
-    torch_devices.append(torch.device("cuda"))
+    torch_devices.append("cuda")
 
 
 import pennylane as qml
@@ -552,35 +552,36 @@ class TestExpval:
 
     # test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
     single_wire_expval_test_data = [
-        (qml.RX, qml.Identity, lambda t, p: torch.tensor([1.0, 1.0], dtype=torch.float64)),
+        (qml.RX, qml.Identity, lambda t, p, t_device: torch.tensor([1.0, 1.0], dtype=torch.float64, device=t_device)),
         (
             qml.RX,
             qml.PauliZ,
-            lambda t, p: torch.tensor(
-                [torch.cos(t), torch.cos(t) * torch.cos(p)], dtype=torch.float64
+            lambda t, p, t_device: torch.tensor(
+                [torch.cos(t), torch.cos(t) * torch.cos(p)], dtype=torch.float64, device=t_device
             ),
         ),
         (
             qml.RY,
             qml.PauliX,
-            lambda t, p: torch.tensor(
-                [torch.sin(t) * torch.sin(p), torch.sin(p)], dtype=torch.float64
+            lambda t, p, t_device: torch.tensor(
+                [torch.sin(t) * torch.sin(p), torch.sin(p)], dtype=torch.float64, device=t_device
             ),
         ),
         (
             qml.RX,
             qml.PauliY,
-            lambda t, p: torch.tensor([0, -torch.cos(t) * torch.sin(p)], dtype=torch.float64),
+            lambda t, p, t_device: torch.tensor([0, -torch.cos(t) * torch.sin(p)], dtype=torch.float64, device=t_device),
         ),
         (
             qml.RY,
             qml.Hadamard,
-            lambda t, p: torch.tensor(
+            lambda t, p, t_device: torch.tensor(
                 [
                     torch.sin(t) * torch.sin(p) + torch.cos(t),
                     torch.cos(t) * torch.cos(p) + torch.sin(p),
                 ],
                 dtype=torch.float64,
+                device=t_device
             )
             / math.sqrt(2),
         ),
@@ -591,13 +592,15 @@ class TestExpval:
         """Test that single qubit gates with single qubit expectation values"""
         dev = device(wires=2, torch_device=torch_device)
 
+        par = torch.tensor(theta, device=torch_device)
+
         with qml.tape.QuantumTape() as tape:
             queue = [gate(theta, wires=0), gate(phi, wires=1), qml.CNOT(wires=[0, 1])]
             observables = [qml.expval(obs(wires=[i])) for i in range(2)]
 
         res = dev.execute(tape)
 
-        expected_res = expected(theta, phi)
+        expected_res = expected(theta, phi, torch_device)
         assert torch.allclose(res, expected_res, atol=tol, rtol=0)
 
     def test_hermitian_expectation(self, device, torch_device, theta, phi, varphi, tol):
@@ -606,7 +609,7 @@ class TestExpval:
 
         Hermitian_mat = torch.tensor(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]],
-            dtype=torch.complex128,
+            dtype=torch.complex128, device=torch_device
         )
 
         with qml.tape.QuantumTape() as tape:
@@ -622,7 +625,7 @@ class TestExpval:
             (a - d) * torch.cos(theta) + 2 * re_b * torch.sin(theta) * torch.sin(phi) + a + d
         ) / 2
         ev2 = ((a - d) * torch.cos(theta) * torch.cos(phi) + 2 * re_b * torch.sin(phi) + a + d) / 2
-        expected = torch.tensor([ev1, ev2], dtype=torch.float64)
+        expected = torch.tensor([ev1, ev2], dtype=torch.float64, device=torch_device)
 
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1511,7 +1514,7 @@ class TestSamples:
 
         assert torch.is_tensor(res)
         assert res.shape == (shots,)
-        assert torch.allclose(torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64))
+        assert torch.allclose(torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device))
 
     def test_estimating_marginal_probability(self, device, torch_device, tol):
         """Test that the probability of a subset of wires is accurately estimated."""
@@ -1526,7 +1529,7 @@ class TestSamples:
 
         assert torch.is_tensor(res)
 
-        expected = torch.tensor([0, 1], dtype=torch.float64)
+        expected = torch.tensor([0, 1], dtype=torch.float64, device=torch_device)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_estimating_full_probability(self, device, torch_device, tol):
@@ -1543,7 +1546,7 @@ class TestSamples:
 
         assert torch.is_tensor(res)
 
-        expected = torch.tensor([0, 0, 0, 1], dtype=torch.float64)
+        expected = torch.tensor([0, 0, 0, 1], dtype=torch.float64, device=torch_device)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
     def test_estimating_expectation_values(self, device, torch_device, tol):
