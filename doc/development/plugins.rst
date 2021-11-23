@@ -550,27 +550,9 @@ The user can then import this operation directly from your plugin, and use it wh
     that the plugin unit tests **do** provide tests to ensure that PennyLane returns the correct
     gradient for the custom operations.
 
-If the custom operation is diagonal in the computational basis, it is recommended to subclass
-:class:`~.DiagonalOperation`. For diagonal operations, :attr:`_eigvals` has to be overridden
-instead of :attr:`_matrix`. 
-
-.. code-block:: python
-
-    class CustomDiagonalGate(DiagonalOperation):
-        """Custom gate"""
-        num_params = 0
-        num_wires = 2
-
-        @classmethod
-        def _eigvals(cls, *params):
-            """Returns the eigenvalues of the operation in the computational basis."""
-            return np.array([1j, 1j, -1j, -1j])
-
-        @staticmethod
-        def decomposition(*params, wires):
-            """(Optional) Returns a list of PennyLane operations that decompose
-            the custom gate."""
-            return [qml.DiagonalQubitUnitary([1j, 1j, -1j, -1j], wires=wires)]
+If the custom operation is diagonal in the computational basis, it can be added to the
+``diagonal_in_z_basis`` attribute in ``pennylane.ops.qubit.attributes``. Devices can use this
+information to implement faster simulations.
 
 Supporting new observables
 --------------------------

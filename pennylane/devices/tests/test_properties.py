@@ -207,6 +207,7 @@ class TestCapabilities:
             with pytest.raises(qml.QuantumFunctionError):
                 qnode()
 
+    @pytest.mark.xfail
     def test_reversible_diff(self, device_kwargs):
         """Tests that the device reports correctly whether it supports reversible differentiation."""
         device_kwargs["wires"] = 1
