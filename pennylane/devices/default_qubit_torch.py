@@ -152,9 +152,9 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
-        self._torch_device = "cpu"
+        self._torch_device = torch_device
 
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
