@@ -24,7 +24,7 @@ import functools
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
-use_cuda = torch.cuda.is_available()  # TODO: make this togglable via the command line
+use_cuda = torch.cuda.is_available()
 torch_device = "cuda" if use_cuda else "cpu"
 
 torch.tensor = functools.partial(torch.tensor, device=torch_device)
@@ -194,7 +194,6 @@ class TestApply:
         """Test basis state initialization"""
 
         dev = device(wires=4)
-        # dev = DefaultQubitTorch(wires=4)
         state = torch.tensor([0, 0, 1, 0], dtype=torch.complex128)
 
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
