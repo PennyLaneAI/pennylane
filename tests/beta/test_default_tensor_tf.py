@@ -602,6 +602,9 @@ class TestInterfaceDeviceIntegration:
         res = np.asarray(grad_fn(*self.p))
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(
+        reason="using a TF device with Torch interface no longer works with the new QNode"
+    )
     @pytest.mark.parametrize("interface", ["torch"])
     def test_torch_interface(self, circuit, interface, tol):
         """Tests that the gradient of the circuit fixture above is correct
@@ -700,6 +703,9 @@ class TestHybridInterfaceDeviceIntegration:
         res = np.asarray(grad_fn(self.p))
         assert np.allclose(res, self.expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(
+        reason="using a TF device with Torch interface no longer works with the new QNode"
+    )
     @pytest.mark.parametrize("interface", ["torch"])
     @pytest.mark.parametrize("diff_method", ["parameter-shift"])
     def test_torch_interface(self, cost, interface, diff_method, tol):

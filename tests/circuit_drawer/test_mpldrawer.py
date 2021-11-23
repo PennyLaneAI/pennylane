@@ -13,13 +13,15 @@
 # limitations under the License.
 """
 Tests the MPLDrawer.
+
+See section on "Testing Matplotlib based code" in the "Software Tests"
+page in the developement guide.
 """
 
 import pytest
 
 plt = pytest.importorskip("matplotlib.pyplot")
 
-import matplotlib.pyplot as plt
 from matplotlib.colors import to_rgba
 from matplotlib.patches import FancyArrow
 
@@ -83,9 +85,9 @@ class TestInitialization:
         options = {"linewidth": 3, "color": rgba_red}
         drawer = MPLDrawer(n_wires=2, n_layers=2, wire_options=options)
 
-        for wire in drawer.ax.lines:
-            assert wire.get_linewidth() == 3
-            assert wire.get_color() == rgba_red
+        for line in drawer.ax.lines:
+            assert line.get_linewidth() == 3
+            assert line.get_color() == rgba_red
 
         plt.close()
 
@@ -641,18 +643,3 @@ class TestAutosize:
         assert self.text_in_box(drawer)
 
         plt.close()
-
-
-def test_matplotlib_import_error(monkeypatch):
-    """Test that an error is raised if the MPLDrawer would be used without
-    an installed version of matplotlib.
-
-    This test needs to be the last in the suite because it makes a permanent change
-    to the system configuration.
-    """
-    with monkeypatch.context() as m:
-        m.setitem(sys.modules, "matplotlib", None)
-        reload(sys.modules["pennylane.circuit_drawer.mpldrawer"])
-        assert not pennylane.circuit_drawer.mpldrawer.has_mpl
-        with pytest.raises(ImportError, match="Module matplotlib is required for"):
-            MPLDrawer(1, 1)

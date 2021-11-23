@@ -14,4 +14,3 @@
 """
 This module contains experimental, contributed, and beta code.
 """
-from .qnode import QNode, qnode

@@ -31,214 +31,9 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
-# Operation subclasses to test
-op_classes = [getattr(qml.ops, cls) for cls in qml.ops.__all__]
-op_classes_cv = [getattr(qml.ops, cls) for cls in qml.ops._cv__all__]
-op_classes_gaussian = [cls for cls in op_classes_cv if cls.supports_heisenberg]
-op_classes_exception = {"PauliRot", "Projector"}
 
-op_classes_param_testable = op_classes.copy()
-for i in [getattr(qml.ops, cls) for cls in list(op_classes_exception)]:
-    op_classes_param_testable.remove(i)
-
-
-def U3(theta, phi, lam):
-    return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
-
-
-class TestOperation:
-    """Operation class tests."""
-
-    @pytest.mark.parametrize("test_class", op_classes_gaussian)
-    def test_heisenberg(self, test_class, tol):
-        "Heisenberg picture adjoint actions of CV Operations."
-
-        ww = list(range(test_class.num_wires))
-
-        # fixed parameter values
-        if test_class.par_domain == "A":
-            if test_class.__name__ == "InterferometerUnitary":
-                ww = list(range(2))
-                par = [
-                    np.array(
-                        [
-                            [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-                            [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-                        ]
-                    )
-                ]
-            else:
-                par = [np.array([[-1.82624687]])] * test_class.num_params
-        else:
-            par = [-0.069125, 0.51778, 0.91133, 0.95904][: test_class.num_params]
-
-        op = test_class(*par, wires=ww)
-
-        if issubclass(test_class, qml.operation.Observable):
-            Q = op.heisenberg_obs(Wires(ww))
-            # ev_order equals the number of dimensions of the H-rep array
-            assert Q.ndim == test_class.ev_order
-            return
-
-        # not an Expectation
-
-        U = op.heisenberg_tr(Wires(ww))
-        I = np.eye(*U.shape)
-        # first row is always (1,0,0...)
-        assert np.all(U[0, :] == I[:, 0])
-
-        # check the inverse transform
-        V = op.heisenberg_tr(Wires(ww), inverse=True)
-        assert np.linalg.norm(U @ V - I) == pytest.approx(0, abs=tol)
-        assert np.linalg.norm(V @ U - I) == pytest.approx(0, abs=tol)
-
-        if op.grad_recipe is not None:
-            # compare gradient recipe to numerical gradient
-            h = 1e-7
-            U = op.heisenberg_tr(Wires(ww))
-            for k in range(test_class.num_params):
-                D = op.heisenberg_pd(k)  # using the recipe
-                # using finite difference
-                op.data[k] += h
-                Up = op.heisenberg_tr(Wires(ww))
-                op.data = par
-                G = (Up - U) / h
-                assert D == pytest.approx(G, abs=tol)
-
-        # make sure that `heisenberg_expand` method receives enough wires to actually expand
-        # so only check multimode ops
-        if len(op.wires) > 1:
-            with pytest.raises(ValueError, match="do not exist on this device with wires"):
-                op.heisenberg_expand(U, Wires([0]))
-
-        # validate size of input for `heisenberg_expand` method
-        with pytest.raises(ValueError, match="Heisenberg matrix is the wrong size"):
-            U_wrong_size = U[1:, 1:]
-            op.heisenberg_expand(U_wrong_size, Wires(ww))
-
-        # ensure that `heisenberg_expand` raises exception if it receives an array with order > 2
-        with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
-            U_high_order = np.array([U] * 3)
-            op.heisenberg_expand(U_high_order, Wires(ww))
-
-    @pytest.mark.parametrize("test_class", op_classes_param_testable)
-    def test_operation_init(self, test_class, monkeypatch):
-        "Operation subclass initialization."
-
-        if test_class == qml.QubitUnitary:
-            pytest.skip("QubitUnitary can act on any number of wires.")
-
-        if test_class == qml.Hamiltonian:
-            pytest.skip("Hamiltonian has a different initialization signature.")
-
-        if test_class in (qml.ControlledQubitUnitary, qml.MultiControlledX):
-            pytest.skip("ControlledQubitUnitary alters the input params and wires in its __init__")
-
-        n = test_class.num_params
-        w = test_class.num_wires
-        ww = list(range(w))
-        # valid pars
-        if test_class.par_domain == "A":
-            pars = [np.eye(2)] * n
-        elif test_class.par_domain == "N":
-            pars = [0] * n
-        elif test_class.par_domain == "L":
-            pars = [[np.eye(2) / np.sqrt(2), np.eye(2) / np.sqrt(2)]] * n
-        else:
-            pars = [0.0] * n
-
-        # valid call
-        op = test_class(*pars, wires=ww)
-        assert op.name == test_class.__name__
-
-        assert op.data == pars
-        assert op._wires == Wires(ww)
-
-        # too many parameters
-        with pytest.raises(ValueError, match="wrong number of parameters"):
-            test_class(*(n + 1) * [0], wires=ww)
-
-        # too few parameters
-        if n > 0:
-            with pytest.raises(ValueError, match="wrong number of parameters"):
-                test_class(*(n - 1) * [0], wires=ww)
-
-        if w > 0:
-            # too many or too few wires
-            with pytest.raises(ValueError, match="wrong number of wires"):
-                test_class(*pars, wires=list(range(w + 1)))
-            with pytest.raises(ValueError, match="wrong number of wires"):
-                test_class(*pars, wires=list(range(w - 1)))
-            # repeated wires
-            if w > 1:
-                with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
-                    test_class(*pars, wires=w * [0])
-
-        if n == 0:
-            return
-
-    def test_controlled_qubit_unitary_init(self):
-        """Test for the init of ControlledQubitUnitary"""
-        control_wires = [3, 2]
-        target_wires = [1, 0]
-        U = qml.CRX._matrix(0.4)
-
-        op = qml.ControlledQubitUnitary(U, control_wires=control_wires, wires=target_wires)
-        target_matrix = np.block([[np.eye(12), np.zeros((12, 4))], [np.zeros((4, 12)), U]])
-
-        assert op.name == qml.ControlledQubitUnitary.__name__
-        assert np.allclose([U], op.data)
-        assert np.allclose(op.matrix, target_matrix)
-        assert op._wires == Wires(control_wires) + Wires(target_wires)
-
-    @pytest.fixture(scope="function")
-    def qnode_for_inverse(self, mock_device):
-        """Provides a QNode for the subsequent tests of inv"""
-
-        def circuit(x):
-            qml.RZ(x, wires=[1]).inv()
-            qml.RZ(x, wires=[1]).inv().inv()
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
-
-        node = qml.QNode(circuit, mock_device)
-        node.construct([1.0], {})
-
-        return node
-
-    def test_operation_inverse_defined(self, qnode_for_inverse):
-        """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
-        of the original class"""
-        assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
-        assert qnode_for_inverse.qtape.operations[0].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
-        assert qnode_for_inverse.qtape.operations[1].name == "RZ"
-        assert not qnode_for_inverse.qtape.operations[1].inverse
-        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
-
-    def test_operation_inverse_using_dummy_operation(self):
-
-        some_param = 0.5
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom Operation"""
-            num_wires = 1
-            num_params = 1
-            par_domain = "R"
-
-        # Check that the name of the Operation is initialized fine
-        dummy_op = DummyOp(some_param, wires=[1])
-
-        assert not dummy_op.inverse
-
-        dummy_op_class_name = dummy_op.name
-
-        # Check that the name of the Operation was modified when applying the inverse
-        assert dummy_op.inv().name == dummy_op_class_name + ".inv"
-        assert dummy_op.inverse
-
-        # Check that the name of the Operation is the original again, once applying the inverse a second time
-        assert dummy_op.inv().name == dummy_op_class_name
-        assert not dummy_op.inverse
+class TestOperatorConstruction:
+    """Test custom operators construction."""
 
     def test_operation_outside_context(self):
         """Test that an operation can be instantiated outside a QNode context, and that do_queue is ignored"""
@@ -251,18 +46,12 @@ class TestOperation:
         op = qml.ops.Hadamard(wires=0)
         assert isinstance(op, qml.operation.Operation)
 
-
-class TestOperatorConstruction:
-    """Test custom operators construction."""
-
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            num_params = 1
-            par_domain = "R"
 
         with pytest.raises(ValueError, match="wrong number of wires"):
             DummyOp(0.5, wires=[0, 1])
@@ -272,9 +61,7 @@ class TestOperatorConstruction:
 
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
-            num_wires = 2
-            num_params = 1
-            par_domain = "R"
+            num_wires = 1
 
         with pytest.raises(qml.wires.WireError, match="Wires must be unique"):
             DummyOp(0.5, wires=[1, 1], do_queue=False)
@@ -285,12 +72,25 @@ class TestOperatorConstruction:
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator"""
             num_wires = 1
-            num_params = 1
-            par_domain = "R"
             grad_method = "A"
+
+            @property
+            def num_params(self):
+                return 1
 
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
+
+    def test_name_setter(self):
+        """Tests that we can set the name of an operator"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        op.name = "MyOp"
+        assert op.name == "MyOp"
 
 
 class TestOperationConstruction:
@@ -302,60 +102,12 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.CVOperation):
             r"""Dummy custom operation"""
             num_wires = 2
-            num_params = 1
-            par_domain = "R"
             grad_method = "A"
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
         with pytest.raises(
             AssertionError, match="Gradient recipe must have one entry for each parameter"
         ):
-            DummyOp(0.5, wires=[0, 1])
-
-    def test_grad_method_with_integer_params(self):
-        """Test that an exception is raised if a non-None grad-method is provided for natural number params"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            num_params = 1
-            par_domain = "N"
-            grad_method = "A"
-
-        with pytest.raises(
-            AssertionError,
-            match="An operation may only be differentiated with respect to real scalar parameters",
-        ):
-            DummyOp(5, wires=[0, 1])
-
-    def test_analytic_grad_with_array_param(self):
-        """Test that an exception is raised if an analytic gradient is requested with an array param"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            num_params = 1
-            par_domain = "A"
-            grad_method = "A"
-
-        with pytest.raises(
-            AssertionError,
-            match="Operations that depend on arrays containing free variables may only be differentiated using the F method",
-        ):
-            DummyOp(np.array([1.0]), wires=[0, 1])
-
-    def test_numerical_grad_with_grad_recipe(self):
-        """Test that an exception is raised if a numerical gradient is requested with a grad recipe"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            num_params = 1
-            par_domain = "R"
-            grad_method = "F"
-            grad_recipe = [(0.5, 0.1)]
-
-        with pytest.raises(AssertionError, match="Gradient recipe is only used by the A method"):
             DummyOp(0.5, wires=[0, 1])
 
     def test_grad_recipe_parameter_dependent(self):
@@ -365,8 +117,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            num_params = 1
-            par_domain = "R"
             grad_method = "A"
 
             @property
@@ -384,8 +134,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
@@ -397,9 +145,11 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
+
+            @property
+            def num_params(self):
+                return 1
 
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54, 0)
@@ -410,8 +160,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyOp(1.0, wires=0, id="test")
@@ -423,8 +171,6 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyOp(1.0, wires=0, id="test")
@@ -440,11 +186,20 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
 
         assert DummyObserv(0, wires=[1]).return_type is None
+
+    def test_construction_with_wires_pos_arg(self):
+        """Test that the wires can be given as a positional argument"""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            grad_method = None
+
+        ob = DummyObserv([1])
+        assert ob.wires == qml.wires.Wires(1)
 
     def test_observable_is_not_operation_but_operator(self):
         """Check that the Observable class inherits from an Operator, not from an Operation"""
@@ -458,8 +213,6 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable, qml.operation.Operation):
             r"""Dummy custom observable"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
 
         assert issubclass(DummyObserv, qml.operation.Operator)
@@ -504,6 +257,10 @@ class TestObservableConstruction:
         expected = "probs(wires=['a'])"
         assert str(m) == expected
 
+        m = qml.probs(op=qml.PauliZ(wires=["a"]))
+        expected = "probs(PauliZ(wires=['a']))"
+        assert str(m) == expected
+
         m = qml.PauliZ(wires=["a"]) @ qml.PauliZ(wires=["b"])
         expected = "PauliZ(wires=['a']) @ PauliZ(wires=['b'])"
         assert str(m) == expected
@@ -518,22 +275,14 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Observable):
             r"""Dummy custom observable"""
             num_wires = 1
-            num_params = 1
-            par_domain = "N"
             grad_method = None
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
 
-
-class TestObservableInstatiation:
-    """Test that wires are specified when a qml.operation.Observable is instantiated"""
-
     def test_wire_is_given_in_argument(self):
         class DummyObservable(qml.operation.Observable):
             num_wires = 1
-            num_params = 0
-            par_domain = None
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
@@ -551,8 +300,6 @@ class TestOperatorIntegration:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
             num_wires = qml.operation.WiresEnum.AllWires
-            num_params = 0
-            par_domain = "R"
 
         @qml.qnode(dev1)
         def circuit():
@@ -566,8 +313,31 @@ class TestOperatorIntegration:
             circuit()
 
 
-class TestOperationIntegration:
-    """Integration tests for the Operation class"""
+class TestInverse:
+    """Test inverse of operations"""
+
+    def test_operation_inverse_using_dummy_operation(self):
+
+        some_param = 0.5
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom Operation"""
+            num_wires = 1
+
+        # Check that the name of the Operation is initialized fine
+        dummy_op = DummyOp(some_param, wires=[1])
+
+        assert not dummy_op.inverse
+
+        dummy_op_class_name = dummy_op.name
+
+        # Check that the name of the Operation was modified when applying the inverse
+        assert dummy_op.inv().name == dummy_op_class_name + ".inv"
+        assert dummy_op.inverse
+
+        # Check that the name of the Operation is the original again, once applying the inverse a second time
+        assert dummy_op.inv().name == dummy_op_class_name
+        assert not dummy_op.inverse
 
     def test_inverse_of_operation(self):
         """Test the inverse of an operation"""
@@ -599,6 +369,30 @@ class TestOperationIntegration:
             match=r"inverse of gates are not supported on device default\.gaussian",
         ):
             mean_photon_gaussian(0.015, 0.02, 0.005)
+
+    @pytest.fixture(scope="function")
+    def qnode_for_inverse(self, mock_device):
+        """Provides a QNode for the subsequent tests of inv"""
+
+        def circuit(x):
+            qml.RZ(x, wires=[1]).inv()
+            qml.RZ(x, wires=[1]).inv().inv()
+            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))
+
+        node = qml.QNode(circuit, mock_device)
+        node.construct([1.0], {})
+
+        return node
+
+    def test_operation_inverse_defined(self, qnode_for_inverse):
+        """Test that the inverse of an operation is added to the QNode queue and the operation is an instance
+        of the original class"""
+        assert qnode_for_inverse.qtape.operations[0].name == "RZ.inv"
+        assert qnode_for_inverse.qtape.operations[0].inverse
+        assert issubclass(qnode_for_inverse.qtape.operations[0].__class__, qml.operation.Operation)
+        assert qnode_for_inverse.qtape.operations[1].name == "RZ"
+        assert not qnode_for_inverse.qtape.operations[1].inverse
+        assert issubclass(qnode_for_inverse.qtape.operations[1].__class__, qml.operation.Operation)
 
 
 class TestTensor:
@@ -1234,10 +1028,23 @@ class TestTensorObservableOperations:
 class TestDecomposition:
     """Test for operation decomposition"""
 
+    def test_decomposition_with_int_wire(self):
+        """Test that the decomposition of a non-parametrized Operation works
+        when we simply pass an integer as a wire without further specification."""
+        decomp_1 = qml.PauliRot.decomposition(0.1, "X", 1)
+        decomp_2 = qml.PauliRot.decomposition(0.1, "X", [1])
+        expected_decomp = qml.PauliRot.decomposition(0.1, "X", wires=1)
+
+        for obtained_1, obtained_2, expected in zip(decomp_1, decomp_2, expected_decomp):
+            assert obtained_1.name == expected.name
+            assert np.allclose(obtained_1.parameters, expected.parameters)
+            assert obtained_2.name == expected.name
+            assert np.allclose(obtained_2.parameters, expected.parameters)
+
     def test_U1_decomposition(self):
         """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
         phi = 0.432
-        res = qml.U1.decomposition(phi, wires=0)
+        res = qml.U1(phi, wires=0).decompose()
 
         assert len(res) == 1
         assert res[0].name == "PhaseShift"
@@ -1348,8 +1155,10 @@ class TestDecomposition:
         """Test that the decomposition of the controlled Y
         qubit rotation is correct"""
 
-        expected = CRoty(phi)
+        def U3(theta, phi, lam):
+            return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
 
+        expected = CRoty(phi)
         obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
@@ -1443,7 +1252,7 @@ class TestDecomposition:
             "BasisStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.BasisState.decomposition(n, wires=wires)
+        qml.BasisState(n, wires=wires).decompose()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], n)
@@ -1462,7 +1271,7 @@ class TestDecomposition:
             "MottonenStatePreparation",
             lambda *args: call_args.append(args),
         )
-        qml.QubitStateVector.decomposition(state, wires=wires)
+        qml.QubitStateVector(state, wires=wires).decompose()
 
         assert len(call_args) == 1
         assert np.array_equal(call_args[0][0], state)
@@ -1478,8 +1287,6 @@ class TestChannel:
         class DummyOp(qml.operation.Channel):
             r"""Dummy custom channel"""
             num_wires = 1
-            num_params = 1
-            par_domain = "R"
             grad_method = "F"
 
             def _kraus_matrices(self, *params):
@@ -1561,6 +1368,45 @@ class TestOperationDerivative:
             ]
         )
         assert np.allclose(derivative, expected_derivative)
+
+
+class TestCVOperation:
+    """Test the CVOperation class"""
+
+    def test_wires_not_found(self):
+        """Make sure that `heisenberg_expand` method receives enough wires to actually expand"""
+
+        class DummyOp(qml.operation.CVOperation):
+            num_wires = 1
+
+        op = DummyOp(wires=1)
+
+        with pytest.raises(ValueError, match="do not exist on this device with wires"):
+            op.heisenberg_expand(np.eye(3), Wires(["a", "b"]))
+
+    def test_input_validation(self):
+        """Make sure that size of input for `heisenberg_expand` method is validated"""
+
+        class DummyOp(qml.operation.CVOperation):
+            num_wires = 1
+
+        op = DummyOp(wires=1)
+
+        with pytest.raises(ValueError, match="Heisenberg matrix is the wrong size"):
+            U_wrong_size = np.eye(1)
+            op.heisenberg_expand(U_wrong_size, op.wires)
+
+    def test_wrong_input_shape(self):
+        """Ensure that `heisenberg_expand` raises exception if it receives an array with order > 2"""
+
+        class DummyOp(qml.operation.CVOperation):
+            num_wires = 1
+
+        op = DummyOp(wires=1)
+
+        with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
+            U_high_order = np.array([np.eye(3)] * 3)
+            op.heisenberg_expand(U_high_order, op.wires)
 
 
 class TestCriteria:
