@@ -39,7 +39,7 @@ class AdamOptimizer(GradientDescentOptimizer):
     Above, :math:`( \nabla f(x^{(t-1)}))^{\odot 2}` denotes the element-wise square operation,
     which means that each element in the gradient is multiplied by itself. The hyperparameters
     :math:`\beta_1` and :math:`\beta_2` can also be step-dependent. Initially, the first and
-    second moment are zero and :math:`\eta^{(0)}` is given by the provided stepsize argument.
+    second moment are zero.
 
     The shift :math:`\epsilon` avoids division by zero.
 
