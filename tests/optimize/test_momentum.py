@@ -40,7 +40,7 @@ class TestMomentumOptimizer:
         sgd_opt = MomentumOptimizer(stepsize, momentum=gamma)
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
-        a1 = stepsize*grad
+        a1 = stepsize * grad
         expected = args - a1
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected)
@@ -49,7 +49,7 @@ class TestMomentumOptimizer:
         grad = grad + args
         args = expected
 
-        a2 = gamma*a1 + stepsize*grad
+        a2 = gamma * a1 + stepsize * grad
         expected = args - a2
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)

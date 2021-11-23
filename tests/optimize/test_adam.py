@@ -41,7 +41,7 @@ class TestAdamOptimizer:
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
         a1 = grad
-        b1 = grad**2
+        b1 = grad ** 2
         expected = args - stepsize * a1 / (np.sqrt(b1) + eps)
         res = sgd_opt.apply_grad(grad, args)
         print("\n", res, "\n", expected)
@@ -52,7 +52,7 @@ class TestAdamOptimizer:
         args = expected
 
         a2 = gamma * a1 + (1 - gamma) * grad / (1 - gamma)
-        b2 = delta * b1 + (1 - delta) * grad ** 2  / (1 - delta)
+        b2 = delta * b1 + (1 - delta) * grad ** 2 / (1 - delta)
         expected = args - stepsize * a2 / (np.sqrt(b2) + eps)
         res = sgd_opt.apply_grad(grad, args)
         print("\n", res, "\n", expected)
@@ -85,7 +85,7 @@ class TestAdamOptimizer:
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = adam_opt.step(f, x_onestep)
-            adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma))**2
+            adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma)) ** 2
             firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
             secondmoment = (
                 delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
@@ -136,7 +136,7 @@ class TestAdamOptimizer:
                 assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = adam_opt.step(f, x_onestep)
-                adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma))**2
+                adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma)) ** 2
                 firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
                 secondmoment = (
                     delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]

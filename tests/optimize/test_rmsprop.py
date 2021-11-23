@@ -40,7 +40,7 @@ class TestRMSPropOptimizer:
         sgd_opt = RMSPropOptimizer(stepsize, decay=gamma, eps=eps)
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
-        a1 = (1-gamma)*grad**2
+        a1 = (1 - gamma) * grad ** 2
         expected = args - stepsize / np.sqrt(a1 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -49,11 +49,10 @@ class TestRMSPropOptimizer:
         grad = grad + args
         args = expected
 
-        a2 = gamma*a1 + (1-gamma)*grad**2
+        a2 = gamma * a1 + (1 - gamma) * grad ** 2
         expected = args - stepsize / np.sqrt(a2 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
-
 
     @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
     def test_rmsprop_optimizer_univar(self, x_start, tol):

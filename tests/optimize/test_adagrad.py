@@ -24,7 +24,7 @@ class TestAdagradOptimizer:
         sgd_opt = AdagradOptimizer(stepsize, eps=eps)
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
-        a1 = grad**2
+        a1 = grad ** 2
         expected = args - stepsize / np.sqrt(a1 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -33,7 +33,7 @@ class TestAdagradOptimizer:
         grad = grad + args
         args = expected
 
-        a2 = a1 + grad**2
+        a2 = a1 + grad ** 2
         expected = args - stepsize / np.sqrt(a2 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
