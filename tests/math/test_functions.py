@@ -1578,16 +1578,15 @@ class TestCoercion:
             pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
 
         tensors = [
-            torch.tensor([0.2], device='cpu'),
+            torch.tensor([0.2], device="cpu"),
             np.array([1, 2, 3]),
-            torch.tensor(1 + 3j, dtype=torch.complex64, device='cuda'),
+            torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
         ]
         pytest.mark
 
-        with pytest.raises(
-            ValueError, match="Multiple Torch devices were specified"
-        ):
+        with pytest.raises(ValueError, match="Multiple Torch devices were specified"):
             res = qml.math.coerce(tensors, like="torch")
+
 
 class TestUnwrap:
     """Test tensor unwrapping"""

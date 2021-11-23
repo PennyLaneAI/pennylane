@@ -1019,7 +1019,7 @@ class TestVar:
                 [-5 - 2j, -5 - 4j, -4 - 3j, -6],
             ],
             dtype=torch.complex128,
-            device=torch_device
+            device=torch_device,
         )
 
         obs = qml.PauliZ(0) @ qml.Hermitian(A, wires=[1, 2])
