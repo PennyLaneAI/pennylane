@@ -343,7 +343,7 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
-* Several AmplitudeEmbedding can now be instantiated if they affect different qubits.
+* Several AmplitudeEmbedding can now be instantiated if they act on different qubits.
   [(#1890)](https://github.com/PennyLaneAI/pennylane/issues/1890)
 
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
