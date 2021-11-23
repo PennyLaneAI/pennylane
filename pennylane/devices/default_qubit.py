@@ -654,6 +654,7 @@ class DefaultQubit(QubitDevice):
         if type(device_wires) != list:
             states = [states]
             device_wires = [device_wires]
+
         state = states[0]
         wires = device_wires[0]
         state = self._asarray(state, dtype=self.C_DTYPE)
