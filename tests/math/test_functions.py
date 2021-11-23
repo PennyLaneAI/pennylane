@@ -1582,7 +1582,6 @@ class TestCoercion:
             np.array([1, 2, 3]),
             torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
         ]
-        pytest.mark
 
         with pytest.raises(ValueError, match="Multiple Torch devices were specified"):
             res = qml.math.coerce(tensors, like="torch")
