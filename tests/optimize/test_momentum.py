@@ -17,11 +17,42 @@ Unit tests for the ``MomentumOptimizer``.
 import pytest
 
 from pennylane import numpy as np
-from pennylane.optimize import MomentumOptimizer
+from pennylane.optimize import MomentumOptimizer, momentum
 
 
 class TestMomentumOptimizer:
     """Test the Momentum optimizer"""
+
+    @pytest.mark.parametrize(
+        "grad,args",
+        [
+            ([40, -4, 12, -17, 400], [0, 30, 6, -7, 800]),
+            ([0.00033, 0.45e-5, 0.0], [1.3, -0.5, 8e3]),
+            ([43], [0.8]),
+        ],
+    )
+    def test_apply_grad(self, grad, args, tol):
+        """
+        Test that the gradient can be applied correctly to a set of parameters
+        and that momentum accumulation works correctly.
+        """
+        stepsize, gamma = 0.1, 0.5
+        sgd_opt = MomentumOptimizer(stepsize, momentum=gamma)
+        grad, args = np.array(grad), np.array(args, requires_grad=True)
+
+        a1 = stepsize*grad
+        expected = args - a1
+        res = sgd_opt.apply_grad(grad, args)
+        assert np.allclose(res, expected)
+
+        # Simulate a new step
+        grad = grad + args
+        args = expected
+
+        a2 = gamma*a1 + stepsize*grad
+        expected = args - a2
+        res = sgd_opt.apply_grad(grad, args)
+        assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
     def test_momentum_optimizer_univar(self, x_start, tol):

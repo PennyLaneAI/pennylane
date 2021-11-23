@@ -23,6 +23,38 @@ from pennylane.optimize import RMSPropOptimizer
 class TestRMSPropOptimizer:
     """Test the RMSProp (root mean square propagation) optimizer"""
 
+    @pytest.mark.parametrize(
+        "grad,args",
+        [
+            ([40, -4, 12, -17, 400], [0, 30, 6, -7, 800]),
+            ([0.00033, 0.45e-5, 0.0], [1.3, -0.5, 8e3]),
+            ([43], [0.8]),
+        ],
+    )
+    def test_apply_grad(self, grad, args, tol):
+        """
+        Test that the gradient can be applied correctly to a set of parameters
+        and that accumulation works correctly.
+        """
+        stepsize, gamma, eps = 0.1, 0.5, 1e-8
+        sgd_opt = RMSPropOptimizer(stepsize, decay=gamma, eps=eps)
+        grad, args = np.array(grad), np.array(args, requires_grad=True)
+
+        a1 = (1-gamma)*grad**2
+        expected = args - stepsize / np.sqrt(a1 + eps) * grad
+        res = sgd_opt.apply_grad(grad, args)
+        assert np.allclose(res, expected, atol=tol)
+
+        # Simulate a new step
+        grad = grad + args
+        args = expected
+
+        a2 = gamma*a1 + (1-gamma)*grad**2
+        expected = args - stepsize / np.sqrt(a2 + eps) * grad
+        res = sgd_opt.apply_grad(grad, args)
+        assert np.allclose(res, expected, atol=tol)
+
+
     @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
     def test_rmsprop_optimizer_univar(self, x_start, tol):
         """Tests that rmsprop optimizer takes one and two steps correctly

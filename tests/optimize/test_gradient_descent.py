@@ -24,8 +24,28 @@ from pennylane.optimize import GradientDescentOptimizer
 class TestGradientDescentOptimizer:
     """Test the Gradient Descent optimizer"""
 
-    @pytest.mark.parametrize("var", [0, -3, 42])
-    def test_step_and_cost_supplied_grad(self, var):
+    @pytest.mark.parametrize(
+        "grad,args",
+        [
+            ([40, -4, 12, -17, 400], [0, 30, 6, -7, 800]),
+            ([0.00033, 0.45e-5, 0.0], [1.3, -0.5, 8e3]),
+            ([43], [0.8]),
+        ],
+    )
+    def test_apply_grad(self, grad, args, tol):
+        """
+        Test that a gradient step can be applied correctly to a set of parameters.
+        """
+        stepsize = 0.1
+        sgd_opt = GradientDescentOptimizer(stepsize)
+        grad, args = np.array(grad), np.array(args, requires_grad=True)
+
+        res = sgd_opt.apply_grad(grad, args)
+        expected = args - stepsize * grad
+        assert np.allclose(res, expected, atol=tol)
+
+    @pytest.mark.parametrize("args", [0, -3, 42])
+    def test_step_and_cost_supplied_grad(self, args):
         """Test that returned cost is correct if gradient function is supplied"""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
@@ -38,8 +58,8 @@ class TestGradientDescentOptimizer:
         ]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
-            _, res = sgd_opt.step_and_cost(f, var, grad_fn=gradf)
-            expected = f(var)
+            _, res = sgd_opt.step_and_cost(f, args, grad_fn=gradf)
+            expected = f(args)
             assert np.all(res == expected)
 
     def test_step_and_cost_autograd_sgd_multiple_inputs(self):
