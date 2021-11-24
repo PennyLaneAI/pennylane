@@ -124,6 +124,24 @@ class TestTorchDevice:
         res.backward()
         assert x.grad.is_cuda
 
+    @pytest.mark.parametrize("init_device, par_device", [("cpu", "cuda"), ("cuda", "cpu")])
+    def test_different_devices_creation_and_parameters_warn(self, init_device, par_device):
+        """Test that a warning is raised if the Torch device specified on
+        PennyLane device creation differs the Torch device of gate
+        parameters.
+        """
+        print(init_device, par_device)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=init_device)
+
+        p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        with pytest.warns(UserWarning, match=f"Torch device {init_device} specified upon PennyLane device creation does not match"):
+            circuit(p)
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
