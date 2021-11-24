@@ -107,10 +107,12 @@ class CommutingEvolution(Operation):
     par_domain = "R"
     grad_method = None
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
+    def __init__(
+        self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None
+    ):  # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import (
             generate_shift_rule,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise TypeError(
@@ -122,7 +124,7 @@ class CommutingEvolution(Operation):
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
         if frequencies is not None and not trainable_hamiltonian:
             coeffs, shifts = generate_shift_rule(frequencies, shifts)
-            mults = np.ones_like(coeffs)
+            mults = qml.math.ones_like(coeffs)
             recipe = qml.math.stack([coeffs, mults, shifts])
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"

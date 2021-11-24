@@ -26,7 +26,7 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
     This utility function accepts coefficients and shift values, and performs the following
     processing:
 
-    - Removes all small (within absolute tolerance `tol`) coefficients and shifts
+    - Removes all small (within absolute tolerance ``tol``) coefficients and shifts
 
     - Removes terms with the coefficients are 0
 
@@ -69,7 +69,7 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
 
 @functools.lru_cache(maxsize=None)
 def eigvals_to_frequencies(eigvals):
-    """Convert an eigenvalue spectra to frequency values, defined
+    r"""Convert an eigenvalue spectra to frequency values, defined
     as the the set of positive, unique, differences of the spectra.
 
     Args:
@@ -90,7 +90,7 @@ def eigvals_to_frequencies(eigvals):
 
 @functools.lru_cache(maxsize=None)
 def frequencies_to_period(frequencies):
-    """Returns the period of a Fourier series as defined
+    r"""Returns the period of a Fourier series as defined
     by a set of frequencies. The period is simply :math:`2\pi/f_min`,
     where :math:`f_min` is the smallest positive frequency value.
 
