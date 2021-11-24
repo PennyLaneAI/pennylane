@@ -261,16 +261,9 @@ class TestMultiShiftRule:
         are correctly combined."""
         c1 = (np.sqrt(2) + 1) / (4 * np.sqrt(2))
         c2 = (np.sqrt(2) - 1) / (4 * np.sqrt(2))
+        f = [(1,), (0.5, 1)]
 
-        res = generate_multi_shift_rule(
-            [
-                (1,),
-                (
-                    0.5,
-                    1,
-                ),
-            ]
-        ).T
+        res = generate_multi_shift_rule(f).T
         expected = [
             [c1 * 0.5, np.pi / 2, np.pi / 2],
             [-c1 * 0.5, np.pi / 2, -np.pi / 2],
