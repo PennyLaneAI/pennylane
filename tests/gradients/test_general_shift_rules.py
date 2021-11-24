@@ -17,11 +17,11 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients.general_shift_rules import get_shift_rule
+from pennylane.gradients.general_shift_rules import generate_shift_rule, _get_shift_rule
 
 
 class TestGetShiftRule:
-    """Tests of input validation and output correctness of function `get_shift_rule`."""
+    """Tests of input validation and output correctness of function `generate_shift_rule`."""
 
     def test_invalid_frequency_spectrum(self):
         """Tests ValueError is raised if input frequency spectrum is non positive or non unique."""
@@ -29,8 +29,8 @@ class TestGetShiftRule:
         non_positive_frequency_spectrum = (-1, 1)
         non_unique_frequency_spectrum = (1, 2, 2, 3)
 
-        assert pytest.raises(ValueError, get_shift_rule, non_positive_frequency_spectrum)
-        assert pytest.raises(ValueError, get_shift_rule, non_unique_frequency_spectrum)
+        assert pytest.raises(ValueError, _get_shift_rule, non_positive_frequency_spectrum)
+        assert pytest.raises(ValueError, _get_shift_rule, non_unique_frequency_spectrum)
 
     def test_invalid_shifts(self):
         """Tests ValueError is raised if specified shifts is not of the same length as
@@ -40,8 +40,8 @@ class TestGetShiftRule:
         invalid_shifts_num = (np.pi / 8, 3 * np.pi / 8, 5 * np.pi / 8)
         non_unique_shifts = (np.pi / 8, 3 * np.pi / 8, 5 * np.pi / 8, np.pi / 8)
 
-        assert pytest.raises(ValueError, get_shift_rule, frequencies, invalid_shifts_num)
-        assert pytest.raises(ValueError, get_shift_rule, frequencies, non_unique_shifts)
+        assert pytest.raises(ValueError, generate_shift_rule, frequencies, invalid_shifts_num)
+        assert pytest.raises(ValueError, generate_shift_rule, frequencies, non_unique_shifts)
 
     def test_two_term_rule_default_shifts(self):
         """Tests the correct two term equidistant rule is generated using default shift pi/2.
@@ -50,11 +50,10 @@ class TestGetShiftRule:
         frequencies = (1,)
 
         n_terms = 2
-        correct_terms = [[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 2]]
+        correct_terms = [[0.5, -0.5], [np.pi / 2, -np.pi / 2]]
+        generated_terms = generate_shift_rule(frequencies)
 
-        generated_terms = get_shift_rule(frequencies)[0]
-
-        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_four_term_rule_default_shifts(self):
         """Tests the correct two term equidistant rule is generated using the default shifts [pi/4, 3*pi/4].
@@ -64,15 +63,12 @@ class TestGetShiftRule:
 
         n_terms = 4
         correct_terms = [
-            [0.8535533905932737, 1.0, np.pi / 4],
-            [-0.14644660940672624, 1.0, 3 * np.pi / 4],
-            [-0.8535533905932737, 1.0, -np.pi / 4],
-            [0.14644660940672624, 1.0, -3 * np.pi / 4],
+            [0.8535533905932737, -0.8535533905932737, -0.14644660940672624, 0.14644660940672624],
+            [np.pi / 4, -np.pi / 4, 3 * np.pi / 4, -3 * np.pi / 4],
         ]
+        generated_terms = generate_shift_rule(frequencies)
 
-        generated_terms = get_shift_rule(frequencies)[0]
-
-        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_eight_term_rule_non_equidistant_default_shifts(self):
         """Tests the correct non-equidistant eight term shift rule is generated given the
@@ -82,20 +78,21 @@ class TestGetShiftRule:
         frequencies = (1, 4, 5, 6)
 
         n_terms = 8
+
         correct_terms = [
-            [2.8111804455102014, 1.0, np.pi / 8],
-            [0.31327576445128014, 1.0, 3 * np.pi / 8],
-            [-0.8080445791083615, 1.0, 5 * np.pi / 8],
-            [-0.3101398980494395, 1.0, 7 * np.pi / 8],
-            [-2.8111804455102014, 1.0, -np.pi / 8],
-            [-0.31327576445128014, 1.0, -3 * np.pi / 8],
-            [0.8080445791083615, 1.0, -5 * np.pi / 8],
-            [0.3101398980494395, 1.0, -7 * np.pi / 8],
+            [2.8111804455102014, np.pi / 8],
+            [-2.8111804455102014, -np.pi / 8],
+            [0.31327576445128014, 3 * np.pi / 8],
+            [-0.31327576445128014, -3 * np.pi / 8],
+            [-0.8080445791083615, 5 * np.pi / 8],
+            [0.8080445791083615, -5 * np.pi / 8],
+            [-0.3101398980494395, 7 * np.pi / 8],
+            [0.3101398980494395, -7 * np.pi / 8],
         ]
 
-        generated_terms = get_shift_rule(frequencies)[0]
+        generated_terms = generate_shift_rule(frequencies)
 
-        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+        assert np.allclose(generated_terms.T, correct_terms)
 
     def test_eight_term_rule_non_equidistant_custom_shifts(self):
         """Tests the correct non-equidistant eight term shift rule is generated given the
@@ -107,19 +104,19 @@ class TestGetShiftRule:
 
         n_terms = 8
         correct_terms = [
-            [2.709571194594805, 1.0, np.pi / 13],
-            [-0.12914139932030527, 1.0, 3 * np.pi / 7],
-            [-0.3820906256032637, 1.0, 2 * np.pi / 3],
-            [0.436088184940856, 1.0, 3 * np.pi / 4],
-            [-2.709571194594805, 1.0, -np.pi / 13],
-            [0.12914139932030527, 1.0, -3 * np.pi / 7],
-            [0.3820906256032637, 1.0, -2 * np.pi / 3],
-            [-0.436088184940856, 1.0, -3 * np.pi / 4],
+            [2.709571194594805, np.pi / 13],
+            [-2.709571194594805, -np.pi / 13],
+            [-0.12914139932030527, 3 * np.pi / 7],
+            [0.12914139932030527, -3 * np.pi / 7],
+            [-0.3820906256032637, 2 * np.pi / 3],
+            [0.3820906256032637, -2 * np.pi / 3],
+            [0.436088184940856, 3 * np.pi / 4],
+            [-0.436088184940856, -3 * np.pi / 4],
         ]
 
-        generated_terms = get_shift_rule(frequencies, custom_shifts)[0]
+        generated_terms = generate_shift_rule(frequencies, custom_shifts)
 
-        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+        assert np.allclose(generated_terms.T, correct_terms)
 
     def test_non_integer_frequency_default_shifts(self):
         """Tests the correct four term shift rule is generated given non-integer frequencies."""
@@ -128,15 +125,15 @@ class TestGetShiftRule:
         n_terms = 4
 
         correct_terms = [
-            [0.2845177968644246, 1, 3 * np.pi / 4],
-            [-0.048815536468908745, 1, 9 * np.pi / 4],
-            [-0.2845177968644246, 1, -3 * np.pi / 4],
-            [0.048815536468908745, 1, -9 * np.pi / 4],
+            [0.2845177968644246, 3 * np.pi / 4],
+            [-0.2845177968644246, -3 * np.pi / 4],
+            [-0.048815536468908745, 9 * np.pi / 4],
+            [0.048815536468908745, -9 * np.pi / 4],
         ]
 
-        generated_terms = get_shift_rule(frequencies)[0]
+        generated_terms = generate_shift_rule(frequencies)
 
-        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+        assert np.allclose(generated_terms.T, correct_terms)
 
     def test_non_integer_frequency_custom_shifts(self):
         """Tests the correct four term shift rule is generated given non-integer frequencies using
@@ -151,17 +148,17 @@ class TestGetShiftRule:
         n_terms = 6
 
         correct_terms = [
-            [1.7548361197453346, 1, 0.7853981633974483],
-            [-0.8720240894718643, 1, 1.0471975511965976],
-            [0.016695190986336428, 1, 2.0943951023931953],
-            [-1.7548361197453346, 1, -0.7853981633974483],
-            [0.8720240894718643, 1, -1.0471975511965976],
-            [-0.016695190986336428, 1, -2.0943951023931953],
+            [1.7548361197453346, 0.7853981633974483],
+            [-1.7548361197453346, -0.7853981633974483],
+            [-0.8720240894718643, 1.0471975511965976],
+            [0.8720240894718643, -1.0471975511965976],
+            [0.016695190986336428, 2.0943951023931953],
+            [-0.016695190986336428, -2.0943951023931953],
         ]
 
-        generated_terms = get_shift_rule(frequencies, custom_shifts)[0]
+        generated_terms = generate_shift_rule(frequencies, custom_shifts)
 
-        assert all([all(np.isclose(generated_terms[i], correct_terms[i])) for i in range(n_terms)])
+        assert np.allclose(generated_terms.T, correct_terms)
 
     def test_near_singular_warning(self):
         """Tests a warning is raised if the determinant of the matrix to be inverted is near zero
@@ -170,7 +167,7 @@ class TestGetShiftRule:
         frequencies = (1, 2, 3, 4, 5, 67)
 
         with pytest.warns(None) as warnings:
-            get_shift_rule(frequencies)
+            generate_shift_rule(frequencies)
 
         raised_warning = False
         for warning in warnings:
