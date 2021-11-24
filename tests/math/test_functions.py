@@ -1394,10 +1394,11 @@ class TestScatterElementAdd:
         assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
 
         jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
-        assert fn.allclose(jac[0], self.expected_jac[0])
-        print(jac[1])
-        print(self.expected_jac[1])
-        assert fn.allclose(jac[1], self.expected_jac[1])
+        assert fn.allclose(jac[0], self.expected_jac_x)
+        exp_jac_y = onp.zeros((2, 3, 2))
+        exp_jac_y[0, 1, 0] = 2 * y[0]
+        exp_jac_y[1, 2, 1] = 2 * y[1]
+        assert fn.allclose(jac[1], exp_jac_y)
 
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
@@ -1553,8 +1554,6 @@ class TestScatterElementAddMultiValue:
 
         res = cost([x, y])
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
-        print(res)
-        print(self.expected_val)
         assert fn.allclose(res, self.expected_val)
 
         scalar_cost = (
