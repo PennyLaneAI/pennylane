@@ -1584,7 +1584,10 @@ class TestCoercion:
             torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
         ]
 
-        with pytest.raises(RuntimeError, match="Expected all tensors to be on the same device, but found at least two devices"):
+        with pytest.raises(
+            RuntimeError,
+            match="Expected all tensors to be on the same device, but found at least two devices",
+        ):
             res = qml.math.coerce(tensors, like="torch")
 
 
