@@ -13,6 +13,8 @@
 # limitations under the License.
 """This module contains tape expansion functions and stopping criteria to
 generate such functions from."""
+# pylint: disable=unused-argument
+import contextlib
 
 import pennylane as qml
 from pennylane.operation import (
@@ -24,6 +26,11 @@ from pennylane.operation import (
     is_trainable,
     not_tape,
 )
+
+# Needed for custom decomposition context manager
+from pennylane.transforms.qfunc_transforms import NonQueuingTape
+
+NonQueuingTape = type("NonQueuingTape", (NonQueuingTape, qml.tape.QuantumTape), {})
 
 
 def _update_trainable_params(tape):
@@ -180,3 +187,165 @@ expand_invalid_trainable = create_expand_fn(
     stop_at=not_tape | is_measurement | (~is_trainable) | has_grad_method,
     docstring=_expand_invalid_trainable_doc,
 )
+
+
+@contextlib.contextmanager
+def _custom_decomp_context(custom_decomps):
+    """A context manager for applying custom decompositions of operations."""
+
+    # Creates an individual context
+    @contextlib.contextmanager
+    def _custom_decomposition(obj, fn):
+        # Covers the case where the user passes a string to indicate the Operator
+        if isinstance(obj, str):
+            obj = getattr(qml, obj)
+
+        original_decomp_method = obj.decompose
+
+        # This is the method that will override the operations .decompose method
+        def new_decomp_method(self):
+            with NonQueuingTape():
+                if self.num_params == 0:
+                    return fn(self.wires)
+                return fn(*self.parameters, self.wires)
+
+        try:
+            # Explicitly set the new .decompose method
+            obj.decompose = new_decomp_method
+            yield
+
+        finally:
+            obj.decompose = original_decomp_method
+
+    # Loop through the decomposition dictionary and create all the contexts
+    try:
+        with contextlib.ExitStack() as stack:
+            for obj, fn in custom_decomps.items():
+                # We enter a new context for each decomposition the user passes
+                stack.enter_context(_custom_decomposition(obj, fn))
+
+            stack = stack.pop_all()
+
+        yield
+
+    finally:
+        stack.close()
+
+
+def create_decomp_expand_fn(custom_decomps, dev, decomp_depth=10):
+    """Creates a custom expansion function for a device that applies
+    a set of specified custom decompositions.
+
+    Args:
+        custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
+            decompositions to be applied by the device at runtime.
+        dev (qml.Device): A quantum device.
+        decomp_depth: The maximum depth of the expansion.
+
+    Returns:
+        Callable: A custom expansion function that a device can call to expand
+        its tapes within a context manager that applies custom decompositions.
+
+    **Example**
+
+    Suppose we would like a custom expansion function that decomposes all CNOTs
+    into CZs. We first define a decomposition function:
+
+    .. code-block:: python
+
+        def custom_cnot(wires):
+            return [
+                qml.Hadamard(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1])
+            ]
+
+    We then create the custom function (passing a device, in order to pick up any
+    additional stopping criteria the expansion should have), and then register the
+    result as a custom function of the device:
+
+    >>> custom_decomps = {qml.CNOT : custom_cnot}
+    >>> expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, dev)
+    >>> dev.custom_expand(expand_fn)
+    """
+    custom_op_names = [op if isinstance(op, str) else op.__name__ for op in custom_decomps.keys()]
+
+    # Create a new expansion function; stop at things that do not have
+    # custom decompositions, or that satisfy the regular device stopping criteria
+    custom_fn = qml.transforms.create_expand_fn(
+        decomp_depth,
+        stop_at=qml.BooleanFn(lambda obj: obj.name not in custom_op_names),
+        device=dev,
+    )
+
+    # Finally, we set the device's custom_expand_fn to a new one that
+    # runs in a context where the decompositions have been replaced.
+    def custom_decomp_expand(self, circuit, max_expansion=decomp_depth):
+        with _custom_decomp_context(custom_decomps):
+            return custom_fn(circuit, max_expansion=max_expansion)
+
+    return custom_decomp_expand
+
+
+@contextlib.contextmanager
+def set_decomposition(custom_decomps, dev, decomp_depth=10):
+    """Context manager for setting custom decompositions.
+
+    Args:
+        custom_decomps (Dict[Union(str, qml.operation.Operation), Callable]): Custom
+            decompositions to be applied by the device at runtime.
+        dev (qml.Device): A quantum device.
+        decomp_depth: The maximum depth of the expansion.
+
+    **Example**
+
+    Suppose we would like a custom expansion function that decomposes all CNOTs
+    into CZs. We first define a decomposition function:
+
+    .. code-block:: python
+
+        def custom_cnot(wires):
+            return [
+                qml.Hadamard(wires=wires[1]),
+                qml.CZ(wires=[wires[0], wires[1]]),
+                qml.Hadamard(wires=wires[1])
+            ]
+
+    This context manager can be used to temporarily change a devices expansion
+    function to one that takes into account the custom decompositions.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, expansion_strategy="device")
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=0))
+
+    >>> print(qml.draw(circuit)())
+     0: ──╭C──┤ ⟨Z⟩
+     1: ──╰X──┤
+
+    Now let's set up a context where the custom decomposition will be applied:
+
+    >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
+    ...     print(qml.draw(circuit)())
+     0: ─────╭C─────┤ ⟨Z⟩
+     1: ──H──╰Z──H──┤
+    """
+    original_custom_expand_fn = dev.custom_expand_fn
+
+    # Create a new expansion function; stop at things that do not have
+    # custom decompositions, or that satisfy the regular device stopping criteria
+    new_custom_expand_fn = qml.transforms.create_decomp_expand_fn(
+        custom_decomps, dev, decomp_depth=decomp_depth
+    )
+
+    # Set the custom expand function within this context only
+    try:
+        dev.custom_expand(new_custom_expand_fn)
+        yield
+
+    finally:
+        dev.custom_expand_fn = original_custom_expand_fn

@@ -1179,7 +1179,9 @@ class Barrier(Operation):
         self.only_visual = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
+    # pylint: disable=unused-argument
     def decomposition(self, wires):
+        # pylint: disable=unused-argument
         return []
 
     def label(self, decimals=None):
