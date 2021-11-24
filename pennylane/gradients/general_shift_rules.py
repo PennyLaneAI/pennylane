@@ -43,7 +43,8 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
 
     # sort columns according to abs(shift)
     gradient_recipe = gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
-    unique_shifts = np.unique(gradient_recipe[-1, :])
+    round_tol = int(-np.log10(tol))
+    unique_shifts = np.unique(np.round(gradient_recipe[-1], round_tol))
 
     if gradient_recipe.shape[-1] != len(unique_shifts):
         # sum columns that have the same shift value
@@ -52,7 +53,7 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
                 np.stack(
                     [
                         np.sum(
-                            gradient_recipe[:, np.nonzero(gradient_recipe[-1, :] == b)[0]], axis=1
+                            gradient_recipe[:, np.nonzero(np.round(gradient_recipe[-1], round_tol) == b)[0]], axis=1
                         )[0]
                         for b in unique_shifts
                     ]
