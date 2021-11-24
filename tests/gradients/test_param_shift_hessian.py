@@ -29,7 +29,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -49,7 +49,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -69,7 +69,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -90,7 +90,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -111,7 +111,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -134,7 +134,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -157,7 +157,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0] + x[1] + x[2], wires=0)
             qml.RY(x[1] - x[0] + 3 * x[2], wires=0)
@@ -178,7 +178,7 @@ class TestParameterShiftHessian:
         """Test that the correct hessian is calculated for higher dimensional QNode outputs"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -198,7 +198,7 @@ class TestParameterShiftHessian:
         """Test that the correct hessian is calculated for higher dimensional cl. jacobians"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0, 0], wires=0)
             qml.RY(x[0, 1], wires=0)
@@ -228,7 +228,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -237,15 +237,16 @@ class TestParameterShiftHessian:
         x = np.array(0.1, requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
-            qml.gradients.param_shift_hessian(circuit)(x)
+            hessian = qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
-            qml.jacobian(qml.jacobian(circuit))(x)
+            jacobian = qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
         print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(1 + 2 - 1, 2), "?")
         print("\n", hessian_qruns, "<=", 3 ** 1, "?")
 
+        assert np.allclose(hessian, jacobian)
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * math.comb(1 + 2 - 1, 2)
         assert hessian_qruns <= 3 ** 1
@@ -255,7 +256,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=[0, 1])
@@ -265,15 +266,16 @@ class TestParameterShiftHessian:
         x = np.array([0.1, 0.2], requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
-            qml.gradients.param_shift_hessian(circuit)(x)
+            hessian = qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
-            qml.jacobian(qml.jacobian(circuit))(x)
+            jacobian = qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
         print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(2 + 2 - 1, 2), "?")
         print("\n", hessian_qruns, "<=", 3 ** 2, "?")
 
+        assert np.allclose(hessian, jacobian)
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * math.comb(2 + 2 - 1, 2)
         assert hessian_qruns <= 3 ** 2
@@ -283,7 +285,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=[0, 1])
@@ -294,15 +296,16 @@ class TestParameterShiftHessian:
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
-            qml.gradients.param_shift_hessian(circuit)(x)
+            hessian = qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
-            qml.jacobian(qml.jacobian(circuit))(x)
+            jacobian = qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
         print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(3 + 2 - 1, 2), "?")
         print("\n", hessian_qruns, "<=", 3 ** 3, "?")
 
+        assert np.allclose(hessian, jacobian)
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * math.comb(3 + 2 - 1, 2)
         assert hessian_qruns <= 3 ** 3
