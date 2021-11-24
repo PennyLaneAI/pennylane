@@ -193,6 +193,7 @@ Noisy channels
     ~pennylane.PhaseFlip
     ~pennylane.ResetError
     ~pennylane.QubitChannel
+    ~pennylane.ThermalRelaxationError
 
 :html:`</div>`
 
