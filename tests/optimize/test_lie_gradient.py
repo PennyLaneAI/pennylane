@@ -231,18 +231,6 @@ def test_lie_gradient_circuit_input_1_check():
         LieGradientOptimizer(circuit=circuit, stepsize=0.001)
 
 
-def test_lie_gradient_circuit_input_2_check():
-    """Test that the optimizer does not care about what is returned"""
-
-    @qml.qnode(qml.device("default.qubit", wires=3))
-    def circuit():
-        qml.RY(0.5, wires=0)
-        return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
-
-    opt = LieGradientOptimizer(circuit=circuit, stepsize=0.001)
-    opt.step()
-
-
 def test_lie_gradient_hamiltonian_input_1_check():
     """Test that a type error is raise for non-QNode circuits"""
 
@@ -259,7 +247,7 @@ def test_lie_gradient_hamiltonian_input_1_check():
 
 
 def test_lie_gradient_nqubits_check(capsys):
-    """Test that a type error is raise for non-QNode circuits"""
+    """Test that we warn if the system is too big"""
 
     @qml.qnode(qml.device("default.qubit", wires=5))
     def circuit():
