@@ -239,7 +239,7 @@ class TestApply:
 
     def test_full_subsystem_statevector(self, device, torch_device, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = device(wires=["a", "b", "c"])
+        dev = device(wires=["a", "b", "c"], torch_device=torch_device)
         state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -251,7 +251,7 @@ class TestApply:
 
     def test_partial_subsystem_statevector(self, device, torch_device, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
-        dev = device(wires=["a", "b", "c"])
+        dev = device(wires=["a", "b", "c"], torch_device=torch_device)
         state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / torch.tensor(math.sqrt(2.0))
         state_wires = qml.wires.Wires(["a", "c"])
 
@@ -265,7 +265,7 @@ class TestApply:
     def test_invalid_qubit_state_vector_size(self, device, torch_device):
         """Test that an exception is raised if the state
         vector is the wrong size"""
-        dev = device(wires=2)
+        dev = device(wires=2, torch_device=torch_device)
         state = torch.tensor([0, 1])
 
         with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
@@ -277,7 +277,7 @@ class TestApply:
     def test_invalid_qubit_state_vector_norm(self, device, torch_device, state):
         """Test that an exception is raised if the state
         vector is not normalized"""
-        dev = device(wires=2)
+        dev = device(wires=2, torch_device=torch_device)
 
         with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
             dev.apply([qml.QubitStateVector(state, wires=[0])])
@@ -285,7 +285,7 @@ class TestApply:
     def test_invalid_state_prep(self, device, torch_device):
         """Test that an exception is raised if a state preparation is not the
         first operation in the circuit."""
-        dev = device(wires=2)
+        dev = device(wires=2, torch_device=torch_device)
         state = torch.tensor([0, 12])
 
         with pytest.raises(
@@ -1256,11 +1256,11 @@ class TestPassthruIntegration:
     def test_jacobian_variable_multiply(self, device, torch_device, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
-        x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
-        y = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
-        z = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
+        x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True, device=torch_device)
+        y = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True, device=torch_device)
+        z = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True, device=torch_device)
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(p):
@@ -1292,11 +1292,11 @@ class TestPassthruIntegration:
     def test_jacobian_repeated(self, device, torch_device, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result in the case of repeated parameters"""
-        x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True)
-        y = torch.tensor(0.2162158, dtype=torch.float64, requires_grad=True)
-        z = torch.tensor(0.75110998, dtype=torch.float64, requires_grad=True)
-        p = torch.tensor([x, y, z], requires_grad=True)
-        dev = qml.device("default.qubit.torch", wires=1)
+        x = torch.tensor(0.43316321, dtype=torch.float64, requires_grad=True, device=torch_device)
+        y = torch.tensor(0.2162158, dtype=torch.float64, requires_grad=True, device=torch_device)
+        z = torch.tensor(0.75110998, dtype=torch.float64, requires_grad=True, device=torch_device)
+        p = torch.tensor([x, y, z], requires_grad=True, device=torch_device)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
@@ -1324,7 +1324,7 @@ class TestPassthruIntegration:
     def test_jacobian_agrees_backprop_parameter_shift(self, device, torch_device, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result with respect to the parameter-shift method"""
-        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True, device=torch_device)
 
         def circuit(x):
             for i in range(0, len(p), 2):
@@ -1334,7 +1334,7 @@ class TestPassthruIntegration:
                 qml.CNOT(wires=[i, i + 1])
             return qml.expval(qml.PauliZ(0))  # , qml.var(qml.PauliZ(1))
 
-        dev1 = qml.device("default.qubit.torch", wires=3)
+        dev1 = qml.device("default.qubit.torch", wires=3, torch_device=torch_device)
         dev2 = qml.device("default.qubit", wires=3)
 
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
@@ -1351,7 +1351,7 @@ class TestPassthruIntegration:
 
     def test_state_differentiability(self, device, torch_device, tol):
         """Test that the device state can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
@@ -1371,7 +1371,7 @@ class TestPassthruIntegration:
 
     def test_prob_differentiability(self, device, torch_device, tol):
         """Test that the device probability can be differentiated"""
-        dev = qml.device("default.qubit.torch", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -1397,7 +1397,7 @@ class TestPassthruIntegration:
 
     def test_backprop_gradient(self, device, torch_device, tol):
         """Tests that the gradient of the qnode is correct"""
-        dev = qml.device("default.qubit.torch", wires=2)
+        dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
@@ -1424,9 +1424,9 @@ class TestPassthruIntegration:
     def test_torch_interface_gradient(self, torch_device, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
         using the PyTorch interface, using a variety of differentiation methods."""
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
 
-        input_state = torch.tensor(1j * np.array([1, -1]) / math.sqrt(2))
+        input_state = torch.tensor(1j * np.array([1, -1]) / math.sqrt(2), device=torch_device)
 
         @qml.qnode(dev, diff_method=diff_method, interface="torch")
         def circuit(x, weights, w):
@@ -1577,7 +1577,7 @@ class TestSamples:
     def test_estimating_expectation_values(self, device, torch_device, tol):
         """Test that estimating expectation values using a finite number
         of shots produces a numeric tensor"""
-        dev = qml.device("default.qubit.torch", wires=3, shots=1000)
+        dev = qml.device("default.qubit.torch", wires=3, shots=1000, torch_device=torch_device)
 
         @qml.qnode(dev, diff_method=None, interface="torch")
         def circuit(a, b):
