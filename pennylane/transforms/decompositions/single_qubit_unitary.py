@@ -72,7 +72,8 @@ def zyz_decomposition(U, wire):
     U = _convert_to_su2(U)
 
     # Derive theta from the off-diagonal element. We very very carefully rescale
-    # the value to make sure it's between -1 and 1.
+    # the value to make sure it's between -1 and 1 by subtracting a small number
+    # in the cases where we have a positive-valued element.
     element = math.abs(U[0, 1])
     theta = 2 * math.arcsin(element - math.sign(element) * 1e-16)
 
