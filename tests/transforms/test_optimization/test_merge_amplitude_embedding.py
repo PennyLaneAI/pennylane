@@ -41,7 +41,7 @@ class TestMergeAmplitudeEmbedding:
         # Check that the solution is as expected.
 
         dev = qml.device("default.qubit", wires=2)
-        assert qml.QNode(transformed_qfunc, dev)()[-1] == 1
+        assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
 
     def test_repeated_qubit(self):
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
