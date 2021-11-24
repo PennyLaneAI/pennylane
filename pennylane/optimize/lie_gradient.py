@@ -44,8 +44,6 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
         lie_gradient: qml.Hamiltonian object
         t: time evolution size
 
-    Returns:
-
     """
     for obj in tape.operations:
         qml.apply(obj)
@@ -63,9 +61,21 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
 
 @batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
-    """Calculate the Lie gradient with the parameter shift rule (see `get_omegas`)"""
+    """
+    Calculate the Lie gradient with the parameter shift rule (see `get_omegas`).
+
+    Args:
+        tape (qml.QuantumTape):
+        observables (list):
+        lie_algebra_basis_names (list):
+        nqubits (int):
+
+    Returns:
+        list of `qml.QuantumTape`'s and None
+    """
     tapes = []
     for obs in observables:
+        # create a list of tapes for the plus and minus shifted circuits
         tapes_plus = [JacobianTape(p + "_p") for p in lie_algebra_basis_names]
         tapes_min = [JacobianTape(p + "_m") for p in lie_algebra_basis_names]
 
@@ -195,11 +205,8 @@ class LieGradientOptimizer:
         r"""Update the circuit with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
-        Args:
-            *args:
-            **kwargs:
-
         Returns:
+            Float corresponding to the energy of the the circuit.
 
         """
         omegas = self.get_omegas()
@@ -226,17 +233,14 @@ class LieGradientOptimizer:
     def step(self):
         r"""Update the circuit with one step of the optimizer
 
-        Args:
-            *args:
-            **kwargs:
-
-        Returns:
-
         """
         self.step_and_cost()
 
     def get_su_n_operators(self, restriction):
         r"""Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
+
+        Args:
+            restriction (qml.Hamiltonian): Restrict the lie gradient to a subalgebra.
 
         Returns:
             List of (N^2)x(N^2) numpy complex arrays and corresponding paulis words
