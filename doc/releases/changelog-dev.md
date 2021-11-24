@@ -216,38 +216,46 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
-* For Hamiltonians whose eigenvalue frequency spectrum is known, `qml.gradients.general_shift_rule` is
-  a function that computes the generalized parameter shift rules for the time evolution.
+* Given an operator of the form :math:`U=e^{iHt}` where :math:`H` as known eigenvalues,
+  `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
+  the gradient of the expectation value :math:`\langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
+  hardware.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
+  [(#1932)](https://github.com/PennyLaneAI/pennylane/pull/1932)
 
-  Given a Hamiltonian's frequency spectrum of `R` unique frequencies, `qml.gradients.general_shift_rule`
-  returns the parameter shift rules to compute expectation value gradients of the Hamiltonian's
+  Assuming that :math:`H` has `R` unique frequencies, `qml.gradients.generate_shift_rule`
+  returns the parameter shift rules to compute expectation value gradients of the operators
   time parameter using `2R` shifted cost function evaluations. This becomes cheaper than
   the standard application of the chain rule and two-term shift rule when `R` is less than the
-  number of Pauli words in the Hamiltonian generator.
+  number of Pauli words in the generator.
 
-  For example, a four-term shift rule is generated for the frequency spectrum `[1, 2]`, which
-  corresponds to a generator eigenspectrum of e.g., `[-1, 0, 1]`:
+  For example, consider the case where :math:`H` has eigenspectrum ``(-1, 0, 1)``:
 
   ```pycon
-  >>> frequencies = (1,2)
-  >>> grad_recipe = qml.gradients.general_shift_rule(frequencies)
-  >>> grad_recipe
-  ([[0.8535533905932737, 1, 0.7853981633974483], [-0.14644660940672624, 1, 2.356194490192345],
-    [-0.8535533905932737, 1, -0.7853981633974483], [0.14644660940672624, 1, -2.356194490192345]],)
+  >>> frequencies = qml.gradients.eigvals_to_frequencies((-1, 0, 1))
+  >>> frequencies
+  (1, 2)
+  >>> coeffs, shifts = qml.gradients.generate_shift_rule(frequencies)
+  >>> coeffs
+  array([ 0.85355339, -0.85355339, -0.14644661,  0.14644661])
+  >>> shifts
+  array([ 0.78539816, -0.78539816,  2.35619449, -2.35619449])
   ```
 
-  As we can see, `general_shift_rule` returns a tuple containing a list of four nested lists for the
-  four term parameter shift rule. Each term :math:`[c_i, a_i, s_i]` specifies a term in the
-  gradient reconstructed via parameter shifts as
+  As we can see, `generate_shift_rule` returns four coefficients :math:`c_i` and shifts
+  :math:`s_i` corresponding to a four term parameter shift rule. The gradient can then
+  be reconstructed via:
 
-  .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+  .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i),
+
+  where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
+  for some observable :math:`\hat{O}` and some unitary :math:`U(\phi)`.
 
 * A circuit template for time evolution under a commuting Hamiltonian utilizing generalized
   parameter shift rules for cost function gradients is available as `qml.CommutingEvolution`.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
 
-  If the template is handed a frequency spectrum during its instantiation, then `general_shift_rule`
+  If the template is handed a frequency spectrum during its instantiation, then `generate_shift_rule`
   is internally called to obtain the general parameter shift rules with respect to
   `CommutingEvolution`'s :math:`t` parameter, otherwise the shift rule for a decomposition of
   `CommutingEvolution` will be used.
@@ -435,7 +443,3 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
 Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
-<<<<<<< HEAD
-
-=======
->>>>>>> master
