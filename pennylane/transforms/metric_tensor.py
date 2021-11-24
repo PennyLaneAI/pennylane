@@ -101,10 +101,13 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         original circuit was defined. This wire may be specified via ``aux_wire``.
         By default, contiguous wire numbering and usage is assumed and the additional
         wire is set to the next wire of the device after the circuit wires.
+        If the given or inferred ``aux_wire`` does not exist on the device,
+        a warning is raised and the block-diagonal approximation is computed instead.
+        It is significantly cheaper in this case to explicitly set ``approx="block-diag"`` .
 
     The flag ``allow_nonunitary`` should be set to ``True`` whenever the device with
     which the metric tensor is computed supports non-unitary operations.
-    This will avoid additional decomposition of gates, in turn avoiding a potentially
+    This will avoid additional decompositions of gates, in turn avoiding a potentially
     large number of additional Hadamard test circuits to be run.
     State vector simulators, for example, often allow applying operations that are
     not unitary.
