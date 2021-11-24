@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from .gradient_transform import gradient_transform
-from .general_shift_rules import general_shift_rule, _process_gradient_recipe
+from .general_shift_rules import generate_shift_rule, _process_gradient_recipe
 from .finite_difference import finite_diff, generate_shifted_tapes
 
 

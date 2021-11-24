@@ -68,23 +68,23 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
 
 
 @functools.lru_cache(maxsize=None)
-def spectra_to_frequencies(spectra):
+def eigvals_to_frequencies(eigvals):
     """Convert an eigenvalue spectra to frequency values, defined
     as the the set of positive, unique, differences of the spectra.
 
     Args:
-        spectra (tuple[int, float]): eigenvalue spectra
+        eigvals (tuple[int, float]): eigenvalue spectra
 
     Returns:
         tuple[int, float]: frequencies
 
     **Example**
 
-    >>> spectra = (-0.5, 0, 0, 0.5)
-    >>> spectra_to_frequencies(spectra)
+    >>> eigvals = (-0.5, 0, 0, 0.5)
+    >>> eigvals_to_frequencies(eigvals)
     (0.5, 1.0)
     """
-    unique_eigvals = sorted(set(spectra))
+    unique_eigvals = sorted(set(eigvals))
     return tuple({abs(i - j) for i, j in itertools.combinations(unique_eigvals, 2)})
 
 
@@ -106,14 +106,7 @@ def frequencies_to_period(frequencies):
     >>> frequencies_to_period(frequencies)
     12.566370614359172
     """
-    frequencies = sorted(frequencies)
-
-    try:
-        frequencies.remove(0)
-    except ValueError:
-        pass
-
-    f_min = frequencies[0]
+    f_min = min(f for f in frequencies if f > 0)
     return 2 * np.pi / f_min
 
 
@@ -173,7 +166,7 @@ def _get_shift_rule(frequencies, shifts=None):
 
 
 @functools.lru_cache()
-def general_shift_rule(frequencies, shifts=None, order=1):
+def generate_shift_rule(frequencies, shifts=None, order=1):
     r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue frequency
     spectrum.
 
@@ -184,7 +177,7 @@ def general_shift_rule(frequencies, shifts=None, order=1):
     found in https://arxiv.org/abs/2107.12390.
 
     Args:
-        frequencies (tuple[int or float]): the tuple of eigenvalue frequencies. Eigenvalue
+        frequencies (tuple[int or float]): The tuple of eigenvalue frequencies. Eigenvalue
             frequencies are defined as the unique positive differences obtained from a set of
             eigenvalues.
         shifts (tuple[int or float]): the tuple of shift values. If unspecified, equidistant
@@ -213,8 +206,8 @@ def general_shift_rule(frequencies, shifts=None, order=1):
     parameter shift rule:
 
     >>> eigvals = (-0.5, 0, 0, 0.5)
-    >>> frequencies = spectra_to_frequencies(eigvals)
-    >>> general_shift_rule(frequencies)
+    >>> frequencies = eigvals_to_frequencies(eigvals)
+    >>> generate_shift_rule(frequencies)
     [[ 0.85355339, -0.85355339, -0.14644661,  0.14644661],
      [ 0.78539816, -0.78539816,  2.35619449, -2.35619449]]
 
@@ -222,7 +215,7 @@ def general_shift_rule(frequencies, shifts=None, order=1):
 
     >>> frequencies = (1, 2, 4)
     >>> shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
-    >>> general_shift_rule(frequencies, shifts)
+    >>> generate_shift_rule(frequencies, shifts)
     [[ 3.        , -3.        , -2.09077028,  2.09077028, 0.2186308, -0.2186308 ],
      [ 0.78539816, -0.78539816,  1.04719755, -1.04719755, 2.0943951, -2.0943951 ]]
 
@@ -231,13 +224,14 @@ def general_shift_rule(frequencies, shifts=None, order=1):
     second order shift rule for a gate with generator :math:`X/2`:
 
     >>> eigvals = (0.5, -0.5)
-    >>> frequencies = spectra_to_frequencies(eigvals)
-    >>> general_shift_rule(frequencies, order=2)
+    >>> frequencies = eigvals_to_frequencies(eigvals)
+    >>> generate_shift_rule(frequencies, order=2)
     [[-0.5       ,  0.5       ],
      [ 0.        , -3.14159265]]
 
     This corresponds to :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)]`.
     """
+    frequencies = tuple(f for f in frequencies if f > 0)
     recipe = _get_shift_rule(frequencies, shifts=shifts)
 
     if order > 1:
@@ -249,28 +243,26 @@ def general_shift_rule(frequencies, shifts=None, order=1):
             new_shift = np.mod(sum(s) + 0.5 * T, T) - 0.5 * T
             all_shifts.append(np.stack([np.prod(c), new_shift]))
 
-        recipe = zip(*all_shifts)
+        recipe = qml.math.stack(all_shifts).T
 
     return _process_gradient_recipe(recipe, tol=1e-10)
 
 
-def off_diagonal_shift_rule(freq1, freq2=None, shifts1=None, shifts2=None):
+def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     r"""Computes the parameter shift rule with respect to two parametrized unitaries,
     given their generator's eigenvalue frequency spectrum. This corresponds to a
     shift rule that computes off-diagonal elements of the Hessian.
 
     Args:
-        freq1 (tuple[int or float]): The tuple of eigenvalue frequencies corresponding
-            to the first parametrized unitary. Eigenvalue frequencies are defined as
-            the unique positive differences obtained from a set of eigenvalues.
-        freq2 (tuple[int or float]): the tuple of eigenvalue frequencies corresponding
-            to the second parametrized unitary
-        shifts1 (tuple[int or float]): The tuple of shift values for the first parametrized
+        frequencies (list[tuple[int or float]]): List of eigenvalue frequencies corresponding
+            to the each parametrized unitary.
+        shifts (list[tuple[int or float]]): List of shift values corresponding to each parametrized
             unitary. If unspecified, equidistant shifts are assumed. If supplied, the length
-            of this tuple must be the same as ``len(freq1)``.
-        shifts2 (tuple[int or float]): The tuple of shift values for the second parametrized
-            unitary. If unspecified, equidistant shifts are assumed. If supplied, the length
-            of this tuple must be the same as ``len(freq2)``.
+            of each tuple in the list must be the same as the length of each tuple in
+            ``frequencies``.
+        orders (list[int]): the order of differentiation for each parametrized unitary.
+            If unspecified, the first order derivative shift rule is computed for each parametrized
+            unitary.
 
     Returns:
         tuple: a tuple of coefficients, shifts for the first parameter, and shifts for the
@@ -291,7 +283,7 @@ def off_diagonal_shift_rule(freq1, freq2=None, shifts1=None, shifts2=None):
 
     **Example**
 
-    >>> off_diagonal_shift_rule((1,), (1,))
+    >>> generate_multi_shift_rule([(1,), (1,)])
     [[ 0.25      , -0.25      , -0.25      ,  0.25      ],
      [ 1.57079633,  1.57079633, -1.57079633, -1.57079633],
      [ 1.57079633, -1.57079633,  1.57079633, -1.57079633]])
@@ -303,12 +295,17 @@ def off_diagonal_shift_rule(freq1, freq2=None, shifts1=None, shifts2=None):
         \frac{\partial^2 f}{\partial x\partial y}
         = \frac{1}{4} \left[f(x+\np/2, y+\np/2) - f(x+\np/2, y-\np/2) - f(x-\np/2, y+\np/2) + f(x-\np/2, y-\np/2)].
     """
-    recipe1 = _process_gradient_recipe(_get_shift_rule(freq1, shifts=shifts1))
-    recipe2 = _process_gradient_recipe(_get_shift_rule(freq2, shifts=shifts2))
+    recipes = []
+    shifts = shifts or [None] * len(frequencies)
+    orders = orders or [1] * len(frequencies)
+
+    for f, s, o in zip(frequencies, shifts, orders):
+        rule = generate_shift_rule(f, shifts=s, order=o)
+        recipes.append(_process_gradient_recipe(rule).T)
 
     all_shifts = []
 
-    for partial_recipes in itertools.product(recipe1.T, recipe2.T, repeat=1):
+    for partial_recipes in itertools.product(*recipes, repeat=1):
         c, s = np.stack(partial_recipes).T
         combined = np.concatenate([[np.prod(c)], s])
         all_shifts.append(np.stack(combined))
