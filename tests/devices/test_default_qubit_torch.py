@@ -1345,10 +1345,11 @@ class TestPassthruIntegration:
         res = circuit1(p_torch)
         res.backward()
 
-        assert np.allclose(qml.math.to_numpy(res), circuit2(p).numpy(), atol=tol, rtol=0)
+
+        assert qml.math.allclose(res, circuit2(p), atol=tol, rtol=0)
 
         p_grad = p_torch.grad
-        assert np.allclose(qml.math.to_numpy(p_grad), qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+        assert qml.math.allclose(p_grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, device, torch_device, tol):
         """Test that the device state can be differentiated"""
