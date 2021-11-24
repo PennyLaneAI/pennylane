@@ -144,8 +144,10 @@ def param_shift_hessian(tape):
         )
 
     _gradient_analysis(tape)
+    diff_methods = tape._grad_method_validation("analytic")
     gradient_tapes = []
     gradient_coeffs = []
+    unshifted_coeffs = {}
     shapes = []
     h_dim = len(tape.trainable_params)
 
@@ -169,8 +171,20 @@ def param_shift_hessian(tape):
     # for now assume all operations support the 2-term parameter shift rule
     for i in range(tape.num_params):
         for j in range(i, tape.num_params):
+            # optimization: skip partial derivates that are zero
+            if diff_methods[i] == "0" or diff_methods[j] == "0":
+                continue
+
             recipe = diag_recipe if i == j else off_diag_recipe
             coeffs, _, shifts = _process_gradient_recipe(recipe)
+
+            # optimization: only compute the unshifted tape once
+            if all(np.array(shifts[0]) == 0):
+                if not unshifted_coeffs:
+                    gradient_tapes.insert(0, tape)
+
+                unshifted_coeffs[(i, j)] = coeffs[0]
+                coeffs, shifts = coeffs[1:], shifts[1:]
 
             # generate the gradient tapes
             gradient_coeffs.append(coeffs)
@@ -184,17 +198,19 @@ def param_shift_hessian(tape):
         # rule, the remaining ones are the QNode output dimensions.
         out_dim = np.shape(results)[1:]
         # The desired shape is: (QNode output dimensions, # gate args, # gate args)
-        grads = np.empty(out_dim + (h_dim, h_dim))
+        grads = np.zeros(out_dim + (h_dim, h_dim))
         # Keep track of tape results already consumed.
-        start = 0
+        start = 1 if unshifted_coeffs else 0
 
         for i, (h_idx, s) in enumerate(shapes):
             res = results[start : start + s]
             start = start + s
 
             # compute the linear combination of results and coefficients
-            res = qml.math.squeeze(qml.math.stack(res))
+            res = qml.math.stack(res)
             g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
+            if h_idx in unshifted_coeffs:
+                g += unshifted_coeffs[h_idx] * results[0]
 
             for out_idx, elem in qml.math.ndenumerate(qml.math.reshape(g, out_dim)):
                 grads[out_idx][h_idx] = elem
