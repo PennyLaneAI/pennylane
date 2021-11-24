@@ -17,4 +17,3 @@ compute/measure some quantity of interest.
 """
 
 from .swap_test import SwapTest
-
