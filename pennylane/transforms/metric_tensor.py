@@ -267,11 +267,16 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
-            raise qml.wires.WireError(
+            warnings.warn(
                 "A wire was not found while executing tapes for the metric tensor. "
                 "Probably you tried to use Hadamard tests and the device does not provide an "
-                "additional wire or the requested auxiliary wire does not exist on the device."
-            ) from e
+                "additional wire or the requested auxiliary wire does not exist on the device. "
+                "Reverting to the block-diagonal approximation. It will often be much more "
+                "efficient to request the block-diagonal approximation directly! "
+                f"Warning raised from WireError:\n{e}"
+            )
+            tkwargs["approx"] = "block-diag"
+            return self.__call__(qnode, targs, tkwargs)
 
         if not hybrid:
             return mt
@@ -283,7 +288,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             if len(cjac) == 1:
                 cjac = cjac[0]
             else:
-                # Classical processing of multiple arguments is present. Return mt @ cjac.
+                # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac.
                 metric_tensors = []
 
                 for c in cjac:
@@ -554,39 +559,43 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
 
     def processing_fn(results):
         """Postprocessing function for the full metric tensor."""
+        nonlocal mask
         # Split results
         diag_res, off_diag_res = results[:num_diag_tapes], results[num_diag_tapes:]
         # Get full block-diagonal tensor
         diag_mt = diag_proc_fn(diag_res)
 
+        # Prepare the mask to match the used interface
+        mask = qml.math.convert_like(mask, diag_mt)
+
         # Initialize off block-diagonal tensor using the stored ids
-        off_diag_res = qml.math.convert_like([res[0] for res in off_diag_res], diag_mt)
-        inv_ids = [_id[::-1] for _id in ids]
         first_term = qml.math.zeros_like(diag_mt)
         if ids != []:
+            off_diag_res = qml.math.stack(off_diag_res, 1)[0]
+            inv_ids = [_id[::-1] for _id in ids]
             first_term = qml.math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
             first_term = qml.math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
 
         # Second terms of off block-diagonal metric tensor
-        expvals = []
+        expvals = qml.math.zeros_like(first_term[0])
+        idx = 0
         for prob, obs in zip(diag_res, obs_list):
             for o in obs:
                 l = qml.math.cast(o.eigvals, dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
-                expvals.append(qml.math.dot(l, p))
+                expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
+                idx += 1
 
         # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
-        expvals = qml.math.convert_like(expvals, results[0])
-        second_term = qml.math.tensordot(expvals, expvals, 0) * mask
-        second_term = qml.math.convert_like(second_term, results[0])
+        second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
 
         # Subtract second term from first term
         off_diag_mt = first_term - second_term
 
         # Rescale first and second term
         _coeffs = qml.math.hstack(coeffs)
-        scale = qml.math.convert_like(qml.math.outer(_coeffs, _coeffs), results[0])
+        scale = qml.math.convert_like(qml.math.tensordot(_coeffs, _coeffs, axes=0), results[0])
         off_diag_mt = scale * off_diag_mt
 
         # Combine block-diagonal and off block-diagonal
