@@ -240,7 +240,7 @@ class TestApply:
     def test_full_subsystem_statevector(self, device, torch_device, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = device(wires=["a", "b", "c"], torch_device=torch_device)
-        state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
+        state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128, device=torch_device) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(dev, "_scatter")
@@ -252,7 +252,7 @@ class TestApply:
     def test_partial_subsystem_statevector(self, device, torch_device, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
         dev = device(wires=["a", "b", "c"], torch_device=torch_device)
-        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / torch.tensor(math.sqrt(2.0))
+        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128, device=torch_device) / torch.tensor(math.sqrt(2.0))
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
@@ -1318,13 +1318,14 @@ class TestPassthruIntegration:
                 0,
             ],
             dtype=torch.float64,
+            device=torch_device
         )
         assert torch.allclose(p.grad, expected_grad, atol=tol, rtol=0)
 
     def test_jacobian_agrees_backprop_parameter_shift(self, device, torch_device, tol):
         """Test that jacobian of a QNode with an attached default.qubit.torch device
         gives the correct result with respect to the parameter-shift method"""
-        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True, device=torch_device)
+        p = pnp.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
@@ -1340,7 +1341,7 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        p_torch = torch.tensor(p, requires_grad=True)
+        p_torch = torch.tensor(p, requires_grad=True, device=torch_device)
         res = circuit1(p_torch)
         res.backward()
 
