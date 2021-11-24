@@ -389,7 +389,7 @@
 <h3>Bug fixes</h3>
 
 * Fixes a bug where batch transforms would mutate a QNodes execution options.
-  [()]()
+  [(#1934)](https://github.com/PennyLaneAI/pennylane/pull/1934)
 
 * `qml.draw` now supports arbitrary templates with matrix parameters.
   [(#1917)](https://github.com/PennyLaneAI/pennylane/pull/1917)
