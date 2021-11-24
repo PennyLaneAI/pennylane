@@ -15,6 +15,7 @@
 reference plugin.
 """
 import semantic_version
+import warnings
 
 try:
     import torch
@@ -169,10 +170,11 @@ class DefaultQubitTorch(DefaultQubit):
     def execute(self, circuit, **kwargs):
         ops_and_obs = circuit.operations + circuit.observables
 
-        if not self._torch_device_specified:
-            if any(
+        some_params_cuda = any(
                 data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")
-            ):
+            )
+        if not self._torch_device_specified:
+            if some_params_cuda:
 
                 self._torch_device = "cuda"
             else:
@@ -184,6 +186,15 @@ class DefaultQubitTorch(DefaultQubit):
             # device
             if self._state.device != self._torch_device:
                 self._state = self._state.to(self._torch_device)
+        else:
+            cuda_params_but_not_cuda_specified = some_params_cuda and self._torch_device != "cuda"
+            not_cuda_params_but_cuda_specified = not some_params_cuda and self._torch_device == "cuda"
+            if cuda_params_but_not_cuda_specified or not_cuda_params_but_cuda_specified:
+
+                warnings.warn(f"Torch device {self._torch_device} specified "
+                        "upon PennyLane device creation does not match the "\
+                        "Torch device of the gate parameters; "\
+                                f"{self._torch_device} will be used.")
 
         return super().execute(circuit, **kwargs)
 
