@@ -130,7 +130,7 @@ from .optimization import (
     merge_rotations,
     single_qubit_fusion,
     merge_amplitude_embedding,
-    remove_barrier
+    remove_barrier,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo

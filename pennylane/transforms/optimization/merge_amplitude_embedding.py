@@ -19,6 +19,7 @@ from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
 from pennylane.math import kron
 
+
 @qfunc_transform
 def merge_amplitude_embedding(tape):
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
@@ -76,7 +77,11 @@ def merge_amplitude_embedding(tape):
         else:
             # Check the qubits have not been used.
             if len(visited_wires.intersection(wires_set)) > 0:
-                raise DeviceError("Operation {} cannot be used after other Operation applied in the same qubit ".format(current_gate.name))
+                raise DeviceError(
+                    "Operation {} cannot be used after other Operation applied in the same qubit ".format(
+                        current_gate.name
+                    )
+                )
             else:
                 input_wires.append(current_gate.wires)
                 input_vectors.append(current_gate.parameters[0])
@@ -89,12 +94,10 @@ def merge_amplitude_embedding(tape):
 
         # Merge all parameters and qubits into a single one.
         for w, v in zip(input_wires[1:], input_vectors[1:]):
-            final_vector = kron(final_vector,v)
+            final_vector = kron(final_vector, v)
             final_wires = final_wires + w
 
-        AmplitudeEmbedding(final_vector, wires = final_wires)
-
-
+        AmplitudeEmbedding(final_vector, wires=final_wires)
 
     # Queue the measurements normally
     for m in tape.measurements:
