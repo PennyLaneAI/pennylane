@@ -60,7 +60,7 @@ def merge_amplitude_embedding(tape):
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
-
+    not_amplitude_embedding = []
     visited_wires = set()
     input_wires, input_vectors = [], []
     while len(list_copy) > 0:
@@ -69,7 +69,7 @@ def merge_amplitude_embedding(tape):
 
         # Check if the current gate is an AmplitudeEmbedding.
         if not isinstance(current_gate, AmplitudeEmbedding):
-            apply(current_gate)
+            not_amplitude_embedding.append(current_gate)
             list_copy.pop(0)
             visited_wires = visited_wires.union(wires_set)
             continue
@@ -96,6 +96,9 @@ def merge_amplitude_embedding(tape):
             final_wires = final_wires + w
 
         AmplitudeEmbedding(final_vector, wires=final_wires)
+
+        for gate in not_amplitude_embedding:
+            apply(gate)
 
     # Queue the measurements normally
     for m in tape.measurements:
