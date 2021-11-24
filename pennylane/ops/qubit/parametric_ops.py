@@ -650,9 +650,16 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if pauli_word == "I" * len(pauli_word):
-            return qml.math.array(
-                qml.math.exp(-1j * theta / 2) * qml.math.eye(2 ** len(pauli_word)), like=interface
-            )
+
+            exp = qml.math.exp(-1j * theta / 2)
+            iden = qml.math.eye(2 ** len(pauli_word))
+            if interface == "torch":
+                # Use convert_like to ensure that the tensor is put on the correct
+                # Torch device
+                iden =  qml.math.convert_like(iden, theta)
+                return exp * iden
+
+            return qml.math.array(exp * iden, like=interface)
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
