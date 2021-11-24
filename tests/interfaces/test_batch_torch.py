@@ -462,9 +462,8 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
 
         res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
-        expected = torch.tensor(
-            1 + np.cos(0.5) + torch.cos(x) * torch.cos(y), dtype=res.dtype, device=res.device
-        )
+        expected = torch.tensor( 1 + np.cos(0.5), dtype=res.dtype) + torch.cos(x) * torch.cos(y)
+        expected = expected.to(device=res.device)
 
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 

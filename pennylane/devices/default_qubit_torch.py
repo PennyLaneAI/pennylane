@@ -180,8 +180,10 @@ class DefaultQubitTorch(DefaultQubit):
                 # need to reset in case last execution moved to cuda
                 self._torch_device = "cpu"
 
-        if self._state.device != self._torch_device:
-            self._state = self._state.to(self._torch_device)
+            # If we've changed the device, place the state on the correct
+            # device
+            if self._state.device != self._torch_device:
+                self._state = self._state.to(self._torch_device)
 
         return super().execute(circuit, **kwargs)
 
