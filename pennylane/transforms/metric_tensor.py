@@ -355,6 +355,9 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
             w = op.wires
             coeffs_list[-1].append(s)
 
+            print(type(gen))
+            print(gen)
+            print(isinstance(gen, np.ndarray))
             # get the observable corresponding to the generator of the current operation
             if isinstance(gen, np.ndarray):
                 # generator is a Hermitian matrix
@@ -432,7 +435,9 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            if issubclass(gen, qml.operation.Observable):
+            if isinstance(gen, np.ndarray):
+                pass
+            elif issubclass(gen, qml.operation.Observable):
                 gen = gen.matrix
             return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
         raise ValueError(
