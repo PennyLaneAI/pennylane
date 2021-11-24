@@ -17,10 +17,14 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients.general_shift_rules import generate_shift_rule, _get_shift_rule
+from pennylane.gradients.general_shift_rules import (
+    generate_shift_rule,
+    _get_shift_rule,
+    generate_multi_shift_rule,
+)
 
 
-class TestGetShiftRule:
+class TestGenerateShiftRule:
     """Tests of input validation and output correctness of function `generate_shift_rule`."""
 
     def test_invalid_frequency_spectrum(self):
@@ -175,3 +179,106 @@ class TestGetShiftRule:
                 raised_warning = True
 
         assert raised_warning
+
+    def test_second_order_two_term_shift_rule(self):
+        """Test that the second order shift rule is correct and
+        properly simplified"""
+        frequencies = (1,)
+        generated_terms = generate_shift_rule(frequencies, order=2)
+        correct_terms = [[-0.5, 0], [0.5, -np.pi]]
+        assert np.allclose(generated_terms.T, correct_terms)
+
+    def test_second_order_two_term_shift_rule_custom_shifts(self):
+        """Test that the second order shift rule is correct and
+        properly simplified when custom shift values are provided"""
+        frequencies = (1,)
+        generated_terms = generate_shift_rule(frequencies, shifts=(np.pi / 4,), order=2)
+        correct_terms = [[-1, 0], [0.5, -np.pi / 2], [0.5, np.pi / 2]]
+        assert np.allclose(generated_terms.T, correct_terms)
+
+    def test_second_order_four_term_shift_rule(self):
+        """Test that the second order shift rule is correct and
+        properly simplified for generators with 4-term rules"""
+        frequencies = (0.5, 1)
+        generated_terms = generate_shift_rule(frequencies, order=2)
+        correct_terms = [
+            [-0.375, 0],
+            [0.25, -np.pi],
+            [0.25, np.pi],
+            [-0.125, -2 * np.pi],
+        ]
+        assert np.allclose(generated_terms.T, correct_terms)
+
+
+class TestMultiShiftRule:
+    """Tests for the generate_multi_shift_rule function"""
+
+    def test_single_parameter(self):
+        """Test that the generate_multi_shift_rule function
+        correctly returns a single-parameter shift rule"""
+        res = generate_multi_shift_rule([(1,)]).T
+        expected = [[0.5, np.pi / 2], [-0.5, -np.pi / 2]]
+        assert np.allclose(res, expected)
+
+        res = generate_multi_shift_rule([(1,)], orders=[2]).T
+        expected = [[-0.5, 0], [0.5, -np.pi]]
+        assert np.allclose(res, expected)
+
+        res = generate_multi_shift_rule([(1,)], orders=[2], shifts=[(np.pi / 4,)]).T
+        expected = [[-1, 0], [0.5, -np.pi / 2], [0.5, np.pi / 2]]
+        assert np.allclose(res, expected)
+
+    def test_two_single_frequency(self):
+        """Test that two independent single-frequency parameters
+        are correctly combined."""
+        res = generate_multi_shift_rule([(1,), (1,)]).T
+        expected = [
+            [0.25, np.pi / 2, np.pi / 2],
+            [-0.25, np.pi / 2, -np.pi / 2],
+            [-0.25, -np.pi / 2, np.pi / 2],
+            [0.25, -np.pi / 2, -np.pi / 2],
+        ]
+        assert np.allclose(res, expected)
+
+    def test_three_single_frequency(self):
+        """Test that three independent single-frequency parameters
+        are correctly combined."""
+        res = generate_multi_shift_rule([(1,), (1,), (1,)]).T
+        expected = [
+            [0.125, np.pi / 2, np.pi / 2, np.pi / 2],
+            [-0.125, np.pi / 2, np.pi / 2, -np.pi / 2],
+            [-0.125, np.pi / 2, -np.pi / 2, np.pi / 2],
+            [0.125, np.pi / 2, -np.pi / 2, -np.pi / 2],
+            [-0.125, -np.pi / 2, np.pi / 2, np.pi / 2],
+            [0.125, -np.pi / 2, np.pi / 2, -np.pi / 2],
+            [0.125, -np.pi / 2, -np.pi / 2, np.pi / 2],
+            [-0.125, -np.pi / 2, -np.pi / 2, -np.pi / 2],
+        ]
+        assert np.allclose(res, expected)
+
+    def test_two_frequency(self):
+        """Test that two independent 2-frequency parameters
+        are correctly combined."""
+        c1 = (np.sqrt(2) + 1) / (4 * np.sqrt(2))
+        c2 = (np.sqrt(2) - 1) / (4 * np.sqrt(2))
+
+        res = generate_multi_shift_rule(
+            [
+                (1,),
+                (
+                    0.5,
+                    1,
+                ),
+            ]
+        ).T
+        expected = [
+            [c1 * 0.5, np.pi / 2, np.pi / 2],
+            [-c1 * 0.5, np.pi / 2, -np.pi / 2],
+            [-c2 * 0.5, np.pi / 2, 3 * np.pi / 2],
+            [c2 * 0.5, np.pi / 2, -3 * np.pi / 2],
+            [-c1 * 0.5, -np.pi / 2, np.pi / 2],
+            [c1 * 0.5, -np.pi / 2, -np.pi / 2],
+            [c2 * 0.5, -np.pi / 2, 3 * np.pi / 2],
+            [-c2 * 0.5, -np.pi / 2, -3 * np.pi / 2],
+        ]
+        assert np.allclose(res, expected)
