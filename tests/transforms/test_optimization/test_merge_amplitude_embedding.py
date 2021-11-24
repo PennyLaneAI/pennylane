@@ -29,6 +29,8 @@ class TestMergeAmplitudeEmbedding:
         def qfunc():
             qml.AmplitudeEmbedding([0.0, 1.0], wires=0)
             qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
+            qml.Hadamard(wires = 0)
+            qml.Hadamard(wires = 0)
             qml.state()
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
