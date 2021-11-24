@@ -25,7 +25,7 @@ import pennylane as qml
 
 from .gradient_transform import gradient_transform
 from .finite_difference import finite_diff, generate_shifted_tapes
-from .parameter_shift import expval_param_shift, _get_operation_recipe
+from .parameter_shift import expval_param_shift, _get_operation_recipe, _process_gradient_recipe
 
 
 def _grad_method(tape, idx):
@@ -325,6 +325,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
         # get the gradient recipe for the trainable parameter
         recipe = gradient_recipes[argnum.index(idx)]
         recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
+        recipe = _process_gradient_recipe(recipe)
         coeffs, multipliers, shifts = recipe
 
         if len(shifts) != 2:
