@@ -127,10 +127,9 @@ class TestTorchDevice:
     @pytest.mark.parametrize("init_device, par_device", [("cpu", "cuda"), ("cuda", "cpu")])
     def test_different_devices_creation_and_parameters_warn(self, init_device, par_device):
         """Test that a warning is raised if the Torch device specified on
-        PennyLane device creation differs the Torch device of gate
+        PennyLane device creation differs from the Torch device of gate
         parameters.
         """
-        print(init_device, par_device)
         dev = qml.device("default.qubit.torch", wires=1, torch_device=init_device)
 
         p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
