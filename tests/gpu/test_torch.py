@@ -139,8 +139,12 @@ class TestTorchDevice:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
-        with pytest.warns(UserWarning, match=f"Torch device {init_device} specified upon PennyLane device creation does not match"):
+        with pytest.warns(
+            UserWarning,
+            match=f"Torch device {init_device} specified upon PennyLane device creation does not match",
+        ):
             circuit(p)
+
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
