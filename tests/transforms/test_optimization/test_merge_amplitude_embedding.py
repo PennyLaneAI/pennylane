@@ -27,8 +27,8 @@ class TestMergeAmplitudeEmbedding:
         """Test that the transformation is working correctly by joining two amplitudeEmbedding."""
 
         def qfunc():
-            qml.AmplitudeEmbedding([0., 1.], wires=0)
-            qml.AmplitudeEmbedding([0., 1.], wires=1)
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=0)
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
             qml.state()
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
@@ -45,8 +45,8 @@ class TestMergeAmplitudeEmbedding:
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
 
         def qfunc():
-            qml.CNOT(wires=[0., 1.])
-            qml.AmplitudeEmbedding([0., 1.], wires=1)
+            qml.CNOT(wires=[0.0, 1.0])
+            qml.AmplitudeEmbedding([0.0, 1.0], wires=1)
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)
 
@@ -72,7 +72,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
-        amplitude = np.array([0., 1.], requires_grad=True)
+        amplitude = np.array([0.0, 1.0], requires_grad=True)
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
@@ -89,7 +89,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev, interface="torch")
 
-        amplitude = torch.tensor([0., 1.], requires_grad=True)
+        amplitude = torch.tensor([0.0, 1.0], requires_grad=True)
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
@@ -106,7 +106,7 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev, interface="tf")
 
-        amplitude = tf.Variable([0., 1.])
+        amplitude = tf.Variable([0.0, 1.0])
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
 
@@ -129,6 +129,6 @@ class TestMergeAmplitudeEmbeddingInterfaces:
         optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
         optimized_qnode = qml.QNode(optimized_qfunc, dev, interface="jax")
 
-        amplitude = jnp.array([0., 1.], dtype=jnp.float64)
+        amplitude = jnp.array([0.0, 1.0], dtype=jnp.float64)
         # Check the state |11> is being generated.
         assert optimized_qnode(amplitude)[-1] == 1
