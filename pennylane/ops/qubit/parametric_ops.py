@@ -656,7 +656,7 @@ class PauliRot(Operation):
             if interface == "torch":
                 # Use convert_like to ensure that the tensor is put on the correct
                 # Torch device
-                iden =  qml.math.convert_like(iden, theta)
+                iden = qml.math.convert_like(iden, theta)
                 return exp * iden
 
             return qml.math.array(exp * iden, like=interface)
