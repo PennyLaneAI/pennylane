@@ -15,8 +15,9 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-torch = pytest.importorskip("torch")
+pytestmark = pytest.mark.gpu
 
+torch = pytest.importorskip("torch")
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestTorchDevice:

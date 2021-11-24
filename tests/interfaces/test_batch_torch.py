@@ -348,7 +348,7 @@ execute_kwargs = [
     },
 ]
 
-
+@pytest.mark.gpu
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestTorchExecuteIntegration:

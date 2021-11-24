@@ -22,6 +22,8 @@ import cmath
 import math
 import functools
 
+pytestmark = pytest.mark.gpu
+
 torch = pytest.importorskip("torch", minversion="1.8.1")
 
 torch_devices = [None]
