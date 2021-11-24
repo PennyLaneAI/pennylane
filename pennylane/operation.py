@@ -236,10 +236,10 @@ def classproperty(func):
 
 def _process_data(op):
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([d % (2 * np.pi) for d in op.data])
+        return str([qml.math.round(d % (2 * np.pi), 10) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([d % (4 * np.pi) for d in op.data])
+        return str([qml.math.round(d % (4 * np.pi), 10) for d in op.data])
 
     return str(op.data)
 

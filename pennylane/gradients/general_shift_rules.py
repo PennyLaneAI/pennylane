@@ -53,7 +53,10 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
                 np.stack(
                     [
                         np.sum(
-                            gradient_recipe[:, np.nonzero(np.round(gradient_recipe[-1], round_tol) == b)[0]], axis=1
+                            gradient_recipe[
+                                :, np.nonzero(np.round(gradient_recipe[-1], round_tol) == b)[0]
+                            ],
+                            axis=1,
                         )[0]
                         for b in unique_shifts
                     ]

@@ -275,3 +275,19 @@ class TestMultiShiftRule:
             [-c2 * 0.5, -np.pi / 2, -3 * np.pi / 2],
         ]
         assert np.allclose(res, expected)
+
+
+class TestEigvalsToFrequency:
+    """Tests for the eigvals_to_frequencies function"""
+
+    def test_two_eigvals(self):
+        """Test the case of two eigenvalues"""
+        res = qml.gradients.eigvals_to_frequencies((-0.5, 0.5))
+        expected = (1,)
+        assert res == expected
+
+    def test_four_eigvals(self):
+        """Test the case of four eigenvalues"""
+        res = qml.gradients.eigvals_to_frequencies((0.5, -0.5, 0, 0))
+        expected = (0.5, 1)
+        assert res == expected
