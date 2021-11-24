@@ -122,13 +122,6 @@ PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
-def prep_par(par, op):
-    "Convert par into a list of parameters that op expects."
-    if op.par_domain == "A":
-        return [np.diag([x, 1]) for x in par]
-    return par
-
-
 def nodes_and_edges_valid(dev, num_nodes, node_names, rep):
     """Asserts that nodes in a device ``dev`` are properly initialized, when there
     are ``num_nodes`` nodes expected, with names ``node_names``, using representation ``rep``."""
@@ -867,58 +860,38 @@ class TestDefaultTensorIntegration:
         with pytest.raises(TypeError, match="missing 1 required positional argument: 'wires'"):
             qml.device("default.tensor")
 
-    @pytest.mark.parametrize("gate", set(qml.ops.cv.ops))
-    def test_unsupported_gate_error(self, rep, gate):
+    def test_unsupported_gate_error(self, rep):
         """Tests that an error is raised if an unsupported gate is applied"""
-        op = getattr(qml.ops, gate)
-
-        if op.num_wires is qml.operation.WiresEnum.AnyWires or qml.operation.WiresEnum.AllWires:
-            wires = [0]
-        else:
-            wires = list(range(op.num_wires))
 
         dev = qml.device("default.tensor", wires=3, representation=rep)
 
         @qml.qnode(dev)
         def circuit(*x):
             """Test quantum function"""
-            x = prep_par(x, op)
-            op(*x, wires=wires)
-
-            return qml.expval(qml.X(0))
+            qml.Displacement(0.1, 0.2, wires=0)
+            return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
             qml._device.DeviceError,
             match="not supported on device default.tensor",
         ):
-            x = np.random.random([op.num_params])
-            circuit(*x)
+            circuit()
 
-    @pytest.mark.parametrize("observable", set(qml.ops.cv.obs))
-    def test_unsupported_observable_error(self, rep, observable):
+    def test_unsupported_observable_error(self, rep):
         """Test error is raised with unsupported observables"""
 
-        op = getattr(qml.ops, observable)
-
-        if op.num_wires is qml.operation.WiresEnum.AnyWires or qml.operation.WiresEnum.AllWires:
-            wires = [0]
-        else:
-            wires = list(range(op.num_wires))
-
         dev = qml.device("default.tensor", wires=3, representation=rep)
 
         @qml.qnode(dev)
-        def circuit(*x):
+        def circuit():
             """Test quantum function"""
-            x = prep_par(x, op)
-            return qml.expval(op(*x, wires=wires))
+            return qml.expval(qml.X(wires=0))
 
         with pytest.raises(
             qml._device.DeviceError,
             match="not supported on device default.tensor",
         ):
-            x = np.random.random([op.num_params])
-            circuit(*x)
+            circuit()
 
     def test_qubit_circuit(self, rep, tol):
         """Test that the tensor network plugin provides correct result for a simple circuit"""

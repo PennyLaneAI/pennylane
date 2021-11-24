@@ -776,7 +776,7 @@ class MPLDrawer:
         arrow_height = -0.5 * self._box_length
 
         lines_options["zorder"] += 1
-        arrow = plt.arrow(
+        self.ax.arrow(
             arrow_start_x,
             arrow_start_y,
             arrow_width,
@@ -784,4 +784,3 @@ class MPLDrawer:
             head_width=self._box_length / 8.0,
             **lines_options,
         )
-        self._ax.add_line(arrow)

@@ -52,7 +52,8 @@ Non-parametric Ops
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Hadamard
     ~pennylane.PauliX
     ~pennylane.PauliY
@@ -70,6 +71,7 @@ Non-parametric Ops
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
+    ~pennylane.Barrier
 
 :html:`</div>`
 
@@ -191,6 +193,7 @@ Noisy channels
     ~pennylane.PhaseFlip
     ~pennylane.ResetError
     ~pennylane.QubitChannel
+    ~pennylane.ThermalRelaxationError
 
 :html:`</div>`
 
@@ -255,7 +258,8 @@ CV Gates
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Beamsplitter
     ~pennylane.ControlledAddition
     ~pennylane.ControlledPhase
