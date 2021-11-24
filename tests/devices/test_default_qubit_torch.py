@@ -240,7 +240,10 @@ class TestApply:
     def test_full_subsystem_statevector(self, device, torch_device, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = device(wires=["a", "b", "c"], torch_device=torch_device)
-        state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128, device=torch_device) / 2.0
+        state = (
+            torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128, device=torch_device)
+            / 2.0
+        )
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(dev, "_scatter")
@@ -252,7 +255,9 @@ class TestApply:
     def test_partial_subsystem_statevector(self, device, torch_device, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
         dev = device(wires=["a", "b", "c"], torch_device=torch_device)
-        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128, device=torch_device) / torch.tensor(math.sqrt(2.0))
+        state = torch.tensor(
+            [1, 0, 1, 0], dtype=torch.complex128, device=torch_device
+        ) / torch.tensor(math.sqrt(2.0))
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(dev, "_scatter")
@@ -1318,7 +1323,7 @@ class TestPassthruIntegration:
                 0,
             ],
             dtype=torch.float64,
-            device=torch_device
+            device=torch_device,
         )
         assert torch.allclose(p.grad, expected_grad, atol=tol, rtol=0)
 
@@ -1344,7 +1349,6 @@ class TestPassthruIntegration:
         p_torch = torch.tensor(p, requires_grad=True, device=torch_device)
         res = circuit1(p_torch)
         res.backward()
-
 
         assert qml.math.allclose(res, circuit2(p), atol=tol, rtol=0)
 
