@@ -123,9 +123,8 @@ class CommutingEvolution(Operation):
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
         if frequencies is not None and not trainable_hamiltonian:
-            coeffs, shifts = generate_shift_rule(frequencies, shifts)
-            mults = qml.math.ones_like(coeffs)
-            recipe = qml.math.stack([coeffs, mults, shifts])
+            c, s = generate_shift_rule(frequencies, shifts)
+            recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
