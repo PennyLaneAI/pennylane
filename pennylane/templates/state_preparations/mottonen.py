@@ -243,6 +243,36 @@ class MottonenStatePreparation(Operation):
             the state preparation acts on. The input array must be normalized.
         wires (Iterable): wires that the template acts on
 
+    Example:
+
+        ``MottonenStatePreparation`` creates any arbitrary state on the given wires depending on the input state vector.
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(state):
+                qml.MottonenStatePreparation(state_vector=state, wires=range(3))
+                return qml.state()
+
+            state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
+            state = state / np.linalg.norm(state)
+
+        The resulting circuit is:
+
+        >>> print(qml.draw(circuit)(state))
+            0: ──RY(2.35)──╭C─────────────╭C─────────────────╭C─────────────────────────────╭C──╭C─────────╭C──────╭C──────╭C──╭┤ State
+            1: ──RY(2.09)──╰X──RY(0.213)──╰X──╭C─────────────│───────────────╭C─────────────│───╰X─────────╰X──╭C──│───╭C──│───├┤ State
+            2: ──RY(1.88)─────────────────────╰X──RY(0.102)──╰X──RY(0.0779)──╰X──RY(0.153)──╰X───RZ(1.57)──────╰X──╰X──╰X──╰X──╰┤ State
+
+        The state preparation can be checked by running:
+
+        >>> print(np.allclose(state * np.exp(1j * -0.785396), circuit(state)))
+            True
+
+        The state is equal to the input state upto a global phase. This phase is given by ``np.exp(1j * -0.785396)`` in this example.
+
     """
 
     num_wires = AnyWires
