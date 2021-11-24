@@ -180,6 +180,9 @@ class DefaultQubitTorch(DefaultQubit):
                 # need to reset in case last execution moved to cuda
                 self._torch_device = "cpu"
 
+        if self._state.device != self._torch_device:
+            self._state = self._state.to(self._torch_device)
+
         return super().execute(circuit, **kwargs)
 
     def _asarray(self, a, dtype=None):
@@ -278,6 +281,4 @@ class DefaultQubitTorch(DefaultQubit):
         Returns:
             torch.Tensor[complex]: output state
         """
-        if state.device != self._torch_device:
-            state = state.to(self._torch_device)
         return super()._apply_operation(state, operation)
