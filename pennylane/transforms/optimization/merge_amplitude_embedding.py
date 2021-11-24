@@ -97,8 +97,8 @@ def merge_amplitude_embedding(tape):
 
         AmplitudeEmbedding(final_vector, wires=final_wires)
 
-        for gate in not_amplitude_embedding:
-            apply(gate)
+    for gate in not_amplitude_embedding:
+        apply(gate)
 
     # Queue the measurements normally
     for m in tape.measurements:
