@@ -1571,6 +1571,7 @@ class TestCoercion:
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
 
+    @pytest.mark.gpu
     def test_torch_coercion_error(self):
         """Test Torch coercion error if multiple devices were specified."""
 
@@ -1583,7 +1584,7 @@ class TestCoercion:
             torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
         ]
 
-        with pytest.raises(ValueError, match="Multiple Torch devices were specified"):
+        with pytest.raises(RuntimeError, match="Expected all tensors to be on the same device, but found at least two devices"):
             res = qml.math.coerce(tensors, like="torch")
 
 
