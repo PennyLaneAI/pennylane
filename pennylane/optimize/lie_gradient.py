@@ -258,7 +258,7 @@ class LieGradientOptimizer:
             for ps in set(restriction.ops):
                 operators.append(ps)
                 names.append(qml.grouping.pauli_word_to_string(ps, wire_map=wire_map))
-        print(names)
+
         return operators, names
 
     def get_omegas(self):
