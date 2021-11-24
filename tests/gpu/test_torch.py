@@ -178,3 +178,21 @@ class TestqnnTorchLayer:
         loss = torch.sum(res).squeeze()
         loss.backward()
         assert loss.is_cuda
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
+class TestParametricOps:
+    """Test that certain parametric operations perform computations correctly
+    with Torch devices internally."""
+
+    @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
+    def test_pauli_rot_identity(self, theta):
+        """Test that the PauliRot operation returns the correct matrix when
+        providing a gate parameter on the GPU and only specifying the identity
+        operation."""
+        x = torch.tensor(theta, device="cuda")
+        mat = qml.PauliRot(x, "I", wires=[0]).matrix
+
+        val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
+        exp = torch.tensor(np.diag([val, val]), device="cuda")
+        assert torch.allclose(mat, exp)
