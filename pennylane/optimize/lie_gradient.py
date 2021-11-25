@@ -198,7 +198,7 @@ class LieGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow."
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
-            raise TypeError(f"`restriction` must be a `qml.Hamiltonian`, received {type(restriction)}")
+            raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
