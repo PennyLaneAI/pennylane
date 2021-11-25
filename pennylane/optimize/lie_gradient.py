@@ -21,8 +21,10 @@ from pennylane.transforms import batch_transform
 
 @qml.qfunc_transform
 def append_time_evolution(tape, lie_gradient, t, exact=False):
-    r"""Append an approximate time evolution to an existing circuit.
-    If `exact` is `False`, we Trotterize the Hamiltonian and with a single step
+    r"""Append an approximate time evolution, corresponding to a Lie
+    gradient, to an existing circuit.
+
+    If ``exact`` is ``False``, we Trotterize the Hamiltonian and apply a single step.
 
     .. math:
 
