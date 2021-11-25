@@ -60,7 +60,7 @@ class TestMergeAmplitudeEmbedding:
 
 
 class TestMergeAmplitudeEmbeddingInterfaces:
-    """Test that amplitude merging works in all interfaces."""
+    """Test that merging amplitude embedding operations works in all interfaces."""
 
     def test_merge_amplitude_embedding_autograd(self):
         """Test QNode in autograd interface."""
