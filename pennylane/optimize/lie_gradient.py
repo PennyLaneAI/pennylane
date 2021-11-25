@@ -179,7 +179,7 @@ class LieGradientOptimizer:
         """
         if not isinstance(circuit, qml.QNode):
             raise TypeError(
-                f"`circuit` must be a `qml.QNode`, " f"received {type(circuit)} "
+                f"circuit must be a QNode, received {type(circuit)}"
             )
 
         self.circuit = circuit
