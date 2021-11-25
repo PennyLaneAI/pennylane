@@ -413,10 +413,14 @@
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
-  
+
 * Device tests no longer throw warnings about the `requires_grad`
   attribute of variational parameters.
   [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
+
+* `AdamOptimizer` and `AdagradOptimizer` had small fixes to their
+  optimization step updates.
+  [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
 <h3>Documentation</h3>
 
@@ -426,11 +430,13 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding and DisplacementEmbedding.
+* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding and
+  MottonenStatePreparation.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
   [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
   [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
+  [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
 
 <h3>Contributors</h3>
 
