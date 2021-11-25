@@ -1156,14 +1156,15 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
     controlled-generator operation registered."""
     dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2"]))
 
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
+
     @qml.qnode(dev)
     def circuit(x, z):
         qml.CRX(x, wires=["wire1", "wire2"])
         qml.RZ(z, wires="wire2")
         return qml.expval(qml.PauliZ("wire2"))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
     with monkeypatch.context() as m:
         exp_fn = lambda tape, *args, **kwargs: tape
         m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
@@ -1177,7 +1178,7 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
     @qml.qnode(dev)
     def circuit(x, z):
         qml.RX(x, wires="wire1")
-        qml.RZ(z, wires="wire2")
+        qml.RZ(z, wires="wire1")
         return qml.expval(qml.PauliZ("wire2"))
 
     with monkeypatch.context() as m:
