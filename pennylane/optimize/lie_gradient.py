@@ -131,7 +131,7 @@ class LieGradientOptimizer:
 
         .. math::
 
-             \text{grad}f(U^{(t)}}) = -[U \rho U^\dag, H]
+             \text{grad}f(U^{(t)}}) = -[U \rho U^\dag, H].
 
         Subsequent steps of this optimizer will append a Trotterized version of the exact Lie
         gradient and grow the circuit.
