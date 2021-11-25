@@ -57,6 +57,20 @@ class TestMergeAmplitudeEmbedding:
         with pytest.raises(DeviceError, match="applied in the same qubit"):
             qnode()
 
+    def test_decorator(self):
+        """Check that the decorator works."""
+
+        @merge_amplitude_embedding
+        def qfunc():
+            qml.AmplitudeEmbedding([0, 1, 0, 0], wires=[0, 1])
+            qml.AmplitudeEmbedding([0, 1], wires=2)
+
+            return qml.state()
+
+        dev = qml.device("default.qubit", wires=3)
+        qnode = qml.QNode(qfunc, dev)
+        assert qnode()[3] == 1.0
+
 
 class TestMergeAmplitudeEmbeddingInterfaces:
     """Test that merging amplitude embedding operations works in all interfaces."""
