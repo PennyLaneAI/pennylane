@@ -24,7 +24,7 @@ class TestMergeAmplitudeEmbedding:
     """Test that amplitude embedding gates are combined into a single."""
 
     def test_multi_amplitude_embedding(self):
-        """Test that the transformation is working correctly by joining two amplitudeEmbedding."""
+        """Test that the transformation is working correctly by joining two AmplitudeEmbedding."""
 
         def qfunc():
             qml.AmplitudeEmbedding([0.0, 1.0], wires=0)
