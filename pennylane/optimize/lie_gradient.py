@@ -264,7 +264,7 @@ class LieGradientOptimizer:
         return operators, names
 
     def get_omegas(self):
-        r"""Measure the coefficients of the Lie gradient with respect to a Pauli word basis
+        r"""Measure the coefficients of the Lie gradient with respect to a Pauli word basis.
 
         We want to calculate the components of the Lie gradient with respect to a Pauli word basis
         For a Hamiltonian of the form :math:`H = \sum_i O_i`, this can be achieved by calculating
