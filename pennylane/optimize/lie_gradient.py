@@ -186,9 +186,8 @@ class LieGradientOptimizer:
         self.circuit.construct([], {})
         if not isinstance(circuit.func().obs, qml.Hamiltonian):
             raise TypeError(
-                f"`circuit` must return the expectation value of a `qml.Hamiltonian`,"
-                f" "
-                f"received {type(circuit.func().obs)} "
+                f"circuit must return the expectation value of a Hamiltonian,"
+                f"received {type(circuit.func().obs)}"
             )
         self.nqubits = len(circuit.device.wires)
 
