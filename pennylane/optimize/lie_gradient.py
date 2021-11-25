@@ -162,9 +162,11 @@ class LieGradientOptimizer:
         ...     qml.RY(0.6, wires=[0])
         ...     return qml.expval(hamiltonian)
 
-        Instatiate the optimizer with the initial circuit and the cost function. Set the stepsize
+        Instantiate the optimizer with the initial circuit and the cost function. Set the stepsize
         accordingly.
-        >>> opt = LieGradientOptimizer(circuit = quant_fun, stepsize=0.1)
+
+        >>> opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1)
+
         Applying 10 steps gets us close the ground state of E=-2.23
         >>> for step in range(10):
         ...    print(step)
