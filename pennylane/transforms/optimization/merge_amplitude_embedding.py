@@ -77,9 +77,7 @@ def merge_amplitude_embedding(tape):
         # Check the qubits have not been used.
         if len(visited_wires.intersection(wires_set)) > 0:
             raise DeviceError(
-                "Operation {} cannot be used after other Operation applied in the same qubit ".format(
-                    current_gate.name
-                )
+                f"Operation {current_gate.name} cannot be used after other Operation applied in the same qubit "
             )
         input_wires.append(current_gate.wires)
         input_vectors.append(current_gate.parameters[0])
