@@ -190,7 +190,7 @@ class LieGradientOptimizer:
                 f" "
                 f"received {type(circuit.func().obs)} "
             )
-        self.nqubits = max(circuit.device.wires) + 1
+        self.nqubits = len(circuit.device.wires)
 
         if self.nqubits > 4:
             print(
