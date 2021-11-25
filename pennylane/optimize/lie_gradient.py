@@ -67,9 +67,9 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     Calculate the Lie gradient with the parameter shift rule (see :meth:`LieGradientOptimizer.get_omegas`).
 
     Args:
-        tape (qml.QuantumTape):
-        observables (list):
-        lie_algebra_basis_names (list):
+        tape (.QuantumTape or .QNode): input circuit
+        observables (list[.Observable]):
+        lie_algebra_basis_names (list[str]):
         nqubits (int):
 
     Returns:
