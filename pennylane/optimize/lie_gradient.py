@@ -21,8 +21,10 @@ from pennylane.transforms import batch_transform
 
 @qml.qfunc_transform
 def append_time_evolution(tape, lie_gradient, t, exact=False):
-    r"""Append an approximate time evolution to an existing circuit.
-    If `exact` is `False`, we Trotterize the Hamiltonian and with a single step
+    r"""Append an approximate time evolution, corresponding to a Lie
+    gradient, to an existing circuit.
+
+    If ``exact`` is ``False``, we Trotterize the Hamiltonian and apply a single step.
 
     .. math:
 
@@ -30,7 +32,7 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
 
     Then this unitary is appended to the current circuit.
 
-    If `exact` is `True`, we calculate the exact time evolution for the Lie gradient by way of the
+    If ``exact`` is ``True``, we calculate the exact time evolution for the Lie gradient by way of the
     matrix exponential.
 
     .. math:
@@ -40,9 +42,9 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
     and append this unitary.
 
     Args:
-        tape: qml.QuantumTape of circuit
-        lie_gradient: qml.Hamiltonian object
-        t: time evolution size
+        tape (QuantumTape or .QNode): circuit to transform
+        lie_gradient (.Hamiltonian): Hamiltonian object representing the Lie gradient
+        t (float): time evolution
 
     """
     for obj in tape.operations:
@@ -62,12 +64,12 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
 @batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     """
-    Calculate the Lie gradient with the parameter shift rule (see `get_omegas`).
+    Calculate the Lie gradient with the parameter shift rule (see :meth:`LieGradientOptimizer.get_omegas`).
 
     Args:
-        tape (qml.QuantumTape):
-        observables (list):
-        lie_algebra_basis_names (list):
+        tape (.QuantumTape or .QNode): input circuit
+        observables (list[.Observable]):
+        lie_algebra_basis_names (list[str]):
         nqubits (int):
 
     Returns:
@@ -116,20 +118,20 @@ class LieGradientOptimizer:
         Base class for other gradient-descent-based optimizers.
 
         A step of the Lie gradient iterates the Lie gradient flow on :math:`\text{SU}(2^N)`.
-        The function to be minimized is :math:`f(U) = \text{Tr}(U \rho_0 U^\dag H)` given a
-        Hamiltonian :math:`H` and initial state :math:`\rho_0`
+        The function to be minimized is :math:`f(U) = \text{Tr}(U \rho_0 U^\dag H)`
+        for a given Hamiltonian :math:`H` and initial state :math:`\rho_0`:
 
         .. math::
 
-            U^{(t+1)} = \exp{\epsilon \text{grad}f(U^{(t)}}) U^{(t)}
+            U^{(t+1)} = \exp{\epsilon \text{grad}f(U^{(t)}}) U^{(t)},
 
         where :math:`\epsilon` is a user-defined hyperparameter corresponding to step size.
 
-        The Lie gradient is given by.
+        The Lie gradient is given by
 
         .. math::
 
-             \text{grad}f(U^{(t)}}) = -[U \rho U^\dag, H]
+             \text{grad}f(U^{(t)}}) = -[U \rho U^\dag, H].
 
         Subsequent steps of this optimizer will append a Trotterized version of the exact Lie
         gradient and grow the circuit.
@@ -137,21 +139,24 @@ class LieGradientOptimizer:
         Args:
             circuit (Any): the user-defined hyperparameter :math:`\eta`
             stepsize (float): the user-defined hyperparameter :math:`\eta`
-            restriction (qml.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
+            restriction (.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
             the full Lie algebra. This restriction should be passed in the form of a
-            `qml.Hamiltonian`.
+            ``qml.Hamiltonian``.
             exact (bool): Flag that indicates wether we approximate the Lie gradient with a
             Trotterization or calculate the exact evolution via a matrix exponential. The latter is
             not quantum friendly and can only be done in simulation.
 
             **kwargs:
 
-        **Examples:**
+        **Examples**
 
-        Define a Hamiltonian cost function to minimize.
+        Define a Hamiltonian cost function to minimize:
+
         >>> hamiltonian = qml.Hamiltonian(coeffs=[-1.]*3,
-        ...observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0)@qml.PauliX(1)])
-        Create an initial state and return the expectation value of the Hamiltonian.
+        ... observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)])
+
+        Create an initial state and return the expectation value of the Hamiltonian:
+
         >>> @qml.qnode(qml.device("default.qubit", wires=2))
         ... def quant_fun():
         ...     qml.RX(0.1, wires=[0])
@@ -160,9 +165,11 @@ class LieGradientOptimizer:
         ...     qml.RY(0.6, wires=[0])
         ...     return qml.expval(hamiltonian)
 
-        Instatiate the optimizer with the initial circuit and the cost function. Set the stepsize
+        Instantiate the optimizer with the initial circuit and the cost function. Set the stepsize
         accordingly.
-        >>> opt = LieGradientOptimizer(circuit = quant_fun, stepsize=0.1)
+
+        >>> opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1)
+
         Applying 10 steps gets us close the ground state of E=-2.23
         >>> for step in range(10):
         ...    print(step)
@@ -172,18 +179,17 @@ class LieGradientOptimizer:
         """
         if not isinstance(circuit, qml.QNode):
             raise TypeError(
-                f"`circuit` must be a `qml.QNode`, " f"received {type(circuit)} "
+                f"circuit must be a QNode, received {type(circuit)}"
             )
 
         self.circuit = circuit
         self.circuit.construct([], {})
         if not isinstance(circuit.func().obs, qml.Hamiltonian):
             raise TypeError(
-                f"`circuit` must return the expectation value of a `qml.Hamiltonian`,"
-                f" "
-                f"received {type(circuit.func().obs)} "
+                f"circuit must return the expectation value of a Hamiltonian,"
+                f"received {type(circuit.func().obs)}"
             )
-        self.nqubits = max(circuit.device.wires) + 1
+        self.nqubits = len(circuit.device.wires)
 
         if self.nqubits > 4:
             print(
@@ -191,7 +197,7 @@ class LieGradientOptimizer:
                 f"optimizing a {self.nqubits} qubit circuit may be slow."
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
-            raise TypeError(f"`restriction` must be a `qml.Hamiltonian`, received {type(restriction)}")
+            raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
@@ -237,13 +243,13 @@ class LieGradientOptimizer:
         self.step_and_cost()
 
     def get_su_n_operators(self, restriction):
-        r"""Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
+        r"""Get the :math:`2\times 2` SU(N) operators. The dimension of the group is :math:`N^2-1`.
 
         Args:
-            restriction (qml.Hamiltonian): Restrict the lie gradient to a subalgebra.
+            restriction (.Hamiltonian): Restrict the lie gradient to a subalgebra.
 
         Returns:
-            List of (N^2)x(N^2) numpy complex arrays and corresponding paulis words
+            tuple[list[array[complex]], list[str]]: list of :math:`N^2 \times N^2` NumPy complex arrays and corresponding Pauli words
         """
 
         operators = []
@@ -262,7 +268,7 @@ class LieGradientOptimizer:
         return operators, names
 
     def get_omegas(self):
-        r"""Measure the coefficients of the Lie gradient with respect to a Pauli word basis
+        r"""Measure the coefficients of the Lie gradient with respect to a Pauli word basis.
 
         We want to calculate the components of the Lie gradient with respect to a Pauli word basis
         For a Hamiltonian of the form :math:`H = \sum_i O_i`, this can be achieved by calculating
@@ -282,7 +288,7 @@ class LieGradientOptimizer:
         where :math:`V` is the unitary generated by the Pauli word :math:`V(\theta) = \exp{-i\theta P_j }`.
 
         Returns:
-            Array of omegas for each direction in the Lie algebra.
+            array: Array of omegas for each direction in the Lie algebra.
 
         """
 
