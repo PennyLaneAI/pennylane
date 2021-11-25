@@ -434,9 +434,12 @@
   [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
 
+* Added Lie Gradient Flow optimizer.
+  [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs, Roeland Wiersema
