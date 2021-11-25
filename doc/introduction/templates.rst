@@ -150,7 +150,7 @@ like VQE to perform quantum chemistry simulations.
 .. customgalleryitem::
     :link: ../code/api/pennylane.UCCSD.html
     :description: UCCSD
-    :figure: ../_static/templates/subroutines/uccsd.png  
+    :figure: ../_static/templates/subroutines/uccsd.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.kUpCCGSD.html
@@ -196,7 +196,7 @@ Other useful templates which do not belong to the previous categories can be fou
 .. customgalleryitem::
     :link: ../code/api/pennylane.FermionicDoubleExcitation.html
     :description: FermionicDoubleExcitation
-    :figure: ../_static/templates/subroutines/double_excitation_unitary.png    
+    :figure: ../_static/templates/subroutines/double_excitation_unitary.png
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.ArbitraryUnitary.html
@@ -227,7 +227,12 @@ Other useful templates which do not belong to the previous categories can be fou
     :link: ../code/api/pennylane.QFT.html
     :description: QuantumFourierTransform
     :figure: ../_static/templates/subroutines/qft.svg
-	
+
+.. customgalleryitem::
+    :link: :link: ../code/api/pennylane.CommutingEvolution.html
+    :description: CommutingEvolution
+    :figure: ../_static/templates/subroutines/commuting_evolution.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -367,4 +372,3 @@ gates to a set of wires. You can import this function both via
 .. autosummary::
 
     pennylane.layer
-
