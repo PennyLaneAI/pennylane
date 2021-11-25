@@ -118,8 +118,8 @@ class LieGradientOptimizer:
         Base class for other gradient-descent-based optimizers.
 
         A step of the Lie gradient iterates the Lie gradient flow on :math:`\text{SU}(2^N)`.
-        The function to be minimized is :math:`f(U) = \text{Tr}(U \rho_0 U^\dag H)` given a
-        Hamiltonian :math:`H` and initial state :math:`\rho_0`
+        The function to be minimized is :math:`f(U) = \text{Tr}(U \rho_0 U^\dag H)`
+        for a given Hamiltonian :math:`H` and initial state :math:`\rho_0`:
 
         .. math::
 
