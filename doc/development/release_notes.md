@@ -4,6 +4,8 @@ Release notes
 This page contains the release notes for PennyLane.
 
 
+.. mdinclude:: ../releases/changelog-dev.md
+
 .. mdinclude:: ../releases/changelog-0.19.1.md
 
 .. mdinclude:: ../releases/changelog-0.19.0.md
