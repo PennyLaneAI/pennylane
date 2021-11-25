@@ -18,4 +18,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac, Romain Moyard, Antal Száva.
+Josh Izaac, Christina Lee, Romain Moyard, Lee James O'Riordan, Antal Száva.
