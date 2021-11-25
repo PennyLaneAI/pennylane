@@ -148,7 +148,7 @@ class LieGradientOptimizer:
 
             **kwargs:
 
-        **Examples:**
+        **Examples**
 
         Define a Hamiltonian cost function to minimize:
 
