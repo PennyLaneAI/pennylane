@@ -32,7 +32,7 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
 
     Then this unitary is appended to the current circuit.
 
-    If `exact` is `True`, we calculate the exact time evolution for the Lie gradient by way of the
+    If ``exact`` is ``True``, we calculate the exact time evolution for the Lie gradient by way of the
     matrix exponential.
 
     .. math:
