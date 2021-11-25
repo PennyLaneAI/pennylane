@@ -634,8 +634,9 @@ class DefaultQubit(QubitDevice):
         if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not qml.math.is_abstract(state):
-            if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        norm = qml.math.linalg.norm(state, ord=2)
+        if not qml.math.is_abstract(norm):
+            if not qml.math.allclose(norm, 1.0, atol=tolerance):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
@@ -679,7 +680,8 @@ class DefaultQubit(QubitDevice):
 
         # get computational basis state number
         basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
-        num = int(np.dot(state, basis_states))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 

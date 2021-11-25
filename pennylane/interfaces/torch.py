@@ -74,7 +74,7 @@ class _TorchInterface(torch.autograd.Function):
         tape.set_parameters(ctx.all_params, trainable_only=False)
 
         if hasattr(res, "numpy"):
-            res = res.numpy()
+            res = qml.math.to_numpy(res)
 
         use_adjoint_cached_state = False
         # tape might not be a jacobian tape
