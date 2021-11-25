@@ -508,8 +508,8 @@ class TestOptimizer:
 
             x_onestep = bunch.adam_opt.step(f, x_start)
             adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
-            firstmoment = gradf(x_start)[0]
-            secondmoment = gradf(x_start)[0] * gradf(x_start)[0]
+            firstmoment = (1 - gamma) * gradf(x_start)[0]
+            secondmoment = (1 - delta) * gradf(x_start)[0] * gradf(x_start)[0]
             x_onestep_target = x_start - adapted_stepsize * firstmoment / (
                 np.sqrt(secondmoment) + 1e-8
             )
@@ -517,10 +517,9 @@ class TestOptimizer:
 
             x_twosteps = bunch.adam_opt.step(f, x_onestep)
             adapted_stepsize = stepsize * np.sqrt(1 - delta ** 2) / (1 - gamma ** 2)
-            firstmoment = gamma * gradf(x_start)[0] + (1 - gamma) * gradf(x_onestep)[0]
+            firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
             secondmoment = (
-                delta * gradf(x_start)[0] * gradf(x_start)[0]
-                + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
+                delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
             )
             x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (
                 np.sqrt(secondmoment) + 1e-8
@@ -538,8 +537,8 @@ class TestOptimizer:
                 x_vec = x_vals[jdx : jdx + 2]
                 x_onestep = bunch.adam_opt.step(f, x_vec)
                 adapted_stepsize = stepsize * np.sqrt(1 - delta) / (1 - gamma)
-                firstmoment = gradf(x_vec)[0]
-                secondmoment = gradf(x_vec)[0] * gradf(x_vec)[0]
+                firstmoment = (1 - gamma) * gradf(x_vec)[0]
+                secondmoment = (1 - delta) * gradf(x_vec)[0] * gradf(x_vec)[0]
                 x_onestep_target = x_vec - adapted_stepsize * firstmoment / (
                     np.sqrt(secondmoment) + 1e-8
                 )
@@ -547,10 +546,9 @@ class TestOptimizer:
 
                 x_twosteps = bunch.adam_opt.step(f, x_onestep)
                 adapted_stepsize = stepsize * np.sqrt(1 - delta ** 2) / (1 - gamma ** 2)
-                firstmoment = gamma * gradf(x_vec)[0] + (1 - gamma) * gradf(x_onestep)[0]
+                firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
                 secondmoment = (
-                    delta * gradf(x_vec)[0] * gradf(x_vec)[0]
-                    + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
+                    delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
                 )
                 x_twosteps_target = x_onestep - adapted_stepsize * firstmoment / (
                     np.sqrt(secondmoment) + 1e-8
