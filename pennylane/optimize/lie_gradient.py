@@ -250,7 +250,7 @@ class LieGradientOptimizer:
             restriction (qml.Hamiltonian): Restrict the lie gradient to a subalgebra.
 
         Returns:
-            List of (N^2)x(N^2) numpy complex arrays and corresponding paulis words
+            tuple[list[array[complex]], list[str]]: list of :math:`N^2 \times N^2` NumPy complex arrays and corresponding Pauli words
         """
 
         operators = []
