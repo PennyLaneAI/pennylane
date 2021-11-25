@@ -413,10 +413,14 @@
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
-  
+
 * Device tests no longer throw warnings about the `requires_grad`
   attribute of variational parameters.
   [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
+
+* `AdamOptimizer` and `AdagradOptimizer` had small fixes to their
+  optimization step updates.
+  [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
 <h3>Documentation</h3>
 
