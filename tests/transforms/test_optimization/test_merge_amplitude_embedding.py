@@ -39,7 +39,6 @@ class TestMergeAmplitudeEmbedding:
         assert len(ops) == 3
 
         # Check that the solution is as expected.
-
         dev = qml.device("default.qubit", wires=2)
         assert np.allclose(qml.QNode(transformed_qfunc, dev)()[-1], 1)
 
