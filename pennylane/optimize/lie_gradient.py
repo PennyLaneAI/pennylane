@@ -127,7 +127,7 @@ class LieGradientOptimizer:
 
         where :math:`\epsilon` is a user-defined hyperparameter corresponding to step size.
 
-        The Lie gradient is given by.
+        The Lie gradient is given by
 
         .. math::
 
