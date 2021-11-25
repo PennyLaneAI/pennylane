@@ -123,7 +123,7 @@ class LieGradientOptimizer:
 
         .. math::
 
-            U^{(t+1)} = \exp{\epsilon \text{grad}f(U^{(t)}}) U^{(t)}
+            U^{(t+1)} = \exp{\epsilon \text{grad}f(U^{(t)}}) U^{(t)},
 
         where :math:`\epsilon` is a user-defined hyperparameter corresponding to step size.
 
