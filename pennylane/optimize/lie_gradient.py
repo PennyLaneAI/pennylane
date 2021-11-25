@@ -15,8 +15,6 @@
 import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
-from pennylane.tape import JacobianTape
-from pennylane.transforms import batch_transform
 
 
 @qml.qfunc_transform
@@ -61,7 +59,7 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
         qml.apply(obj)
 
 
-@batch_transform
+@qml.batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     """
     Calculate the Lie gradient with the parameter shift rule (see :meth:`LieGradientOptimizer.get_omegas`).
@@ -78,8 +76,8 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     tapes = []
     for obs in observables:
         # create a list of tapes for the plus and minus shifted circuits
-        tapes_plus = [JacobianTape(p + "_p") for p in lie_algebra_basis_names]
-        tapes_min = [JacobianTape(p + "_m") for p in lie_algebra_basis_names]
+        tapes_plus = [qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names]
+        tapes_min = [qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names]
 
         # loop through all operations on the input tape
         for op in tape.operations:

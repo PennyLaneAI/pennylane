@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the ``LieGradientOptimizer``.
+Unit tests for the ``qml.LieGradientOptimizer``.
 """
 import pytest
 
@@ -20,7 +20,6 @@ from scipy.sparse.linalg import expm
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.optimize.lie_gradient import LieGradientOptimizer
 
 
 def circuit_1():
@@ -98,7 +97,7 @@ def test_lie_gradient_omegas(circuit, hamiltonian):
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
-    opt = LieGradientOptimizer(circuit=lie_circuit)
+    opt = qml.LieGradientOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
@@ -144,7 +143,7 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
         observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
     )
 
-    opt = LieGradientOptimizer(circuit=lie_circuit, restriction=restriction)
+    opt = qml.LieGradientOptimizer(circuit=lie_circuit, restriction=restriction)
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
@@ -187,7 +186,7 @@ def test_lie_gradient_evolution(circuit, hamiltonian):
 
     phi_exact = expm(-0.001 * lie_gradient_np) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
-    opt = LieGradientOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
+    opt = qml.LieGradientOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
     opt.step()
 
     cost_pl = opt.circuit()
@@ -205,7 +204,7 @@ def test_lie_gradient_evolution(circuit, hamiltonian):
         (circuit_3, hamiltonian_3),
     ],
 )
-def test_list_gradient_step(circuit, hamiltonian):
+def test_lie_gradient_step(circuit, hamiltonian):
     """Test that we can take subsequent steps with the optimizer"""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
 
@@ -216,7 +215,7 @@ def test_list_gradient_step(circuit, hamiltonian):
         circuit()
         return qml.expval(hamiltonian)
 
-    opt = LieGradientOptimizer(circuit=lie_circuit)
+    opt = qml.LieGradientOptimizer(circuit=lie_circuit)
     opt.step()
     opt.step()
 
@@ -227,8 +226,8 @@ def test_lie_gradient_circuit_input_1_check():
     def circuit():
         qml.RY(0.5, wires=0)
 
-    with pytest.raises(TypeError, match="`circuit` must be a `qml.QNode`"):
-        LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+    with pytest.raises(TypeError, match="circuit must be a QNode"):
+        qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_gradient_hamiltonian_input_1_check():
@@ -241,9 +240,9 @@ def test_lie_gradient_hamiltonian_input_1_check():
 
     with pytest.raises(
         TypeError,
-        match="`circuit` must return the expectation value of a `qml.Hamiltonian`",
+        match="circuit must return the expectation value of a Hamiltonian",
     ):
-        LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+        qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_gradient_nqubits_check(capsys):
@@ -254,7 +253,7 @@ def test_lie_gradient_nqubits_check(capsys):
         qml.RY(0.5, wires=0)
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
-    LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+    qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
     out, _ = capsys.readouterr()
     assert out.startswith("WARNING: The exact Lie gradient is exponentially")
 
@@ -270,6 +269,6 @@ def test_lie_gradient_restriction_check():
     restriction = "not_a_hamiltonian"
     with pytest.raises(
         TypeError,
-        match="`restriction` must be a `qml.Hamiltonian`",
+        match="restriction must be a Hamiltonian",
     ):
-        LieGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
+        qml.LieGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
