@@ -243,7 +243,7 @@ class LieGradientOptimizer:
         self.step_and_cost()
 
     def get_su_n_operators(self, restriction):
-        r"""Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
+        r"""Get the :math:`2\times 2` SU(N) operators. The dimension of the group is :math:`N^2-1`.
 
         Args:
             restriction (.Hamiltonian): Restrict the lie gradient to a subalgebra.
