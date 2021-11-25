@@ -150,10 +150,13 @@ class LieGradientOptimizer:
 
         **Examples:**
 
-        Define a Hamiltonian cost function to minimize.
+        Define a Hamiltonian cost function to minimize:
+
         >>> hamiltonian = qml.Hamiltonian(coeffs=[-1.]*3,
-        ...observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0)@qml.PauliX(1)])
-        Create an initial state and return the expectation value of the Hamiltonian.
+        ... observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)])
+
+        Create an initial state and return the expectation value of the Hamiltonian:
+
         >>> @qml.qnode(qml.device("default.qubit", wires=2))
         ... def quant_fun():
         ...     qml.RX(0.1, wires=[0])
