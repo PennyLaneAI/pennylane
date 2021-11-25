@@ -40,23 +40,25 @@ class TestAdamOptimizer:
         sgd_opt = AdamOptimizer(stepsize, beta1=gamma, beta2=delta, eps=eps)
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
-        a1 = grad
-        b1 = grad ** 2
-        expected = args - stepsize * a1 / (np.sqrt(b1) + eps)
+        a1 = (1 - gamma) * grad
+        b1 = (1 - delta) * grad ** 2
+        a1_corrected = a1 / (1 - gamma)
+        b1_corrected = b1 / (1 - delta)
+        expected = args - stepsize * a1_corrected / (np.sqrt(b1_corrected) + eps)
         res = sgd_opt.apply_grad(grad, args)
-        print("\n", res, "\n", expected)
         assert np.allclose(res, expected, atol=tol)
 
         # Simulate a new step
         grad = grad + args
         args = expected
 
-        a2 = gamma * a1 + (1 - gamma) * grad / (1 - gamma)
-        b2 = delta * b1 + (1 - delta) * grad ** 2 / (1 - delta)
-        expected = args - stepsize * a2 / (np.sqrt(b2) + eps)
+        a2 = (gamma * a1 + (1 - gamma) * grad)
+        b2 = (delta * b1 + (1 - delta) * grad ** 2)
+        a2_corrected = a2 / (1 - gamma ** 2)
+        b2_corrected = b2 / (1 - delta ** 2)
+        expected = args - stepsize * a2_corrected / (np.sqrt(b2_corrected) + eps)
         res = sgd_opt.apply_grad(grad, args)
-        print("\n", res, "\n", expected)
-        assert np.allclose(res, expected, atol=0.1)
+        assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
     def test_adam_optimizer_univar(self, x_start, tol):
@@ -85,7 +87,7 @@ class TestAdamOptimizer:
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = adam_opt.step(f, x_onestep)
-            adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma)) ** 2
+            adapted_stepsize = stepsize * np.sqrt(1 - delta ** 2) / (1 - gamma ** 2)
             firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
             secondmoment = (
                 delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
@@ -136,7 +138,7 @@ class TestAdamOptimizer:
                 assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
                 x_twosteps = adam_opt.step(f, x_onestep)
-                adapted_stepsize = stepsize * (np.sqrt(1 - delta) / (1 - gamma)) ** 2
+                adapted_stepsize = stepsize * np.sqrt(1 - delta ** 2) / (1 - gamma ** 2)
                 firstmoment = gamma * firstmoment + (1 - gamma) * gradf(x_onestep)[0]
                 secondmoment = (
                     delta * secondmoment + (1 - delta) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
