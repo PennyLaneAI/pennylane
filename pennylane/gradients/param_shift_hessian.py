@@ -170,9 +170,12 @@ def param_shift_hessian(tape):
 
     # for now assume all operations support the 2-term parameter shift rule
     for i in range(tape.num_params):
-        for j in range(i, tape.num_params):
+        for j in range(tape.num_params):
+            # optimization: only generate tapes for upper triangular matrix (j >= i)
             # optimization: skip partial derivates that are zero
-            if diff_methods[i] == "0" or diff_methods[j] == "0":
+            if j < i or diff_methods[i] == "0" or diff_methods[j] == "0":
+                gradient_coeffs.append([])
+                shapes.append(((i, j), 0))
                 continue
 
             recipe = diag_recipe if i == j else off_diag_recipe
@@ -197,25 +200,40 @@ def param_shift_hessian(tape):
         # The first results dimension is the number of terms/tapes in the parameter-shift
         # rule, the remaining ones are the QNode output dimensions.
         out_dim = np.shape(results)[1:]
-        # The desired shape is: (QNode output dimensions, # gate args, # gate args)
-        grads = np.zeros(out_dim + (h_dim, h_dim))
+        # The desired shape of the Hessian is: (QNode output dimensions, # gate args, # gate args)
+        hessian, row = [], []
         # Keep track of tape results already consumed.
         start = 1 if unshifted_coeffs else 0
 
-        for i, (h_idx, s) in enumerate(shapes):
+        for k, ((i, j), s) in enumerate(shapes):
             res = results[start : start + s]
             start = start + s
 
-            # compute the linear combination of results and coefficients
-            res = qml.math.stack(res)
-            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
-            if h_idx in unshifted_coeffs:
-                g += unshifted_coeffs[h_idx] * results[0]
+            # Compute the elements of the Hessian as the linear combination of
+            # results and coefficients, barring optimization cases.
+            if j < i:
+                g = hessian[j][i]
+            elif s == 0:
+                g = qml.math.zeros(out_dim)
+            else:
+                res = qml.math.stack(res)
+                g = qml.math.tensordot(
+                    res, qml.math.convert_like(gradient_coeffs[k], res), [[0], [0]]
+                )
+                if (i, j) in unshifted_coeffs:
+                    g += unshifted_coeffs[(i, j)] * results[0]
 
-            for out_idx, elem in qml.math.ndenumerate(qml.math.reshape(g, out_dim)):
-                grads[out_idx][h_idx] = elem
-                grads[out_idx][h_idx[1], h_idx[0]] = elem
+            row.append(g)
+            if j == h_dim - 1:
+                hessian.append(row)
+                row = []
 
-        return qml.math.squeeze(qml.math.array(grads))
+        # Reshape the Hessian to have the dimensions of the QNode output on the outside, that is:
+        #         (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
+        hessian = qml.math.array(hessian)
+        dim_indices = list(range(len(out_dim) + 2))
+        hessian = qml.math.transpose(hessian, axes=dim_indices[2:] + [0, 1])
+
+        return qml.math.squeeze(hessian)
 
     return gradient_tapes, processing_fn

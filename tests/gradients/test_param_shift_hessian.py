@@ -309,3 +309,24 @@ class TestParameterShiftHessian:
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
         assert hessian_qruns <= 3 ** 3
+
+    def test_hessian_is_differentiable(self):
+        """Test that the 3rd derivate can be calculated via auto-differentiation"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        jacobian = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        hessian = qml.jacobian(qml.gradients.param_shift_hessian(circuit))(x)
+
+        print("\n", jacobian, "\n\t=?\n", hessian)
+
+        assert np.allclose(jacobian, hessian)
