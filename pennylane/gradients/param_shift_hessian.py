@@ -143,6 +143,35 @@ def param_shift_hessian(tape):
             "Computing the gradient of circuits that return the state is not supported."
         )
 
+    # The parameter-shift Hessian implementation currently only supports
+    # the two-term parameter-shift rule. Raise an error for unsupported operations.
+    supported_ops = (
+        "RX",
+        "RY",
+        "RZ",
+        "Rot",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "MultiRZ",
+        "PauliRot",
+        "U1",
+        "U2",
+        "U3",
+        "SingleExcitationMinus",
+        "SingleExcitationPlus",
+        "DoubleExcitationMinus",
+        "DoubleExcitationPlus",
+        "OrbitalRotation",
+    )
+
+    for idx, _ in enumerate(tape.trainable_params):
+        op, _ = tape.get_operation(idx)
+        if op.name not in supported_ops:
+            raise ValueError(
+                f"The operation {op.name} is currently not supported for the parameter-shift "
+                f"Hessian. Only two-term parameter shift rules are currently supported."
+            )
+
     _gradient_analysis(tape)
     diff_methods = tape._grad_method_validation("analytic")  # pylint: disable=protected-access
     gradient_tapes = []

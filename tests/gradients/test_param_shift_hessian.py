@@ -13,12 +13,10 @@
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
 
-import math
-from autograd.differential_operators import jacobian
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients import param_shift_hessian
-from pennylane.ops.qubit.non_parametric_ops import PauliZ
 
 
 class TestParameterShiftHessian:
@@ -330,3 +328,38 @@ class TestParameterShiftHessian:
         print("\n", jacobian, "\n\t=?\n", hessian)
 
         assert np.allclose(jacobian, hessian)
+
+    def test_error_unsupported_operation(self):
+        """Test that the correct error is thrown for unsopperted operations"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CRZ(x[2], wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with pytest.raises(ValueError, match=r"The operation .+ is currently not supported"):
+            qml.gradients.param_shift_hessian(circuit)(x)
+
+    def test_noerror_unsupported_operation(self):
+        """Test that no error is thrown for operations that are not marked differentiable"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.CRZ(z, wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array(0.1, requires_grad=True)
+        y = np.array(0.2, requires_grad=True)
+        z = np.array(0.3, requires_grad=False)
+
+        qml.gradients.param_shift_hessian(circuit)(x, y, z)
