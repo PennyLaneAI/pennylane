@@ -64,7 +64,7 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
 @batch_transform
 def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     """
-    Calculate the Lie gradient with the parameter shift rule (see `get_omegas`).
+    Calculate the Lie gradient with the parameter shift rule (see :meth:`LieGradientOptimizer.get_omegas`).
 
     Args:
         tape (qml.QuantumTape):
