@@ -246,7 +246,7 @@ class LieGradientOptimizer:
         r"""Get the 2x2 SU(N) operators. The dimension of the group is N^2-1.
 
         Args:
-            restriction (qml.Hamiltonian): Restrict the lie gradient to a subalgebra.
+            restriction (.Hamiltonian): Restrict the lie gradient to a subalgebra.
 
         Returns:
             tuple[list[array[complex]], list[str]]: list of :math:`N^2 \times N^2` NumPy complex arrays and corresponding Pauli words
