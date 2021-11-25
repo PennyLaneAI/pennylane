@@ -42,9 +42,9 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
     and append this unitary.
 
     Args:
-        tape: qml.QuantumTape of circuit
-        lie_gradient: qml.Hamiltonian object
-        t: time evolution size
+        tape (QuantumTape or .QNode): circuit to transform
+        lie_gradient (.Hamiltonian): Hamiltonian object representing the Lie gradient
+        t (float): time evolution
 
     """
     for obj in tape.operations:
