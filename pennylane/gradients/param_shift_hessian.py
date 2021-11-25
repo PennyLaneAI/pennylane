@@ -144,7 +144,7 @@ def param_shift_hessian(tape):
         )
 
     _gradient_analysis(tape)
-    diff_methods = tape._grad_method_validation("analytic")
+    diff_methods = tape._grad_method_validation("analytic")  # pylint: disable=protected-access
     gradient_tapes = []
     gradient_coeffs = []
     unshifted_coeffs = {}

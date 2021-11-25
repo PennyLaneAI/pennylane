@@ -243,12 +243,12 @@ class TestParameterShiftHessian:
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(1 + 2 - 1, 2), "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * 1, "?")
         print("\n", hessian_qruns, "<=", 3 ** 1, "?")
 
         assert np.allclose(hessian, jacobian)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * math.comb(1 + 2 - 1, 2)
+        assert hessian_qruns <= 2 ** 2 * 1  # 1 = (1+2-1)C(2)
         assert hessian_qruns <= 3 ** 1
 
     def test_less_quantum_invocations2(self):
@@ -272,12 +272,12 @@ class TestParameterShiftHessian:
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(2 + 2 - 1, 2), "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * 3, "?")
         print("\n", hessian_qruns, "<=", 3 ** 2, "?")
 
         assert np.allclose(hessian, jacobian)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * math.comb(2 + 2 - 1, 2)
+        assert hessian_qruns <= 2 ** 2 * 3  # 3 = (2+2-1)C(2)
         assert hessian_qruns <= 3 ** 2
 
     def test_less_quantum_invocations3(self):
@@ -302,10 +302,10 @@ class TestParameterShiftHessian:
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
         print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * math.comb(3 + 2 - 1, 2), "?")
+        print("\n", hessian_qruns, "<=", 2 ** 2 * 6, "?")
         print("\n", hessian_qruns, "<=", 3 ** 3, "?")
 
         assert np.allclose(hessian, jacobian)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * math.comb(3 + 2 - 1, 2)
+        assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
         assert hessian_qruns <= 3 ** 3
