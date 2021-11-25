@@ -139,9 +139,9 @@ class LieGradientOptimizer:
         Args:
             circuit (Any): the user-defined hyperparameter :math:`\eta`
             stepsize (float): the user-defined hyperparameter :math:`\eta`
-            restriction (qml.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
+            restriction (.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of
             the full Lie algebra. This restriction should be passed in the form of a
-            `qml.Hamiltonian`.
+            ``qml.Hamiltonian``.
             exact (bool): Flag that indicates wether we approximate the Lie gradient with a
             Trotterization or calculate the exact evolution via a matrix exponential. The latter is
             not quantum friendly and can only be done in simulation.
