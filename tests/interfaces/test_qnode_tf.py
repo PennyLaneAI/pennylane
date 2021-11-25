@@ -19,7 +19,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape
 
 
@@ -85,7 +85,7 @@ class TestQNode:
 
         # without the interface, the tape is unable to deduce
         # trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should cause an error
         with pytest.raises(AttributeError, match="has no attribute '_id'"):
@@ -109,7 +109,7 @@ class TestQNode:
 
         # if executing outside a gradient tape, the number of trainable parameters
         # cannot be determined by TensorFlow
-        assert circuit.qtape.trainable_params == set()
+        assert circuit.qtape.trainable_params == []
 
         with tf.GradientTape() as tape:
             res = circuit(a)
@@ -121,7 +121,7 @@ class TestQNode:
         assert res.shape == tuple()
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = tape.gradient(res, a)
@@ -207,7 +207,7 @@ class TestQNode:
         with tf.GradientTape() as tape:
             res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -248,7 +248,7 @@ class TestQNode:
             res = circuit(a, b)
 
         assert circuit.qtape.interface == "tf"
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         assert isinstance(res, tf.Tensor)
         assert res.shape == (2,)
@@ -305,7 +305,7 @@ class TestQNode:
             res = circuit(a, b)
 
         # the tape has reported both gate arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -331,7 +331,7 @@ class TestQNode:
             res = circuit(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [tf.cos(a), -tf.cos(a) * tf.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -364,7 +364,7 @@ class TestQNode:
             res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c])
@@ -391,7 +391,7 @@ class TestQNode:
             res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, tf.Tensor)
@@ -415,7 +415,7 @@ class TestQNode:
             res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
@@ -451,7 +451,7 @@ class TestQNode:
             tape.watch(p)
             res = circuit(a, p)
 
-        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        assert circuit.qtape.trainable_params == [1, 2, 3, 4]
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
         assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 
@@ -838,7 +838,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="tf")
+        @qnode(dev, diff_method="adjoint", interface="tf")
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -875,7 +875,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=True)
+        @qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=True)
         def circ(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=1)
@@ -911,7 +911,7 @@ class Test_adjoint:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=False)
+        @qnode(dev, diff_method="adjoint", interface="tf", adjoint_cache=False)
         def circ(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
