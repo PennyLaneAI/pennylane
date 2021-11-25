@@ -161,6 +161,9 @@ class TestBatchTransform:
         assert spy.call_args[1]["max_diff"] == 3
         assert spy.call_args[1]["cache"] is cache
 
+        # test that the QNode execution options remain unchanged
+        assert circuit.execute_kwargs["max_diff"] == 3
+
     def test_expand_fn(self, mocker):
         """Test that if an expansion function is provided,
         that the input tape is expanded before being transformed."""
