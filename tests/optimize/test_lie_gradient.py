@@ -253,9 +253,8 @@ def test_lie_gradient_nqubits_check(capsys):
         qml.RY(0.5, wires=0)
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
-    qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
-    out, _ = capsys.readouterr()
-    assert out.startswith("WARNING: The exact Lie gradient is exponentially")
+    with pytest.warns(UserWarning, match="The exact Lie gradient is exponentially"):
+        qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_gradient_restriction_check():

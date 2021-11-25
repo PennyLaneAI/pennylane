@@ -13,6 +13,7 @@
 # limitations under the License.
 """Lie gradient optimizers"""
 import numpy as np
+import warnings
 from scipy.sparse.linalg import expm
 import pennylane as qml
 
@@ -190,9 +191,9 @@ class LieGradientOptimizer:
         self.nqubits = len(circuit.device.wires)
 
         if self.nqubits > 4:
-            print(
-                "WARNING: The exact Lie gradient is exponentially expensive in the number of qubits,"
-                f"optimizing a {self.nqubits} qubit circuit may be slow."
+            warnings.warn(
+                "The exact Lie gradient is exponentially expensive in the number of qubits,"
+                f"optimizing a {self.nqubits} qubit circuit may be slow.",UserWarning
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
             raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
