@@ -15,6 +15,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+pytestmark = pytest.mark.gpu
+
 torch = pytest.importorskip("torch")
 
 
@@ -122,6 +124,27 @@ class TestTorchDevice:
         res.backward()
         assert x.grad.is_cuda
 
+    @pytest.mark.parametrize("init_device, par_device", [("cpu", "cuda"), ("cuda", "cpu")])
+    def test_different_devices_creation_and_parameters_warn(self, init_device, par_device):
+        """Test that a warning is raised if the Torch device specified on
+        PennyLane device creation differs from the Torch device of gate
+        parameters.
+        """
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=init_device)
+
+        p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        with pytest.warns(
+            UserWarning,
+            match=f"Torch device {init_device} specified upon PennyLane device creation does not match",
+        ):
+            circuit(p)
+
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
@@ -178,3 +201,21 @@ class TestqnnTorchLayer:
         loss = torch.sum(res).squeeze()
         loss.backward()
         assert loss.is_cuda
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
+class TestParametricOps:
+    """Test that certain parametric operations perform computations correctly
+    with Torch devices internally."""
+
+    @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
+    def test_pauli_rot_identity(self, theta):
+        """Test that the PauliRot operation returns the correct matrix when
+        providing a gate parameter on the GPU and only specifying the identity
+        operation."""
+        x = torch.tensor(theta, device="cuda")
+        mat = qml.PauliRot(x, "I", wires=[0]).matrix
+
+        val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
+        exp = torch.tensor(np.diag([val, val]), device="cuda")
+        assert torch.allclose(mat, exp)
