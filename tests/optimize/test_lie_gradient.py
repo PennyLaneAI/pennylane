@@ -287,7 +287,7 @@ def test_docstring_example():
 
     opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1)
 
-    for step in range(5):
+    for step in range(6):
         cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
