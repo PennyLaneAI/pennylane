@@ -256,7 +256,7 @@ class TestSample:
         circuit()
 
     def test_providing_observable_and_wires(self):
-        """Test that a ValueError is raised if both an observable is provided and wires are specified"""
+        """Test that a QuantumFunctionError is raised if both an observable is provided and wires are specified"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -265,7 +265,7 @@ class TestSample:
             return qml.sample(qml.PauliZ(0), wires=[0, 1])
 
         with pytest.raises(
-            ValueError,
+            qml.QuantumFunctionError,
             match="Cannot specify the wires to sample if an observable is provided."
             " The wires to sample will be determined directly from the observable.",
         ):
