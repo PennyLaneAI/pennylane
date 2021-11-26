@@ -83,37 +83,38 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
          function will return the metric tensor.
 
     """
-    tapes = []
+    tapes_plus_total = []
+    tapes_min_total = []
     for obs in observables:
-        # create a list of tapes for the plus and minus shifted circuits
-        tapes_plus = [qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names]
-        tapes_min = [qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names]
+        for o in obs:
+            # create a list of tapes for the plus and minus shifted circuits
+            tapes_plus = [qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names]
+            tapes_min = [qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names]
 
-        # loop through all operations on the input tape
-        for op in tape.operations:
-            for t in tapes_plus + tapes_min:
+            # loop through all operations on the input tape
+            for op in tape.operations:
+                for t in tapes_plus + tapes_min:
+                    with t:
+                        qml.apply(op)
+            for i, t in enumerate(tapes_plus):
                 with t:
-                    qml.apply(op)
-        for i, t in enumerate(tapes_plus):
-            with t:
-                qml.PauliRot(
-                    np.pi / 2,
-                    lie_algebra_basis_names[i],
-                    wires=list(range(nqubits)),
-                )
-                for o in obs:
+                    qml.PauliRot(
+                        np.pi / 2,
+                        lie_algebra_basis_names[i],
+                        wires=list(range(nqubits)),
+                    )
                     qml.expval(o)
-        for i, t in enumerate(tapes_min):
-            with t:
-                qml.PauliRot(
-                    -np.pi / 2,
-                    lie_algebra_basis_names[i],
-                    wires=list(range(nqubits)),
-                )
-                for o in obs:
+            for i, t in enumerate(tapes_min):
+                with t:
+                    qml.PauliRot(
+                        -np.pi / 2,
+                        lie_algebra_basis_names[i],
+                        wires=list(range(nqubits)),
+                    )
                     qml.expval(o)
-        tapes.append((tapes_plus, tapes_min))
-    return tapes, None
+            tapes_plus_total.extend(tapes_plus)
+            tapes_min_total.extend(tapes_min)
+    return tapes_plus_total+tapes_min_total, None
 
 
 class LieGradientOptimizer:
@@ -316,16 +317,18 @@ class LieGradientOptimizer:
             self.lie_algebra_basis_names,
             self.nqubits,
         )[0]
-        # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = np.zeros((len(self.coeffs), len(self.lie_algebra_basis_names)))
-        idx = 0
+        circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
+        circuits_plus = np.array([item for sublist in circuits[:len(circuits)//2]
+                                  for item in sublist]).reshape(
+            len(self.coeffs), len(self.lie_algebra_basis_names)
+        )
+        circuits_min = np.array([item for sublist in circuits[len(circuits)//2:]
+                                 for item in sublist]).reshape(
+            len(self.coeffs), len(self.lie_algebra_basis_names)
+        )
 
-        for circuit_plus, circuit_min in circuits:
-            out_plus = qml.execute(circuit_plus, self.circuit.device, gradient_fn=None)
-            out_min = qml.execute(circuit_min, self.circuit.device, gradient_fn=None)
-            # depending on the length of the grouped observable, store the omegas in the array
-            omegas[idx : idx + len(out_plus[0]), :] = 0.5 * (
-                np.array(out_plus).T - np.array(out_min).T
-            )
-            idx += len(out_plus[0])
+        # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
+
+        omegas = 0.5*(circuits_plus - circuits_min)
+
         return np.dot(self.coeffs, omegas)
