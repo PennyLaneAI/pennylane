@@ -26,7 +26,8 @@ try:
     import dask.distributed as dist
     from dask.distributed import worker_client, performance_report
     import dask
-    dask.config.set(scheduler='processes')
+
+    dask.config.set(scheduler="processes")
 
     from distributed.protocol import (
         dask_serialize,
