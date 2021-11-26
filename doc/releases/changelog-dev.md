@@ -281,6 +281,9 @@
 
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
+* The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
+  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+
 <h3>Improvements</h3>
 
 * Tests do not loop over automatically imported and instantiated operations any more,
