@@ -318,17 +318,15 @@ class LieGradientOptimizer:
             self.nqubits,
         )[0]
         circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
-        circuits_plus = np.array([item for sublist in circuits[:len(circuits)//2]
-                                  for item in sublist]).reshape(
+        circuits_plus = np.array(circuits[:len(circuits)//2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
-        circuits_min = np.array([item for sublist in circuits[len(circuits)//2:]
-                                 for item in sublist]).reshape(
+        circuits_min = np.array(circuits[len(circuits)//2:]
+                                 ).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-
         omegas = 0.5*(circuits_plus - circuits_min)
 
         return np.dot(self.coeffs, omegas)
