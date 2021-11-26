@@ -75,9 +75,9 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
 
     Args:
         tape (.QuantumTape or .QNode): input circuit
-        observables (list[.Observable]):
-        lie_algebra_basis_names (list[str]):
-        nqubits (int):
+        observables (list[.Observable]): list of observables to be measured. Can be grouped.
+        lie_algebra_basis_names (list[str]): List of strings corresponding to valid Pauli words.
+        nqubits (int): the number of qubits.
 
     Returns:
          func: Function which accepts the same arguments as the QNode. When called, this
@@ -284,7 +284,7 @@ class LieGradientOptimizer:
         return cost
 
     def step(self):
-        r"""Update the circuit with one step of the optimizer"""
+        r"""Update the circuit with one step of the optimizer."""
         self.step_and_cost()
 
     def get_su_n_operators(self, restriction):
@@ -294,7 +294,7 @@ class LieGradientOptimizer:
             restriction (.Hamiltonian): Restrict the lie gradient to a subspace.
 
         Returns:
-            tuple[list[array[complex]], list[str]]: list of :math:`N^2 \times N^2` NumPy complex arrays and corresponding Pauli words
+            tuple[list[array[complex]], list[str]]: list of :math:`N^2 \times N^2` NumPy complex arrays and corresponding Pauli words.
         """
 
         operators = []
