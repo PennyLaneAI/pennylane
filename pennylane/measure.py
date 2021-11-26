@@ -597,6 +597,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
         QuantumFunctionError: Hamiltonians are not supported for rotating probabilities
         QuantumFunctionError: No diagonalizing_gates attribute: cannot be used to rotate the probability
         QuantumFunctionError: Cannot specify the wires to probs/sample if an observable is provided.
+        ValueError: base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state')
      """
 
     if wires is not None and not isinstance(wires, Wires):

@@ -971,28 +971,32 @@ class QubitDevice(Device):
     def custom_process(self, post_processing_func, base_measurement, observable=None,
                        wires=None, shot_range=None, bin_size=None):
 
-        if base_measurement == "expval":
-            res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
-
-        elif base_measurement == "var":
-            res = self.var(observable, shot_range=shot_range, bin_size=bin_size)
-
-        elif base_measurement == "sample":
+        if base_measurement == "sample":
             measurement_obj = qml.sample(op=observable, wires=wires)
             res = self.sample(measurement_obj, shot_range=shot_range, bin_size=bin_size)
 
+        elif base_measurement == "expval":
+            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+        #     res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
+        #
+        elif base_measurement == "var":
+            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+        #     res = self.var(observable, shot_range=shot_range, bin_size=bin_size)
+        #
         elif base_measurement == "prob":
-            res = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
-
+            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+        #     res = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
+        #
         elif base_measurement == "state":
-            if self.wires.labels != tuple(range(self.num_wires)):
-                raise qml.QuantumFunctionError(
-                    "Returning the state is not supported when using custom wire labels"
-                )
-            res = self.access_state(wires=observable.wires)
+            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+        #     if self.wires.labels != tuple(range(self.num_wires)):
+        #         raise qml.QuantumFunctionError(
+        #             "Returning the state is not supported when using custom wire labels"
+        #         )
+        #     res = self.access_state(wires=observable.wires)
 
         else:
-            raise ValueError(f"base_measurement should be one of [expval, var,sample, prob, state], "
+            raise ValueError(f"base_measurement should be one of [expval, var, sample, prob, state], "
                              f"got: {base_measurement}")
 
         try:
