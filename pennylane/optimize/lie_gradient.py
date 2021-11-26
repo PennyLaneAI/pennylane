@@ -128,14 +128,14 @@ class LieGradientOptimizer:
     Lie Gradient descent algorithms can be used to optimize a function directly on a Lie group
     as opposed to on a Euclidean parameter space. Consider the function
     :math:`f(U) = \text{Tr}(U \rho_0 U^\dagger H)`
-    for a given Hamiltonian :math:`H`, unitary :math:`U\in\text{SU}(2^N)` and initial state
+    for a given Hamiltonian :math:`H`, unitary :math:`U\in \text{SU}(2^N)` and initial state
     :math:`\rho_0`. One can show that this function is minimized by the flow equation
 
     .. math::
 
         \dot{U} = \text{grad}f(U)
 
-    where :math:`\text{grad}` is the Riemannian gradient operator on `\text{SU}(2^N)`.
+    where :math:`\text{grad}` is the Riemannian gradient operator on :math:`\text{SU}(2^N)`.
     By discretizing the flow above, we see that a step of the Lie gradient optimizer
     iterates the Lie gradient flow on :math:`\text{SU}(2^N)` as
 
