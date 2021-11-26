@@ -19,7 +19,7 @@ import pennylane as qml
 
 
 @qml.qfunc_transform
-def append_time_evolution(tape, lie_gradient, t, exact=False):
+def append_time_evolution(tape, lie_gradient, t, n, exact=False):
     r"""Append an approximate time evolution, corresponding to a Lie
     gradient, to an existing circuit.
 
@@ -30,13 +30,13 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
         \text{grad} f(U) = sum_i c_i O_i,
 
     where :math:`O_i` are Pauli words and :math:`c_t \in \mathbb{R}`.
-    If ``exact`` is ``False``, we Trotterize this operator and apply a single step.
+    If ``exact`` is ``False``, we Trotterize this operator and apply the unitary
 
     .. math::
 
-        U' = \prod_i \exp{-it O_i}
+        U' = \prod_{n=1}^{N_{Trot.}} \left(\prod_i \exp{-it / N_{Trot.} O_i}\right),
 
-    Then this unitary is appended to the current circuit.
+    which is then appended to the current circuit.
 
     If ``exact`` is ``True``, we calculate the exact time evolution for the Lie gradient by way of the
     matrix exponential.
@@ -48,9 +48,10 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
     and append this unitary.
 
     Args:
-        tape (QuantumTape or .QNode): circuit to transform
-        lie_gradient (.Hamiltonian): Hamiltonian object representing the Lie gradient
-        t (float): time evolution
+        tape (QuantumTape or .QNode): circuit to transform.
+        lie_gradient (.Hamiltonian): Hamiltonian object representing the Lie gradient.
+        t (float): time evolution parameter.
+        n (int): number of Trotter steps.
 
     """
     for obj in tape.operations:
@@ -61,7 +62,7 @@ def append_time_evolution(tape, lie_gradient, t, exact=False):
             wires=range(max(lie_gradient.wires) + 1),
         )
     else:
-        qml.templates.ApproxTimeEvolution(lie_gradient, t, 1)
+        qml.templates.ApproxTimeEvolution(lie_gradient, t, n)
 
     for obj in tape.measurements:
         qml.apply(obj)
@@ -122,7 +123,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
 
 
 class LieGradientOptimizer:
-    r"""Lie Gradient flow optimizer
+    r"""Lie Gradient flow optimizer.
 
     A step of the Lie gradient iterates the Lie gradient flow on :math:`\text{SU}(2^N)`.
     The function to be minimized is :math:`f(U) = \text{Tr}(U \rho_0 U^\dagger H)`
@@ -194,7 +195,7 @@ class LieGradientOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False):
+    def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
 
         if not isinstance(circuit, qml.QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
@@ -224,6 +225,7 @@ class LieGradientOptimizer:
             self.lie_algebra_basis_names,
         ) = self.get_su_n_operators(restriction)
         self.exact = exact
+        self.trottersteps = trottersteps
         self.coeffs, self.observables = self.hamiltonian.terms
         self.stepsize = stepsize
 
@@ -249,7 +251,7 @@ class LieGradientOptimizer:
                 for ps in non_zero_lie_algebra_elements
             ],
         )
-        new_circuit = append_time_evolution(lie_gradient, self.stepsize, self.exact)(
+        new_circuit = append_time_evolution(lie_gradient, self.stepsize, self.trottersteps, self.exact)(
             self.circuit.func
         )
 

@@ -220,6 +220,31 @@ def test_lie_gradient_step(circuit, hamiltonian):
     opt.step()
 
 
+@pytest.mark.parametrize(
+    "circuit,hamiltonian",
+    [
+        (circuit_1, hamiltonian_1),
+        (circuit_1, hamiltonian_2),
+        (circuit_2, hamiltonian_1),
+        (circuit_2, hamiltonian_2),
+        (circuit_3, hamiltonian_3),
+    ],
+)
+def test_lie_gradient_step_trotterstep(circuit, hamiltonian):
+    """Test that we can take subsequent steps with the optimizer"""
+    nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
+
+    dev = qml.device("default.qubit", wires=nqubits)
+
+    @qml.qnode(dev=dev)
+    def lie_circuit():
+        circuit()
+        return qml.expval(hamiltonian)
+
+    opt = qml.LieGradientOptimizer(circuit=lie_circuit, trottersteps=3)
+    opt.step()
+    opt.step()
+
 def test_lie_gradient_circuit_input_1_check():
     """Test that a type error is raise for non-QNode circuits"""
 
