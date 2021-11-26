@@ -422,8 +422,16 @@ class QubitDevice(Device):
             elif obs.return_type is CustomPostProcess:
                 post_process_func = obs.kwargs["func"]
                 base_measurement = obs.kwargs["b_measure"]
-                results.append(self.custom_process(post_process_func, base_measurement, observable=obs.obs,
-                                                   wires=obs.wires, shot_range=shot_range, bin_size=bin_size))
+                results.append(
+                    self.custom_process(
+                        post_process_func,
+                        base_measurement,
+                        observable=obs.obs,
+                        wires=obs.wires,
+                        shot_range=shot_range,
+                        bin_size=bin_size,
+                    )
+                )
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -968,27 +976,42 @@ class QubitDevice(Device):
 
         return jac
 
-    def custom_process(self, post_processing_func, base_measurement, observable=None,
-                       wires=None, shot_range=None, bin_size=None):
+    def custom_process(
+        self,
+        post_processing_func,
+        base_measurement,
+        observable=None,
+        wires=None,
+        shot_range=None,
+        bin_size=None,
+    ):
 
         if base_measurement == "sample":
             measurement_obj = qml.sample(op=observable, wires=wires)
             res = self.sample(measurement_obj, shot_range=shot_range, bin_size=bin_size)
 
         elif base_measurement == "expval":
-            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+            raise NotImplementedError(
+                f"custom_process currently does not support measuring {base_measurement}"
+            )
         #     res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
         #
         elif base_measurement == "var":
-            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+            raise NotImplementedError(
+                f"custom_process currently does not support measuring {base_measurement}"
+            )
         #     res = self.var(observable, shot_range=shot_range, bin_size=bin_size)
         #
         elif base_measurement == "prob":
-            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+            raise NotImplementedError(
+                f"custom_process currently does not support measuring {base_measurement}"
+            )
         #     res = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
         #
         elif base_measurement == "state":
-            raise NotImplementedError(f"custom_process currently does not support measuring {base_measurement}")
+            raise NotImplementedError(
+                f"custom_process currently does not support measuring {base_measurement}"
+            )
         #     if self.wires.labels != tuple(range(self.num_wires)):
         #         raise qml.QuantumFunctionError(
         #             "Returning the state is not supported when using custom wire labels"
@@ -996,14 +1019,18 @@ class QubitDevice(Device):
         #     res = self.access_state(wires=observable.wires)
 
         else:
-            raise ValueError(f"base_measurement should be one of [expval, var, sample, prob, state], "
-                             f"got: {base_measurement}")
+            raise ValueError(
+                f"base_measurement should be one of [expval, var, sample, prob, state], "
+                f"got: {base_measurement}"
+            )
 
         try:
             post_processed_res = post_processing_func(res)
         except BaseException as e:
-            print("Encountered the following exception when applying the post-processing function"
-                  f" to the measured {base_measurement}:\n {e} \n")
+            print(
+                "Encountered the following exception when applying the post-processing function"
+                f" to the measured {base_measurement}:\n {e} \n"
+            )
             return None
 
         return post_processed_res

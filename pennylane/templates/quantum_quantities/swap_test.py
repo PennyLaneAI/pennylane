@@ -24,6 +24,7 @@ from pennylane.measure import custom_process
 
 class SwapTest(Operation):
     """A class that implements the SWAPTest"""
+
     num_wires = AnyWires
     grad_recipe = None
 
@@ -31,8 +32,10 @@ class SwapTest(Operation):
         wires = [ancilla] + q_reg1 + q_reg2
 
         if len(q_reg1) != len(q_reg2):
-            raise ValueError(f"The two quantum registers must be the same size to compare them via SWAPTest, "
-                             f"got: {q_reg1}, {q_reg2}")
+            raise ValueError(
+                f"The two quantum registers must be the same size to compare them via SWAPTest, "
+                f"got: {q_reg1}, {q_reg2}"
+            )
 
         self.ac = ancilla
         self.q_reg1 = q_reg1
@@ -50,7 +53,9 @@ class SwapTest(Operation):
 
             Hadamard(wires=self.ac)  # apply hadamard to ancilla qubit
             for i in range(len_register):
-                CSWAP(wires=Wires([self.ac, self.q_reg1[i], self.q_reg2[i]]))  # swap qubit registers
+                CSWAP(
+                    wires=Wires([self.ac, self.q_reg1[i], self.q_reg2[i]])
+                )  # swap qubit registers
             Hadamard(wires=self.ac)  # apply hadamard again
 
         return tape

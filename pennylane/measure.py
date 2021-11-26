@@ -22,7 +22,15 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance, CustomPostProcess
+from pennylane.operation import (
+    Expectation,
+    Observable,
+    Probability,
+    Sample,
+    State,
+    Variance,
+    CustomPostProcess,
+)
 from pennylane.wires import Wires
 
 
@@ -598,7 +606,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
         QuantumFunctionError: No diagonalizing_gates attribute: cannot be used to rotate the probability
         QuantumFunctionError: Cannot specify the wires to probs/sample if an observable is provided.
         ValueError: base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state')
-     """
+    """
 
     if wires is not None and not isinstance(wires, Wires):
         wires = Wires(wires)
@@ -630,7 +638,9 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
 
     elif base_measurement == "prob":
         if isinstance(op, qml.Hamiltonian):
-            raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
+            raise qml.QuantumFunctionError(
+                "Hamiltonians are not supported for rotating probabilities."
+            )
 
         if op is not None and not hasattr(op, "diagonalizing_gates"):
             raise qml.QuantumFunctionError(
@@ -650,8 +660,11 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
         pass
 
     else:
-        raise ValueError("base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
-                         f"got: {base_measurement}")
+        raise ValueError(
+            "base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
+            f"got: {base_measurement}"
+        )
 
-    return MeasurementProcess(CustomPostProcess, obs=op, wires=wires, func=post_process_func,
-                              b_measure=base_measurement)
+    return MeasurementProcess(
+        CustomPostProcess, obs=op, wires=wires, func=post_process_func, b_measure=base_measurement
+    )

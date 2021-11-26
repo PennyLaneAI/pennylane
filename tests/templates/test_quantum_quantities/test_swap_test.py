@@ -17,4 +17,3 @@ Contains the unit tests for the SwapTest template.
 
 import pennylane as qml
 import pytest
-

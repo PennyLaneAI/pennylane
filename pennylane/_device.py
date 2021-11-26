@@ -1032,7 +1032,9 @@ class Device(abc.ABC):
             "Returning probability not currently supported by {}".format(self.short_name)
         )
 
-    def custom_process(self, post_processing_func, base_measurement, observable=None, wires=None, par=None):
+    def custom_process(
+        self, post_processing_func, base_measurement, observable=None, wires=None, par=None
+    ):
         """Applies the provided post_processing_func to the result of base_measurement.
 
         The base_measurement is a string (one of ['expval', 'var', 'sample', 'prob', 'state']),
