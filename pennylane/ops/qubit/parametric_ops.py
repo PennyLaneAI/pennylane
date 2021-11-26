@@ -593,17 +593,15 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given Pauli word "{}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z".format(pauli_word)
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z"
             )
 
         num_wires = 1 if isinstance(wires, int) else len(wires)
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                "The given Pauli word has length {}, length {} was expected for wires {}".format(
-                    len(pauli_word), num_wires, wires
-                )
+                f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
     @property
@@ -661,8 +659,8 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given Pauli word "{}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z".format(pauli_word)
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z"
             )
 
         theta = params[0]
