@@ -16,7 +16,7 @@ Unit tests for the pennylane.circuit_drawer.styles` module.
 """
 
 import pytest
-from pennylane.circuit_drawer import styles
+from pennylane.circuit_drawer import style
 
 plt = pytest.importorskip("matplotlib.pyplot")
 
@@ -24,7 +24,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 def test_black_white_style():
     """Tests the black white style sets ``plt.rcParams`` with correct values"""
 
-    styles.black_white()
+    style.black_white()
 
     assert plt.rcParams["patch.facecolor"] == "white"
     assert plt.rcParams["patch.edgecolor"] == "black"
@@ -39,7 +39,7 @@ def test_black_white_style():
 def test_black_white_style_dark():
     """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
 
-    styles.black_white_dark()
+    style.black_white_dark()
 
     almost_black = "#151515"
     assert plt.rcParams["figure.facecolor"] == almost_black
