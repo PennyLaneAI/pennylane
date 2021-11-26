@@ -178,15 +178,15 @@ def param_shift_hessian(tape):
     gradient_coeffs = []
     unshifted_coeffs = {}
     shapes = []
-    h_dim = len(tape.trainable_params)
+    h_dim = tape.num_params
 
     if not tape.trainable_params:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
     # Off-diagonal elements of the Hessian require shifts to two different parameter indices.
-    # A recipe can thus be expressed via the tape patterns: (dummy values for ndarray creation)
-    #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]
+    # A recipe can thus be expressed via the tape patterns:
+    #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]    (dummy values for ndarray creation)
     # Each corresponding to one term in the parameter-shift formula:
     #       didj f(x) = coeff * f(mult*x + shift1*ei + shift2*ej) + ...
     diag_recipe = [[[0.5], [1], [np.pi]], [[-0.5], [1], [0]]]
@@ -198,8 +198,8 @@ def param_shift_hessian(tape):
     ]
 
     # for now assume all operations support the 2-term parameter shift rule
-    for i in range(tape.num_params):
-        for j in range(tape.num_params):
+    for i in range(h_dim):
+        for j in range(h_dim):
             # optimization: only generate tapes for upper triangular matrix (j >= i)
             # optimization: skip partial derivates that are zero
             if j < i or diff_methods[i] == "0" or diff_methods[j] == "0":
@@ -228,9 +228,11 @@ def param_shift_hessian(tape):
     def processing_fn(results):
         # The first results dimension is the number of terms/tapes in the parameter-shift
         # rule, the remaining ones are the QNode output dimensions.
-        out_dim = np.shape(results)[1:]
-        # The desired shape of the Hessian is: (QNode output dimensions, # gate args, # gate args)
-        hessian, row = [], []
+        out_dim = qml.math.shape(results)[1:]
+        # The desired shape of the Hessian is:
+        #       (QNode output dimensions, # trainable gate args, # trainable gate args),
+        # but first we accumulate all elements into a list, since no array assingment is possible.
+        hessian = []
         # Keep track of tape results already consumed.
         start = 1 if unshifted_coeffs else 0
 
@@ -241,7 +243,7 @@ def param_shift_hessian(tape):
             # Compute the elements of the Hessian as the linear combination of
             # results and coefficients, barring optimization cases.
             if j < i:
-                g = hessian[j][i]
+                g = hessian[j* h_dim + i]
             elif s == 0:
                 g = qml.math.zeros(out_dim)
             else:
@@ -252,14 +254,11 @@ def param_shift_hessian(tape):
                 if (i, j) in unshifted_coeffs:
                     g += unshifted_coeffs[(i, j)] * results[0]
 
-            row.append(g)
-            if j == h_dim - 1:
-                hessian.append(row)
-                row = []
+            hessian.append(g)
 
         # Reshape the Hessian to have the dimensions of the QNode output on the outside, that is:
         #         (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
-        hessian = qml.math.array(hessian)
+        hessian = qml.math.reshape(qml.math.stack(hessian), (h_dim, h_dim) + out_dim)
         dim_indices = list(range(len(out_dim) + 2))
         hessian = qml.math.transpose(hessian, axes=dim_indices[2:] + [0, 1])
 
