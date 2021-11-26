@@ -747,9 +747,7 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = (
-            f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
-        )
+        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
 
         return self._einsum(einsum_indices, mat, state)
 
