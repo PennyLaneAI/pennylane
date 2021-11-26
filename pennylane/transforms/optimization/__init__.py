@@ -19,4 +19,5 @@ from .remove_barrier import remove_barrier
 from .cancel_inverses import cancel_inverses
 from .commute_controlled import commute_controlled
 from .merge_rotations import merge_rotations
+from .merge_amplitude_embedding import merge_amplitude_embedding
 from .single_qubit_fusion import single_qubit_fusion
