@@ -181,7 +181,7 @@ def param_shift_hessian(tape):
     h_dim = tape.num_params
 
     if not tape.trainable_params:
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return gradient_tapes, lambda _: []
 
     # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
     # Off-diagonal elements of the Hessian require shifts to two different parameter indices.

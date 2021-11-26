@@ -363,3 +363,24 @@ class TestParameterShiftHessian:
         z = np.array(0.3, requires_grad=False)
 
         qml.gradients.param_shift_hessian(circuit)(x, y, z)
+
+    def test_no_trainable_parameters(self):
+        """Test that the correct ouput is generated in the absence of any trainable parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CRZ(x[2], wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=False)
+
+        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        print("\n", jacobian, "\n\t=?\n", hessian)
+
+        assert np.allclose(jacobian, hessian)
