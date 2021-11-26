@@ -184,9 +184,7 @@ class DefaultQubit(QubitDevice):
             mapped_wires = [self.wire_map[w] for w in wires]
         except KeyError as e:
             raise WireError(
-                "Did not find some of the wires {} on device with wires {}.".format(
-                    wires.labels, self.wires.labels
-                )
+                f"Did not find some of the wires {wires.labels} on device with wires {self.wires.labels}."
             ) from e
 
         return mapped_wires
@@ -206,8 +204,8 @@ class DefaultQubit(QubitDevice):
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
+                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
+                    f"on a {self.short_name} device."
                 )
 
             if isinstance(operation, QubitStateVector):
@@ -750,12 +748,7 @@ class DefaultQubit(QubitDevice):
 
         # We now put together the indices in the notation numpy's einsum requires
         einsum_indices = (
-            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-                affected_indices=affected_indices,
-                state_indices=state_indices,
-                new_indices=new_indices,
-                new_state_indices=new_state_indices,
-            )
+            f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
         )
 
         return self._einsum(einsum_indices, mat, state)
@@ -782,10 +775,7 @@ class DefaultQubit(QubitDevice):
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
-        einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
-            affected_indices=affected_indices, state_indices=state_indices
-        )
-
+        einsum_indices = f"{affected_indices},{state_indices}->{state_indices}"
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
