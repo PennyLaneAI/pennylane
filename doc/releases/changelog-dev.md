@@ -4,7 +4,6 @@
 
 <h3>New features since last release</h3>
 
-
 * Added functions for computing the values of atomic and molecular orbitals at a given position.
   [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
 
@@ -472,5 +471,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo, David Ittah,
+Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi, Robert Lang,
+Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni,
+Rodrigo Vargas, David Wierichs

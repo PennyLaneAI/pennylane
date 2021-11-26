@@ -114,10 +114,10 @@ class Molecule:
         self.mo_coefficients = None
 
     def atomic_orbital(self, index):
-        r"""Return a function that evaluates a basis function at a given position.
+        r"""Return a function that evaluates an atomic orbital at a given position.
 
         Args:
-            index (int): index of the basis function
+            index (int): index of the atomic orbital, order follwos the order of atomic symbols
 
         Returns:
             function: function that computes the value of the orbital at a given position
@@ -172,7 +172,7 @@ class Molecule:
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
         >>> mol = qml.hf.Molecule(symbols, geometry)
-        >>> _ = generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
         >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128
