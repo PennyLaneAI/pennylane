@@ -334,7 +334,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -346,12 +346,52 @@ class TestParameterShiftHessian:
         with pytest.raises(ValueError, match=r"The operation .+ is currently not supported"):
             qml.gradients.param_shift_hessian(circuit)(x)
 
+    def test_error_unsupported_measurement(self):
+        """Test that the correct error is thrown for variance measurements"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CRZ(x[2], wires=[0, 1])
+            return qml.var(qml.PauliZ(1))
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with pytest.raises(
+            ValueError,
+            match="Computing the gradient of circuits that return variances is currently not supported.",
+        ):
+            qml.gradients.param_shift_hessian(circuit)(x)
+
+    def test_error_unsupported_measurement2(self):
+        """Test that the correct error is thrown for state measurements"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CRZ(x[2], wires=[0, 1])
+            return qml.state()
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with pytest.raises(
+            ValueError,
+            match="Computing the gradient of circuits that return the state is not supported.",
+        ):
+            qml.gradients.param_shift_hessian(circuit)(x)
+
     def test_noerror_unsupported_operation(self):
         """Test that no error is thrown for operations that are not marked differentiable"""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
@@ -369,7 +409,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -384,3 +424,30 @@ class TestParameterShiftHessian:
         print("\n", jacobian, "\n\t=?\n", hessian)
 
         assert np.allclose(jacobian, hessian)
+
+    def test_f0_argument(self):
+        """Test that we can provide the results of a QNode to save on quantum invocations"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        res = circuit(x)
+
+        with qml.Tracker(dev) as tracker:
+            hessian1 = qml.gradients.param_shift_hessian(circuit, f0=res)(x)
+            qruns1 = tracker.totals["executions"]
+            hessian2 = qml.gradients.param_shift_hessian(circuit)(x)
+            qruns2 = tracker.totals["executions"] - qruns1
+
+        print("\n", qruns1, "<", qruns2, "?")
+
+        assert np.allclose(hessian1, hessian2)
+        assert qruns1 < qruns2

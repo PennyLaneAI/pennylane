@@ -69,7 +69,7 @@ def generate_multishifted_tapes(tape, idx, shifts):
 
 
 class hessian_transform(qml.batch_transform):
-    """Modified gradient_transform to account for different post-processing when computing
+    """Modified `gradient_transform` to account for different post-processing when computing
     the second derivate of a QNode."""
 
     def __init__(
@@ -132,56 +132,31 @@ class hessian_transform(qml.batch_transform):
         return jacobian_wrapper
 
 
-@hessian_transform
-def param_shift_hessian(tape):
-    """Generate parameter-shift tapes and postprocessing method
-    to directly compute the hessian."""
+def compute_hessian_tapes(tape, diff_methods, f0=None):
+    r"""Generate the Hessian tapes that are used in the computation of the second derivate of a
+    quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
+    post-processing function to combine the results of evaluating the gradient tapes.
 
-    # perform gradient method validation
-    if any(m.return_type is qml.operation.State for m in tape.measurements):
-        raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
-        )
+    Args:
+        tape (.QuantumTape): input quantum tape
+        diff_methods (list[string]): The gradient method to use for each trainable parameter.
+            Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
+            a 0 gradient (that is the parameter does not affect the tapes output).
+        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
 
-    # The parameter-shift Hessian implementation currently only supports
-    # the two-term parameter-shift rule. Raise an error for unsupported operations.
-    supported_ops = (
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "PhaseShift",
-        "ControlledPhaseShift",
-        "MultiRZ",
-        "PauliRot",
-        "U1",
-        "U2",
-        "U3",
-        "SingleExcitationMinus",
-        "SingleExcitationPlus",
-        "DoubleExcitationMinus",
-        "DoubleExcitationPlus",
-        "OrbitalRotation",
-    )
+    Returns:
+        tuple[list[QuantumTape], function]: A tuple containing a list of generated tapes, in
+            addition to a post-processing function to be applied to the results of the evaluated
+            tapes.
+    """
+    h_dim = tape.num_params
 
-    for idx, _ in enumerate(tape.trainable_params):
-        op, _ = tape.get_operation(idx)
-        if op.name not in supported_ops:
-            raise ValueError(
-                f"The operation {op.name} is currently not supported for the parameter-shift "
-                f"Hessian. Only two-term parameter shift rules are currently supported."
-            )
-
-    _gradient_analysis(tape)
-    diff_methods = tape._grad_method_validation("analytic")  # pylint: disable=protected-access
     gradient_tapes = []
     gradient_coeffs = []
     unshifted_coeffs = {}
     shapes = []
-    h_dim = tape.num_params
-
-    if not tape.trainable_params:
-        return gradient_tapes, lambda _: []
 
     # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
     # Off-diagonal elements of the Hessian require shifts to two different parameter indices.
@@ -212,7 +187,7 @@ def param_shift_hessian(tape):
 
             # optimization: only compute the unshifted tape once
             if all(np.array(shifts[0]) == 0):
-                if not unshifted_coeffs:
+                if not unshifted_coeffs and f0 is None:
                     gradient_tapes.insert(0, tape)
 
                 unshifted_coeffs[(i, j)] = coeffs[0]
@@ -234,7 +209,9 @@ def param_shift_hessian(tape):
         # but first we accumulate all elements into a list, since no array assingment is possible.
         hessian = []
         # Keep track of tape results already consumed.
-        start = 1 if unshifted_coeffs else 0
+        start = 1 if unshifted_coeffs and f0 is None else 0
+        # Results of the unshifted tape.
+        r0 = results[0] if start == 1 else f0
 
         for k, ((i, j), s) in enumerate(shapes):
             res = results[start : start + s]
@@ -243,7 +220,7 @@ def param_shift_hessian(tape):
             # Compute the elements of the Hessian as the linear combination of
             # results and coefficients, barring optimization cases.
             if j < i:
-                g = hessian[j* h_dim + i]
+                g = hessian[j * h_dim + i]
             elif s == 0:
                 g = qml.math.zeros(out_dim)
             else:
@@ -252,7 +229,7 @@ def param_shift_hessian(tape):
                     res, qml.math.convert_like(gradient_coeffs[k], res), [[0], [0]]
                 )
                 if (i, j) in unshifted_coeffs:
-                    g += unshifted_coeffs[(i, j)] * results[0]
+                    g += unshifted_coeffs[(i, j)] * r0
 
             hessian.append(g)
 
@@ -265,3 +242,79 @@ def param_shift_hessian(tape):
         return qml.math.squeeze(hessian)
 
     return gradient_tapes, processing_fn
+
+
+@hessian_transform
+def param_shift_hessian(tape, f0=None):
+    r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
+    parameters.
+
+    Args:
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+            and the gradient recipe contains an unshifted term, this value is used,
+            saving a quantum evaluation.
+
+    Returns:
+        tensor_like or tuple[list[QuantumTape], function]:
+
+        - If the input is a QNode, a tensor representing the output of the hybrid Jacobian matrix
+          of size ``(QNode output dimensions, QNode input dimensions, QNode input dimensions)``
+          is returned. When the keyword ``hybrid=False`` is specified, the purely quantum Hessian
+          matrix is returned instead, with the dimesions
+          ``(QNode output dimensions, number of gate arguments, number of gate arguments)``.
+          The difference between the two accounts for the mapping of QNode arguments
+          to the actual gate arguments, which can include classical computations.
+
+        - If the input is a tape, a tuple containing a list of generated tapes, in addition
+          to a post-processing function to be applied to the evaluated tapes.
+    """
+
+    # perform gradient method validation
+    if any(m.return_type is qml.operation.State for m in tape.measurements):
+        raise ValueError(
+            "Computing the gradient of circuits that return the state is not supported."
+        )
+
+    # The parameter-shift Hessian implementation currently doesn't support variance measurements.
+    if any(m.return_type is qml.operation.Variance for m in tape.measurements):
+        raise ValueError(
+            "Computing the gradient of circuits that return variances is currently not supported."
+        )
+
+    if not tape.trainable_params:
+        return [], lambda _: []
+
+    # The parameter-shift Hessian implementation currently only supports
+    # the two-term parameter-shift rule. Raise an error for unsupported operations.
+    supported_ops = (
+        "RX",
+        "RY",
+        "RZ",
+        "Rot",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "MultiRZ",
+        "PauliRot",
+        "U1",
+        "U2",
+        "U3",
+        "SingleExcitationMinus",
+        "SingleExcitationPlus",
+        "DoubleExcitationMinus",
+        "DoubleExcitationPlus",
+        "OrbitalRotation",
+    )
+
+    for idx in range(tape.num_params):
+        op, _ = tape.get_operation(idx)
+        if op.name not in supported_ops:
+            raise ValueError(
+                f"The operation {op.name} is currently not supported for the parameter-shift "
+                f"Hessian. Only two-term parameter shift rules are currently supported."
+            )
+
+    _gradient_analysis(tape)
+    diff_methods = tape._grad_method_validation("analytic")  # pylint: disable=protected-access
+
+    return compute_hessian_tapes(tape, diff_methods, f0)
