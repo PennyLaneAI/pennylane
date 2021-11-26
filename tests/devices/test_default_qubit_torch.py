@@ -1235,9 +1235,9 @@ class TestQNodeIntegration:
         a Torch data structure as a parameter"""
         dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
 
-        a = torch.tensor(1.7, dtype=torch.complex128, device=torch_device)
-        b = torch.tensor(1.3432, dtype=torch.complex128, device=torch_device)
-        c = torch.tensor(-0.654, dtype=torch.complex128, device=torch_device)
+        a = torch.tensor(1.7, device=torch_device)
+        b = torch.tensor(1.3432, device=torch_device)
+        c = torch.tensor(-0.654, device=torch_device)
         state = init_state(2, torch_device=torch_device)
 
         @qml.qnode(dev, interface="torch")
