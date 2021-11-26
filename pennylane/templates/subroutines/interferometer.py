@@ -165,7 +165,7 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
         .. code-block:: python
 
             @qml.qnode(dev)
-            def circuit():
+            def circuit(params):
                 qml.Interferometer(*params, wires=range(4), mesh='triangular', beamsplitter='clements')
                 return qml.expval(qml.Identity(0))
 
