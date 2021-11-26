@@ -274,7 +274,7 @@ class TestSupportedGates:
 
             @qml.qnode(dev)
             def circuit():
-                ops[operation]
+                qml.apply(ops[operation])
                 return qml.expval(qml.Identity(wires=0))
 
             assert isinstance(circuit(), (float, np.ndarray))
