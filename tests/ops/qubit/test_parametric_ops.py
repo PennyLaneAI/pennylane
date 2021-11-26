@@ -1243,6 +1243,7 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert torch.allclose(mat, exp)
 
+
 class TestMultiRZ:
     """Test the MultiRZ operation."""
 
