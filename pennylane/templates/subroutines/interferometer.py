@@ -135,7 +135,7 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     Example:
 
-        The template requires :math:`3` sets of parameters. The ``mesh`` and ``beamsplitter`` arguments are optional and
+        The template requires :math:`3` sets of parameters. The ``mesh`` and ``beamsplitter`` keyword arguments are optional and
         have ``'rectangular'`` and ``'pennylane'`` as default values.
 
         .. code-block:: python
