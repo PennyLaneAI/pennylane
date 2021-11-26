@@ -14,8 +14,8 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
-import semantic_version
 import warnings
+import semantic_version
 
 try:
     import torch
