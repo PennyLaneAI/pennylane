@@ -925,7 +925,6 @@ class TestTapeExpansion:
 
         class UnsupportedOp(qml.operation.Operation):
             num_wires = 1
-            num_params = 1
 
             def expand(self):
                 with qml.tape.QuantumTape() as tape:
@@ -957,7 +956,6 @@ class TestTapeExpansion:
 
         class UnsupportedOp(qml.operation.Operation):
             num_wires = 1
-            num_params = 1
 
             grad_method = "A"
             grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)

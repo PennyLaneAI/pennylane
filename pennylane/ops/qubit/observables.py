@@ -51,9 +51,12 @@ class Hermitian(Observable):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
-    num_params = 1
     grad_method = "F"
     _eigs = {}
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -139,8 +142,11 @@ class SparseHamiltonian(Observable):
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
     """
     num_wires = AllWires
-    num_params = 1
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")

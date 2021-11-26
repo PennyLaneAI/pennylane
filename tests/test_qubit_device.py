@@ -302,7 +302,6 @@ class TestExtractStatistics:
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         class SomeObservable(qml.operation.Observable):
-            num_params = 0
             num_wires = 1
             return_type = returntype
 
@@ -330,7 +329,6 @@ class TestExtractStatistics:
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class SomeObservable(qml.operation.Observable):
-            num_params = 0
             num_wires = 1
             return_type = returntype
 
@@ -349,7 +347,6 @@ class TestExtractStatistics:
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
         class SomeObservable(qml.operation.Observable):
-            num_params = 0
             num_wires = 1
             return_type = returntype
 
