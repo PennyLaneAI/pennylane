@@ -129,6 +129,8 @@ from .optimization import (
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
+    merge_amplitude_embedding,
+    remove_barrier,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
