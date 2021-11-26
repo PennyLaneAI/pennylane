@@ -51,7 +51,6 @@ class RX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
@@ -109,7 +108,6 @@ class RY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
@@ -161,7 +159,6 @@ class RZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
@@ -224,7 +221,6 @@ class PhaseShift(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
@@ -299,7 +295,6 @@ class ControlledPhaseShift(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
@@ -386,7 +381,6 @@ class Rot(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
 
     @property
@@ -471,7 +465,6 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = "A"
 
     @property
@@ -585,7 +578,6 @@ class PauliRot(Operation):
     """
     num_wires = AnyWires
     do_check_domain = False
-    par_domain = "R"
     grad_method = "A"
 
     _ALLOWED_CHARACTERS = "IXYZ"
@@ -840,7 +832,6 @@ class CRX(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -936,7 +927,6 @@ class CRY(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1026,7 +1016,6 @@ class CRZ(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1121,7 +1110,6 @@ class CRot(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
@@ -1217,7 +1205,6 @@ class U1(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
@@ -1279,7 +1266,6 @@ class U2(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
 
     @property
@@ -1356,7 +1342,6 @@ class U3(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
 
     @property
@@ -1428,7 +1413,6 @@ class IsingXX(Operation):
         wires (int): the subsystem the gate acts on
     """
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
 
     generator = [
@@ -1493,7 +1477,6 @@ class IsingYY(Operation):
         wires (int): the subsystem the gate acts on
     """
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
@@ -1555,7 +1538,6 @@ class IsingZZ(Operation):
         wires (int): the subsystem the gate acts on
     """
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),

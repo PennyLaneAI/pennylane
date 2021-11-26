@@ -1215,6 +1215,19 @@ class TestTake:
         res = fn.take(t, indices)
         assert fn.allclose(res, [1, 3, 4, 5, 2])
 
+    def test_array_indexing_autograd(self):
+        """Test that indexing with a sequence properly extracts
+        the elements from the flattened tensor"""
+        t = np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]])
+        indices = [0, 2, 3, 6, -2]
+
+        def cost_fn(t):
+            return np.sum(fn.take(t, indices))
+
+        grad = qml.grad(cost_fn)(t)
+        expected = np.array([[[1, 0], [1, 1], [0, 0]], [[1, 0], [0, 0], [1, 0]]])
+        assert fn.allclose(grad, expected)
+
     @pytest.mark.parametrize("t", take_data)
     def test_multidimensional_indexing(self, t):
         """Test that indexing with a multi-dimensional sequence properly extracts

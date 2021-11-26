@@ -32,6 +32,7 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~draw
+    ~draw_mpl
     ~transforms.get_unitary_matrix
     ~metric_tensor
     ~specs
@@ -75,6 +76,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
+    ~transforms.set_decomposition
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -102,6 +104,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~qfunc_transform
     ~transforms.make_tape
     ~transforms.create_expand_fn
+    ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
     ~transforms.expand_multipar
     ~transforms.expand_nonunitary_gen
@@ -115,7 +118,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw
+from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -126,6 +129,8 @@ from .optimization import (
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
+    merge_amplitude_embedding,
+    remove_barrier,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
@@ -136,4 +141,6 @@ from .tape_expand import (
     expand_multipar,
     expand_nonunitary_gen,
     create_expand_fn,
+    create_decomp_expand_fn,
+    set_decomposition,
 )
