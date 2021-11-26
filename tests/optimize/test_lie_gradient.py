@@ -270,12 +270,17 @@ def test_lie_gradient_restriction_check():
         TypeError,
         match="restriction must be a Hamiltonian",
     ):
-        qml.LieGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
+        qml.LieGradientOptimizer(
+            circuit=circuit, restriction=restriction, stepsize=0.001
+        )
 
 
 def test_docstring_example():
-    hamiltonian = qml.Hamiltonian(coeffs=[-1.] * 3,
-                                  observables = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)])
+    hamiltonian = qml.Hamiltonian(
+        coeffs=[-1.0] * 3,
+        observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+    )
+
     @qml.qnode(qml.device("default.qubit", wires=2))
     def quant_fun():
         qml.RX(0.1, wires=[0])
@@ -283,7 +288,6 @@ def test_docstring_example():
         qml.CNOT(wires=[0, 1])
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
-
 
     opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1)
 

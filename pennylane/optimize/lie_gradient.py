@@ -88,8 +88,12 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names]
-            tapes_min = [qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names]
+            tapes_plus = [
+                qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names
+            ]
+            tapes_min = [
+                qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names
+            ]
 
             # loop through all operations on the input tape
             for op in tape.operations:
@@ -114,7 +118,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
                     qml.expval(o)
             tapes_plus_total.extend(tapes_plus)
             tapes_min_total.extend(tapes_min)
-    return tapes_plus_total+tapes_min_total, None
+    return tapes_plus_total + tapes_min_total, None
 
 
 class LieGradientOptimizer:
@@ -193,9 +197,7 @@ class LieGradientOptimizer:
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False):
 
         if not isinstance(circuit, qml.QNode):
-            raise TypeError(
-                f"circuit must be a QNode, received {type(circuit)}"
-            )
+            raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
 
         self.circuit = circuit
         self.circuit.construct([], {})
@@ -210,10 +212,13 @@ class LieGradientOptimizer:
         if self.nqubits > 4:
             warnings.warn(
                 "The exact Lie gradient is exponentially expensive in the number of qubits,"
-                f"optimizing a {self.nqubits} qubit circuit may be slow.",UserWarning
+                f"optimizing a {self.nqubits} qubit circuit may be slow.",
+                UserWarning,
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
-            raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
+            raise TypeError(
+                f"restriction must be a Hamiltonian, received {type(restriction)}"
+            )
         (
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
@@ -253,9 +258,7 @@ class LieGradientOptimizer:
         return cost
 
     def step(self):
-        r"""Update the circuit with one step of the optimizer
-
-        """
+        r"""Update the circuit with one step of the optimizer"""
         self.step_and_cost()
 
     def get_su_n_operators(self, restriction):
@@ -318,15 +321,14 @@ class LieGradientOptimizer:
             self.nqubits,
         )[0]
         circuits = qml.execute(circuits, self.circuit.device, gradient_fn=None)
-        circuits_plus = np.array(circuits[:len(circuits)//2]).reshape(
+        circuits_plus = np.array(circuits[: len(circuits) // 2]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
-        circuits_min = np.array(circuits[len(circuits)//2:]
-                                 ).reshape(
+        circuits_min = np.array(circuits[len(circuits) // 2 :]).reshape(
             len(self.coeffs), len(self.lie_algebra_basis_names)
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = 0.5*(circuits_plus - circuits_min)
+        omegas = 0.5 * (circuits_plus - circuits_min)
 
         return np.dot(self.coeffs, omegas)
