@@ -237,12 +237,11 @@ class LieGradientOptimizer:
         """
         cost = self.circuit()
         omegas = self.get_omegas()
-        non_zero_lie_algebra_elements = []
-        non_zero_omegas = []
-        for i, element in enumerate(omegas):
-            if not np.isclose(element, 0):
-                non_zero_lie_algebra_elements.append(self.lie_algebra_basis_names[i])
-                non_zero_omegas.append(-omegas[i])
+        nonzero_idx = np.where(~np.isclose(omegas, 0))[0]
+
+        non_zero_lie_algebra_elements = [self.lie_algebra_basis_names[i] for i in nonzero_idx]
+        non_zero_omegas = [-omegas[i] for i in nonzero_idx]
+
         lie_gradient = qml.Hamiltonian(
             non_zero_omegas,
             [
