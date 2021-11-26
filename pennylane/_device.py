@@ -1032,14 +1032,22 @@ class Device(abc.ABC):
             "Returning probability not currently supported by {}".format(self.short_name)
         )
 
-    def custom_process(self, post_processing_func, base_measurement, observable=None, wires=None):
-        """Return the func.
+    def custom_process(self, post_processing_func, base_measurement, observable=None, wires=None, par=None):
+        """Applies the provided post_processing_func to the result of base_measurement.
+
+        The base_measurement is a string (one of ['expval', 'var', 'sample', 'prob', 'state']),
+        which specifies which measurement to make at the end of the circuit.
 
         Args:
-            arg type: discrp
+            post_processing_func (callable/func): The function which will be applied to the measured result
+            base_measurement (str): A string representing which measurement will take place
+            observable (str or list[str]): name of the observable(s)
+            wires (Wires): wires the observable(s) is to be measured on
+            par (tuple or list[tuple]]): parameters for the observable(s)
+
 
         Returns:
-            type: discrp
+            float or array[float]: Result after applying the post_processing_func to the measured quantity
         """
         raise NotImplementedError(
             "Returning custom_process not currently supported by {}".format(self.short_name)
