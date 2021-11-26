@@ -35,9 +35,14 @@ class MPS(Operation):
         id=None,
     ):
         n_wires = len(wires)
-        assert loc >= 2, f"loc must be larger than or equal to 2; got {loc}"
-        assert n_wires >= 3, f"number of wires must be greater than or equal to 3; got {n_wires}"
-        assert loc <= n_wires, f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
+        if loc < 2:
+            raise ValueError(f"number of wires in each block must be larger than or equal to 2; got {loc}")
+
+        if n_wires < 3:
+            raise ValueError(f"fnumber of wires must be greater than or equal to 3; got {n_wires}")
+
+        if loc > n_wires: 
+            raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
   
 
         shape = qml.math.shape(weights)[-4:] # (n_params_block, n_blocks)
@@ -86,9 +91,11 @@ class MPS(Operation):
             tuple[int]: shape
         """
 
-        assert n_wires % 2 == 0, "n_wires should be an even integer"
-        assert loc % 2 == 0, "loc should be an even integer"
-        assert loc <= n_wires, "loc should be smaller or equal than num_wires"
+        if n_wires % 2 ==1:
+            raise ValueError(f"n_wires should be an even integer; got n_wires = {n_wires}")
+
+        if loc > n_wires: 
+            raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
 
         n_blocks = int(n_wires / (loc / 2) - 1)
 
