@@ -287,15 +287,3 @@ class DefaultQubitTorch(DefaultQubit):
         return super().sample_basis_states(
             number_of_states, state_probability.cpu().detach().numpy()
         )
-
-    def _apply_operation(self, state, operation):
-        """Applies operations to the input state.
-
-        Args:
-            state (torch.Tensor[complex]): input state
-            operation (~.Operation): operation to apply on the device
-
-        Returns:
-            torch.Tensor[complex]: output state
-        """
-        return super()._apply_operation(state, operation)
