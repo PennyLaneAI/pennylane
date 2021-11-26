@@ -421,10 +421,7 @@ class QNode:
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
         # cannot be done here since we don't yet know the composition of the circuit.
 
-        supported_device = hasattr(device, "_apply_operation")
-        supported_device = supported_device and hasattr(device, "_apply_unitary")
-        supported_device = supported_device and device.capabilities().get("returns_state")
-        supported_device = supported_device and hasattr(device, "adjoint_jacobian")
+        supported_device = device.capabilities().get("provides_adjoint_method")
 
         if not supported_device:
             raise ValueError(
