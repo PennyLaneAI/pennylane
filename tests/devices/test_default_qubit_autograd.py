@@ -404,7 +404,7 @@ class TestOps:
             qml.MultiRZ(param, wires=[0, 1])
             return qml.probs(wires=list(range(wires)))
 
-        param = 0.3
+        param = np.array(0.3, requires_grad=True)
         res = qml.jacobian(circuit)(param)
         assert np.allclose(res, np.zeros(wires ** 2))
 
@@ -418,7 +418,7 @@ class TestOps:
             qml.RY(param, wires=0).inv()
             return qml.expval(qml.PauliX(0))
 
-        x = 0.3
+        x = np.array(0.3, requires_grad=True)
         res = circuit(x)
         assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
 

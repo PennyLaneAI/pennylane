@@ -53,6 +53,18 @@ def test_adjoint_directly_on_op():
     np.testing.assert_allclose(my_circuit(), np.array([0.92388, 0.382683j]), atol=1e-6, rtol=1e-6)
 
 
+def test_barrier_adjoint():
+    """Check that the adjoint for the Barrier is working"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        qml.adjoint(qml.Barrier)(wires=0)
+        return qml.state()
+
+    assert my_circuit()[0] == 1.0
+
+
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)

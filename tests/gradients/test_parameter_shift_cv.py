@@ -486,7 +486,6 @@ class TestExpectationQuantumGradients:
             heisenberg representation"""
 
             num_wires = 1
-            num_params = 1
             par_domain = "R"
             grad_method = "A"
 
@@ -847,7 +846,6 @@ class TestVarianceQuantumGradients:
 
         class DummyOp(qml.operation.CVOperation):
             num_wires = 1
-            num_params = 1
             par_domain = "R"
             grad_method = "A"
             grad_recipe = ([[1, 1, 1], [1, 1, 1], [1, 1, 1]],)

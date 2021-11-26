@@ -27,7 +27,7 @@ import pennylane as qml
 dtype = jnp.float64
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
     """Execute a batch of tapes with JAX parameters on a device.
 
     Args:
@@ -48,11 +48,14 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
     if max_diff > 1:
         raise ValueError("The JAX interface only supports first order derivatives.")
 

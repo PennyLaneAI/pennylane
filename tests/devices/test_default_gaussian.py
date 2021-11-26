@@ -83,13 +83,6 @@ H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 hbar = 2
 
 
-def prep_par(par, op):
-    "Convert par into a list of parameters that op expects."
-    if op.par_domain == "A":
-        return [np.diag([x, 1]) for x in par]
-    return par
-
-
 @pytest.fixture(scope="function")
 def gaussian_device_1_wire():
     """Fixture of a default.gaussian device with 1 wire."""

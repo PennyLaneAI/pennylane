@@ -64,7 +64,6 @@ class QFT(Operation):
         circuit_qft([1.0, 0.0, 0.0])
     """
     num_wires = AnyWires
-    par_domain = None
     grad_method = None
 
     @property
