@@ -281,6 +281,9 @@
 
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
+* The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
+  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+
 <h3>Improvements</h3>
 
 * Tests do not loop over automatically imported and instantiated operations any more,
@@ -342,6 +345,8 @@
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+
+* BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
 
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
@@ -413,10 +418,14 @@
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
-  
+
 * Device tests no longer throw warnings about the `requires_grad`
   attribute of variational parameters.
   [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
+
+* `AdamOptimizer` and `AdagradOptimizer` had small fixes to their
+  optimization step updates.
+  [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
 <h3>Documentation</h3>
 
@@ -426,17 +435,18 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding and
-  MottonenStatePreparation.
+* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding,
+  MottonenStatePreparation and Interferometer.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
   [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
   [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
+  [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
 Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
