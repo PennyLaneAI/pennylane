@@ -120,7 +120,7 @@ class Molecule:
             index (int): index of the basis function
 
         Returns:
-            function: function that computes the basis function
+            function: function that computes the value of the orbital at a given position
 
         **Example**
 
