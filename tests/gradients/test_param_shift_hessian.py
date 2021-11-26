@@ -22,8 +22,9 @@ from pennylane import numpy as np
 class TestParameterShiftHessian:
     """Tests for the param_shift_hessian method"""
 
-    def test_2term_shift_rules1(self):
-        """Test that the correct hessian is calculated for a single RX operator"""
+    def test_single_two_term_gate(self):
+        """Test that the correct hessian is calculated for a QNode with single RX operator
+        and single expectation value output (0d -> 0d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -35,15 +36,14 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        jacobian = qml.jacobian(qml.grad(circuit))(x)
+        expected = qml.jacobian(qml.grad(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "=?", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules2(self):
-        """Test that the correct hessian is calculated for a single RY operator"""
+    def test_single_two_term_gate_vector_output(self):
+        """Test that the correct hessian is calculated for a QNode with single RY operator
+        and probabilies as output (0d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -55,15 +55,14 @@ class TestParameterShiftHessian:
 
         x = np.array(0.1, requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules3(self):
-        """Test that the correct hessian is calculated for two 2-term shift rule operators"""
+    def test_multiple_two_term_gates(self):
+        """Test that the correct hessian is calculated for a QNode with two rotation operators
+        and one expectation value output (1d -> 0d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -76,15 +75,14 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules4(self):
-        """Test that the correct hessian is calculated for two 2-term shift rule operators"""
+    def test_multiple_two_term_gates_vector_output(self):
+        """Test that the correct hessian is calculated for a QNode with two rotation operators
+        and probabilities output (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -97,15 +95,13 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules5(self):
-        """Test that the purely "quantum" hessian has the correct shape"""
+    def test_quantum_hessian_shape_vector_input_vector_output(self):
+        """Test that the purely "quantum" hessian has the correct shape (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -123,12 +119,10 @@ class TestParameterShiftHessian:
 
         hessian = qml.gradients.param_shift_hessian(circuit, hybrid=False)(x)
 
-        print("\n", hessian)
-
         assert qml.math.shape(hessian) == shape
 
-    def test_2term_shift_rules6(self):
-        """Test that the correct hessian is calculated when reusing parameters"""
+    def test_multiple_two_term_gates_reusing_parameters(self):
+        """Test that the correct hessian is calculated when reusing parameters (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -143,15 +137,13 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules7(self):
-        """Test that the correct hessian is calculated when manipulating parameters"""
+    def test_multiple_two_term_gates_classical_processing(self):
+        """Test that the correct hessian is calculated when manipulating parameters (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -165,15 +157,14 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules8(self):
-        """Test that the correct hessian is calculated for higher dimensional QNode outputs"""
+    def test_multiple_two_term_gates_matrix_output(self):
+        """Test that the correct hessian is calculated for higher dimensional QNode outputs
+        (1d -> 2d)"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -185,15 +176,14 @@ class TestParameterShiftHessian:
 
         x = np.ones([2], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
+        assert np.allclose(expected, hessian)
 
-        assert np.allclose(jacobian, hessian)
-
-    def test_2term_shift_rules9(self):
-        """Test that the correct hessian is calculated for higher dimensional cl. jacobians"""
+    def test_multiple_two_term_gates_matrix_input(self):
+        """Test that the correct hessian is calculated for higher dimensional cl. jacobians
+        (2d -> 2d)"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -207,12 +197,10 @@ class TestParameterShiftHessian:
 
         x = np.ones([1, 3], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
-
-        assert np.allclose(jacobian, hessian)
+        assert np.allclose(expected, hessian)
 
     # Some bounds we could choose to meet on the efficiency of the hessian implementation
     # for operations with two eigenvalues (2-term shift rule):
@@ -221,8 +209,9 @@ class TestParameterShiftHessian:
     # - <= 3^m                    see arXiv:2008.06517 p. 4
     # here d=2 is the derivative order, m is the number of variational parameters (w.r.t. gate args)
 
-    def test_less_quantum_invocations1(self):
-        """Test that the hessian invokes less hardware executions than double differentiation"""
+    def test_fewer_device_invocations_scalar_input(self):
+        """Test that the hessian invokes less hardware executions than double differentiation
+        (0d -> 0d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -237,20 +226,17 @@ class TestParameterShiftHessian:
         with qml.Tracker(dev) as tracker:
             hessian = qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
-            jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+            expected = qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
-        print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * 1, "?")
-        print("\n", hessian_qruns, "<=", 3 ** 1, "?")
-
-        assert np.allclose(hessian, jacobian)
+        assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * 1  # 1 = (1+2-1)C(2)
         assert hessian_qruns <= 3 ** 1
 
-    def test_less_quantum_invocations2(self):
-        """Test that the hessian invokes less hardware executions than double differentiation"""
+    def test_fewer_device_invocations_vector_input(self):
+        """Test that the hessian invokes less hardware executions than double differentiation
+        (1d -> 0d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -266,20 +252,17 @@ class TestParameterShiftHessian:
         with qml.Tracker(dev) as tracker:
             hessian = qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
-            jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+            expected = qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
-        print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * 3, "?")
-        print("\n", hessian_qruns, "<=", 3 ** 2, "?")
-
-        assert np.allclose(hessian, jacobian)
+        assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * 3  # 3 = (2+2-1)C(2)
         assert hessian_qruns <= 3 ** 2
 
-    def test_less_quantum_invocations3(self):
-        """Test that the hessian invokes less hardware executions than double differentiation"""
+    def test_fewer_device_invocations_vector_output(self):
+        """Test that the hessian invokes less hardware executions than double differentiation
+        (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -296,20 +279,17 @@ class TestParameterShiftHessian:
         with qml.Tracker(dev) as tracker:
             hessian = qml.gradients.param_shift_hessian(circuit)(x)
             hessian_qruns = tracker.totals["executions"]
-            jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+            expected = qml.jacobian(qml.jacobian(circuit))(x)
             jacobian_qruns = tracker.totals["executions"] - hessian_qruns
 
-        print("\n", hessian_qruns, "<", jacobian_qruns, "?")
-        print("\n", hessian_qruns, "<=", 2 ** 2 * 6, "?")
-        print("\n", hessian_qruns, "<=", 3 ** 3, "?")
-
-        assert np.allclose(hessian, jacobian)
+        assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
         assert hessian_qruns <= 3 ** 3
 
-    def test_hessian_is_differentiable(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation"""
+    def test_hessian_transform_is_differentiable_autograd(self):
+        """Test that the 3rd derivate can be calculated via auto-differentiation in Autograd
+        (1d -> 1d)"""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -322,12 +302,10 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2], requires_grad=True)
 
-        jacobian = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
         hessian = qml.jacobian(qml.gradients.param_shift_hessian(circuit))(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
-
-        assert np.allclose(jacobian, hessian)
+        assert np.allclose(expected, hessian)
 
     def test_error_unsupported_operation(self):
         """Test that the correct error is thrown for unsopperted operations"""
@@ -346,7 +324,7 @@ class TestParameterShiftHessian:
         with pytest.raises(ValueError, match=r"The operation .+ is currently not supported"):
             qml.gradients.param_shift_hessian(circuit)(x)
 
-    def test_error_unsupported_measurement(self):
+    def test_error_unsupported_variance_measurement(self):
         """Test that the correct error is thrown for variance measurements"""
 
         dev = qml.device("default.qubit", wires=2)
@@ -366,7 +344,7 @@ class TestParameterShiftHessian:
         ):
             qml.gradients.param_shift_hessian(circuit)(x)
 
-    def test_error_unsupported_measurement2(self):
+    def test_error_unsupported_state_measurement(self):
         """Test that the correct error is thrown for state measurements"""
 
         dev = qml.device("default.qubit", wires=2)
@@ -386,7 +364,7 @@ class TestParameterShiftHessian:
         ):
             qml.gradients.param_shift_hessian(circuit)(x)
 
-    def test_noerror_unsupported_operation(self):
+    def test_no_error_nondifferentiable_unsupported_operation(self):
         """Test that no error is thrown for operations that are not marked differentiable"""
 
         dev = qml.device("default.qubit", wires=2)
@@ -418,12 +396,10 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=False)
 
-        jacobian = qml.jacobian(qml.jacobian(circuit))(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
-        print("\n", jacobian, "\n\t=?\n", hessian)
-
-        assert np.allclose(jacobian, hessian)
+        assert np.allclose(expected, hessian)
 
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""
@@ -446,8 +422,6 @@ class TestParameterShiftHessian:
             qruns1 = tracker.totals["executions"]
             hessian2 = qml.gradients.param_shift_hessian(circuit)(x)
             qruns2 = tracker.totals["executions"] - qruns1
-
-        print("\n", qruns1, "<", qruns2, "?")
 
         assert np.allclose(hessian1, hessian2)
         assert qruns1 < qruns2
