@@ -306,7 +306,7 @@ def sample(op=None, wires=None):
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-        QuantumFunctionError: Cannot set wires if an observable is provided
+        ValueError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
@@ -370,7 +370,7 @@ def sample(op=None, wires=None):
 
     if wires is not None:
         if op is not None:
-            raise qml.QuantumFunctionError(
+            raise ValueError(
                 "Cannot specify the wires to sample if an observable is "
                 "provided. The wires to sample will be determined directly from the observable."
             )
