@@ -970,7 +970,7 @@ class QubitDevice(Device):
 
     def custom_process(self, post_processing_func, base_measurement, observable=None,
                        wires=None, shot_range=None, bin_size=None):
-        """ """
+
         if base_measurement == "expval":
             res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
 

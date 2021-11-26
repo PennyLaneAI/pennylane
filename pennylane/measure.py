@@ -104,9 +104,9 @@ class MeasurementProcess:
         cls = self.__class__
 
         if self.obs is not None:
-            return cls(self.return_type, obs=copy.copy(self.obs))
+            return cls(self.return_type, obs=copy.copy(self.obs), **self.kwargs)
 
-        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
+        return cls(self.return_type, eigvals=self._eigvals, wires=self._wires, **self.kwargs)
 
     @property
     def wires(self):
@@ -306,7 +306,7 @@ def sample(op=None, wires=None):
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
-        ValueError: Cannot set wires if an observable is provided
+        QuantumFunctionError: Cannot set wires if an observable is provided
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
@@ -370,7 +370,7 @@ def sample(op=None, wires=None):
 
     if wires is not None:
         if op is not None:
-            raise ValueError(
+            raise qml.QuantumFunctionError(
                 "Cannot specify the wires to sample if an observable is "
                 "provided. The wires to sample will be determined directly from the observable."
             )
@@ -444,7 +444,7 @@ def probs(wires=None, op=None):
 
     if op is not None and not hasattr(op, "diagonalizing_gates"):
         raise qml.QuantumFunctionError(
-            "{} has not diagonalizing_gates attribute: cannot be used to rotate the probability".format(
+            "{} has no diagonalizing_gates attribute: cannot be used to rotate the probability".format(
                 op
             )
         )
@@ -554,8 +554,103 @@ def density_matrix(wires):
 
 
 def custom_process(post_process_func, base_measurement, op=None, wires=None):
-    """Something ..."""
-    # add some validation checks ...
+    r"""The custom_process takes a callable function and applies it to the result
+     obtained from making a measurement defined by the base_measurement string. In this way
+     we can take the pre-existing measurement process types and perform classical
+     post-processing on them.
 
-    return MeasurementProcess(CustomPostProcess, obs=op, wires=qml.wires.Wires(wires), func=post_process_func,
+     Note the restrictions which apply for each measurement type also apply when using
+     them through `custom_process`.
+
+     **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=1, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            # circuit def:#####
+            qml.PauliX(wires=0)
+            ###################
+
+            def sum_samples(samples):
+                return np.sum(samples)
+
+            measure = 'sample'
+            return qml.custom_process(sum_samples, measure)  # measure qubit and sum over all samples
+
+    Executing this QNode:
+
+    >>> circuit()
+    100
+
+     Args:
+         post_process_func (func): The function which will be applied to the measured quantity
+         base_measurement (str): A string ('expval', 'var', 'sample', 'prob', 'state') representing the measurement type
+         op (Observable or None): a quantum observable object
+         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
+
+     Raises:
+        QuantumFunctionError: op is not an observable, cannot be used with expval/var
+        QuantumFunctionError: op is not an observable or None, cannot be used with sample
+        QuantumFunctionError: Hamiltonians are not supported for rotating probabilities
+        QuantumFunctionError: No diagonalizing_gates attribute: cannot be used to rotate the probability
+        QuantumFunctionError: Cannot specify the wires to probs/sample if an observable is provided.
+     """
+
+    if wires is not None and not isinstance(wires, Wires):
+        wires = Wires(wires)
+
+    if base_measurement == "expval":
+        if not isinstance(op, (Observable, qml.Hamiltonian)):
+            raise qml.QuantumFunctionError(
+                "{} is not an observable or hamiltonian: cannot be used with expval".format(op.name)
+            )
+
+    elif base_measurement == "var":
+        if not isinstance(op, Observable):
+            raise qml.QuantumFunctionError(
+                "{} is not an observable: cannot be used with var".format(op.name)
+            )
+
+    elif base_measurement == "sample":
+        if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
+            raise qml.QuantumFunctionError(
+                "{} is not an observable: cannot be used with sample".format(op.name)
+            )
+
+        if wires is not None:
+            if op is not None:
+                raise qml.QuantumFunctionError(
+                    "Cannot specify the wires to sample if an observable is "
+                    "provided. The wires to sample will be determined directly from the observable."
+                )
+
+    elif base_measurement == "prob":
+        if isinstance(op, qml.Hamiltonian):
+            raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
+
+        if op is not None and not hasattr(op, "diagonalizing_gates"):
+            raise qml.QuantumFunctionError(
+                "{} has no diagonalizing_gates attribute: cannot be used to rotate the probability".format(
+                    op
+                )
+            )
+
+        if wires is not None:
+            if op is not None:
+                raise qml.QuantumFunctionError(
+                    "Cannot specify the wires to probs if an observable is "
+                    "provided. The wires for probs will be determined directly from the observable."
+                )
+
+    elif base_measurement == "state":
+        pass
+
+    else:
+        raise ValueError("base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
+                         f"got: {base_measurement}")
+
+    return MeasurementProcess(CustomPostProcess, obs=op, wires=wires, func=post_process_func,
                               b_measure=base_measurement)
