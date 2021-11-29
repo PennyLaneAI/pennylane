@@ -444,7 +444,7 @@
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
   [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
 
-* Added Lie Gradient Flow optimizer.
+* Added Lie Gradient Flow optimizer that allows one to perform gradient descent on the special unitary group.
   [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
   
 <h3>Contributors</h3>
