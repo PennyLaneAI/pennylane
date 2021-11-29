@@ -10,5 +10,5 @@ toml==0.10
 appdirs==1.4
 semantic_version==2.6
 dask[delayed]==2021.08
-autoray==0.2
+autoray>=0.2.5
 matplotlib==3.4
