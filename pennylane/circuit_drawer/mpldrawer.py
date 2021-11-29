@@ -418,8 +418,8 @@ class MPLDrawer:
 
         x_loc = layer - self._box_length / 2.0 - extra_width / 2.0 + self._pad
         y_loc = box_min - self._box_length / 2.0 + self._pad
-        box_height = box_max - box_min + self._box_length - 2*self._pad
-        box_width = self._box_length + extra_width - 2*self._pad
+        box_height = box_max - box_min + self._box_length - 2 * self._pad
+        box_width = self._box_length + extra_width - 2 * self._pad
 
         box = patches.FancyBboxPatch(
             (x_loc, y_loc),
@@ -430,8 +430,6 @@ class MPLDrawer:
         )
         self._ax.add_patch(box)
 
-
-
         text_obj = self._ax.text(
             layer,
             box_center,
@@ -441,9 +439,9 @@ class MPLDrawer:
 
         if autosize:
             margin = 0.1
-            max_width = box_width - margin + 2*self._pad
+            max_width = box_width - margin + 2 * self._pad
             # factor of 2 makes it look nicer
-            max_height = box_height - 2 * margin + 2*self._pad
+            max_height = box_height - 2 * margin + 2 * self._pad
 
             w, h = self._text_dims(text_obj)
 
@@ -771,13 +769,13 @@ class MPLDrawer:
         if "zorder" not in lines_options:
             lines_options["zorder"] = 3
 
-        x_loc = layer-self._box_length / 2.0 + self._pad
+        x_loc = layer - self._box_length / 2.0 + self._pad
         y_loc = wires - self._box_length / 2.0 + self._pad
 
         box = patches.FancyBboxPatch(
             (x_loc, y_loc),
-            self._box_length-2*self._pad,
-            self._box_length-2*self._pad,
+            self._box_length - 2 * self._pad,
+            self._box_length - 2 * self._pad,
             boxstyle=self._boxstyle,
             **box_options,
         )

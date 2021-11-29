@@ -45,12 +45,14 @@ with QuantumTape() as tape1:
     qml.PauliX("a")
     qml.PauliX(1.234)
 
+
 def test_fontsize():
     """Test default fontsize set with keyword argument."""
 
     _, ax = tape_mpl(tape1, fontsize=20)
     for t in ax.texts:
         assert t.get_fontsize() == 20
+
 
 label_data = [
     ({}, ["0", "a", "1.234"]),  # default behaviour
@@ -369,8 +371,8 @@ class TestControlledGates:
         assert control_line.get_data() == ((layer, layer), (0, 1))
 
         assert isinstance(ax.patches[1], mpl.patches.FancyBboxPatch)
-        assert ax.patches[1].get_x() == layer - self.width/2.0
-        assert ax.patches[1].get_y() == 1 - self.width/2.0
+        assert ax.patches[1].get_x() == layer - self.width / 2.0
+        assert ax.patches[1].get_y() == 1 - self.width / 2.0
 
         # two wire labels, so [2] is box gate label
         assert ax.texts[2].get_text() == label
@@ -417,7 +419,7 @@ general_op_data = [
 class TestGeneralOperations:
     """Tests general operations."""
 
-    width = 0.75 - 2 *0.2
+    width = 0.75 - 2 * 0.2
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations(self, op):
@@ -433,8 +435,8 @@ class TestGeneralOperations:
         assert ax.texts[num_wires].get_text() == op.label()
 
         assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
-        assert ax.patches[0].get_x() == -self.width/2.0
-        assert ax.patches[0].get_y() == -self.width/2.0
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
         assert ax.patches[0].get_width() == self.width
         assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
@@ -466,7 +468,7 @@ measure_data = [
 class TestMeasurements:
     """Tests measurements are drawn correctly"""
 
-    width = 0.75 - 2 *0.2
+    width = 0.75 - 2 * 0.2
 
     @pytest.mark.parametrize("measurements, wires", measure_data)
     def test_measurements(self, measurements, wires):
@@ -481,9 +483,9 @@ class TestMeasurements:
         assert len(ax.patches) == 3 * len(wires)
 
         for ii, w in enumerate(wires):
-            assert ax.patches[3 * ii].get_x() == 1 - self.width/2.0
-            assert ax.patches[3 * ii].get_y() == w - self.width/2.0
-            assert ax.patches[3 * ii + 1].center == (1, w + 0.75/16)  # arc
+            assert ax.patches[3 * ii].get_x() == 1 - self.width / 2.0
+            assert ax.patches[3 * ii].get_y() == w - self.width / 2.0
+            assert ax.patches[3 * ii + 1].center == (1, w + 0.75 / 16)  # arc
             assert isinstance(ax.patches[3 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
 
         plt.close()
@@ -503,14 +505,14 @@ class TestMeasurements:
         assert all(isinstance(arrow, mpl.patches.FancyArrow) for arrow in ax.patches[2::3])
 
         for layer, box in enumerate(ax.patches[::3]):
-            assert box.get_x() == 1 - self.width/2.0
-            assert box.get_y() == layer - self.width/2.0
+            assert box.get_x() == 1 - self.width / 2.0
+            assert box.get_y() == layer - self.width / 2.0
 
 
 class TestLayering:
     """Tests operations are placed into layers correctly."""
 
-    width = 0.75 - 2 *0.2
+    width = 0.75 - 2 * 0.2
 
     def test_single_layer_multiple_wires(self):
         """Tests positions when multiple gates are all in the same layer."""
@@ -529,8 +531,8 @@ class TestLayering:
         boxes_x = [p.get_x() for p in ax.patches]
         boxes_y = [p.get_y() for p in ax.patches]
         for wire in range(3):
-            assert -self.width/2.0 in boxes_x
-            assert wire - self.width/2.0 in boxes_y
+            assert -self.width / 2.0 in boxes_x
+            assert wire - self.width / 2.0 in boxes_y
 
         for t in ax.texts[3:]:
             assert t.get_text() == "X"
@@ -546,8 +548,8 @@ class TestLayering:
         _, ax = tape_mpl(tape)
 
         for layer, box in enumerate(ax.patches):
-            assert box.get_x() == layer - self.width/2.0
-            assert box.get_y() == -self.width/2.0
+            assert box.get_x() == layer - self.width / 2.0
+            assert box.get_y() == -self.width / 2.0
 
         for t in ax.texts[1:]:
             assert t.get_text() == "X"
@@ -563,17 +565,16 @@ class TestLayering:
         _, ax = tape_mpl(tape, wire_order=[0, 1, 2])
 
         # layer=0, wire=0
-        assert ax.patches[0].get_x() == -self.width/2.0
-        assert ax.patches[0].get_y() == -self.width/2.0
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
 
         # layer=1, wire=0
-        assert ax.patches[1].get_x() == 1.0 - self.width/2.0
-        assert ax.patches[1].get_y() == -self.width/2.0
+        assert ax.patches[1].get_x() == 1.0 - self.width / 2.0
+        assert ax.patches[1].get_y() == -self.width / 2.0
 
         # layer=2, wire=1
-        assert ax.patches[2].get_x() == 2 - self.width/2.0
-        assert ax.patches[2].get_y() == 1 - self.width/2.0
-
+        assert ax.patches[2].get_x() == 2 - self.width / 2.0
+        assert ax.patches[2].get_y() == 1 - self.width / 2.0
 
         assert ax.texts[3].get_text() == "X"
         assert ax.texts[4].get_text() == "IsingXX"
