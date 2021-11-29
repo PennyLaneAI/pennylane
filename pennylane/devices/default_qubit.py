@@ -184,9 +184,7 @@ class DefaultQubit(QubitDevice):
             mapped_wires = [self.wire_map[w] for w in wires]
         except KeyError as e:
             raise WireError(
-                "Did not find some of the wires {} on device with wires {}.".format(
-                    wires.labels, self.wires.labels
-                )
+                f"Did not find some of the wires {wires.labels} on device with wires {self.wires.labels}."
             ) from e
 
         return mapped_wires
@@ -206,8 +204,8 @@ class DefaultQubit(QubitDevice):
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
+                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
+                    f"on a {self.short_name} device."
                 )
 
             if isinstance(operation, QubitStateVector):
@@ -634,8 +632,9 @@ class DefaultQubit(QubitDevice):
         if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not qml.math.is_abstract(state):
-            if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        norm = qml.math.linalg.norm(state, ord=2)
+        if not qml.math.is_abstract(norm):
+            if not qml.math.allclose(norm, 1.0, atol=tolerance):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
@@ -679,7 +678,8 @@ class DefaultQubit(QubitDevice):
 
         # get computational basis state number
         basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
-        num = int(np.dot(state, basis_states))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
@@ -747,14 +747,7 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = (
-            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-                affected_indices=affected_indices,
-                state_indices=state_indices,
-                new_indices=new_indices,
-                new_state_indices=new_state_indices,
-            )
-        )
+        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
 
         return self._einsum(einsum_indices, mat, state)
 
@@ -780,10 +773,7 @@ class DefaultQubit(QubitDevice):
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
-        einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
-            affected_indices=affected_indices, state_indices=state_indices
-        )
-
+        einsum_indices = f"{affected_indices},{state_indices}->{state_indices}"
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):

@@ -352,7 +352,18 @@ def _coerce_types_torch(tensors):
     """Coerce a list of tensors to all have the same dtype
     without any loss of information."""
     torch = _i("torch")
-    tensors = [torch.as_tensor(t) for t in tensors]
+
+    # Extract existing set devices, if any
+    device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
+    if len(device_set) > 1:
+        device_names = ", ".join(str(d) for d in device_set)
+        raise RuntimeError(
+            f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+        )
+
+    device = device_set.pop() if len(device_set) == 1 else None
+    tensors = [torch.as_tensor(t, device=device) for t in tensors]
+
     dtypes = {i.dtype for i in tensors}
 
     if len(dtypes) == 1:
