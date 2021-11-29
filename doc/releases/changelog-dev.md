@@ -352,6 +352,8 @@
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
+* Interferometer is now a class with `shape` method. [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
+
 <h3>Breaking changes</h3>
 
 * The `par_domain` attribute in the operator class has been removed.
