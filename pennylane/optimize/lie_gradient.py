@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Lie gradient optimizers"""
-import numpy as np
 import warnings
+
+import numpy as np
 from scipy.sparse.linalg import expm
 import pennylane as qml
 
@@ -81,7 +82,7 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
 
     Returns:
          func: Function which accepts the same arguments as the QNode. When called, this
-         function will return the metric tensor.
+         function will return the Lie algebra commutator.
 
     """
     tapes_plus_total = []
@@ -159,7 +160,7 @@ class LieGradientOptimizer:
     The exact Lie Gradient flow on :math:`\text{SU}(2^N)` has desirable optimization properties
     that can guarantee convergence to global minima under mild assumptions. However, this comes
     at a cost. Since :math:`\text{dim}(\text{SU}(2^N)) = 4^N-1`, we need an exponential number
-    of parameters to calculate the gradient. This will not be problematic for small systems (N<5),
+    of parameters to calculate the gradient. This will not be problematic for small systems (:math:`N<5`),
     but will quickly get out of control as the number of qubits increases.
 
     To resolve this issue, we can restrict the Lie gradient to a subspace and calculate an
@@ -169,7 +170,7 @@ class LieGradientOptimizer:
     For more information on Lie gradient flows see
     `T. Schulte-Herbrueggen et. al. (2008) <https://arxiv.org/abs/0802.4195>`_
     and the application to quantum circuits
-    `Wiersema and Killoran (2021) <https://arxiv.org/abs/>`_,
+    `Wiersema and Killoran (2021) <https://arxiv.org/abs/>`_.
 
     Args:
         circuit (.QNode): a user defined circuit that does not take any arguments and returns
@@ -186,8 +187,9 @@ class LieGradientOptimizer:
 
     Define a Hamiltonian cost function to minimize:
 
-    >>> hamiltonian = qml.Hamiltonian(coeffs=[-1.]*3,
-    ... observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)])
+    >>> coeffs = [-1., -1., -1.]
+    >>> observables = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)]
+    >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
 
     Create an initial state and return the expectation value of the Hamiltonian:
 
@@ -204,9 +206,9 @@ class LieGradientOptimizer:
 
     >>> opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1)
 
-    Applying 10 steps gets us close the ground state of :math:`E\approx-2.23`
+    Applying 5 steps gets us close the ground state of :math:`E\approx-2.23`
 
-    >>> for step in range(10):
+    >>> for step in range(5):
     ...    cost = opt.step_and_cost()
     ...    print(f"Step {step} - cost {cost}")
     Step 0 - cost -1.3351865007304005
@@ -215,7 +217,6 @@ class LieGradientOptimizer:
     Step 3 - cost -2.1955105378898487
     Step 4 - cost -2.2137628169764256
     Step 5 - cost -2.2234364822091575
-    ...
 
     """
     # pylint: disable=too-few-public-methods
