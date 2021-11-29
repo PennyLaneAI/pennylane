@@ -995,19 +995,19 @@ class QubitDevice(Device):
                 f"custom_process currently does not support measuring {base_measurement}"
             )
         #     res = self.expval(observable, shot_range=shot_range, bin_size=bin_size)
-        #
+
         elif base_measurement == "var":
             raise NotImplementedError(
                 f"custom_process currently does not support measuring {base_measurement}"
             )
         #     res = self.var(observable, shot_range=shot_range, bin_size=bin_size)
-        #
+
         elif base_measurement == "prob":
             raise NotImplementedError(
                 f"custom_process currently does not support measuring {base_measurement}"
             )
         #     res = self.probability(wires=observable.wires, shot_range=shot_range, bin_size=bin_size)
-        #
+
         elif base_measurement == "state":
             raise NotImplementedError(
                 f"custom_process currently does not support measuring {base_measurement}"

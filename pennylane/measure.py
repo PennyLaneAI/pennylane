@@ -597,7 +597,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
          post_process_func (func): The function which will be applied to the measured quantity
          base_measurement (str): A string ('expval', 'var', 'sample', 'prob', 'state') representing the measurement type
          op (Observable or None): a quantum observable object
-         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
+         wires (Sequence[int] or int or None): the wires we measure from, ONLY set wires if op is None
 
      Raises:
         QuantumFunctionError: op is not an observable, cannot be used with expval/var
@@ -614,7 +614,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
     if base_measurement == "expval":
         if not isinstance(op, (Observable, qml.Hamiltonian)):
             raise qml.QuantumFunctionError(
-                "{} is not an observable or hamiltonian: cannot be used with expval".format(op.name)
+                "{} is not an observable: cannot be used with expval".format(op.name)
             )
 
     elif base_measurement == "var":
@@ -633,7 +633,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
             if op is not None:
                 raise qml.QuantumFunctionError(
                     "Cannot specify the wires to sample if an observable is "
-                    "provided. The wires to sample will be determined directly from the observable."
+                    "provided. The wires for sample will be determined directly from the observable."
                 )
 
     elif base_measurement == "prob":
@@ -652,14 +652,11 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
         if wires is not None:
             if op is not None:
                 raise qml.QuantumFunctionError(
-                    "Cannot specify the wires to probs if an observable is "
-                    "provided. The wires for probs will be determined directly from the observable."
+                    "Cannot specify the wires to prob if an observable is "
+                    "provided. The wires for prob will be determined directly from the observable."
                 )
 
-    elif base_measurement == "state":
-        pass
-
-    else:
+    elif base_measurement not in ('expval', 'var', 'sample', 'prob', 'state'):
         raise ValueError(
             "base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
             f"got: {base_measurement}"

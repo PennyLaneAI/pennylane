@@ -26,6 +26,7 @@ from pennylane.measure import (
     probs,
     state,
     density_matrix,
+    custom_process,
     Expectation,
     Sample,
     State,
@@ -1046,3 +1047,45 @@ class TestDensityMatrix:
 
         with pytest.raises(qml.QuantumFunctionError, match="custom wire labels"):
             func()
+
+class TestCustomProcess:
+    """Tests for the custom_process function."""
+
+    @pytest.mark.parametrize("measure_type", ["expval", "var", "sample"])
+    def test_not_observable(self, measure_type):
+        """Test if an error is raised when no operator is provided with expval measurement."""
+        op = qml.Rotation(1.23, wires=0)
+
+        with pytest.raises(qml.QuantumFunctionError,
+                           match="{} is not an observable: cannot be used with {}".format(op.name, measure_type)):
+            custom_process((lambda res: 1), measure_type, op=op)
+
+    @pytest.mark.parametrize("measure_type", ["prob", "sample"])
+    def test_passing_wires_and_observable(self, measure_type):
+        """Test if an error is raised when both wires and observable."""
+        wire = 0
+        obs = qml.PauliZ(wires=wire)
+
+        with pytest.raises(qml.QuantumFunctionError,
+                           match=f"Cannot specify the wires to {measure_type} if an observable "
+                                 f"is provided. The wires for {measure_type} will be determined "
+                                 f"directly from the observable."):
+            custom_process((lambda res: 1), measure_type, op=obs, wires=wire)
+
+    def test_hamiltonian_not_supported_by_probs(self):
+        """Test if an error is raised when a hamiltonian is given during a probs measurement."""
+        H = qml.Hamiltonian([1.0], [qml.PauliX(0)])
+        measure = 'prob'
+
+        with pytest.raises(qml.QuantumFunctionError,
+                           match="Hamiltonians are not supported for rotating probabilities."):
+            custom_process((lambda res: 1), measure, op=H)
+
+    def test_no_diagonalizing_gates_op(self):
+        """Test if an error is raised when an observable is passed with no diagonalizing gates attribute."""
+        ob = qml.RX(1.23, wires=0)
+        measure = 'prob'
+
+        with pytest.raises(qml.QuantumFunctionError, match=f"{ob} has no diagonalizing_gates attribute: "
+                                                           f"cannot be used to rotate the probability"):
+            custom_process((lambda res: 1), measure, op=ob)
