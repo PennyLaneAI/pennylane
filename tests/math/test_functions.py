@@ -558,7 +558,7 @@ class TestTensordotTorch:
     M1 = torch.tensor(_arange)
     M2 = torch.tensor(_shuffled_arange)
     T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
-    T1 = np.array([T1[1], T1[0], T1[2]])
+    T1 = torch.tensor(np.array([T1[1], T1[0], T1[2]]), dtype=torch.float64)
 
     v1_dot_v2 = 9.59
     v1_outer_v2 = np.array(
