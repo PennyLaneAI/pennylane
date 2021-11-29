@@ -17,7 +17,7 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.wires import Wires
-from pennylane.tape import QuantumTape
+from pennylane.tape import stop_recording
 
 
 
@@ -77,7 +77,7 @@ def undo_swaps(tape):
             change_wires += map_wires[wire]
         return change_wires
 
-    with QuantumTape(do_queue = False):
+    with stop_recording():
         while len(list_copy) > 0:
             current_gate = list_copy[0]
             params = current_gate.parameters
@@ -85,16 +85,19 @@ def undo_swaps(tape):
                 if len(params) == 0:
                     gates.append(type(current_gate)(wires=_change_wires(current_gate.wires)))
                 else:
-                    gates.append(type(current_gate)(params, wires=_change_wires(current_gate.wires)))
+                    gates.append(type(current_gate)(*params, wires=_change_wires(current_gate.wires)))
 
             else:
                 swap_wires_0, swap_wires_1 = current_gate.wires
                 map_wires[swap_wires_0], map_wires[swap_wires_1] = map_wires[swap_wires_1], map_wires[swap_wires_0]
             list_copy.pop(0)
             continue
-#TODO: no está cogiendo bien esto, habrá que pensar como hacerlo
+
+        gates.reverse()
+
         for m in tape.measurements:
             gates.append(m)
+
     for gate in gates:
         apply(gate)
 
