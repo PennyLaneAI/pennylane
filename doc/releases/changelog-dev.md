@@ -402,6 +402,9 @@
   in `qml.fourier.qnode_spectrum`, leading to wrong outputs.
   [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
 
+* Fixes a bug where the device test suite wasn't testing certain operations.
+  [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
+
 * Fixes a bug where batch transforms would mutate a QNodes execution options.
   [(#1934)](https://github.com/PennyLaneAI/pennylane/pull/1934)
 
