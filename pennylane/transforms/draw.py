@@ -270,33 +270,39 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         **Formatting:**
 
-        PennyLane has inbuilt styles.  The function names are listed in ``qml.styles.available``.
-        The functions modify ``plt.rcParams``, and thus the styling can be reset with ``plt.style.use('default')``.
+        PennyLane has inbuilt styles.
+        ``qml.style`` mirrors ``plt.style`` with the ``available`` variable and the ``use`` and ``context`` methods.
+        See more on the matplotlib methods in the
+        `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
 
         .. code-block:: python
 
-            qml.styles.black_white()
+            qml.styles.use('black_white')
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()
 
 
-        .. figure:: ../../_static/styles/black_white_style.png
+        .. figure:: ../../_static/style/black_white_style.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
 
-        You can globally control the style with ``plt.rcParams`` and styles, see the
-        `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+        You can globally control the style with ``plt.rcParams`` and styles
         If we customize ``plt.rcParams``, we get a
         different style:
 
         .. code-block:: python
 
-            plt.rcParams['patch.facecolor'] = 'white'
-            plt.rcParams['patch.edgecolor'] = 'black'
-            plt.rcParams['patch.linewidth'] = 2
+            plt.rcParams['patch.facecolor'] = 'mistyrose'
+            plt.rcParams['patch.edgecolor'] = 'maroon'
+            plt.rcParams['text.color'] = 'maroon'
+            plt.rcParams['font.weight'] = 'bold'
+            plt.rcParams['patch.linewidth'] = 4
             plt.rcParams['patch.force_edgecolor'] = True
-            plt.rcParams['lines.color'] = 'black'
+            plt.rcParams['lines.color'] = 'indigo'
+            plt.rcParams['lines.linewidth'] = 5
+            plt.rcParams['figure.facecolor'] = 'ghostwhite'
+
 
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()

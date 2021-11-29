@@ -78,9 +78,7 @@
   [(#1811)](https://github.com/PennyLaneAI/pennylane/pull/1811)
 
   ```python
-  dev = qml.device("default.qubit", wires=4)
-
-  @qml.qnode(dev)
+  @qml.qnode(qml.device("default.qubit", wires=4))
   def circuit(x, z):
       qml.QFT(wires=(0,1,2,3))
       qml.Toffoli(wires=(0,1,2))
@@ -89,7 +87,7 @@
       qml.CRZ(z, wires=(3,0))
       return qml.expval(qml.PauliZ(0))
 
-  qml.styles.black_white()
+  qml.styles.use('black_white')
   fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
   fig.show()
   ```

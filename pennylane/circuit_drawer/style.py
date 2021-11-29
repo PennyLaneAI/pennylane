@@ -27,15 +27,16 @@ import contextlib
 _has_mpl = True   # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
-    from matplotlib import rc_context, rcdefaults
-except (ModuleNotFoundError, ImportError) as e:
+    from matplotlib import rc_context as _rc_context
+    from matplotlib import rcdefaults as _rcdefaults
+except (ModuleNotFoundError, ImportError) as e: # pragma: no cover
     _has_mpl = False
 
 available = ["black_white", "black_white_dark"]
 """Lists all available styling functions"""
 
 
-def black_white():
+def _black_white():
     """Apply the black and white style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
 
@@ -61,7 +62,7 @@ def black_white():
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
         fig.show()
 
-    .. figure:: ../../_static/styles/black_white_style.png
+    .. figure:: ../../_static/style/black_white_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -82,7 +83,7 @@ def black_white():
     plt.rcParams["text.color"] = "black"
 
 
-def black_white_dark():
+def _black_white_dark():
     """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
 
     The style can be reset with ``qml.style.use('default')``.
@@ -107,7 +108,7 @@ def black_white_dark():
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
         fig.show()
 
-    .. figure:: ../../_static/styles/black_white_style_dark.png
+    .. figure:: ../../_static/style/black_white_style_dark.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -156,7 +157,7 @@ def use(style):
         fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
         fig.show()
 
-    .. figure:: ../../_static/styles/black_white_style.png
+    .. figure:: ../../_static/style/black_white_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -168,8 +169,8 @@ def use(style):
             "You can install matplotlib via \n\n   pip install matplotlib"
         )
 
-    map = {'black_white': black_white,
-        'black_white_dark': black_white_dark}
+    map = {'black_white': _black_white,
+        'black_white_dark': _black_white_dark}
 
     if style in map:
         map[style]()
@@ -207,7 +208,7 @@ def context(style, after_reset=False):
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()
 
-    .. figure:: ../../_static/styles/black_white_style.png
+    .. figure:: ../../_static/style/black_white_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -218,8 +219,8 @@ def context(style, after_reset=False):
             "``black_white_style`` requires matplotlib."
             "You can install matplotlib via \n\n   pip install matplotlib"
         )
-    with rc_context():
+    with _rc_context():
         if after_reset:
-            rcdefaults()
+            _rcdefaults()
         use(style)
         yield
