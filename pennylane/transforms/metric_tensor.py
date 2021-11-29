@@ -296,8 +296,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
                 for c in cjac:
                     if c is not None:
-                        _mt = qml.math.tensordot(mt, c, [[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, [[0], [0]])
+                        _mt = qml.math.tensordot(mt, c, axes=[[-1], [0]])
+                        _mt = qml.math.tensordot(c, _mt, axes=[[0], [0]])
                         metric_tensors.append(_mt)
 
                 return tuple(metric_tensors)
@@ -310,7 +310,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             return mt
 
         # Classical processing of a single argument is present. Return mt @ cjac.
-        cjac = qml.math.convert_like(cjac, mt)
         mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
         mt = qml.math.tensordot(cjac, mt, [[0], [0]])
         return mt
@@ -388,6 +387,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         gs = []
 
         for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
+
             # calculate the covariance matrix of this layer
             scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), prob)
             scale = qml.math.cast_like(scale, prob)

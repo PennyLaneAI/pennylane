@@ -535,8 +535,8 @@ class TestDot:
         assert fn.allequal(res, expected)
 
 
-class TestTensordot:
-    """Tests for the dot product function."""
+class TestTensordotTorch:
+    """Tests for the tensor product function in torch."""
 
     v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
     v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
