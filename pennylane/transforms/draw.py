@@ -21,6 +21,7 @@ from functools import wraps
 from pennylane.drawer import tape_mpl
 from pennylane.wires import Wires
 
+
 def draw(
     qnode,
     charset="unicode",
