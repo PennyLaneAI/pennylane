@@ -63,12 +63,12 @@ class Hermitian(Observable):
 
     @classmethod
     def _matrix(cls, *params):
-        A = np.asarray(params[0])
+        A = qml.math.asarray(params[0])
 
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
-        if not np.allclose(A, A.conj().T):
+        if not qml.math.allclose(A, A.conj().T):
             raise ValueError("Observable must be Hermitian.")
 
         return A
@@ -86,6 +86,7 @@ class Hermitian(Observable):
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         Hmat = self.matrix
+        Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
