@@ -282,19 +282,6 @@ def tensordot(tensor1, tensor2, axes=None):
     return np.tensordot(tensor1, tensor2, axes=axes, like=interface)
 
 
-def hstack(tensors):
-    """Horizontally stack tensors.
-
-    Args:
-        tensors (Sequence[tensor_like]): input tensors
-
-    Returns:
-        tensor_like: the horizontally stacked tensors as single tensor
-    """
-    interface = _multi_dispatch(tensors)
-    return np.hstack(tensors, like=interface)
-
-
 def get_trainable_indices(values):
     """Returns a set containing the trainable indices of a sequence of
     values.
