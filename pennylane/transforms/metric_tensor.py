@@ -365,8 +365,8 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
             else:
                 raise qml.QuantumFunctionError(
-                    "Can't generate metric tensor, generator {}"
-                    "has no corresponding observable".format(gen)
+                    f"Can't generate metric tensor, generator {gen}"
+                    "has no corresponding observable"
                 )
 
         # Create a quantum tape with all operations
@@ -575,7 +575,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
 
         # Initialize off block-diagonal tensor using the stored ids
         first_term = qml.math.zeros_like(diag_mt)
-        if ids != []:
+        if ids:
             off_diag_res = qml.math.stack(off_diag_res, 1)[0]
             inv_ids = [_id[::-1] for _id in ids]
             first_term = qml.math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
