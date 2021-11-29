@@ -341,3 +341,23 @@ def test_docstring_example_exact():
         cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
+
+def test_example_shots():
+    hamiltonian = qml.Hamiltonian(
+        coeffs=[-1.0] * 3,
+        observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+    )
+
+    @qml.qnode(qml.device("default.qubit", wires=2, shots=1000))
+    def quant_fun():
+        qml.RX(0.1, wires=[0])
+        qml.RY(0.5, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.6, wires=[0])
+        return qml.expval(hamiltonian)
+
+    opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
+
+    for step in range(3):
+        cost = opt.step_and_cost()
+        print(f"Step {step} - cost {cost}")

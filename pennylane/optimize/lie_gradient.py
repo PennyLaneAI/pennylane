@@ -220,7 +220,7 @@ class LieGradientOptimizer:
 
     """
     # pylint: disable=too-few-public-methods
-
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
 
         if not isinstance(circuit, qml.QNode):
