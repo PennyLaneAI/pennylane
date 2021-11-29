@@ -1224,6 +1224,25 @@ class TestPauliRot:
         assert np.allclose(gen[0], expected_gen_mat)
         assert gen[1] == -0.5
 
+    @pytest.mark.gpu
+    @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("torch_device", [None, "cuda"])
+    def test_pauli_rot_identity_torch(self, torch_device, theta):
+        """Test that the PauliRot operation returns the correct matrix when
+        providing a gate parameter on the GPU and only specifying the identity
+        operation."""
+        torch = pytest.importorskip("torch")
+
+        if torch_device == "cuda" and not torch.cuda.is_available():
+            pytest.skip("No GPU available")
+
+        x = torch.tensor(theta, device=torch_device)
+        mat = qml.PauliRot(x, "I", wires=[0]).matrix
+
+        val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
+        exp = torch.tensor(np.diag([val, val]), device=torch_device)
+        assert torch.allclose(mat, exp)
+
 
 class TestMultiRZ:
     """Test the MultiRZ operation."""

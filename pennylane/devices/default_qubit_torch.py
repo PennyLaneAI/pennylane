@@ -14,6 +14,7 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import warnings
 import semantic_version
 
 try:
@@ -152,9 +153,12 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
-        self._torch_device = "cpu"
+        # Store if the user specified a Torch device. Otherwise the execute
+        # method attempts to infer the Torch device from the gate parameters.
+        self._torch_device_specified = torch_device is not None
+        self._torch_device = torch_device
 
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
@@ -165,11 +169,37 @@ class DefaultQubitTorch(DefaultQubit):
 
     def execute(self, circuit, **kwargs):
         ops_and_obs = circuit.operations + circuit.observables
-        if any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")):
-            self._torch_device = "cuda"
+
+        some_params_cuda = any(
+            data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")
+        )
+        if not self._torch_device_specified:
+            if some_params_cuda:
+
+                self._torch_device = "cuda"
+            else:
+
+                # need to reset in case last execution moved to cuda
+                self._torch_device = "cpu"
+
+            # If we've changed the device, place the state on the correct
+            # device
+            if self._state.device != self._torch_device:
+                self._state = self._state.to(self._torch_device)
         else:
-            # need to reset in case last execution moved to cuda
-            self._torch_device = "cpu"
+            cuda_params_but_not_cuda_specified = some_params_cuda and self._torch_device != "cuda"
+            not_cuda_params_but_cuda_specified = (
+                not some_params_cuda and self._torch_device == "cuda"
+            )
+            if cuda_params_but_not_cuda_specified or not_cuda_params_but_cuda_specified:
+
+                warnings.warn(
+                    f"Torch device {self._torch_device} specified "
+                    "upon PennyLane device creation does not match the "
+                    "Torch device of the gate parameters; "
+                    f"{self._torch_device} will be used."
+                )
+
         return super().execute(circuit, **kwargs)
 
     def _asarray(self, a, dtype=None):
@@ -257,17 +287,3 @@ class DefaultQubitTorch(DefaultQubit):
         return super().sample_basis_states(
             number_of_states, state_probability.cpu().detach().numpy()
         )
-
-    def _apply_operation(self, state, operation):
-        """Applies operations to the input state.
-
-        Args:
-            state (torch.Tensor[complex]): input state
-            operation (~.Operation): operation to apply on the device
-
-        Returns:
-            torch.Tensor[complex]: output state
-        """
-        if state.device != self._torch_device:
-            state = state.to(self._torch_device)
-        return super()._apply_operation(state, operation)
