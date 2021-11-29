@@ -59,7 +59,7 @@ def append_time_evolution(tape, lie_gradient, t, n, exact=False):
     if exact:
         qml.QubitUnitary(
             expm(-1j*t * qml.utils.sparse_hamiltonian(lie_gradient).toarray()),
-            wires=range(max(lie_gradient.wires) + 1),
+            wires=range(len(lie_gradient.wires)),
         )
     else:
         qml.templates.ApproxTimeEvolution(lie_gradient, t, n)
