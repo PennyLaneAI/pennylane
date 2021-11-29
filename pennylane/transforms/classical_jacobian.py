@@ -184,13 +184,15 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         argnum = 0 if argnum is None else argnum
 
         def _jacobian(*args, **kwargs):
-            # kwargs["_trainable_only"] = False
-            _argnum = list(range(len(args)))
-            full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(*args, **kwargs)
-            if np.isscalar(argnum):
-                return full_jac[argnum]
+            if trainable_only:
+                _argnum = list(range(len(args)))
+                full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(*args, **kwargs)
+                if np.isscalar(argnum):
+                    return full_jac[argnum]
 
-            return tuple(full_jac[i] for i in argnum)
+                return tuple(full_jac[i] for i in argnum)
+
+            return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
         return _jacobian
 
