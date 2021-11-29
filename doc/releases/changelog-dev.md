@@ -448,5 +448,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
+David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
+Maria Schuld, Jay Soni, David Wierichs
