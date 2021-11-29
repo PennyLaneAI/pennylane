@@ -151,7 +151,7 @@ class TestOutsideOfQueuing:
         """Test that the adjoint correctly inverts CV templates"""
         template, par, wires = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]
         result = qml.adjoint(template)(*par, wires=wires)
-        expected_ops = template(*par, wires=wires).expand().operations
+        expected_ops = template(*par, wires=wires)
 
         for o1, o2 in zip(result, reversed(expected_ops)):
             o2 = o2.adjoint()
