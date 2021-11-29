@@ -93,6 +93,18 @@ class TestInitialization:
 
         plt.close()
 
+    def test_fontsize(self):
+        """Test fontsize can be get and set via property."""
+        drawer = MPLDrawer(1,1)
+        
+        assert drawer._fontsize == drawer.fontsize
+        assert drawer.fontsize == 14
+
+        drawer.fontsize = 10
+
+        assert drawer._fontsize == 10
+        assert drawer.fontsize == 10
+        plt.close()
 
 class TestLabels:
     def test_labels(self):

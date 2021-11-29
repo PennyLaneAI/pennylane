@@ -559,7 +559,7 @@ class MPLDrawer:
         if options is None:
             options = {}
         if "color" not in options:
-            options["facecolor"] = plt.rcParams["lines.color"]
+            options["color"] = plt.rcParams["lines.color"]
         if "zorder" not in options:
             options["zorder"] = 3
 

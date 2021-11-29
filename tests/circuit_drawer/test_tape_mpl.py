@@ -45,6 +45,12 @@ with QuantumTape() as tape1:
     qml.PauliX("a")
     qml.PauliX(1.234)
 
+def test_fontsize():
+    """Test default fontsize set with keyword argument."""
+
+    _, ax = tape_mpl(tape1, fontsize=20)
+    for t in ax.texts:
+        assert t.get_fontsize() == 20
 
 label_data = [
     ({}, ["0", "a", "1.234"]),  # default behaviour

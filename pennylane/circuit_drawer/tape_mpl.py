@@ -89,6 +89,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        fontsize (float or str): fontsize for text 
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
 
@@ -237,6 +238,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     """
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
+    fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(
         tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
@@ -248,6 +250,10 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     n_wires = len(wire_map)
 
     drawer = MPLDrawer(n_layers=n_layers, n_wires=n_wires, wire_options=wire_options)
+
+    if fontsize is not None:
+        drawer.fontsize = fontsize
+
     drawer.label(list(wire_map), text_options=label_options)
 
     for layer, layer_ops in enumerate(layers):
