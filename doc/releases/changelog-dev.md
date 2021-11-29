@@ -393,6 +393,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the device test suite wasn't testing certain operations.
+  [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
+
 * Fixes a bug where batch transforms would mutate a QNodes execution options.
   [(#1934)](https://github.com/PennyLaneAI/pennylane/pull/1934)
 
@@ -435,17 +438,20 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding and
-  MottonenStatePreparation.
+* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding,
+  MottonenStatePreparation and Interferometer.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
   [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
   [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
+  [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
+David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
+Maria Schuld, Jay Soni, David Wierichs
