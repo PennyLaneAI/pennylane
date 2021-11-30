@@ -28,7 +28,7 @@
       qml.RY(weights[1], wires=0)
       qml.CNOT(wires=[0, 1])
       qml.RZ(weights[2], wires=1)
-      return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
   weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
   ```

@@ -874,9 +874,6 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    # @pytest.mark.skip(
-    # reason="The tensorflow implementation is not adapted to the forward pass metric tensor yet."
-    # )
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_tf(self, ansatz, params):
         tf = pytest.importorskip("tensorflow")

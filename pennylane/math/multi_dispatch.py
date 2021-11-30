@@ -256,8 +256,8 @@ def tensordot(tensor1, tensor2, axes=None):
     """Returns the tensor product of two tensors.
     In general ``axes`` specifies either the set of axes for both
     tensors that are contracted (with the first/second entry of ``axes``
-    giving all axis indices for the first/second tensor) or - if it is
-    an integer - the number of last/first axes of the first/second
+    giving all axis indices for the first/second tensor) or --- if it is
+    an integer --- the number of last/first axes of the first/second
     tensor to contract over.
     There are some non-obvious special cases:
 

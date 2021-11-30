@@ -99,8 +99,10 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         Performing the Hadamard tests requires a device
         that has an additional wire as compared to the wires on which the
         original circuit was defined. This wire may be specified via ``aux_wire``.
+
         By default, contiguous wire numbering and usage is assumed and the additional
         wire is set to the next wire of the device after the circuit wires.
+
         If the given or inferred ``aux_wire`` does not exist on the device,
         a warning is raised and the block-diagonal approximation is computed instead.
         It is significantly cheaper in this case to explicitly set ``approx="block-diag"`` .
@@ -216,9 +218,11 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         See for example `the appendix of McArdle et al. <https://arxiv.org/pdf/1804.03023.pdf>`__
         for details.
         The block-diagonal of the tensor is computed using the covariance matrix approach.
+
         In addition, we may extract the factors for the second terms
         :math:`\langle \psi|\partial_j\psi\rangle`
         of the *off block-diagonal* tensor from the quantum function output for the covariance matrix!
+
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the block diagonal.
     """
@@ -239,7 +243,7 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire)
 
     raise ValueError(
-        f"Unknown value {approx} for keyword argument `approx`. "
+        f"Unknown value {approx} for keyword argument approx. "
         "Valid values are 'diag', 'block-diag' and None."
     )
 
@@ -271,12 +275,13 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
             warnings.warn(
-                "A wire was not found while executing tapes for the metric tensor. "
-                "Probably you tried to use Hadamard tests and the device does not provide an "
-                "additional wire or the requested auxiliary wire does not exist on the device. "
-                "Reverting to the block-diagonal approximation. It will often be much more "
-                "efficient to request the block-diagonal approximation directly! "
-                f"Warning raised from WireError:\n{e}"
+                "An auxiliary wire is not available."
+                "\n\nThis can occur when computing the full metric tensor via the "
+                "Hadamard test, and the device does not provide an "
+                "additional wire or the requested auxiliary wire does not exist "
+                "on the device."
+                "\n\nReverting to the block-diagonal approximation. It will often be "
+                "much more efficient to request the block-diagonal approximation directly!"
             )
             tkwargs["approx"] = "block-diag"
             return self.__call__(qnode, targs, tkwargs)
