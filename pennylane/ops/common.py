@@ -19,6 +19,7 @@ import numpy as np
 
 from pennylane.operation import CVObservable, Operation
 
+
 class Identity(CVObservable, Operation):
     r"""pennylane.Identity(wires)
     The identity observable :math:`\I`.
