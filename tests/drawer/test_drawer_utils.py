@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the pennylane.circuit_drawer.utils` module.
+Unit tests for the pennylane.drawer.utils` module.
 """
 
 import pytest
 import pennylane as qml
-from pennylane.circuit_drawer.utils import default_wire_map, convert_wire_order
+from pennylane.drawer.utils import default_wire_map, convert_wire_order
 
 
 class TestDefaultWireMap:
