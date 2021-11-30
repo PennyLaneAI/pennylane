@@ -848,9 +848,6 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
-    # @pytest.mark.skip(
-    # reason="The torch implementation is not adapted to the forward pass metric tensor yet."
-    # )
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_torch(self, ansatz, params):
         torch = pytest.importorskip("torch")
@@ -867,7 +864,7 @@ class TestFullMetricTensor:
 
         mt = qml.metric_tensor(circuit, approx=None)(
             *params
-        )  # Produces only diagonal entries, and as a tuple!
+        )
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -892,7 +889,7 @@ class TestFullMetricTensor:
             qml.metric_tensor(circuit, approx="block-diag")(*params)
             mt = qml.metric_tensor(circuit, approx=None)(
                 *params
-            )  # Produces only diagonal entries, and as a tuple!
+            )
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
