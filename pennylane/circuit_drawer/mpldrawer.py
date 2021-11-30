@@ -284,6 +284,7 @@ class MPLDrawer:
 
     @fontsize.setter
     def fontsize(self, value):
+        """Set ``fontsize`` property as provided value."""
         self._fontsize = value
 
     def label(self, labels, text_options=None):
