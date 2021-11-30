@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def classical_jacobian(qnode, argnum=None, expand_fn=None):
+def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     r"""Returns a function to extract the Jacobian
     matrix of the classical part of a QNode.
 
@@ -137,7 +137,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None):
 
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for a given QNode input."""
-        trainable_only = kwargs.pop("_trainable_only", True)
         kwargs.pop("shots", None)
         qnode.construct(args, kwargs)
         tape = qnode.qtape
@@ -185,7 +184,14 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None):
         argnum = 0 if argnum is None else argnum
 
         def _jacobian(*args, **kwargs):
-            kwargs["_trainable_only"] = False
+            if trainable_only:
+                _argnum = list(range(len(args)))
+                full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(*args, **kwargs)
+                if np.isscalar(argnum):
+                    return full_jac[argnum]
+
+                return tuple(full_jac[i] for i in argnum)
+
             return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
         return _jacobian
