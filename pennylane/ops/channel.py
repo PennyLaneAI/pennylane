@@ -368,7 +368,7 @@ class ResetError(Channel):
 
 
 class PauliError(Channel):
-    r"""PauliError(operators, p, wirelist, wires)
+    r"""PauliError(operators, p, wires)
     Arbitrary number qubit, arbitrary Pauli operator error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -399,10 +399,21 @@ class PauliError(Channel):
     Args:
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
-        wires (Sequence[int]): The wires the channel acts on
+        wires (Sequence[int] or int): The wires the channel acts on
+
+    **Example:**
+
+    >>> pe = PauliError("X", 0.5, wires=0)
+    >>> km = pe.kraus_matrices
+    >>> km[0]
+    array([[0.70710678, 0.        ],
+           [0.        , 0.70710678]])
+    >>> km[1]
+        array([[0.        , 0.70710678],
+               [0.70710678, 0.        ]])
     """
 
-    num_params = 3
+    num_params = 2
     num_wires = AnyWires
     par_domain = "L"
 
@@ -414,7 +425,7 @@ class PauliError(Channel):
 
     def __init__(self, *params, wires=None, do_queue=True):
         super().__init__(*params, wires=wires, do_queue=do_queue)
-        operators, p, wirelist = params[0], params[1], params[2]
+        operators, p = params[0], params[1]
 
         # check if the specified operators are legal
         if not all(c in "XYZ" for c in operators):
@@ -425,21 +436,23 @@ class PauliError(Channel):
             raise ValueError("p must be between [0,1]")
 
         # check if the number of operators matches the number of wires
-        if len(operators) != len(wirelist):
+        if (type(wires) == int and len(operators) != 1) or (
+            type(wires) == list and len(operators) != len(wires)
+        ):
             raise ValueError("The number of operators must match the number of wires")
 
-        nq = len(wirelist)
+        nq = len(operators)
 
-        if (2 ** (2 * (nq)) * 8) > 1 / 4 * os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES"):
+        if nq > 20:
             warnings.warn(
-                f"The resulting Kronecker matrix will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals a quarter of your physical memory."
+                f"The resulting Kronecker matrix will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory."
             )
 
     @classmethod
     def _kraus_matrices(cls, *params):
-        operators, p, wirelist = params[0], params[1], params[2]
+        operators, p = params[0], params[1]
 
-        nq = len(wirelist)
+        nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
         K0 = np.sqrt(1 - p) * np.eye(2 ** nq)
