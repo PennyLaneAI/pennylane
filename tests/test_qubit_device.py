@@ -359,7 +359,7 @@ class TestExtractStatistics:
     def test_extract_custom_postprocess(self):
         """Tests that the custom_postprocess function is called throught the statistics method."""
 
-        obs = qml.measure.custom_process((lambda res: 1), 'sample')
+        obs = qml.measure.custom_process((lambda res: 1), "sample")
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         results = dev.statistics([obs])
@@ -632,6 +632,7 @@ class TestSample:
 class TestCustomProcess:
     """Test the custom_process method"""
 
+    @pytest.mark.parametrize("", [])
     def test_not_implemented(self):
         return
 

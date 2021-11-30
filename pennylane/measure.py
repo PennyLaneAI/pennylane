@@ -644,7 +644,8 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
 
         if op is not None and not hasattr(op, "diagonalizing_gates"):
             raise qml.QuantumFunctionError(
-                f"{op} has no diagonalizing_gates attribute: cannot be used to rotate the probability")
+                f"{op} has no diagonalizing_gates attribute: cannot be used to rotate the probability"
+            )
 
         if wires is not None:
             if op is not None:
@@ -653,7 +654,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
                     "provided. The wires for prob will be determined directly from the observable."
                 )
 
-    elif base_measurement not in ('expval', 'var', 'sample', 'prob', 'state'):
+    elif base_measurement not in ("expval", "var", "sample", "prob", "state"):
         raise ValueError(
             "base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
             f"got: {base_measurement}"
