@@ -165,7 +165,8 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             Default ``None`` will omit parameters from operation labels.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
-
+        active_wire_notches (bool): whether or not to add notches indicating active wires.
+            Defaults to ``True``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,

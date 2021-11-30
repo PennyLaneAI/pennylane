@@ -225,6 +225,16 @@ class MPLDrawer:
     _fontsize = 14
     """The default fontsize."""
 
+    _notch_width = 0.04
+    """The width of active wire notches."""
+
+    _notch_height = 0.25
+    """The height of active wire notches."""
+
+    _notch_pad = 0.05
+
+    _notch_style = "round, pad=0.05"
+
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
         if not has_mpl:
@@ -327,6 +337,8 @@ class MPLDrawer:
             text_options=None (dict): any matplotlib keywords for the text
             extra_width (float): extra box width
             autosize (bool): whether to rotate and shrink text to fit within the box
+            active_wire_notches (bool): whether or not to add notches indicating active wires.
+                Defaults to ``True``.
 
         **Example**
 
@@ -385,6 +397,7 @@ class MPLDrawer:
         """
         extra_width = kwargs.get("extra_width", 0)
         autosize = kwargs.get("autosize", True)
+        active_wire_notches = kwargs.get("active_wire_notches", True)
 
         if box_options is None:
             box_options = {}
@@ -421,6 +434,10 @@ class MPLDrawer:
             **new_text_options,
         )
 
+        if active_wire_notches and (len(wires) != (box_max-box_min+1)):
+            for wire in wires:
+                self._add_notch(layer, wire, extra_width)
+
         if autosize:
             margin = 0.1
             max_width = box_width - margin
@@ -441,6 +458,26 @@ class MPLDrawer:
                     break
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
+
+    def _add_notch(self, layer, wire, extra_width):
+        """Add a wire used marker to both sides of a box.
+
+        Args:
+            layer (int): x coordinate for the box center
+            wire (int): y cordinate for the notches
+            extra_width (float): extra box width
+        """
+        pad = 0.05
+        w = 0.03
+        h = 0.25
+        y = wire-self._notch_height/2
+        x1 = layer - self._box_length/2.0 - extra_width/2.0 - self._notch_width
+        x2 = layer + self._box_length/2.0 + extra_width/2.0
+
+        box1 = patches.FancyBboxPatch((x1, y), self._notch_width, self._notch_height, boxstyle=self._notch_style)
+        self._ax.add_patch(box1)
+        box2 = patches.FancyBboxPatch((x2, y), self._notch_width, self._notch_height, boxstyle=self._notch_style)
+        self._ax.add_patch(box2)
 
     def _text_dims(self, text_obj):
         """Get width and height of text object in data coordinates.

@@ -93,6 +93,8 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             Default ``None`` will omit parameters from operation labels.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
+        active_wire_notches (bool): whether or not to add notches indicating active wires.
+            Defaults to ``True``.
 
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
@@ -239,6 +241,8 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     """
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
+    active_wire_notches = kwargs.get("active_wire_notches", True)
+
 
     wire_map = convert_wire_order(
         tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
@@ -273,6 +277,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                         "zorder": 4
                     },  # make sure box and text above control wires if controlled
                     text_options={"zorder": 5},
+                    active_wire_notches=active_wire_notches
                 )
 
     # store wires we've already drawn on
