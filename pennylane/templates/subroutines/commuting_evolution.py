@@ -114,10 +114,9 @@ class CommutingEvolution(Operation):
         )
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
+            type_name = type(hamiltonian).__name__
             raise TypeError(
-                "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                    type(hamiltonian).__name__
-                )
+                f"hamiltonian must be of type pennylane.Hamiltonian, got {type_name}"
             )
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
