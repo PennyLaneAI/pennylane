@@ -43,7 +43,8 @@
    [0.         0.         0.21846983]]
   ```
 
-  Instead, we now can also compute the full metric tensor:
+  Instead, we now can also compute the full metric tensor, using
+  Hadamard tests on the additional wire of the device:
 
   ```pycon
   >>> qml.metric_tensor(circuit)(weights)

@@ -24,12 +24,20 @@ from pennylane.circuit_graph import LayerData
 
 from .batch_transform import batch_transform
 
+# This dictionary maps generators to their controlled gate equivalent.
+# It is equivalent to using ``controlled`` on the generators, but this
+# approach via registering specific generators allows us to guarantee
+# unitary circuits for ``allow_nonunitary=False``
 _GEN_TO_CGEN = {
     qml.PauliX: qml.CNOT,
     qml.PauliY: qml.CY,
     qml.PauliZ: qml.CZ,
 }
 
+# In contrast to the above, this dictionary maps *operators* to controlled
+# generator gates, skipping over the step of retrieving the generator from
+# the original operation and identifying it as a gate. It replaces matrix
+# arithmetics that otherwise would be required at this point.
 _OP_TO_CGEN = {
     # PhaseShift is the same as RZ up to a global phase
     qml.PhaseShift: qml.CZ,
@@ -424,10 +432,12 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     """
     gen, _ = op.generator
     try:
-        if isinstance(gen, np.ndarray) or gen not in _GEN_TO_CGEN:
+        if isinstance(gen, np.ndarray):
             cgen = _OP_TO_CGEN[op.__class__]
         else:
             cgen = _GEN_TO_CGEN.get(gen, None)
+            if cgen is None:
+                cgen = _OP_TO_CGEN[op.__class__]
         return cgen(wires=[aux_wire, *op.wires])
 
     except KeyError as e:
