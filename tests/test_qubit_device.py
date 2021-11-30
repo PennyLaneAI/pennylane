@@ -356,6 +356,15 @@ class TestExtractStatistics:
             dev = mock_qubit_device_extract_stats()
             dev.statistics([obs])
 
+    def test_extract_custom_postprocess(self):
+        """Tests that the custom_postprocess function is called throught the statistics method."""
+
+        obs = qml.measure.custom_process((lambda res: 1), 'sample')
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        results = dev.statistics([obs])
+        assert results == [1]
+
 
 class TestGenerateSamples:
     """Test the generate_samples method"""
@@ -618,6 +627,13 @@ class TestSample:
         dev._samples = np.array([[1, 0], [0, 0]])
         with pytest.raises(ValueError, match="Cannot compute samples"):
             dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
+
+class TestCustomProcess:
+    """Test the custom_process method"""
+
+    def test_not_implemented(self):
+        return
 
 
 class TestEstimateProb:

@@ -644,10 +644,7 @@ def custom_process(post_process_func, base_measurement, op=None, wires=None):
 
         if op is not None and not hasattr(op, "diagonalizing_gates"):
             raise qml.QuantumFunctionError(
-                "{} has no diagonalizing_gates attribute: cannot be used to rotate the probability".format(
-                    op
-                )
-            )
+                f"{op} has no diagonalizing_gates attribute: cannot be used to rotate the probability")
 
         if wires is not None:
             if op is not None:

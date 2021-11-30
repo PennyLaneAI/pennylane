@@ -1089,3 +1089,12 @@ class TestCustomProcess:
         with pytest.raises(qml.QuantumFunctionError, match=f"{ob} has no diagonalizing_gates attribute: "
                                                            f"cannot be used to rotate the probability"):
             custom_process((lambda res: 1), measure, op=ob)
+
+    def test_unknown_base_measurement(self):
+        """Test if a value error is raised when unknown measurement type is passed."""
+        measure = 'not_supported_measurement'
+
+        with pytest.raises(qml.QuantumFunctionError,
+                           match="base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
+                                 f"got: {measure}"):
+            custom_process((lambda res: 1), measure)
