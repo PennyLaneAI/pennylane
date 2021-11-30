@@ -111,7 +111,7 @@ class ApproxTimeEvolution(Operation):
 
         # extract the wires that the op acts on
         wire_list = [term.wires for term in hamiltonian.ops]
-        unique_wires = list(set(wire_list))
+        unique_wires = qml.wires.Wires.unique_wires(wire_list)
 
         # non-trainable and non-numeric parameters are stored as
         # attributes
