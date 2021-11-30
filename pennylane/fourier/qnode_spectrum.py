@@ -420,7 +420,6 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
 
             # Iterate over the axis of the current Jacobian that corresponds to the tape operations
             for op_idx, jac_of_op in enumerate(np.round(cjac, decimals=decimals)):
-                # op = tape.get_operation(op_idx)[0]
                 op = par_info[op_idx]["op"]
                 # Find parameters that both were requested and feed into the operation
                 if len(cjac.shape) == 1:
