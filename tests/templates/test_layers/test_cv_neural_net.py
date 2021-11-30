@@ -132,7 +132,7 @@ class TestInputs:
             circuit()
 
     def test_cvqnn_layers_exception_second_dim(self):
-        """Check exception if weong dimension of weights"""
+        """Check exception if wrong dimension of weights"""
         shapes = expected_shapes(1, 2)
         weights = [np.random.random(shape) for shape in shapes[:-1]]
         weights += [np.random.random((1, shapes[-1][1] - 1))]
