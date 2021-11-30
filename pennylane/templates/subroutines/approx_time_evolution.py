@@ -111,7 +111,7 @@ class ApproxTimeEvolution(Operation):
 
         # extract the wires that the op acts on
         wire_list = [term.wires for term in hamiltonian.ops]
-        unique_wires = qml.wires.Wires.unique_wires(wire_list)
+        wires = qml.wires.Wires.all_wires(wire_list)
 
         # non-trainable and non-numeric parameters are stored as
         # attributes
@@ -119,7 +119,7 @@ class ApproxTimeEvolution(Operation):
         self.n = n
 
         # trainable parameters are passed to the base init method
-        super().__init__(*hamiltonian.data, time, wires=unique_wires, do_queue=do_queue, id=id)
+        super().__init__(*hamiltonian.data, time, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
