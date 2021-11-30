@@ -1156,7 +1156,7 @@ def test_invalid_value_for_approx(approx):
         qml.RX(np.array(0.5, requires_grad=True), wires=0)
         qml.expval(qml.PauliX(0))
 
-    with pytest.raises(ValueError, match="keyword argument `approx`"):
+    with pytest.raises(ValueError, match="keyword argument approx"):
         qml.metric_tensor(tape, approx=approx)
 
 
@@ -1191,9 +1191,9 @@ def test_error_missing_aux_wire():
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
-    with pytest.warns(UserWarning, match="Hadamard tests"):
+    with pytest.warns(UserWarning, match="Hadamard test"):
         qml.metric_tensor(circuit, approx=None)(x, z)
-    with pytest.warns(UserWarning, match="Hadamard tests"):
+    with pytest.warns(UserWarning, match="Hadamard test"):
         qml.metric_tensor(circuit, approx=None, aux_wire="wire3")(x, z)
 
 
