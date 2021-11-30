@@ -356,6 +356,9 @@
 
 <h3>Breaking changes</h3>
 
+* The `circuit_drawer` module has been renamed `drawer`.
+  [(#1949)](https://github.com/PennyLaneAI/pennylane/pull/1949)
+
 * The `par_domain` attribute in the operator class has been removed.
   [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
 
@@ -394,6 +397,9 @@
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the device test suite wasn't testing certain operations.
+  [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
 
 * Fixes a bug where batch transforms would mutate a QNodes execution options.
   [(#1934)](https://github.com/PennyLaneAI/pennylane/pull/1934)
