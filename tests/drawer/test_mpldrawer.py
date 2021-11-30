@@ -25,7 +25,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 from matplotlib.colors import to_rgba
 from matplotlib.patches import FancyArrow
 
-from pennylane.circuit_drawer import MPLDrawer
+from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
 import pennylane
 import sys
