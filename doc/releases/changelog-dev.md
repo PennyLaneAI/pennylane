@@ -396,6 +396,8 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes several code factor complaints.
+
 * Fixes a bug where the device test suite wasn't testing certain operations.
   [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
 

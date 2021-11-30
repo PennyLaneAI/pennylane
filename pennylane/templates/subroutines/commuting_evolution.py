@@ -108,9 +108,10 @@ class CommutingEvolution(Operation):
     grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
+        # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import (
             get_shift_rule,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise TypeError(
