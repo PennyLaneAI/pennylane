@@ -862,9 +862,7 @@ class TestFullMetricTensor:
             ansatz(*params, dev.wires[:-1])
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.metric_tensor(circuit, approx=None)(
-            *params
-        )
+        mt = qml.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -887,9 +885,7 @@ class TestFullMetricTensor:
 
         with tf.GradientTape() as t:
             qml.metric_tensor(circuit, approx="block-diag")(*params)
-            mt = qml.metric_tensor(circuit, approx=None)(
-                *params
-            )
+            mt = qml.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
