@@ -20,7 +20,7 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.circuit_drawer import MPLDrawer
+from pennylane.drawer import MPLDrawer
 
 folder = pathlib.Path(__file__).parent
 

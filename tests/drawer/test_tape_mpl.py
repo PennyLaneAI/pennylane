@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file tests the ``qml.circuit_drawer.tape_mpl`` function.
+"""This file tests the ``qml.drawer.tape_mpl`` function.
 
 See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
@@ -22,7 +22,7 @@ import pytest
 from pytest_mock import mocker
 import pennylane as qml
 
-from pennylane.circuit_drawer import tape_mpl
+from pennylane.drawer import tape_mpl
 from pennylane.tape import QuantumTape
 
 mpl = pytest.importorskip("matplotlib")
