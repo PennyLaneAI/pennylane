@@ -485,7 +485,6 @@ class TestJax:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="jax")
 
-        qnode(x, w)
         res = qnode_spectrum(qnode, argnum=0)(x, w)
 
         assert res
