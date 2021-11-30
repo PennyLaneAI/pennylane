@@ -405,6 +405,9 @@
   in `qml.fourier.qnode_spectrum`, leading to wrong outputs.
   [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
 
+* Fixes several Pylint errors.
+  [(#1951)](https://github.com/PennyLaneAI/pennylane/pull/1951)
+
 * Fixes a bug where the device test suite wasn't testing certain operations.
   [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
 
