@@ -121,7 +121,9 @@ def adjoint(fn):
         adjoint_ops = []
         for op in reversed(tape.operations):
             try:
+                inverse = op.inverse
                 new_op = op.adjoint()
+                new_op.inverse = inverse
                 adjoint_ops.append(new_op)
             except NotImplementedError:
                 # Expand the operation and adjoint the result.
