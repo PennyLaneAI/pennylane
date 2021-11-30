@@ -416,6 +416,9 @@
   used device does not have an additional wire.
   [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
 
+* The `circuit_drawer` module has been renamed `drawer`.
+  [(#1949)](https://github.com/PennyLaneAI/pennylane/pull/1949)
+
 * The `par_domain` attribute in the operator class has been removed.
   [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
 
@@ -454,6 +457,9 @@
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes several Pylint errors.
+  [(#1951)](https://github.com/PennyLaneAI/pennylane/pull/1951)
 
 * Fixes a bug where the device test suite wasn't testing certain operations.
   [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
