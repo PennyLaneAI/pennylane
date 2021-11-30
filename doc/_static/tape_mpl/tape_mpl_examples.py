@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import pennylane as qml
 
 
-from pennylane.circuit_drawer import draw_mpl
+from pennylane.drawer import draw_mpl
 
 folder = pathlib.Path(__file__).parent
 
