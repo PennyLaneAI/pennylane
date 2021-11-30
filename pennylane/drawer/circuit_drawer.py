@@ -48,6 +48,7 @@ class CircuitDrawer:
         wires (Wires): all wires on the device for which the circuit is drawn
         charset (str, pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
     """
 
     def __init__(
@@ -57,6 +58,7 @@ class CircuitDrawer:
         wires,
         charset=None,
         show_all_wires=False,
+        max_length=None,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -69,10 +71,9 @@ class CircuitDrawer:
             self.charset = charset()
         else:
             if charset not in CHARSETS:
+                supported_char = ", ".join(CHARSETS.keys())
                 raise ValueError(
-                    "Charset '{}' is not supported. Supported charsets: {}.".format(
-                        charset, ", ".join(CHARSETS.keys())
-                    )
+                    f"Charset '{charset}' is not supported. Supported charsets: {supported_char}."
                 )
             self.charset = CHARSETS[charset]()
 
@@ -80,6 +81,9 @@ class CircuitDrawer:
             # if the provided wires include empty wires, make sure they are included
             # as active wires
             self.active_wires = wires.all_wires([wires, self.active_wires])
+
+        # We add a -2 character offset to account for some downstream formatting
+        self.max_length = max_length - 2 if max_length is not None else None
 
         self.representation_resolver = RepresentationResolver(self.charset)
         self.operation_representation_grid = Grid()
@@ -228,9 +232,7 @@ class CircuitDrawer:
                     max_wire = max(wire_indices)
 
                     # If there is a conflict between decorations, we start a new decoration_layer
-                    if any(
-                        [decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)]
-                    ):
+                    if any(decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)):
                         representation_grid.insert_layer(i + j, decoration_layer)
                         inserted_indices.append(i + j)
                         j += 1
@@ -331,7 +333,7 @@ class CircuitDrawer:
 
                             break
 
-            if not all([item is None for item in other_layer]):
+            if not all(item is None for item in other_layer):
                 operator_grid.insert_layer(i + 1, other_layer)
                 n += 1
 
@@ -357,7 +359,6 @@ class CircuitDrawer:
             s = " {:>" + str(padding) + "}: {}"
 
             rendered_string += s.format(wire_names[i], 2 * self.charset.WIRE)
-
             for s in wire:
                 rendered_string += s
 
@@ -369,6 +370,28 @@ class CircuitDrawer:
             ("M", self.representation_resolver.matrix_cache),
         ]:
             for idx, matrix in enumerate(cache):
-                rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
+                rendered_string += f"{symbol}{idx} =\n{matrix}\n"
+
+        # Restrict CLI print width to max_length
+        if self.max_length is not None:
+            wires = rendered_string.split("\n")
+            n_wraps = (len(wires[0]) // self.max_length) + 1
+            rendered_substrings = []
+            for i in range(n_wraps):
+                for wire in wires:
+                    # Print body of circuit. We compute some index and whitespace offsets to ensure the rendered wire matches existing unit tests.
+                    if (self.max_length * (i + 1)) < len(wire):
+                        offset_white_space = (
+                            int((i != 0) or (self.max_length * (i + 1) >= len(wire))) * " "
+                        )
+                        offset_index = int(i != 0)
+                        rendered_substrings.append(
+                            f"{offset_white_space}"
+                            + f"{wire[(i * self.max_length) + offset_index: ((i + 1) * self.max_length) + 1]}"
+                        )
+                    # Last wrap, print the tail of the circuit. We trim the last character of whitespace at the end.
+                    else:
+                        rendered_substrings.append(f" {wire[i * self.max_length + 1:]}"[:-1])
+            rendered_string = "\n".join(rendered_substrings)
 
         return rendered_string

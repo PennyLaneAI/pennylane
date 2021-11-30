@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.circuit_drawer.grid` module.
+Unit tests for the :mod:`pennylane.drawer.grid` module.
 """
 import pytest
 import numpy as np
 
-from pennylane.circuit_drawer.grid import Grid
-from pennylane.circuit_drawer.grid import _transpose
+from pennylane.drawer.grid import Grid
+from pennylane.drawer.grid import _transpose
 
 
 class TestFunctions:

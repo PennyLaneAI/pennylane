@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.circuit_drawer` module.
+Unit tests for the :mod:`pennylane.drawer` module.
 """
 from unittest.mock import Mock
 import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.circuit_drawer import CircuitDrawer
-from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
-from pennylane.circuit_drawer.grid import Grid, _transpose
-from pennylane.circuit_drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
+from pennylane.drawer import CircuitDrawer
+from pennylane.drawer.circuit_drawer import _remove_duplicates
+from pennylane.drawer.grid import Grid, _transpose
+from pennylane.drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
 from pennylane.wires import Wires
 
 from pennylane.measure import state
@@ -766,6 +766,44 @@ class TestCircuitDrawerIntegration:
             + " 1: ───────────────────────┤     ┤ ⟨Z⟩ ╰┤ ⟨Z ⊗ Z⟩ \n"
         )
         assert tape.draw() == expected
+
+    def test_qubit_circuit_with_max_length_kwdarg(self):
+        """Test that a qubit circuit with max_length set to 30 renders correctly."""
+        with qml.tape.QuantumTape() as tape:
+            for i in range(3):
+                qml.Hadamard(wires=i)
+                qml.RX(i * 0.1, wires=i)
+                qml.RY(i * 0.1, wires=i)
+                qml.RZ(i * 0.1, wires=i)
+            qml.expval(qml.PauliZ(0))
+
+        expected = (
+            " 0: ──H──RX(0)────RY(0)────RZ\n"
+            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
+            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
+            + "\n"
+            + " (0)────┤ ⟨Z⟩\n"
+            + " (0.1)──┤    \n"
+            + " (0.2)──┤    \n"
+        )
+        assert tape.draw(max_length=30) == expected
+
+    def test_qubit_circuit_length_under_max_length_kwdarg(self):
+        """Test that a qubit circuit with a circuit length less than the max_length renders correctly."""
+        with qml.tape.QuantumTape() as tape:
+            for i in range(3):
+                qml.Hadamard(wires=i)
+                qml.RX(i * 0.1, wires=i)
+                qml.RY(i * 0.1, wires=i)
+                qml.RZ(i * 0.1, wires=i)
+            qml.expval(qml.PauliZ(0))
+
+        expected = (
+            " 0: ──H──RX(0)────RY(0)────RZ(0)────┤ ⟨Z⟩\n"
+            + " 1: ──H──RX(0.1)──RY(0.1)──RZ(0.1)──┤    \n"
+            + " 2: ──H──RX(0.2)──RY(0.2)──RZ(0.2)──┤    \n"
+        )
+        assert tape.draw(max_length=60) == expected
 
 
 class TestWireOrdering:

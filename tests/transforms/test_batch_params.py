@@ -45,6 +45,26 @@ def test_simple_circuit(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+def test_basic_entangler_layers(mocker):
+    """Test that batching works for BasicEngtanglerLayers"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+        qml.RY(0.2, wires=1)
+        return qml.probs(wires=[0, 1])
+
+    batch_size = 5
+    weights = np.random.random((batch_size, 2, 2))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(weights)
+    assert res.shape == (batch_size, 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+
 def test_angle_embedding(mocker):
     """Test that batching works for AngleEmbedding"""
     dev = qml.device("default.qubit", wires=3)
@@ -65,13 +85,49 @@ def test_angle_embedding(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+def test_mottonenstate_preparation(mocker):
+    """Test that batching works for MottonenStatePreparation"""
+    dev = qml.device("default.qubit", wires=3)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(data, weights):
+        qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    batch_size = 3
+
+    # create a batched input statevector
+    data = np.random.random((batch_size, 2 ** 3))
+    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = np.random.random((batch_size, 10, 3, 3))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2 ** 3)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+        return qml.probs(wires=[0, 1, 2])
+
+    indiv_res = []
+    for state, weight in zip(data, weights):
+        indiv_res.append(circuit2(state, weight))
+    assert np.allclose(res, indiv_res)
+
+
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, diff_method=diff_method)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -97,7 +153,7 @@ def test_jax(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface="jax", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -123,7 +179,7 @@ def test_jax_jit(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface="jax", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -149,7 +205,7 @@ def test_torch(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="torch", diff_method=diff_method)
+    @qml.qnode(dev, interface="torch", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -177,7 +233,7 @@ def test_tf(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="tf", diff_method=diff_method)
+    @qml.qnode(dev, interface="tf", diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -204,7 +260,7 @@ def test_tf_autograph(tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.beta.qnode(dev, interface="tf", diff_method="backprop")
+    @qml.qnode(dev, interface="tf", diff_method="backprop")
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -255,7 +311,7 @@ def test_unbatched_parameter():
     dev = qml.device("default.qubit", wires=1)
 
     @qml.batch_params
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit(x, y):
         qml.RY(x, wires=[0])
         qml.RX(y, wires=[0])
@@ -275,7 +331,7 @@ def test_initial_unbatched_parameter():
     dev = qml.device("default.qubit", wires=1)
 
     @qml.batch_params
-    @qml.beta.qnode(dev)
+    @qml.qnode(dev)
     def circuit(x, y):
         qml.RY(x, wires=[0])
         qml.RX(y, wires=[0])

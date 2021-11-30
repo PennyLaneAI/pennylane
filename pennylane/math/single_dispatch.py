@@ -43,6 +43,10 @@ ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
+# the following is required to ensure that SciPy sparse Hamiltonians passed to
+# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+ar.register_function("scipy", "to_numpy", lambda x: x)
+
 
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
@@ -120,11 +124,17 @@ def _scatter_element_add_autograd(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Since Autograd doesn't support indexing
     assignment, we have to be clever and use ravel_multi_index."""
+    pnp = _i("qml").numpy
     size = tensor.size
-    flat_index = _i("qml").numpy.ravel_multi_index(index, tensor.shape)
+    flat_index = pnp.ravel_multi_index(index, tensor.shape)
+    if pnp.isscalar(flat_index):
+        flat_index = [flat_index]
+    if pnp.isscalar(value) or len(pnp.shape(value)) == 0:
+        value = [value]
     t = [0] * size
-    t[flat_index] = value
-    return tensor + _i("qml").numpy.array(t).reshape(tensor.shape)
+    for _id, val in zip(flat_index, value):
+        t[_id] = val
+    return tensor + pnp.array(t).reshape(tensor.shape)
 
 
 ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
@@ -154,6 +164,8 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -255,6 +267,8 @@ def _scatter_element_add_tf(tensor, index, value):
     indices of a tensor."""
     import tensorflow as tf
 
+    if not isinstance(index[0], int):
+        index = tuple(zip(*index))
     indices = tf.expand_dims(index, 0)
     value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
     return tf.tensor_scatter_nd_add(tensor, indices, value)
@@ -277,7 +291,9 @@ def _to_numpy_torch(x):
 
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
-    "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device)
+    "torch",
+    "asarray",
+    lambda x, device=None: _i("torch").as_tensor(x, device=device),
 )
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
@@ -336,7 +352,18 @@ def _coerce_types_torch(tensors):
     """Coerce a list of tensors to all have the same dtype
     without any loss of information."""
     torch = _i("torch")
-    tensors = [torch.as_tensor(t) for t in tensors]
+
+    # Extract existing set devices, if any
+    device_set = set(t.device for t in tensors if isinstance(t, torch.Tensor))
+    if len(device_set) > 1:
+        device_names = ", ".join(str(d) for d in device_set)
+        raise RuntimeError(
+            f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+        )
+
+    device = device_set.pop() if len(device_set) == 1 else None
+    tensors = [torch.as_tensor(t, device=device) for t in tensors]
+
     dtypes = {i.dtype for i in tensors}
 
     if len(dtypes) == 1:
@@ -404,6 +431,16 @@ def _sort_torch(tensor):
 
 
 ar.register_function("torch", "sort", _sort_torch)
+
+
+def _tensordot_torch(tensor1, tensor2, axes):
+    torch = _i("torch")
+    if not semantic_version.match(">=1.10.0", torch.__version__) and axes == 0:
+        return torch.outer(tensor1, tensor2)
+    return torch.tensordot(tensor1, tensor2, axes)
+
+
+ar.register_function("torch", "tensordot", _tensordot_torch)
 
 
 # -------------------------------- JAX --------------------------------- #

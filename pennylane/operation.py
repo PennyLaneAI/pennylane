@@ -249,9 +249,7 @@ class Operator(abc.ABC):
 
     The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     Args:
         params (tuple[float, int, array]): operator parameters
@@ -389,25 +387,8 @@ class Operator(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def num_params(self):
-        """Number of parameters the operator takes."""
-
-    @property
-    @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on."""
-
-    @property
-    @abc.abstractmethod
-    def par_domain(self):
-        """Domain of the gate parameters.
-
-        * ``'N'``: natural numbers (including zero).
-        * ``'R'``: floats.
-        * ``'A'``: arrays of real or complex values.
-        * ``'L'``: list of arrays of real or complex values.
-        * ``None``: if there are no parameters.
-        """
 
     @property
     def name(self):
@@ -483,6 +464,16 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
+        self._num_params = len(params)
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            raise ValueError(
+                "{}: wrong number of parameters. "
+                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+            )
+
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -499,12 +490,6 @@ class Operator(abc.ABC):
                 "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
             )
 
-        if len(params) != self.num_params:
-            raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
-            )
-
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -516,6 +501,20 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
         return "{}(wires={})".format(self.name, self.wires.tolist())
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters that this operator expects to be fed via the
+        dynamic `*params` argument.
+
+        By default, this property returns as many parameters as were used for the
+        operator creation. If the number of parameters for an operator subclass is fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            int: number of parameters
+        """
+        return self._num_params
 
     @property
     def wires(self):
@@ -571,9 +570,7 @@ class Operation(Operator):
     As with :class:`~.Operator`, the following class attributes must be
     defined for all operations:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
@@ -814,17 +811,6 @@ class Operation(Operator):
         self._inverse = False
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
-        # check the grad_method validity
-        if self.par_domain == "N":
-            assert (
-                self.grad_method is None
-            ), "An operation may only be differentiated with respect to real scalar parameters."
-        elif self.par_domain == "A":
-            assert self.grad_method in (
-                None,
-                "F",
-            ), "Operations that depend on arrays containing free variables may only be differentiated using the F method."
-
         # check the grad_recipe validity
         if self.grad_method == "A":
             if self.grad_recipe is None:
@@ -844,9 +830,7 @@ class Channel(Operation, abc.ABC):
     As with :class:`~.Operation`, the following class attributes must be
     defined for all channels:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     To define a noisy channel, the following attribute of :class:`~.Channel`
     can be used to list the corresponding Kraus matrices.
@@ -933,9 +917,7 @@ class Observable(Operator):
     As with :class:`~.Operator`, the following class attributes must be
     defined for all observables:
 
-    * :attr:`~.Operator.num_params`
     * :attr:`~.Operator.num_wires`
-    * :attr:`~.Operator.par_domain`
 
     Args:
         params (tuple[float, int, array]): observable parameters
@@ -1147,7 +1129,6 @@ class Tensor(Observable):
     # pylint: disable=abstract-method
     return_type = None
     tensor = True
-    par_domain = None
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
@@ -1754,10 +1735,10 @@ class CVOperation(CV, Operation):
         """
         p = [qml.math.toarray(a) for a in self.parameters]
         if inverse:
-            if self.par_domain == "A":
+            try:
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
                 p[0] = np.linalg.inv(p[0])
-            else:
+            except np.linalg.LinAlgError:
                 p[0] = -p[0]  # negate first parameter
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
 

@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the pennylane.circuit_drawer.drawable_layers` module.
+Unit tests for the pennylane.drawer.drawable_layers` module.
 """
 
 import pytest
 
 import pennylane as qml
-from pennylane.circuit_drawer.drawable_layers import (
+from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     drawable_layers,
     drawable_grid,
 )
-from pennylane.circuit_drawer.grid import Grid
+from pennylane.drawer.grid import Grid
 
 
 class TestRecursiveFindLayer:
@@ -77,6 +77,25 @@ class TestDrawableLayers:
 
         layers = drawable_layers(ops)
 
+        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+
+    def test_barrier_only_visual(self):
+        """Test the barrier is always drawn"""
+
+        ops = [
+            qml.PauliX(0),
+            qml.Barrier(wires=0),
+            qml.Barrier(only_visual=True, wires=0),
+            qml.PauliX(0),
+        ]
+        layers = drawable_layers(ops)
+        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}, {ops[3]}]
+
+    def test_barrier_block(self):
+        """Test the barrier blocking operators"""
+
+        ops = [qml.PauliX(0), qml.Barrier(wires=[0, 1]), qml.PauliX(1)]
+        layers = drawable_layers(ops)
         assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
 
     @pytest.mark.parametrize(

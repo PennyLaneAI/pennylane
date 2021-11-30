@@ -71,6 +71,7 @@ Non-parametric Ops
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
+    ~pennylane.Barrier
 
 :html:`</div>`
 
@@ -193,6 +194,7 @@ Noisy channels
     ~pennylane.ResetError
     ~pennylane.PauliError
     ~pennylane.QubitChannel
+    ~pennylane.ThermalRelaxationError
 
 :html:`</div>`
 

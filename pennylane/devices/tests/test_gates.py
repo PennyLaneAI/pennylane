@@ -55,7 +55,7 @@ ops = {
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
     "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
-    "QubitDensityMatrix": qml.QubitStateVector(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
+    "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
     "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
@@ -68,6 +68,7 @@ ops = {
     "ISWAP": qml.ISWAP(wires=[0, 1]),
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
+    "Barrier": qml.Barrier(wires=[0, 1, 2]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
@@ -273,7 +274,7 @@ class TestSupportedGates:
 
             @qml.qnode(dev)
             def circuit():
-                ops[operation]
+                qml.apply(ops[operation])
                 return qml.expval(qml.Identity(wires=0))
 
             assert isinstance(circuit(), (float, np.ndarray))
