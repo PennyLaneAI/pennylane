@@ -24,7 +24,7 @@ import pennylane as qml
 import numpy as np
 
 from pennylane.wires import Wires
-from .circuit_drawer import CircuitDrawer
+from .drawer import CircuitDrawer
 
 
 def _by_idx(x):

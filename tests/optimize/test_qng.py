@@ -14,7 +14,6 @@
 """Tests for the QNG optimizer"""
 import pytest
 import scipy as sp
-import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
