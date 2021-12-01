@@ -122,9 +122,7 @@ def _get_shift_rule(frequencies, shifts=None):
 
     if len(set(frequencies)) != n_freqs or freq_min <= 0:
         raise ValueError(
-            "Expected frequencies to be a list of unique positive values, instead got {}.".format(
-                frequencies
-            )
+            f"Expected frequencies to be a list of unique positive values, instead got {frequencies}."
         )
 
     mu = np.arange(1, n_freqs + 1)
@@ -136,12 +134,10 @@ def _get_shift_rule(frequencies, shifts=None):
         shifts = qml.math.sort(qml.math.stack(shifts))
         if len(shifts) != n_freqs:
             raise ValueError(
-                "Expected number of shifts to equal the number of frequencies ({}), instead got {}.".format(
-                    n_freqs, shifts
-                )
+                f"Expected number of shifts to equal the number of frequencies ({n_freqs}), instead got {shifts}."
             )
         if len(set(shifts)) != n_freqs:
-            raise ValueError("Shift values must be unique, instead got {}".format(shifts))
+            raise ValueError(f"Shift values must be unique, instead got {shifts}")
 
         equ_shifts = all(np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)))
 
@@ -157,9 +153,8 @@ def _get_shift_rule(frequencies, shifts=None):
         det_sin_matr = np.linalg.det(sin_matr)
         if abs(det_sin_matr) < 1e-6:
             warnings.warn(
-                "Solving linear problem with near zero determinant ({}) may give unstable results for the parameter shift rules.".format(
-                    det_sin_matr
-                )
+                f"Solving linear problem with near zero determinant ({det_sin_matr}) "
+                "may give unstable results for the parameter shift rules."
             )
 
         coeffs = -2 * np.linalg.solve(sin_matr.T, frequencies)
