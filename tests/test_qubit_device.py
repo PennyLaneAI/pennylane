@@ -361,6 +361,7 @@ class TestExtractStatistics:
 
         obs = qml.measure.custom_process((lambda res: 1), "sample")
         dev = qml.device("default.qubit", wires=3, shots=5)
+        dev._samples = ['101', '010', '100', '111', '100']  # artificially setting sampled result
 
         results = dev.statistics([obs])
         assert results == [1]
