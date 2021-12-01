@@ -307,6 +307,7 @@ def execute(
     batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
     if expand_fn == "device":
+        print("here")
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
 
     if gradient_fn is None:

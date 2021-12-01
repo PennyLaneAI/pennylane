@@ -17,6 +17,7 @@ PennyLane can be directly imported.
 """
 from importlib import reload
 import pkg_resources
+import types
 
 import numpy as _np
 from semantic_version import Spec, Version
@@ -108,38 +109,6 @@ def refresh_devices():
 
 # get list of installed devices
 plugin_devices = _get_device_entrypoints()
-
-
-# get chemistry plugin
-class NestedAttrError:
-    """This class mocks out the qchem module in case
-    it is not installed. Any attempt to print an instance
-    of this class, or to access an attribute of this class,
-    results in an import error, directing the user to the installation
-    instructions for PennyLane Qchem"""
-
-    error_msg = (
-        "PennyLane-QChem not installed. \n\nTo access the qchem "
-        "module, you can install PennyLane-QChem via pip:"
-        "\n\npip install pennylane-qchem"
-        "\n\nFor more details, see the quantum chemistry documentation:"
-        "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html"
-    )
-
-    def __str__(self):
-        raise ImportError(self.error_msg) from None
-
-    def __getattr__(self, name):
-        raise ImportError(self.error_msg) from None
-
-    __repr__ = __str__
-
-
-qchem = NestedAttrError()
-
-for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
-    if entry.name == "OpenFermion":
-        qchem = entry.load()
 
 
 def device(name, *args, **kwargs):
@@ -340,3 +309,46 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+# add everything as long as it's not a module and not prefixed with _
+_all = sorted(
+    [
+        name
+        for name, function in globals().items()
+        if not (name.startswith("_") or isinstance(function, types.ModuleType))
+    ]
+)
+
+
+_qchem = None
+
+
+def __getattr__(name):
+    """Ensure that the qchem module is imported lazily"""
+
+    if name == "qchem":
+        global _qchem
+
+        if _qchem is None:
+
+            for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
+                if entry.name == "OpenFermion":
+                    _qchem = entry.load()
+
+            if _qchem is None:
+                raise ImportError(
+                    "PennyLane-QChem not installed. \n\nTo access the qchem "
+                    "module, you can install PennyLane-QChem via pip:"
+                    "\n\npip install pennylane-qchem"
+                    "\n\nFor more details, see the quantum chemistry documentation:"
+                    "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html"
+                )
+
+        return _qchem
+
+    return AttributeError(name)
+
+
+def __dir__():
+    return _all + ["qchem"]
