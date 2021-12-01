@@ -70,36 +70,39 @@ def metric_tensor(
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
         approx (str): Which approximation of the metric tensor to compute.
 
-            - If ``None`` , the full metric tensor is computed
+            - If ``None``, the full metric tensor is computed
 
-            - If ``"block-diag"`` , the block-diagonal approximation is computed, reducing
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
               the number of evaluated circuits significantly.
 
-            - If ``"diag"`` , only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources.
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
 
         diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
             block-diagonal approximation of the metric tensor is computed.
-            This keyword argument is deprecated in favor of ``approx`` and will be removed soon
+            This keyword argument is deprecated in favor of ``approx`` and will be removed soon.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
-            created by the transform. Only relevant if ``approx`` is ``None``
+            created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
-        aux_wire (int or pennylane.wires.Wires): Auxiliary wire to be used for
-            Hadamard tests. By default, a suitable wire is inferred from the number
-            of used wires in the original circuit.
+        aux_wire (int or str or pennylane.wires.Wires): Auxiliary wire to be used for
+            Hadamard tests. If ``None`` (the default), a suitable wire is inferred
+            from the (number of) used wires in the original circuit and ``device_wires``.
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
-            is ``None`` .
+            is ``None``.
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
             - If ``True``, and classical processing is detected, the Jacobian of the classical
               processing will be computed and included. When evaluated, the
               returned metric tensor will be with respect to the QNode arguments.
+              The output shape can vary widely.
 
             - If ``False``, any internal QNode classical processing will be
               **ignored**. When evaluated, the returned metric tensor will be with
               respect to the **gate** arguments, and not the QNode arguments.
+              The output shape is a single two-dimensional tensor.
 
     Returns:
         func: Function which accepts the same arguments as the QNode. When called, this
@@ -114,8 +117,10 @@ def metric_tensor(
         Performing the Hadamard tests requires a device
         that has an additional wire as compared to the wires on which the
         original circuit was defined. This wire may be specified via ``aux_wire``.
+        The available wires on the device may be specified via ``device_wires``.
 
-        By default, contiguous wire numbering and usage is assumed and the additional
+        By default (that is, if ``device_wires=None`` ), contiguous wire
+        numbering and usage is assumed and the additional
         wire is set to the next wire of the device after the circuit wires.
 
         If the given or inferred ``aux_wire`` does not exist on the device,
@@ -128,7 +133,7 @@ def metric_tensor(
     large number of additional Hadamard test circuits to be run.
     State vector simulators, for example, often allow applying operations that are
     not unitary.
-    On a real QPU, setting this flag to ``True`` will cause exceptions because the
+    On a real QPU, setting this flag to ``True`` may cause exceptions because the
     computation of the metric tensor will request invalid operations on a quantum
     device.
 
@@ -173,11 +178,13 @@ def metric_tensor(
             [0.    , 0.    , 0.0123, 0.0123],
             [0.    , 0.    , 0.0123, 0.0123]], requires_grad=True)
 
+    These blocks are given by parameter groups that belong to groups of commuting gates.
+
     The tensor can be further restricted to the diagonal via ``approx="diag"``. However,
     this will not save further quantum function evolutions but only classical postprocessing.
 
     The returned metric tensor is also fully differentiable in all interfaces.
-    For example, we can compute the gradient of Frobenius norm of the metric tensor
+    For example, we can compute the gradient of the Frobenius norm of the metric tensor
     with respect to the QNode ``weights`` :
 
     >>> norm_fn = lambda x: qml.math.linalg(mt_fn(x), ord="fro")
@@ -239,7 +246,7 @@ def metric_tensor(
         of the *off block-diagonal* tensor from the quantum function output for the covariance matrix!
 
         This means that in total only the tapes for the first terms of the off block-diagonal
-        are required in addition to the block diagonal.
+        are required in addition to the circuits for the block diagonal.
     """
     # pylint: disable=too-many-arguments
     if diag_approx is not None:
@@ -649,6 +656,9 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     Args:
         aux_wire (object): Input auxiliary wire. Returned unmodified if not ``None``
         tape (pennylane.tape.QuantumTape): Tape to infer the wire for
+        device_wires (.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None`` .
 
     Returns:
         object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None`` ,
