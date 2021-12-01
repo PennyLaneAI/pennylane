@@ -357,7 +357,7 @@ class TestExtractStatistics:
             dev.statistics([obs])
 
     def test_extract_custom_postprocess(self):
-        """Tests that the custom_postprocess function is called throught the statistics method."""
+        """Tests that the custom_postprocess function is called through the statistics method."""
 
         obs = qml.measure.custom_process((lambda res: 1), "sample")
         dev = qml.device("default.qubit", wires=3, shots=5)

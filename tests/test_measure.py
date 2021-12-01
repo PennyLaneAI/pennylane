@@ -1105,7 +1105,7 @@ class TestCustomProcess:
         measure = "not_supported_measurement"
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            ValueError,
             match="base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
             f"got: {measure}",
         ):
