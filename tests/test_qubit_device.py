@@ -361,7 +361,9 @@ class TestExtractStatistics:
 
         obs = qml.measure.custom_process((lambda res: 1), "sample")
         dev = qml.device("default.qubit", wires=3, shots=5)
-        dev._samples = np.array([[1, 0, 0], [0, 0, 1], [1, 1, 1], [1, 0, 1], [1, 1, 0]])  # set sampled result
+        dev._samples = np.array(
+            [[1, 0, 0], [0, 0, 1], [1, 1, 1], [1, 0, 1], [1, 1, 0]]
+        )  # set sampled result
 
         results = dev.statistics([obs], shot_range=[0, 5])
         assert results == [1]
@@ -638,8 +640,9 @@ class TestCustomProcess:
         """Test the custom_process method raises a NotImplementedError when calling non-implemented measurements."""
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(NotImplementedError,
-                           match=f"custom_process currently does not support measuring {base_measurement}"
+        with pytest.raises(
+            NotImplementedError,
+            match=f"custom_process currently does not support measuring {base_measurement}",
         ):
             dev.custom_process((lambda res: 1), base_measurement)
 
@@ -648,9 +651,10 @@ class TestCustomProcess:
         dev = qml.device("default.qubit", wires=1)
         base_measurement = "not_supported_measurement"
 
-        with pytest.raises(ValueError,
-                           match="base_measurement should be one of expval, var, sample, prob or state, "
-                                 f"got: {base_measurement}"
+        with pytest.raises(
+            ValueError,
+            match="base_measurement should be one of expval, var, sample, prob or state, "
+            f"got: {base_measurement}",
         ):
             dev.custom_process((lambda res: 1), base_measurement)
 

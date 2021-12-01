@@ -21,6 +21,7 @@ import pennylane as qml
 
 class TestSwapTest:
     """Testing that the result of the swap test matches theory"""
+
     np.random.seed(1)  # set random seed
 
     def test_identical_states(self):
@@ -34,7 +35,10 @@ class TestSwapTest:
 
         expected_res = 1.0
         swap_res = circuit()
-        assert np.isclose(expected_res, swap_res, )
+        assert np.isclose(
+            expected_res,
+            swap_res,
+        )
 
     # def test_orthogonal_states(self):
     #     dev = qml.device("default.qubit", wires=5, shots=200)
