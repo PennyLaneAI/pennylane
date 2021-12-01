@@ -361,7 +361,7 @@ class TestExtractStatistics:
 
         obs = qml.measure.custom_process((lambda res: 1), "sample")
         dev = qml.device("default.qubit", wires=3, shots=5)
-        dev._samples = ['101', '010', '100', '111', '100']  # artificially setting sampled result
+        dev._samples = np.array([[1, 0, 0], [0, 0, 1], [1, 1, 1], [1, 0, 1], [1, 1, 0]])  # set sampled result
 
         results = dev.statistics([obs], shot_range=[0, 5])
         assert results == [1]
@@ -633,9 +633,35 @@ class TestSample:
 class TestCustomProcess:
     """Test the custom_process method"""
 
-    @pytest.mark.parametrize("", [])
-    def test_not_implemented(self):
-        return
+    @pytest.mark.parametrize("base_measurement", ["expval", "prob", "var", "state"])
+    def test_not_implemented_measurements(self, base_measurement):
+        """Test the custom_process method raises a NotImplementedError when calling non-implemented measurements."""
+        dev = qml.device("default.qubit", wires=1)
+
+        with pytest.raises(NotImplementedError,
+                           match=f"custom_process currently does not support measuring {base_measurement}"
+        ):
+            dev.custom_process((lambda res: 1), base_measurement)
+
+    def test_not_supported_measurements(self):
+        """Test the custom_process method raises a ValueError when calling non-supported measurements."""
+        dev = qml.device("default.qubit", wires=1)
+        base_measurement = "not_supported_measurement"
+
+        with pytest.raises(ValueError,
+                           match="base_measurement should be one of [expval, var, sample, prob, state], "
+                                 f"got: {base_measurement}"
+        ):
+            dev.custom_process((lambda res: 1), base_measurement)
+
+    def test_cp_sample(self):
+        """Test the custom_process method when processing a sample measurement."""
+        dev = qml.device("default.qubit", wires=1, shots=5)
+        dev._samples = np.array([[1], [0], [1], [1], [0]])  # set sampled result
+        base_measurement = "sample"
+
+        res = dev.custom_process((lambda samples: np.sum(samples)), base_measurement)
+        assert res == 3
 
 
 class TestEstimateProb:
