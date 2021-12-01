@@ -22,7 +22,7 @@ from utils import compare_operation_lists
 
 
 class TestUndoSwaps:
-    """Test that adjacent rotation gates of the same type will add the angles."""
+    """Test that check the main functionalities of the `undo_swaps` transform"""
 
     def test_one_qubit_gates_transform(self):
         """Test that a single-qubit gate change correctly with a SWAP."""
@@ -109,7 +109,7 @@ class TestUndoSwaps:
 
         assert np.allclose(res1, res2)
 
-    def tet_decorator(self):
+    def test_decorator(self):
 
         dev = qml.device("default.qubit", wires=3)
 
