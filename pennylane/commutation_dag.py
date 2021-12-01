@@ -103,7 +103,7 @@ def intersection(wires1, wires2):
 
 
 def is_commuting(operation1, operation2):
-    r"""Check if two operations are commuting
+    r"""Check if two operations are commuting.
 
     Args:
         operation1 (.Operation): A first quantum operation.
