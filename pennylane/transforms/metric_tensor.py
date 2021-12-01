@@ -48,7 +48,7 @@ def expand_fn(
     tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
 ):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
         return qml.transforms.expand_nonunitary_gen(tape)
     return qml.transforms.expand_multipar(tape)
@@ -241,6 +241,7 @@ def metric_tensor(
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the block diagonal.
     """
+    # pylint: disable=too-many-arguments
     if diag_approx is not None:
         warnings.warn(
             "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
@@ -290,15 +291,22 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
-            warnings.warn(
-                "An auxiliary wire is not available."
-                "\n\nThis can occur when computing the full metric tensor via the "
-                "Hadamard test, and the device does not provide an "
-                "additional wire or the requested auxiliary wire does not exist "
-                "on the device."
-                "\n\nReverting to the block-diagonal approximation. It will often be "
-                "much more efficient to request the block-diagonal approximation directly!"
-            )
+            if str(e) == "No device wires are unused by the tape.":
+                warnings.warn(
+                    "The device does not have a wire that is not used by the tape."
+                    "\n\nReverting to the block-diagonal approximation. It will often be "
+                    "much more efficient to request the block-diagonal approximation directly!"
+                )
+            else:
+                warnings.warn(
+                    "An auxiliary wire is not available."
+                    "\n\nThis can occur when computing the full metric tensor via the "
+                    "Hadamard test, and the device does not provide an "
+                    "additional wire or the requested auxiliary wire does not exist "
+                    "on the device."
+                    "\n\nReverting to the block-diagonal approximation. It will often be "
+                    "much more efficient to request the block-diagonal approximation directly!"
+                )
             tkwargs["approx"] = "block-diag"
             return self.__call__(qnode, *targs, **tkwargs)(*args, **kwargs)
 

@@ -1191,10 +1191,31 @@ def test_error_missing_aux_wire():
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
-    with pytest.warns(UserWarning, match="Hadamard test"):
+    with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
         qml.metric_tensor(circuit, approx=None)(x, z)
-    with pytest.warns(UserWarning, match="Hadamard test"):
+    with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
         qml.metric_tensor(circuit, approx=None, aux_wire="wire3")(x, z)
+
+
+def test_error_aux_wire_replaced():
+    """Tests that even if an aux_wire is provided, it is superseded by a device
+    wire if it does not exist itself on the device, so that the metric_tensor is
+    successfully computed."""
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "hidden_wire"]))
+
+    @qml.qnode(dev)
+    def circuit(x, z):
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        qml.CNOT(wires=["wire1", "wire2"])
+        qml.RX(x, wires="wire1")
+        qml.RZ(z, wires="wire2")
+        return qml.expval(qml.PauliZ("wire2"))
+
+    x = np.array(0.5, requires_grad=True)
+    z = np.array(0.1, requires_grad=True)
+
+    qml.metric_tensor(circuit, approx=None, aux_wire="wire3")(x, z)
 
 
 @pytest.mark.parametrize("allow_nonunitary", [True, False])
