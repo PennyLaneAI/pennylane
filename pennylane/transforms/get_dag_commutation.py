@@ -24,7 +24,9 @@ from pennylane.wires import Wires
 
 
 def get_dag_commutation(circuit):
-    r"""Construct the commutation DAG representation of a quantum circuit.
+    r"""Construct the pairwise-commutation DAG representation of a quantum circuit. A node represents a quantum
+    operations and  an edge represent non commutation between two operations. It takes into account that not all
+    operations can be moved next to each other by pairwise commutation.
 
     Args:
         circuit (pennylane.QNode, .QuantumTape, or Callable): A quantum node, tape,
@@ -39,6 +41,12 @@ def get_dag_commutation(circuit):
     >>> get_dag = get_dag_commutation(circuit)
     >>> theta = np.pi/4
     >>> get_dag(theta)
+
+    For more details, see:
+
+    * Iten, R., Moyard, R., Metger, T., Sutter, D., Woerner, S.
+      "Exact and practical pattern matching for quantum circuit optimization" `arXiv:1909.05270. (2020).
+      <https://arxiv.org/pdf/1909.05270.pdf>`_
 
     """
 
