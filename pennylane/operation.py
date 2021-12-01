@@ -766,7 +766,7 @@ class Operation(Operator):
             :class:`Operator`: operation to be inverted
         """
         if qml.QueuingContext.recording():
-            current_inv = qml.QueuingContext.get_info(self).get("inverse", self.inverse)
+            current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
             qml.QueuingContext.update_info(self, inverse=not current_inv)
         else:
             self.inverse = not self._inverse

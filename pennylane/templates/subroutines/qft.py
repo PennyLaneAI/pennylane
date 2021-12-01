@@ -114,3 +114,6 @@ class QFT(Operation):
 
         return decomp_ops
 
+    def adjoint(self):
+        self.queue()
+        return self.inv()
