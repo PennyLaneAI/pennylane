@@ -14,7 +14,7 @@
 """
 This module contains the functions needed for tapering qubits.
 """
-# pylint: unnecessary-lambda
+# pylint: disable=unnecessary-lambda
 import functools
 
 import pennylane as qml
