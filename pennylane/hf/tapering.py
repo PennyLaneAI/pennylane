@@ -18,7 +18,7 @@ This module contains the functions needed for tapering qubits.
 import functools
 
 import pennylane as qml
-from pennylane import numpy as np
+import autograd.numpy as anp
 from pennylane.grouping import pauli_mult_with_phase, pauli_word_to_string, string_to_pauli_word
 
 
@@ -46,15 +46,15 @@ def simplify(h):
         s.append(qml.grouping.pauli_word_to_string(term, wire_map=dict(zip(h.wires, h.wires))))
 
     o_set = list(set(s))
-    c_set = np.zeros(len(o_set))
+    c_set = anp.zeros(len(o_set))
 
     for i, item in enumerate(s):
-        o_ = np.zeros(len(o_set))
+        o_ = anp.zeros(len(o_set))
         o_[o_set.index(item)] = 1.0
         c_set = c_set + o_ * h.terms[0][i]
 
     for i, coeff in enumerate(c_set):
-        if not np.allclose(coeff, 0.0):
+        if not anp.allclose(coeff, 0.0):
             c.append(coeff)
             o.append(o_set[i])
 
@@ -78,8 +78,7 @@ def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
 
     h_red = qml.Hamiltonian(h.coeffs.copy(), h.ops.copy())
 
-    c = np.ones(len(h_red.terms[0]))
-    c = c * complex(1.0)
+    c = anp.ones(len(h_red.terms[0])) * complex(1.0)
 
     for idx, w_i in enumerate(paulix_wires):
         for i in range(len(h_red.terms[0])):
