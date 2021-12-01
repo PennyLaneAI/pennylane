@@ -4,6 +4,55 @@
 
 <h3>New features since last release</h3>
 
+* The `metric_tensor` transform can now be used to compute the full
+  tensor, beyond the block diagonal approximation. 
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
+  This is performed using Hadamard tests, and requires an additional wire 
+  on the device to execute the circuits produced by the transform, 
+  as compared to the number of wires required by the original circuit.
+  The transform defaults to computing the full tensor, which can
+  be controlled by the `approx` keyword argument.
+  See the 
+  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  for more information and usage details.
+
+  As an example, consider the QNode
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(weights[2], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
+  ```
+
+  Then we can compute the (block) diagonal metric tensor as before, now using the
+  ``approx="block-diag"`` keyword:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
+  [[0.25       0.         0.        ]
+   [0.         0.24013262 0.        ]
+   [0.         0.         0.21846983]]
+  ```
+
+  Instead, we now can also compute the full metric tensor, using
+  Hadamard tests on the additional wire of the device:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit)(weights)
+  [[ 0.25        0.         -0.23300977]
+   [ 0.          0.24013262  0.01763859]
+   [-0.23300977  0.01763859  0.21846983]]
+  ```
+
 * Custom decompositions can now be applied to operations at the device level.
   [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
 
@@ -353,6 +402,19 @@
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
 <h3>Breaking changes</h3>
+
+* The default behaviour of the `qml.metric_tensor` transform has been modified:
+  By default, the full metric tensor is computed, leading to higher cost than the previous
+  default of computing the block diagonal only. At the same time, the Hadamard tests for
+  the full metric tensor require an additional wire on the device, so that 
+
+  ```pycon
+  >>> qml.metric_tensor(some_qnode)(weights)
+  ```
+
+  will revert back to the block diagonal restriction and raise a warning if the
+  used device does not have an additional wire.
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
 
 * The `circuit_drawer` module has been renamed `drawer`.
   [(#1949)](https://github.com/PennyLaneAI/pennylane/pull/1949)
