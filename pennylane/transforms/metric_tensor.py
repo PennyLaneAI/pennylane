@@ -44,7 +44,9 @@ _OP_TO_CGEN = {
 }
 
 
-def expand_fn(tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None):
+def expand_fn(
+    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -53,7 +55,9 @@ def expand_fn(tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wi
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None):
+def metric_tensor(
+    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     r"""Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
@@ -83,6 +87,9 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         aux_wire (int or pennylane.wires.Wires): Auxiliary wire to be used for
             Hadamard tests. By default, a suitable wire is inferred from the number
             of used wires in the original circuit.
+        device_wires (.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None`` .
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
@@ -248,7 +255,7 @@ def metric_tensor(tape, approx=None, diag_approx=None, allow_nonunitary=True, au
         return _metric_tensor_cov_matrix(tape, diag_approx)[:2]
 
     if approx is None:
-        return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire)
+        return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires)
 
     raise ValueError(
         f"Unknown value {approx} for keyword argument approx. "
@@ -273,6 +280,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         qnode = qnode.qnodes.qnodes[0]
 
+    tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
     _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
@@ -292,7 +300,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 "much more efficient to request the block-diagonal approximation directly!"
             )
             tkwargs["approx"] = "block-diag"
-            return self.__call__(qnode, targs, tkwargs)
+            return self.__call__(qnode, *targs, **tkwargs)(*args, **kwargs)
 
         if not hybrid:
             return mt
@@ -447,9 +455,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            if isinstance(gen, np.ndarray):
-                pass
-            elif issubclass(gen, qml.operation.Observable):
+            if (not isinstance(gen, np.ndarray)) and issubclass(gen, qml.operation.Observable):
                 gen = gen.matrix
             return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
         raise ValueError(
@@ -517,7 +523,7 @@ def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
+def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
@@ -527,9 +533,12 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``
             Should be set to ``True`` if possible to reduce cost.
-        aux_wire (int or pennylane.wires.Wires): Auxiliary wire to be used for
+        aux_wire (int or .wires.Wires): Auxiliary wire to be used for
             Hadamard tests. By default, a suitable wire is inferred from the number
             of used wires in the original circuit.
+        device_wires (.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None`` .
 
     Returns:
         list[pennylane.tape.QuantumTape]: Tapes to evaluate the metric tensor
@@ -555,7 +564,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     ]
 
     # Get default for aux_wire
-    aux_wire = _get_aux_wire(aux_wire, tape)
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
 
     # Get all tapes for the first term of the metric tensor and memorize which
     # entry they belong to
@@ -626,7 +635,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire):
     return tapes, processing_fn
 
 
-def _get_aux_wire(aux_wire, tape):
+def _get_aux_wire(aux_wire, tape, device_wires):
     r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
@@ -638,7 +647,14 @@ def _get_aux_wire(aux_wire, tape):
         and an often reasonable choice else.
     """
     if aux_wire is not None:
-        return aux_wire
+        if device_wires is None or aux_wire in device_wires:
+            return aux_wire
+
+    if device_wires is not None:
+        unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))
+        if not unused_wires:
+            raise qml.wires.WireError("No device wires are unused by the tape.")
+        return unused_wires[0]
 
     _wires = tape.wires
     for _aux in range(tape.num_wires):

@@ -1201,7 +1201,7 @@ def test_error_missing_aux_wire():
 def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
     """Tests that an error is raised if an operation doe not have a
     controlled-generator operation registered."""
-    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2"]))
+    dev = qml.device("default.qubit", wires=qml.wires.Wires(["wire1", "wire2", "wire3"]))
 
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
@@ -1289,15 +1289,31 @@ def aux_wire_ansatz_1(x, y):
 @pytest.mark.parametrize("aux_wire", [None, "aux", 3])
 @pytest.mark.parametrize("ansatz", [aux_wire_ansatz_0, aux_wire_ansatz_1])
 def test_get_aux_wire(aux_wire, ansatz):
+    """Test ``_get_aux_wire`` without device_wires."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
     with qml.tape.JacobianTape() as tape:
         ansatz(x, y)
-    out = _get_aux_wire(aux_wire, tape)
+    out = _get_aux_wire(aux_wire, tape, None)
 
     if aux_wire is not None:
         assert out == aux_wire
     else:
         assert out == (1 if 1 not in tape.wires else 2)
+
+
+def test_get_aux_wire_with_device_wires():
+    """Test ``_get_aux_wire`` with device_wires."""
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.tape.JacobianTape() as tape:
+        qml.RX(x, wires=0)
+        qml.RX(x, wires="one")
+
+    device_wires = qml.wires.Wires([0, "aux", "one"])
+
+    assert _get_aux_wire(0, tape, device_wires) == 0
+    assert _get_aux_wire("one", tape, device_wires) == "one"
+    assert _get_aux_wire("two", tape, device_wires) == "aux"
+    assert _get_aux_wire(None, tape, device_wires) == "aux"
 
 
 class TestDeprecatedQNodeMethod:
