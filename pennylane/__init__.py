@@ -315,11 +315,10 @@ def device(name, *args, **kwargs):
         plugin_device_class = plugin_devices[name].load()
 
         if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
+            requires = plugin_device_class.pennylane_requires
             raise DeviceError(
-                "The {} plugin requires PennyLane versions {}, however PennyLane "
-                "version {} is installed.".format(
-                    name, plugin_device_class.pennylane_requires, __version__
-                )
+                f"The {name} plugin requires PennyLane versions {requires}, however PennyLane "
+                f"version {__version__} is installed."
             )
 
         # Construct the device

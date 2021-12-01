@@ -15,10 +15,10 @@
 A transform to obtain the commutation DAG of a quantum circuit.
 """
 import heapq
-import networkx as nx
 from functools import wraps
 from collections import OrderedDict
 
+import networkx as nx
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -98,7 +98,7 @@ position = OrderedDict(
         "ctrl": 5,
     }
 )
-"""OrderedDict[str, int]: represents the..."""
+"""OrderedDict[str, int]: represents the place of each gates in the commutation_map."""
 
 commutation_map = OrderedDict(
     {
@@ -152,6 +152,8 @@ commutation_map = OrderedDict(
         ],
     }
 )
+"""OrderedDict[str, array[bool]]: represents the commutation map of each gates. Positions in the array are the
+one defined by the position dictionary. True represents commutation and False non commutation."""
 
 
 def intersection(wires1, wires2):
