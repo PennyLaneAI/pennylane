@@ -25,28 +25,27 @@ import matplotlib.pyplot as plt
 
 folder = pathlib.Path(__file__).parent
 
-def black_white_style_example():
+def black_white_style_example(circuit):
     qml.drawer.use_style('black_white')
-
-    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
-    @qml.qnode(dev)
-    def circuit(x, z):
-        qml.QFT(wires=(0,1,2,3))
-        qml.Toffoli(wires=(0,1,2))
-        qml.CSWAP(wires=(0,2,3))
-        qml.RX(x, wires=0)
-        qml.CRZ(z, wires=(3,0))
-        return qml.expval(qml.PauliZ(0))
 
     fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
 
     plt.savefig(folder / "black_white_style.png")
     plt.close()
-    plt.style.use('default')
+    qml.drawer.use_style('default')
 
-def black_white_style_dark_example():
+def black_white_style_dark_example(circuit):
 
     qml.drawer.use_style('black_white_dark')
+
+    fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+
+    plt.savefig(folder / "black_white_dark_style.png")
+    plt.close()
+    qml.drawer.use_style('default')
+
+
+if __name__ == "__main__":
 
     dev = qml.device('lightning.qubit', wires=(0,1,2,3))
     @qml.qnode(dev)
@@ -58,15 +57,6 @@ def black_white_style_dark_example():
         qml.CRZ(z, wires=(3,0))
         return qml.expval(qml.PauliZ(0))
 
-    fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
-
-    plt.savefig(folder / "black_white_dark_style.png")
-    plt.close()
-    plt.style.use('default')
-
-
-
-if __name__ == "__main__":
-    black_white_style_example()
-    black_white_style_dark_example()
+    black_white_style_example(circuit)
+    black_white_style_dark_example(circuit)
 

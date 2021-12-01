@@ -67,15 +67,10 @@ def _black_white_dark():
     plt.rcParams["lines.color"] = "white"
     plt.rcParams["text.color"] = "white"
 
-@_needs_mpl
-def _default():
-    """Apply the default style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
-    """
-    plt.style.use('default')
 
 _styles_map = {'black_white': _black_white,
         'black_white_dark': _black_white_dark,
-        'default': _default}
+        'default': _needs_mpl(lambda : plt.style.use('default'))}
 
 
 def available_styles():

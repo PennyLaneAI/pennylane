@@ -88,11 +88,15 @@ def rcparams(circuit):
     plt.close()
     plt.style.use('default')
 
-def Solarize_Light2(circuit):
-    with plt.style.context("Solarize_Light2"):
-        fig, ax = draw_mpl(circuit)(1.2345,1.2345)
-        plt.savefig(folder / "Solarize_Light2.png")
-        plt.close()
+def use_style(circuit):
+
+    qml.drawer.use_style('black_white')
+
+    fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+
+    plt.savefig(folder / "black_white_style.png")
+    plt.close()
+    plt.style.use('default')
 
 def wires_labels(circuit):
     fig, ax = draw_mpl(circuit, wire_options={'color':'black', 'linewidth': 5},
@@ -118,6 +122,6 @@ if __name__ == "__main__":
     wire_order(circuit)
     show_all_wires(circuit)
     postprocessing(circuit)
+    use_style(circuit)
     rcparams(circuit)
-    Solarize_Light2(circuit)
     wires_labels(circuit)

@@ -274,19 +274,18 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         **Formatting:**
 
-        PennyLane has inbuilt styles.
-        ``qml.style`` mirrors ``plt.style`` with the ``available`` variable and the ``use`` and ``context`` methods.
-        See more on the matplotlib methods in the
-        `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+        PennyLane has inbuilt styles. All available styles can be determined by
+        evaluating ``qml.drawer.available_styles()``. Any available string
+        can then be passed to ``qml.drawer.use_style``.
 
         .. code-block:: python
 
-            qml.styles.use('black_white')
+            qml.drawer.use_style('black_white')
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()
 
 
-        .. figure:: ../../_static/style/black_white_style.png
+        .. figure:: ../../_static/draw_mpl/black_white_style.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
@@ -312,21 +311,6 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png
-                :align: center
-                :width: 60%
-                :target: javascript:void(0);
-
-        Instead of manually customizing everything, you can choose one of
-        the provided styles. You can see available styles with ``plt.style.available``.
-        We can set the ``'Solarize_Light2'`` style and instead get:
-
-        .. code-block:: python
-
-            with plt.style.context("Solarize_Light2):
-                fig, ax = draw_mpl(circuit)(1.2345,1.2345)
-            fig.show()
-
-        .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);

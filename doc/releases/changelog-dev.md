@@ -87,12 +87,12 @@
       qml.CRZ(z, wires=(3,0))
       return qml.expval(qml.PauliZ(0))
 
-  qml.styles.use('black_white')
+  qml.drawer.use_style('black_white')
   fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
   fig.show()
   ```
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/styles/black_white_style.png" width=70%/>
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl/black_white_style.png" width=70%/>
 
 * It is now possible to use TensorFlow's [AutoGraph
   mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
