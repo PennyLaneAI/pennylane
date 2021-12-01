@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the ``qml.LieGradientOptimizer``.
+Unit tests for the ``qml.LieAlgebraOptimizer``.
 """
 import pytest
 
@@ -97,7 +97,7 @@ def test_lie_gradient_omegas(circuit, hamiltonian):
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
-    opt = qml.LieGradientOptimizer(circuit=lie_circuit)
+    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
@@ -143,7 +143,7 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
         observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
     )
 
-    opt = qml.LieGradientOptimizer(circuit=lie_circuit, restriction=restriction)
+    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, restriction=restriction)
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
@@ -186,7 +186,7 @@ def test_lie_gradient_evolution(circuit, hamiltonian):
 
     phi_exact = expm(-0.001 * lie_gradient_np) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
-    opt = qml.LieGradientOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
+    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
     opt.step()
 
     cost_pl = opt.circuit()
@@ -215,7 +215,7 @@ def test_lie_gradient_step(circuit, hamiltonian):
         circuit()
         return qml.expval(hamiltonian)
 
-    opt = qml.LieGradientOptimizer(circuit=lie_circuit)
+    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit)
     opt.step()
     opt.step()
 
@@ -241,7 +241,7 @@ def test_lie_gradient_step_trotterstep(circuit, hamiltonian):
         circuit()
         return qml.expval(hamiltonian)
 
-    opt = qml.LieGradientOptimizer(circuit=lie_circuit, trottersteps=3)
+    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, trottersteps=3)
     opt.step()
     opt.step()
 
@@ -253,7 +253,7 @@ def test_lie_gradient_circuit_input_1_check():
         qml.RY(0.5, wires=0)
 
     with pytest.raises(TypeError, match="circuit must be a QNode"):
-        qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+        qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_gradient_hamiltonian_input_1_check():
@@ -268,7 +268,7 @@ def test_lie_gradient_hamiltonian_input_1_check():
         TypeError,
         match="circuit must return the expectation value of a Hamiltonian",
     ):
-        qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+        qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_gradient_nqubits_check(capsys):
@@ -280,7 +280,7 @@ def test_lie_gradient_nqubits_check(capsys):
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
     with pytest.warns(UserWarning, match="The exact Lie gradient is exponentially"):
-        qml.LieGradientOptimizer(circuit=circuit, stepsize=0.001)
+        qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_gradient_restriction_check():
@@ -296,7 +296,7 @@ def test_lie_gradient_restriction_check():
         TypeError,
         match="restriction must be a Hamiltonian",
     ):
-        qml.LieGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
+        qml.LieAlgebraOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 
 
 def test_docstring_example():
@@ -313,7 +313,7 @@ def test_docstring_example():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
+    opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
         _, cost = opt.step_and_cost()
@@ -335,7 +335,7 @@ def test_docstring_example_exact():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
+    opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
         _, cost = opt.step_and_cost()
@@ -357,7 +357,7 @@ def test_example_shots():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
+    opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
 
     for step in range(3):
         _, cost = opt.step_and_cost()
