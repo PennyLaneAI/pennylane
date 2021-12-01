@@ -108,12 +108,9 @@ class CommutingEvolution(Operation):
     grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
-        from pennylane.gradients.general_shift_rules import get_shift_rule
 
         # pylint: disable=import-outside-toplevel
-        from pennylane.gradients.general_shift_rules import (
-            get_shift_rule,
-        )
+        from pennylane.gradients.general_shift_rules import get_shift_rule
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             type_name = type(hamiltonian).__name__
