@@ -16,8 +16,8 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 from importlib import reload
-import pkg_resources
 import types
+import pkg_resources
 
 import numpy as _np
 from semantic_version import Spec, Version
