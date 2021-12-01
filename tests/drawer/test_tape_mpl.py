@@ -46,6 +46,14 @@ with QuantumTape() as tape1:
     qml.PauliX(1.234)
 
 
+def test_fontsize():
+    """Test default fontsize set with keyword argument."""
+
+    _, ax = tape_mpl(tape1, fontsize=20)
+    for t in ax.texts:
+        assert t.get_fontsize() == 20
+
+
 label_data = [
     ({}, ["0", "a", "1.234"]),  # default behaviour
     ({"wire_order": [1.234, "a", 0]}, ["1.234", "a", "0"]),  # provide standard wire order
@@ -343,6 +351,8 @@ controlled_data = [
 class TestControlledGates:
     """Tests generic controlled gates"""
 
+    width = 0.75 - 2 * 0.2
+
     @pytest.mark.parametrize("op, label", controlled_data)
     def test_control_gates(self, op, label):
         """Test a variety of non-special gates. Checks control wires are drawn, and
@@ -360,8 +370,9 @@ class TestControlledGates:
         control_line = ax.lines[2]
         assert control_line.get_data() == ((layer, layer), (0, 1))
 
-        assert isinstance(ax.patches[1], mpl.patches.Rectangle)
-        assert ax.patches[1].get_xy() == (layer - 0.4, 0.6)
+        assert isinstance(ax.patches[1], mpl.patches.FancyBboxPatch)
+        assert ax.patches[1].get_x() == layer - self.width / 2.0
+        assert ax.patches[1].get_y() == 1 - self.width / 2.0
 
         # two wire labels, so [2] is box gate label
         assert ax.texts[2].get_text() == label
@@ -408,6 +419,8 @@ general_op_data = [
 class TestGeneralOperations:
     """Tests general operations."""
 
+    width = 0.75 - 2 * 0.2
+
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations(self, op):
         """Test that a variety of operations produce a rectangle across relevant wires
@@ -421,10 +434,11 @@ class TestGeneralOperations:
         num_wires = len(op.wires)
         assert ax.texts[num_wires].get_text() == op.label()
 
-        assert isinstance(ax.patches[0], mpl.patches.Rectangle)
-        assert ax.patches[0].get_xy() == (-0.4, -0.4)
-        assert ax.patches[0].get_width() == 0.8
-        assert ax.patches[0].get_height() == num_wires - 0.2
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == num_wires - 1 + self.width
 
         plt.close()
 
@@ -454,6 +468,8 @@ measure_data = [
 class TestMeasurements:
     """Tests measurements are drawn correctly"""
 
+    width = 0.75 - 2 * 0.2
+
     @pytest.mark.parametrize("measurements, wires", measure_data)
     def test_measurements(self, measurements, wires):
         """Tests a variety of measurements draw measurement boxes on the correct wires."""
@@ -467,8 +483,9 @@ class TestMeasurements:
         assert len(ax.patches) == 3 * len(wires)
 
         for ii, w in enumerate(wires):
-            assert ax.patches[3 * ii].get_xy() == (0.6, w - 0.4)  # rectangle
-            assert ax.patches[3 * ii + 1].center == (1, w + 0.05)  # arc
+            assert ax.patches[3 * ii].get_x() == 1 - self.width / 2.0
+            assert ax.patches[3 * ii].get_y() == w - self.width / 2.0
+            assert ax.patches[3 * ii + 1].center == (1, w + 0.75 / 16)  # arc
             assert isinstance(ax.patches[3 * ii + 2], mpl.patches.FancyArrow)  # fancy arrow
 
         plt.close()
@@ -483,16 +500,19 @@ class TestMeasurements:
 
         assert len(ax.patches) == 9  # three measure boxes with 3 patches each
 
-        assert all(isinstance(box, mpl.patches.Rectangle) for box in ax.patches[::3])
+        assert all(isinstance(box, mpl.patches.FancyBboxPatch) for box in ax.patches[::3])
         assert all(isinstance(arc, mpl.patches.Arc) for arc in ax.patches[1::3])
         assert all(isinstance(arrow, mpl.patches.FancyArrow) for arrow in ax.patches[2::3])
 
         for layer, box in enumerate(ax.patches[::3]):
-            assert box.get_xy() == (0.6, layer - 0.4)
+            assert box.get_x() == 1 - self.width / 2.0
+            assert box.get_y() == layer - self.width / 2.0
 
 
 class TestLayering:
     """Tests operations are placed into layers correctly."""
+
+    width = 0.75 - 2 * 0.2
 
     def test_single_layer_multiple_wires(self):
         """Tests positions when multiple gates are all in the same layer."""
@@ -508,9 +528,11 @@ class TestLayering:
         # order operations are added to ax.
         # So we check that each rectangle is in ``patches``
         # independent of order
-        box_coords = [p.get_xy() for p in ax.patches]
+        boxes_x = [p.get_x() for p in ax.patches]
+        boxes_y = [p.get_y() for p in ax.patches]
         for wire in range(3):
-            assert (-0.4, wire - 0.4) in box_coords
+            assert -self.width / 2.0 in boxes_x
+            assert wire - self.width / 2.0 in boxes_y
 
         for t in ax.texts[3:]:
             assert t.get_text() == "X"
@@ -526,7 +548,8 @@ class TestLayering:
         _, ax = tape_mpl(tape)
 
         for layer, box in enumerate(ax.patches):
-            assert box.get_xy() == (layer - 0.4, -0.4)
+            assert box.get_x() == layer - self.width / 2.0
+            assert box.get_y() == -self.width / 2.0
 
         for t in ax.texts[1:]:
             assert t.get_text() == "X"
@@ -541,9 +564,17 @@ class TestLayering:
 
         _, ax = tape_mpl(tape, wire_order=[0, 1, 2])
 
-        assert ax.patches[0].get_xy() == (-0.4, -0.4)  # layer=0, wire=0
-        assert ax.patches[1].get_xy() == (0.6, -0.4)  # layer=1, wire=0
-        assert ax.patches[2].get_xy() == (1.6, 0.6)  # layer=2, wire=1
+        # layer=0, wire=0
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+
+        # layer=1, wire=0
+        assert ax.patches[1].get_x() == 1.0 - self.width / 2.0
+        assert ax.patches[1].get_y() == -self.width / 2.0
+
+        # layer=2, wire=1
+        assert ax.patches[2].get_x() == 2 - self.width / 2.0
+        assert ax.patches[2].get_y() == 1 - self.width / 2.0
 
         assert ax.texts[3].get_text() == "X"
         assert ax.texts[4].get_text() == "IsingXX"
