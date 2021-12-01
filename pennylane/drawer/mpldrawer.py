@@ -72,25 +72,26 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(n_wires=5, n_layers=5)
+        drawer = qml.drawer.MPLDrawer(n_wires=5, n_layers=6)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers")
-        drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
+        drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
+        drawer.box_gate(1, [0, 2, 3], "U(θ)")
 
-        drawer.box_gate(layer=1, wires=4, text="Z")
+        drawer.box_gate(1, 4, "Z")
 
-        drawer.SWAP(layer=1, wires=(2, 3))
-        drawer.CNOT(layer=2, wires=(0, 2))
+        drawer.SWAP(2, (3,4))
+        drawer.CNOT(2, (0, 2))
 
-        drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
-        drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
-            text_options={'zorder': 5})
+        drawer.ctrl(3, [1, 3], control_values=[True, False])
+        drawer.box_gate(
+            layer=3, wires=2, text="H", box_options={"zorder": 4}, text_options={"zorder": 5}
+        )
 
-        drawer.ctrl(layer=4, wires=[1, 2])
+        drawer.ctrl(4, [1, 2])
 
-        drawer.measure(layer=5, wires=0)
+        drawer.measure(5, 0)
 
         drawer.fig.suptitle('My Circuit', fontsize='xx-large')
 
@@ -237,9 +238,8 @@ class MPLDrawer:
     _notch_height = 0.25
     """The height of active wire notches."""
 
-    _notch_pad = 0.05
-
     _notch_style = "round, pad=0.05"
+    """Box style for active wire notches."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
@@ -452,8 +452,10 @@ class MPLDrawer:
         )
 
         if active_wire_notches and (len(wires) != (box_max-box_min+1)):
+            notch_options = box_options.copy()
+            notch_options['zorder'] += -1
             for wire in wires:
-                self._add_notch(layer, wire, extra_width)
+                self._add_notch(layer, wire, extra_width, notch_options)
 
         if autosize:
             margin = 0.1
@@ -476,24 +478,24 @@ class MPLDrawer:
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
 
-    def _add_notch(self, layer, wire, extra_width):
+    def _add_notch(self, layer, wire, extra_width, box_options):
         """Add a wire used marker to both sides of a box.
 
         Args:
             layer (int): x coordinate for the box center
             wire (int): y cordinate for the notches
             extra_width (float): extra box width
+            box_options (dict): styling options
         """
-        pad = 0.05
-        w = 0.03
-        h = 0.25
         y = wire-self._notch_height/2
         x1 = layer - self._box_length/2.0 - extra_width/2.0 - self._notch_width
         x2 = layer + self._box_length/2.0 + extra_width/2.0
 
-        box1 = patches.FancyBboxPatch((x1, y), self._notch_width, self._notch_height, boxstyle=self._notch_style)
+        box1 = patches.FancyBboxPatch((x1, y), self._notch_width, self._notch_height,
+            boxstyle=self._notch_style, **box_options)
         self._ax.add_patch(box1)
-        box2 = patches.FancyBboxPatch((x2, y), self._notch_width, self._notch_height, boxstyle=self._notch_style)
+        box2 = patches.FancyBboxPatch((x2, y), self._notch_width, self._notch_height,
+            boxstyle=self._notch_style, **box_options)
         self._ax.add_patch(box2)
 
     def _text_dims(self, text_obj):
@@ -691,29 +693,20 @@ class MPLDrawer:
 
         **Example**
 
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
-
-            drawer.SWAP(0, (0, 1))
-
-        .. figure:: ../../_static/drawer/SWAP.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
         The ``options`` keyword can accept any
         `Line2D compatible keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.lines.Line2D.html#matplotlib.lines.Line2D>`_
         in a dictionary.
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(n_wires=2, n_layers=2)
+
+            drawer.SWAP(0, (0, 1))
 
             swap_options = {"linewidth": 2, "color": "indigo"}
-            drawer.SWAP(0, (0, 1), options=swap_options)
+            drawer.SWAP(2, (0, 1), options=swap_options)
 
-        .. figure:: ../../_static/drawer/SWAP_formatted.png
+        .. figure:: ../../_static/drawer/SWAP.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -770,28 +763,13 @@ class MPLDrawer:
 
         **Example**
 
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=1, n_layers=1)
-            drawer.measure(0, 0)
-
-        .. figure:: ../../_static/drawer/measure.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
         This method accepts two different formatting dictionaries. ``box_options`` edits the rectangle
         while ``lines_options`` edits the arc and arrow.
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=1, n_layers=1)
 
-            measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
-            measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
-            drawer.measure(0, 0, box_options=measure_box, lines_options=measure_lines)
-
-        .. figure:: ../../_static/drawer/measure_formatted.png
+        .. figure:: ../../_static/drawer/measure.png
             :align: center
             :width: 60%
             :target: javascript:void(0);

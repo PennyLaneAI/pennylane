@@ -185,6 +185,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         @qml.qnode(dev)
         def circuit(x, z):
             qml.QFT(wires=(0,1,2,3))
+            qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)

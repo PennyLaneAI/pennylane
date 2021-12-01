@@ -105,11 +105,11 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape:
-            qml.GroverOperator(wires=(0,1,2,3))
+            qml.QFT(wires=(0,1,2,3))
+            qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(1.2345, wires=0)
-
             qml.CRZ(1.2345, wires=(3,0))
             qml.expval(qml.PauliZ(0))
 
