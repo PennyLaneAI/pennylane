@@ -104,9 +104,7 @@ class ApproxTimeEvolution(Operation):
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
-                "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                    type(hamiltonian).__name__
-                )
+                f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
             )
 
         # extract the wires that the op acts on
