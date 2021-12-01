@@ -76,22 +76,22 @@ class MPLDrawer:
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
-        drawer.box_gate(1, [0, 2, 3], "U(θ)")
+        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], "Entangling Layers")
+        drawer.box_gate(layer=1, wires=[0, 2, 3], "U(θ)")
 
-        drawer.box_gate(1, 4, "Z")
+        drawer.box_gate(layer=1, wires=4, "Z")
 
-        drawer.SWAP(2, (3,4))
-        drawer.CNOT(2, (0, 2))
+        drawer.SWAP(layer=2, wires=(3,4))
+        drawer.CNOT(layer=2, wires=(0, 2))
 
-        drawer.ctrl(3, [1, 3], control_values=[True, False])
+        drawer.ctrl(layer=3, wires=[1, 3], control_values=[True, False])
         drawer.box_gate(
             layer=3, wires=2, text="H", box_options={"zorder": 4}, text_options={"zorder": 5}
         )
 
-        drawer.ctrl(4, [1, 2])
+        drawer.ctrl(layer=4, wires=[1, 2])
 
-        drawer.measure(5, 0)
+        drawer.measure(layer=5, wires=0)
 
         drawer.fig.suptitle('My Circuit', fontsize='xx-large')
 
