@@ -59,7 +59,7 @@ def append_time_evolution(tape, lie_gradient, t, n, exact=False):
         qml.apply(obj)
     if exact:
         qml.QubitUnitary(
-            expm(-1j*t * qml.utils.sparse_hamiltonian(lie_gradient).toarray()),
+            expm(-1j * t * qml.utils.sparse_hamiltonian(lie_gradient).toarray()),
             wires=range(len(lie_gradient.wires)),
         )
     else:
@@ -90,12 +90,8 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [
-                qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names
-            ]
-            tapes_min = [
-                qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names
-            ]
+            tapes_plus = [qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names]
+            tapes_min = [qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names]
 
             # loop through all operations on the input tape
             for op in tape.operations:
@@ -243,9 +239,7 @@ class LieGradientOptimizer:
                 UserWarning,
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
-            raise TypeError(
-                f"restriction must be a Hamiltonian, received {type(restriction)}"
-            )
+            raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
         (
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
@@ -255,38 +249,40 @@ class LieGradientOptimizer:
         self.coeffs, self.observables = self.hamiltonian.terms
         self.stepsize = stepsize
 
+    def step(self):
+        r"""Update the circuit with one step of the optimizer.
+
+        Returns:
+           float: the optimized circuit and the objective function output prior
+           to the step.
+        """
+        return self.step_and_cost()[0]
+
     def step_and_cost(self):
         r"""Update the circuit with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
         Returns:
-             float: the objective function output prior to the step.
-
+            tuple[.QNode, float]: the optimized circuit and the objective function output prior
+            to the step.
         """
         cost = self.circuit()
         omegas = self.get_omegas()
-        nonzero_idx = np.where(~np.isclose(omegas, 0))[0]
+        non_zero_omegas = -omegas[omegas != 0]
 
+        nonzero_idx = np.nonzero(omegas)[0]
         non_zero_lie_algebra_elements = [self.lie_algebra_basis_names[i] for i in nonzero_idx]
-        non_zero_omegas = [-omegas[i] for i in nonzero_idx]
 
         lie_gradient = qml.Hamiltonian(
             non_zero_omegas,
-            [
-                qml.grouping.string_to_pauli_word(ps)
-                for ps in non_zero_lie_algebra_elements
-            ],
+            [qml.grouping.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
         )
-        new_circuit = append_time_evolution(lie_gradient, self.stepsize, self.trottersteps, self.exact)(
-            self.circuit.func
-        )
+        new_circuit = append_time_evolution(
+            lie_gradient, self.stepsize, self.trottersteps, self.exact
+        )(self.circuit.func)
 
         self.circuit = qml.QNode(new_circuit, self.circuit.device)
-        return cost
-
-    def step(self):
-        r"""Update the circuit with one step of the optimizer."""
-        self.step_and_cost()
+        return self.circuit, cost
 
     def get_su_n_operators(self, restriction):
         r"""Get the SU(N) operators. The dimension of the group is :math:`N^2-1`.

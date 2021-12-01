@@ -245,6 +245,7 @@ def test_lie_gradient_step_trotterstep(circuit, hamiltonian):
     opt.step()
     opt.step()
 
+
 def test_lie_gradient_circuit_input_1_check():
     """Test that a type error is raise for non-QNode circuits"""
 
@@ -295,9 +296,7 @@ def test_lie_gradient_restriction_check():
         TypeError,
         match="restriction must be a Hamiltonian",
     ):
-        qml.LieGradientOptimizer(
-            circuit=circuit, restriction=restriction, stepsize=0.001
-        )
+        qml.LieGradientOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 
 
 def test_docstring_example():
@@ -317,9 +316,10 @@ def test_docstring_example():
     opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
-        cost = opt.step_and_cost()
+        _, cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
+
 
 def test_docstring_example_exact():
     hamiltonian = qml.Hamiltonian(
@@ -338,9 +338,10 @@ def test_docstring_example_exact():
     opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
-        cost = opt.step_and_cost()
+        _, cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
+
 
 def test_example_shots():
     hamiltonian = qml.Hamiltonian(
@@ -359,5 +360,5 @@ def test_example_shots():
     opt = qml.LieGradientOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
 
     for step in range(3):
-        cost = opt.step_and_cost()
+        _, cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
