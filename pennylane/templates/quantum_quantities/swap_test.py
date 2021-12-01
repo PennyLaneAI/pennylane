@@ -70,7 +70,7 @@ class SwapTest(Operation):
         return tape
 
     def __call__(self, *args, **kwargs):
-        base_measurement = "state"
+        base_measurement = "sample"
 
         def compute_ip_from_samples(samples):
             num_samples = len(samples)
