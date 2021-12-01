@@ -1020,7 +1020,7 @@ class QubitDevice(Device):
 
         else:
             raise ValueError(
-                f"base_measurement should be one of [expval, var, sample, prob, state], "
+                f"base_measurement should be one of expval, var, sample, prob or state, "
                 f"got: {base_measurement}"
             )
 

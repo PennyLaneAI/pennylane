@@ -649,7 +649,7 @@ class TestCustomProcess:
         base_measurement = "not_supported_measurement"
 
         with pytest.raises(ValueError,
-                           match="base_measurement should be one of [expval, var, sample, prob, state], "
+                           match="base_measurement should be one of expval, var, sample, prob or state, "
                                  f"got: {base_measurement}"
         ):
             dev.custom_process((lambda res: 1), base_measurement)

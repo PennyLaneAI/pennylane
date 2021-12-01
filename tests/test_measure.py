@@ -1095,7 +1095,7 @@ class TestCustomProcess:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match=f"{ob} has no diagonalizing_gates attribute: cannot be used to rotate the probability",
+            match=f"{ob.name} has no diagonalizing_gates attribute: cannot be used to rotate the probability",
         ):
             custom_process((lambda res: 1), measure, op=ob)
 
@@ -1105,7 +1105,7 @@ class TestCustomProcess:
 
         with pytest.raises(
             ValueError,
-            match="base_measurement must be one of ('expval', 'var', 'sample', 'prob', 'state'), "
+            match="base_measurement must be one of 'expval', 'var', 'sample', 'prob' or 'state', "
             f"got: {measure}",
         ):
             custom_process((lambda res: 1), measure)
