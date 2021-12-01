@@ -524,6 +524,8 @@
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
   [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
 
+* QueueContext was not empty when importing `pennylane`.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
