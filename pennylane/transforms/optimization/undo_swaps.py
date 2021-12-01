@@ -20,10 +20,9 @@ from pennylane.wires import Wires
 from pennylane.tape import stop_recording
 
 
-
 @qfunc_transform
 def undo_swaps(tape):
-    """Quantum function transform to remove Barrier gates.
+    """Quantum function transform to remove SWAP gates.
 
     Args:
         qfunc (function): A quantum function.
@@ -37,38 +36,40 @@ def undo_swaps(tape):
 
     .. code-block:: python
 
-        def qfunc(x, y, z):
+        def qfunc():
             qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.PauliX(wires=0)
+            qml.PauliX(wires=1)
+            qml.SWAP(wires=[0,1])
+            qml.SWAP(wires=[0,2])
+            qml.PauliY(wires=0)
             return qml.expval(qml.PauliZ(0))
 
     The circuit before optimization:
 
-    >>> dev = qml.device('default.qubit', wires=2)
+    >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)(1, 2))
-        0: ──H──╭||──X──┤ ⟨Z⟩
-        1: ──H──╰||─────┤
+    >>> print(qml.draw(qnode)())
+        0: ──H──╭SWAP──╭SWAP──Y──┤ ⟨Z⟩
+        1: ──X──╰SWAP──│─────────┤
+        2: ────────────╰SWAP─────┤
 
 
-    We can remove the Barrier by running the ``remove_barrier`` transform:
+    We can remove the SWAP gates by running the ``undo_swap`` transform:
 
-    >>> optimized_qfunc = remove_barrier(qfunc)
+    >>> optimized_qfunc = undo_swaps(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)(1, 2))
-       0: ──H──X──┤ ⟨Z⟩
-       1: ──H─────┤
+        0: ──Y──┤ ⟨Z⟩
+        1: ──H──┤
+        2: ──X──┤
 
     """
     # Make a working copy of the list to traverse
-
-    #TODO: dar la vuelta, acumular y rehacer
-    gates = []
     list_copy = tape.operations.copy()
     list_copy.reverse()
+
     map_wires = {wire: wire for wire in tape.wires}
+    gates = []
 
     def _change_wires(wires):
         change_wires = Wires([])
@@ -85,11 +86,16 @@ def undo_swaps(tape):
                 if len(params) == 0:
                     gates.append(type(current_gate)(wires=_change_wires(current_gate.wires)))
                 else:
-                    gates.append(type(current_gate)(*params, wires=_change_wires(current_gate.wires)))
+                    gates.append(
+                        type(current_gate)(*params, wires=_change_wires(current_gate.wires))
+                    )
 
             else:
                 swap_wires_0, swap_wires_1 = current_gate.wires
-                map_wires[swap_wires_0], map_wires[swap_wires_1] = map_wires[swap_wires_1], map_wires[swap_wires_0]
+                map_wires[swap_wires_0], map_wires[swap_wires_1] = (
+                    map_wires[swap_wires_1],
+                    map_wires[swap_wires_0],
+                )
             list_copy.pop(0)
             continue
 
@@ -100,5 +106,3 @@ def undo_swaps(tape):
 
     for gate in gates:
         apply(gate)
-
-
