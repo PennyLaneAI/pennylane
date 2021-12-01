@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for tapering qubits.
 """
+# pylint: unnecessary-lambda
 import functools
 
 import pennylane as qml
@@ -22,7 +23,7 @@ from pennylane.grouping import pauli_mult_with_phase, pauli_word_to_string, stri
 
 
 def hamiltonian_mult(h1, h2):
-    r""" """
+    r"""... """
     o = []
     c = []
     for i in range(len(h1.terms[0])):
@@ -34,7 +35,7 @@ def hamiltonian_mult(h1, h2):
 
 
 def simplify(h):
-    r""" """
+    r"""... """
 
     c = []
     o = []
@@ -63,7 +64,7 @@ def simplify(h):
 
 
 def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
-    r""" """
+    r"""... """
 
     cliff = []
     for i, t in enumerate(symmetry):
