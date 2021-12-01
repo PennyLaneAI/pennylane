@@ -286,6 +286,10 @@
 
 <h3>Improvements</h3>
 
+* The PennyLane `qchem` package is now lazily imported; it will only be imported
+  the first time it is accessed.
+  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
+
 * Tests do not loop over automatically imported and instantiated operations any more,
 
 * The QNode has been re-written to support batch execution across the board,
