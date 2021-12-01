@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file generates the images used in docstrings for``qml.circuit_drawer.draw_mpl``.
+This file generates the images used in docstrings for``qml.circuit_drawer.tape_mpl``.
 This makes it easier to keep docstrings up to date with the latest styling.
 
 It is not intended to be used in any Continuous Integration, but save time and hassle
@@ -24,13 +24,13 @@ import matplotlib.pyplot as plt
 import pennylane as qml
 
 
-from pennylane.drawer import draw_mpl
+from pennylane.drawer import tape_mpl
 
 folder = pathlib.Path(__file__).parent
 
 def default(tape):
 
-    fig, ax = draw_mpl(tape)
+    fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "default.png")
     plt.close()
@@ -42,27 +42,27 @@ def decimals():
         qml.Rot(1.2345,2.3456,3.456, wires=0)
         qml.expval(qml.PauliZ(0))
 
-    fig, ax = draw_mpl(tape2, decimals=2)
+    fig, ax = tape_mpl(tape2, decimals=2)
     plt.savefig(folder / "decimals.png")
     plt.close()
 
 def wire_order(tape):
 
-    fig, ax = draw_mpl(tape, wire_order=[3,2,1,0])
+    fig, ax = tape_mpl(tape, wire_order=[3,2,1,0])
 
     plt.savefig(folder / "wire_order.png")
     plt.close()
 
 def show_all_wires(tape):
 
-    fig, ax = draw_mpl(tape, wire_order=["aux"], show_all_wires=show_all_wires)
+    fig, ax = tape_mpl(tape, wire_order=["aux"], show_all_wires=show_all_wires)
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
 
 def mpl_style(tape):
 
     with plt.style.context("Solarize_Light2"):
-        fig, ax = draw_mpl(tape)
+        fig, ax = tape_mpl(tape)
         plt.savefig(folder/"Solarize_Light2.png")
         plt.close()
 
@@ -74,7 +74,7 @@ def rcparams(tape):
     plt.rcParams['patch.force_edgecolor'] = True
     plt.rcParams['lines.color'] = 'black'
 
-    fig, ax = draw_mpl(tape)
+    fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
@@ -82,7 +82,7 @@ def rcparams(tape):
 
 def wires_and_labels(tape):
 
-    fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+    fig, ax = tape_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
                   label_options={'size': 20})
 
     plt.savefig(folder / "wires_labels.png")
@@ -90,7 +90,7 @@ def wires_and_labels(tape):
 
 def postprocessing(tape):
 
-    fig, ax = draw_mpl(tape)
+    fig, ax = tape_mpl(tape)
     fig.suptitle("My Circuit", fontsize="xx-large")
 
     options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
