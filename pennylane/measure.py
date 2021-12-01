@@ -562,7 +562,9 @@ def density_matrix(wires):
 
 
 def custom_process(post_process_func, base_measurement, op=None, wires=None):
-    r"""The custom_process takes a callable function and applies it to the result
+    r"""Custom post-processing of the base measured quanitity.
+
+    The custom_process takes a callable function and applies it to the result
      obtained from making a measurement defined by the base_measurement string. In this way
      we can take the pre-existing measurement process types and perform classical
      post-processing on them.
