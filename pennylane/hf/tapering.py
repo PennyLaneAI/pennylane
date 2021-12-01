@@ -62,8 +62,9 @@ def simplify(h):
     return qml.Hamiltonian(c, o)
 
 
-def hamiltonian_red(h, symmetry, paulix_wires):
+def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
     r""" """
+
     cliff = []
     for i, t in enumerate(symmetry):
         cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
@@ -72,14 +73,7 @@ def hamiltonian_red(h, symmetry, paulix_wires):
 
     uhu = hamiltonian_mult(hamiltonian_mult(u, h), u)
 
-    h_red = qml.Hamiltonian(uhu.coeffs, uhu.ops)
-    h_red = simplify(h_red)
-
-    return h_red
-
-
-def hamiltonian_taper(h, paulix_wires, paulix_sector):
-    r""" """
+    h = simplify(qml.Hamiltonian(uhu.coeffs, uhu.ops))
 
     h_red = qml.Hamiltonian(h.coeffs.copy(), h.ops.copy())
 
