@@ -23,7 +23,16 @@ from pennylane.measure import custom_process
 
 
 class SwapTest(Operation):
-    """A class that implements the SWAPTest"""
+    r"""A class that implements the SWAPTest.
+
+    The Swap Test is a method used to determine the fidelity between two quantum registers. It is computed
+    using an auxiliary qubit and controlled swap gates between the two registers. The Auxiliary qubit is then
+    repeatedly measured and the outcome of theses measurements is used to determine the fidelity.
+
+    .. math::
+        F(\psi, \phi) = 1 - \frac{2}{n} * \sum_{i=1}^{n} m_{i}
+
+    """
 
     num_wires = AnyWires
     grad_recipe = None

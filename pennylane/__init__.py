@@ -48,6 +48,7 @@ from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
+from pennylane.templates.quantum_quantities import *
 from pennylane.optimize import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode

@@ -14,6 +14,36 @@
 r"""
 Contains the unit tests for the SwapTest template.
 """
-
-import pennylane as qml
 import pytest
+import numpy as np
+import pennylane as qml
+
+
+class TestSwapTest:
+    """Testing that the result of the swap test matches theory"""
+
+    def test_identical_states(self):
+        dev = qml.device("default.qubit", wires=5, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.PauliX(wires=3)
+            return qml.SwapTest(0, [1, 2], [3, 4])()
+
+        expected_res = 1.0
+        swap_res = circuit()
+        assert np.isclose(expected_res, swap_res, )
+
+    def test_orthogonal_states(self):
+        dev = qml.device("default.qubit", wires=5, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=1)
+            qml.PauliX(wires=2)
+            return qml.SwapTest(0, [1, 2], [3, 4])()
+
+        expected_res = 0.0
+        swap_res = circuit()
+        assert np.isclose(expected_res, swap_res, atol=1e-02)
