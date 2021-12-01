@@ -204,8 +204,8 @@ class LieAlgebraOptimizer:
 
     Applying 5 steps gets us close the ground state of :math:`E\approx-2.23`
 
-    >>> for step in range(5):
-    ...    cost = opt.step_and_cost()
+    >>> for step in range(6):
+    ...    circuit, cost = opt.step_and_cost()
     ...    print(f"Step {step} - cost {cost}")
     Step 0 - cost -1.3351865007304005
     Step 1 - cost -1.9937887238935206
@@ -213,6 +213,11 @@ class LieAlgebraOptimizer:
     Step 3 - cost -2.1955105378898487
     Step 4 - cost -2.2137628169764256
     Step 5 - cost -2.2234364822091575
+
+    The optimized circuit is returned at each step, and can be used as any other QNode
+
+    >>> circuit()
+    -2.2283086057521713
 
     """
     # pylint: disable=too-many-arguments

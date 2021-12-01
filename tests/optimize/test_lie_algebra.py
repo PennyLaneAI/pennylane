@@ -319,11 +319,13 @@ def test_docstring_example():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
+    opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1)
 
     for step in range(6):
-        _, cost = opt.step_and_cost()
+        circuit, cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
+    print(circuit())
+
     assert np.isclose(cost, -2.23, atol=1e-2)
 
 
@@ -346,7 +348,7 @@ def test_docstring_example_exact():
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
-        _, cost = opt.step_and_cost()
+        circuit, cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
 
@@ -369,5 +371,5 @@ def test_example_shots():
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
 
     for step in range(3):
-        _, cost = opt.step_and_cost()
+        circuit, cost = opt.step_and_cost()
         print(f"Step {step} - cost {cost}")
