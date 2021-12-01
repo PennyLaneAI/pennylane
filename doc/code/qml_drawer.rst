@@ -8,6 +8,7 @@ Styling Matplotlib
 
 .. autosummary::
     :toctree: api
+
     available_styles
     use_style
 
