@@ -451,9 +451,9 @@ class MPLDrawer:
             **new_text_options,
         )
 
-        if active_wire_notches and (len(wires) != (box_max-box_min+1)):
+        if active_wire_notches and (len(wires) != (box_max - box_min + 1)):
             notch_options = box_options.copy()
-            notch_options['zorder'] += -1
+            notch_options["zorder"] += -1
             for wire in wires:
                 self._add_notch(layer, wire, extra_width, notch_options)
 
@@ -487,15 +487,25 @@ class MPLDrawer:
             extra_width (float): extra box width
             box_options (dict): styling options
         """
-        y = wire-self._notch_height/2
-        x1 = layer - self._box_length/2.0 - extra_width/2.0 - self._notch_width
-        x2 = layer + self._box_length/2.0 + extra_width/2.0
+        y = wire - self._notch_height / 2
+        x1 = layer - self._box_length / 2.0 - extra_width / 2.0 - self._notch_width
+        x2 = layer + self._box_length / 2.0 + extra_width / 2.0
 
-        box1 = patches.FancyBboxPatch((x1, y), self._notch_width, self._notch_height,
-            boxstyle=self._notch_style, **box_options)
+        box1 = patches.FancyBboxPatch(
+            (x1, y),
+            self._notch_width,
+            self._notch_height,
+            boxstyle=self._notch_style,
+            **box_options,
+        )
         self._ax.add_patch(box1)
-        box2 = patches.FancyBboxPatch((x2, y), self._notch_width, self._notch_height,
-            boxstyle=self._notch_style, **box_options)
+        box2 = patches.FancyBboxPatch(
+            (x2, y),
+            self._notch_width,
+            self._notch_height,
+            boxstyle=self._notch_style,
+            **box_options,
+        )
         self._ax.add_patch(box2)
 
     def _text_dims(self, text_obj):

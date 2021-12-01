@@ -91,23 +91,28 @@ class TestKwargs:
     def test_label_options(self):
         """Test label options modifies label style."""
 
-        _, ax = qml.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(
+            1.23, 2.34
+        )
 
         for l in ax.texts[0:3]:  # three labels
             assert l.get_color() == "purple"
             assert l.get_fontsize() == 20
         plt.close()
 
-    @pytest.mark.parametrize("notches, n_patches",[
-        (True, 8), #4 notches, 3 measurement, 1 box
-        (False, 4), # 1 box, 3 measurements
-    ])
+    @pytest.mark.parametrize(
+        "notches, n_patches",
+        [
+            (True, 8),  # 4 notches, 3 measurement, 1 box
+            (False, 4),  # 1 box, 3 measurements
+        ],
+    )
     def test_active_wire_notches(self, notches, n_patches):
         """Test active wire notches can be toggled by keyword."""
 
         @qml.qnode(dev)
         def temp_circ():
-            qml.QFT(wires=(0,1.23))
+            qml.QFT(wires=(0, 1.23))
             return qml.probs(0)
 
         _, ax = qml.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()

@@ -282,7 +282,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                         "zorder": 4
                     },  # make sure box and text above control wires if controlled
                     text_options={"zorder": 5},
-                    active_wire_notches=active_wire_notches
+                    active_wire_notches=active_wire_notches,
                 )
 
     # store wires we've already drawn on

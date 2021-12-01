@@ -194,9 +194,9 @@ class TestBoxGate:
         """Test notch styling is correct"""
 
         drawer = MPLDrawer(n_layers=1, n_wires=3)
-        drawer.box_gate(0, (0,2))
+        drawer.box_gate(0, (0, 2))
 
-        xs= [-0.415, 0.375, -0.415, 0.375]
+        xs = [-0.415, 0.375, -0.415, 0.375]
         ys = [-0.125, -0.125, 1.875, 1.875]
 
         # first patch is big box
@@ -209,27 +209,22 @@ class TestBoxGate:
             assert notch.get_boxstyle().pad == 0.05
         plt.close()
 
-    @pytest.mark.parametrize("wires, n_notches", 
-        [
-            ((0, 1, 2, 3), 0),
-            ((0,), 0),
-            ((0, 2), 4),
-            ((0, 1, 3), 6)
-        ]
+    @pytest.mark.parametrize(
+        "wires, n_notches", [((0, 1, 2, 3), 0), ((0,), 0), ((0, 2), 4), ((0, 1, 3), 6)]
     )
     def test_active_wire_notches_number(self, wires, n_notches):
         """Tests the number of active wires drawn is the expected amount."""
 
         drawer = MPLDrawer(n_layers=1, n_wires=4)
         drawer.box_gate(layer=0, wires=wires)
-        
-        assert len(drawer.ax.patches) == (n_notches+1)
+
+        assert len(drawer.ax.patches) == (n_notches + 1)
         plt.close()
 
     def test_no_active_wire_notches(self):
         """Test active wire notches deactivated by keyword."""
         drawer = MPLDrawer(n_layers=1, n_wires=3)
-        drawer.box_gate(layer=0, wires=(0,2), active_wire_notches=False)
+        drawer.box_gate(layer=0, wires=(0, 2), active_wire_notches=False)
 
         # only one patch for big box, no patches for notches
         assert len(drawer.ax.patches) == 1
@@ -246,7 +241,7 @@ class TestBoxGate:
         assert box.get_x() == -(drawer._box_length + 0.4) / 2.0 + drawer._pad
         assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
         assert box.get_width() == drawer._box_length + 0.4 - 2 * drawer._pad
-        assert box.get_height() == 2+drawer._box_length - 2 * drawer._pad
+        assert box.get_height() == 2 + drawer._box_length - 2 * drawer._pad
 
         text = drawer.ax.texts[0]
 
@@ -265,8 +260,8 @@ class TestBoxGate:
         drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
-        options = {"facecolor": rgba_red, "edgecolor": rgba_green, 'zorder': 5}
-        drawer.box_gate(0, (0,2), text="X", box_options=options)
+        options = {"facecolor": rgba_red, "edgecolor": rgba_green, "zorder": 5}
+        drawer.box_gate(0, (0, 2), text="X", box_options=options)
 
         # notches get same styling options as box
         for p in drawer.ax.patches:
