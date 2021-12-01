@@ -69,7 +69,8 @@ class TestQFT:
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_adjoint_identity(self, n_qubits, tol):
-        """Test if the QFT adjoint operation is the inverse of QFT."""
+        """Test if using the qml.adjoint transform the resulting operation is
+        the inverse of QFT."""
 
         dev = qml.device("default.qubit", wires=n_qubits)
 
@@ -86,7 +87,8 @@ class TestQFT:
 
     @pytest.mark.parametrize("n_qubits", range(2, 6))
     def test_QFT_adjoint_decomposition(self, n_qubits):  # tol
-        """Test if the QFT adjoint operation has the right decomposition"""
+        """Test if using the qml.adjoint transform results in the right
+        decomposition."""
 
         # QFT adjoint has right decompositions
         qft = qml.QFT(wires=range(n_qubits))
