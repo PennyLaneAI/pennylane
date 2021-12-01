@@ -287,7 +287,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
         .. math::
 
             \frac{\partial^2}{\partial\phi_a \partial\phi_b}f
-            = \sum_{i} c_i \left[ f(\phi_a + s^{(a)}_i, \phi_b + s^{(b)}_i) \right].
+            = \sum_{i} c_i f(\phi_a + s^{(a)}_i, \phi_b + s^{(b)}_i).
 
         where :math:`f(\phi_a, \phi_b) = \langle 0|U(\phi_a)^\dagger V(\phi_b)^\dagger \hat{O} V(\phi_b) U(\phi_a)|0\rangle`
         for some observable :math:`\hat{O}` and unitaries :math:`U(\phi_a)=e^{iH_a\phi_a}` and :math:`V(\phi_b)=e^{iH_b\phi_b}`.
@@ -303,8 +303,8 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     .. math::
 
-        \frac{\partial^2 f}{\partial x\partial y}
-        = \frac{1}{4} \left[f(x+\np/2, y+\np/2) - f(x+\np/2, y-\np/2) - f(x-\np/2, y+\np/2) + f(x-\np/2, y-\np/2)].
+        \frac{\partial^2 f}{\partial x\partial y} = \frac{1}{4}
+        \left[f(x+\np/2, y+\np/2) - f(x+\np/2, y-\np/2) - f(x-\np/2, y+\np/2) + f(x-\np/2, y-\np/2) \right].
     """
     rules = []
     shifts = shifts or [None] * len(frequencies)
