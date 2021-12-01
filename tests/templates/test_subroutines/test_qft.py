@@ -33,7 +33,7 @@ class TestQFT:
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
 
-    @pytest.mark.parametrize("num_inversions", [1,2,3])
+    @pytest.mark.parametrize("num_inversions", [1, 2, 3])
     def test_QFT_adjoint_method(self, num_inversions):
         """Test the adjoint method of the QFT class"""
         op = qml.QFT(wires=range(3))
