@@ -105,8 +105,8 @@ def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting
 
     Args:
-        operation1 (pennylane.Operation): A first quantum operation.
-        operation2 (pennylane.Operation): A second quantum operation.
+        operation1 (.Operation): A first quantum operation.
+        operation2 (.Operation): A second quantum operation.
 
     Returns:
          bool: True if the operations commute, False otherwise.
