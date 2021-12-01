@@ -76,7 +76,7 @@ class MPLDrawer:
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers", text_options={'rotation': 'vertical'})
+        drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers")
         drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
 
         drawer.box_gate(layer=1, wires=4, text="Z")
@@ -207,7 +207,7 @@ class MPLDrawer:
             :target: javascript:void(0);
     """
 
-    _box_length = 0.8
+    _box_length = 0.75
     """The width/height of the rectangle drawn by ``box_gate``"""
 
     _circ_rad = 0.3
@@ -224,6 +224,12 @@ class MPLDrawer:
 
     _fontsize = 14
     """The default fontsize."""
+
+    _pad = 0.2
+    """Padding for FancyBboxPatch objects."""
+
+    _boxstyle = "round, pad=0.2"
+    """Style for FancyBboxPatch objects."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
@@ -271,6 +277,16 @@ class MPLDrawer:
         """Matplotlib axes"""
         return self._ax
 
+    @property
+    def fontsize(self):
+        """Default fontsize for text. Defaults to 14."""
+        return self._fontsize
+
+    @fontsize.setter
+    def fontsize(self, value):
+        """Set ``fontsize`` property as provided value."""
+        self._fontsize = value
+
     def label(self, labels, text_options=None):
         """Label each wire.
 
@@ -308,7 +324,7 @@ class MPLDrawer:
 
         """
         if text_options is None:
-            text_options = {"ha": "center", "va": "center", "fontsize": self._fontsize}
+            text_options = {"ha": "center", "va": "center", "fontsize": self.fontsize}
 
         for wire, ii_label in enumerate(labels):
             self._ax.text(-1.5, wire, ii_label, **text_options)
@@ -391,7 +407,7 @@ class MPLDrawer:
         if "zorder" not in box_options:
             box_options["zorder"] = 2
 
-        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self._fontsize}
+        new_text_options = {"zorder": 3, "ha": "center", "va": "center", "fontsize": self.fontsize}
         if text_options is not None:
             new_text_options.update(text_options)
 
@@ -401,15 +417,16 @@ class MPLDrawer:
         box_max = max(wires)
         box_center = (box_max + box_min) / 2.0
 
-        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0
-        y_loc = box_min - self._box_length / 2.0
-        box_height = box_max - box_min + self._box_length
-        box_width = self._box_length + extra_width
+        x_loc = layer - self._box_length / 2.0 - extra_width / 2.0 + self._pad
+        y_loc = box_min - self._box_length / 2.0 + self._pad
+        box_height = box_max - box_min + self._box_length - 2 * self._pad
+        box_width = self._box_length + extra_width - 2 * self._pad
 
-        box = plt.Rectangle(
+        box = patches.FancyBboxPatch(
             (x_loc, y_loc),
             box_width,
             box_height,
+            boxstyle=self._boxstyle,
             **box_options,
         )
         self._ax.add_patch(box)
@@ -423,9 +440,9 @@ class MPLDrawer:
 
         if autosize:
             margin = 0.1
-            max_width = box_width - margin
+            max_width = box_width - margin + 2 * self._pad
             # factor of 2 makes it look nicer
-            max_height = box_height - 2 * margin
+            max_height = box_height - 2 * margin + 2 * self._pad
 
             w, h = self._text_dims(text_obj)
 
@@ -541,7 +558,7 @@ class MPLDrawer:
         if options is None:
             options = {}
         if "color" not in options:
-            options["facecolor"] = plt.rcParams["lines.color"]
+            options["color"] = plt.rcParams["lines.color"]
         if "zorder" not in options:
             options["zorder"] = 3
 
@@ -562,11 +579,13 @@ class MPLDrawer:
 
         self._ax.add_patch(circ_ctrlo)
 
-    def CNOT(self, layer, wires, options=None):
+    def CNOT(self, layer, wires, control_values=None, options=None):
         """Draws a CNOT gate.
 
         Args:
             layer (int): layer to draw in
+            control_values=None (Union[bool, Iterable[bool]]): for each control wire, denotes whether to control
+                on ``False=0`` or ``True=1``
             wires (Union[int, Iterable[int]]): wires to use. Last wire is the target.
 
         Keyword Args:
@@ -591,7 +610,7 @@ class MPLDrawer:
 
         """
 
-        self.ctrl(layer, wires[:-1], wires[-1], options=options)
+        self.ctrl(layer, wires[:-1], wires[-1], control_values=control_values, options=options)
         self._target_x(layer, wires[-1], options=options)
 
     def _target_x(self, layer, wires, options=None):
@@ -751,10 +770,14 @@ class MPLDrawer:
         if "zorder" not in lines_options:
             lines_options["zorder"] = 3
 
-        box = plt.Rectangle(
-            (layer - self._box_length / 2.0, wires - self._box_length / 2.0),
-            self._box_length,
-            self._box_length,
+        x_loc = layer - self._box_length / 2.0 + self._pad
+        y_loc = wires - self._box_length / 2.0 + self._pad
+
+        box = patches.FancyBboxPatch(
+            (x_loc, y_loc),
+            self._box_length - 2 * self._pad,
+            self._box_length - 2 * self._pad,
+            boxstyle=self._boxstyle,
             **box_options,
         )
         self._ax.add_patch(box)
