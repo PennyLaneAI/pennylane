@@ -140,7 +140,7 @@ def is_commuting(operation1, operation2):
                 commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
             )
 
-        # Case 2.3: targets overlap and controls overalp
+        # Case 2.3: targets overlap and controls overlap
         if target_target and control_control and not control_target and not target_control:
             return bool(
                 commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
