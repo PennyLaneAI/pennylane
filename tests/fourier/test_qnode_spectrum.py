@@ -32,6 +32,7 @@ def circuit_0(a):
 def circuit_1(a, b):
     qml.RZ(-a / 3, wires=0)
     qml.RX(a / 5, wires=1)
+    qml.CRZ(0.3, wires=[1, 0])
     qml.CNOT(wires=[0, 1])
     qml.RY(b * 2, wires=1)
     qml.RZ(-b, wires=1)
@@ -395,8 +396,8 @@ class TestAutograd:
         """Test that the spectra of a circuit is calculated correctly
         in the autograd interface."""
 
-        x = pnp.array([1.0, 2.0, 3.0])
-        w = pnp.array([[-1, -2, -3], [-4, -5, -6]], dtype=float)
+        x = pnp.array([1.0, 2.0, 3.0], requires_grad=True)
+        w = pnp.array([[-1, -2, -3], [-4, -5, -6]], dtype=float, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="autograd")
@@ -421,7 +422,7 @@ class TestTorch:
         in the torch interface."""
 
         torch = pytest.importorskip("torch")
-        x = torch.tensor([1.0, 2.0, 3.0])
+        x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
         w = torch.tensor([[-1, -2, -3], [-4, -5, -6]], dtype=float)
 
         dev = qml.device("default.qubit", wires=3)

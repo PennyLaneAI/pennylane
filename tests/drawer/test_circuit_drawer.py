@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.circuit_drawer` module.
+Unit tests for the :mod:`pennylane.drawer` module.
 """
 from unittest.mock import Mock
 import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.circuit_drawer import CircuitDrawer
-from pennylane.circuit_drawer.circuit_drawer import _remove_duplicates
-from pennylane.circuit_drawer.grid import Grid, _transpose
-from pennylane.circuit_drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
+from pennylane.drawer import CircuitDrawer
+from pennylane.drawer.circuit_drawer import _remove_duplicates
+from pennylane.drawer.grid import Grid, _transpose
+from pennylane.drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
 from pennylane.wires import Wires
 
 from pennylane.measure import state
