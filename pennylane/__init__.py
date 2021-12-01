@@ -324,9 +324,6 @@ _qchem = None
 
 def __getattr__(name):
     """Ensure that the qchem module is imported lazily"""
-    if name == "__all__":
-        return __dir__()
-
     if name == "qchem":
         global _qchem  # pylint: disable=global-statement
 
@@ -347,7 +344,7 @@ def __getattr__(name):
 
         return _qchem
 
-    return AttributeError(name)
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
 def __dir__():
