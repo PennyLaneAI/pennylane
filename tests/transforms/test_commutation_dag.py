@@ -233,7 +233,7 @@ class TestCommutationDAG:
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
 
         with pytest.raises(ValueError, match="Input is not a tape, QNode, or quantum function"):
-            dag = qml.transforms.get_dag_commutation(qml.PauliZ(0))()
+            qml.transforms.get_dag_commutation(qml.PauliZ(0))()
 
     def test_dag_wrong_function(self):
         """Assert error raised when input function is not a quantum function"""

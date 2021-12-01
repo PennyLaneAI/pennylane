@@ -70,7 +70,7 @@ from pennylane.transforms import (
     apply_controlled_Q,
 )
 from pennylane.vqe import ExpvalCost, VQECost
-from pennylane.commutation_dag import is_commuting
+from pennylane.transforms import is_commuting
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
