@@ -25,22 +25,24 @@ errors if ``matplotlib`` is not installed.
 """
 
 
-_has_mpl = True   # pragma: no cover
+_has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
-except (ModuleNotFoundError, ImportError) as e: # pragma: no cover
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 
 # pragma: no cover
 def _needs_mpl(func):
     def wrapper():
-        if not _has_mpl:  
+        if not _has_mpl:
             raise ImportError(
                 "The drawer style module requires matplotlib."
                 "You can install matplotlib via \n\n   pip install matplotlib"
             )
         func()
+
     return wrapper
+
 
 @_needs_mpl
 def _black_white():
@@ -54,10 +56,10 @@ def _black_white():
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
 
+
 @_needs_mpl
 def _black_white_dark():
-    """Apply the black and white dark style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
-    """
+    """Apply the black and white dark style to matplotlib's configuration. This functions modifies ``plt.rcParams``."""
     almost_black = "#151515"  # less harsh than full black
     plt.rcParams["figure.facecolor"] = almost_black
     plt.rcParams["axes.facecolor"] = almost_black
@@ -68,14 +70,16 @@ def _black_white_dark():
     plt.rcParams["text.color"] = "white"
 
 
-_styles_map = {'black_white': _black_white,
-        'black_white_dark': _black_white_dark,
-        'default': _needs_mpl(lambda : plt.style.use('default'))}
+_styles_map = {
+    "black_white": _black_white,
+    "black_white_dark": _black_white_dark,
+    "default": _needs_mpl(lambda: plt.style.use("default")),
+}
 
 
 def available_styles():
     """Get available style specification strings.
-    
+
     Returns:
         tuple(str)
     """
@@ -86,9 +90,10 @@ def use_style(style: str):
     """Set a style setting. Reset to default style using ``plt.style.use('default')``
 
     Args:
-        style (str): A style specification. 
+        style (str): A style specification.
 
     Current styles:
+
     * ``'default'``
     * ``'black_white'``
     * ``'black_white_dark'``
@@ -121,5 +126,7 @@ def use_style(style: str):
     if style in _styles_map:
         _styles_map[style]()
     else:
-        raise TypeError(f"style '{style}' provided to ``qml.drawer.use_style``"
-            f" does not exist.  Available options are {available_styles()}")
+        raise TypeError(
+            f"style '{style}' provided to ``qml.drawer.use_style``"
+            f" does not exist.  Available options are {available_styles()}"
+        )
