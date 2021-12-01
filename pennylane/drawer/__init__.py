@@ -27,4 +27,4 @@ from .tape_mpl import tape_mpl
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers, drawable_grid
 from .utils import convert_wire_order
-from . import style
+from .style import available_styles, use_style

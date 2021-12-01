@@ -14,67 +14,39 @@
 """
 This module contains styles for using matplotlib graphics.
 
-See available styles in the variable ``qml.style.available``. Styles can be reset
-with ``plt.style.use('default')``.
+To add a new style:
+* create a private function that modifies ``plt.rcParams``.
+* add an entry to the private dictionary ``_style_map``.
+* Add an entry to ``doc/code/qml.drawer.rst``
+* Add a test in ``tests/drawer/test_style.py``
 
-This module matches the interfaces in
-`matplotlib's style module <https://matplotlib.org/stable/api/style_api.html>`__ ,
- but provides extra styling options.
+Use the decorator ``_needs_mpl`` on style functions to raise appropriate
+errors if ``matplotlib`` is not installed.
 """
 
-import contextlib
 
 _has_mpl = True   # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
-    from matplotlib import rc_context as _rc_context
-    from matplotlib import rcdefaults as _rcdefaults
 except (ModuleNotFoundError, ImportError) as e: # pragma: no cover
     _has_mpl = False
 
-available = ["black_white", "black_white_dark"]
-"""Lists all available styling functions"""
+# pragma: no cover
+def _needs_mpl(func):
+    def wrapper():
+        if not _has_mpl:  
+            raise ImportError(
+                "The drawer style module requires matplotlib."
+                "You can install matplotlib via \n\n   pip install matplotlib"
+            )
+        func()
+    return wrapper
 
-
+@_needs_mpl
 def _black_white():
     """Apply the black and white style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
-
-    The style can be reset with ``qml.style.use('default')``.
-
-    **Example**:
-
-    .. code-block:: python
-
-        qml.style.black_white()
-
-        dev = qml.device('lightning.qubit', wires=(0,1,2,3))
-        @qml.qnode(dev)
-        def circuit(x, z):
-            qml.QFT(wires=(0,1,2,3))
-            qml.Toffoli(wires=(0,1,2))
-            qml.CSWAP(wires=(0,2,3))
-            qml.RX(x, wires=0)
-            qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
-
-
-        fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
-        fig.show()
-
-    .. figure:: ../../_static/style/black_white_style.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
     """
-
-    if not _has_mpl:  # pragma: no cover
-        raise ImportError(
-            "``black_white_style`` requires matplotlib."
-            "You can install matplotlib via \n\n   pip install matplotlib"
-        )
-
     plt.rcParams["patch.facecolor"] = "white"
     plt.rcParams["patch.edgecolor"] = "black"
     plt.rcParams["patch.linewidth"] = 2
@@ -82,45 +54,10 @@ def _black_white():
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
 
-
+@_needs_mpl
 def _black_white_dark():
-    """Apply the black and white style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
-
-    The style can be reset with ``qml.style.use('default')``.
-
-    **Example**:
-
-    .. code-block:: python
-
-        qml.style.black_white_dark()
-
-        dev = qml.device('lightning.qubit', wires=(0,1,2,3))
-        @qml.qnode(dev)
-        def circuit(x, z):
-            qml.QFT(wires=(0,1,2,3))
-            qml.Toffoli(wires=(0,1,2))
-            qml.CSWAP(wires=(0,2,3))
-            qml.RX(x, wires=0)
-            qml.CRZ(z, wires=(3,0))
-            return qml.expval(qml.PauliZ(0))
-
-
-        fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
-        fig.show()
-
-    .. figure:: ../../_static/style/black_white_style_dark.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
+    """Apply the black and white dark style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
     """
-
-    if not _has_mpl:  # pragma: no cover
-        raise ImportError(
-            "``black_white_style`` requires matplotlib."
-            "You can install matplotlib via \n\n   pip install matplotlib"
-        )
-
     almost_black = "#151515"  # less harsh than full black
     plt.rcParams["figure.facecolor"] = almost_black
     plt.rcParams["axes.facecolor"] = almost_black
@@ -130,21 +67,44 @@ def _black_white_dark():
     plt.rcParams["lines.color"] = "white"
     plt.rcParams["text.color"] = "white"
 
-def use(style):
-    """Set a style setting. If not a PennyLane style, then the function
-    defers to matplotlib's ``plt.style.use``.
+@_needs_mpl
+def _default():
+    """Apply the default style to matplotlib's configuration. This functions modifies ``plt.rcParams``.
+    """
+    plt.style.use('default')
+
+_styles_map = {'black_white': _black_white,
+        'black_white_dark': _black_white_dark,
+        'default': _default}
+
+
+def available_styles():
+    """Get available style specification strings.
+    
+    Returns:
+        tuple(str)
+    """
+    return tuple(_styles_map)
+
+
+def use_style(style: str):
+    """Set a style setting. Reset to default style using ``plt.style.use('default')``
 
     Args:
-        style (Union[str, dict, Path, or list]): A style specification. 
+        style (str): A style specification. 
+
+    Current styles:
+    * ``'default'``
+    * ``'black_white'``
+    * ``'black_white_dark'``
 
     **Example**:
 
     .. code-block:: python
 
-        qml.style.use('black_white')
+        qml.style.use_style('black_white')
 
-        dev = qml.device('lightning.qubit', wires=(0,1,2,3))
-        @qml.qnode(dev)
+        @qml.qnode(qml.device('lightning.qubit', wires=(0,1,2,3)))
         def circuit(x, z):
             qml.QFT(wires=(0,1,2,3))
             qml.Toffoli(wires=(0,1,2))
@@ -163,64 +123,8 @@ def use(style):
             :target: javascript:void(0);
 
     """
-    if not _has_mpl:  # pragma: no cover
-        raise ImportError(
-            "``black_white_style`` requires matplotlib."
-            "You can install matplotlib via \n\n   pip install matplotlib"
-        )
-
-    map = {'black_white': _black_white,
-        'black_white_dark': _black_white_dark}
-
-    if style in map:
-        map[style]()
+    if style in _styles_map:
+        _styles_map[style]()
     else:
-        plt.style.use(style)
-
-@contextlib.contextmanager
-def context(style, after_reset=False):
-    """A context manager for setting a style temporarily. If not a PennyLane style,
-    then the function defers to matplotlib's ``plt.style.use``.
-    
-    Args:
-        style (Union[str, dict, Path, list]): A style specification. 
-
-    Keyword Args:
-        after_reset (Bool): If True, apply style after resetting to their default
-
-    **Example**:
-
-    .. code-block:: python
-
-        with qml.style.context('black_white'):
-
-            dev = qml.device('lightning.qubit', wires=(0,1,2,3))
-            @qml.qnode(dev)
-            def circuit(x, z):
-                qml.QFT(wires=(0,1,2,3))
-                qml.Toffoli(wires=(0,1,2))
-                qml.CSWAP(wires=(0,2,3))
-                qml.RX(x, wires=0)
-                qml.CRZ(z, wires=(3,0))
-                return qml.expval(qml.PauliZ(0))
-
-
-            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
-            fig.show()
-
-    .. figure:: ../../_static/style/black_white_style.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    """
-    if not _has_mpl:  # pragma: no cover
-        raise ImportError(
-            "``black_white_style`` requires matplotlib."
-            "You can install matplotlib via \n\n   pip install matplotlib"
-        )
-    with _rc_context():
-        if after_reset:
-            _rcdefaults()
-        use(style)
-        yield
+        raise TypeError(f"style '{style}' provided to ``qml.drawer.use_style``"
+            f" does not exist.  Available options are {available_styles()}")
