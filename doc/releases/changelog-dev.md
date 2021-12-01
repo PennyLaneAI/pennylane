@@ -216,18 +216,26 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
-* Given an operator of the form :math:`U=e^{iHt}` where :math:`H` has commuting terms and known
-  eigenvalues (and thus known frequency spectrum),
+* Given an operator of the form :math:`U=e^{iHt}`, where :math:`H` has
+  commuting terms and known eigenvalues,
   `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
-  the gradient of the expectation value :math:`\langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
+  the gradient of the expectation value :math:`f(t) = \langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
   hardware.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
   [(#1932)](https://github.com/PennyLaneAI/pennylane/pull/1932)
 
-  Assuming that :math:`H` has `R` unique frequencies, `qml.gradients.generate_shift_rule`
-  returns the parameter shift rules to compute expectation value gradients of the operators
-  time parameter using `2R` shifted cost function evaluations. This becomes cheaper than
-  the standard application of the chain rule and two-term shift rule when `R` is less than the
+  Given
+
+  .. math:: H = \sum_i a_i h_i,
+
+  where the eigenvalues of :math:`H` are known and all :math:`h_i` commute, we can compute
+  the *frequencies* (the unique positive differences of any two eigenvalues) using
+  `qml.gradients.eigvals_to_frequencies`.
+
+  `qml.gradients.generate_shift_rule` can then be used to compute the parameter
+  shift rules to compute :math:`f'(t)` using `2R` shifted cost function evaluations.
+  This becomes cheaper than the standard application of the chain rule and
+  two-term shift rule when `R` is less than the
   number of Pauli words in the generator.
 
   For example, consider the case where :math:`H` has eigenspectrum ``(-1, 0, 1)``:
