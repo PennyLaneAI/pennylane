@@ -245,11 +245,11 @@ def is_commuting(operation1, operation2):
         # Case 2.9: targets and controls overlap with targets and controls
         if target_control and control_target and target_target:
             return (
-                    bool(commutation_map[operation1.is_controlled][position["ctrl"]])
-                    and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
-                    and bool(
-                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-            )
+                bool(commutation_map[operation1.is_controlled][position["ctrl"]])
+                and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
+                and bool(
+                    commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
+                )
             )
 
     # Case 3: only operation 1 is controlled
@@ -347,18 +347,18 @@ class CommutationDAGNode:
     ]
 
     def __init__(
-            self,
-            op=None,
-            wires=None,
-            target_wires=None,
-            control_wires=None,
-            successors=None,
-            predecessors=None,
-            reachable=None,
-            matchedwith=None,
-            successorstovisit=None,
-            isblocked=None,
-            node_id=-1,
+        self,
+        op=None,
+        wires=None,
+        target_wires=None,
+        control_wires=None,
+        successors=None,
+        predecessors=None,
+        reachable=None,
+        matchedwith=None,
+        successorstovisit=None,
+        isblocked=None,
+        node_id=-1,
     ):
         self.op = op
         self.wires = wires
@@ -485,7 +485,7 @@ class CommutationDAG:
 
         for prev_node_id in range(max_node_id - 1, -1, -1):
             if self.get_node(prev_node_id).reachable and not is_commuting(
-                    self.get_node(prev_node_id).op, max_node
+                self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)
                 self._pred_update(max_node_id)
