@@ -347,5 +347,5 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__} has no attribute {name}")
 
 
-def __dir__():
+def __dir__():  # pragma: no cover
     return _all + ["qchem"]
