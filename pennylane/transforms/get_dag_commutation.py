@@ -172,7 +172,9 @@ def intersection(wires1, wires2):
 
 
 def is_commuting(operation1, operation2):
-    r"""Check if two operations are commuting.
+    r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
+    controlled, targetted part of operation 1 with the controlled, targetted part of operation 2. Operations
+    supported are the non parametric one, but it will be extended to all operations.
 
     Args:
         operation1 (.Operation): A first quantum operation.

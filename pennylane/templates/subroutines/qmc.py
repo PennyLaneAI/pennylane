@@ -343,11 +343,11 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        self.tar_wires = list(target_wires)
+        self._target_wires = list(target_wires)
         self.estimation_wires = list(estimation_wires)
-        wires = self.tar_wires + self.estimation_wires
+        wires = self._target_wires + self.estimation_wires
 
-        if num_target_wires != len(self.tar_wires):
+        if num_target_wires != len(self._target_wires):
             raise ValueError(
                 f"The probability distribution of dimension {dim_p} requires"
                 f" {num_target_wires} target wires"
@@ -359,6 +359,10 @@ class QuantumMonteCarlo(Operation):
         super().__init__(A, R, Q, wires=wires, do_queue=do_queue, id=id)
 
     @property
+    def target_wires(self):
+        return self._target_wires
+
+    @property
     def num_params(self):
         return 3
 
@@ -366,10 +370,10 @@ class QuantumMonteCarlo(Operation):
         A, R, Q = self.parameters
 
         with qml.tape.QuantumTape() as tape:
-            QubitUnitary(A, wires=self.tar_wires[:-1])
-            QubitUnitary(R, wires=self.tar_wires)
+            QubitUnitary(A, wires=self.target_wires[:-1])
+            QubitUnitary(R, wires=self.target_wires)
             qml.templates.QuantumPhaseEstimation(
-                Q, target_wires=self.tar_wires, estimation_wires=self.estimation_wires
+                Q, target_wires=self.target_wires, estimation_wires=self.estimation_wires
             )
 
         return tape
