@@ -77,8 +77,8 @@ hamiltonian_3 = qml.Hamiltonian(
         (circuit_3, hamiltonian_3),
     ],
 )
-def test_lie_gradient_omegas(circuit, hamiltonian):
-    """Test that we calculate the lie gradient coefficients Tr{[rho, H] P_j} correctly"""
+def test_lie_algebra_omegas(circuit, hamiltonian):
+    """Test that we calculate the Riemannian gradient coefficients Tr{[rho, H] P_j} correctly"""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
@@ -96,13 +96,13 @@ def test_lie_gradient_omegas(circuit, hamiltonian):
     phi = get_state()
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
-    lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
+    lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
     opt = qml.LieAlgebraOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
         op = qml.utils.expand(op.matrix, op.wires, wires)
-        omegas_np.append(-np.trace(lie_gradient_np @ op).imag / 2)
+        omegas_np.append(-np.trace(lie_algebra_np @ op).imag / 2)
     omegas = opt.get_omegas()
     assert np.allclose(omegas, omegas_np)
 
@@ -117,8 +117,8 @@ def test_lie_gradient_omegas(circuit, hamiltonian):
         (circuit_3, hamiltonian_3),
     ],
 )
-def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
-    """Test that we calculate the (restricted) lie gradient coefficients correctly"""
+def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
+    """Test that we calculate the (restricted) Riemannian gradient coefficients correctly"""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
@@ -136,7 +136,7 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
     phi = get_state()
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
-    lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
+    lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
     restriction = qml.Hamiltonian(
         coeffs=[1.0] * 3,
@@ -148,7 +148,7 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
     omegas_np = []
     for op in ops:
         op = qml.utils.expand(op.matrix, op.wires, wires)
-        omegas_np.append(-np.trace(lie_gradient_np @ op).imag / 2)
+        omegas_np.append(-np.trace(lie_algebra_np @ op).imag / 2)
     omegas = opt.get_omegas()
 
     assert np.allclose(omegas, omegas_np)
@@ -163,7 +163,7 @@ def test_lie_gradient_omegas_restricted(circuit, hamiltonian):
         (circuit_2, hamiltonian_2),
     ],
 )
-def test_lie_gradient_evolution(circuit, hamiltonian):
+def test_lie_algebra_evolution(circuit, hamiltonian):
     """Test that the optimizer produces the correct unitary to append"""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
     wires = range(nqubits)
@@ -182,9 +182,9 @@ def test_lie_gradient_evolution(circuit, hamiltonian):
     phi = get_state()
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
-    lie_gradient_np = hamiltonian_np @ rho - rho @ hamiltonian_np
+    lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    phi_exact = expm(-0.001 * lie_gradient_np) @ phi
+    phi_exact = expm(-0.001 * lie_algebra_np) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
     opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
     opt.step()
@@ -204,7 +204,7 @@ def test_lie_gradient_evolution(circuit, hamiltonian):
         (circuit_3, hamiltonian_3),
     ],
 )
-def test_lie_gradient_step(circuit, hamiltonian):
+def test_lie_algebra_step(circuit, hamiltonian):
     """Test that we can take subsequent steps with the optimizer"""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
 
@@ -230,7 +230,7 @@ def test_lie_gradient_step(circuit, hamiltonian):
         (circuit_3, hamiltonian_3),
     ],
 )
-def test_lie_gradient_step_trotterstep(circuit, hamiltonian):
+def test_lie_algebra_step_trotterstep(circuit, hamiltonian):
     """Test that we can take subsequent steps with the optimizer"""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
 
@@ -246,7 +246,7 @@ def test_lie_gradient_step_trotterstep(circuit, hamiltonian):
     opt.step()
 
 
-def test_lie_gradient_circuit_input_1_check():
+def test_lie_algebra_circuit_input_1_check():
     """Test that a type error is raise for non-QNode circuits"""
 
     def circuit():
@@ -256,7 +256,7 @@ def test_lie_gradient_circuit_input_1_check():
         qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
-def test_lie_gradient_hamiltonian_input_1_check():
+def test_lie_algebra_hamiltonian_input_1_check():
     """Test that a type error is raise for non-QNode circuits"""
 
     @qml.qnode(qml.device("default.qubit", wires=3))
@@ -271,7 +271,7 @@ def test_lie_gradient_hamiltonian_input_1_check():
         qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
-def test_lie_gradient_nqubits_check(capsys):
+def test_lie_algebra_nqubits_check(capsys):
     """Test that we warn if the system is too big"""
 
     @qml.qnode(qml.device("default.qubit", wires=5))
@@ -279,11 +279,11 @@ def test_lie_gradient_nqubits_check(capsys):
         qml.RY(0.5, wires=0)
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
-    with pytest.warns(UserWarning, match="The exact Lie gradient is exponentially"):
+    with pytest.warns(UserWarning, match="The exact Riemannian gradient is exponentially"):
         qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
-def test_lie_gradient_restriction_check():
+def test_lie_algebra_restriction_check():
     """Test that a type error is raise for non-QNode circuits"""
 
     @qml.qnode(qml.device("default.qubit", wires=3))
