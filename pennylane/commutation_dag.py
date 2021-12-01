@@ -31,6 +31,7 @@ position = OrderedDict(
         "ctrl": 5,
     }
 )
+"""OrderedDict[str, int]: represents the..."""
 
 commutation_map = OrderedDict(
     {
