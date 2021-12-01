@@ -460,7 +460,7 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        
+
         if wires is None:
             raise ValueError("Must specify the wires that {} acts on".format(self.name))
 
