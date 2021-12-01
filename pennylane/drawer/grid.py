@@ -47,9 +47,7 @@ class Grid:
             self.raw_grid = np.array(raw_grid, dtype=object)
             if len(self.raw_grid.shape) != 2:
                 raise ValueError(
-                    "The entered raw grid was not parsed as two-dimensional array: {}".format(
-                        raw_grid
-                    )
+                    f"The entered raw grid was not parsed as two-dimensional array: {raw_grid}"
                 )
 
     def insert_layer(self, idx, layer):

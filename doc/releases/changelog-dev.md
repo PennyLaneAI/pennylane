@@ -354,6 +354,9 @@
 
 <h3>Breaking changes</h3>
 
+* The `circuit_drawer` module has been renamed `drawer`.
+  [(#1949)](https://github.com/PennyLaneAI/pennylane/pull/1949)
+
 * The `par_domain` attribute in the operator class has been removed.
   [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
 
@@ -396,6 +399,21 @@
 * Fixes a bug where differentiating a QNode with `qml.state` using the JAX
   interface raised an error.
   [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
+
+* Fixes a bug where the classical preprocessing Jacobian
+  computed by `qml.transforms.classical_jacobian` with JAX
+  returned a reduced submatrix of the Jacobian.
+  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
+
+* Fixes a bug where the operations are not accessed in the correct order
+  in `qml.fourier.qnode_spectrum`, leading to wrong outputs.
+  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
+
+* Fixes several Pylint errors.
+  [(#1951)](https://github.com/PennyLaneAI/pennylane/pull/1951)
+
+* Fixes a bug where the device test suite wasn't testing certain operations.
+  [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
 
 * Fixes a bug where batch transforms would mutate a QNodes execution options.
   [(#1934)](https://github.com/PennyLaneAI/pennylane/pull/1934)
@@ -448,9 +466,13 @@
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
   [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
 
+* QueueContext was not empty when importing `pennylane`.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs, Antal Száva
+Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
+David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
+Maria Schuld, Jay Soni, David Wierichs, Antal Száva
