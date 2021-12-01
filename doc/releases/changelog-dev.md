@@ -216,7 +216,8 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
-* Given an operator of the form :math:`U=e^{iHt}` where :math:`H` as known eigenvalues,
+* Given an operator of the form :math:`U=e^{iHt}` where :math:`H` has known
+  eigenvalues (and thus known frequency spectrum),
   `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
   the gradient of the expectation value :math:`\langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
   hardware.
@@ -249,7 +250,7 @@
   .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i),
 
   where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
-  for some observable :math:`\hat{O}` and some unitary :math:`U(\phi)`.
+  for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
 
 * A circuit template for time evolution under a commuting Hamiltonian utilizing generalized
   parameter shift rules for cost function gradients is available as `qml.CommutingEvolution`.

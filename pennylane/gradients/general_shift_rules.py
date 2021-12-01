@@ -73,8 +73,8 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
 
 @functools.lru_cache(maxsize=None)
 def eigvals_to_frequencies(eigvals):
-    r"""Convert an eigenvalue spectra to frequency values, defined
-    as the the set of positive, unique, differences of the spectra.
+    r"""Convert an eigenvalue spectrum to frequency values, defined
+    as the the set of positive, unique differences of the eigenvalues in the spectrum.
 
     Args:
         eigvals (tuple[int, float]): eigenvalue spectra
@@ -198,7 +198,7 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
         .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i).
 
         where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
-        for some observable :math:`\hat{O}` and some unitary :math:`U(\phi)`.
+        for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
 
     Raises:
         ValueError: if ``frequencies`` is not a list of unique positive values, or if ``shifts``
@@ -255,14 +255,15 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     r"""Computes the parameter shift rule with respect to two parametrized unitaries,
     given their generator's eigenvalue frequency spectrum. This corresponds to a
-    shift rule that computes off-diagonal elements of the Hessian.
+    shift rule that computes off-diagonal elements of higher order derivative tensors.
+    For the second order, this corresponds to the Hessian.
 
     Args:
         frequencies (list[tuple[int or float]]): List of eigenvalue frequencies corresponding
             to the each parametrized unitary.
         shifts (list[tuple[int or float]]): List of shift values corresponding to each parametrized
             unitary. If unspecified, equidistant shifts are assumed. If supplied, the length
-            of each tuple in the list must be the same as the length of each tuple in
+            of each tuple in the list must be the same as the length of the corresponding tuple in
             ``frequencies``.
         orders (list[int]): the order of differentiation for each parametrized unitary.
             If unspecified, the first order derivative shift rule is computed for each parametrized
@@ -280,10 +281,10 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
         .. math::
 
             \frac{\partial^2}{\partial\phi_a \partial\phi_b}f
-            = \sum_{i} c_i \left[ f(\phi_a + s^{(a)}_i) + f(\phi_b + s^{(b)}_i) \right].
+            = \sum_{i} c_i \left[ f(\phi_a + s^{(a)}_i, \phi_b + s^{(b)}_i) \right].
 
-        where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
-        for some observable :math:`\hat{O}` and some unitary :math:`U(\phi)`.
+        where :math:`f(\phi_a, \phi_b) = \langle 0|U(\phi_a)^\dagger V(\phi_b)^\dagger \hat{O} V(\phi_b) U(\phi_a)|0\rangle`
+        for some observable :math:`\hat{O}` and unitaries :math:`U(\phi_a)=e^{iH_a\phi_a}` and :math:`V(\phi_b)=e^{iH_b\phi_b}`.
 
     **Example**
 
@@ -309,7 +310,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     all_shifts = []
 
-    for partial_recipes in itertools.product(*recipes, repeat=1):
+    for partial_recipes in itertools.product(*recipes):
         c, s = np.stack(partial_recipes).T
         combined = np.concatenate([[np.prod(c)], s])
         all_shifts.append(np.stack(combined))
