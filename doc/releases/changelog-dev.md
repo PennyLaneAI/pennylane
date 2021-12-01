@@ -216,7 +216,7 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
-* Given an operator of the form :math:`U=e^{iHt}` where :math:`H` has known
+* Given an operator of the form :math:`U=e^{iHt}` where :math:`H` has commuting terms and known
   eigenvalues (and thus known frequency spectrum),
   `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
   the gradient of the expectation value :math:`\langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on

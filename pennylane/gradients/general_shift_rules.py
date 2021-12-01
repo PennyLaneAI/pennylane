@@ -20,8 +20,15 @@ import numpy as np
 import pennylane as qml
 
 
-def _process_gradient_recipe(gradient_recipe, tol=1e-10):
-    """Utility function to process gradient recipes.
+def _process_shifts(rule, tol=1e-10):
+    """Utility function to process gradient rules.
+
+    Args:
+        rule (array): a ``(N, M)`` array corresponding to ``M`` terms
+            with ``N-1`` simultaneous function shifts. The first row of
+            the array corresponds to the linear combination coefficients;
+            subsequent rows correspond to parameter shifts for these coefficients.
+        tol (float): floating point tolerance used when comparing shifts/coefficients
 
     This utility function accepts coefficients and shift values, and performs the following
     processing:
@@ -36,39 +43,30 @@ def _process_gradient_recipe(gradient_recipe, tol=1e-10):
       ensuring that, if there is a zero-shift term, this is returned first.
     """
     # remove all small coefficients and shifts
-    gradient_recipe[np.abs(gradient_recipe) < tol] = 0
+    rule[np.abs(rule) < tol] = 0
 
     # remove columns where the coefficients are 0
-    gradient_recipe = gradient_recipe[:, ~(gradient_recipe[0] == 0)]
+    rule = rule[:, ~(rule[0] == 0)]
 
     # sort columns according to abs(shift)
-    gradient_recipe = gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
-    round_tol = int(-np.log10(tol))
-    unique_shifts = np.unique(np.round(gradient_recipe[-1], round_tol))
+    rule = rule[:, np.argsort(np.abs(rule)[-1])]
 
-    if gradient_recipe.shape[-1] != len(unique_shifts):
+    # determine unique shifts
+    round_decimals = int(-np.log10(tol))
+    rounded_rule = np.round(rule[-1], round_decimals)
+    unique_shifts = np.unique(rounded_rule)
+
+    if rule.shape[-1] != len(unique_shifts):
         # sum columns that have the same shift value
-        gradient_recipe = np.stack(
-            [
-                np.stack(
-                    [
-                        np.sum(
-                            gradient_recipe[
-                                :, np.nonzero(np.round(gradient_recipe[-1], round_tol) == b)[0]
-                            ],
-                            axis=1,
-                        )[0]
-                        for b in unique_shifts
-                    ]
-                ),
-                unique_shifts,
-            ]
-        )
+        coeffs = [
+            np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
+        ]
+        rule = np.stack([np.stack(coeffs), unique_shifts])
 
         # sort columns according to abs(shift)
-        gradient_recipe = gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
+        rule = rule[:, np.argsort(np.abs(rule)[-1])]
 
-    return gradient_recipe
+    return rule
 
 
 @functools.lru_cache(maxsize=None)
@@ -93,13 +91,17 @@ def eigvals_to_frequencies(eigvals):
 
 
 @functools.lru_cache(maxsize=None)
-def frequencies_to_period(frequencies):
+def frequencies_to_period(frequencies, decimals=5):
     r"""Returns the period of a Fourier series as defined
-    by a set of frequencies. The period is simply :math:`2\pi/f_min`,
-    where :math:`f_min` is the smallest positive frequency value.
+    by a set of frequencies.
+
+    The period is simply :math:`2\pi/gcd(frequencies)`,
+    where :math:`\text{gcd}` is the greatest common divisor.
 
     Args:
-        spectra (tuple[int, float]): eigenvalue spectra
+        spectra (tuple[int, float]): frequency spectra
+        decimals (int): Number of decimal places to round to
+            if there are non-integral frequencies.
 
     Returns:
         tuple[int, float]: frequencies
@@ -110,8 +112,16 @@ def frequencies_to_period(frequencies):
     >>> frequencies_to_period(frequencies)
     12.566370614359172
     """
-    f_min = min(f for f in frequencies if f > 0)
-    return 2 * np.pi / f_min
+    try:
+        gcd = np.gcd.reduce(frequencies)
+
+    except TypeError:
+        # np.gcd only support integer frequencies
+        exponent = 10 ** decimals
+        frequencies = np.round(frequencies, decimals) * exponent
+        gcd = np.gcd.reduce(np.int64(frequencies)) / exponent
+
+    return 2 * np.pi / gcd
 
 
 @functools.lru_cache(maxsize=None)
@@ -166,29 +176,28 @@ def _get_shift_rule(frequencies, shifts=None):
 
 @functools.lru_cache()
 def generate_shift_rule(frequencies, shifts=None, order=1):
-    r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue frequency
-    spectrum.
+    r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue
+    frequency spectrum.
 
     To compute gradients of circuit parameters in variational quantum algorithms, expressions for
     cost function first derivatives with respect to the variational parameters can be cast into
-    linear combinations of expectation values at shifted parameter values. These "gradient recipes"
-    can be obtained from the unitary generator's eigenvalue frequency spectrum. Details can be
-    found in https://arxiv.org/abs/2107.12390.
+    linear combinations of expectation values at shifted parameter values. The coefficients and
+    shifts defining the linear combination can be obtained from the unitary generator's eigenvalue
+    frequency spectrum. Details can be found in https://arxiv.org/abs/2107.12390.
 
     Args:
         frequencies (tuple[int or float]): The tuple of eigenvalue frequencies. Eigenvalue
             frequencies are defined as the unique positive differences obtained from a set of
             eigenvalues.
-        shifts (tuple[int or float]): the tuple of shift values. If unspecified, equidistant
-            shifts are assumed. If supplied, the length of this tuple should match the number of
-            given frequencies.
+        shifts (tuple[int or float]): the tuple of shift values. If unspecified,
+            equidistant shifts are assumed. If supplied, the length of this tuple should match the
+            number of given frequencies.
         order (int): the order of differentiation to compute the shift rule for
 
     Returns:
-        tuple: a tuple of coefficients and shifts describing the gradient recipe
-        for the parameter-shift method. For parameter :math:`\phi`, the
-        coefficients :math:`c_i` and the shifts :math:`s_i` combine to give a gradient
-        recipe of the following form:
+        tuple: a tuple of coefficients and shifts describing the gradient rule for the
+        parameter-shift method. For parameter :math:`\phi`, the coefficients :math:`c_i` and the
+        shifts :math:`s_i` combine to give a gradient rule of the following form:
 
         .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i).
 
@@ -201,14 +210,14 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
 
     **Examples**
 
-    An example of obtaining the frequencies from generator eigenvalues, and obtaining the
-    parameter shift rule:
+    An example of obtaining the frequencies from generator eigenvalues, and obtaining the parameter
+    shift rule:
 
     >>> eigvals = (-0.5, 0, 0, 0.5)
     >>> frequencies = eigvals_to_frequencies(eigvals)
     >>> generate_shift_rule(frequencies)
     [[ 0.85355339, -0.85355339, -0.14644661,  0.14644661],
-     [ 0.78539816, -0.78539816,  2.35619449, -2.35619449]]
+     [0.78539816,  -0.78539816,  2.35619449, -2.35619449]]
 
     An example with explicitly specified shift values:
 
@@ -218,33 +227,35 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     [[ 3.        , -3.        , -2.09077028,  2.09077028, 0.2186308, -0.2186308 ],
      [ 0.78539816, -0.78539816,  1.04719755, -1.04719755, 2.0943951, -2.0943951 ]]
 
-    Higher order shift rules (corresponding to the :math:`n`-th derivative of the parameter)
-    can be requested via the ``order`` argument. For example, to extract the
-    second order shift rule for a gate with generator :math:`X/2`:
+    Higher order shift rules (corresponding to the :math:`n`-th derivative of the parameter) can be
+    requested via the ``order`` argument. For example, to extract the second order shift rule for a
+    gate with generator :math:`X/2`:
 
-    >>> eigvals = (0.5, -0.5)
-    >>> frequencies = eigvals_to_frequencies(eigvals)
+    >>> eigvals = (0.5, -0.5) frequencies = eigvals_to_frequencies(eigvals)
     >>> generate_shift_rule(frequencies, order=2)
-    [[-0.5       ,  0.5       ],
-     [ 0.        , -3.14159265]]
+    [[-0.5       ,   0.5       ],
+     [ 0.        ,  -3.14159265]]
 
-    This corresponds to :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)]`.
+    This corresponds to :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) -
+    f(\phi-\pi)]`.
     """
     frequencies = tuple(f for f in frequencies if f > 0)
-    recipe = _get_shift_rule(frequencies, shifts=shifts)
+    rule = _get_shift_rule(frequencies, shifts=shifts)
 
     if order > 1:
-        all_shifts = []
+        combined_rules = []
         T = frequencies_to_period(frequencies)
 
-        for partial_recipe in itertools.product(recipe.T, repeat=order):
-            c, s = np.stack(partial_recipe).T
+        for partial_rule in itertools.product(rule.T, repeat=order):
+            c, s = np.stack(partial_rule).T
             new_shift = np.mod(sum(s) + 0.5 * T, T) - 0.5 * T
-            all_shifts.append(np.stack([np.prod(c), new_shift]))
+            combined_rules.append(np.stack([np.prod(c), new_shift]))
 
-        recipe = qml.math.stack(all_shifts).T
+        # combine all terms in the linear combination into a single
+        # array, with coefficients on the first row and shifts on the second row.
+        rule = qml.math.stack(combined_rules).T
 
-    return _process_gradient_recipe(recipe, tol=1e-10)
+    return _process_shifts(rule, tol=1e-10)
 
 
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
@@ -266,12 +277,12 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     Returns:
         tuple: a tuple of coefficients, shifts for the first parameter, and shifts for the
-        second parameter, describing the gradient recipe
+        second parameter, describing the gradient rule
         for the parameter-shift method.
 
         For parameters :math:`\phi_a` and :math:`\phi_b`, the
         coefficients :math:`c_i` and the shifts :math:`s^{(a)}_i`, :math:`s^{(b)}_i`,
-        combine to give a gradient recipe of the following form:
+        combine to give a gradient rule of the following form:
 
         .. math::
 
@@ -288,26 +299,26 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
      [ 1.57079633,  1.57079633, -1.57079633, -1.57079633],
      [ 1.57079633, -1.57079633,  1.57079633, -1.57079633]])
 
-    This corresponds to the gradient recipe
+    This corresponds to the gradient rule
 
     .. math::
 
         \frac{\partial^2 f}{\partial x\partial y}
         = \frac{1}{4} \left[f(x+\np/2, y+\np/2) - f(x+\np/2, y-\np/2) - f(x-\np/2, y+\np/2) + f(x-\np/2, y-\np/2)].
     """
-    recipes = []
+    rules = []
     shifts = shifts or [None] * len(frequencies)
     orders = orders or [1] * len(frequencies)
 
     for f, s, o in zip(frequencies, shifts, orders):
         rule = generate_shift_rule(f, shifts=s, order=o)
-        recipes.append(_process_gradient_recipe(rule).T)
+        rules.append(_process_shifts(rule).T)
 
-    all_shifts = []
+    combined_rules = []
 
-    for partial_recipes in itertools.product(*recipes):
-        c, s = np.stack(partial_recipes).T
+    for partial_rules in itertools.product(*rules):
+        c, s = np.stack(partial_rules).T
         combined = np.concatenate([[np.prod(c)], s])
-        all_shifts.append(np.stack(combined))
+        combined_rules.append(np.stack(combined))
 
-    return np.stack(all_shifts).T
+    return np.stack(combined_rules).T

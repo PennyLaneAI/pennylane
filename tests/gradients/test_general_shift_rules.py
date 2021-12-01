@@ -209,6 +209,22 @@ class TestGenerateShiftRule:
         ]
         assert np.allclose(generated_terms.T, correct_terms)
 
+    def test_second_order_non_equidistant_shift_rule(self):
+        """Test that the second order shift rule is correct and
+        properly simplified for generators with non-equidistant frequencies"""
+        frequencies = (2, 3)
+        generated_terms = generate_shift_rule(frequencies, order=2)
+        correct_terms = [
+            [-6, 0],
+            [3.91421356, -np.pi / 4],
+            [3.91421356, np.pi / 4],
+            [-1, -np.pi / 2],
+            [-1, np.pi / 2],
+            [0.08578644, -3 * np.pi / 4],
+            [0.08578644, 3 * np.pi / 4],
+        ]
+        assert np.allclose(generated_terms.T, correct_terms)
+
 
 class TestMultiShiftRule:
     """Tests for the generate_multi_shift_rule function"""
@@ -290,4 +306,10 @@ class TestEigvalsToFrequency:
         """Test the case of four eigenvalues"""
         res = qml.gradients.eigvals_to_frequencies((0.5, -0.5, 0, 0))
         expected = (0.5, 1)
+        assert res == expected
+
+    def test_nonequidistant_eigvals(self):
+        """Test the case of non-equidistant eigenvalues"""
+        res = qml.gradients.eigvals_to_frequencies((0.453, 0.65, -1.2, 0))
+        expected = (0.453, 1.2, 1.85, 1.653, 0.65, 0.197)
         assert res == expected
