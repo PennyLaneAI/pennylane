@@ -115,7 +115,7 @@ def is_commuting(operation1, operation2):
     **Example**
 
     >>> qml.is_commuting(qml.PauliX(wires=0), qml.PauliZ(wires=0))
-    True
+    False
     """
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-return-statements
