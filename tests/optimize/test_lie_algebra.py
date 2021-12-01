@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the ``qml.LieAlgebraOptimizer``.
+Unit tests for the ``LieAlgebraOptimizer``.
 """
 import pytest
 
 from scipy.sparse.linalg import expm
+import numpy as np
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane.optimize import LieAlgebraOptimizer
 
 
 def circuit_1():
-    """Simple circuit"""
+    """Simple circuit."""
     qml.Hadamard(wires=[0])
     qml.Hadamard(wires=[1])
 
 
 def circuit_2():
-    """Simply parameterized circuit"""
+    """Simply parameterized circuit."""
     qml.RX(0.1, wires=[0])
     qml.RY(0.5, wires=[1])
     qml.CNOT(wires=[0, 1])
@@ -37,7 +38,7 @@ def circuit_2():
 
 
 def circuit_3():
-    """Three-qubit circuit"""
+    """Three-qubit circuit."""
     qml.RY(0.5, wires=[0])
     qml.RY(0.6, wires=[1])
     qml.RY(0.7, wires=[2])
@@ -78,7 +79,9 @@ hamiltonian_3 = qml.Hamiltonian(
     ],
 )
 def test_lie_algebra_omegas(circuit, hamiltonian):
-    """Test that we calculate the Riemannian gradient coefficients Tr{[rho, H] P_j} correctly"""
+    """Test that we calculate the Riemannian gradient coefficients Tr{[rho, H] P_j} correctly."""
+    # pylint: disable=no-member
+
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
@@ -97,7 +100,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     rho = np.outer(phi, phi.conj())
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
-    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit)
+    opt = LieAlgebraOptimizer(circuit=lie_circuit)
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
@@ -118,7 +121,8 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     ],
 )
 def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
-    """Test that we calculate the (restricted) Riemannian gradient coefficients correctly"""
+    """Test that we calculate the (restricted) Riemannian gradient coefficients correctly."""
+    # pylint: disable=no-member
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
@@ -143,7 +147,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
         observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
     )
 
-    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, restriction=restriction)
+    opt = LieAlgebraOptimizer(circuit=lie_circuit, restriction=restriction)
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
@@ -164,7 +168,8 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     ],
 )
 def test_lie_algebra_evolution(circuit, hamiltonian):
-    """Test that the optimizer produces the correct unitary to append"""
+    """Test that the optimizer produces the correct unitary to append."""
+    # pylint: disable=no-member
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
@@ -186,7 +191,7 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
 
     phi_exact = expm(-0.001 * lie_algebra_np) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
-    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
+    opt = LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
     opt.step()
 
     cost_pl = opt.circuit()
@@ -205,7 +210,7 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
     ],
 )
 def test_lie_algebra_step(circuit, hamiltonian):
-    """Test that we can take subsequent steps with the optimizer"""
+    """Test that we can take subsequent steps with the optimizer."""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
 
     dev = qml.device("default.qubit", wires=nqubits)
@@ -215,7 +220,7 @@ def test_lie_algebra_step(circuit, hamiltonian):
         circuit()
         return qml.expval(hamiltonian)
 
-    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit)
+    opt = LieAlgebraOptimizer(circuit=lie_circuit)
     opt.step()
     opt.step()
 
@@ -231,7 +236,7 @@ def test_lie_algebra_step(circuit, hamiltonian):
     ],
 )
 def test_lie_algebra_step_trotterstep(circuit, hamiltonian):
-    """Test that we can take subsequent steps with the optimizer"""
+    """Test that we can take subsequent steps with the optimizer."""
     nqubits = max([max(ps.wires) for ps in hamiltonian.ops]) + 1
 
     dev = qml.device("default.qubit", wires=nqubits)
@@ -241,23 +246,23 @@ def test_lie_algebra_step_trotterstep(circuit, hamiltonian):
         circuit()
         return qml.expval(hamiltonian)
 
-    opt = qml.LieAlgebraOptimizer(circuit=lie_circuit, trottersteps=3)
+    opt = LieAlgebraOptimizer(circuit=lie_circuit, trottersteps=3)
     opt.step()
     opt.step()
 
 
 def test_lie_algebra_circuit_input_1_check():
-    """Test that a type error is raise for non-QNode circuits"""
+    """Test that a type error is raise for non-QNode circuits."""
 
     def circuit():
         qml.RY(0.5, wires=0)
 
     with pytest.raises(TypeError, match="circuit must be a QNode"):
-        qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
+        LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_algebra_hamiltonian_input_1_check():
-    """Test that a type error is raise for non-QNode circuits"""
+    """Test that a type error is raise for non-QNode circuits."""
 
     @qml.qnode(qml.device("default.qubit", wires=3))
     def circuit():
@@ -268,11 +273,11 @@ def test_lie_algebra_hamiltonian_input_1_check():
         TypeError,
         match="circuit must return the expectation value of a Hamiltonian",
     ):
-        qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
+        LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
-def test_lie_algebra_nqubits_check(capsys):
-    """Test that we warn if the system is too big"""
+def test_lie_algebra_nqubits_check():
+    """Test that we warn if the system is too big."""
 
     @qml.qnode(qml.device("default.qubit", wires=5))
     def circuit():
@@ -280,11 +285,11 @@ def test_lie_algebra_nqubits_check(capsys):
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
     with pytest.warns(UserWarning, match="The exact Riemannian gradient is exponentially"):
-        qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
+        LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
 def test_lie_algebra_restriction_check():
-    """Test that a type error is raise for non-QNode circuits"""
+    """Test that a type error is raise for non-QNode circuits."""
 
     @qml.qnode(qml.device("default.qubit", wires=3))
     def circuit():
@@ -296,10 +301,11 @@ def test_lie_algebra_restriction_check():
         TypeError,
         match="restriction must be a Hamiltonian",
     ):
-        qml.LieAlgebraOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
+        LieAlgebraOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 
 
 def test_docstring_example():
+    """Test the docstring example with Trotterized evolution."""
     hamiltonian = qml.Hamiltonian(
         coeffs=[-1.0] * 3,
         observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
@@ -313,7 +319,7 @@ def test_docstring_example():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
+    opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
         _, cost = opt.step_and_cost()
@@ -322,6 +328,8 @@ def test_docstring_example():
 
 
 def test_docstring_example_exact():
+    """Test that the optimizer works with matrix exponential."""
+
     hamiltonian = qml.Hamiltonian(
         coeffs=[-1.0] * 3,
         observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
@@ -335,7 +343,7 @@ def test_docstring_example_exact():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
+    opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
     for step in range(6):
         _, cost = opt.step_and_cost()
@@ -344,6 +352,7 @@ def test_docstring_example_exact():
 
 
 def test_example_shots():
+    """Test that the optimizer works with finite shots."""
     hamiltonian = qml.Hamiltonian(
         coeffs=[-1.0] * 3,
         observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
@@ -357,7 +366,7 @@ def test_example_shots():
         qml.RY(0.6, wires=[0])
         return qml.expval(hamiltonian)
 
-    opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
+    opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
 
     for step in range(3):
         _, cost = opt.step_and_cost()

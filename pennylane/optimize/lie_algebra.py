@@ -215,7 +215,7 @@ class LieAlgebraOptimizer:
     Step 5 - cost -2.2234364822091575
 
     """
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
     def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
 
@@ -266,6 +266,8 @@ class LieAlgebraOptimizer:
             tuple[.QNode, float]: the optimized circuit and the objective function output prior
             to the step.
         """
+        # pylint: disable=not-callable
+
         cost = self.circuit()
         omegas = self.get_omegas()
         non_zero_omegas = -omegas[omegas != 0]
