@@ -155,7 +155,7 @@ class TestDecomposition:
 
             return qml.state()
 
-        assert qml.math.isclose(qpe_circuit()[0],1)
+        assert qml.math.isclose(qpe_circuit()[0], 1)
 
 
 class TestInputs:
