@@ -42,7 +42,7 @@ from scipy.linalg import block_diag
 from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
 
-from .common import *
+from .identity import Identity
 
 
 def _rotation(phi, bare=False):

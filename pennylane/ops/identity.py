@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the available built-in operations supported by PennyLane
-that are common to multiple computing paradigms (e.g. cv and qubit).
+This module contains the Identity operation that is common to both
+cv and qubit computing paradigms in PennyLane.
 """
 import numpy as np
 
