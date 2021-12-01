@@ -284,10 +284,8 @@ def device(name, *args, **kwargs):
 
         if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
             raise DeviceError(
-                "The {} plugin requires PennyLane versions {}, however PennyLane "
-                "version {} is installed.".format(
-                    name, plugin_device_class.pennylane_requires, __version__
-                )
+                f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
+                f"however PennyLane version {__version__} is installed."
             )
 
         # Construct the device
@@ -326,9 +324,11 @@ _qchem = None
 
 def __getattr__(name):
     """Ensure that the qchem module is imported lazily"""
+    if name == "__all__":
+        return __dir__()
 
     if name == "qchem":
-        global _qchem
+        global _qchem  # pylint: disable=global-statement
 
         if _qchem is None:
 
