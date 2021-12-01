@@ -352,7 +352,8 @@
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
-* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules. [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
+* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
+   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
 <h3>Breaking changes</h3>
 
@@ -397,6 +398,15 @@
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the classical preprocessing Jacobian
+  computed by `qml.transforms.classical_jacobian` with JAX
+  returned a reduced submatrix of the Jacobian.
+  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
+
+* Fixes a bug where the operations are not accessed in the correct order
+  in `qml.fourier.qnode_spectrum`, leading to wrong outputs.
+  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
 
 * Fixes several Pylint errors.
   [(#1951)](https://github.com/PennyLaneAI/pennylane/pull/1951)
