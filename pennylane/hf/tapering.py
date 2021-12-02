@@ -19,48 +19,65 @@ import functools
 
 import pennylane as qml
 import autograd.numpy as anp
+from pennylane import numpy as np
 from pennylane.grouping import pauli_mult_with_phase, pauli_word_to_string, string_to_pauli_word
 
 
-def hamiltonian_mult(h1, h2):
-    r"""..."""
+def observable_mult(obs_a, obs_b):
+    r"""Multiply two PennyLane observables together.
+
+    Each observable is a linear combination of Pauli words, e.g., :math:`\sum_{k=0}^{N} c_k O_k`,
+    and is represented by a PennyLane Hamiltonian.
+
+    Args:
+        obs_a (Hamiltonian): first observable
+        obs_b (Hamiltonian): second observable
+
+    Returns:
+        .Hamiltonian: Observable expressed as a PennyLane Hamiltonian
+
+    **Example**
+
+    >>> c = np.array([0.5, 0.5])
+    >>> obs_a = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)])
+    >>> obs_b = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+    >>> print(observable_mult(obs_a, obs_b))
+      (-0.25j) [Z1]
+    + (-0.25j) [Y0]
+    + ( 0.25j) [Y1]
+    + ((0.25+0j)) [Y0 X1]
+    """
     o = []
     c = []
-    for i in range(len(h1.terms[0])):
-        for j in range(len(h2.terms[0])):
-            op, phase = pauli_mult_with_phase(h1.terms[1][i], h2.terms[1][j])
+    for i in range(len(obs_a.terms[0])):
+        for j in range(len(obs_b.terms[0])):
+            op, phase = pauli_mult_with_phase(obs_a.terms[1][i], obs_b.terms[1][j])
             o.append(op)
-            c.append(phase * h1.terms[0][i] * h2.terms[0][j])
-    return qml.Hamiltonian(c, o)
+            c.append(phase * obs_a.terms[0][i] * obs_b.terms[0][j])
+
+    return simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
 def simplify(h):
     r"""..."""
 
-    c = []
-    o = []
     s = []
-
+    wiremap = dict(zip(h.wires, h.wires))
     for term in h.terms[1]:
         term = qml.operation.Tensor(term).prune()
-        s.append(qml.grouping.pauli_word_to_string(term, wire_map=dict(zip(h.wires, h.wires))))
+        s.append(pauli_word_to_string(term, wire_map=wiremap))
 
-    o_set = list(set(s))
-    c_set = anp.zeros(len(o_set))
-
+    o = list(set(s))
+    c = [0.0] * len(o)
     for i, item in enumerate(s):
-        o_ = anp.zeros(len(o_set))
-        o_[o_set.index(item)] = 1.0
-        c_set = c_set + o_ * h.terms[0][i]
+        c[o.index(item)] += h.terms[0][i]
 
-    for i, coeff in enumerate(c_set):
-        if not anp.allclose(coeff, 0.0):
-            c.append(coeff)
-            o.append(o_set[i])
+    nonzero_ind = np.nonzero(c)[0]
+    c = [c[i] for i in nonzero_ind]
+    o = [o[i] for i in nonzero_ind]
+    o = [string_to_pauli_word(i) for i in o]
 
-    o = [qml.grouping.string_to_pauli_word(i) for i in o]
-
-    return qml.Hamiltonian(c, o)
+    return qml.Hamiltonian(qml.math.stack(c), o)
 
 
 def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
@@ -70,9 +87,9 @@ def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
     for i, t in enumerate(symmetry):
         cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
 
-    u = functools.reduce(lambda i, j: hamiltonian_mult(i, j), cliff)
+    u = functools.reduce(lambda i, j: observable_mult(i, j), cliff)
 
-    uhu = hamiltonian_mult(hamiltonian_mult(u, h), u)
+    uhu = observable_mult(observable_mult(u, h), u)
 
     h = simplify(qml.Hamiltonian(uhu.coeffs, uhu.ops))
 
