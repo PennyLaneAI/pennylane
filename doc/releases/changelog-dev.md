@@ -421,6 +421,9 @@
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
+* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
+   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
+
 <h3>Breaking changes</h3>
 
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
