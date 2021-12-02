@@ -79,7 +79,7 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf8") as f:
             self._config = toml.load(f)
 
     def save(self, filepath):
@@ -88,7 +88,7 @@ class Configuration:
         Args:
             filepath (str): path to the configuration file.
         """
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf8") as f:
             toml.dump(self._config, f)
 
     def __getitem__(self, key):
