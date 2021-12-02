@@ -22,7 +22,8 @@ from pennylane.tape import stop_recording
 
 @qfunc_transform
 def undo_swaps(tape):
-    """Quantum function transform to remove SWAP gates. To do this it runs from right to left through the circuit changing the position of the qubits accordingly.
+    """Quantum function transform to remove SWAP gates. To do this it runs from right
+    to left through the circuit changing the position of the qubits accordingly.
 
     Args:
         qfunc (function): A quantum function.
