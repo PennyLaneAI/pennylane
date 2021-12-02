@@ -115,5 +115,7 @@ class QFT(Operation):
         return decomp_ops
 
     def adjoint(self):
-        self.queue()
-        return self.inv()
+        adjoint_op = QFT(wires=self.wires)
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op
+
