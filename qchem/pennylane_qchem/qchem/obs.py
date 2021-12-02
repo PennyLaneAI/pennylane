@@ -192,14 +192,10 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     """
 
     if electrons <= 0:
-        raise ValueError(
-            f"'electrons' must be greater than 0; got for 'electrons' {electrons}"
-        )
+        raise ValueError(f"'electrons' must be greater than 0; got for 'electrons' {electrons}")
 
     if orbitals <= 0:
-        raise ValueError(
-            f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}"
-        )
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     sz = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
 
@@ -360,9 +356,7 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     """
 
     if orbitals <= 0:
-        raise ValueError(
-            f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}"
-        )
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     r = np.arange(orbitals)
     sz_orb = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
@@ -424,9 +418,7 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     """
 
     if orbitals <= 0:
-        raise ValueError(
-            f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}"
-        )
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     r = np.arange(orbitals)
     table = np.vstack([r, r, np.ones([orbitals])]).T

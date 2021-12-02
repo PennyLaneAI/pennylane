@@ -118,9 +118,7 @@ def _process_wires(wires, n_wires=None):
 
     if len(wires) != n_wires:
         # check length consistency when all checking and cleaning are done.
-        raise ValueError(
-            f"Length of `wires` ({len(wires)}) does not match `n_wires` ({n_wires})"
-        )
+        raise ValueError(f"Length of `wires` ({len(wires)}) does not match `n_wires` ({n_wires})")
 
     return wires
 
@@ -393,8 +391,7 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     else:
         if active_electrons <= 0:
             raise ValueError(
-                f"The number of active electrons ({active_electrons}) "
-                f"has to be greater than 0."
+                f"The number of active electrons ({active_electrons}) " f"has to be greater than 0."
             )
 
         if active_electrons > electrons:
@@ -408,7 +405,8 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
             raise ValueError(
                 f"For a reference state with multiplicity {mult}, "
                 f"the number of active electrons ({active_electrons}) should be "
-                f"greater than or equal to {mult - 1}.")
+                f"greater than or equal to {mult - 1}."
+            )
 
         if mult % 2 == 1:
             if active_electrons % 2 != 0:
@@ -431,8 +429,7 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     else:
         if active_orbitals <= 0:
             raise ValueError(
-                f"The number of active orbitals ({active_orbitals}) "
-                f"has to be greater than 0."
+                f"The number of active orbitals ({active_orbitals}) " f"has to be greater than 0."
             )
 
         if ncore_orbs + active_orbitals > orbitals:
