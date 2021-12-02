@@ -39,14 +39,14 @@ The following images are generated via the code:
 Currently Available Styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. |bw| image:: ../_static/style/black_white_style.png
-        :width: 40%
 
 .. |bwd| image:: ../_static/style/black_white_dark_style.png
-        :width: 40%
 
-+------------+---------------+
-+   |bw|     +   |bwd|       +
-+------------+---------------+
+.. |default| image:: ../_static/style/default_style.png
+
++----+------+---------+
++|bw|+|bwd| +|default|+
++----+------+---------+
 
 
 Developer Methods

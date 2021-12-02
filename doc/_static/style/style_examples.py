@@ -25,25 +25,15 @@ import matplotlib.pyplot as plt
 
 folder = pathlib.Path(__file__).parent
 
-def black_white_style_example(circuit):
-    qml.drawer.use_style('black_white')
+def make_imag(circuit, style):
+    qml.drawer.use_style(style)
 
     fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+    fig.suptitle(style, fontsize='xx-large')
 
-    plt.savefig(folder / "black_white_style.png")
+    plt.savefig(folder / (style + "_style.png"))
     plt.close()
     qml.drawer.use_style('default')
-
-def black_white_style_dark_example(circuit):
-
-    qml.drawer.use_style('black_white_dark')
-
-    fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
-
-    plt.savefig(folder / "black_white_dark_style.png")
-    plt.close()
-    qml.drawer.use_style('default')
-
 
 if __name__ == "__main__":
 
@@ -57,6 +47,6 @@ if __name__ == "__main__":
         qml.CRZ(z, wires=(3,0))
         return qml.expval(qml.PauliZ(0))
 
-    black_white_style_example(circuit)
-    black_white_style_dark_example(circuit)
+    for style in qml.drawer.available_styles():
+        make_imag(circuit, style)
 
