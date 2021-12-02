@@ -87,7 +87,7 @@ def eigvals_to_frequencies(eigvals):
     (0.5, 1.0)
     """
     unique_eigvals = sorted(set(eigvals))
-    return tuple({abs(i - j) for i, j in itertools.combinations(unique_eigvals, 2)})
+    return tuple({j - i for i, j in itertools.combinations(unique_eigvals, 2)})
 
 
 @functools.lru_cache(maxsize=None)
