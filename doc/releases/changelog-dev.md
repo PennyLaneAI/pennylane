@@ -350,7 +350,14 @@
 * The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
   [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
 
+* The `undo_swaps` transformation has been created to automatically remove all swaps of a circuit.
+  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+
 <h3>Improvements</h3>
+
+* The PennyLane `qchem` package is now lazily imported; it will only be imported
+  the first time it is accessed.
+  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
 
 * Change all instances of `"{}".format(..)` to `f"{..}"`.
   [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
@@ -360,6 +367,7 @@
 * The QNode has been re-written to support batch execution across the board,
   custom gradients, better decomposition strategies, and higher-order derivatives.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+  [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
 
   - Internally, if multiple circuits are generated for simultaneous execution, they
     will be packaged into a single job for execution on the device. This can lead to
@@ -420,6 +428,9 @@
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
+
+* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
+   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
 <h3>Breaking changes</h3>
 
