@@ -458,6 +458,12 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the `ApproxTimeEvolution` template was not correctly
+  computing the operation wires from the input Hamiltonian. This did not
+  affect computation with the `ApproxTimeEvolution` template, but did
+  cause circuit drawing to fail.
+  [(#1952)](https://github.com/PennyLaneAI/pennylane/pull/1952)
+
 * Fixes a bug where the classical preprocessing Jacobian
   computed by `qml.transforms.classical_jacobian` with JAX
   returned a reduced submatrix of the Jacobian.
