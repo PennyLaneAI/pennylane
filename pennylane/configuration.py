@@ -59,11 +59,11 @@ class Configuration:
 
     def __str__(self):
         if self._config:
-            return "{}".format(self._config)
+            return f"{self._config}"
         return ""
 
     def __repr__(self):
-        return "PennyLane Configuration <{}>".format(self._filepath)
+        return f"PennyLane Configuration <{self._filepath}>"
 
     @property
     def path(self):
