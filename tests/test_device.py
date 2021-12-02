@@ -339,7 +339,7 @@ class TestInternalFunctions:
 
         with pytest.raises(
             DeviceError,
-            match="Gate {} not supported on device {}".format("CNOT", "MockDevice"),
+            match="Gate CNOT not supported on device MockDevice",
         ):
             dev.check_validity(queue, observables)
 
@@ -444,13 +444,13 @@ class TestInternalFunctions:
 
         with pytest.raises(
             DeviceError,
-            match="The inverse of gates are not supported on device {}".format(dev.short_name),
+            match=f"The inverse of gates are not supported on device {dev.short_name}",
         ):
             dev.check_validity([qml.PauliZ(0).inv()], [])
 
         with pytest.raises(
             DeviceError,
-            match="The inverse of gates are not supported on device {}".format(dev.short_name),
+            match=f"The inverse of gates are not supported on device {dev.short_name}",
         ):
             dev.check_validity([], [qml.PauliZ(0).inv()])
 

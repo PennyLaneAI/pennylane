@@ -406,9 +406,8 @@ class RepresentationResolver:
             )
 
         else:
-            representation = "{}({})".format(
-                name, ", ".join([self.single_parameter_representation(par) for par in op.data])
-            )
+            r = ", ".join([self.single_parameter_representation(par) for par in op.data])
+            representation = f"{name}({r})"
 
         if getattr(op, "inverse", False):
             representation += self.charset.to_superscript("-1")

@@ -352,6 +352,9 @@
 
 <h3>Improvements</h3>
 
+* Change all instances of `"{}".format(..)` to `f"{..}"`.
+  [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
+
 * Tests do not loop over automatically imported and instantiated operations any more,
 
 * The QNode has been re-written to support batch execution across the board,

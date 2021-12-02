@@ -24,7 +24,7 @@ def format_nvec(nvec):
     if isinstance(nvec, int):
         return str(nvec)
 
-    nvec_str = ["{}".format(n) if n < 0 else " {}".format(n) for n in nvec]
+    nvec_str = [f"{n}" if n < 0 else f" {n}" for n in nvec]
 
     return " ".join(nvec_str)
 

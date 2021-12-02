@@ -55,7 +55,7 @@ def particle_conserving_u2_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
 
     if n_wires < 2:
         raise ValueError(
-            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
         )
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, 2 * n_wires - 1))
@@ -90,7 +90,7 @@ def particle_conserving_u2_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
 
     if n_wires < 2:
         raise ValueError(
-            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
         )
 
     params = np.random.normal(loc=mean, scale=std, size=(n_layers, 2 * n_wires - 1))
@@ -125,7 +125,7 @@ def particle_conserving_u1_uniform(n_layers, n_wires, low=0, high=2 * pi, seed=N
 
     if n_wires < 2:
         raise ValueError(
-            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
         )
 
     params = np.random.uniform(low=low, high=high, size=(n_layers, n_wires - 1, 2))
@@ -160,7 +160,7 @@ def particle_conserving_u1_normal(n_layers, n_wires, mean=0, std=0.1, seed=None)
 
     if n_wires < 2:
         raise ValueError(
-            "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+            f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
         )
 
     params = np.random.normal(loc=mean, scale=std, size=(n_layers, n_wires - 1, 2))

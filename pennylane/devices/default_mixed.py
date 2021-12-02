@@ -278,16 +278,8 @@ class DefaultMixed(QubitDevice):
 
         # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
         einsum_indices = (
-            "{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
-            "{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}".format(
-                kraus_index=kraus_index,
-                new_col_indices=new_col_indices,
-                col_indices=col_indices,
-                state_indices=state_indices,
-                row_indices=row_indices,
-                new_row_indices=new_row_indices,
-                new_state_indices=new_state_indices,
-            )
+            f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
+            f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
 
         self._state = self._einsum(einsum_indices, kraus, self._state, kraus_dagger)
@@ -317,9 +309,7 @@ class DefaultMixed(QubitDevice):
         col_wires_list = [w + self.num_wires for w in row_wires_list]
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
-        einsum_indices = "{row_indices},{state_indices},{col_indices}->{state_indices}".format(
-            col_indices=col_indices, state_indices=state_indices, row_indices=row_indices
-        )
+        einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
         self._state = self._einsum(einsum_indices, eigvals, self._state, self._conj(eigvals))
 
@@ -495,8 +485,8 @@ class DefaultMixed(QubitDevice):
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
+                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
+                    f"on a {self.short_name} device."
                 )
 
         for operation in operations:
