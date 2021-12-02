@@ -575,7 +575,6 @@ def test_holomorphic_differentiation():
         return U[0,0]
 
     analytic_diff = jax.grad(complex_fn, holomorphic=True)(1.0 + 0.0j)
-
     finite_difference_diff = (complex_fn(1.01) - complex_fn(0.99)) / 0.02
 
     assert jax.numpy.abs(analytic_diff - finite_difference_diff) < 0.01
@@ -585,11 +584,12 @@ def test_another_holomorph():
     torch = pytest.importorskip("torch")
 
     x = torch.tensor(0.2 + 0j, requires_grad=True)
-    
+
     cost = lambda x: qml.RZ(x, wires=0).matrix
     value = torch.autograd.functional.jacobian(cost, x)
 
     cost2 = lambda x: torch.diag(torch.stack([torch.exp(-0.5j * x), torch.exp(0.5j * x)]))
     value2 = torch.autograd.functional.jacobian(cost2, x)
 
-    assert value == value2
+    assert torch.sum(torch.abs(value - value2)) < 0.01
+
