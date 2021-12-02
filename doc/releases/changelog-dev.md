@@ -4,6 +4,55 @@
 
 <h3>New features since last release</h3>
 
+* The `metric_tensor` transform can now be used to compute the full
+  tensor, beyond the block diagonal approximation. 
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
+  This is performed using Hadamard tests, and requires an additional wire 
+  on the device to execute the circuits produced by the transform, 
+  as compared to the number of wires required by the original circuit.
+  The transform defaults to computing the full tensor, which can
+  be controlled by the `approx` keyword argument.
+  See the 
+  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  for more information and usage details.
+
+  As an example, consider the QNode
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(weights[2], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
+  ```
+
+  Then we can compute the (block) diagonal metric tensor as before, now using the
+  ``approx="block-diag"`` keyword:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
+  [[0.25       0.         0.        ]
+   [0.         0.24013262 0.        ]
+   [0.         0.         0.21846983]]
+  ```
+
+  Instead, we now can also compute the full metric tensor, using
+  Hadamard tests on the additional wire of the device:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit)(weights)
+  [[ 0.25        0.         -0.23300977]
+   [ 0.          0.24013262  0.01763859]
+   [-0.23300977  0.01763859  0.21846983]]
+  ```
+
 * Custom decompositions can now be applied to operations at the device level.
   [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
 
@@ -281,6 +330,9 @@
 
 * Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
+* The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
+  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+
 <h3>Improvements</h3>
 
 * Tests do not loop over automatically imported and instantiated operations any more,
@@ -347,11 +399,29 @@
   This update reduces the total running time of the Python test-suite up to 8%.
   [(#1869)](https://github.com/PennyLaneAI/pennylane/pull/1869)
 
+* BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
+
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
 <h3>Breaking changes</h3>
+
+* The default behaviour of the `qml.metric_tensor` transform has been modified:
+  By default, the full metric tensor is computed, leading to higher cost than the previous
+  default of computing the block diagonal only. At the same time, the Hadamard tests for
+  the full metric tensor require an additional wire on the device, so that 
+
+  ```pycon
+  >>> qml.metric_tensor(some_qnode)(weights)
+  ```
+
+  will revert back to the block diagonal restriction and raise a warning if the
+  used device does not have an additional wire.
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
+* The `circuit_drawer` module has been renamed `drawer`.
+  [(#1949)](https://github.com/PennyLaneAI/pennylane/pull/1949)
 
 * The `par_domain` attribute in the operator class has been removed.
   [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
@@ -392,6 +462,27 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the `ApproxTimeEvolution` template was not correctly
+  computing the operation wires from the input Hamiltonian. This did not
+  affect computation with the `ApproxTimeEvolution` template, but did
+  cause circuit drawing to fail.
+  [(#1952)](https://github.com/PennyLaneAI/pennylane/pull/1952)
+
+* Fixes a bug where the classical preprocessing Jacobian
+  computed by `qml.transforms.classical_jacobian` with JAX
+  returned a reduced submatrix of the Jacobian.
+  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
+
+* Fixes a bug where the operations are not accessed in the correct order
+  in `qml.fourier.qnode_spectrum`, leading to wrong outputs.
+  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
+
+* Fixes several Pylint errors.
+  [(#1951)](https://github.com/PennyLaneAI/pennylane/pull/1951)
+
+* Fixes a bug where the device test suite wasn't testing certain operations.
+  [(#1943)](https://github.com/PennyLaneAI/pennylane/pull/1943)
+
 * Fixes a bug where batch transforms would mutate a QNodes execution options.
   [(#1934)](https://github.com/PennyLaneAI/pennylane/pull/1934)
 
@@ -417,10 +508,14 @@
 * The `requires_grad` attribute of `qml.numpy.tensor` objects is now
   preserved when pickling/unpickling the object.
   [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
-  
+
 * Device tests no longer throw warnings about the `requires_grad`
   attribute of variational parameters.
   [(#1913)](https://github.com/PennyLaneAI/pennylane/pull/1913)
+
+* `AdamOptimizer` and `AdagradOptimizer` had small fixes to their
+  optimization step updates.
+  [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
 <h3>Documentation</h3>
 
@@ -430,17 +525,22 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding and
-  MottonenStatePreparation.
+* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding,
+  MottonenStatePreparation and Interferometer.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
   [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
   [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
+  [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
+
+* QueueContext was not empty when importing `pennylane`.
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Ali Asadi, Benjamin Cordier, Olivia Di Matteo, David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Maria Schuld, Jay Soni, David Wierichs
+Guillermo Alonso-Linaje, Ali Asadi, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
+David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
+Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
+Maria Schuld, Jay Soni, David Wierichs

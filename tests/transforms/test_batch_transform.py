@@ -213,7 +213,6 @@ class TestBatchTransform:
         transform_fn = qml.batch_transform(
             MyTransform().my_transform, expand_fn=self.expand_logic_with_kwarg
         )
-
         with qml.tape.QuantumTape() as tape:
             qml.PhaseShift(0.5, wires=0)
             qml.expval(qml.PauliX(0))
@@ -260,7 +259,6 @@ class TestBatchTransform:
 
         spy_transform.assert_called()
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
-
         input_tape = spy_transform.call_args[0][1]
         assert len(input_tape.operations) == 1
         assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")

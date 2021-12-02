@@ -34,7 +34,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
     Args:
         prob (tensor_like): probability distribution
         obs (list[.Observable]): a list of observables for which
-            to compute the covariance matrix for
+            to compute the covariance matrix
         diag_approx (bool): if True, return the diagonal approximation
         wires (.Wires): The wire register of the system. If not provided,
             it is assumed that the wires are labelled with consecutive integers.

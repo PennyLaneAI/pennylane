@@ -135,7 +135,7 @@ class RepresentationResolver:
         mat = operation.data[0]
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
-        return "{}{}".format(symbol, idx)
+        return f"{symbol}{idx}"
 
     @staticmethod
     def _format_controlled_qubit_unitary(operation, symbol, cache):
@@ -152,7 +152,7 @@ class RepresentationResolver:
         mat = operation.U
         idx = RepresentationResolver.index_of_array_or_append(mat, cache)
 
-        return "{}{}".format(symbol, idx)
+        return f"{symbol}{idx}"
 
     @staticmethod
     def _format_matrix_arguments(params, symbol, cache):
@@ -170,7 +170,7 @@ class RepresentationResolver:
         for param in params:
             idx = RepresentationResolver.index_of_array_or_append(param, cache)
 
-            param_strings.append("{}{}".format(symbol, idx))
+            param_strings.append(f"{symbol}{idx}")
 
         return "(" + ",".join(param_strings) + ")"
 
@@ -194,7 +194,7 @@ class RepresentationResolver:
         if coefficient == -1.0:
             return "-" + str(variable)
 
-        return "{:+.3g}{}".format(coefficient, variable)
+        return f"{coefficient:+.3g}{variable}"
 
     def _format_polyxp_order1(self, coefficients):
         """Format a first-order polynomial of x and p operators.
@@ -208,16 +208,16 @@ class RepresentationResolver:
         poly_str = ""
 
         if coefficients[0] != 0:
-            poly_str += "{:.3g}".format(coefficients[0])
+            poly_str += f"{coefficients[0]:.3g}"
 
         for idx in range(0, coefficients.shape[0] // 2):
             x = 2 * idx + 1
             y = 2 * idx + 2
             poly_str += RepresentationResolver._format_poly_term(
-                coefficients[x], "x{}".format(self.charset.to_subscript(idx))
+                coefficients[x], f"x{self.charset.to_subscript(idx)}"
             )
             poly_str += RepresentationResolver._format_poly_term(
-                coefficients[y], "p{}".format(self.charset.to_subscript(idx))
+                coefficients[y], f"p{self.charset.to_subscript(idx)}"
             )
 
         return poly_str
@@ -238,11 +238,11 @@ class RepresentationResolver:
             p = 2 * idx + 2
             poly_str += RepresentationResolver._format_poly_term(
                 coefficients[0, x] + coefficients[x, 0],
-                "x{}".format(self.charset.to_subscript(idx)),
+                f"x{self.charset.to_subscript(idx)}",
             )
             poly_str += RepresentationResolver._format_poly_term(
                 coefficients[0, p] + coefficients[p, 0],
-                "p{}".format(self.charset.to_subscript(idx)),
+                f"p{self.charset.to_subscript(idx)}",
             )
 
         for idx1 in range(0, coefficients.shape[0] // 2):
@@ -255,49 +255,35 @@ class RepresentationResolver:
                 if idx1 == idx2:
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[x1, x1],
-                        "x{}{}".format(
-                            self.charset.to_subscript(idx1), self.charset.to_superscript(2)
-                        ),
+                        f"x{self.charset.to_subscript(idx1)}{self.charset.to_superscript(2)}",
                     )
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[p1, p1],
-                        "p{}{}".format(
-                            self.charset.to_subscript(idx1), self.charset.to_superscript(2)
-                        ),
+                        f"p{self.charset.to_subscript(idx1)}{self.charset.to_superscript(2)}",
                     )
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[x1, p1] + coefficients[p1, x1],
-                        "x{}p{}".format(
-                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx1)
-                        ),
+                        f"x{self.charset.to_subscript(idx1)}p{self.charset.to_subscript(idx1)}",
                     )
                 else:
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[x1, x2] + coefficients[x2, x1],
-                        "x{}x{}".format(
-                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
-                        ),
+                        f"x{self.charset.to_subscript(idx1)}x{self.charset.to_subscript(idx2)}",
                     )
 
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[p1, p2] + coefficients[p2, p1],
-                        "p{}p{}".format(
-                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
-                        ),
+                        f"p{self.charset.to_subscript(idx1)}p{self.charset.to_subscript(idx2)}",
                     )
 
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[x1, p2] + coefficients[p2, x1],
-                        "x{}p{}".format(
-                            self.charset.to_subscript(idx1), self.charset.to_subscript(idx2)
-                        ),
+                        f"x{self.charset.to_subscript(idx1)}p{self.charset.to_subscript(idx2)}",
                     )
 
                     poly_str += RepresentationResolver._format_poly_term(
                         coefficients[p1, x2] + coefficients[x2, p1],
-                        "x{}p{}".format(
-                            self.charset.to_subscript(idx2), self.charset.to_subscript(idx1)
-                        ),
+                        f"x{self.charset.to_subscript(idx2)}p{self.charset.to_subscript(idx1)}",
                     )
 
         return poly_str
@@ -369,10 +355,8 @@ class RepresentationResolver:
             representation = name
 
         elif base_name == "PauliRot":
-            representation = "R{0}({1})".format(
-                op.data[1][op.wires.index(wire)],
-                self.single_parameter_representation(op.data[0]),
-            )
+            rot_data = op.data[1][op.wires.index(wire)]
+            representation = f"R{rot_data}({self.single_parameter_representation(op.data[0])})"
 
         elif base_name == "QubitUnitary":
             representation = RepresentationResolver._format_matrix_operation(
@@ -395,7 +379,7 @@ class RepresentationResolver:
         elif base_name == "QuadOperator":
             par_rep = self.single_parameter_representation(op.data[0])
 
-            representation = "cos({0})x+sin({0})p".format(par_rep)
+            representation = f"cos({par_rep})x+sin({par_rep})p"
 
         elif base_name == "FockStateProjector":
             n_str = ",".join([str(n) for n in op.data[0]])
@@ -445,15 +429,15 @@ class RepresentationResolver:
         if obs.return_type == qml.operation.Expectation:
             return (
                 self.charset.LANGLE
-                + "{}".format(self.operator_representation(obs, wire))
+                + f"{self.operator_representation(obs, wire)}"
                 + self.charset.RANGLE
             )
 
         if obs.return_type == qml.operation.Variance:
-            return "Var[{}]".format(self.operator_representation(obs, wire))
+            return f"Var[{self.operator_representation(obs, wire)}]"
 
         if obs.return_type == qml.operation.Sample:
-            return "Sample[{}]".format(self.operator_representation(obs, wire))
+            return f"Sample[{self.operator_representation(obs, wire)}]"
 
         if obs.return_type == qml.operation.Probability:
             return "Probs"
@@ -462,7 +446,7 @@ class RepresentationResolver:
             return "State"
 
         # Unknown return_type
-        return "{}[{}]".format(str(obs.return_type), self.operator_representation(obs, wire))
+        return f"{str(obs.return_type)}[{self.operator_representation(obs, wire)}]"
 
     def element_representation(self, element, wire):
         """Return the string representation of an element in the circuit's Grid.

@@ -71,10 +71,9 @@ class CircuitDrawer:
             self.charset = charset()
         else:
             if charset not in CHARSETS:
+                supported_char = ", ".join(CHARSETS.keys())
                 raise ValueError(
-                    "Charset '{}' is not supported. Supported charsets: {}.".format(
-                        charset, ", ".join(CHARSETS.keys())
-                    )
+                    f"Charset '{charset}' is not supported. Supported charsets: {supported_char}."
                 )
             self.charset = CHARSETS[charset]()
 
@@ -233,9 +232,7 @@ class CircuitDrawer:
                     max_wire = max(wire_indices)
 
                     # If there is a conflict between decorations, we start a new decoration_layer
-                    if any(
-                        [decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)]
-                    ):
+                    if any(decoration_layer[wire] != "" for wire in range(min_wire, max_wire + 1)):
                         representation_grid.insert_layer(i + j, decoration_layer)
                         inserted_indices.append(i + j)
                         j += 1
@@ -336,7 +333,7 @@ class CircuitDrawer:
 
                             break
 
-            if not all([item is None for item in other_layer]):
+            if not all(item is None for item in other_layer):
                 operator_grid.insert_layer(i + 1, other_layer)
                 n += 1
 
@@ -373,7 +370,7 @@ class CircuitDrawer:
             ("M", self.representation_resolver.matrix_cache),
         ]:
             for idx, matrix in enumerate(cache):
-                rendered_string += "{}{} =\n{}\n".format(symbol, idx, matrix)
+                rendered_string += f"{symbol}{idx} =\n{matrix}\n"
 
         # Restrict CLI print width to max_length
         if self.max_length is not None:
