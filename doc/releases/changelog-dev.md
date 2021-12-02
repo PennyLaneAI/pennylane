@@ -356,6 +356,10 @@
 
 <h3>Improvements</h3>
 
+* The PennyLane `qchem` package is now lazily imported; it will only be imported
+  the first time it is accessed.
+  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
+
 * Change all instances of `"{}".format(..)` to `f"{..}"`.
   [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
 
@@ -364,6 +368,7 @@
 * The QNode has been re-written to support batch execution across the board,
   custom gradients, better decomposition strategies, and higher-order derivatives.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+  [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
 
   - Internally, if multiple circuits are generated for simultaneous execution, they
     will be packaged into a single job for execution on the device. This can lead to
