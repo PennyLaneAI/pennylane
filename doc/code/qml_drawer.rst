@@ -39,13 +39,13 @@ The following images are generated via the code:
 Currently Available Styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. |bw| image:: ../_static/style/black_white_style.png
-    :width: 33%
+    :width: 100%
 
 .. |bwd| image:: ../_static/style/black_white_dark_style.png
-    :width: 33%
+    :width: 100%
 
 .. |default| image:: ../_static/style/default_style.png
-    :width: 33%
+    :width: 100%
 
 +----+-----+---------+
 +|bw|+|bwd|+|default|+
