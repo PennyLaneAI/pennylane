@@ -250,7 +250,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     if argnum > len(args) - 1:
         raise ValueError(
-            "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
+            f"The value of 'argnum' has to be between 0 and {len(args) - 1}; got {argnum}"
         )
 
     x = onp.array(args[argnum])
@@ -258,8 +258,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     if x.ndim == 0 and idx is not None:
         raise ValueError(
-            "Argument {} is not an array, 'idx' should be set to 'None';"
-            " got {}".format(argnum, idx)
+            f"Argument {argnum} is not an array, 'idx' should be set to 'None'; got {idx}"
         )
 
     if idx is None:
@@ -298,30 +297,27 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
 
     if argnum > len(args) - 1:
         raise ValueError(
-            "The value of 'argnum' has to be between 0 and {}; got {}".format(len(args) - 1, argnum)
+            f"The value of 'argnum' has to be between 0 and {len(args) - 1}; got {argnum}"
         )
 
     x = onp.array(args[argnum])
 
     if x.ndim == 0 and idx is not None:
         raise ValueError(
-            "Argument {} is not an array, 'idx' should be set to 'None';"
-            " got {}".format(argnum, idx)
+            f"Argument {argnum} is not an array, 'idx' should be set to 'None'; got {idx}"
         )
 
     if idx is None:
         if x.ndim != 0:
             raise ValueError(
-                "Argument {} is an array, 'idx' should contain the indices of the arguments"
-                " to differentiate; got idx = {}".format(argnum, idx)
+                f"Argument {argnum} is an array, 'idx' should contain the indices of the arguments"
+                f" to differentiate; got idx = {idx}"
             )
         idx = [(), ()]
     else:
         if len(idx) > 2:
             raise ValueError(
-                "The number of indices given in 'idx' can not be greater than two; got {} indices".format(
-                    len(idx)
-                )
+                f"The number of indices given in 'idx' can not be greater than two; got {len(idx)} indices"
             )
 
     i, j = idx
@@ -428,14 +424,12 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     """
 
     if not callable(f):
-        error_message = "{} object is not callable. \n" "'f' should be a callable function".format(
-            type(f)
-        )
+        error_message = f"{type(f)} object is not callable. \n'f' should be a callable function"
         raise TypeError(error_message)
 
     if delta <= 0.0:
         raise ValueError(
-            "The value of the step size 'delta' has to be greater than 0; got {}".format(delta)
+            f"The value of the step size 'delta' has to be greater than 0; got {delta}"
         )
 
     if N == 1:
@@ -445,6 +439,6 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
         return partial(_fd_second_order_centered, f, argnum, delta, idx=idx)
 
     raise ValueError(
-        "At present, finite-difference approximations are supported up to second-order."
-        " The value of 'N' can be 1 or 2; got {}".format(N)
+        f"At present, finite-difference approximations are supported up to second-order."
+        f" The value of 'N' can be 1 or 2; got {N}"
     )

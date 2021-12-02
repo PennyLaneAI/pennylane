@@ -147,17 +147,13 @@ class UCCSD(Operation):
 
         if (not s_wires) and (not d_wires):
             raise ValueError(
-                "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
-                    s_wires, d_wires
-                )
+                f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
             )
 
         for d_wires_ in d_wires:
             if len(d_wires_) != 2:
                 raise ValueError(
-                    "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                        d_wires_, len(d_wires_)
-                    )
+                    f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
         shape = qml.math.shape(weights)

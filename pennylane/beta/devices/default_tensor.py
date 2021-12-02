@@ -219,7 +219,7 @@ class DefaultTensor(Device):
         Returns:
             tn.Node: the newly created node
         """
-        name = "{}{}".format(name, (tuple([wires]) if isinstance(wires, int) else wires.labels))
+        name = f"{name}{(tuple([wires]) if isinstance(wires, int) else wires.labels)}"
         if isinstance(A, tn.Node):
             A.set_name(name)
             A.backend = self.backend
@@ -260,8 +260,8 @@ class DefaultTensor(Device):
             for tensor, wires, name in zip(tensors, tensor_wires, names):
                 if len(tensor.shape) != len(wires):
                     raise ValueError(
-                        "Tensor provided has shape={}, which is incompatible "
-                        "with provided wires {}.".format(tensor.shape, wires.tolist())
+                        f"Tensor provided has shape={tensor.shape}, which is incompatible "
+                        f"with provided wires {wires.tolist()}."
                     )
                 node = self._add_node(tensor, wires=wires, name=name)
                 self._free_wire_edges.extend(node.edges)
@@ -271,8 +271,8 @@ class DefaultTensor(Device):
             for tensor, wires, name in zip(tensors, tensor_wires, names):
                 if len(tensor.shape) != len(wires):
                     raise ValueError(
-                        "Tensor provided has shape={}, which is incompatible "
-                        "with provided wires {}.".format(tensor.shape, wires.tolist())
+                        f"Tensor provided has shape={tensor.shape}, which is incompatible "
+                        f"with provided wires {wires.tolist()}."
                     )
                 tensor = self._expand_dims(tensor, 0)
                 tensor = self._expand_dims(tensor, -1)
@@ -330,9 +330,7 @@ class DefaultTensor(Device):
                 and wires.tolist() != list(range(self.num_wires))
             ):
                 raise ValueError(
-                    "The default.tensor plugin can apply {} only to all of the {} wires.".format(
-                        operation, self.num_wires
-                    )
+                    f"The default.tensor plugin can apply {operation} only to all of the {self.num_wires} wires."
                 )
             self._clear_network_data()
             self._add_state_prep_nodes(operation, par)
@@ -361,9 +359,7 @@ class DefaultTensor(Device):
             elements = set(par[0].tolist())
             if n == 0 or n > self.num_wires or not elements.issubset({0, 1}):
                 raise ValueError(
-                    "BasisState parameter must be an array of 0 or 1 integers of length at most {}.".format(
-                        self.num_wires
-                    )
+                    f"BasisState parameter must be an array of 0 or 1 integers of length at most {self.num_wires}."
                 )
             zero_vec = self._array(self._zero_state, dtype=self.C_DTYPE)
             one_vec = zero_vec[::-1]
@@ -521,7 +517,7 @@ class DefaultTensor(Device):
 
         if self._abs(self._imag(expval)) > TOL:
             warnings.warn(
-                "Nonvanishing imaginary part {} in expectation value.".format(expval.imag),
+                f"Nonvanishing imaginary part {expval.imag} in expectation value.",
                 RuntimeWarning,
             )
         return self._real(expval)
@@ -696,8 +692,8 @@ class DefaultTensor(Device):
         """
         if method not in contract_fns:
             raise ValueError(
-                "The contraction method ``{}`` was not found. Supported methods are"
-                "'auto', 'greedy', 'branch', or 'optimal'.".format(method)
+                f"The contraction method ``{method}`` was not found. Supported methods are "
+                f"'auto', 'greedy', 'branch', or 'optimal'."
             )
 
         self._contraction_method = method
