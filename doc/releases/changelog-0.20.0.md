@@ -4,78 +4,117 @@
 
 <h3>New features since last release</h3>
 
-* Added functions for computing the values of atomic and molecular orbitals at a given position.
-  [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
+<h4>Shiny new circuit drawer!🎨🖌️ </h4>
 
-  The functions `atomic_orbital` and `molecular_orbital` can be used, as shown in the
-  following codeblock, to evaluate the orbitals. By generating values of the orbitals at different
-  positions, one can plot the spatial shape of a desired orbital.
+* PennyLane now supports drawing a QNode with matplotlib!
+  [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
 
   ```python
-  symbols  = ['H', 'H']
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False) 
-  mol = hf.Molecule(symbols, geometry)
-  hf.generate_scf(mol)()
-
-  ao = mol.atomic_orbital(0)
-  mo = mol.molecular_orbital(1)
-  ```
-
-  ```pycon
-  >>> print(ao(0.0, 0.0, 0.0))
-  >>> print(mo(0.0, 0.0, 0.0))
-  0.6282468778183719
-  0.018251285973461928
-  ```
-
-* The `metric_tensor` transform can now be used to compute the full
-  tensor, beyond the block diagonal approximation. 
-  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
-
-  This is performed using Hadamard tests, and requires an additional wire 
-  on the device to execute the circuits produced by the transform, 
-  as compared to the number of wires required by the original circuit.
-  The transform defaults to computing the full tensor, which can
-  be controlled by the `approx` keyword argument.
-  See the 
-  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
-  for more information and usage details.
-
-  As an example, consider the QNode
-
-  ```python
-  dev = qml.device("default.qubit", wires=3)
+  dev = qml.device("default.qubit", wires=4)
 
   @qml.qnode(dev)
-  def circuit(weights):
-      qml.RX(weights[0], wires=0)
-      qml.RY(weights[1], wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.RZ(weights[2], wires=1)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
+  def circuit(x, z):
+      qml.QFT(wires=(0,1,2,3))
+      qml.Toffoli(wires=(0,1,2))
+      qml.CSWAP(wires=(0,2,3))
+      qml.RX(x, wires=0)
+      qml.CRZ(z, wires=(3,0))
+      return qml.expval(qml.PauliZ(0))
+  fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
+  fig.show()
   ```
 
-  Then we can compute the (block) diagonal metric tensor as before, now using the
-  ``approx="block-diag"`` keyword:
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
+
+<h4>Support for TensorFlow AutoGraph mode</h4>
+
+* It is now possible to use TensorFlow's [AutoGraph
+  mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
+  differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
+  will result in significantly more performant model execution, at the cost of a more expensive
+  initial compilation. [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1886)
+
+  Use AutoGraph to convert your QNodes or cost functions into TensorFlow
+  graphs by decorating them with `@tf.function`:
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliZ(0))
+
+  @tf.function
+  def cost(x):
+      return tf.reduce_sum(circuit(x))
+
+  x = tf.Variable([0.5, 0.7], dtype=tf.float64)
+
+  with tf.GradientTape() as tape:
+      loss = cost(x)
+
+  grad = tape.gradient(loss, x)
+  ```
+
+  The initial execution may take slightly longer than when executing the circuit in
+  eager mode; this is because TensorFlow is tracing the function to create the graph.
+  Subsequent executions will be much more performant.
+
+  Note that using AutoGraph with backprop-enabled devices, such as `default.qubit`,
+  will yield the best performance.
+
+  For more details, please see the [TensorFlow AutoGraph
+  documentation](https://www.tensorflow.org/guide/function).
+
+<h4>Parameter shift rule generation</h4>
+
+* Given an operator of the form :math:`U=e^{iHt}`, where :math:`H` has
+  commuting terms and known eigenvalues,
+  `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
+  the gradient of the expectation value :math:`f(t) = \langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
+  hardware.
+  [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
+  [(#1932)](https://github.com/PennyLaneAI/pennylane/pull/1932)
+
+  Given
+
+  .. math:: H = \sum_i a_i h_i,
+
+  where the eigenvalues of :math:`H` are known and all :math:`h_i` commute, we can compute
+  the *frequencies* (the unique positive differences of any two eigenvalues) using
+  `qml.gradients.eigvals_to_frequencies`.
+
+  `qml.gradients.generate_shift_rule` can then be used to compute the parameter
+  shift rules to compute :math:`f'(t)` using `2R` shifted cost function evaluations.
+  This becomes cheaper than the standard application of the chain rule and
+  two-term shift rule when `R` is less than the
+  number of Pauli words in the generator.
+
+  For example, consider the case where :math:`H` has eigenspectrum ``(-1, 0, 1)``:
 
   ```pycon
-  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
-  [[0.25       0.         0.        ]
-   [0.         0.24013262 0.        ]
-   [0.         0.         0.21846983]]
+  >>> frequencies = qml.gradients.eigvals_to_frequencies((-1, 0, 1))
+  >>> frequencies
+  (1, 2)
+  >>> coeffs, shifts = qml.gradients.generate_shift_rule(frequencies)
+  >>> coeffs
+  array([ 0.85355339, -0.85355339, -0.14644661,  0.14644661])
+  >>> shifts
+  array([ 0.78539816, -0.78539816,  2.35619449, -2.35619449])
   ```
 
-  Instead, we now can also compute the full metric tensor, using
-  Hadamard tests on the additional wire of the device:
+  As we can see, `generate_shift_rule` returns four coefficients :math:`c_i` and shifts
+  :math:`s_i` corresponding to a four term parameter shift rule. The gradient can then
+  be reconstructed via:
 
-  ```pycon
-  >>> qml.metric_tensor(circuit)(weights)
-  [[ 0.25        0.         -0.23300977]
-   [ 0.          0.24013262  0.01763859]
-   [-0.23300977  0.01763859  0.21846983]]
-  ```
+  .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i),
+
+  where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
+  for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
+
+<h4>Custom decompositions dedicated to the device</h4>
 
 * Custom decompositions can now be applied to operations at the device level.
   [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
@@ -146,89 +185,65 @@
    2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
   ```
 
-* PennyLane now supports drawing a QNode with matplotlib!
-  [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+<h4>Advanced transforms</h4>
+
+* The `metric_tensor` transform can now be used to compute the full
+  tensor, beyond the block diagonal approximation.
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
+  This is performed using Hadamard tests, and requires an additional wire
+  on the device to execute the circuits produced by the transform,
+  as compared to the number of wires required by the original circuit.
+  The transform defaults to computing the full tensor, which can
+  be controlled by the `approx` keyword argument.
+  See the
+  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  for more information and usage details.
+
+  As an example, consider the QNode
 
   ```python
-  dev = qml.device("default.qubit", wires=4)
+  dev = qml.device("default.qubit", wires=3)
 
   @qml.qnode(dev)
-  def circuit(x, z):
-      qml.QFT(wires=(0,1,2,3))
-      qml.Toffoli(wires=(0,1,2))
-      qml.CSWAP(wires=(0,2,3))
-      qml.RX(x, wires=0)
-      qml.CRZ(z, wires=(3,0))
-      return qml.expval(qml.PauliZ(0))
-  fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
-  fig.show()
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(weights[2], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
   ```
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
-
-* It is now possible to use TensorFlow's [AutoGraph
-  mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
-  differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
-  will result in significantly more performant model execution, at the cost of a more expensive
-  initial compilation. [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1886)
-
-  Use AutoGraph to convert your QNodes or cost functions into TensorFlow
-  graphs by decorating them with `@tf.function`:
-
-  ```python
-  dev = qml.device("lightning.qubit", wires=2)
-
-  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
-  def circuit(x):
-      qml.RX(x[0], wires=0)
-      qml.RY(x[1], wires=1)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliZ(0))
-
-  @tf.function
-  def cost(x):
-      return tf.reduce_sum(circuit(x))
-
-  x = tf.Variable([0.5, 0.7], dtype=tf.float64)
-
-  with tf.GradientTape() as tape:
-      loss = cost(x)
-
-  grad = tape.gradient(loss, x)
-  ```
-
-  The initial execution may take slightly longer than when executing the circuit in
-  eager mode; this is because TensorFlow is tracing the function to create the graph.
-  Subsequent executions will be much more performant.
-
-  Note that using AutoGraph with backprop-enabled devices, such as `default.qubit`,
-  will yield the best performance.
-
-  For more details, please see the [TensorFlow AutoGraph
-  documentation](https://www.tensorflow.org/guide/function).
-
-
-* `qml.math.scatter_element_add` now supports adding multiple values at
-  multiple indices with a single function call, in all interfaces
-  [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
-
-  For example, we may set five values of a three-dimensional tensor
-  in the following way:
+  Then we can compute the (block) diagonal metric tensor as before, now using the
+  ``approx="block-diag"`` keyword:
 
   ```pycon
-  >>> X = tf.zeros((3, 2, 9), dtype=tf.float64)
-  >>> indices = [(0, 0, 1, 2, 2), (0, 0, 0, 0, 1), (1, 3, 8, 6, 7)]
-  >>> values = [0.1 * i for i in range(5)]
-  >>> qml.math.scatter_element_add(X, indices, values)
-  <tf.Tensor: shape=(3, 2, 9), dtype=float64, numpy=
-  array([[[0., 1., 0., 2., 0., 0., 0., 0., 0.],
-          [0., 0., 0., 0., 0., 0., 0., 0., 0.]],
-
-         [[0., 0., 0., 0., 0., 0., 0., 0., 3.],
-          [0., 0., 0., 0., 0., 0., 0., 0., 0.]],
-
-         [[0., 0., 0., 0., 0., 0., 4., 0., 0.],
-          [0., 0., 0., 0., 0., 0., 0., 5., 0.]]])>
+  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
+  [[0.25       0.         0.        ]
+   [0.         0.24013262 0.        ]
+   [0.         0.         0.21846983]]
   ```
+
+  Instead, we now can also compute the full metric tensor, using
+  Hadamard tests on the additional wire of the device:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit)(weights)
+  [[ 0.25        0.         -0.23300977]
+   [ 0.          0.24013262  0.01763859]
+   [-0.23300977  0.01763859  0.21846983]]
+  ```
+
+* The `merge_amplitude_embedding` transformation has been created to
+  automatically merge all gates of this type into one.
+  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+
+* The `undo_swaps` transformation has been created to automatically remove all swaps of a circuit.
+  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+
+<h4>Reconstructing QNodes</h4>
 
 * The `qml.fourier.reconstruct` function is added. It can be used to
   reconstruct QNodes outputting expectation values along a specified
@@ -282,57 +297,15 @@
   For more details on usage, reconstruction cost and differentiability support, please see the
   [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.reconstruct.html).
 
-* A thermal relaxation channel is added to the Noisy channels. The channel description can be
-  found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
-  [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
+<h4>State-of-the-art operations and templates</h4>
+
+* The `qml.Barrier()` operator has been added. With it we can separate blocks
+  in compilation or use it as a visual tool.
+  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
 
 * Added the identity observable to be an operator. Now we can explicitly call the identity
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
-
-* Given an operator of the form :math:`U=e^{iHt}`, where :math:`H` has
-  commuting terms and known eigenvalues,
-  `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
-  the gradient of the expectation value :math:`f(t) = \langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
-  hardware.
-  [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
-  [(#1932)](https://github.com/PennyLaneAI/pennylane/pull/1932)
-
-  Given
-
-  .. math:: H = \sum_i a_i h_i,
-
-  where the eigenvalues of :math:`H` are known and all :math:`h_i` commute, we can compute
-  the *frequencies* (the unique positive differences of any two eigenvalues) using
-  `qml.gradients.eigvals_to_frequencies`.
-
-  `qml.gradients.generate_shift_rule` can then be used to compute the parameter
-  shift rules to compute :math:`f'(t)` using `2R` shifted cost function evaluations.
-  This becomes cheaper than the standard application of the chain rule and
-  two-term shift rule when `R` is less than the
-  number of Pauli words in the generator.
-
-  For example, consider the case where :math:`H` has eigenspectrum ``(-1, 0, 1)``:
-
-  ```pycon
-  >>> frequencies = qml.gradients.eigvals_to_frequencies((-1, 0, 1))
-  >>> frequencies
-  (1, 2)
-  >>> coeffs, shifts = qml.gradients.generate_shift_rule(frequencies)
-  >>> coeffs
-  array([ 0.85355339, -0.85355339, -0.14644661,  0.14644661])
-  >>> shifts
-  array([ 0.78539816, -0.78539816,  2.35619449, -2.35619449])
-  ```
-
-  As we can see, `generate_shift_rule` returns four coefficients :math:`c_i` and shifts
-  :math:`s_i` corresponding to a four term parameter shift rule. The gradient can then
-  be reconstructed via:
-
-  .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i),
-
-  where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
-  for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
 
 * A circuit template for time evolution under a commuting Hamiltonian utilizing generalized
   parameter shift rules for cost function gradients is available as `qml.CommutingEvolution`.
@@ -367,27 +340,41 @@
   and 2) the eigenvalue frequency spectrum is correct, since these checks become
   prohibitively expensive for large Hamiltonians.
 
-* The qml.Barrier() operator has been added. With it we can separate blocks in compilation or use it as a visual tool.
-  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+* Added the `qml.QubitDensityMatrix` initialization gate for
+  mixed state simulation.
+  [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
 
-* Added density matrix initialization gate for mixed state simulation. [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
+* A thermal relaxation channel is added to the Noisy channels. The channel description can be
+  found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
+  [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
-* The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
-  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+<h4>Quantum chemistry utility</h4>
 
-* The `undo_swaps` transformation has been created to automatically remove all swaps of a circuit.
-  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+* Added functions for computing the values of atomic and molecular orbitals at a given position.
+  [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
+
+  The functions `atomic_orbital` and `molecular_orbital` can be used, as shown in the
+  following codeblock, to evaluate the orbitals. By generating values of the orbitals at different
+  positions, one can plot the spatial shape of a desired orbital.
+
+  ```python
+  symbols  = ['H', 'H']
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+  mol = hf.Molecule(symbols, geometry)
+  hf.generate_scf(mol)()
+
+  ao = mol.atomic_orbital(0)
+  mo = mol.molecular_orbital(1)
+  ```
+
+  ```pycon
+  >>> print(ao(0.0, 0.0, 0.0))
+  >>> print(mo(0.0, 0.0, 0.0))
+  0.6282468778183719
+  0.018251285973461928
+  ```
 
 <h3>Improvements</h3>
-
-* The PennyLane `qchem` package is now lazily imported; it will only be imported
-  the first time it is accessed.
-  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
-
-* Change all instances of `"{}".format(..)` to `f"{..}"`.
-  [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
-
-* Tests do not loop over automatically imported and instantiated operations any more,
 
 * The QNode has been re-written to support batch execution across the board,
   custom gradients, better decomposition strategies, and higher-order derivatives.
@@ -429,6 +416,36 @@
   Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
   be removed in the next release.
 
+* The PennyLane `qchem` package is now lazily imported; it will only be imported
+  the first time it is accessed.
+  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
+
+* `qml.math.scatter_element_add` now supports adding multiple values at
+  multiple indices with a single function call, in all interfaces
+  [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
+
+  For example, we may set five values of a three-dimensional tensor
+  in the following way:
+
+  ```pycon
+  >>> X = tf.zeros((3, 2, 9), dtype=tf.float64)
+  >>> indices = [(0, 0, 1, 2, 2), (0, 0, 0, 0, 1), (1, 3, 8, 6, 7)]
+  >>> values = [0.1 * i for i in range(5)]
+  >>> qml.math.scatter_element_add(X, indices, values)
+  <tf.Tensor: shape=(3, 2, 9), dtype=float64, numpy=
+  array([[[0., 1., 0., 2., 0., 0., 0., 0., 0.],
+          [0., 0., 0., 0., 0., 0., 0., 0., 0.]],
+
+         [[0., 0., 0., 0., 0., 0., 0., 0., 3.],
+          [0., 0., 0., 0., 0., 0., 0., 0., 0.]],
+
+         [[0., 0., 0., 0., 0., 0., 4., 0., 0.],
+          [0., 0., 0., 0., 0., 0., 0., 5., 0.]]])>
+  ```
+
+* Change all instances of `"{}".format(..)` to `f"{..}"`.
+  [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
+
 * Tests do not loop over automatically imported and instantiated operations any more,
   which was opaque and created unnecessarily many tests.
   [(#1895)](https://github.com/PennyLaneAI/pennylane/pull/1895)
@@ -462,7 +479,7 @@
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
   By default, the full metric tensor is computed, leading to higher cost than the previous
   default of computing the block diagonal only. At the same time, the Hadamard tests for
-  the full metric tensor require an additional wire on the device, so that 
+  the full metric tensor require an additional wire on the device, so that
 
   ```pycon
   >>> qml.metric_tensor(some_qnode)(weights)
@@ -512,7 +529,7 @@
 
 <h3>Deprecations</h3>
 
-* The init module, which contains functions to generate random parameters for 
+* The init module, which contains functions to generate random parameters for
   templates, has been removed. Instead, the templates provide a `shape()` method.
   [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
 
