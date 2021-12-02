@@ -101,7 +101,7 @@ def xy_mixer(graph):
 
     if not isinstance(graph, nx.Graph):
         raise ValueError(
-            "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph object, got {type(graph).__name__}"
         )
 
     edges = graph.edges
@@ -163,11 +163,11 @@ def bit_flip_mixer(graph, b):
 
     if not isinstance(graph, nx.Graph):
         raise ValueError(
-            "Input graph must be a nx.Graph object, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph object, got {type(graph).__name__}"
         )
 
     if b not in [0, 1]:
-        raise ValueError("'b' must be either 0 or 1, got {}".format(b))
+        raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
     sign = 1 if b == 0 else -1
 

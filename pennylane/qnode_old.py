@@ -622,7 +622,7 @@ class QNode:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(
-                        "Operator {} must act on all wires".format(obj.name)
+                        f"Operator {obj.name} must act on all wires"
                     )
 
             if (

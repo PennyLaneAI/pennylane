@@ -838,7 +838,7 @@ class DefaultGaussian(Device):
             phi = par[0]
         else:
             raise NotImplementedError(
-                "default.gaussian does not support sampling {}".format(observable)
+                f"default.gaussian does not support sampling {observable}"
             )
 
         cov, mu = self.reduced_state(wires)

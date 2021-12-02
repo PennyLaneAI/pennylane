@@ -125,7 +125,7 @@ class tensor(_np.ndarray):
 
     def __repr__(self):
         string = super().__repr__()
-        return string[:-1] + ", requires_grad={})".format(self.requires_grad)
+        return string[:-1] + f", requires_grad={self.requires_grad})"
 
     def __array_wrap__(self, obj):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
@@ -303,7 +303,7 @@ def tensor_to_arraybox(x, *args):
             return ArrayBox(x, *args)
 
         raise NonDifferentiableError(
-            "{} is non-differentiable. Set the requires_grad attribute to True.".format(x)
+            f"{x} is non-differentiable. Set the requires_grad attribute to True."
         )
 
     return ArrayBox(x, *args)

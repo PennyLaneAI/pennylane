@@ -58,7 +58,7 @@ def _process(wires):
             # if object is not hashable, cannot identify unique wires
             if str(e).startswith("unhashable"):
                 raise WireError(
-                    "Wires must be hashable; got object of type {}.".format(type(wires))
+                    f"Wires must be hashable; got object of type {type(wires)}."
                 ) from e
         return (wires,)
 
@@ -68,10 +68,10 @@ def _process(wires):
         set_of_wires = set(wires)
     except TypeError as e:
         if str(e).startswith("unhashable"):
-            raise WireError("Wires must be hashable; got {}.".format(wires)) from e
+            raise WireError(f"Wires must be hashable; got {wires}.") from e
 
     if len(set_of_wires) != len(tuple_of_wires):
-        raise WireError("Wires must be unique; got {}.".format(wires))
+        raise WireError(f"Wires must be unique; got {wires}.")
 
     return tuple_of_wires
 
@@ -122,7 +122,7 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return "<Wires = {}>".format(list(self._labels))
+        return f"<Wires = {list(self._labels)}>"
 
     def __eq__(self, other):
         """Method to support the '==' operator. This will also implicitly define the '!=' operator."""
@@ -225,7 +225,7 @@ class Wires(Sequence):
         try:
             return self._labels.index(wire)
         except ValueError as e:
-            raise WireError("Wire with label {} not found in {}.".format(wire, self)) from e
+            raise WireError(f"Wire with label {wire} not found in {self}.") from e
 
     def indices(self, wires):
         """
@@ -269,7 +269,7 @@ class Wires(Sequence):
         for w in self:
             if w not in wire_map:
                 raise WireError(
-                    "No mapping for wire label {} specified in wire map {}.".format(w, wire_map)
+                    f"No mapping for wire label {w} specified in wire map {wire_map}."
                 )
 
         new_wires = [wire_map[w] for w in self]
@@ -278,8 +278,8 @@ class Wires(Sequence):
             new_wires = Wires(new_wires)
         except WireError as e:
             raise WireError(
-                "Failed to implement wire map {}. Make sure that the new labels are unique and "
-                "valid wire labels.".format(wire_map)
+                f"Failed to implement wire map {wire_map}. Make sure that the new labels "
+                f"are unique and valid wire labels."
             ) from e
 
         return new_wires
@@ -324,7 +324,7 @@ class Wires(Sequence):
         for i in indices:
             if i > len(self._labels):
                 raise WireError(
-                    "Cannot subset wire at index {} from {} wires.".format(i, len(self._labels))
+                    f"Cannot subset wire at index {i} from {len(self._labels)} wires."
                 )
 
         subset = tuple(self._labels[i] for i in indices)
@@ -344,7 +344,7 @@ class Wires(Sequence):
 
         if n_samples > len(self._labels):
             raise WireError(
-                "Cannot sample {} wires from {} wires.".format(n_samples, len(self._labels))
+                f"Cannot sample {n_samples} wires from {len(self._labels)} wires."
             )
 
         if seed is not None:
@@ -380,7 +380,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
+                    f"Expected a Wires object; got {wires} of type {type(wires)}."
                 )
 
         first_wires_obj = list_of_wires[0]
@@ -424,7 +424,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "Expected a Wires object; got {} of type {}".format(wires, type(wires))
+                    f"Expected a Wires object; got {wires} of type {type(wires)}"
                 )
 
             extension = [label for label in wires.labels if label not in seen_labels]
@@ -461,7 +461,7 @@ class Wires(Sequence):
         for wires in list_of_wires:
             if not isinstance(wires, Wires):
                 raise WireError(
-                    "Expected a Wires object; got {} of type {}.".format(wires, type(wires))
+                    f"Expected a Wires object; got {wires} of type {type(wires)}."
                 )
 
         label_sets = [wire.toset() for wire in list_of_wires]

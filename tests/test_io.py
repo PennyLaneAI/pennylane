@@ -90,5 +90,5 @@ class TestLoad:
 
             if mock_plugin_converters[plugin_converter].called:
                 raise Exception(
-                    "The other plugin converter {} was called.".format(plugin_converter)
+                    f"The other plugin converter {plugin_converter} was called."
                 )
