@@ -298,7 +298,7 @@ class JacobianTape(QuantumTape):
                     array[float]: 1-dimensional array of length determined by the tape output
                     measurement statistics
                 """
-                shifted = np.array(results[0])
+                shifted = qml.math.to_numpy(results[0])
                 unshifted = y0
 
                 if unshifted is None:
@@ -582,7 +582,7 @@ class JacobianTape(QuantumTape):
                 # this computation is only performed once, for all parameters.
                 # convert to float64 to eliminate floating point errors when params float32
                 params_f64 = np.array(params, dtype=np.float64)
-                options["y0"] = np.asarray(self.execute_device(params_f64, device))
+                options["y0"] = qml.math.to_numpy(self.execute_device(params_f64, device))
 
         # some gradient methods need the device or the device wires
         options["device"] = device

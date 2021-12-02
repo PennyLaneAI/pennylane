@@ -69,7 +69,7 @@ def sum(x):
 
             return apply(jnp.sum, x)
 
-        raise ValueError("Unknown interface {}".format(x.interface))
+        raise ValueError(f"Unknown interface {x.interface}")
 
     import numpy as np
 

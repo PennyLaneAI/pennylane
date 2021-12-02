@@ -14,7 +14,7 @@
 r"""
 Contains the CommutingEvolution template.
 """
-# pylint: disable-msg=too-many-arguments
+# pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -108,22 +108,20 @@ class CommutingEvolution(Operation):
     grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
+        # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import (
-            get_shift_rule,
-        )  # pylint: disable=import-outside-toplevel
+            generate_shift_rule,
+        )
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
-            raise TypeError(
-                "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                    type(hamiltonian).__name__
-                )
-            )
+            type_name = type(hamiltonian).__name__
+            raise TypeError(f"hamiltonian must be of type pennylane.Hamiltonian, got {type_name}")
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
         if frequencies is not None and not trainable_hamiltonian:
-            self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
-                hamiltonian.data
-            )
+            c, s = generate_shift_rule(frequencies, shifts)
+            recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
+            self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
         self.hamiltonian = hamiltonian
