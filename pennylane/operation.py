@@ -235,11 +235,15 @@ def classproperty(func):
 
 
 def _process_data(op):
+
+    # Use qml.math.real to take the real part. We may get complex inputs for
+    # example when differentiating holomorphic functions with JAX: a complex
+    # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(d % (2 * np.pi), 10) for d in op.data])
+        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(d % (4 * np.pi), 10) for d in op.data])
+        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
 
     return str(op.data)
 
