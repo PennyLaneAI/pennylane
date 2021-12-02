@@ -2,15 +2,18 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.templates.tensornetworks.mps import *
-import re
 
 """
 Unit tests for the MPS template.
 """
 
-class TestInputs: 
-    """Test that the correct exceptions are thrown for the inputs"""
+class TestInputs:
+    """Test inputs and pre-processing (ensure the correct exceptions are thrown for the inputs)"""
     
+    def my_minimal_quantum_function(weights, wires):
+        """The simplest function"""
+        qml.RZ(weights[0], wires=wires[0])
+        qml.CNOT(wires=wires[:])
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "loc", "msg_match"),
@@ -23,7 +26,7 @@ class TestInputs:
     def test_exception_wrong_dim(self, block, n_params_block, wires, loc, msg_match):
         """Verifies that an exception is raised if the number of wires or loc is incorrect."""
         with pytest.raises(AssertionError, match=msg_match):
-            MPS_from_function(wires, loc, block, n_params_block, wires)
+            MPS(wires, loc, block, n_params_block, wires)
 
     @pytest.mark.parametrize(
         ("wires", "loc", "expected_indices"),
@@ -39,6 +42,27 @@ class TestInputs:
         for i in range(len(expected_indices)):
             assert all(indices[i] == expected_indices[i])
 
+            
+
+class TestAttributes:
+    """Tests additional methods and attributes"""
+    
+    @pytest.mark.parametrize(
+        "n_wires, loc, n_params_block, expected_shape",
+        [
+            (3, 2, 1, (2, 10)),
+            (4, 2, 1, (3, 1)),
+            (16, 4, 1,(7, 1)),
+        ],
+    )
+    def test_shape(self, n_layers, n_wires, expected_shape):
+        """Test that the shape method returns the correct shape of the weights tensor"""
+
+        shape = qml.MPS.shape(n_wires, loc, n_params_block)
+        assert shape == expected_shape
+
+            
+            
 class TestDifferentiability:
     """Test that the template is differentiable"""
     #TODO
