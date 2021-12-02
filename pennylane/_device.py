@@ -145,20 +145,18 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return "<{} device (wires={}, shots={}) at {}>".format(
-            self.__class__.__name__, self.num_wires, self.shots, hex(id(self))
-        )
+        return f"<{self.__class__.__name__} device (wires={self.num_wires}, shots={self.shots}) at {hex(id(self))}>"
 
     def __str__(self):
         """Verbose string representation."""
-        return "{}\nShort name: {}\nPackage: {}\nPlugin version: {}\nAuthor: {}\nWires: {}\nShots: {}".format(
-            self.name,
-            self.short_name,
-            self.__module__.split(".")[0],
-            self.version,
-            self.author,
-            self.num_wires,
-            self.shots,
+        package = self.__module__.split(".")[0]
+        return (
+            f"{self.name}\nShort name: {self.short_name}\n"
+            f"Package: {package}\n"
+            f"Plugin version: {self.version}\n"
+            f"Author: {self.author}\n"
+            f"Wires: {self.num_wires}\n"
+            f"Shots: {self.shots}"
         )
 
     @property
@@ -258,7 +256,7 @@ class Device(abc.ABC):
             # device is in sampling mode (unbatched)
             if shots < 1:
                 raise DeviceError(
-                    "The specified number of shots needs to be at least 1. Got {}.".format(shots)
+                    f"The specified number of shots needs to be at least 1. Got {shots}."
                 )
 
             self._shots = shots
@@ -349,9 +347,7 @@ class Device(abc.ABC):
             mapped_wires = wires.map(self.wire_map)
         except WireError as e:
             raise WireError(
-                "Did not find some of the wires {} on device with wires {}.".format(
-                    wires, self.wires
-                )
+                f"Did not find some of the wires {wires} on device with wires {self.wires}."
             ) from e
 
         return mapped_wires
@@ -450,7 +446,7 @@ class Device(abc.ABC):
 
                 elif obs.return_type is not None:
                     raise qml.QuantumFunctionError(
-                        "Unsupported return type specified for observable {}".format(obs.name)
+                        f"Unsupported return type specified for observable {obs.name}"
                     )
 
             self.post_measure()
@@ -886,15 +882,13 @@ class Device(abc.ABC):
                 ) or self.capabilities().get("inverse_operations", False)
                 if not supports_inv:
                     raise DeviceError(
-                        "The inverse of gates are not supported on device {}".format(
-                            self.short_name
-                        )
+                        f"The inverse of gates are not supported on device {self.short_name}"
                     )
                 operation_name = o.base_name
 
             if not self.supports_operation(operation_name):
                 raise DeviceError(
-                    "Gate {} not supported on device {}".format(operation_name, self.short_name)
+                    f"Gate {operation_name} not supported on device {self.short_name}"
                 )
 
         for o in observables:
@@ -908,15 +902,13 @@ class Device(abc.ABC):
                 ) or self.capabilities().get("tensor_observables", False)
                 if not supports_tensor:
                     raise DeviceError(
-                        "Tensor observables not supported on device {}".format(self.short_name)
+                        f"Tensor observables not supported on device {self.short_name}"
                     )
 
                 for i in o.obs:
                     if not self.supports_observable(i.name):
                         raise DeviceError(
-                            "Observable {} not supported on device {}".format(
-                                i.name, self.short_name
-                            )
+                            f"Observable {i.name} not supported on device {self.short_name}"
                         )
             else:
                 observable_name = o.name
@@ -928,17 +920,13 @@ class Device(abc.ABC):
                     ) or self.capabilities().get("inverse_operations", False)
                     if not supports_inv:
                         raise DeviceError(
-                            "The inverse of gates are not supported on device {}".format(
-                                self.short_name
-                            )
+                            f"The inverse of gates are not supported on device {self.short_name}"
                         )
                     observable_name = o.base_name
 
                 if not self.supports_observable(observable_name):
                     raise DeviceError(
-                        "Observable {} not supported on device {}".format(
-                            observable_name, self.short_name
-                        )
+                        f"Observable {observable_name} not supported on device {self.short_name}"
                     )
 
     @abc.abstractmethod
@@ -987,7 +975,7 @@ class Device(abc.ABC):
             float: variance :math:`\mathrm{var}(A) = \bra{\psi}A^2\ket{\psi} - \bra{\psi}A\ket{\psi}^2`
         """
         raise NotImplementedError(
-            "Returning variances from QNodes not currently supported by {}".format(self.short_name)
+            f"Returning variances from QNodes not currently supported by {self.short_name}"
         )
 
     def sample(self, observable, wires, par):
@@ -1011,7 +999,7 @@ class Device(abc.ABC):
             array[float]: samples in an array of dimension ``(shots,)``
         """
         raise NotImplementedError(
-            "Returning samples from QNodes not currently supported by {}".format(self.short_name)
+            f"Returning samples from QNodes not currently supported by {self.short_name}"
         )
 
     def probability(self, wires=None):
@@ -1029,7 +1017,7 @@ class Device(abc.ABC):
             state tuples are in lexicographical order.
         """
         raise NotImplementedError(
-            "Returning probability not currently supported by {}".format(self.short_name)
+            f"Returning probability not currently supported by {self.short_name}"
         )
 
     @abc.abstractmethod
