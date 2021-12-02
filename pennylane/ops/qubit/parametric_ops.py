@@ -55,6 +55,9 @@ class RX(Operation):
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -112,6 +115,9 @@ class RY(Operation):
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -162,6 +168,9 @@ class RZ(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -224,6 +233,9 @@ class PhaseShift(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -298,6 +310,9 @@ class ControlledPhaseShift(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -383,6 +398,9 @@ class Rot(Operation):
     num_wires = 1
     grad_method = "A"
 
+    def __init__(self, phi, theta, omega, wires):
+        super().__init__(phi, theta, omega, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 3
@@ -466,6 +484,9 @@ class MultiRZ(Operation):
     """
     num_wires = AnyWires
     grad_method = "A"
+
+    def __init__(self, theta, wires):
+        super().__init__(theta, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -846,6 +867,9 @@ class CRX(Operation):
         -1 / 2,
     ]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -947,6 +971,9 @@ class CRY(Operation):
         -1 / 2,
     ]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -1042,6 +1069,9 @@ class CRZ(Operation):
         -1 / 2,
     ]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -1072,11 +1102,11 @@ class CRZ(Operation):
         return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
-    def decomposition(lam, wires):
+    def decomposition(phi, wires):
         decomp_ops = [
-            PhaseShift(lam / 2, wires=wires[1]),
+            PhaseShift(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            PhaseShift(-lam / 2, wires=wires[1]),
+            PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
         return decomp_ops
@@ -1129,6 +1159,9 @@ class CRot(Operation):
     num_wires = 2
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+
+    def __init__(self, phi, theta, omega, wires):
+        super().__init__(phi, theta, omega, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -1225,6 +1258,9 @@ class U1(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -1249,20 +1285,20 @@ class U1(Operation):
 
 
 class U2(Operation):
-    r"""U2(phi, lambda, wires)
+    r"""U2(phi, delta, wires)
     U2 gate.
 
     .. math::
 
-        U_2(\phi, \lambda) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \lambda)
-        \\ \exp(i \phi) & \exp(i (\phi + \lambda)) \end{bmatrix}
+        U_2(\phi, \delta) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \delta)
+        \\ \exp(i \phi) & \exp(i (\phi + \delta)) \end{bmatrix}
 
     The :math:`U_2` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
     :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
 
     .. math::
 
-        U_2(\phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\pi/2,-\lambda)
+        U_2(\phi, \delta) = R_\phi(\phi+\delta) R(\delta,\pi/2,-\delta)
 
     .. note::
 
@@ -1273,17 +1309,20 @@ class U2(Operation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \lambda)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \lambda)) - f(U_2(\phi-\pi/2, \lambda))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_2(\phi, \lambda)`.
-      This gradient recipe applies for each angle argument :math:`\{\phi, \lambda\}`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \delta)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \delta)) - f(U_2(\phi-\pi/2, \delta))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_2(\phi, \delta)`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \delta\}`.
 
     Args:
         phi (float): azimuthal angle :math:`\phi`
-        lambda (float): quantum phase :math:`\lambda`
+        delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, phi, delta, wires):
+        super().__init__(phi, delta, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -1291,53 +1330,53 @@ class U2(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        phi, lam = params
+        phi, delta = params
 
         interface = qml.math._multi_dispatch(params)
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
-            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+            delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
 
         mat = [
-            [1, -qml.math.exp(1j * lam)],
-            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + lam))],
+            [1, -qml.math.exp(1j * delta)],
+            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + delta))],
         ]
 
         return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(phi, lam, wires):
+    def decomposition(phi, delta, wires):
         decomp_ops = [
-            Rot(lam, np.pi / 2, -lam, wires=wires),
-            PhaseShift(lam, wires=wires),
+            Rot(delta, np.pi / 2, -delta, wires=wires),
+            PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
 
     def adjoint(self):
-        phi, lam = self.parameters
-        new_lam = (np.pi - phi) % (2 * np.pi)
-        new_phi = (np.pi - lam) % (2 * np.pi)
-        return U2(new_phi, new_lam, wires=self.wires)
+        phi, delta = self.parameters
+        new_delta = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - delta) % (2 * np.pi)
+        return U2(new_phi, new_delta, wires=self.wires)
 
 
 class U3(Operation):
-    r"""U3(theta, phi, lambda, wires)
+    r"""U3(theta, phi, delta, wires)
     Arbitrary single qubit unitary.
 
     .. math::
 
-        U_3(\theta, \phi, \lambda) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2) \\
-        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \lambda))\cos(\theta/2) \end{bmatrix}
+        U_3(\theta, \phi, \delta) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \delta)\sin(\theta/2) \\
+        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \delta))\cos(\theta/2) \end{bmatrix}
 
     The :math:`U_3` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
     :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
 
     .. math::
 
-        U_3(\theta, \phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\theta,-\lambda)
+        U_3(\theta, \phi, \delta) = R_\phi(\phi+\delta) R(\delta,\theta,-\delta)
 
     .. note::
 
@@ -1348,18 +1387,21 @@ class U3(Operation):
 
     * Number of wires: 1
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \lambda)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \lambda)) - f(U_3(\theta-\pi/2, \phi, \lambda))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \lambda)`.
-      This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \lambda\}`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \delta)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \delta)) - f(U_3(\theta-\pi/2, \phi, \delta))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \delta)`.
+      This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \delta\}`.
 
     Args:
         theta (float): polar angle :math:`\theta`
         phi (float): azimuthal angle :math:`\phi`
-        lambda (float): quantum phase :math:`\lambda`
+        delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, theta, phi, delta, wires):
+        super().__init__(theta, phi, delta, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -1367,7 +1409,7 @@ class U3(Operation):
 
     @classmethod
     def _matrix(cls, *params):
-        theta, phi, lam = params
+        theta, phi, delta = params
 
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
@@ -1380,31 +1422,31 @@ class U3(Operation):
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
-            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+            delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
         mat = [
-            [c, -s * qml.math.exp(1j * lam)],
-            [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + lam))],
+            [c, -s * qml.math.exp(1j * delta)],
+            [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + delta))],
         ]
 
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(theta, phi, lam, wires):
+    def decomposition(theta, phi, delta, wires):
         decomp_ops = [
-            Rot(lam, theta, -lam, wires=wires),
-            PhaseShift(lam, wires=wires),
+            Rot(delta, theta, -delta, wires=wires),
+            PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
 
     def adjoint(self):
-        theta, phi, lam = self.parameters
-        new_lam = (np.pi - phi) % (2 * np.pi)
-        new_phi = (np.pi - lam) % (2 * np.pi)
-        return U3(theta, new_phi, new_lam, wires=self.wires)
+        theta, phi, delta = self.parameters
+        new_delta = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - delta) % (2 * np.pi)
+        return U3(theta, new_phi, new_delta, wires=self.wires)
 
 
 class IsingXX(Operation):
@@ -1436,6 +1478,9 @@ class IsingXX(Operation):
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -1500,6 +1545,9 @@ class IsingYY(Operation):
         -1 / 2,
     ]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -1560,6 +1608,9 @@ class IsingZZ(Operation):
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
