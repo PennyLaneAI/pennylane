@@ -411,9 +411,7 @@ class TestDefaultTensorNetworkParametrize:
         assert dev._contracted_state_node is None
         assert "state" in dev._nodes and len(dev._nodes) == 1
         assert len(dev._nodes["state"]) == 2
-        assert all(
-            [dev._nodes["state"][idx].name == "ZeroState({},)".format(idx) for idx in range(2)]
-        )
+        assert all([dev._nodes["state"][idx].name == f"ZeroState({idx},)" for idx in range(2)])
 
         shape = (1, 2, 1) if rep == "mps" else (2,)
         reshaped_zero_state = dev._zero_state.reshape(shape)

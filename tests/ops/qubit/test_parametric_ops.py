@@ -1227,14 +1227,14 @@ class TestPauliRot:
             # this is the identity
             expected_gen = qml.Identity(wires=0)
         else:
-            expected_gen = getattr(qml, "Pauli{}".format(pauli_word[0]))(wires=0)
+            expected_gen = getattr(qml, f"Pauli{pauli_word[0]}")(wires=0)
 
         for i, pauli in enumerate(pauli_word[1:]):
             i += 1
             if pauli == "I":
                 expected_gen = expected_gen @ qml.Identity(wires=i)
             else:
-                expected_gen = expected_gen @ getattr(qml, "Pauli{}".format(pauli))(wires=i)
+                expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
         expected_gen_mat = expected_gen.matrix
 
