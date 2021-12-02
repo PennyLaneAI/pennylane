@@ -355,6 +355,10 @@
 
 <h3>Improvements</h3>
 
+* The PennyLane `qchem` package is now lazily imported; it will only be imported
+  the first time it is accessed.
+  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
+
 * Change all instances of `"{}".format(..)` to `f"{..}"`.
   [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
 
