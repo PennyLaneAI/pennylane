@@ -584,6 +584,6 @@ class QNode:
         return qml.math.squeeze(res)
 
 
-qnode = lambda dev, **kwargs: functools.partial(QNode, device=dev, **kwargs)
+qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
