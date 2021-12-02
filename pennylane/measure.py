@@ -97,7 +97,7 @@ class MeasurementProcess:
         if self.obs.return_type is None:
             return f"{self.return_type.value}({self.obs})"
 
-        return "{self.obs}"
+        return f"{self.obs}"
 
     def __copy__(self):
         cls = self.__class__
