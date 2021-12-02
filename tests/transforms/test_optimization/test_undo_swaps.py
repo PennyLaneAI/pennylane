@@ -41,7 +41,7 @@ class TestUndoSwaps:
         assert np.allclose(res[0][0], 0.5)
 
     def test_two_qubits_gates_transform(self):
-        """Test that a two-qubit gate change correctly with a SWAP."""
+        """Test that a two-qubit gate changes correctly with a SWAP."""
 
         def qfunc():
             qml.PauliX(wires=1)
@@ -57,7 +57,7 @@ class TestUndoSwaps:
         assert np.allclose(res[0][2], 1.0)
 
     def test_templates_transform(self):
-        """Test that a two-qubit gate change correctly with a SWAP."""
+        """Test that a template changes correctly with a SWAP."""
 
         def qfunc1():
             qml.RX(2, wires=0)
