@@ -187,6 +187,16 @@ ar.register_function(
 )
 
 
+def _round_tf(tensor, decimals=0):
+    """Implement a TensorFlow version of np.round"""
+    tf = _i("tf")
+    tol = 10 ** decimals
+    return tf.round(tensor * tol) / tol
+
+
+ar.register_function("tensorflow", "round", _round_tf)
+
+
 def _take_tf(tensor, indices, axis=None):
     """Implement a TensorFlow version of np.take"""
     tf = _i("tf")
@@ -321,6 +331,16 @@ ar.register_function(
 
 ar.autoray._SUBMODULE_ALIASES["torch", "arctan2"] = "torch"
 ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
+
+
+def _round_torch(tensor, decimals=0):
+    """Implement a Torch version of np.round"""
+    torch = _i("torch")
+    tol = 10 ** decimals
+    return torch.round(tensor * tol) / tol
+
+
+ar.register_function("torch", "round", _round_torch)
 
 
 def _take_torch(tensor, indices, axis=None):
