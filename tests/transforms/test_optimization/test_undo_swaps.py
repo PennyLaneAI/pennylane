@@ -25,7 +25,7 @@ class TestUndoSwaps:
     """Test that check the main functionalities of the `undo_swaps` transform"""
 
     def test_one_qubit_gates_transform(self):
-        """Test that a single-qubit gate change correctly with a SWAP."""
+        """Test that a single-qubit gate changes correctly with a SWAP."""
 
         def qfunc():
             qml.Hadamard(wires=0)
