@@ -183,8 +183,8 @@ class QNodeCollection(Sequence):
 
         if self.qnodes and (qnodes[0].interface != self.interface):
             raise ValueError(
-                "Interface mismatch. Provided QNodes use the {} interface, "
-                "QNode collection uses the {} interface".format(qnodes[0].interface, self.interface)
+                f"Interface mismatch. Provided QNodes use the {qnodes[0].interface} interface, "
+                f"QNode collection uses the {self.interface} interface"
             )
 
         self.qnodes.extend(qnodes)

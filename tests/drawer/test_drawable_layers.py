@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the pennylane.circuit_drawer.drawable_layers` module.
+Unit tests for the pennylane.drawer.drawable_layers` module.
 """
 
 import pytest
 
 import pennylane as qml
-from pennylane.circuit_drawer.drawable_layers import (
+from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     drawable_layers,
     drawable_grid,
 )
-from pennylane.circuit_drawer.grid import Grid
+from pennylane.drawer.grid import Grid
 
 
 class TestRecursiveFindLayer:
