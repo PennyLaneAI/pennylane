@@ -143,7 +143,7 @@ class ApproxTimeEvolution(Operation):
 
             except KeyError as error:
                 raise ValueError(
-                    "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
+                    f"hamiltonian must be written in terms of Pauli matrices, got {error}"
                 ) from error
 
             # skips terms composed solely of identities
