@@ -34,7 +34,7 @@ except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
 # pragma: no cover
 def _needs_mpl(func):
     def wrapper():
-        if not _has_mpl:
+        if not _has_mpl: # pragma: no cover
             raise ImportError(
                 "The drawer style module requires matplotlib."
                 "You can install matplotlib via \n\n   pip install matplotlib"
