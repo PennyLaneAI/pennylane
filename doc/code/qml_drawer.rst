@@ -38,20 +38,16 @@ The following images are generated via the code:
 
 Currently Available Styles
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. |bw| figure:: ../_static/style/black_white_style.png
+.. figure:: ../_static/style/black_white_style.png
         :class: with-border
         :width: 40%
         :target: javascript:void(0);
         ``'black_white'``
-
-.. |bw_dark| figure:: ../_static/style/black_white_dark_style.png
+.. figure:: ../_static/style/black_white_dark_style.png
         :class: with border
         :width: 40%
         :target: javascript:void(0);
         ``'black_white_dark'``
-
-|bw| |bw_dark|
-
 
 Developer Methods
 -----------------
