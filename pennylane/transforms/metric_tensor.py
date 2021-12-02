@@ -18,23 +18,47 @@ methods of computing the metric tensor.
 import functools
 import warnings
 
-import numpy as np
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.circuit_graph import LayerData
 
 from .batch_transform import batch_transform
 
+# This dictionary maps generators to their controlled gate equivalent.
+# It is equivalent to using ``controlled`` on the generators, but this
+# approach via registering specific generators allows us to guarantee
+# unitary circuits for ``allow_nonunitary=False``
+_GEN_TO_CGEN = {
+    qml.PauliX: qml.CNOT,
+    qml.PauliY: qml.CY,
+    qml.PauliZ: qml.CZ,
+}
 
-def expand_fn(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
+# In contrast to the above, this dictionary maps *operators* to controlled
+# generator gates, skipping over the step of retrieving the generator from
+# the original operation and identifying it as a gate. It replaces matrix
+# arithmetics that otherwise would be required at this point.
+_OP_TO_CGEN = {
+    # PhaseShift is the same as RZ up to a global phase
+    qml.PhaseShift: qml.CZ,
+}
+
+
+def expand_fn(
+    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
         return qml.transforms.expand_nonunitary_gen(tape)
     return qml.transforms.expand_multipar(tape)
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=True):
-    """Returns a function that computes the block-diagonal approximation of the metric tensor
+def metric_tensor(
+    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
+):
+    r"""Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
     .. note::
@@ -42,43 +66,76 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
         Only gates that have a single parameter and define a ``generator`` are supported.
         All other parametrized gates will be decomposed if possible.
 
-    .. warning::
-
-        While ``approx=None`` is a valid input, the full metric tensor is not implemented yet
-        but will be added in an upcoming enhancement. Effectively, this means that only
-        ``approx="block-diag"`` and ``approx="diag"`` are currently supported.
-
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
         approx (str): Which approximation of the metric tensor to compute.
 
             - If ``None``, the full metric tensor is computed
 
-            - If ``"block-diag"``, the block diagonal approximation is computed, reducing
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
               the number of evaluated circuits significantly.
 
             - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources.
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
 
-        diag_approx (bool): if True, use the diagonal approximation. If ``False``, a
-            block diagonal approximation of the metric tensor is computed.
-            This keyword argument is deprecated in favor of ``approx`` and will be removed soon
+        diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
+            block-diagonal approximation of the metric tensor is computed.
+            This keyword argument is deprecated in favor of ``approx`` and will be removed soon.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
-            created by the transform. Only relevant if ``approx`` is ``None``
+            created by the transform. Only relevant if ``approx`` is ``None``.
+            Should be set to ``True`` if possible to reduce cost.
+        aux_wire (int or str or pennylane.wires.Wires): Auxiliary wire to be used for
+            Hadamard tests. If ``None`` (the default), a suitable wire is inferred
+            from the (number of) used wires in the original circuit and ``device_wires``.
+        device_wires (.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None``.
         hybrid (bool): Specifies whether classical processing inside a QNode
             should be taken into account when transforming a QNode.
 
             - If ``True``, and classical processing is detected, the Jacobian of the classical
               processing will be computed and included. When evaluated, the
               returned metric tensor will be with respect to the QNode arguments.
+              The output shape can vary widely.
 
             - If ``False``, any internal QNode classical processing will be
               **ignored**. When evaluated, the returned metric tensor will be with
               respect to the **gate** arguments, and not the QNode arguments.
+              The output shape is a single two-dimensional tensor.
 
     Returns:
         func: Function which accepts the same arguments as the QNode. When called, this
         function will return the metric tensor.
+
+    The block-diagonal part of the metric tensor always is computed using the
+    covariance-based approach. If no approximation is selected,
+    the off block-diagonal is computed using Hadamard tests.
+
+    .. warning::
+
+        Performing the Hadamard tests requires a device
+        that has an additional wire as compared to the wires on which the
+        original circuit was defined. This wire may be specified via ``aux_wire``.
+        The available wires on the device may be specified via ``device_wires``.
+
+        By default (that is, if ``device_wires=None`` ), contiguous wire
+        numbering and usage is assumed and the additional
+        wire is set to the next wire of the device after the circuit wires.
+
+        If the given or inferred ``aux_wire`` does not exist on the device,
+        a warning is raised and the block-diagonal approximation is computed instead.
+        It is significantly cheaper in this case to explicitly set ``approx="block-diag"`` .
+
+    The flag ``allow_nonunitary`` should be set to ``True`` whenever the device with
+    which the metric tensor is computed supports non-unitary operations.
+    This will avoid additional decompositions of gates, in turn avoiding a potentially
+    large number of additional Hadamard test circuits to be run.
+    State vector simulators, for example, often allow applying operations that are
+    not unitary.
+    On a real QPU, setting this flag to ``True`` may cause exceptions because the
+    computation of the metric tensor will request invalid operations on a quantum
+    device.
 
     **Example**
 
@@ -90,40 +147,50 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
 
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
-            # layer 1
             qml.RX(weights[0], wires=0)
-            qml.RX(weights[1], wires=1)
-
+            qml.RY(weights[1], wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-
-            # layer 2
-            qml.RZ(weights[2], wires=0)
-            qml.RZ(weights[3], wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(2))
+            qml.RZ(weights[2], wires=1)
+            qml.RZ(weights[3], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
 
     We can use the ``metric_tensor`` transform to generate a new function that returns the
     metric tensor of this QNode:
 
-    >>> met_fn = qml.metric_tensor(circuit)
+    >>> mt_fn = qml.metric_tensor(circuit)
     >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
-    >>> met_fn(weights)
+    >>> mt_fn(weights)
+    tensor([[ 0.25  ,  0.    , -0.0497, -0.0497],
+            [ 0.    ,  0.2475,  0.0243,  0.0243],
+            [-0.0497,  0.0243,  0.0123,  0.0123],
+            [-0.0497,  0.0243,  0.0123,  0.0123]], requires_grad=True)
+
+    In order to save cost, one might want to compute only the block-diagonal part of
+    the metric tensor, which requires significantly fewer executions of quantum functions
+    and does not need an auxiliary wire on the device. This can be done using the
+    ``approx`` keyword:
+
+    >>> mt_fn = qml.metric_tensor(circuit, approx="block-diag")
+    >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+    >>> mt_fn(weights)
     tensor([[0.25  , 0.    , 0.    , 0.    ],
-            [0.    , 0.25  , 0.    , 0.    ],
-            [0.    , 0.    , 0.0025, 0.0024],
-            [0.    , 0.    , 0.0024, 0.0123]], requires_grad=True)
+            [0.    , 0.2475, 0.    , 0.    ],
+            [0.    , 0.    , 0.0123, 0.0123],
+            [0.    , 0.    , 0.0123, 0.0123]], requires_grad=True)
+
+    These blocks are given by parameter groups that belong to groups of commuting gates.
+
+    The tensor can be further restricted to the diagonal via ``approx="diag"``. However,
+    this will not save further quantum function evolutions but only classical postprocessing.
 
     The returned metric tensor is also fully differentiable in all interfaces.
-    For example, we can compute the gradient of the ``(3, 2)`` element
-    with respect to the QNode ``weights``:
+    For example, we can compute the gradient of the Frobenius norm of the metric tensor
+    with respect to the QNode ``weights`` :
 
-    >>> grad_fn = qml.grad(lambda x: met_fn(x)[3, 2])
+    >>> norm_fn = lambda x: qml.math.linalg(mt_fn(x), ord="fro")
+    >>> grad_fn = qml.grad(norm_fn)
     >>> grad_fn(weights)
-    array([[ 0.04867729, -0.00049502,  0.        ],
-           [ 0.        ,  0.        ,  0.        ]])
+    array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
 
     .. UsageDetails::
 
@@ -143,21 +210,45 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
         >>> tapes
         [<QuantumTape: wires=[0, 1], params=0>,
          <QuantumTape: wires=[0, 1], params=1>,
-         <QuantumTape: wires=[0, 1], params=3>]
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[2, 0], params=1>,
+         <QuantumTape: wires=[2, 0, 1], params=2>,
+         <QuantumTape: wires=[2, 0, 1], params=2>]
 
         This can be useful if the underlying circuits representing the metric tensor
-        computation need to be analyzed.
+        computation need to be analyzed. We clearly can distinguish the first three
+        tapes used for the block-diagonal from the last three tapes that use the
+        auxiliary wire ``2`` , which was not used by the original tape.
 
         The output tapes can then be evaluated and post-processed to retrieve
         the metric tensor:
 
         >>> dev = qml.device("default.qubit", wires=2)
         >>> fn(qml.execute(tapes, dev, None))
-        array([[0.25      , 0.        , 0.        ],
-               [0.        , 0.00415023, 0.        ],
-               [0.        , 0.        , 0.24878844]])
+        array([[ 0.25      ,  0.        ,  0.42073549],
+               [ 0.        ,  0.00415023, -0.26517488],
+               [ 0.42073549, -0.26517488,  0.24878844]])
+
+        The first term of the off block-diagonal entries of the full metric tensor are
+        computed with Hadamard tests. This first term reads
+
+        .. math ::
+
+            \mathfrak{Re}\left\{\langle \partial_i\psi|\partial_j\psi\rangle\right\}
+
+        and can be computed using an augmented circuit with an additional qubit.
+        See for example `the appendix of McArdle et al. <https://arxiv.org/pdf/1804.03023.pdf>`__
+        for details.
+        The block-diagonal of the tensor is computed using the covariance matrix approach.
+
+        In addition, we may extract the factors for the second terms
+        :math:`\langle \psi|\partial_j\psi\rangle`
+        of the *off block-diagonal* tensor from the quantum function output for the covariance matrix!
+
+        This means that in total only the tapes for the first terms of the off block-diagonal
+        are required in addition to the circuits for the block diagonal.
     """
-    # pylint: disable=unused-argument
+    # pylint: disable=too-many-arguments
     if diag_approx is not None:
         warnings.warn(
             "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
@@ -169,9 +260,15 @@ def metric_tensor(tape, approx="block-diag", diag_approx=None, allow_nonunitary=
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
-        return _metric_tensor_cov_matrix(tape, diag_approx)
+        return _metric_tensor_cov_matrix(tape, diag_approx)[:2]
 
-    raise NotImplementedError("No method for the full metric tensor has been implemented yet.")
+    if approx is None:
+        return _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires)
+
+    raise ValueError(
+        f"Unknown value {approx} for keyword argument approx. "
+        "Valid values are 'diag', 'block-diag' and None."
+    )
 
 
 @metric_tensor.custom_qnode_wrapper
@@ -191,13 +288,34 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         qnode = qnode.qnodes.qnodes[0]
 
+    tkwargs.setdefault("device_wires", qnode.device.wires)
     mt_fn = self.default_qnode_wrapper(qnode, targs, tkwargs)
 
     _expand_fn = lambda tape: self.expand_fn(tape, *targs, **tkwargs)
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
-        mt = mt_fn(*args, **kwargs)
+        try:
+            mt = mt_fn(*args, **kwargs)
+        except qml.wires.WireError as e:
+            if str(e) == "No device wires are unused by the tape.":
+                warnings.warn(
+                    "The device does not have a wire that is not used by the tape."
+                    "\n\nReverting to the block-diagonal approximation. It will often be "
+                    "much more efficient to request the block-diagonal approximation directly!"
+                )
+            else:
+                warnings.warn(
+                    "An auxiliary wire is not available."
+                    "\n\nThis can occur when computing the full metric tensor via the "
+                    "Hadamard test, and the device does not provide an "
+                    "additional wire or the requested auxiliary wire does not exist "
+                    "on the device."
+                    "\n\nReverting to the block-diagonal approximation. It will often be "
+                    "much more efficient to request the block-diagonal approximation directly!"
+                )
+            tkwargs["approx"] = "block-diag"
+            return self.__call__(qnode, *targs, **tkwargs)(*args, **kwargs)
 
         if not hybrid:
             return mt
@@ -209,13 +327,13 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             if len(cjac) == 1:
                 cjac = cjac[0]
             else:
-                # Classical processing of multiple arguments is present. Return mt @ cjac.
+                # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac.
                 metric_tensors = []
 
                 for c in cjac:
                     if c is not None:
-                        _mt = qml.math.tensordot(mt, c, [[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, [[0], [0]])
+                        _mt = qml.math.tensordot(mt, c, axes=[[-1], [0]])
+                        _mt = qml.math.tensordot(c, _mt, axes=[[0], [0]])
                         metric_tensors.append(_mt)
 
                 return tuple(metric_tensors)
@@ -228,7 +346,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             return mt
 
         # Classical processing of a single argument is present. Return mt @ cjac.
-        cjac = qml.math.convert_like(cjac, mt)
         mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
         mt = qml.math.tensordot(cjac, mt, [[0], [0]])
         return mt
@@ -237,8 +354,23 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
 
 def _metric_tensor_cov_matrix(tape, diag_approx):
-    """This is the metric tensor method for the block diagonal, using
-    the covariance matrix of the generators of each layer."""
+    r"""This is the metric tensor method for the block diagonal, using
+    the covariance matrix of the generators of each layer.
+
+    Args:
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
+            block-diagonal approximation of the metric tensor is computed.
+    Returns:
+        list[pennylane.tape.QuantumTape]: Transformed tapes that compute the probabilities
+            required for the covariance matrix
+        callable: Post-processing function that computes the covariance matrix from the
+            results of the tapes in the first return value
+        list[list[.Observable]]: Observables measured in each tape, one inner list
+            corresponding to one tape in the first return value
+        list[list[float]]: Coefficients to scale the results for each observable, one inner list
+            corresponding to one tape in the first return value
+    """
     # get the circuit graph
     graph = tape.graph
 
@@ -269,8 +401,8 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
             else:
                 raise qml.QuantumFunctionError(
-                    "Can't generate metric tensor, generator {}"
-                    "has no corresponding observable".format(gen)
+                    f"Can't generate metric tensor, generator {gen}"
+                    "has no corresponding observable"
                 )
 
         # Create a quantum tape with all operations
@@ -291,8 +423,9 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         gs = []
 
         for prob, obs, coeffs in zip(probs, obs_list, coeffs_list):
+
             # calculate the covariance matrix of this layer
-            scale = qml.math.convert_like(np.outer(coeffs, coeffs), prob)
+            scale = qml.math.convert_like(qml.math.outer(coeffs, coeffs), prob)
             scale = qml.math.cast_like(scale, prob)
             g = scale * qml.math.cov_matrix(prob, obs, wires=tape.wires, diag_approx=diag_approx)
             gs.append(g)
@@ -300,4 +433,250 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         # create the block diagonal metric tensor
         return qml.math.block_diag(gs)
 
-    return metric_tensor_tapes, processing_fn
+    return metric_tensor_tapes, processing_fn, obs_list, coeffs_list
+
+
+@functools.lru_cache()
+def _get_gen_op(op, allow_nonunitary, aux_wire):
+    r"""Get the controlled-generator operation for a given operation.
+
+    Args:
+        op (pennylane.operation.Operation): Operation from which to extract the generator
+        allow_nonunitary (bool): Whether non-unitary gates are allowed in the circuit
+        aux_wire (int or pennylane.wires.Wires): Auxiliary wire on which to control the operation
+
+    Returns
+        qml.Operation: Controlled-generator operation of the generator of ``op``, controlled
+        on wire ``aux_wire``.
+
+    Raises
+        ValueError: If the generator of ``op`` is not known or it is non-unitary while
+        ``allow_nonunitary=False``.
+
+    If ``allow_nonunitary=True``, a general :class:`~.pennylane.ControlledQubitUnitary` is returned,
+    otherwise only controlled Pauli operations are used. If the operation has a non-unitary
+    generator but ``allow_nonunitary=False``, the operation ``op`` should have been decomposed
+    before, leading to a ``ValueError``.
+    """
+    gen, _ = op.generator
+    try:
+        if isinstance(gen, np.ndarray):
+            cgen = _OP_TO_CGEN[op.__class__]
+        else:
+            cgen = _GEN_TO_CGEN.get(gen, None)
+            if cgen is None:
+                cgen = _OP_TO_CGEN[op.__class__]
+        return cgen(wires=[aux_wire, *op.wires])
+
+    except KeyError as e:
+        if allow_nonunitary:
+            if (not isinstance(gen, np.ndarray)) and issubclass(gen, qml.operation.Observable):
+                gen = gen.matrix
+            return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
+        raise ValueError(
+            f"Generator for operation {op} not known and non-unitary operations "
+            "deactivated via allow_nonunitary=False."
+        ) from e
+
+
+def _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire):
+    r"""Obtain the tapes for the first term of all tensor entries
+    belonging to an off-diagonal block.
+
+    Args:
+        tape (pennylane.tape.QuantumTape): Tape that is being transformed
+        layer_i (list): The first layer of parametrized ops, of the format of
+            the layers generated by ``iterate_parametrized_layers``
+        layer_j (list): The second layer of parametrized ops
+        allow_nonunitary (bool): Whether non-unitary operations are allowed
+            in the circuit; passed to ``_get_gen_op``
+        aux_wire (object or pennylane.wires.Wires): Auxiliary wire on which to
+            control the controlled-generator operations
+
+    Returns:
+        list[pennylane.tape.QuantumTape]: Transformed tapes that compute the
+            first term of the metric tensor for the off-diagonal block belonging
+            to the input layers
+        list[tuple[int]]: 2-tuple indices assigning the tapes to metric tensor
+            entries
+    """
+
+    tapes = []
+    ids = []
+    # Exclude the backwards cone of layer_i from the backwards cone of layer_j
+    ops_between_cgens = [op for op in layer_j.pre_ops if op not in layer_i.pre_ops]
+
+    # Iterate over differentiated operation in first layer
+    for diffed_op_i, par_idx_i in zip(layer_i.ops, layer_i.param_inds):
+        gen_op_i = _get_gen_op(diffed_op_i, allow_nonunitary, aux_wire)
+
+        # Iterate over differentiated operation in second layer
+        # There will be one tape per pair of differentiated operations
+        for diffed_op_j, par_idx_j in zip(layer_j.ops, layer_j.param_inds):
+            gen_op_j = _get_gen_op(diffed_op_j, allow_nonunitary, aux_wire)
+
+            with tape.__class__() as new_tape:
+                # Initialize auxiliary wire
+                qml.Hadamard(wires=aux_wire)
+                # Apply backward cone of first layer
+                for op in layer_i.pre_ops:
+                    qml.apply(op)
+                # Controlled-generator operation of first diff'ed op
+                qml.apply(gen_op_i)
+                # Apply first layer and operations between layers
+                for op in ops_between_cgens:
+                    qml.apply(op)
+                # Controlled-generator operation of second diff'ed op
+                qml.apply(gen_op_j)
+                # Measure X on auxiliary wire
+                qml.expval(qml.PauliX(aux_wire))
+
+            tapes.append(new_tape)
+            # Memorize to which metric entry this tape belongs
+            ids.append((par_idx_i, par_idx_j))
+
+    return tapes, ids
+
+
+def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
+    r"""Generate the quantum tapes that execute the Hadamard tests
+    to compute the first term of off block-diagonal metric entries
+    and combine them with the covariance matrix-based block-diagonal tapes.
+
+    Args:
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
+            created by the transform. Only relevant if ``approx`` is ``None``
+            Should be set to ``True`` if possible to reduce cost.
+        aux_wire (int or .wires.Wires): Auxiliary wire to be used for
+            Hadamard tests. By default, a suitable wire is inferred from the number
+            of used wires in the original circuit.
+        device_wires (.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None`` .
+
+    Returns:
+        list[pennylane.tape.QuantumTape]: Tapes to evaluate the metric tensor
+        callable: processing function to obtain the metric tensor from the tape results
+    """
+    # Get tapes and processing function for the block-diagonal metric tensor,
+    # as well as the generator observables and generator coefficients for each diff'ed operation
+    diag_tapes, diag_proc_fn, obs_list, coeffs = _metric_tensor_cov_matrix(tape, diag_approx=False)
+
+    # Obtain layers of parametrized operations and account for the discrepancy between trainable
+    # and non-trainable parameter indices
+    graph = tape.graph
+    par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
+    layers = graph.iterate_parametrized_layers()
+    layers = [
+        LayerData(
+            layer.pre_ops,
+            layer.ops,
+            tuple(par_idx_to_trainable_idx[idx] for idx in layer[2]),
+            layer.post_ops,
+        )
+        for layer in layers
+    ]
+
+    # Get default for aux_wire
+    aux_wire = _get_aux_wire(aux_wire, tape, device_wires)
+
+    # Get all tapes for the first term of the metric tensor and memorize which
+    # entry they belong to
+    first_term_tapes = []
+    ids = []
+    block_sizes = []
+    for idx_i, layer_i in enumerate(layers):
+        block_sizes.append(len(layer_i.param_inds))
+
+        for layer_j in layers[idx_i + 1 :]:
+            _tapes, _ids = _get_first_term_tapes(tape, layer_i, layer_j, allow_nonunitary, aux_wire)
+            first_term_tapes.extend(_tapes)
+            ids.extend(_ids)
+
+    # Combine block-diagonal and off block-diagonal tapes
+    tapes = diag_tapes + first_term_tapes
+    # prepare off block-diagonal mask
+    mask = 1 - qml.math.block_diag([qml.math.ones((bsize, bsize)) for bsize in block_sizes])
+    # Required for slicing in processing_fn
+    num_diag_tapes = len(diag_tapes)
+
+    def processing_fn(results):
+        """Postprocessing function for the full metric tensor."""
+        nonlocal mask
+        # Split results
+        diag_res, off_diag_res = results[:num_diag_tapes], results[num_diag_tapes:]
+        # Get full block-diagonal tensor
+        diag_mt = diag_proc_fn(diag_res)
+
+        # Prepare the mask to match the used interface
+        mask = qml.math.convert_like(mask, diag_mt)
+
+        # Initialize off block-diagonal tensor using the stored ids
+        first_term = qml.math.zeros_like(diag_mt)
+        if ids:
+            off_diag_res = qml.math.stack(off_diag_res, 1)[0]
+            inv_ids = [_id[::-1] for _id in ids]
+            first_term = qml.math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
+            first_term = qml.math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
+
+        # Second terms of off block-diagonal metric tensor
+        expvals = qml.math.zeros_like(first_term[0])
+        idx = 0
+        for prob, obs in zip(diag_res, obs_list):
+            for o in obs:
+                l = qml.math.cast(o.eigvals, dtype=np.float64)
+                w = tape.wires.indices(o.wires)
+                p = qml.math.marginal_prob(prob, w)
+                expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
+                idx += 1
+
+        # Construct <\partial_i\psi|\psi><\psi|\partial_j\psi> and mask it
+        second_term = qml.math.tensordot(expvals, expvals, axes=0) * mask
+
+        # Subtract second term from first term
+        off_diag_mt = first_term - second_term
+
+        # Rescale first and second term
+        _coeffs = qml.math.hstack(coeffs)
+        scale = qml.math.convert_like(qml.math.tensordot(_coeffs, _coeffs, axes=0), results[0])
+        off_diag_mt = scale * off_diag_mt
+
+        # Combine block-diagonal and off block-diagonal
+        mt = off_diag_mt + diag_mt
+
+        return mt
+
+    return tapes, processing_fn
+
+
+def _get_aux_wire(aux_wire, tape, device_wires):
+    r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
+
+    Args:
+        aux_wire (object): Input auxiliary wire. Returned unmodified if not ``None``
+        tape (pennylane.tape.QuantumTape): Tape to infer the wire for
+        device_wires (.wires.Wires): Wires of the device that is going to be used for the
+            metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
+            is ``None`` .
+
+    Returns:
+        object: The auxiliary wire to be used. Equals ``aux_wire`` if it was not ``None`` ,
+        and an often reasonable choice else.
+    """
+    if aux_wire is not None:
+        if device_wires is None or aux_wire in device_wires:
+            return aux_wire
+
+    if device_wires is not None:
+        unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))
+        if not unused_wires:
+            raise qml.wires.WireError("No device wires are unused by the tape.")
+        return unused_wires[0]
+
+    _wires = tape.wires
+    for _aux in range(tape.num_wires):
+        if _aux not in _wires:
+            return _aux
+
+    return tape.num_wires

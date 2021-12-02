@@ -91,13 +91,13 @@ class MeasurementProcess:
     def __repr__(self):
         """Representation of this class."""
         if self.obs is None:
-            return "{}(wires={})".format(self.return_type.value, self.wires.tolist())
+            return f"{self.return_type.value}(wires={self.wires.tolist()})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         if self.obs.return_type is None:
-            return "{}({})".format(self.return_type.value, self.obs)
+            return f"{self.return_type.value}({self.obs})"
 
-        return "{}".format(self.obs)
+        return f"{self.obs}"
 
     def __copy__(self):
         cls = self.__class__
@@ -252,7 +252,7 @@ def expval(op):
     """
     if not isinstance(op, (Observable, qml.Hamiltonian)):
         raise qml.QuantumFunctionError(
-            "{} is not an observable: cannot be used with expval".format(op.name)
+            f"{op.name} is not an observable: cannot be used with expval"
         )
 
     return MeasurementProcess(Expectation, obs=op)
@@ -286,9 +286,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise qml.QuantumFunctionError(
-            "{} is not an observable: cannot be used with var".format(op.name)
-        )
+        raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
     return MeasurementProcess(Variance, obs=op)
 
@@ -364,7 +362,7 @@ def sample(op=None, wires=None):
     """
     if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
-            "{} is not an observable: cannot be used with sample".format(op.name)
+            f"{op.name} is not an observable: cannot be used with sample"
         )
 
     if wires is not None:
@@ -443,9 +441,7 @@ def probs(wires=None, op=None):
 
     if op is not None and not hasattr(op, "diagonalizing_gates"):
         raise qml.QuantumFunctionError(
-            "{} has not diagonalizing_gates attribute: cannot be used to rotate the probability".format(
-                op
-            )
+            f"{op} has not diagonalizing_gates attribute: cannot be used to rotate the probability"
         )
 
     if wires is not None:

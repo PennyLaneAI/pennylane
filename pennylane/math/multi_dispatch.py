@@ -252,6 +252,36 @@ def dot(tensor1, tensor2):
     return np.dot(x, y, like=interface)
 
 
+def tensordot(tensor1, tensor2, axes=None):
+    """Returns the tensor product of two tensors.
+    In general ``axes`` specifies either the set of axes for both
+    tensors that are contracted (with the first/second entry of ``axes``
+    giving all axis indices for the first/second tensor) or --- if it is
+    an integer --- the number of last/first axes of the first/second
+    tensor to contract over.
+    There are some non-obvious special cases:
+
+    * If both tensors are 0-dimensional, ``axes`` must be 0.
+      and a 0-dimensional scalar is returned containing the simple product.
+
+    * If both tensors are 1-dimensional and ``axes=0``, the outer product
+      is returned.
+
+    * Products between a non-0-dimensional and a 0-dimensional tensor are not
+      supported in all interfaces.
+
+    Args:
+        tensor1 (tensor_like): input tensor
+        tensor2 (tensor_like): input tensor
+        axes (int or list[list[int]]): Axes to contract over, see detail description.
+
+    Returns:
+        tensor_like: the tensor product of the two input tensors
+    """
+    interface = _multi_dispatch([tensor1, tensor2])
+    return np.tensordot(tensor1, tensor2, axes=axes, like=interface)
+
+
 def get_trainable_indices(values):
     """Returns a set containing the trainable indices of a sequence of
     values.
