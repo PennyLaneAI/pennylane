@@ -128,7 +128,7 @@ class FermionicSingleExcitation(Operation):
 
     def __init__(self, weight, wires=None, do_queue=True, id=None):
         if len(wires) < 2:
-            raise ValueError("expected at least two wires; got {}".format(len(wires)))
+            raise ValueError(f"expected at least two wires; got {len(wires)}")
 
         shape = qml.math.shape(weight)
         if shape != ():

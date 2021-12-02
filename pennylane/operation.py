@@ -466,7 +466,7 @@ class Operator(abc.ABC):
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
         if wires is None:
-            raise ValueError("Must specify the wires that {} acts on".format(self.name))
+            raise ValueError(f"Must specify the wires that {self.name} acts on")
 
         self._num_params = len(params)
         # Check if the expected number of parameters coincides with the one received.
@@ -474,8 +474,8 @@ class Operator(abc.ABC):
         # subclasses may overwrite it to define a fixed expected value.
         if len(params) != self.num_params:
             raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+                f"{self.name}: wrong number of parameters. "
+                f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
         if isinstance(wires, Wires):
@@ -490,8 +490,8 @@ class Operator(abc.ABC):
             and len(self._wires) != self.num_wires
         ):
             raise ValueError(
-                "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
+                f"{self.name}: wrong number of wires. "
+                f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
         self.data = list(params)  #: list[Any]: parameters of the operator
@@ -503,8 +503,8 @@ class Operator(abc.ABC):
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
-        return "{}(wires={})".format(self.name, self.wires.tolist())
+            return f"{self.name}({params}, wires={self.wires.tolist()})"
+        return f"{self.name}(wires={self.wires.tolist()})"
 
     @property
     def num_params(self):
@@ -1006,7 +1006,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+            return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -1214,7 +1214,7 @@ class Tensor(Observable):
             return s
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+            return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + s + ")"
 
@@ -1480,8 +1480,8 @@ class Tensor(Observable):
             if len(o.wires) > 1:
                 # todo: deal with multi-qubit operations that do not act on consecutive qubits
                 raise ValueError(
-                    "Can only compute sparse representation for tensors whose operations "
-                    "act on consecutive wires; got {}.".format(o)
+                    f"Can only compute sparse representation for tensors whose operations "
+                    f"act on consecutive wires; got {o}."
                 )
             # store the single-qubit ops according to the order of their wires
             idx = wires.index(o.wires)
@@ -1565,7 +1565,7 @@ class CV:
             raise ValueError("Only order-1 and order-2 arrays supported.")
 
         if U_dim != 1 + 2 * nw:
-            raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
+            raise ValueError(f"{self.name}: Heisenberg matrix is the wrong size {U_dim}.")
 
         if len(wires) == 0 or len(self.wires) == len(wires):
             # no expansion necessary (U is a full-system matrix in the correct order)
@@ -1573,9 +1573,7 @@ class CV:
 
         if not wires.contains_wires(self.wires):
             raise ValueError(
-                "{}: Some observable wires {} do not exist on this device with wires {}".format(
-                    self.name, self.wires, wires
-                )
+                f"{self.name}: Some observable wires {self.wires} do not exist on this device with wires {wires}"
             )
 
         # get the indices that the operation's wires have on the device
@@ -1749,9 +1747,7 @@ class CVOperation(CV, Operation):
         # not defined?
         if U is None:
             raise RuntimeError(
-                "{} is not a Gaussian operation, or is missing the _heisenberg_rep method.".format(
-                    self.name
-                )
+                f"{self.name} is not a Gaussian operation, or is missing the _heisenberg_rep method."
             )
 
         return self.heisenberg_expand(U, wires)
