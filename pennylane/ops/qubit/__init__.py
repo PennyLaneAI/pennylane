@@ -36,8 +36,10 @@ from .parametric_ops import *
 from .qchem_ops import *
 from .state_preparation import *
 from .hamiltonian import Hamiltonian
+from ..identity import Identity
 
 ops = {
+    "Identity",
     "Hadamard",
     "PauliX",
     "PauliY",
