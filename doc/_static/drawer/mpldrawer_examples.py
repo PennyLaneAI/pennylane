@@ -105,7 +105,7 @@ def SWAP(savefile="SWAP.png"):
     drawer.SWAP(0, (0, 1))
 
     swap_options = {"linewidth": 2, "color": "indigo"}
-    drawer.SWAP(2, (0, 1), options=swap_options)
+    drawer.SWAP(1, (0, 1), options=swap_options)
 
     plt.savefig(folder / savefile)
     plt.close()

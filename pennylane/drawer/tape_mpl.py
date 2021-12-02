@@ -181,7 +181,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
         ax.add_patch(box1)
 
-        ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+        ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                     arrowprops={'facecolor': 'black'}, fontsize=14)
 
     .. figure:: ../../_static/tape_mpl/postprocessing.png

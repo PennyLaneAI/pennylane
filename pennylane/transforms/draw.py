@@ -265,7 +265,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
             ax.add_patch(box1)
 
-            ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+            ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                         arrowprops={'facecolor': 'black'}, fontsize=14)
             fig.show()
 

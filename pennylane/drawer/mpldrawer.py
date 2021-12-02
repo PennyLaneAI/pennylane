@@ -778,6 +778,12 @@ class MPLDrawer:
 
         .. code-block:: python
 
+            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer.measure(layer=0, wires=0)
+
+            measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
+            measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
+            drawer.measure(layer=0, wires=1, box_options=measure_box, lines_options=measure_lines)
 
         .. figure:: ../../_static/drawer/measure.png
             :align: center
