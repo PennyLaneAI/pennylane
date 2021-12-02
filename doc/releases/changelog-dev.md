@@ -4,6 +4,55 @@
 
 <h3>New features since last release</h3>
 
+* The `metric_tensor` transform can now be used to compute the full
+  tensor, beyond the block diagonal approximation. 
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
+  This is performed using Hadamard tests, and requires an additional wire 
+  on the device to execute the circuits produced by the transform, 
+  as compared to the number of wires required by the original circuit.
+  The transform defaults to computing the full tensor, which can
+  be controlled by the `approx` keyword argument.
+  See the 
+  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  for more information and usage details.
+
+  As an example, consider the QNode
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(weights[2], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
+  ```
+
+  Then we can compute the (block) diagonal metric tensor as before, now using the
+  ``approx="block-diag"`` keyword:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
+  [[0.25       0.         0.        ]
+   [0.         0.24013262 0.        ]
+   [0.         0.         0.21846983]]
+  ```
+
+  Instead, we now can also compute the full metric tensor, using
+  Hadamard tests on the additional wire of the device:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit)(weights)
+  [[ 0.25        0.         -0.23300977]
+   [ 0.          0.24013262  0.01763859]
+   [-0.23300977  0.01763859  0.21846983]]
+  ```
+
 * Custom decompositions can now be applied to operations at the device level.
   [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
 
@@ -216,38 +265,55 @@
   operation on our quantum circuits for both qubit and CV devices.
   [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
-* For Hamiltonians whose eigenvalue frequency spectrum is known, `qml.gradients.get_shift_rule` is
-  a function that computes the generalized parameter shift rules for the time evolution.
+* Given an operator of the form :math:`U=e^{iHt}`, where :math:`H` has
+  commuting terms and known eigenvalues,
+  `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
+  the gradient of the expectation value :math:`f(t) = \langle 0|U(t)^\dagger \hat{O} U(t)|0\rangle` on
+  hardware.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
+  [(#1932)](https://github.com/PennyLaneAI/pennylane/pull/1932)
 
-  Given a Hamiltonian's frequency spectrum of `R` unique frequencies, `qml.gradients.get_shift_rule`
-  returns the parameter shift rules to compute expectation value gradients of the Hamiltonian's
-  time parameter using `2R` shifted cost function evaluations. This becomes cheaper than
-  the standard application of the chain rule and two-term shift rule when `R` is less than the
-  number of Pauli words in the Hamiltonian generator.
+  Given
 
-  For example, a four-term shift rule is generated for the frequency spectrum `[1, 2]`, which
-  corresponds to a generator eigenspectrum of e.g., `[-1, 0, 1]`:
+  .. math:: H = \sum_i a_i h_i,
+
+  where the eigenvalues of :math:`H` are known and all :math:`h_i` commute, we can compute
+  the *frequencies* (the unique positive differences of any two eigenvalues) using
+  `qml.gradients.eigvals_to_frequencies`.
+
+  `qml.gradients.generate_shift_rule` can then be used to compute the parameter
+  shift rules to compute :math:`f'(t)` using `2R` shifted cost function evaluations.
+  This becomes cheaper than the standard application of the chain rule and
+  two-term shift rule when `R` is less than the
+  number of Pauli words in the generator.
+
+  For example, consider the case where :math:`H` has eigenspectrum ``(-1, 0, 1)``:
 
   ```pycon
-  >>> frequencies = (1,2)
-  >>> grad_recipe = qml.gradients.get_shift_rule(frequencies)
-  >>> grad_recipe
-  ([[0.8535533905932737, 1, 0.7853981633974483], [-0.14644660940672624, 1, 2.356194490192345],
-    [-0.8535533905932737, 1, -0.7853981633974483], [0.14644660940672624, 1, -2.356194490192345]],)
+  >>> frequencies = qml.gradients.eigvals_to_frequencies((-1, 0, 1))
+  >>> frequencies
+  (1, 2)
+  >>> coeffs, shifts = qml.gradients.generate_shift_rule(frequencies)
+  >>> coeffs
+  array([ 0.85355339, -0.85355339, -0.14644661,  0.14644661])
+  >>> shifts
+  array([ 0.78539816, -0.78539816,  2.35619449, -2.35619449])
   ```
 
-  As we can see, `get_shift_rule` returns a tuple containing a list of four nested lists for the
-  four term parameter shift rule. Each term :math:`[c_i, a_i, s_i]` specifies a term in the
-  gradient reconstructed via parameter shifts as
+  As we can see, `generate_shift_rule` returns four coefficients :math:`c_i` and shifts
+  :math:`s_i` corresponding to a four term parameter shift rule. The gradient can then
+  be reconstructed via:
 
-  .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+  .. math:: \frac{\partial}{\partial\phi}f = \sum_{i} c_i f(\phi + s_i),
+
+  where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
+  for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
 
 * A circuit template for time evolution under a commuting Hamiltonian utilizing generalized
   parameter shift rules for cost function gradients is available as `qml.CommutingEvolution`.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
 
-  If the template is handed a frequency spectrum during its instantiation, then `get_shift_rule`
+  If the template is handed a frequency spectrum during its instantiation, then `generate_shift_rule`
   is internally called to obtain the general parameter shift rules with respect to
   `CommutingEvolution`'s :math:`t` parameter, otherwise the shift rule for a decomposition of
   `CommutingEvolution` will be used.
@@ -356,6 +422,19 @@
 
 <h3>Breaking changes</h3>
 
+* The default behaviour of the `qml.metric_tensor` transform has been modified:
+  By default, the full metric tensor is computed, leading to higher cost than the previous
+  default of computing the block diagonal only. At the same time, the Hadamard tests for
+  the full metric tensor require an additional wire on the device, so that 
+
+  ```pycon
+  >>> qml.metric_tensor(some_qnode)(weights)
+  ```
+
+  will revert back to the block diagonal restriction and raise a warning if the
+  used device does not have an additional wire.
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
 * The `circuit_drawer` module has been renamed `drawer`.
   [(#1949)](https://github.com/PennyLaneAI/pennylane/pull/1949)
 
@@ -397,6 +476,16 @@
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where differentiating a QNode with `qml.state` using the JAX
+  interface raised an error.
+  [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
+
+* Fixes a bug where the `ApproxTimeEvolution` template was not correctly
+  computing the operation wires from the input Hamiltonian. This did not
+  affect computation with the `ApproxTimeEvolution` template, but did
+  cause circuit drawing to fail.
+  [(#1952)](https://github.com/PennyLaneAI/pennylane/pull/1952)
 
 * Fixes a bug where the classical preprocessing Jacobian
   computed by `qml.transforms.classical_jacobian` with JAX
@@ -464,6 +553,8 @@
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
   [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
 
+* QueueContext was not empty when importing `pennylane`.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -471,4 +562,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
 David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
 Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
-Maria Schuld, Jay Soni, David Wierichs
+Maria Schuld, Jay Soni, David Wierichs, Antal Száva

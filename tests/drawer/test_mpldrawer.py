@@ -70,12 +70,14 @@ class TestInitialization:
 
         drawer = MPLDrawer(1, 1)
 
-        assert drawer._box_length == 0.8
+        assert drawer._box_length == 0.75
         assert drawer._circ_rad == 0.3
         assert drawer._ctrl_rad == 0.1
         assert drawer._octrl_rad == 0.1
         assert drawer._swap_dx == 0.2
         assert drawer._fontsize == 14
+        assert drawer._pad == 0.2
+        assert drawer._boxstyle == "round, pad=0.2"
         plt.close()
 
     def test_wires_formatting(self):
@@ -89,6 +91,19 @@ class TestInitialization:
             assert line.get_linewidth() == 3
             assert line.get_color() == rgba_red
 
+        plt.close()
+
+    def test_fontsize(self):
+        """Test fontsize can be get and set via property."""
+        drawer = MPLDrawer(1, 1)
+
+        assert drawer._fontsize == drawer.fontsize
+        assert drawer.fontsize == 14
+
+        drawer.fontsize = 10
+
+        assert drawer._fontsize == 10
+        assert drawer.fontsize == 10
         plt.close()
 
 
@@ -138,11 +153,12 @@ class TestBoxGate:
 
         drawer.box_gate(0, 0, "X")
 
-        rect = drawer.ax.patches[0]
+        box = drawer.ax.patches[0]
 
-        assert rect.get_xy() == (-0.4, -0.4)
-        assert rect.get_width() == 0.8
-        assert rect.get_height() == 0.8
+        assert box.get_x() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_width() == drawer._box_length - 2 * drawer._pad
+        assert box.get_height() == drawer._box_length - 2 * drawer._pad
 
         text = drawer.ax.texts[0]
 
@@ -156,11 +172,12 @@ class TestBoxGate:
         drawer = MPLDrawer(1, 3)
         drawer.box_gate(0, (0, 2), text="Tall Gate")
 
-        rect = drawer.ax.patches[0]
+        box = drawer.ax.patches[0]
 
-        assert rect.get_xy() == (-0.4, -0.4)
-        assert rect.get_width() == 0.8
-        assert rect.get_height() == 2.8
+        assert box.get_x() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_width() == drawer._box_length - 2 * drawer._pad
+        assert box.get_height() == 2 + drawer._box_length - 2 * drawer._pad
 
         text = drawer.ax.texts[0]
 
@@ -174,11 +191,12 @@ class TestBoxGate:
         drawer = MPLDrawer(1, 1)
         drawer.box_gate(0, 0, text="Wide Gate", extra_width=0.4)
 
-        rect = drawer.ax.patches[0]
+        box = drawer.ax.patches[0]
 
-        assert allclose(rect.get_xy(), (-0.6, -0.4))
-        assert rect.get_height() == 0.8
-        assert allclose(rect.get_width(), 1.2)
+        assert box.get_x() == -(drawer._box_length + 0.4) / 2.0 + drawer._pad
+        assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_width() == drawer._box_length + 0.4 - 2 * drawer._pad
+        assert box.get_height() == drawer._box_length - 2 * drawer._pad
 
         text = drawer.ax.texts[0]
 
@@ -417,6 +435,21 @@ class TestCTRL:
         assert to_rgba(plt.rcParams["lines.color"]) == to_rgba(target_circle.get_edgecolor())
         plt.close()
 
+    def test_CNOT_control_values(self):
+        """Tests the ``control_values`` keyword for CNOT."""
+
+        drawer = MPLDrawer(1, 3)
+
+        drawer.CNOT(0, (0, 1, 2), control_values=[True, False])
+
+        ctrl_circ1 = drawer.ax.patches[0]
+        ctrl_circ2 = drawer.ax.patches[1]
+
+        # first should be a closed in circle
+        assert ctrl_circ1.get_facecolor() == to_rgba(plt.rcParams["lines.color"])
+        # second facecolor should match the background
+        assert ctrl_circ2.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
+
     def test_CNOT_color(self):
         drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
@@ -494,16 +527,16 @@ class TestMeasure:
         drawer.measure(0, 0)
 
         box = drawer.ax.patches[0]
-        assert box.get_xy() == (-0.4, -0.4)
-        assert box.get_width() == 0.8
-        assert box.get_height() == 0.8
+        assert box.get_x() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
+        assert box.get_width() == drawer._box_length - 2 * drawer._pad
 
         arc = drawer.ax.patches[1]
-        assert arc.center == (0, 0.05)
+        assert arc.center == (0, drawer._box_length / 16)
         assert arc.theta1 == 180
         assert arc.theta2 == 0
-        assert allclose(arc.height, 0.44)
-        assert arc.width == 0.48
+        assert allclose(arc.height, 0.55 * drawer._box_length)
+        assert arc.width == 0.6 * drawer._box_length
 
         arrow = drawer.ax.patches[2]
         assert isinstance(arrow, FancyArrow)

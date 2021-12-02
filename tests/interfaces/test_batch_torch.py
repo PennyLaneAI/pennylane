@@ -278,7 +278,7 @@ class TestCaching:
 
         expected_runs_ideal = 1  # forward pass
         expected_runs_ideal += 2 * N  # Jacobian
-        expected_runs_ideal += 2 * N + 1  # Hessian diagonal
+        expected_runs_ideal += N + 1  # Hessian diagonal
         expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
