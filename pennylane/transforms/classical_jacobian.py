@@ -112,9 +112,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array``
          - ``tuple(array)``
 
-    [1] If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-    arrays are stacked into one ``array``. If there only is one QNode argument, the tuple is
-    unpacked as well. Both is due to the behaviour of ``qml.jacobian``.
+    [1] If all QNode arguments are of the same shape, the tuple is unpacked and the
+    Jacobian arrays are stacked into one ``array``. If there only is one QNode argument,
+    the tuple is unpacked as well. Both is based on the behaviour of ``qml.jacobian``.
 
     **Example with ``argnum``**
 
