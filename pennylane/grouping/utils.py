@@ -73,9 +73,7 @@ def is_pauli_word(observable):
     """
 
     if not isinstance(observable, Observable):
-        raise TypeError(
-            f"Expected {Observable} instance, instead got {type(observable)} instance."
-        )
+        raise TypeError(f"Expected {Observable} instance, instead got {type(observable)} instance.")
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
@@ -115,9 +113,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     """
 
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
-        raise TypeError(
-            f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}."
-        )
+        raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
 
     paulis_with_identity = (PauliX, PauliY, PauliZ, Identity)
 
@@ -218,9 +214,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     """
 
     if not is_pauli_word(pauli_word):
-        raise TypeError(
-            f"Expected a Pauli word Observable instance, instead got {pauli_word}."
-        )
+        raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
 
     if wire_map is None:
         num_wires = len(pauli_word.wires)

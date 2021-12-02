@@ -70,9 +70,7 @@ def get_shape(inpt):
         try:
             shape = inpt.shape
         except AttributeError as e:
-            raise ValueError(
-                f"could not extract shape of object of type {type(inpt)}"
-            ) from e
+            raise ValueError(f"could not extract shape of object of type {type(inpt)}") from e
 
         # turn result into tuple to avoid type TensorShape
         shape = tuple(shape)

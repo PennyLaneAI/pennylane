@@ -150,12 +150,14 @@ class Device(abc.ABC):
     def __str__(self):
         """Verbose string representation."""
         package = self.__module__.split(".")[0]
-        return f"{self.name}\nShort name: {self.short_name}\n" \
-               f"Package: {package}\n" \
-               f"Plugin version: {self.version}\n" \
-               f"Author: {self.author}\n" \
-               f"Wires: {self.num_wires}\n" \
-               f"Shots: {self.shots}"
+        return (
+            f"{self.name}\nShort name: {self.short_name}\n"
+            f"Package: {package}\n"
+            f"Plugin version: {self.version}\n"
+            f"Author: {self.author}\n"
+            f"Wires: {self.num_wires}\n"
+            f"Shots: {self.shots}"
+        )
 
     @property
     @abc.abstractmethod

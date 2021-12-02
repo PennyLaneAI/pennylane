@@ -286,9 +286,7 @@ def var(op):
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
     if not isinstance(op, Observable):
-        raise qml.QuantumFunctionError(
-            f"{op.name} is not an observable: cannot be used with var"
-        )
+        raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
     return MeasurementProcess(Variance, obs=op)
 

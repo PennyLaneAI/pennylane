@@ -234,8 +234,7 @@ class ParticleConservingU1(Operation):
 
         if len(wires) < 2:
             raise ValueError(
-                f"Expected the number of qubits to be greater than one; "
-                f"got wires {wires}"
+                f"Expected the number of qubits to be greater than one; " f"got wires {wires}"
             )
 
         shape = qml.math.shape(weights)
