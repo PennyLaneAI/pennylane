@@ -18,8 +18,8 @@ NumPy Interface
 ^^^^^^^^^^^^^^^
 
 When using the standard NumPy interface, PennyLane offers some built-in optimizers.
-Some of these are specific to quantum optimization, such as the :mod:`~.QNGOptimizer`, :mod:`~.LieAlgebraOptimizer`
-:mod:`~.RotosolveOptimizer`, :mod:`~.RotoselectOptimizer`, and :mod:`~.ShotAdaptiveOptimizer`.
+Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
+:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, and :class:`~.ShotAdaptiveOptimizer`.
 
 :html:`<div class="summary-table">`
 

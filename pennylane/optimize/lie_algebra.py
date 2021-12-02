@@ -177,7 +177,7 @@ class LieAlgebraOptimizer:
             ``qml.Hamiltonian`` that consists only of Pauli words.
         exact (bool): Flag that indicates wether we approximate the Riemannian gradient with a
             Trotterization or calculate the exact evolution via a matrix exponential. The latter is
-            not quantum friendly and can only be done in simulation.
+            not hardware friendly and can only be done in simulation.
 
     **Examples**
 
@@ -239,7 +239,7 @@ class LieAlgebraOptimizer:
 
         if self.nqubits > 4:
             warnings.warn(
-                "The exact Riemannian gradient is exponentially expensive in the number of qubits,"
+                "The exact Riemannian gradient is exponentially expensive in the number of qubits, "
                 f"optimizing a {self.nqubits} qubit circuit may be slow.",
                 UserWarning,
             )
