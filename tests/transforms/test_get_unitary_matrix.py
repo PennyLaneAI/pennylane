@@ -572,7 +572,7 @@ def test_holomorphic_differentiation():
 
     def complex_fn(theta):
         U = qml.transforms.get_unitary_matrix(circuit)(theta)
-        return U[0,0]
+        return U[1,1]
 
     analytic_diff = jax.grad(complex_fn, holomorphic=True)(1.0 + 0.0j)
     finite_difference_diff = (complex_fn(1.01) - complex_fn(0.99)) / 0.02
