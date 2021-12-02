@@ -192,7 +192,7 @@ def check_number_of_layers(list_of_weights):
     if n_different_first_dims > 1:
         raise ValueError(
             f"The first dimension of all parameters needs to be the number of layers in the "
-            f"template; got differing first dimensions: {*different_first_dims}."
+            f"template; got differing first dimensions: {different_first_dims}."
         )
 
     return first_dimensions[0]

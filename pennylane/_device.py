@@ -145,7 +145,7 @@ class Device(abc.ABC):
 
     def __repr__(self):
         """String representation."""
-        return f"<{self.__class__.__name__} device (wires={self.num_wires}, shots={self.shots}) at {hex(id(self)}>"
+        return f"<{self.__class__.__name__} device (wires={self.num_wires}, shots={self.shots}) at {hex(id(self))}>"
 
     def __str__(self):
         """Verbose string representation."""
