@@ -561,3 +561,21 @@ def test_get_unitary_matrix_autograd_differentiable(v):
     assert isinstance(matrix, qml.numpy.tensor)
     assert np.allclose(l, 2 * np.cos(v / 2))
     assert np.allclose(dl, -np.sin(v / 2))
+
+def test_holomorphic_differentiation():
+
+    jax = pytest.importorskip("jax")
+
+    def circuit(theta):
+        qml.RX(theta, wires=0)
+        return qml.PauliZ(wires=0)
+
+    def complex_fn(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return U[0,0]
+
+    analytic_diff = jax.grad(complex_fn, holomorphic=True)(1.0 + 0.0j)
+
+    finite_difference_diff = (complex_fn(1.01) - complex_fn(0.99)) / 0.02
+
+    assert jax.numpy.abs(analytic_diff - finite_difference_diff) < 0.01
