@@ -38,9 +38,7 @@ def check_wires(wires):
     if isinstance(wires, int):
         wires = [wires]
 
-    msg = "wires must be a positive integer or a " "list of positive integers; got {}.".format(
-        wires
-    )
+    msg = f"wires must be a positive integer or a list of positive integers; got {wires}."
     if not isinstance(wires, Iterable):
         raise ValueError(msg)
     if not all([isinstance(w, int) for w in wires]):
@@ -72,9 +70,7 @@ def get_shape(inpt):
         try:
             shape = inpt.shape
         except AttributeError as e:
-            raise ValueError(
-                "could not extract shape of object of type {}".format(type(inpt))
-            ) from e
+            raise ValueError(f"could not extract shape of object of type {type(inpt)}") from e
 
         # turn result into tuple to avoid type TensorShape
         shape = tuple(shape)
@@ -193,8 +189,8 @@ def check_number_of_layers(list_of_weights):
 
     if n_different_first_dims > 1:
         raise ValueError(
-            "The first dimension of all parameters needs to be the number of layers in the "
-            "template; got differing first dimensions: {}.".format(*different_first_dims)
+            f"The first dimension of all parameters needs to be the number of layers in the "
+            f"template; got differing first dimensions: {different_first_dims}."
         )
 
     return first_dimensions[0]

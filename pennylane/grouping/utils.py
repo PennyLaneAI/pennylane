@@ -73,9 +73,7 @@ def is_pauli_word(observable):
     """
 
     if not isinstance(observable, Observable):
-        raise TypeError(
-            "Expected {} instance, instead got {} instance.".format(Observable, type(observable))
-        )
+        raise TypeError(f"Expected {Observable} instance, instead got {type(observable)} instance.")
 
     pauli_word_names = ["Identity", "PauliX", "PauliY", "PauliZ"]
     if isinstance(observable, Tensor):
@@ -115,9 +113,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     """
 
     if not (is_pauli_word(pauli_1) and is_pauli_word(pauli_2)):
-        raise TypeError(
-            "Expected Pauli word observables, instead got {} and {}.".format(pauli_1, pauli_2)
-        )
+        raise TypeError(f"Expected Pauli word observables, instead got {pauli_1} and {pauli_2}.")
 
     paulis_with_identity = (PauliX, PauliY, PauliZ, Identity)
 
@@ -218,9 +214,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     """
 
     if not is_pauli_word(pauli_word):
-        raise TypeError(
-            "Expected a Pauli word Observable instance, instead got {}.".format(pauli_word)
-        )
+        raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
 
     if wire_map is None:
         num_wires = len(pauli_word.wires)
@@ -231,8 +225,8 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
         n_qubits = n_qubits_min
     elif n_qubits < n_qubits_min:
         raise ValueError(
-            "n_qubits must support the highest mapped wire index {},"
-            " instead got n_qubits={}.".format(n_qubits_min, n_qubits)
+            f"n_qubits must support the highest mapped wire index {n_qubits_min},"
+            f" instead got n_qubits={n_qubits}."
         )
 
     pauli_wires = pauli_word.wires.map(wire_map).tolist()
@@ -306,16 +300,12 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
 
     if len(binary_vector) % 2 != 0:
         raise ValueError(
-            "Length of binary_vector must be even, instead got vector of shape {}.".format(
-                np.shape(binary_vector)
-            )
+            f"Length of binary_vector must be even, instead got vector of shape {np.shape(binary_vector)}."
         )
 
     if not np.array_equal(binary_vector, binary_vector.astype(bool)):
         raise ValueError(
-            "Input vector must have strictly binary components, instead got {}.".format(
-                binary_vector
-            )
+            f"Input vector must have strictly binary components, instead got {binary_vector}."
         )
 
     n_qubits = len(binary_vector) // 2
@@ -323,8 +313,8 @@ def binary_to_pauli(binary_vector, wire_map=None):  # pylint: disable=too-many-b
     if wire_map is not None:
         if set(wire_map.values()) != set(range(n_qubits)):
             raise ValueError(
-                "The values of wire_map must be integers 0 to N, for 2N-dimensional binary vector."
-                " Instead got wire_map values: {}".format(wire_map.values())
+                f"The values of wire_map must be integers 0 to N, for 2N-dimensional binary vector."
+                f" Instead got wire_map values: {wire_map.values()}"
             )
         label_map = {explicit_index: wire_label for wire_label, explicit_index in wire_map.items()}
     else:
@@ -620,16 +610,13 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
 
     if len(pauli_vec_1) != len(pauli_vec_2):
         raise ValueError(
-            "Vectors a and b must be the same dimension, instead got shapes {} and {}.".format(
-                np.shape(pauli_vec_1), np.shape(pauli_vec_2)
-            )
+            f"Vectors a and b must be the same dimension, instead got "
+            f"shapes {np.shape(pauli_vec_1)} and {np.shape(pauli_vec_2)}."
         )
 
     if len(pauli_vec_1) % 2 != 0:
         raise ValueError(
-            "Symplectic vector-space must have even dimension, instead got vectors of shape {}.".format(
-                np.shape(pauli_vec_1)
-            )
+            f"Symplectic vector-space must have even dimension, instead got vectors of shape {np.shape(pauli_vec_1)}."
         )
 
     if not (
@@ -637,9 +624,7 @@ def is_qwc(pauli_vec_1, pauli_vec_2):
         and np.array_equal(pauli_vec_2, pauli_vec_2.astype(bool))
     ):
         raise ValueError(
-            "Vectors a and b must have strictly binary components, instead got {} and {}".format(
-                pauli_vec_1, pauli_vec_2
-            )
+            f"Vectors a and b must have strictly binary components, instead got {pauli_vec_1} and {pauli_vec_2}"
         )
 
     n_qubits = int(len(pauli_vec_1) / 2)
@@ -705,8 +690,8 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
         n_qubits = n_qubits_min
     elif n_qubits < n_qubits_min:
         raise ValueError(
-            "n_qubits must support the highest mapped wire index {},"
-            " instead got n_qubits={}.".format(n_qubits_min, n_qubits)
+            f"n_qubits must support the highest mapped wire index {n_qubits_min},"
+            f" instead got n_qubits={n_qubits}."
         )
 
     binary_mat = np.zeros((m_cols, 2 * n_qubits))
@@ -752,7 +737,7 @@ def qwc_complement_adj_matrix(binary_observables):
         binary_observables = np.asarray(binary_observables)
 
     if not np.array_equal(binary_observables, binary_observables.astype(bool)):
-        raise ValueError("Expected a binary array, instead got {}".format(binary_observables))
+        raise ValueError(f"Expected a binary array, instead got {binary_observables}")
 
     m_terms = np.shape(binary_observables)[0]
     adj = np.zeros((m_terms, m_terms))
