@@ -350,6 +350,9 @@
 * The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
   [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
 
+* The `undo_swaps` transformation has been created to automatically remove all swaps of a circuit.
+  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+
 <h3>Improvements</h3>
 
 * Change all instances of `"{}".format(..)` to `f"{..}"`.
