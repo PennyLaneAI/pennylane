@@ -41,9 +41,9 @@ def check_wires(wires):
     msg = f"wires must be a positive integer or a list of positive integers; got {wires}."
     if not isinstance(wires, Iterable):
         raise ValueError(msg)
-    if not all([isinstance(w, int) for w in wires]):
+    if not all(isinstance(w, int) for w in wires):
         raise ValueError(msg)
-    if any([w < 0 for w in wires]):
+    if any(w < 0 for w in wires):
         raise ValueError(msg)
     return wires
 
@@ -158,7 +158,7 @@ def check_type(element, types, msg):
          msg (str): error message to display
     """
 
-    if not any([isinstance(element, t) for t in types]):
+    if not any(isinstance(element, t) for t in types):
         raise ValueError(msg)
 
 
