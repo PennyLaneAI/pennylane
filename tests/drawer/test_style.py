@@ -72,8 +72,9 @@ def test_black_white_style_dark():
 
     plt.style.use("default")
 
+
 def test_style_none_error():
     """Tests proper error raised when style doesn't exist."""
 
-    with pytest.raises(TypeError, "style 'none' provided to ``qml.drawer.use_style``"):
-        qml.drawer.use_style('none')
+    with pytest.raises(TypeError, match="style 'none' provided to ``qml.drawer.use_style``"):
+        qml.drawer.use_style("none")
