@@ -342,7 +342,6 @@
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
   [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
 
-
   - Internally, if multiple circuits are generated for simultaneous execution, they
     will be packaged into a single job for execution on the device. This can lead to
     significant performance improvement when executing the QNode on remote
