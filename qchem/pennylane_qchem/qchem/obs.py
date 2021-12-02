@@ -192,14 +192,10 @@ def spin2(electrons, orbitals, mapping="jordan_wigner", wires=None):
     """
 
     if electrons <= 0:
-        raise ValueError(
-            "'electrons' must be greater than 0; got for 'electrons' {}".format(electrons)
-        )
+        raise ValueError(f"'electrons' must be greater than 0; got for 'electrons' {electrons}")
 
     if orbitals <= 0:
-        raise ValueError(
-            "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
-        )
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     sz = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
 
@@ -296,8 +292,8 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
-            "The '{}' transformation is not available. \n "
-            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
+            f"The '{mapping}' transformation is not available. \n "
+            f"Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'."
         )
 
     # Initialize the FermionOperator
@@ -305,9 +301,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     for ops in fermion_ops:
         if not isinstance(ops, openfermion.ops.FermionOperator):
             raise TypeError(
-                "Elements in the lists are expected to be of type 'FermionOperator'; got {}".format(
-                    type(ops)
-                )
+                f"Elements in the lists are expected to be of type 'FermionOperator'; got {type(ops)}"
             )
         mb_obs += ops
 
@@ -362,9 +356,7 @@ def spin_z(orbitals, mapping="jordan_wigner", wires=None):
     """
 
     if orbitals <= 0:
-        raise ValueError(
-            "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
-        )
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     r = np.arange(orbitals)
     sz_orb = np.where(np.arange(orbitals) % 2 == 0, 0.5, -0.5)
@@ -426,9 +418,7 @@ def particle_number(orbitals, mapping="jordan_wigner", wires=None):
     """
 
     if orbitals <= 0:
-        raise ValueError(
-            "'orbitals' must be greater than 0; got for 'orbitals' {}".format(orbitals)
-        )
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
 
     r = np.arange(orbitals)
     table = np.vstack([r, r, np.ones([orbitals])]).T
@@ -502,9 +492,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     if matrix_elements.ndim != 2:
         raise ValueError(
-            "'matrix_elements' must be a 2D array; got matrix_elements.ndim = {}".format(
-                matrix_elements.ndim
-            )
+            f"'matrix_elements' must be a 2D array; got matrix_elements.ndim = {matrix_elements.ndim}"
         )
 
     if not core:
@@ -512,9 +500,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     else:
         if any(i > orbitals - 1 or i < 0 for i in core):
             raise ValueError(
-                "Indices of core orbitals must be between 0 and {}; got core = {}".format(
-                    orbitals - 1, core
-                )
+                f"Indices of core orbitals must be between 0 and {orbitals - 1}; got core = {core}"
             )
 
         # Compute contribution due to core orbitals
@@ -528,9 +514,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     if any(i > orbitals - 1 or i < 0 for i in active):
         raise ValueError(
-            "Indices of active orbitals must be between 0 and {}; got active = {}".format(
-                orbitals - 1, active
-            )
+            f"Indices of active orbitals must be between 0 and {orbitals - 1}; got active = {active}"
         )
 
     # Indices of the matrix elements with absolute values >= cutoff
@@ -673,9 +657,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     if matrix_elements.ndim != 4:
         raise ValueError(
-            "'matrix_elements' must be a 4D array; got 'matrix_elements.ndim = ' {}".format(
-                matrix_elements.ndim
-            )
+            f"'matrix_elements' must be a 4D array; got 'matrix_elements.ndim = ' {matrix_elements.ndim}"
         )
 
     if not core:
@@ -683,9 +665,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     else:
         if any(i > orbitals - 1 or i < 0 for i in core):
             raise ValueError(
-                "Indices of core orbitals must be between 0 and {}; got core = {}".format(
-                    orbitals - 1, core
-                )
+                f"Indices of core orbitals must be between 0 and {orbitals - 1}; got core = {core}"
             )
 
         # Compute the contribution of core orbitals
@@ -706,9 +686,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     if any(i > orbitals - 1 or i < 0 for i in active):
         raise ValueError(
-            "Indices of active orbitals must be between 0 and {}; got active = {}".format(
-                orbitals - 1, active
-            )
+            f"Indices of active orbitals must be between 0 and {orbitals - 1}; got active = {active}"
         )
 
     # Indices of the matrix elements with absolute values >= cutoff
@@ -905,15 +883,15 @@ def dipole(
 
     if mult != 1:
         raise ValueError(
-            "Currently, this functionality is constrained to Hartree-Fock states with spin multiplicity = 1;"
-            " got multiplicity 2S+1 =  {}".format(mult)
+            f"Currently, this functionality is constrained to Hartree-Fock states with spin multiplicity = 1;"
+            f" got multiplicity 2S+1 =  {mult}"
         )
 
     for i in symbols:
         if i not in atomic_numbers:
             raise ValueError(
-                "Currently, only first- or second-row elements of the periodic table are supported;"
-                " got element {}".format(i)
+                f"Currently, only first- or second-row elements of the periodic table are supported;"
+                f" got element {i}"
             )
 
     hf_file = qml.qchem.meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)

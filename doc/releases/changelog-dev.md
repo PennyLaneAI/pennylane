@@ -352,6 +352,9 @@
 
 <h3>Improvements</h3>
 
+* Change all instances of `"{}".format(..)` to `f"{..}"`.
+  [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
+
 * Tests do not loop over automatically imported and instantiated operations any more,
 
 * The QNode has been re-written to support batch execution across the board,
@@ -418,6 +421,9 @@
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
+* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
+   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
+
 <h3>Breaking changes</h3>
 
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
@@ -474,6 +480,10 @@
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where differentiating a QNode with `qml.state` using the JAX
+  interface raised an error.
+  [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
 
 * Fixes a bug where the `ApproxTimeEvolution` template was not correctly
   computing the operation wires from the input Hamiltonian. This did not
@@ -556,4 +566,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
 David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
 Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
-Maria Schuld, Jay Soni, David Wierichs
+Maria Schuld, Jay Soni, David Wierichs, Antal Száva
