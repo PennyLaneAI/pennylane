@@ -18,7 +18,8 @@ Contains the drawing function.
 """
 from functools import wraps
 
-import pennylane as qml
+from pennylane.drawer import tape_mpl
+from pennylane.wires import Wires
 
 
 def draw(
@@ -117,7 +118,7 @@ def draw(
             qnode.expansion_strategy = original_expansion_strategy
 
         _wire_order = wire_order or qnode.device.wires
-        _wire_order = qml.wires.Wires(_wire_order)
+        _wire_order = Wires(_wire_order)
 
         if show_all_wires and len(_wire_order) < qnode.device.num_wires:
             raise ValueError(
@@ -162,6 +163,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        fontsize (float or str): fontsize for text. Valid strings are
+            ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
+            Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
 
@@ -329,7 +333,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         _wire_order = wire_order or qnode.device.wires
 
-        return qml.circuit_drawer.tape_mpl(
+        return tape_mpl(
             qnode.qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
