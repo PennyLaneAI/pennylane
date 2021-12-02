@@ -440,5 +440,5 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
 
     raise ValueError(
         f"At present, finite-difference approximations are supported up to second-order."
-        " The value of 'N' can be 1 or 2; got {N}"
+        f" The value of 'N' can be 1 or 2; got {N}"
     )
