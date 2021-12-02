@@ -517,9 +517,7 @@ class QNode:
             if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(
-                        "Operator {} must act on all wires".format(obj.name)
-                    )
+                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
