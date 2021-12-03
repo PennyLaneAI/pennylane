@@ -512,6 +512,10 @@
 
 <h3>Deprecations</h3>
 
+* The init module, which contains functions to generate random parameters for 
+  templates, has been removed. Instead, the templates provide a `shape()` method.
+  [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where differentiating a QNode with `qml.state` using the JAX
