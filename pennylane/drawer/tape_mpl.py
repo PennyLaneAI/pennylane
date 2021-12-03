@@ -191,36 +191,39 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     **Formatting:**
 
-    You can globally control the style with ``plt.rcParams`` and styles, see the
-    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    If we customize ``plt.rcParams``, we get a
-    different style:
+    PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+    Any available string can then be passed to ``qml.drawer.use_style``.
 
     .. code-block:: python
 
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
-        plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
-
+        qml.drawer.use_style('black_white')
         fig, ax = tape_mpl(tape)
 
-    .. figure:: ../../_static/tape_mpl/rcparams.png
+    .. figure:: ../../_static/tape_mpl/black_white_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
 
-    Instead of manually customizing everything, you can choose one of
-    the provided styles. You can see available styles with ``plt.style.available``.
-    We can set the ``'Solarize_Light2'`` style and instead get:
+    You can also control the appearance with matplotlib's provided tools, see the
+    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    For example, we can customize ``plt.rcParams``:
 
     .. code-block:: python
 
-        with plt.style.context("Solarize_Light2):
-            fig, ax = tape_mpl(tape)
+        plt.rcParams['patch.facecolor'] = 'mistyrose'
+        plt.rcParams['patch.edgecolor'] = 'maroon'
+        plt.rcParams['text.color'] = 'maroon'
+        plt.rcParams['font.weight'] = 'bold'
+        plt.rcParams['patch.linewidth'] = 4
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'indigo'
+        plt.rcParams['lines.linewidth'] = 5
+        plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-    .. figure:: ../../_static/tape_mpl/Solarize_Light2.png
+        fig, ax = tape_mpl(tape)
+
+    .. figure:: ../../_static/tape_mpl/rcparams.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
