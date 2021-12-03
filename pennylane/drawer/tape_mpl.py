@@ -196,7 +196,6 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     .. code-block:: python
 
         qml.drawer.use_style('black_white')
-
         fig, ax = tape_mpl(tape)
 
     .. figure:: ../../_static/tape_mpl/black_white_style.png
