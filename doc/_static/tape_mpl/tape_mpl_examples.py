@@ -59,24 +59,31 @@ def show_all_wires(tape):
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
 
-def mpl_style(tape):
-
-    with plt.style.context("Solarize_Light2"):
-        fig, ax = tape_mpl(tape)
-        plt.savefig(folder/"Solarize_Light2.png")
-        plt.close()
-
 def rcparams(tape):
 
-    plt.rcParams['patch.facecolor'] = 'white'
-    plt.rcParams['patch.edgecolor'] = 'black'
-    plt.rcParams['patch.linewidth'] = 2
+    plt.rcParams['patch.facecolor'] = 'mistyrose'
+    plt.rcParams['patch.edgecolor'] = 'maroon'
+    plt.rcParams['text.color'] = 'maroon'
+    plt.rcParams['font.weight'] = 'bold'
+    plt.rcParams['patch.linewidth'] = 4
     plt.rcParams['patch.force_edgecolor'] = True
-    plt.rcParams['lines.color'] = 'black'
+    plt.rcParams['lines.color'] = 'indigo'
+    plt.rcParams['lines.linewidth'] = 5
+    plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
     fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "rcparams.png")
+    plt.close()
+    plt.style.use('default')
+
+def use_style(tape):
+
+    qml.drawer.use_style('black_white')
+
+    fig, ax = tape_mpl(tape)
+
+    plt.savefig(folder / "black_white_style.png")
     plt.close()
     plt.style.use('default')
 
@@ -118,7 +125,7 @@ if __name__ == "__main__":
     decimals()
     wire_order(tape)
     show_all_wires(tape)
-    mpl_style(tape)
+    use_style(tape)
     rcparams(tape)
     wires_and_labels(tape)
     postprocessing(tape)
