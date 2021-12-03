@@ -53,6 +53,9 @@ class AmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, gamma, wires):
+        super().__init__(gamma, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -116,6 +119,9 @@ class GeneralizedAmplitudeDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, gamma, p, wires):
+        super().__init__(gamma, p, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 2
@@ -170,6 +176,9 @@ class PhaseDamping(Channel):
     """
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, gamma, wires):
+        super().__init__(gamma, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -233,6 +242,9 @@ class DepolarizingChannel(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -283,6 +295,9 @@ class BitFlip(Channel):
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -352,6 +367,9 @@ class ResetError(Channel):
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, p0, p1, wires):
+        super().__init__(p0, p1, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 2
@@ -410,6 +428,9 @@ class PhaseFlip(Channel):
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
+    def __init__(self, p, wires):
+        super().__init__(p, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -446,9 +467,8 @@ class QubitChannel(Channel):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-        K_list = params[0]
+    def __init__(self, K_list, wires=None, do_queue=True):
+        super().__init__(K_list, wires=wires, do_queue=do_queue)
 
         # check all Kraus matrices are square matrices
         if not all(K.shape[0] == K.shape[1] for K in K_list):
@@ -561,6 +581,9 @@ class ThermalRelaxationError(Channel):
     """
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, pe, t1, t2, tq, wires):
+        super().__init__(pe, t1, t2, tq, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):

@@ -54,6 +54,9 @@ class Hermitian(Observable):
     grad_method = "F"
     _eigs = {}
 
+    def __init__(self, A, wires):
+        super().__init__(A, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -144,6 +147,9 @@ class SparseHamiltonian(Observable):
     """
     num_wires = AllWires
     grad_method = None
+
+    def __init__(self, H):
+        super().__init__(H, do_queue=True, id=None)
 
     @property
     def num_params(self):

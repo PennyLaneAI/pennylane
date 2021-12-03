@@ -95,9 +95,13 @@ class Rotation(CVOperation):
 
     Args:
         phi (float): the rotation angle
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -150,6 +154,9 @@ class Squeezing(CVOperation):
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    def __init__(self, r, phi, wires):
+        super().__init__(r, phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -205,6 +212,9 @@ class Displacement(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
+    def __init__(self, a, phi, wires):
+        super().__init__(a, phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 2
@@ -259,6 +269,9 @@ class Beamsplitter(CVOperation):
     """
     num_wires = 2
     grad_method = "A"
+
+    def __init__(self, theta, phi, wires):
+        super().__init__(theta, phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -326,6 +339,9 @@ class TwoModeSqueezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
+    def __init__(self, r, phi, wires):
+        super().__init__(r, phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 2
@@ -387,6 +403,9 @@ class QuadraticPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
+    def __init__(self, s, wires):
+        super().__init__(s, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -438,6 +457,9 @@ class ControlledAddition(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    def __init__(self, s, wires):
+        super().__init__(s, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -495,6 +517,9 @@ class ControlledPhase(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
 
+    def __init__(self, s, wires):
+        super().__init__(s, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -533,6 +558,9 @@ class Kerr(CVOperation):
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, kappa, wires):
+        super().__init__(kappa, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -561,6 +589,9 @@ class CrossKerr(CVOperation):
     num_wires = 2
     grad_method = "F"
 
+    def __init__(self, kappa, wires):
+        super().__init__(kappa, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -588,6 +619,9 @@ class CubicPhase(CVOperation):
     """
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, gamma, wires):
+        super().__init__(gamma, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -637,6 +671,9 @@ class InterferometerUnitary(CVOperation):
     num_wires = AnyWires
     grad_method = None
     grad_recipe = None
+
+    def __init__(self, U, wires):
+        super().__init__(U, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -690,6 +727,9 @@ class CoherentState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, a, phi, wires):
+        super().__init__(a, phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 2
@@ -712,6 +752,9 @@ class SqueezedState(CVOperation):
     """
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, r, phi, wires):
+        super().__init__(r, phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -746,6 +789,9 @@ class DisplacedSqueezedState(CVOperation):
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, a, phi_a, r, phi_r, wires):
+        super().__init__(a, phi_a, r, phi_r, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 4
@@ -767,6 +813,9 @@ class ThermalState(CVOperation):
     """
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, nbar, wires):
+        super().__init__(nbar, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -795,6 +844,9 @@ class GaussianState(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
+    def __init__(self, V, r, wires):
+        super().__init__(V, r, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 2
@@ -819,6 +871,9 @@ class FockState(CVOperation):
     """
     num_wires = 1
     grad_method = None
+
+    def __init__(self, n, wires):
+        super().__init__(n, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -862,6 +917,7 @@ class FockStateVector(CVOperation):
     Args:
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
+        wires (Sequence[int] or int): the wire the operation acts on
 
     .. UsageDetails::
 
@@ -906,6 +962,9 @@ class FockStateVector(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
+    def __init__(self, state, wires):
+        super().__init__(state, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -946,9 +1005,13 @@ class FockDensityMatrix(CVOperation):
     Args:
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = AnyWires
     grad_method = "F"
+
+    def __init__(self, state, wires):
+        super().__init__(state, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -983,6 +1046,9 @@ class CatState(CVOperation):
     """
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, a, phi, p, wires):
+        super().__init__(a, phi, p, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -1192,6 +1258,9 @@ class QuadOperator(CVObservable):
     grad_method = "A"
     ev_order = 1
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -1259,12 +1328,16 @@ class PolyXP(CVObservable):
 
     Args:
         q (array[float]): expansion coefficients
+        wires (Sequence[int] or int): the wire the operation acts on
 
     """
     num_wires = AnyWires
 
     grad_method = "F"
     ev_order = 2
+
+    def __init__(self, q, wires):
+        super().__init__(q, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -1316,11 +1389,15 @@ class FockStateProjector(CVObservable):
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
+        wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = AnyWires
 
     grad_method = None
     ev_order = None
+
+    def __init__(self, n, wires):
+        super().__init__(n, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):

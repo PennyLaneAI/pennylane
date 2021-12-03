@@ -85,6 +85,9 @@ class SingleExcitation(Operation):
         -1 / 2,
     ]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -146,6 +149,9 @@ class SingleExcitationMinus(Operation):
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -222,6 +228,9 @@ class SingleExcitationPlus(Operation):
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -325,6 +334,9 @@ class DoubleExcitation(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -422,6 +434,9 @@ class DoubleExcitationPlus(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
+
     @property
     def num_params(self):
         return 1
@@ -493,6 +508,9 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
@@ -604,6 +622,9 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+
+    def __init__(self, phi, wires):
+        super().__init__(phi, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
