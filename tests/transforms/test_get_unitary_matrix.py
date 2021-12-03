@@ -632,29 +632,3 @@ def test_holomorphic_differentiation_entire_matrix_MultiRZ():
 
     assert jax.numpy.sum(jax.numpy.abs(analytic_diff - finite_difference_diff)) < 0.01
 
-
-# def test_holomorphic_differentiation():
-#
-#     def complex_fn(theta):
-#         return np.array([np.conj(theta[0]), 1])
-#
-#     analytic_diff = qml.jacobian(complex_fn)
-#     analytic_diff = analytic_diff((np.array([-1.0], requires_grad=True)))
-#     finite_difference_diff = (complex_fn(1.01 - 1.0j) - complex_fn(0.99 - 1.0j)) / 0.02
-#     print('ok')
-#     # assert qml.abs(analytic_diff - finite_difference_diff) < 0.01
-
-def test_another_holomorph():
-
-    torch = pytest.importorskip("torch")
-
-    x = torch.tensor(0.2 + 0j, requires_grad=True)
-
-    cost = lambda x: qml.RZ(x, wires=0).matrix
-    value = torch.autograd.functional.jacobian(cost, x)
-
-    cost2 = lambda x: torch.diag(torch.stack([torch.exp(-0.5j * x), torch.exp(0.5j * x)]))
-    value2 = torch.autograd.functional.jacobian(cost2, x)
-
-    assert torch.sum(torch.abs(value - value2)) < 0.01
-
