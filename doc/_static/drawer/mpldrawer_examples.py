@@ -20,7 +20,7 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.drawer import MPLDrawer
+from pennylane.drawer import MPLDrawer, use_style
 
 folder = pathlib.Path(__file__).parent
 
@@ -123,7 +123,7 @@ def measure(savefile="measure.png"):
     plt.close()
 
 def integration(style="default", savefile="example_basic.png"):
-    plt.style.use(style)
+    use_style(style)
     drawer = MPLDrawer(n_wires=5, n_layers=6)
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
@@ -152,23 +152,28 @@ def integration(style="default", savefile="example_basic.png"):
 
 
 def integration_rcParams(savefile="example_rcParams.png"):
-    plt.rcParams["patch.facecolor"] = "white"
-    plt.rcParams["patch.edgecolor"] = "black"
-    plt.rcParams["patch.linewidth"] = 2
-    plt.rcParams["patch.force_edgecolor"] = True
-
-    plt.rcParams["lines.color"] = "black"
+    plt.rcParams['patch.facecolor'] = 'mistyrose'
+    plt.rcParams['patch.edgecolor'] = 'maroon'
+    plt.rcParams['text.color'] = 'maroon'
+    plt.rcParams['font.weight'] = 'bold'
+    plt.rcParams['patch.linewidth'] = 4
+    plt.rcParams['patch.force_edgecolor'] = True
+    plt.rcParams['lines.color'] = 'indigo'
+    plt.rcParams['lines.linewidth'] = 5
+    plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
     drawer = MPLDrawer(n_wires=5, n_layers=5)
+
+    drawer = MPLDrawer(n_wires=5, n_layers=6)
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
     drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
-    drawer.box_gate(1, [0, 1], "U(θ)")
+    drawer.box_gate(1, [0, 2, 3], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
 
-    drawer.SWAP(1, (2, 3))
+    drawer.SWAP(2, (3,4))
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
@@ -241,6 +246,6 @@ if __name__ == "__main__":
     measure()
     integration()
     float_layer()
-    integration(style="Solarize_Light2", savefile="example_Solarize_Light2.png")
+    integration(style="black_white", savefile="black_white_style.png")
     integration_rcParams()
     integration_formatted()
