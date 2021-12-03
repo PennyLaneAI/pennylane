@@ -168,7 +168,8 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
-
+        active_wire_notches (bool): whether or not to add notches indicating active wires.
+            Defaults to ``True``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -184,6 +185,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         @qml.qnode(dev)
         def circuit(x, z):
             qml.QFT(wires=(0,1,2,3))
+            qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
@@ -263,7 +265,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
             ax.add_patch(box1)
 
-            ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+            ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                         arrowprops={'facecolor': 'black'}, fontsize=14)
             fig.show()
 
