@@ -20,7 +20,7 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.drawer import MPLDrawer
+from pennylane.drawer import MPLDrawer, use_style
 
 folder = pathlib.Path(__file__).parent
 
@@ -136,7 +136,7 @@ def measure_formatted(savefile="measure_formatted.png"):
 
 
 def integration(style="default", savefile="example_basic.png"):
-    plt.style.use(style)
+    use_style(style)
     drawer = MPLDrawer(n_wires=5, n_layers=5)
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
@@ -165,12 +165,15 @@ def integration(style="default", savefile="example_basic.png"):
 
 
 def integration_rcParams(savefile="example_rcParams.png"):
-    plt.rcParams["patch.facecolor"] = "white"
-    plt.rcParams["patch.edgecolor"] = "black"
-    plt.rcParams["patch.linewidth"] = 2
-    plt.rcParams["patch.force_edgecolor"] = True
-
-    plt.rcParams["lines.color"] = "black"
+    plt.rcParams['patch.facecolor'] = 'mistyrose'
+    plt.rcParams['patch.edgecolor'] = 'maroon'
+    plt.rcParams['text.color'] = 'maroon'
+    plt.rcParams['font.weight'] = 'bold'
+    plt.rcParams['patch.linewidth'] = 4
+    plt.rcParams['patch.force_edgecolor'] = True
+    plt.rcParams['lines.color'] = 'indigo'
+    plt.rcParams['lines.linewidth'] = 5
+    plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
     drawer = MPLDrawer(n_wires=5, n_layers=5)
 
@@ -256,6 +259,6 @@ if __name__ == "__main__":
     measure_formatted()
     integration()
     float_layer()
-    integration(style="Solarize_Light2", savefile="example_Solarize_Light2.png")
+    integration(style="black_white", savefile="black_white_style.png")
     integration_rcParams()
     integration_formatted()

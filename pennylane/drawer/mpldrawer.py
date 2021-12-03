@@ -113,10 +113,22 @@ class MPLDrawer:
 
     **Formatting**
 
-    You can globally control the style with ``plt.rcParams`` and styles, see the
+    PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+    Any available string can then be passed to ``qml.drawer.use_style``.
+
+    .. code-block:: python
+
+        qml.drawer.use_style('black_white')
+
+    .. figure:: ../../_static/drawer/black_white_style.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+    You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    If we customize ``plt.rcParams`` before executing our example function, we get a
-    different style:
+    For example, we can customize ``plt.rcParams``:
 
     .. code-block:: python
 
@@ -136,25 +148,11 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-    Instead of manually customizing everything, you can choose one of
-    the provided styles. You can see available styles with ``plt.style.available``.
-    We can set the ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
-
-    .. code-block:: python
-
-        plt.style.use('Solarize_Light2')
-
-    .. figure:: ../../_static/drawer/example_Solarize_Light2.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
     You can also manually control the styles of individual plot elements via the drawer class.
     All accept dictionaries of keyword-values pairs for matplotlib object
     components. Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
     to the dictionary controlling how to format a rectangle. For the control-type gates ``CNOT`` and
     ``ctrl`` the options dictionary can only contain ``'linewidth'``, ``'color'``, or ``'zorder'`` keys.
-
 
     This example demonstrates the different ways you can format the individual elements:
 

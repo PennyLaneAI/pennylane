@@ -306,7 +306,6 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             plt.rcParams['lines.linewidth'] = 5
             plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()
 
