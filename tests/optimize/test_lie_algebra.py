@@ -86,12 +86,12 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def get_state():
         circuit()
         return qml.state()
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def lie_circuit():
         circuit()
         return qml.expval(hamiltonian)
@@ -127,12 +127,12 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def get_state():
         circuit()
         return qml.state()
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def lie_circuit():
         circuit()
         return qml.expval(hamiltonian)
@@ -174,12 +174,12 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
     wires = range(nqubits)
     dev = qml.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def get_state():
         circuit()
         return qml.state()
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def lie_circuit():
         circuit()
         return qml.expval(hamiltonian)
@@ -215,7 +215,7 @@ def test_lie_algebra_step(circuit, hamiltonian):
 
     dev = qml.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def lie_circuit():
         circuit()
         return qml.expval(hamiltonian)
@@ -241,7 +241,7 @@ def test_lie_algebra_step_trotterstep(circuit, hamiltonian):
 
     dev = qml.device("default.qubit", wires=nqubits)
 
-    @qml.qnode(dev=dev)
+    @qml.qnode(dev)
     def lie_circuit():
         circuit()
         return qml.expval(hamiltonian)
