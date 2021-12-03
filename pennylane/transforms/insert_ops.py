@@ -200,7 +200,7 @@ def insert(
         for operation in req_ops:
             if operation.__base__ != Operation:
                 not_op = True
-    elif not isinstance(position, list) and not isinstance(position, str):
+    elif not isinstance(position, list):
         try:
             if position.__base__ == Operation:
                 req_ops = [position]
