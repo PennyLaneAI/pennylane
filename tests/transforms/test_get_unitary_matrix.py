@@ -562,7 +562,8 @@ def test_get_unitary_matrix_autograd_differentiable(v):
     assert np.allclose(l, 2 * np.cos(v / 2))
     assert np.allclose(dl, -np.sin(v / 2))
 
-def test_holomorphic_differentiation():
+
+def test_holomorphic_differentiation_RZ():
 
     jax = pytest.importorskip("jax")
 
@@ -579,31 +580,69 @@ def test_holomorphic_differentiation():
 
     assert jax.numpy.abs(analytic_diff - finite_difference_diff) < 0.01
 
-def test_holomorphic_differentiation():
 
-    # jax = pytest.importorskip("jax")
-    import jax
+def test_holomorphic_differentiation_entire_matrix_RZ():
 
-    def complex_fn(theta):
-        # return theta
-        return jax.numpy.conj(theta) * theta
+    jax = pytest.importorskip("jax")
 
-    analytic_diff = jax.grad(complex_fn, holomorphic=True)(-1.0 + 1.0j)
-    finite_difference_diff = (complex_fn(1.01 - 1.0j) - complex_fn(0.99 - 1.0j)) / 0.02
-
-    assert jax.numpy.abs(analytic_diff - finite_difference_diff) < 0.01
-
-
-def test_holomorphic_differentiation():
+    def circuit(theta):
+        qml.RZ(theta, wires=0)
+        return qml.PauliZ(wires=0)
 
     def complex_fn(theta):
-        # return theta
-        return np.conj(theta)
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return U
 
-    analytic_diff = qml.jacobian(complex_fn)(-1.0 + 1.0j)
-    finite_difference_diff = (complex_fn(1.01 - 1.0j) - complex_fn(0.99 - 1.0j)) / 0.02
-    print('ok')
-    # assert qml.abs(analytic_diff - finite_difference_diff) < 0.01
+    analytic_diff = jax.jacobian(complex_fn, holomorphic=True)(1.0 + 0.0j)
+    finite_difference_diff = (complex_fn(1.01) - complex_fn(0.99)) / 0.02
+
+    assert jax.numpy.sum(jax.numpy.abs(analytic_diff - finite_difference_diff)) < 0.01
+
+def test_holomorphic_differentiation_entire_matrix_CRZ():
+
+    jax = pytest.importorskip("jax")
+
+    def circuit(theta):
+        qml.CRZ(theta, wires=[0, 1])
+        return qml.PauliZ(wires=1)
+
+    def complex_fn(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return U
+
+    analytic_diff = jax.jacobian(complex_fn, holomorphic=True)(1.0 + 0.0j)
+    finite_difference_diff = (complex_fn(1.01) - complex_fn(0.99)) / 0.02
+
+    assert jax.numpy.sum(jax.numpy.abs(analytic_diff - finite_difference_diff)) < 0.01
+
+def test_holomorphic_differentiation_entire_matrix_MultiRZ():
+
+    jax = pytest.importorskip("jax")
+
+    def circuit(theta):
+        qml.MultiRZ(theta, wires=[0, 1])
+        return qml.PauliZ(wires=0) @ qml.PauliX(wires=1)
+
+    def complex_fn(theta):
+        U = qml.transforms.get_unitary_matrix(circuit)(theta)
+        return U
+
+    analytic_diff = jax.jacobian(complex_fn, holomorphic=True)(1.0 + 0.0j)
+    finite_difference_diff = (complex_fn(1.01) - complex_fn(0.99)) / 0.02
+
+    assert jax.numpy.sum(jax.numpy.abs(analytic_diff - finite_difference_diff)) < 0.01
+
+
+# def test_holomorphic_differentiation():
+#
+#     def complex_fn(theta):
+#         return np.array([np.conj(theta[0]), 1])
+#
+#     analytic_diff = qml.jacobian(complex_fn)
+#     analytic_diff = analytic_diff((np.array([-1.0], requires_grad=True)))
+#     finite_difference_diff = (complex_fn(1.01 - 1.0j) - complex_fn(0.99 - 1.0j)) / 0.02
+#     print('ok')
+#     # assert qml.abs(analytic_diff - finite_difference_diff) < 0.01
 
 def test_another_holomorph():
 
