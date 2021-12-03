@@ -429,7 +429,7 @@ class TestStatesToBinary:
         dev = mock_qubit_device()
         res = dev.states_to_binary(samples, wires)
 
-        format_smt = "{{:0{}b}}".format(wires)
+        format_smt = f"{{:0{wires}b}}"
         expected = np.array([[int(x) for x in list(format_smt.format(i))] for i in samples])
 
         assert np.all(res == expected)

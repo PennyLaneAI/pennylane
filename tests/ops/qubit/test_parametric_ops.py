@@ -873,6 +873,23 @@ class TestGrad:
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
+    def test_qnode_with_rx_and_state_jacobian_jax(self, par, tol):
+        """Test the jacobian of a complex valued QNode that contains a rotation
+        using the JAX interface."""
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def test(x):
+            qml.RX(x, wires=[0])
+            return qml.state()
+
+        res = jax.jacobian(test, holomorphic=True)(par + 0j)
+        expected = -1 / 2 * np.sin(par / 2), -1 / 2 * 1j * np.cos(par / 2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA = [
     (
@@ -1210,14 +1227,14 @@ class TestPauliRot:
             # this is the identity
             expected_gen = qml.Identity(wires=0)
         else:
-            expected_gen = getattr(qml, "Pauli{}".format(pauli_word[0]))(wires=0)
+            expected_gen = getattr(qml, f"Pauli{pauli_word[0]}")(wires=0)
 
         for i, pauli in enumerate(pauli_word[1:]):
             i += 1
             if pauli == "I":
                 expected_gen = expected_gen @ qml.Identity(wires=i)
             else:
-                expected_gen = expected_gen @ getattr(qml, "Pauli{}".format(pauli))(wires=i)
+                expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
         expected_gen_mat = expected_gen.matrix
 
