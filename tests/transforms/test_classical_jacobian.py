@@ -132,8 +132,8 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
     arg_shapes = [qml.math.shape(arg) for arg in args]
     if len(args) == 1:
         # For a single argument, the Jacobian is unpacked
-        expected_jac = expected_jac[0]
-    if all(sh == arg_shapes[0] for sh in arg_shapes[1:]):
+        assert np.allclose(expected_jac, expected_jac[0])
+    elif all(sh == arg_shapes[0] for sh in arg_shapes[1:]):
         expected_jac = qml.math.stack(expected_jac).T
         assert np.allclose(jac, expected_jac)
     else:
