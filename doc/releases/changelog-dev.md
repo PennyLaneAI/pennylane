@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added `qml.LieAlgebraOptimizer`, a new quantum-aware Lie Algebra optimizer that allows
+  one to perform gradient descent on the special unitary group.
+  [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
+  
 * Added functions for computing the values of atomic and molecular orbitals at a given position.
   [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
 
@@ -607,4 +611,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
 Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
 Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
-Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs
+Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema
