@@ -195,6 +195,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
+                    if isinstance(obj, qml.operation.Operation) and obj.inverse:
+                        obj.inv()
                 except NotImplementedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.

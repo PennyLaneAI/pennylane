@@ -144,7 +144,7 @@ class CVNeuralNetLayers(Operation):
 
     def expand(self):
 
-        with qml.tape.stop_recording(), qml.tape.QuantumTape() as tape1:
+        with qml.tape.QuantumTape() as tape:
 
             for l in range(self.n_layers):
 
@@ -175,17 +175,7 @@ class CVNeuralNetLayers(Operation):
                 for i in range(len(self.wires)):
                     qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
 
-        tape1 = tape1.adjoint() if self.inverse else tape1
-
-        with qml.tape.QuantumTape() as tape2:
-
-            for op in tape1.operations:
-                qml.apply(op)
-
-            for ms in tape1.measurements:
-                qml.apply(ms)
-
-        return tape2
+        return tape
 
     @staticmethod
     def shape(n_layers, n_wires):
@@ -208,8 +198,3 @@ class CVNeuralNetLayers(Operation):
         )
 
         return shapes
-
-    def adjoint(self):
-        adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op
