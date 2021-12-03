@@ -25,6 +25,28 @@ from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 
+def _check_position(position):
+    not_op = False
+    req_ops = False
+    if isinstance(position, list):
+        req_ops = position.copy()
+        for operation in req_ops:
+            try:
+                if operation.__base__ != Operation:
+                    not_op = True
+            except AttributeError:
+                not_op = True
+    elif not isinstance(position, list):
+        try:
+            if position.__base__ == Operation:
+                req_ops = [position]
+            else:
+                not_op = True
+        except AttributeError:
+            not_op = True
+    return not_op, req_ops
+
+
 @qfunc_transform
 def insert(
     circuit: Union[callable, QuantumTape, Device],
@@ -56,8 +78,8 @@ def insert(
             ``"start"`` to add the operation to all wires at the start of the circuit (but after state preparations);
             ``"end"`` to add the operation to all wires at the end of the circuit;
             list of operations to add the operation before or after depending on ``before``.
-        before (bool): Whether to add the operation before the given operation(s) in position.
-            Default is False and the operation is inserted after.
+        before (bool): Whether to add the operation before the given operation(s) in ``position``.
+            Default is ``False`` and the operation is inserted after.
 
     Returns:
         callable or QuantumTape or Device: the updated version of the input circuit or an updated
@@ -193,21 +215,7 @@ def insert(
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
 
-    not_op = False
-    req_ops = False
-    if isinstance(position, list):
-        req_ops = position.copy()
-        for operation in req_ops:
-            if operation.__base__ != Operation:
-                not_op = True
-    elif not isinstance(position, list):
-        try:
-            if position.__base__ == Operation:
-                req_ops = [position]
-            else:
-                not_op = True
-        except AttributeError:
-            not_op = True
+    not_op, req_ops = _check_position(position)
 
     if position not in ("start", "end", "all") and not_op:
         raise ValueError(

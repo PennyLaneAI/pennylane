@@ -51,10 +51,11 @@ class TestInsert:
         with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
             insert(qml.CNOT, [])(self.tape)
 
-    def test_invalid_position(self):
+    @pytest.mark.parametrize('pos', [1, ['all', qml.RY], 'ABC'])
+    def test_invalid_position(self, pos):
         """Test if a ValueError is raised when an invalid position is requested"""
         with pytest.raises(ValueError, match="Position must be either 'start', 'end', or 'all'"):
-            insert(qml.AmplitudeDamping, 0.4, position="ABC")(self.tape)
+            insert(qml.AmplitudeDamping, 0.4, position=pos)(self.tape)
 
     def test_start(self):
         """Test if the expected tape is returned when the start position is requested"""
