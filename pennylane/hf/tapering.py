@@ -16,9 +16,10 @@ This module contains the functions needed for tapering qubits.
 """
 # pylint: disable=unnecessary-lambda
 import functools
+import itertools
 
-import pennylane as qml
 import autograd.numpy as anp
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.grouping import pauli_mult_with_phase, pauli_word_to_string, string_to_pauli_word
 
@@ -103,8 +104,8 @@ def clifford(generator, paulix_wires):
     :math:`k` PauliX operators.
 
     Args:
-        generator list[Hamiltonian]: generators expressed as PennyLane Hamiltonians
-        paulix_wires list[int]: indices of the wires the PauliX operator acts on
+        generator (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        paulix_wires (list[int]): indices of the wires the PauliX operator acts on
 
     Returns:
         .Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
@@ -136,34 +137,60 @@ def clifford(generator, paulix_wires):
     return u
 
 
-def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
-    r"""..."""
+def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
+    r"""Transform a Hamiltonian with a Clifford operator and taper qubits.
 
-    cliff = []
-    for i, t in enumerate(symmetry):
-        cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
+    The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
+    operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
+    with the eigenvalues of their corresponding Pauli/Identity operator.
 
-    u = functools.reduce(lambda i, j: observable_mult(i, j), cliff)
+    Args:
+        h (Hamiltonian): PennyLane Hamiltonian
+        generator (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        paulix_wires (list[int]): indices of the wires the PauliX operator acts on
+        paulix_sector list([list[int]]): list of eigenvalues of the PauliX operators
 
-    uhu = observable_mult(observable_mult(u, h), u)
+    Returns:
+        (list[tuple[list[int], qml.Hamiltonian]]): paulix sector and its corresponding Hamiltonian
 
-    h = simplify(qml.Hamiltonian(uhu.coeffs, uhu.ops))
+    **Example**
 
-    h_red = qml.Hamiltonian(h.coeffs.copy(), h.ops.copy())
+    >>> t1 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIIZ')])
+    >>> generator = [t1, t2, t3]
+    >>> paulix_wires = [1, 2, 3]
+    >>> paulix_sector = [[1, -1, -1]]
+    """
+    u = clifford(generator, paulix_wires)
+    h = observable_mult(observable_mult(u, h), u)
 
-    c = anp.ones(len(h_red.terms[0])) * complex(1.0)
+    if paulix_sector is None:
+        paulix_sector = itertools.product([1, -1], repeat=len(paulix_wires))
 
-    for idx, w_i in enumerate(paulix_wires):
-        for i in range(len(h_red.terms[0])):
-            s = pauli_word_to_string(h_red.terms[1][i], wire_map=dict(zip(h.wires, h.wires)))
-            if s[w_i] == "X":
-                c[i] *= paulix_sector[idx]
+    h_tapered = []
+    wiremap = dict(zip(h.wires, h.wires))
 
-    s = []
-    for i in range(len(h_red.terms[0])):
-        str = pauli_word_to_string(h_red.terms[1][i], wire_map=dict(zip(h.wires, h.wires)))
-        wires = [x for x in h.wires if x not in paulix_wires]
-        s.append(string_to_pauli_word("".join([str[i] for i in wires])))
-        c[i] = c[i] * h_red.terms[0][i]
+    for sector in paulix_sector:
+        val = anp.ones(len(h.terms[0])) * complex(1.0)
 
-    return simplify(qml.Hamiltonian(c, s))
+        for idx, w in enumerate(paulix_wires):
+            for i in range(len(h.terms[0])):
+                s = pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+                if s[w] == "X":
+                    val[i] *= sector[idx]
+
+        o = []
+        c = anp.zeros(len(h.terms[0]))
+        for i in range(len(h.terms[0])):
+            s = pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+            wires = [x for x in h.wires if x not in paulix_wires]
+            o.append(string_to_pauli_word("".join([s[i] for i in wires])))
+            o_ = anp.zeros(len(c)) * complex(1.0)
+            o_[i] = val[i] * h.terms[0][i]
+            c = c + o_
+
+        c = qml.math.stack(c)
+        h_tapered.append((sector, simplify(qml.Hamiltonian(c, o))))
+
+    return h_tapered
