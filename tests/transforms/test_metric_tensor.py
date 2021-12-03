@@ -467,16 +467,13 @@ class TestMetricTensor:
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
 
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
-        """Test that a metric tensor under the
-        diagonal approximation evaluates correctly and that the old option
-        ``diag_approx`` raises a Warning."""
+        """Test that a metric tensor under the diagonal approximation evaluates
+        correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
         G = qml.metric_tensor(circuit, approx="diag")(*params)
-        with pytest.warns(UserWarning):
-            G_alias = qml.metric_tensor(circuit, diag_approx=True)(*params)
 
         # ============================================
         # Test block-diag metric tensor of first layer is correct.
@@ -502,7 +499,6 @@ class TestMetricTensor:
         G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
 
         assert qml.math.allclose(G[:3, :3], G1, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias[:3, :3], G1, atol=tol, rtol=0)
 
         # =============================================
         # Test block-diag metric tensor of second layer is correct.
@@ -532,7 +528,6 @@ class TestMetricTensor:
         G2[1, 1] = varK1 / 4
 
         assert qml.math.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias[4:6, 4:6], G2, atol=tol, rtol=0)
 
         # =============================================
         # Test metric tensor of third layer is correct.
@@ -560,7 +555,6 @@ class TestMetricTensor:
         layer3_diag = qml.QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
         assert qml.math.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
         # Finally, double check that the entire metric
@@ -568,7 +562,6 @@ class TestMetricTensor:
 
         G_expected = block_diag(G1, G3, G2)
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias, G_expected, atol=tol, rtol=0)
 
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""

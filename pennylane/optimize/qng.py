@@ -14,8 +14,6 @@
 """Quantum natural gradient optimizer"""
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
-import warnings
-
 from pennylane import numpy as np
 
 import pennylane as qml
@@ -141,32 +139,28 @@ class QNGOptimizer(GradientDescentOptimizer):
         See the :ref:`quantum natural gradient example <quantum_natural_gradient>`
         for more details on Fubini-Study metric tensor and this optimization class.
 
-    Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta`
-        diag_approx (bool): If ``True``, forces a diagonal approximation
-            where the calculated metric tensor only contains diagonal
-            elements :math:`G_{ii}`. In some cases, this may reduce the
-            time taken per optimization step.
-        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+    Keyword Args:
+        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
+        approx (str): Which approximation of the metric tensor to compute.
+
+            - If ``None``, the full metric tensor is computed
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
             to be applied at each optimization step
     """
 
-    def __init__(self, stepsize=0.01, approx="block-diag", diag_approx=None, lam=0):
+    def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
         super().__init__(stepsize)
 
         approx_set = False
-        if diag_approx is not None:
-
-            warnings.warn(
-                "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
-                UserWarning,
-            )
-            if diag_approx:
-                self.approx = "diag"
-                approx_set = True
-
-        if not approx_set:
-            self.approx = approx
+        self.approx = approx
 
         self.metric_tensor = None
         self.lam = lam
