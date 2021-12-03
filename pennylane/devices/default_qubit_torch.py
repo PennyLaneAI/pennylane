@@ -195,8 +195,8 @@ class DefaultQubitTorch(DefaultQubit):
                 if hasattr(data, "is_cuda"):
                     if data.is_cuda:
                         return ":".join([data.device.type, str(data.device.index)])
-                    else:
-                        par_torch_device = "cpu"
+
+                    par_torch_device = "cpu"
 
         return par_torch_device
 
