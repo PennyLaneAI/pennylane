@@ -97,3 +97,33 @@ def test_simplify(hamiltonian, result):
     r"""Test that simplify returns the correct hamiltonian."""
     h = simplify(hamiltonian)
     assert h.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "generator", "paulix_wires", "paulix_sector", "ham_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [1, 2, 3],
+            [[1, -1, -1]],
+            qml.Hamiltonian(
+                np.array([0.79596785, -0.3210344, 0.18092703]),
+                [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
+            ),
+        ),
+    ],
+)
+def test_transform_hamiltonian(symbols, geometry, generator, paulix_wires, paulix_sector, ham_ref):
+    r"""Test that transform_hamiltonian returns the correct hamiltonian."""
+    mol = qml.hf.Molecule(symbols, geometry)
+    h = qml.hf.generate_hamiltonian(mol)()
+    output_sector, h_trans = transform_hamiltonian(h, generator, paulix_wires, paulix_sector)[0]
+
+    assert output_sector == paulix_sector[0]
+    assert np.allclose(sorted(h_trans.terms[0]), sorted(ham_ref.terms[0]))

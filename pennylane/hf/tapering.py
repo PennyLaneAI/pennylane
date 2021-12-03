@@ -58,7 +58,7 @@ def observable_mult(obs_a, obs_b):
     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
-def simplify(h):
+def simplify(h, cutoff=1.0e-12):
     r"""Add together identical terms in the Hamiltonian.
 
     The Hamiltonian terms with identical Pauli words are added together and eliminated if the
@@ -88,7 +88,7 @@ def simplify(h):
     for i, item in enumerate(s):
         c[o.index(item)] += h.terms[0][i]
 
-    nonzero_ind = np.nonzero(c)[0]
+    nonzero_ind = np.argwhere(abs(qml.math.stack(c)) > cutoff).flatten()
     c = [c[i] for i in nonzero_ind]
     o = [o[i] for i in nonzero_ind]
     o = [qml.grouping.string_to_pauli_word(i) for i in o]
@@ -164,7 +164,7 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
     >>> generator = [t1, t2, t3]
     >>> paulix_wires = [1, 2, 3]
     >>> paulix_sector = [[1, -1, -1]]
-    >>> transform_hamiltonian(H, generator, paulix_wires, [paulix_sector])
+    >>> transform_hamiltonian(H, generator, paulix_wires, paulix_sector)
     [([1, -1, -1], <Hamiltonian: terms=4, wires=[0]>)]
     """
     u = clifford(generator, paulix_wires)
