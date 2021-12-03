@@ -80,3 +80,20 @@ def test_cliford(generator, paulix_wires, result):
     r"""Test that clifford returns the correct operator."""
     u = clifford(generator, paulix_wires)
     assert u.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("hamiltonian", "result"),
+    [
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
+            ),
+            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+        ),
+    ],
+)
+def test_simplify(hamiltonian, result):
+    r"""Test that simplify returns the correct hamiltonian."""
+    h = simplify(hamiltonian)
+    assert h.compare(result)
