@@ -126,7 +126,8 @@ class DefaultQubitTorch(DefaultQubit):
             If ``shots > 0`` is used, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
-        torch_device='cpu' (str): the device on which the computation will be run, ``'cpu'`` or ``'cuda'``
+        torch_device='cpu' (str): the device on which the computation will be
+        run, e.g., ``'cpu'`` or ``'cuda'``
     """
 
     name = "Default qubit (Torch) PennyLane plugin"
