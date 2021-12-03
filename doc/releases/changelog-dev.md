@@ -396,6 +396,10 @@
 
 <h3>Bug fixes</h3>
 
+* Corrects the documentation of `qml.transforms.classical_jacobian`
+  for the Autograd interface (and improves test coverage).
+  [(#19xx)](https://github.com/PennyLaneAI/pennylane/pull/19xx)
+
 * Fixes a bug where the classical preprocessing Jacobian
   computed by `qml.transforms.classical_jacobian` with JAX
   returned a reduced submatrix of the Jacobian.
