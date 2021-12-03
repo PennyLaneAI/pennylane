@@ -518,6 +518,10 @@
 
 <h3>Bug fixes</h3>
 
+* Corrects the documentation of `qml.transforms.classical_jacobian`
+  for the Autograd interface (and improves test coverage).
+  [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)
+
 * Fixes a bug where differentiating a QNode with `qml.state` using the JAX
   interface raised an error.
   [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
