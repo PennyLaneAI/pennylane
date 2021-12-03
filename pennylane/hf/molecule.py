@@ -18,10 +18,10 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 import itertools
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
-import numpy as np
-from pennylane import numpy as pnp
+from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.basis_set import BasisFunction, mol_basis_data
+from pennylane.hf.integrals import primitive_norm, contracted_norm
 
 
 class Molecule:
@@ -50,7 +50,7 @@ class Molecule:
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, -0.694349],
-    >>>                       [0.0, 0.0,  0.694349]], requires_grad = True)
+    >>>                      [0.0, 0.0,  0.694349]], requires_grad = True)
     >>> mol = Molecule(symbols, geometry)
     >>> print(mol.n_electrons)
     2
@@ -86,10 +86,10 @@ class Molecule:
             l = [i[0] for i in self.basis_data]
 
         if alpha is None:
-            alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
+            alpha = [np.array(i[1], requires_grad=False) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
+            coeff = [np.array(i[2], requires_grad=False) for i in self.basis_data]
 
         r = list(
             itertools.chain(
@@ -110,3 +110,89 @@ class Molecule:
         self.nuclear_charges = [atomic_numbers[s] for s in self.symbols]
 
         self.n_electrons = sum(np.array(self.nuclear_charges)) - self.charge
+
+        self.mo_coefficients = None
+
+    def atomic_orbital(self, index):
+        r"""Return a function that evaluates an atomic orbital at a given position.
+
+        Args:
+            index (int): index of the atomic orbital, order follwos the order of atomic symbols
+
+        Returns:
+            function: function that computes the value of the orbital at a given position
+
+        **Example**
+
+        >>> symbols  = ['H', 'H']
+        >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+        >>> mol = qml.hf.Molecule(symbols, geometry)
+        >>> ao = mol.atomic_orbital(0)
+        >>> ao(0.0, 0.0, 0.0)
+        0.62824688
+        """
+        l = self.basis_set[index].l
+        alpha = self.basis_set[index].alpha
+        coeff = self.basis_set[index].coeff
+        r = self.basis_set[index].r
+
+        coeff = coeff * primitive_norm(l, alpha)
+        coeff = coeff * contracted_norm(l, alpha, coeff)
+
+        lx, ly, lz = l
+
+        def orbital(x, y, z):
+            r"""Evaluate a basis function at a given position.
+
+            Args:
+                x (float): x component of the position
+                y (float): y component of the position
+                z (float): z component of the position
+
+            Returns:
+                array[float]: value of a basis function
+            """
+            c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
+            e = [np.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
+            return c * np.dot(coeff, e)
+
+        return orbital
+
+    def molecular_orbital(self, index):
+        r"""Return a function that evaluates a molecular orbital at a given position.
+
+        Args:
+            index (int): index of the molecular orbital
+
+        Returns:
+            function: function to evaluate the molecular orbital
+
+        **Example**
+
+        >>> symbols  = ['H', 'H']
+        >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+        >>> mol = qml.hf.Molecule(symbols, geometry)
+        >>> generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> mo = mol.molecular_orbital(1)
+        >>> mo(0.0, 0.0, 0.0)
+        0.01825128
+        """
+        c = self.mo_coefficients[index]
+
+        def orbital(x, y, z):
+            r"""Evaluate a molecular orbital at a given position.
+
+            Args:
+                x (float): x component of the position
+                y (float): y component of the position
+                z (float): z component of the position
+
+            Returns:
+                array[float]: value of a molecular orbital
+            """
+            m = 0.0
+            for i in range(self.n_orbitals):
+                m = m + c[i] * self.atomic_orbital(i)(x, y, z)
+            return m
+
+        return orbital

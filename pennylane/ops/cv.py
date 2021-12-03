@@ -42,6 +42,8 @@ from scipy.linalg import block_diag
 from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
 
+from .identity import Identity  #  pylint: disable=unused-import
+
 
 def _rotation(phi, bare=False):
     r"""Utility function, returns the Heisenberg transformation of a phase rotation gate.
@@ -1350,6 +1352,7 @@ class FockStateProjector(CVObservable):
 
 
 ops = {
+    "Identity",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",
