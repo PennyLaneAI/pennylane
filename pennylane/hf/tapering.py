@@ -59,8 +59,24 @@ def observable_mult(obs_a, obs_b):
 
 
 def simplify(h):
-    r"""..."""
+    r"""Add together identical terms in the Hamiltonian.
 
+    The Hamiltonian terms with identical Pauli words are added together and eliminated if the
+    overall coefficient is zero.
+
+    Args:
+        h (Hamiltonian): PennyLane Hamiltonian
+
+    Returns:
+        .Hamiltonian: Simplified PennyLane Hamiltonian
+
+    **Example**
+
+    >>> c = np.array([0.5, 0.5])
+    >>> h = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)])
+    >>> print(simplify(h))
+    (1.0) [X0 Y1]
+    """
     s = []
     wiremap = dict(zip(h.wires, h.wires))
     for term in h.terms[1]:
@@ -78,6 +94,46 @@ def simplify(h):
     o = [string_to_pauli_word(i) for i in o]
 
     return qml.Hamiltonian(qml.math.stack(c), o)
+
+
+def clifford(generator, paulix_wires):
+    r"""Compute a Clifford operator from a set of generators and Pauli operators.
+
+    This function computes :math:`U = U_0U_1...U_k` for a set of :math:`k` generators and
+    :math:`k` PauliX operators.
+
+    Args:
+        generator list[Hamiltonian]: generators expressed as PennyLane Hamiltonians
+        paulix_wires list[int]: indices of the wires the PauliX operator acts on
+
+    Returns:
+        .Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
+
+    **Example**
+
+    >>> t1 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIIZ')])
+    >>> generator = [t1, t2, t3]
+    >>> paulix_wires = [1, 2, 3]
+    >>> u = clifford(generator, paulix_wires)
+    >>> print(u)
+      (0.3535533905932737) [Z1 Z2 X3]
+    + (0.3535533905932737) [X1 X2 X3]
+    + (0.3535533905932737) [Z1 X2 Z3]
+    + (0.3535533905932737) [X1 Z2 Z3]
+    + (0.3535533905932737) [Z0 X1 X2 Z3]
+    + (0.3535533905932737) [Z0 Z1 Z2 Z3]
+    + (0.3535533905932737) [Z0 X1 Z2 X3]
+    + (0.3535533905932737) [Z0 Z1 X2 X3]
+    """
+    clifford = []
+    for i, t in enumerate(generator):
+        clifford.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
+
+    u = functools.reduce(lambda i, j: observable_mult(i, j), clifford)
+
+    return u
 
 
 def transform_hamiltonian(h, symmetry, paulix_wires, paulix_sector):
