@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* Added functions for computing the values of atomic and molecular orbitals at a given position.
+  [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
+
+  The functions `atomic_orbital` and `molecular_orbital` can be used, as shown in the
+  following codeblock, to evaluate the orbitals. By generating values of the orbitals at different
+  positions, one can plot the spatial shape of a desired orbital.
+
+  ```python
+  symbols  = ['H', 'H']
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False) 
+  mol = hf.Molecule(symbols, geometry)
+  hf.generate_scf(mol)()
+
+  ao = mol.atomic_orbital(0)
+  mo = mol.molecular_orbital(1)
+  ```
+
+  ```pycon
+  >>> print(ao(0.0, 0.0, 0.0))
+  >>> print(mo(0.0, 0.0, 0.0))
+  0.6282468778183719
+  0.018251285973461928
+  ```
+
 * The `metric_tensor` transform can now be used to compute the full
   tensor, beyond the block diagonal approximation. 
   [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
@@ -182,6 +206,7 @@
   For more details, please see the [TensorFlow AutoGraph
   documentation](https://www.tensorflow.org/guide/function).
 
+
 * `qml.math.scatter_element_add` now supports adding multiple values at
   multiple indices with a single function call, in all interfaces
   [(#1864)](https://github.com/PennyLaneAI/pennylane/pull/1864)
@@ -350,13 +375,24 @@
 * The `merge_amplitude_embedding` transformation has been created to automatically merge all gates of this type into one.
   [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
 
+* The `undo_swaps` transformation has been created to automatically remove all swaps of a circuit.
+  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+
 <h3>Improvements</h3>
+
+* The PennyLane `qchem` package is now lazily imported; it will only be imported
+  the first time it is accessed.
+  [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
+
+* Change all instances of `"{}".format(..)` to `f"{..}"`.
+  [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
 
 * Tests do not loop over automatically imported and instantiated operations any more,
 
 * The QNode has been re-written to support batch execution across the board,
   custom gradients, better decomposition strategies, and higher-order derivatives.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+  [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
 
   - Internally, if multiple circuits are generated for simultaneous execution, they
     will be packaged into a single job for execution on the device. This can lead to
@@ -420,6 +456,9 @@
 
 * Interferometer is now a class with `shape` method. [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
 
+* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
+   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
+
 <h3>Breaking changes</h3>
 
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
@@ -474,6 +513,10 @@
   ```
 
 <h3>Deprecations</h3>
+
+* The init module, which contains functions to generate random parameters for 
+  templates, has been removed. Instead, the templates provide a `shape()` method.
+  [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
 
 <h3>Bug fixes</h3>
 
@@ -559,7 +602,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Samuel Banning, Benjamin Cordier, Olivia Di Matteo,
-David Ittah, Josh Izaac, Jalani Kanem, Ankit Khandelwal, Shumpei Kobayashi,
-Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard,
-Maria Schuld, Jay Soni, David Wierichs, Antal Száva
+Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
+Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
+Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
+Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs
