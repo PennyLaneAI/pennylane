@@ -457,6 +457,9 @@
 * `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
    [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
+* Insert transform now supports adding operation after or before certain specific gates.
+  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
+
 <h3>Breaking changes</h3>
 
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
