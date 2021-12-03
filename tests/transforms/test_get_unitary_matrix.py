@@ -579,6 +579,32 @@ def test_holomorphic_differentiation():
 
     assert jax.numpy.abs(analytic_diff - finite_difference_diff) < 0.01
 
+def test_holomorphic_differentiation():
+
+    # jax = pytest.importorskip("jax")
+    import jax
+
+    def complex_fn(theta):
+        # return theta
+        return jax.numpy.conj(theta) * theta
+
+    analytic_diff = jax.grad(complex_fn, holomorphic=True)(-1.0 + 1.0j)
+    finite_difference_diff = (complex_fn(1.01 - 1.0j) - complex_fn(0.99 - 1.0j)) / 0.02
+
+    assert jax.numpy.abs(analytic_diff - finite_difference_diff) < 0.01
+
+
+def test_holomorphic_differentiation():
+
+    def complex_fn(theta):
+        # return theta
+        return np.conj(theta)
+
+    analytic_diff = qml.jacobian(complex_fn)(-1.0 + 1.0j)
+    finite_difference_diff = (complex_fn(1.01 - 1.0j) - complex_fn(0.99 - 1.0j)) / 0.02
+    print('ok')
+    # assert qml.abs(analytic_diff - finite_difference_diff) < 0.01
+
 def test_another_holomorph():
 
     torch = pytest.importorskip("torch")
