@@ -274,9 +274,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         **Formatting:**
 
-        PennyLane has inbuilt styles. All available styles can be determined by
-        evaluating ``qml.drawer.available_styles()``. Any available string
-        can then be passed to ``qml.drawer.use_style``.
+        PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+        All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+        Any available string can then be passed to ``qml.drawer.use_style``.
 
         .. code-block:: python
 
@@ -290,9 +290,9 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
                 :width: 60%
                 :target: javascript:void(0);
 
-        You can globally control the style with ``plt.rcParams`` and styles
-        If we customize ``plt.rcParams``, we get a
-        different style:
+        You can also control the appearance with matplotlib's provided tools, see the
+        `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+        For example, we can customize ``plt.rcParams``:
 
         .. code-block:: python
 

@@ -120,11 +120,16 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
+        plt.rcParams['patch.facecolor'] = 'mistyrose'
+        plt.rcParams['patch.edgecolor'] = 'maroon'
+        plt.rcParams['text.color'] = 'maroon'
+        plt.rcParams['font.weight'] = 'bold'
+        plt.rcParams['patch.linewidth'] = 4
         plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
+        plt.rcParams['lines.color'] = 'indigo'
+        plt.rcParams['lines.linewidth'] = 5
+        plt.rcParams['figure.facecolor'] = 'ghostwhite'
+
 
     .. figure:: ../../_static/drawer/example_rcParams.png
             :align: center

@@ -189,9 +189,9 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
 
     **Formatting:**
 
-    PennyLane has inbuilt styles. All available styles can be determined by
-    evaluating ``qml.drawer.available_styles()``. Any available string
-    can then be passed to ``qml.drawer.use_style``.
+    PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+    Any available string can then be passed to ``qml.drawer.use_style``.
 
     .. code-block:: python
 
@@ -204,10 +204,9 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             :width: 60%
             :target: javascript:void(0);
 
-    You can also control the style with ``plt.rcParams`` and styles, see the
+    You can also control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    If we customize ``plt.rcParams``, we get a
-    different style:
+    For example, we can customize ``plt.rcParams``:
 
     .. code-block:: python
 
