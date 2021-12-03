@@ -68,6 +68,14 @@ def test_standard_use():
     plt.close()
 
 
+def test_fontsize():
+    """Test fontsize set by keyword argument."""
+
+    _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
+    for t in ax.texts:
+        assert t.get_fontsize() == 20
+
+
 def test_decimals():
     """Test decimals changes operation labelling"""
 
