@@ -149,11 +149,13 @@
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
   [(#1811)](https://github.com/PennyLaneAI/pennylane/pull/1811)
+  [(#1954)](https://github.com/PennyLaneAI/pennylane/pull/1954)
 
   ```python
   @qml.qnode(qml.device("default.qubit", wires=4))
   def circuit(x, z):
       qml.QFT(wires=(0,1,2,3))
+      qml.IsingXX(1.234, wires=(0,2))
       qml.Toffoli(wires=(0,1,2))
       qml.CSWAP(wires=(0,2,3))
       qml.RX(x, wires=0)
@@ -518,6 +520,10 @@
   [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
 
 <h3>Bug fixes</h3>
+
+* Corrects the documentation of `qml.transforms.classical_jacobian`
+  for the Autograd interface (and improves test coverage).
+  [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)
 
 * Fixes a bug where differentiating a QNode with `qml.state` using the JAX
   interface raised an error.
