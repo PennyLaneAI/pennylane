@@ -68,34 +68,56 @@ def test_standard_use():
     plt.close()
 
 
-def test_fontsize():
-    """Test fontsize set by keyword argument."""
+class TestKwargs:
+    """Test various keywords arguments that can be passed to modify graphic."""
 
-    _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
-    for t in ax.texts:
-        assert t.get_fontsize() == 20
+    def test_fontsize(self):
+        """Test fontsize set by keyword argument."""
 
+        _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
+        for t in ax.texts:
+            assert t.get_fontsize() == 20
 
-def test_decimals():
-    """Test decimals changes operation labelling"""
+    def test_decimals(self):
+        """Test decimals changes operation labelling"""
 
-    _, ax = qml.draw_mpl(circuit1, decimals=2)(1.23, 2.34)
+        _, ax = qml.draw_mpl(circuit1, decimals=2)(1.23, 2.34)
 
-    texts = [t.get_text() for t in ax.texts[3:]]
-    assert "RX\n(1.23)" in texts
-    assert "RY\n(2.34)" in texts
-    plt.close()
+        texts = [t.get_text() for t in ax.texts[3:]]
+        assert "RX\n(1.23)" in texts
+        assert "RY\n(2.34)" in texts
+        plt.close()
 
+    def test_label_options(self):
+        """Test label options modifies label style."""
 
-def test_label_options():
-    """Test label options modifies label style."""
+        _, ax = qml.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(
+            1.23, 2.34
+        )
 
-    _, ax = qml.draw_mpl(circuit1, label_options={"color": "purple", "fontsize": 20})(1.23, 2.34)
+        for l in ax.texts[0:3]:  # three labels
+            assert l.get_color() == "purple"
+            assert l.get_fontsize() == 20
+        plt.close()
 
-    for l in ax.texts[0:3]:  # three labels
-        assert l.get_color() == "purple"
-        assert l.get_fontsize() == 20
-    plt.close()
+    @pytest.mark.parametrize(
+        "notches, n_patches",
+        [
+            (True, 8),  # 4 notches, 3 measurement, 1 box
+            (False, 4),  # 1 box, 3 measurements
+        ],
+    )
+    def test_active_wire_notches(self, notches, n_patches):
+        """Test active wire notches can be toggled by keyword."""
+
+        @qml.qnode(dev)
+        def temp_circ():
+            qml.QFT(wires=(0, 1.23))
+            return qml.probs(0)
+
+        _, ax = qml.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
+
+        assert len(ax.patches) == n_patches
 
 
 class TestWireBehaviour:

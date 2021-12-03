@@ -94,6 +94,8 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
+        active_wire_notches (bool): whether or not to add notches indicating active wires.
+            Defaults to ``True``.
 
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
@@ -103,11 +105,11 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape:
-            qml.GroverOperator(wires=(0,1,2,3))
+            qml.QFT(wires=(0,1,2,3))
+            qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(1.2345, wires=0)
-
             qml.CRZ(1.2345, wires=(3,0))
             qml.expval(qml.PauliZ(0))
 
@@ -179,7 +181,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
         box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
         ax.add_patch(box1)
 
-        ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+        ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                     arrowprops={'facecolor': 'black'}, fontsize=14)
 
     .. figure:: ../../_static/tape_mpl/postprocessing.png
@@ -240,6 +242,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     """
     wire_options = kwargs.get("wire_options", None)
     label_options = kwargs.get("label_options", None)
+    active_wire_notches = kwargs.get("active_wire_notches", True)
     fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(
@@ -279,6 +282,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
                         "zorder": 4
                     },  # make sure box and text above control wires if controlled
                     text_options={"zorder": 5},
+                    active_wire_notches=active_wire_notches,
                 )
 
     # store wires we've already drawn on
