@@ -463,6 +463,14 @@
 
 <h3>Breaking changes</h3>
 
+* Certain features deprecated in `v0.19.0` have been removed:
+
+  - the `qml.template` decorator
+  - the `default.tensor` and `default.tensor.tf` experimental devices
+  - the `qml.fourier.spectrum` function
+  - the `diag_approx` keyword argument of `qml.metric_tensor` and `qml.QNGOptimizer`
+  [(#1981)](https://github.com/PennyLaneAI/pennylane/pull/1981)
+
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
   By default, the full metric tensor is computed, leading to higher cost than the previous
   default of computing the block diagonal only. At the same time, the Hadamard tests for
