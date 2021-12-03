@@ -295,8 +295,8 @@ class Hamiltonian(Observable):
             or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
         ):
             raise ValueError(
-                "The grouped index value needs to be a list of lists of integers between 0 and the "
-                "number of observables in the Hamiltonian; got {}".format(value)
+                f"The grouped index value needs to be a list of lists of integers between 0 and the "
+                f"number of observables in the Hamiltonian; got {value}"
             )
         self._grouping_indices = value
 

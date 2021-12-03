@@ -96,9 +96,7 @@ class TestTorchLayer:
         w[qml.qnn.torch.TorchLayer._input_arg] = n_qubits
         with pytest.raises(
             ValueError,
-            match="{} argument should not have its dimension".format(
-                qml.qnn.torch.TorchLayer._input_arg
-            ),
+            match=f"{qml.qnn.torch.TorchLayer._input_arg} argument should not have its dimension",
         ):
             TorchLayer(c, w)
 
@@ -462,11 +460,9 @@ class TestTorchLayerIntegration:
         state_dict = module.state_dict()
         dict_keys = set(state_dict.keys())
 
-        clayer_weights = set("clayer{}.weight".format(i + 1) for i in range(3))
-        clayer_biases = set("clayer{}.bias".format(i + 1) for i in range(3))
-        qlayer_params = set(
-            "qlayer{}.w{}".format(i + 1, j + 1) for i in range(2) for j in range(len(w))
-        )
+        clayer_weights = set(f"clayer{i + 1}.weight" for i in range(3))
+        clayer_biases = set(f"clayer{i + 1}.bias" for i in range(3))
+        qlayer_params = set(f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w)))
 
         all_params = clayer_weights | clayer_biases | qlayer_params
 
