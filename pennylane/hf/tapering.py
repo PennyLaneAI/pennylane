@@ -128,11 +128,11 @@ def clifford(generator, paulix_wires):
     + (0.3535533905932737) [Z0 X1 Z2 X3]
     + (0.3535533905932737) [Z0 Z1 X2 X3]
     """
-    clifford = []
+    cliff = []
     for i, t in enumerate(generator):
-        clifford.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
+        cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
 
-    u = functools.reduce(lambda i, j: observable_mult(i, j), clifford)
+    u = functools.reduce(lambda i, j: observable_mult(i, j), cliff)
 
     return u
 
