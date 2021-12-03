@@ -24,7 +24,7 @@
   fig.show()
   ```
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
+  <img src="https://pennylane.readthedocs.io/en/latest/_images/main_example.png" width=70%/>
 
 <h4>Support for TensorFlow AutoGraph mode</h4>
 
