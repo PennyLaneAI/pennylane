@@ -36,7 +36,7 @@ class TestTorchDevice:
         res = dev.execute(tape)
 
         assert res.is_cuda
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
 
         res.backward()
         assert x.grad.is_cuda
@@ -57,7 +57,7 @@ class TestTorchDevice:
         res = dev.execute(tape)
 
         assert res.is_cuda
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
 
         res.backward()
         assert x.grad.is_cuda
@@ -77,7 +77,7 @@ class TestTorchDevice:
 
         res = dev.execute(tape)
         assert res.is_cuda
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
 
     def test_resets(self):
         """Asserts reverts to cpu after execution on gpu"""
@@ -92,7 +92,7 @@ class TestTorchDevice:
             qml.expval(qml.PauliZ(0))
 
         res1 = dev.execute(tape1)
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
         assert res1.is_cuda
 
         with qml.tape.QuantumTape() as tape2:
@@ -120,7 +120,7 @@ class TestTorchDevice:
         res = circ(x, y)
         assert res.is_cuda
 
-        assert circ.device._torch_device == "cuda"
+        assert "cuda" in circ.device._torch_device
         res.backward()
         assert x.grad.is_cuda
 
@@ -170,7 +170,7 @@ class TestqnnTorchLayer:
         x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
         res = qlayer(x)
         assert circuit.device.short_name == "default.qubit.torch"
-        assert circuit.device._torch_device == "cuda"
+        assert "cuda" in circuit.device._torch_device
         assert res.is_cuda
 
         loss = torch.sum(res).squeeze()
