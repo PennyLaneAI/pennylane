@@ -129,7 +129,7 @@ def clifford(generator, paulix_wires):
     """
     cliff = []
     for i, t in enumerate(generator):
-        cliff.append(1 / 2 ** 0.5 * (qml.PauliX(qml.grouping.paulix_wires[i]) + t))
+        cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
 
     u = functools.reduce(lambda i, j: observable_mult(i, j), cliff)
 

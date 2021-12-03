@@ -46,3 +46,37 @@ def test_observable_mult(obs_a, obs_b, result):
     r"""Test that observable_mult returns the correct result."""
     o = observable_mult(obs_a, obs_b)
     assert o.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("generator", "paulix_wires", "result"),
+    [
+        (
+            [
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(0)]),
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(1)]),
+            ],
+            [0, 1],
+            qml.Hamiltonian(
+                np.array(
+                    [
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                    ]
+                ),
+                [
+                    qml.PauliZ(0) @ qml.PauliZ(1),
+                    qml.PauliZ(0) @ qml.PauliX(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliX(1),
+                ],
+            ),
+        ),
+    ],
+)
+def test_cliford(generator, paulix_wires, result):
+    r"""Test that clifford returns the correct operator."""
+    u = clifford(generator, paulix_wires)
+    assert u.compare(result)
