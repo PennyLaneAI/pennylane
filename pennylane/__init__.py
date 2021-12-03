@@ -25,7 +25,6 @@ from semantic_version import Spec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
 
-import pennylane.init
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
