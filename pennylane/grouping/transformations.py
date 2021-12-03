@@ -46,8 +46,8 @@ def qwc_rotation(pauli_operators):
     paulis_with_identity = (qml.Identity, qml.PauliX, qml.PauliY, qml.PauliZ)
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
         raise TypeError(
-            "All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
-            " instead got pauli_operators = {}.".format(pauli_operators)
+            f"All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
+            f" instead got pauli_operators = {pauli_operators}."
         )
     with qml.tape.OperationRecorder() as rec:
 
@@ -81,7 +81,7 @@ def diagonalize_pauli_word(pauli_word):
     """
 
     if not is_pauli_word(pauli_word):
-        raise TypeError("Input must be a Pauli word, instead got: {}.".format(pauli_word))
+        raise TypeError(f"Input must be a Pauli word, instead got: {pauli_word}.")
 
     paulis_with_identity = (qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity)
     diag_term = None
@@ -144,9 +144,7 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
                 pauli_to_binary(qwc_grouping[j], wire_map=wire_map),
             ):
                 raise ValueError(
-                    "{} and {} are not qubit-wise commuting.".format(
-                        qwc_grouping[i], qwc_grouping[j]
-                    )
+                    f"{qwc_grouping[i]} and {qwc_grouping[j]} are not qubit-wise commuting."
                 )
 
     pauli_operators = []

@@ -32,9 +32,7 @@ def _preprocess(args, depth):
 
         if shape(arg)[0] != depth:
             raise ValueError(
-                "Each positional argument must have length matching 'depth'; expected {} got {}".format(
-                    depth, len(arg)
-                )
+                f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
             )
 
 
