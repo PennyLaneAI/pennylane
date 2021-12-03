@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Added `qml.LieAlgebraOptimizer`, a new quantum-aware Lie Algebra optimizer that allows
+  one to perform gradient descent on the special unitary group.
+  [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
+  
 * Added functions for computing the values of atomic and molecular orbitals at a given position.
   [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
 
@@ -148,13 +152,13 @@
 
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+  [(#1954)](https://github.com/PennyLaneAI/pennylane/pull/1954)
 
   ```python
-  dev = qml.device("default.qubit", wires=4)
-
-  @qml.qnode(dev)
+  @qml.qnode(qml.device("default.qubit", wires=4))
   def circuit(x, z):
       qml.QFT(wires=(0,1,2,3))
+      qml.IsingXX(1.234, wires=(0,2))
       qml.Toffoli(wires=(0,1,2))
       qml.CSWAP(wires=(0,2,3))
       qml.RX(x, wires=0)
@@ -520,6 +524,10 @@
 
 <h3>Bug fixes</h3>
 
+* Corrects the documentation of `qml.transforms.classical_jacobian`
+  for the Autograd interface (and improves test coverage).
+  [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)
+
 * Fixes a bug where differentiating a QNode with `qml.state` using the JAX
   interface raised an error.
   [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
@@ -605,4 +613,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
 Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
 Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
-Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs
+Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema
