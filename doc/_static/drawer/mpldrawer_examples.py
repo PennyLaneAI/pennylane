@@ -164,14 +164,16 @@ def integration_rcParams(savefile="example_rcParams.png"):
 
     drawer = MPLDrawer(n_wires=5, n_layers=5)
 
+    drawer = MPLDrawer(n_wires=5, n_layers=6)
+
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
     drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
-    drawer.box_gate(1, [0, 1], "U(θ)")
+    drawer.box_gate(1, [0, 2, 3], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
 
-    drawer.SWAP(1, (2, 3))
+    drawer.SWAP(2, (3,4))
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
