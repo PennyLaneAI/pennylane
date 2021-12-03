@@ -148,13 +148,13 @@
 
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+  [(#1954)](https://github.com/PennyLaneAI/pennylane/pull/1954)
 
   ```python
-  dev = qml.device("default.qubit", wires=4)
-
-  @qml.qnode(dev)
+  @qml.qnode(qml.device("default.qubit", wires=4))
   def circuit(x, z):
       qml.QFT(wires=(0,1,2,3))
+      qml.IsingXX(1.234, wires=(0,2))
       qml.Toffoli(wires=(0,1,2))
       qml.CSWAP(wires=(0,2,3))
       qml.RX(x, wires=0)
