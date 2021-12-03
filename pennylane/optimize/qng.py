@@ -130,7 +130,8 @@ class QNGOptimizer(GradientDescentOptimizer):
     >>> eta = 0.01
     >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
-    >>> theta_new = opt.step(cost_fn, init_params, metric_tensor_fn=qnodes.qnodes[0].metric_tensor)
+    >>> metric_tensor_fn = qml.metric_tensor(qnodes.qnodes[0], approx='block-diag')
+    >>> theta_new = opt.step(cost_fn, init_params, metric_tensor_fn=metric_tensor_fn)
     >>> print(theta_new)
     [0.011445239214543481, -0.027519522461477233]
 

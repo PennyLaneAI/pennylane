@@ -44,9 +44,7 @@ _OP_TO_CGEN = {
 }
 
 
-def expand_fn(
-    tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -55,9 +53,7 @@ def expand_fn(
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(
-    tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     r"""Returns a function that computes the block-diagonal approximation of the metric tensor
     of a given QNode or quantum tape.
 
