@@ -21,7 +21,6 @@ import itertools
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.grouping import pauli_mult_with_phase, pauli_word_to_string, string_to_pauli_word
 
 
 def observable_mult(obs_a, obs_b):
@@ -52,7 +51,7 @@ def observable_mult(obs_a, obs_b):
     c = []
     for i in range(len(obs_a.terms[0])):
         for j in range(len(obs_b.terms[0])):
-            op, phase = pauli_mult_with_phase(obs_a.terms[1][i], obs_b.terms[1][j])
+            op, phase = qml.grouping.pauli_mult_with_phase(obs_a.terms[1][i], obs_b.terms[1][j])
             o.append(op)
             c.append(phase * obs_a.terms[0][i] * obs_b.terms[0][j])
 
@@ -82,7 +81,7 @@ def simplify(h):
     wiremap = dict(zip(h.wires, h.wires))
     for term in h.terms[1]:
         term = qml.operation.Tensor(term).prune()
-        s.append(pauli_word_to_string(term, wire_map=wiremap))
+        s.append(qml.grouping.pauli_word_to_string(term, wire_map=wiremap))
 
     o = list(set(s))
     c = [0.0] * len(o)
@@ -92,7 +91,7 @@ def simplify(h):
     nonzero_ind = np.nonzero(c)[0]
     c = [c[i] for i in nonzero_ind]
     o = [o[i] for i in nonzero_ind]
-    o = [string_to_pauli_word(i) for i in o]
+    o = [qml.grouping.string_to_pauli_word(i) for i in o]
 
     return qml.Hamiltonian(qml.math.stack(c), o)
 
@@ -112,9 +111,9 @@ def clifford(generator, paulix_wires):
 
     **Example**
 
-    >>> t1 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZZII')])
-    >>> t2 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIZI')])
-    >>> t3 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIIZ')])
+    >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
     >>> generator = [t1, t2, t3]
     >>> paulix_wires = [1, 2, 3]
     >>> u = clifford(generator, paulix_wires)
@@ -130,7 +129,7 @@ def clifford(generator, paulix_wires):
     """
     cliff = []
     for i, t in enumerate(generator):
-        cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
+        cliff.append(1 / 2 ** 0.5 * (qml.PauliX(qml.grouping.paulix_wires[i]) + t))
 
     u = functools.reduce(lambda i, j: observable_mult(i, j), cliff)
 
@@ -159,9 +158,9 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False)
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> H = qml.hf.generate_hamiltonian(mol)()
-    >>> t1 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZZII')])
-    >>> t2 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIZI')])
-    >>> t3 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIIZ')])
+    >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
     >>> generator = [t1, t2, t3]
     >>> paulix_wires = [1, 2, 3]
     >>> paulix_sector = [[1, -1, -1]]
@@ -182,15 +181,15 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
 
         for idx, w in enumerate(paulix_wires):
             for i in range(len(h.terms[0])):
-                s = pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+                s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
                 if s[w] == "X":
                     val[i] *= sector[idx]
 
         o = []
         for i in range(len(h.terms[0])):
-            s = pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+            s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
             wires = [x for x in h.wires if x not in paulix_wires]
-            o.append(string_to_pauli_word("".join([s[i] for i in wires])))
+            o.append(qml.grouping.string_to_pauli_word("".join([s[i] for i in wires])))
 
         c = anp.multiply(val, h.terms[0])
         c = qml.math.stack(c)

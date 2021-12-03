@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
+import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.tapering import (observable_mult, simplify, clifford, transform_hamiltonian)
