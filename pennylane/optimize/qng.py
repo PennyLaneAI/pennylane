@@ -160,7 +160,6 @@ class QNGOptimizer(GradientDescentOptimizer):
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
         super().__init__(stepsize)
 
-        approx_set = False
         self.approx = approx
 
         self.metric_tensor = None
