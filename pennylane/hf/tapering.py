@@ -54,53 +54,48 @@ def _binary_matrix(terms, num_qubits):
     return E
 
 
-def _row_echelon_form(binary_matrix):
-    """Computes the row echelon form (ref) of a binary matrix on the binary finite field Z_2"""
+def _reduced_row_echelon(binary_matrix):
+    """ Returns the reduced row echelon form (RREF) of a matrix in a binary finite field Z_2 """
 
+    binary_matrix = deepcopy(binary_matrix)
     shape = binary_matrix.shape
 
-    for irow in range(shape[0]):
-        pivot_index = 0
-        if np.count_nonzero(binary_matrix[irow, :]):
-            pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
+    for irow, icol in zip(range(shape[0]), range(shape[1])):
 
-        for jrow in range(shape[0]):
-            if jrow != irow and binary_matrix[jrow, pivot_index]:
-                binary_matrix[jrow, :] = (binary_matrix[jrow, :] + binary_matrix[irow, :]) % 2
+        # find value and index of largest element in remainder of column icol
+        krow = irow + np.argmax(binary_matrix[irow:, icol])
 
-    indices = [
-        irow
-        for irow in range(shape[0] - 1)
-        if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
-    ]
+        # swap rows krow and irow
+        binary_matrix[krow], binary_matrix[irow] = deepcopy(binary_matrix[irow]), deepcopy(binary_matrix[krow])
 
-    temp_row_echelon_matrix = deepcopy(binary_matrix)
-    for row in indices[::-1]:
-        temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
+        # store remainder columns of the row irow
+        pvtcols = binary_matrix[irow, icol:]
 
-    row_echelon_matrix = np.zeros(shape, dtype=int)
-    row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
+        # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
+        currcol = deepcopy(binary_matrix[:, icol])
+        currcol[irow] = 0
+        binary_matrix[:, icol:] ^= np.outer(currcol, pvtcols)
 
-    return row_echelon_matrix
+    return binary_matrix.astype(int)
 
 
 def _kernel(binary_matrix):
-    """Computes the kernel of a binary matrix on the binary finite field Z_2"""
+    """ Computes the kernel of a binary matrix on the binary finite field Z_2 """
 
-    shape = binary_matrix.shape
+    # Get the columns with and without pivots
+    pivots = (binary_matrix.T!=0).argmax(axis=0)
+    nonpivots = np.setdiff1d(range(len(binary_matrix[0])), pivots)
 
-    row_aug_mat = np.vstack((binary_matrix, np.identity(shape[1], dtype=int)))
-    col_ech_mat = (_row_echelon_form(row_aug_mat.T)).T
+    # Initialize the nullspace
+    null_vector = np.zeros((binary_matrix.shape[1], len(nonpivots)), dtype=int)
+    null_vector[nonpivots, np.arange(len(nonpivots))] = 1
 
-    kernel = []
-    for icol in range(shape[1]):
-        b_col, c_col = col_ech_mat[: shape[0], icol], col_ech_mat[shape[0] :, icol]
-        if np.array_equal(b_col, np.zeros(shape[0])) and not np.array_equal(
-            c_col, np.zeros(shape[1])
-        ):
-            kernel.append(col_ech_mat[shape[0] :, icol])
+    # Fill up the nullspace vectors from the binary matrix
+    null_vector_indices = np.ix_(pivots, np.arange(len(nonpivots)))
+    binary_vector_indices = np.ix_(np.arange(len(pivots)), nonpivots)
+    null_vector[null_vector_indices] = -binary_matrix[binary_vector_indices]%2
 
-    return kernel
+    return null_vector.T
 
 
 def generate_taus(nullspace, num_qubits):
@@ -120,7 +115,7 @@ def generate_taus(nullspace, num_qubits):
     for null_vector in nullspace:
         tau = qml.Identity(0)
         for idx, op in enumerate(
-            zip(null_vector[:num_qubits][::-1], null_vector[num_qubits:][::-1])
+            zip(null_vector[:num_qubits], null_vector[num_qubits:])
         ):
             x, z = op
             if x == 0 and z == 0:
@@ -194,7 +189,7 @@ def generate_symmetries(qubit_op, num_qubits):
     E = _binary_matrix(qubit_op.ops, num_qubits)
 
     # Get reduced row echelon form of binary matrix E
-    E_rref = _row_echelon_form(E)  # row_echelon(E)
+    E_rref = _reduced_row_echelon(E)
     E_reduced = E_rref[~np.all(E_rref == 0, axis=1)]  # remove all-zero rows
 
     # Get kernel (i.e., nullspace) for trimmed binary matrix using gaussian elimination
