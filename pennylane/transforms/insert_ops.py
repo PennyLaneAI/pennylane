@@ -30,7 +30,7 @@ def insert(
     circuit: Union[callable, QuantumTape, Device],
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
-    position: str = "all",
+    position: str = "all", # add operations
 ) -> Union[callable, QuantumTape]:
     """Insert an operation into specified points in an input circuit.
 
