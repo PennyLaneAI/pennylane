@@ -14,24 +14,35 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
-import pytest
 import pennylane as qml
+import pytest
 from pennylane import numpy as np
-from pennylane.hf.tapering import (observable_mult, simplify, clifford, transform_hamiltonian)
+from pennylane.hf.tapering import clifford, observable_mult, simplify, transform_hamiltonian
 
 
 @pytest.mark.parametrize(
     ("obs_a", "obs_b", "result"),
     [
         (
-            qml.Hamiltonian(np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)]),
-            qml.Hamiltonian(np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]),
-            qml.Hamiltonian(np.array([-0.25j, 0.25j, -0.25j, 0.25]), [qml.PauliY(0), qml.PauliY(1), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)])
+            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
+            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
+            qml.Hamiltonian(np.array([1.0]), [qml.Identity(0)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)]
+            ),
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+            ),
+            qml.Hamiltonian(
+                np.array([-0.25j, 0.25j, -0.25j, 0.25]),
+                [qml.PauliY(0), qml.PauliY(1), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+            ),
         ),
     ],
 )
 def test_observable_mult(obs_a, obs_b, result):
     r"""Test that observable_mult returns the correct result."""
     o = observable_mult(obs_a, obs_b)
-
     assert o.compare(result)
