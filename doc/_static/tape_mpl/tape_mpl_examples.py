@@ -97,7 +97,7 @@ def postprocessing(tape):
     box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
     ax.add_patch(box1)
 
-    ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+    ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                 arrowprops={'facecolor': 'black'}, fontsize=14)
 
     plt.savefig(folder / "postprocessing.png")
@@ -106,7 +106,8 @@ def postprocessing(tape):
 if __name__ == "__main__":
 
     with qml.tape.QuantumTape() as tape:
-        qml.templates.GroverOperator(wires=(0,1,2,3))
+        qml.QFT(wires=(0,1,2,3))
+        qml.IsingXX(1.234, wires=(0,2))
         qml.Toffoli(wires=(0,1,2))
         qml.CSWAP(wires=(0,2,3))
         qml.RX(1.2345, wires=0)
