@@ -155,12 +155,18 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
 
     **Example**
 
+    >>> symbols = ["H", "H"]
+    >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False)
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> H = qml.hf.generate_hamiltonian(mol)()
     >>> t1 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZZII')])
     >>> t2 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIZI')])
     >>> t3 = qml.Hamiltonian([1.0], [string_to_pauli_word('ZIIZ')])
     >>> generator = [t1, t2, t3]
     >>> paulix_wires = [1, 2, 3]
     >>> paulix_sector = [[1, -1, -1]]
+    >>> transform_hamiltonian(H, generator, paulix_wires, [paulix_sector])
+    [([1, -1, -1], <Hamiltonian: terms=4, wires=[0]>)]
     """
     u = clifford(generator, paulix_wires)
     h = observable_mult(observable_mult(u, h), u)
@@ -172,7 +178,7 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
     wiremap = dict(zip(h.wires, h.wires))
 
     for sector in paulix_sector:
-        val = anp.ones(len(h.terms[0])) * complex(1.0)
+        val = np.ones(len(h.terms[0])) * complex(1.0)
 
         for idx, w in enumerate(paulix_wires):
             for i in range(len(h.terms[0])):
@@ -181,15 +187,12 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
                     val[i] *= sector[idx]
 
         o = []
-        c = anp.zeros(len(h.terms[0]))
         for i in range(len(h.terms[0])):
             s = pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
             wires = [x for x in h.wires if x not in paulix_wires]
             o.append(string_to_pauli_word("".join([s[i] for i in wires])))
-            o_ = anp.zeros(len(c)) * complex(1.0)
-            o_[i] = val[i] * h.terms[0][i]
-            c = c + o_
 
+        c = anp.multiply(val, h.terms[0])
         c = qml.math.stack(c)
         h_tapered.append((sector, simplify(qml.Hamiltonian(c, o))))
 
