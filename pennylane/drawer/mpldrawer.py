@@ -114,33 +114,37 @@ class MPLDrawer:
 
     **Formatting**
 
-    You can globally control the style with ``plt.rcParams`` and styles, see the
-    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    If we customize ``plt.rcParams`` before executing our example function, we get a
-    different style:
+    PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+    Any available string can then be passed to ``qml.drawer.use_style``.
 
     .. code-block:: python
 
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
-        plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
+        qml.drawer.use_style('black_white')
 
-    .. figure:: ../../_static/drawer/example_rcParams.png
+    .. figure:: ../../_static/drawer/black_white_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
 
-    Instead of manually customizing everything, you can choose one of
-    the provided styles. You can see available styles with ``plt.style.available``.
-    We can set the ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
+    You can also control the appearance with matplotlib's provided tools, see the
+    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    For example, we can customize ``plt.rcParams``:
 
     .. code-block:: python
 
-        plt.style.use('Solarize_Light2')
+        plt.rcParams['patch.facecolor'] = 'mistyrose'
+        plt.rcParams['patch.edgecolor'] = 'maroon'
+        plt.rcParams['text.color'] = 'maroon'
+        plt.rcParams['font.weight'] = 'bold'
+        plt.rcParams['patch.linewidth'] = 4
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'indigo'
+        plt.rcParams['lines.linewidth'] = 5
+        plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-    .. figure:: ../../_static/drawer/example_Solarize_Light2.png
+
+    .. figure:: ../../_static/drawer/example_rcParams.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -150,7 +154,6 @@ class MPLDrawer:
     components. Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
     to the dictionary controlling how to format a rectangle. For the control-type gates ``CNOT`` and
     ``ctrl`` the options dictionary can only contain ``'linewidth'``, ``'color'``, or ``'zorder'`` keys.
-
 
     This example demonstrates the different ways you can format the individual elements:
 
