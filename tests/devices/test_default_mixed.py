@@ -953,6 +953,7 @@ class TestApply:
 
         assert np.allclose(dev.state, target, atol=tol, rtol=0)
 
+
 class TestInit:
     """Tests related to device initializtion"""
 
