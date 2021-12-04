@@ -447,16 +447,14 @@ class PauliError(Channel):
             raise ValueError("p must be between [0,1]")
 
         # check if the number of operators matches the number of wires
-        if (type(wires) == int and len(operators) != 1) or (
-            type(wires) == list and len(operators) != len(wires)
-        ):
+        if len(self.wires) != len(operators):
             raise ValueError("The number of operators must match the number of wires")
 
-        nq = len(operators)
+        nq = len(self.wires)
 
         if nq > 20:
             warnings.warn(
-                f"The resulting Kronecker matrix will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory."
+                f"The resulting Kronecker matrices will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory for each matrix."
             )
 
     @classmethod
