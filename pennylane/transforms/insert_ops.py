@@ -24,6 +24,8 @@ from pennylane.tape import QuantumTape
 from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
+# pylint: disable=too-many-branches
+
 
 def _check_position(position):
     not_op = False
