@@ -455,7 +455,8 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
-* New `qml.ops.PauliError` Channel allowing the application of an arbitrary number of Pauli operators on an arbitrary number of wires. [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
+* New `qml.ops.PauliError` Channel allowing the application of an arbitrary number of Pauli operators on an arbitrary number of wires.
+  [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
 
 * BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
 
