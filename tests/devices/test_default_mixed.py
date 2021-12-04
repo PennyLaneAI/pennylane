@@ -951,6 +951,7 @@ class TestApply:
         dev.apply([PauliError("XYZ", p, wires=[0, 1, 2])])
         target = 0.7 * basis_state(0, 3) + 0.3 * basis_state(6, 3)
 
+        assert np.allclose(dev.state, target, atol=tol, rtol=0)
 
 class TestInit:
     """Tests related to device initializtion"""
