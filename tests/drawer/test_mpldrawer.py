@@ -28,8 +28,6 @@ from matplotlib.patches import FancyArrow
 from pennylane.drawer import MPLDrawer
 from pennylane.math import allclose
 import pennylane
-import sys
-from importlib import reload
 
 
 class TestInitialization:
@@ -78,6 +76,9 @@ class TestInitialization:
         assert drawer._fontsize == 14
         assert drawer._pad == 0.2
         assert drawer._boxstyle == "round, pad=0.2"
+        assert drawer._notch_width == 0.04
+        assert drawer._notch_height == 0.25
+        assert drawer._notch_style == "round, pad=0.05"
         plt.close()
 
     def test_wires_formatting(self):
@@ -159,11 +160,13 @@ class TestBoxGate:
         assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
         assert box.get_width() == drawer._box_length - 2 * drawer._pad
         assert box.get_height() == drawer._box_length - 2 * drawer._pad
+        assert box.get_zorder() == 2
 
         text = drawer.ax.texts[0]
 
         assert text.get_text() == "X"
         assert text.get_position() == (0, 0)
+        assert text.get_zorder() == 3
         plt.close()
 
     def test_multiwire_box(self):
@@ -178,44 +181,97 @@ class TestBoxGate:
         assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
         assert box.get_width() == drawer._box_length - 2 * drawer._pad
         assert box.get_height() == 2 + drawer._box_length - 2 * drawer._pad
+        assert box.get_zorder() == 2
 
         text = drawer.ax.texts[0]
 
         assert text.get_text() == "Tall Gate"
         assert text.get_position() == (0, 1.0)
+        assert text.get_zorder() == 3
+        plt.close()
+
+    def test_notch_standard_styling(self):
+        """Test notch styling is correct"""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=3)
+        drawer.box_gate(0, (0, 2))
+
+        xs = [-0.415, 0.375, -0.415, 0.375]
+        ys = [-0.125, -0.125, 1.875, 1.875]
+
+        # first patch is big box
+        for x, y, notch in zip(xs, ys, drawer.ax.patches[1:]):
+            assert notch.get_x() == x
+            assert notch.get_y() == y
+            assert notch.get_width() == drawer._notch_width
+            assert notch.get_height() == drawer._notch_height
+            assert notch.get_zorder() == 1
+            assert notch.get_boxstyle().pad == 0.05
+        plt.close()
+
+    @pytest.mark.parametrize(
+        "wires, n_notches", [((0, 1, 2, 3), 0), ((0,), 0), ((0, 2), 4), ((0, 1, 3), 6)]
+    )
+    def test_active_wire_notches_number(self, wires, n_notches):
+        """Tests the number of active wires drawn is the expected amount."""
+
+        drawer = MPLDrawer(n_layers=1, n_wires=4)
+        drawer.box_gate(layer=0, wires=wires)
+
+        assert len(drawer.ax.patches) == (n_notches + 1)
+        plt.close()
+
+    def test_no_active_wire_notches(self):
+        """Test active wire notches deactivated by keyword."""
+        drawer = MPLDrawer(n_layers=1, n_wires=3)
+        drawer.box_gate(layer=0, wires=(0, 2), active_wire_notches=False)
+
+        # only one patch for big box, no patches for notches
+        assert len(drawer.ax.patches) == 1
         plt.close()
 
     def test_extra_width(self):
         """tests a box with added width."""
 
-        drawer = MPLDrawer(1, 1)
-        drawer.box_gate(0, 0, text="Wide Gate", extra_width=0.4)
+        drawer = MPLDrawer(1, 3)
+        drawer.box_gate(0, (0, 2), text="Wide Gate", extra_width=0.4)
 
         box = drawer.ax.patches[0]
 
         assert box.get_x() == -(drawer._box_length + 0.4) / 2.0 + drawer._pad
         assert box.get_y() == -drawer._box_length / 2.0 + drawer._pad
         assert box.get_width() == drawer._box_length + 0.4 - 2 * drawer._pad
-        assert box.get_height() == drawer._box_length - 2 * drawer._pad
+        assert box.get_height() == 2 + drawer._box_length - 2 * drawer._pad
 
         text = drawer.ax.texts[0]
 
         assert text.get_text() == "Wide Gate"
-        assert text.get_position() == (0, 0)
+        assert text.get_position() == (0, 1.0)
+
+        xs = [-0.615, 0.575, -0.615, 0.575]
+        for x, notch in zip(xs, drawer.ax.patches[1:]):
+            assert notch.get_x() == x
+
         plt.close()
 
     def test_box_formatting(self):
         """Tests that box_options influences the rectangle"""
 
-        drawer = MPLDrawer(1, 1)
+        drawer = MPLDrawer(1, 3)
         rgba_red = (1, 0, 0, 1)
         rgba_green = (0, 1, 0, 1)
-        options = {"facecolor": rgba_red, "edgecolor": rgba_green}
-        drawer.box_gate(0, 0, text="X", box_options=options)
+        options = {"facecolor": rgba_red, "edgecolor": rgba_green, "zorder": 5}
+        drawer.box_gate(0, (0, 2), text="X", box_options=options)
 
-        rect = drawer.ax.patches[0]
-        assert rect.get_facecolor() == rgba_red
-        assert rect.get_edgecolor() == rgba_green
+        # notches get same styling options as box
+        for p in drawer.ax.patches:
+            assert p.get_facecolor() == rgba_red
+            assert p.get_edgecolor() == rgba_green
+
+        # except for zorder
+        assert drawer.ax.patches[0].get_zorder() == 5
+        for n in drawer.ax.patches[1:]:
+            assert n.get_zorder() == 4
         plt.close()
 
     def test_text_formatting(self):
