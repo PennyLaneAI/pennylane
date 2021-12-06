@@ -44,4 +44,4 @@ from .matrices import (
     molecular_density_matrix,
 )
 from .molecule import Molecule
-from .tapering import observable_mult, simplify, clifford, transform_hamiltonian
+from .tapering import clifford, transform_hamiltonian

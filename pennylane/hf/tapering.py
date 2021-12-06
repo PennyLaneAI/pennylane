@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def observable_mult(obs_a, obs_b):
+def _observable_mult(obs_a, obs_b):
     r"""Multiply two PennyLane observables together.
 
     Each observable is a linear combination of Pauli words, e.g., :math:`\sum_{k=0}^{N} c_k O_k`,
@@ -41,7 +41,7 @@ def observable_mult(obs_a, obs_b):
     >>> c = np.array([0.5, 0.5])
     >>> obs_a = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)])
     >>> obs_b = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
-    >>> print(observable_mult(obs_a, obs_b))
+    >>> print(_observable_mult(obs_a, obs_b))
       (-0.25j) [Z1]
     + (-0.25j) [Y0]
     + ( 0.25j) [Y1]
@@ -55,10 +55,10 @@ def observable_mult(obs_a, obs_b):
             o.append(op)
             c.append(phase * obs_a.terms[0][i] * obs_b.terms[0][j])
 
-    return simplify(qml.Hamiltonian(qml.math.stack(c), o))
+    return _simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
-def simplify(h, cutoff=1.0e-12):
+def _simplify(h, cutoff=1.0e-12):
     r"""Add together identical terms in the Hamiltonian.
 
     The Hamiltonian terms with identical Pauli words are added together and eliminated if the
@@ -74,7 +74,7 @@ def simplify(h, cutoff=1.0e-12):
 
     >>> c = np.array([0.5, 0.5])
     >>> h = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)])
-    >>> print(simplify(h))
+    >>> print(_simplify(h))
     (1.0) [X0 Y1]
     """
     s = []
@@ -131,7 +131,7 @@ def clifford(generator, paulix_wires):
     for i, t in enumerate(generator):
         cliff.append(1 / 2 ** 0.5 * (qml.PauliX(paulix_wires[i]) + t))
 
-    u = functools.reduce(lambda i, j: observable_mult(i, j), cliff)
+    u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
 
     return u
 
@@ -168,7 +168,7 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
     [([1, -1, -1], <Hamiltonian: terms=4, wires=[0]>)]
     """
     u = clifford(generator, paulix_wires)
-    h = observable_mult(observable_mult(u, h), u)
+    h = _observable_mult(_observable_mult(u, h), u)
 
     if paulix_sector is None:
         paulix_sector = itertools.product([1, -1], repeat=len(paulix_wires))
@@ -193,6 +193,6 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
 
         c = anp.multiply(val, h.terms[0])
         c = qml.math.stack(c)
-        result.append((list(sector), simplify(qml.Hamiltonian(c, o))))
+        result.append((list(sector), _simplify(qml.Hamiltonian(c, o))))
 
     return result
