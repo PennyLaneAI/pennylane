@@ -72,21 +72,22 @@ class MPLDrawer:
 
     .. code-block:: python
 
-        drawer = MPLDrawer(n_wires=5, n_layers=5)
+        drawer = qml.drawer.MPLDrawer(n_wires=5, n_layers=6)
 
         drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
         drawer.box_gate(layer=0, wires=[0, 1, 2, 3, 4], text="Entangling Layers")
-        drawer.box_gate(layer=1, wires=[0, 1], text="U(θ)")
+        drawer.box_gate(layer=1, wires=[0, 2, 3], text="U(θ)")
 
         drawer.box_gate(layer=1, wires=4, text="Z")
 
-        drawer.SWAP(layer=1, wires=(2, 3))
+        drawer.SWAP(layer=2, wires=(3,4))
         drawer.CNOT(layer=2, wires=(0, 2))
 
-        drawer.ctrl(layer=3, wires=[1, 3], control_values = [True, False])
-        drawer.box_gate(layer=3, wires=2, text="H", box_options={'zorder': 4},
-            text_options={'zorder': 5})
+        drawer.ctrl(layer=3, wires=[1, 3], control_values=[True, False])
+        drawer.box_gate(
+            layer=3, wires=2, text="H", box_options={"zorder": 4}, text_options={"zorder": 5}
+        )
 
         drawer.ctrl(layer=4, wires=[1, 2])
 
@@ -113,33 +114,37 @@ class MPLDrawer:
 
     **Formatting**
 
-    You can globally control the style with ``plt.rcParams`` and styles, see the
-    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-    If we customize ``plt.rcParams`` before executing our example function, we get a
-    different style:
+    PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+    Any available string can then be passed to ``qml.drawer.use_style``.
 
     .. code-block:: python
 
-        plt.rcParams['patch.facecolor'] = 'white'
-        plt.rcParams['patch.edgecolor'] = 'black'
-        plt.rcParams['patch.linewidth'] = 2
-        plt.rcParams['patch.force_edgecolor'] = True
-        plt.rcParams['lines.color'] = 'black'
+        qml.drawer.use_style('black_white')
 
-    .. figure:: ../../_static/drawer/example_rcParams.png
+    .. figure:: ../../_static/drawer/black_white_style.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
 
-    Instead of manually customizing everything, you can choose one of
-    the provided styles. You can see available styles with ``plt.style.available``.
-    We can set the ``'Solarize_Light2'`` style with the same graph as drawn above and instead get:
+    You can also control the appearance with matplotlib's provided tools, see the
+    `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+    For example, we can customize ``plt.rcParams``:
 
     .. code-block:: python
 
-        plt.style.use('Solarize_Light2')
+        plt.rcParams['patch.facecolor'] = 'mistyrose'
+        plt.rcParams['patch.edgecolor'] = 'maroon'
+        plt.rcParams['text.color'] = 'maroon'
+        plt.rcParams['font.weight'] = 'bold'
+        plt.rcParams['patch.linewidth'] = 4
+        plt.rcParams['patch.force_edgecolor'] = True
+        plt.rcParams['lines.color'] = 'indigo'
+        plt.rcParams['lines.linewidth'] = 5
+        plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-    .. figure:: ../../_static/drawer/example_Solarize_Light2.png
+
+    .. figure:: ../../_static/drawer/example_rcParams.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -149,7 +154,6 @@ class MPLDrawer:
     components. Acceptable keywords differ based on what's being drawn. For example, you cannot pass ``"fontsize"``
     to the dictionary controlling how to format a rectangle. For the control-type gates ``CNOT`` and
     ``ctrl`` the options dictionary can only contain ``'linewidth'``, ``'color'``, or ``'zorder'`` keys.
-
 
     This example demonstrates the different ways you can format the individual elements:
 
@@ -230,6 +234,15 @@ class MPLDrawer:
 
     _boxstyle = "round, pad=0.2"
     """Style for FancyBboxPatch objects."""
+
+    _notch_width = 0.04
+    """The width of active wire notches."""
+
+    _notch_height = 0.25
+    """The height of active wire notches."""
+
+    _notch_style = "round, pad=0.05"
+    """Box style for active wire notches."""
 
     def __init__(self, n_layers, n_wires, wire_options=None, figsize=None):
 
@@ -343,6 +356,8 @@ class MPLDrawer:
             text_options=None (dict): any matplotlib keywords for the text
             extra_width (float): extra box width
             autosize (bool): whether to rotate and shrink text to fit within the box
+            active_wire_notches (bool): whether or not to add notches indicating active wires.
+                Defaults to ``True``.
 
         **Example**
 
@@ -401,6 +416,7 @@ class MPLDrawer:
         """
         extra_width = kwargs.get("extra_width", 0)
         autosize = kwargs.get("autosize", True)
+        active_wire_notches = kwargs.get("active_wire_notches", True)
 
         if box_options is None:
             box_options = {}
@@ -438,6 +454,12 @@ class MPLDrawer:
             **new_text_options,
         )
 
+        if active_wire_notches and (len(wires) != (box_max - box_min + 1)):
+            notch_options = box_options.copy()
+            notch_options["zorder"] += -1
+            for wire in wires:
+                self._add_notch(layer, wire, extra_width, notch_options)
+
         if autosize:
             margin = 0.1
             max_width = box_width - margin + 2 * self._pad
@@ -458,6 +480,36 @@ class MPLDrawer:
                     break
                 text_obj.set_fontsize(s)
                 w, h = self._text_dims(text_obj)
+
+    def _add_notch(self, layer, wire, extra_width, box_options):
+        """Add a wire used marker to both sides of a box.
+
+        Args:
+            layer (int): x coordinate for the box center
+            wire (int): y cordinate for the notches
+            extra_width (float): extra box width
+            box_options (dict): styling options
+        """
+        y = wire - self._notch_height / 2
+        x1 = layer - self._box_length / 2.0 - extra_width / 2.0 - self._notch_width
+        x2 = layer + self._box_length / 2.0 + extra_width / 2.0
+
+        box1 = patches.FancyBboxPatch(
+            (x1, y),
+            self._notch_width,
+            self._notch_height,
+            boxstyle=self._notch_style,
+            **box_options,
+        )
+        self._ax.add_patch(box1)
+        box2 = patches.FancyBboxPatch(
+            (x2, y),
+            self._notch_width,
+            self._notch_height,
+            boxstyle=self._notch_style,
+            **box_options,
+        )
+        self._ax.add_patch(box2)
 
     def _text_dims(self, text_obj):
         """Get width and height of text object in data coordinates.
@@ -654,29 +706,20 @@ class MPLDrawer:
 
         **Example**
 
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
-
-            drawer.SWAP(0, (0, 1))
-
-        .. figure:: ../../_static/drawer/SWAP.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
         The ``options`` keyword can accept any
         `Line2D compatible keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.lines.Line2D.html#matplotlib.lines.Line2D>`_
         in a dictionary.
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer = MPLDrawer(n_wires=2, n_layers=2)
+
+            drawer.SWAP(0, (0, 1))
 
             swap_options = {"linewidth": 2, "color": "indigo"}
-            drawer.SWAP(0, (0, 1), options=swap_options)
+            drawer.SWAP(1, (0, 1), options=swap_options)
 
-        .. figure:: ../../_static/drawer/SWAP_formatted.png
+        .. figure:: ../../_static/drawer/SWAP.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -733,28 +776,19 @@ class MPLDrawer:
 
         **Example**
 
-        .. code-block:: python
-
-            drawer = MPLDrawer(n_wires=1, n_layers=1)
-            drawer.measure(0, 0)
-
-        .. figure:: ../../_static/drawer/measure.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
         This method accepts two different formatting dictionaries. ``box_options`` edits the rectangle
         while ``lines_options`` edits the arc and arrow.
 
         .. code-block:: python
 
-            drawer = MPLDrawer(n_wires=1, n_layers=1)
+            drawer = MPLDrawer(n_wires=2, n_layers=1)
+            drawer.measure(layer=0, wires=0)
 
             measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
             measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
-            drawer.measure(0, 0, box_options=measure_box, lines_options=measure_lines)
+            drawer.measure(layer=0, wires=1, box_options=measure_box, lines_options=measure_lines)
 
-        .. figure:: ../../_static/drawer/measure_formatted.png
+        .. figure:: ../../_static/drawer/measure.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
