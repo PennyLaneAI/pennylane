@@ -152,6 +152,7 @@
 
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+  [(#1811)](https://github.com/PennyLaneAI/pennylane/pull/1811)
   [(#1954)](https://github.com/PennyLaneAI/pennylane/pull/1954)
 
   ```python
@@ -164,11 +165,13 @@
       qml.RX(x, wires=0)
       qml.CRZ(z, wires=(3,0))
       return qml.expval(qml.PauliZ(0))
+
+  qml.drawer.use_style('black_white')
   fig, ax = qml.draw_mpl(circuit)(1.2345, 1.2345)
   fig.show()
   ```
 
-  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl_qnode/main_example.png" width=70%/>
+  <img src="https://pennylane.readthedocs.io/en/latest/_static/draw_mpl/black_white_style.png" width=70%/>
 
 * It is now possible to use TensorFlow's [AutoGraph
   mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
@@ -452,6 +455,9 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* Added a new `qml.PauliError` channel that allows the application of an arbitrary number of Pauli operators on an arbitrary number of wires.
+  [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
+
 * BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
 
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
@@ -604,6 +610,9 @@
 
 * QueueContext was not empty when importing `pennylane`.
 
+* Fixed circuit drawing problem with Interferometer and CVNeuralNet.
+  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -611,4 +620,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
 Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
 Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
-Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema
+Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann
