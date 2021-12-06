@@ -1083,7 +1083,6 @@ class Observable(Operator):
         raise ValueError(f"Cannot subtract {type(other)} from Observable")
 
 
-
 class Tensor(Observable):
     """Container class representing tensor products of observables.
 
