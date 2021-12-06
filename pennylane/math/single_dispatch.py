@@ -130,7 +130,10 @@ def _scatter_element_add_autograd(tensor, index, value):
     if pnp.isscalar(flat_index):
         flat_index = [flat_index]
     if pnp.isscalar(value) or len(pnp.shape(value)) == 0:
-        value = [value]
+        if len(flat_index) > 1:
+            value = [value] * len(flat_index)
+        else:
+            value = [value]
     t = [0] * size
     for _id, val in zip(flat_index, value):
         t[_id] = val

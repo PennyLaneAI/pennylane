@@ -53,6 +53,7 @@ from pennylane.qnode import QNode, qnode
 import pennylane.qnode_old
 from pennylane.transforms import (
     adjoint,
+    adjoint_metric_tensor,
     batch_params,
     batch_transform,
     draw,

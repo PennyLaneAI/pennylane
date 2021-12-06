@@ -140,6 +140,29 @@ expand_multipar = create_expand_fn(
     docstring=_expand_multipar_doc,
 )
 
+_expand_trainable_multipar_doc = """Expand out a tape so that all its trainable
+operations have a single parameter.
+
+This is achieved by decomposing all trainable operations that do not have
+a generator, up to maximum depth ``depth``.
+For a sufficient ``depth``, it should always be possible to obtain a tape containing
+only single-parameter operations.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+expand_trainable_multipar = create_expand_fn(
+    depth=10,
+    stop_at=not_tape | is_measurement | has_nopar | (~is_trainable) | has_gen,
+    docstring=_expand_trainable_multipar_doc,
+)
+
 
 _expand_nonunitary_gen_doc = """Expand out a tape so that all its parametrized
 operations have a unitary generator.
