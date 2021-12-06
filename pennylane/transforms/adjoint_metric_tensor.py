@@ -125,8 +125,8 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
           Note also that this makes the metric tensor strictly real-valued.
 
     Args:
-        circuit (.QuantumTape or .QNode): circuit that the function computes the metric tensor of
-        device (.Device): device to use for the adjoint method
+        circuit (.QuantumTape or .QNode): Circuit to compute the metric tensor of
+        device (.Device): Device to use for the adjoint method
         hybrid (bool): Whether to take classical preprocessing into account. Ignored if
             ``circuit`` is a tape.
 
@@ -140,10 +140,12 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     if not isinstance(circuit, qml.QNode):
         raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
 
-    return _adjoint_metric_tensor_qnode(circuit, hybrid)
+    return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
 
 def _adjoint_metric_tensor_tape(tape, device):
+    """Computes the metric tensor of a tape using the adjoint method and a given device.
+    """
     if device.shots is not None:
         raise ValueError(
             "The adjoint method for the metric tensor is only implemented for shots=None"
@@ -233,16 +235,21 @@ def _adjoint_metric_tensor_tape(tape, device):
     return metric_tensor
 
 
-def _adjoint_metric_tensor_qnode(qnode, hybrid):
-    """ """
-    if isinstance(qnode, qml.ExpvalCost):
-        if qnode._multiple_devices:  # pylint: disable=protected-access
-            warnings.warn(
-                "ExpvalCost was instantiated with multiple devices. Only the first device "
-                "will be used to evaluate the metric tensor with the adjoint method.",
-                UserWarning,
-            )
-        qnode = qnode.qnodes.qnodes[0]
+def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
+    """Computes the metric tensor of a qnode using the adjoint method and its device.
+    For ``hybrid==True`` this wrapper accounts for classical preprocessing within the
+    QNode.
+    """
+    if device is None:
+        if isinstance(qnode, qml.ExpvalCost):
+            if qnode._multiple_devices:  # pylint: disable=protected-access
+                warnings.warn(
+                    "ExpvalCost was instantiated with multiple devices. Only the first device "
+                    "will be used to evaluate the metric tensor with the adjoint method.",
+                    UserWarning,
+                )
+            qnode = qnode.qnodes.qnodes[0]
+        device = qnode.device
 
     cjac_fn = qml.transforms.classical_jacobian(
         qnode, expand_fn=qml.transforms.expand_trainable_multipar
@@ -250,7 +257,7 @@ def _adjoint_metric_tensor_qnode(qnode, hybrid):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        mt = _adjoint_metric_tensor_tape(qnode.qtape, qnode.device)
+        mt = _adjoint_metric_tensor_tape(qnode.qtape, device)
 
         if not hybrid:
             return mt

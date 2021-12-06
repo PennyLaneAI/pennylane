@@ -127,7 +127,7 @@ from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .adjoint_metric_tensor import adjoint_metric_tensor as adjoint_metric_tensor
+from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
 from .mitigate import mitigate_with_zne
 from .optimization import (
