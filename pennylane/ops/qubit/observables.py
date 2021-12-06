@@ -123,7 +123,7 @@ class Hermitian(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r"""SparseHamiltonian(H)
+    r"""SparseHamiltonian(H, wires)
     A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     .. warning::
@@ -144,12 +144,13 @@ class SparseHamiltonian(Observable):
     Args:
         H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+        wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AllWires
     grad_method = None
 
-    def __init__(self, H):
-        super().__init__(H, do_queue=True, id=None)
+    def __init__(self, H, wires):
+        super().__init__(H, wires=wires, do_queue=True, id=None)
 
     @property
     def num_params(self):
