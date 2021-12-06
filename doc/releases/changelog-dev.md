@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * Added the adjoint method for the metric tensor.
-  [(#19xx)](https://github.com/PennyLaneAI/pennylane/pull/19xx)
+  [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
   This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
