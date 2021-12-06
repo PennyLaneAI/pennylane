@@ -159,11 +159,9 @@ class AmplitudeEmbedding(Operation):
         """
 
         # check if features is batched
-        dims = qml.math.shape(features)
-        batched = len(dims) > 1
+        batched = len(qml.math.shape(features)) > 1
 
         features_batch = features if batched else [features]
-        processed = np.empty(dims if batched else (1, *dims), dtype=np.complex128)
 
         # apply pre-processing to each features tensor in the batch
         for i, feature_set in enumerate(features_batch):
@@ -207,6 +205,6 @@ class AmplitudeEmbedding(Operation):
                         "Use 'normalize=True' to automatically normalize."
                     )
 
-            processed[i] = qml.math.cast(feature_set, np.complex128)
+            features_batch[i] = feature_set
 
-        return processed if batched else processed[0]
+        return qml.math.cast(features_batch if batched else features_batch[0], np.complex128)
