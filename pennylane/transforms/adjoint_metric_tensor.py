@@ -133,7 +133,6 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
 
 
-
 def _adjoint_metric_tensor_tape(tape, device):
     """Computes the metric tensor of a tape using the adjoint method and a given device."""
     # pylint: disable=protected-access

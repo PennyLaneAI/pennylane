@@ -694,12 +694,11 @@ class TestErrors:
         devices is passed."""
         dev1 = qml.device("default.qubit", wires=2)
         dev2 = qml.device("default.qubit", wires=1)
-        H = qml.Hamiltonian([0.2, 0.9], [qml.PauliZ(0), qml.PauliY(0)]) 
+        H = qml.Hamiltonian([0.2, 0.9], [qml.PauliZ(0), qml.PauliY(0)])
+
         def ansatz(x, wires):
             qml.RX(x, wires=0)
 
         cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated"):
             mt = qml.adjoint_metric_tensor(cost)
-
-
