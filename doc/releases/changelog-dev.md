@@ -13,7 +13,7 @@
 
   ```python
   symbols  = ['H', 'H']
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False) 
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
   mol = hf.Molecule(symbols, geometry)
   hf.generate_scf(mol)()
 
@@ -29,15 +29,15 @@
   ```
 
 * The `metric_tensor` transform can now be used to compute the full
-  tensor, beyond the block diagonal approximation. 
+  tensor, beyond the block diagonal approximation.
   [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
 
-  This is performed using Hadamard tests, and requires an additional wire 
-  on the device to execute the circuits produced by the transform, 
+  This is performed using Hadamard tests, and requires an additional wire
+  on the device to execute the circuits produced by the transform,
   as compared to the number of wires required by the original circuit.
   The transform defaults to computing the full tensor, which can
   be controlled by the `approx` keyword argument.
-  See the 
+  See the
   [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
   for more information and usage details.
 
@@ -462,7 +462,7 @@
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
   By default, the full metric tensor is computed, leading to higher cost than the previous
   default of computing the block diagonal only. At the same time, the Hadamard tests for
-  the full metric tensor require an additional wire on the device, so that 
+  the full metric tensor require an additional wire on the device, so that
 
   ```pycon
   >>> qml.metric_tensor(some_qnode)(weights)
@@ -512,7 +512,7 @@
 
 <h3>Deprecations</h3>
 
-* The init module, which contains functions to generate random parameters for 
+* The init module, which contains functions to generate random parameters for
   templates, has been removed. Instead, the templates provide a `shape()` method.
   [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
 
@@ -576,6 +576,10 @@
 * `AdamOptimizer` and `AdagradOptimizer` had small fixes to their
   optimization step updates.
   [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
+
+* Fixes a bug where differentiating a QNode with multiple array
+  arguments via `qml.gradients.param_shift` throws an error.
+  [(#1989)]https://github.com/PennyLaneAI/pennylane/pull/1989
 
 <h3>Documentation</h3>
 
