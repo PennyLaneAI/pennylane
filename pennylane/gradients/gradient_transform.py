@@ -108,6 +108,29 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
+    @staticmethod
+    def _jacobian_trainable_args(args, interface):
+        """Return the indices of QNode arguments for which a Jacobian was
+        computed by `qml.gradients.classical_jacobian` with argnum=None.
+        """
+        trainable_args = []
+
+        if interface == "autograd":
+            for idx, arg in enumerate(args):
+                if getattr(arg, "requires_grad", True):
+                    trainable_args.append(idx)
+
+        elif interface == "torch":
+            trainable_args = range(len(args))
+
+        elif interface == "jax":
+            trainable_args = [0]
+
+        elif interface == "tf":
+            trainable_args = range(len(args))
+
+        return trainable_args
+
     def default_qnode_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
@@ -144,8 +167,35 @@ class gradient_transform(qml.batch_transform):
                 # is present inside the QNode.
                 return qjac
 
-            # Classical processing of a single argument is present. Return qjac @ cjac.
-            jac = qml.math.squeeze(qml.math.tensordot(qml.math.T(cjac), qjac, [[-1], [-1]]))
-            return qml.math.T(jac)
+            # Classical processing present of either:
+            #   a) a single argument
+            #   b) multiple arguments of the same shape
+            # The shape of the classical jacobian returned by qml.jacobian depends on the scenario:
+            #   a) (# gate args, qnode arg shape)
+            #   b) (reverse qnode arg shape, # gate args, # qnode args)
+            # It then needs to be contracted with the quantum jacobian of shape:
+            #      (qnode output shape, # gate args)
+            # The result should have shape:
+            #   a) (qnode ouput shape, qnode arg shape)
+            #   b) (reverse qnode arg shape, qnode output shape, # qnode args)
+            num_gate_args = qml.math.shape(qjac)[-1]
+            trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
+            qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
+            num_qnode_args = len(trainable_args_idx)  # need trainable number of qnode args only
+
+            if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
+                # single QNode argument
+                jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
+            elif qml.math.shape(cjac) == (*(qnode_arg_shape[::-1]), num_gate_args, num_qnode_args):
+                # multiple QNode arguments with stacking
+                cjac = qml.math.swapaxes(cjac, -1, -2)
+                jac = qml.math.tensordot(cjac, qjac, [[-1], [-1]])
+                jac = qml.math.moveaxis(jac, -1, len(qnode_arg_shape))
+            else:
+                # default to old behaviour in case shape is not identified, remove in the future
+                jac = qml.math.squeeze(qml.math.tensordot(qml.math.T(cjac), qjac, [[-1], [-1]]))
+                return qml.math.T(jac)
+
+            return qml.math.squeeze(jac)
 
         return jacobian_wrapper
