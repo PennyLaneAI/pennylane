@@ -4,6 +4,45 @@
 
 <h3>New features since last release</h3>
 
+* Added the adjoint method for the metric tensor.
+  [(#19xx)](https://github.com/PennyLaneAI/pennylane/pull/19xx)
+
+  This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
+  computes the metric tensor using four copies of the state vector and
+  a number of operations that scales quadratically in the number of trainable
+  parameters. As it makes use of state cloning it is inherently classical
+  and to be used on state vector simulators only.
+  It is particular useful for larger circuits for which back-propagation requires
+  inconvenient or even unfeasible amounts of storage, but is slower.
+  Furthermore, the adjoint method is only available for analytic computation, not
+  for measurements simulation with `shots!=None`.
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+  
+  @qml.qnode(dev)
+  def circuit(x, y):
+      qml.Rot(*x[0], wires=0)
+      qml.Rot(*x[1], wires=1)
+      qml.Rot(*x[2], wires=2)
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[1, 2])
+      qml.CNOT(wires=[2, 0])
+      qml.RY(y[0], wires=0)
+      qml.RY(y[1], wires=1)
+      qml.RY(y[0], wires=2)
+
+  x = pnp.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
+  y = pnp.array([1.3, 0.2], requires_grad=True)
+  ```
+
+  ```pycon
+  >>> qml.adjoint_metric_tensor(circuit)(x, y)
+  tensor([[ 0.25495723, -0.07086695],
+          [-0.07086695,  0.24945606]], requires_grad=True)
+  ```
+  
+
 * Added `qml.LieAlgebraOptimizer`, a new quantum-aware Lie Algebra optimizer that allows
   one to perform gradient descent on the special unitary group.
   [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
