@@ -597,7 +597,7 @@
 
 * Fixes a bug where differentiating a QNode with multiple array
   arguments via `qml.gradients.param_shift` throws an error.
-  [(#1989)]https://github.com/PennyLaneAI/pennylane/pull/1989
+  [(#1989)](https://github.com/PennyLaneAI/pennylane/pull/1989)
 
 <h3>Documentation</h3>
 
