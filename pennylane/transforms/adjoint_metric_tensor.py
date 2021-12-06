@@ -144,8 +144,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
 
 
 def _adjoint_metric_tensor_tape(tape, device):
-    """Computes the metric tensor of a tape using the adjoint method and a given device.
-    """
+    """Computes the metric tensor of a tape using the adjoint method and a given device."""
     if device.shots is not None:
         raise ValueError(
             "The adjoint method for the metric tensor is only implemented for shots=None"

@@ -535,7 +535,6 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
-
     def test_autograd_with_other_device(self):
         """Test passing an extra device to the QNode wrapper."""
         ansatz = fubini_ansatz2
