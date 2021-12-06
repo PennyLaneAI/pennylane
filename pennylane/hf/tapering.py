@@ -173,7 +173,7 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
     if paulix_sector is None:
         paulix_sector = itertools.product([1, -1], repeat=len(paulix_wires))
 
-    h_tapered = []
+    result = []
     wiremap = dict(zip(h.wires, h.wires))
 
     for sector in paulix_sector:
@@ -193,6 +193,6 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
 
         c = anp.multiply(val, h.terms[0])
         c = qml.math.stack(c)
-        h_tapered.append((sector, simplify(qml.Hamiltonian(c, o))))
+        result.append((list(sector), simplify(qml.Hamiltonian(c, o))))
 
-    return h_tapered
+    return result
