@@ -610,6 +610,13 @@
 
 * QueueContext was not empty when importing `pennylane`.
 
+<h3>Operator class refactor</h3>
+
+The Operator class has undergone a major refactor with the following changes:
+
+* The `diagonalizing_gates()` representation has been moved to the highest-level 
+  `Operator` class and is therefore available to all subclasses.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

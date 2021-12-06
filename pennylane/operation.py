@@ -349,8 +349,13 @@ class Operator(abc.ABC):
 
         This is a *class method* that should be defined for all
         new operations and observables that returns the eigenvalues
-        of the operator. Note that the eigenvalues are not guaranteed
-        to be in any particular order.
+        of the operator.
+
+        If :attr:`diagonalizing_gates` are specified, the order of the
+        eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using these ops. Otherwise, no particular order is
+        guaranteed.
 
         This private method allows eigenvalues to be computed
         directly without instantiating the operators first.
@@ -364,7 +369,12 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.RZ._eigvals(0.5)
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        >>> qml.PauliX(wires=0).diagonalizing_gates()
+        [Hadamard(wires=[0])]
+        >>> qml.PauliX._eigvals()
+        array([1, -1])
 
         Returns:
             array: eigenvalue representation
@@ -375,14 +385,22 @@ class Operator(abc.ABC):
     def eigvals(self):
         r"""Eigenvalues of an instantiated operator.
 
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
+        If :attr:`diagonalizing_gates` are specified, the order of the
+        eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using these ops. Otherwise, no particular order is
+        guaranteed.
 
         **Example:**
 
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
         >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        >>> qml.PauliX(wires=0).diagonalizing_gates()
+        [Hadamard(wires=[0])]
+        >>> qml.PauliX.eigvals()
+        array([1, -1])
 
         Returns:
             array: eigvals representation
@@ -556,6 +574,15 @@ class Operator(abc.ABC):
         if self.num_params == 0:
             return self.decomposition(wires=self.wires)
         return self.decomposition(*self.parameters, wires=self.wires)
+
+    def diagonalizing_gates(self):
+        r"""Returns the list of operations such that they
+        diagonalize this operation in the computational basis.
+
+        Returns:
+            list(qml.Operator): A list of operators.
+        """
+        raise NotImplementedError
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -936,54 +963,6 @@ class Observable(Operator):
     # pylint: disable=abstract-method
     return_type = None
 
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the observable.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`.
-
-        This is a *class method* that must be defined for all
-        new diagonal operations, that returns the eigenvalues
-        of the operator in the computational basis.
-
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
-
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
-
-        **Example:**
-
-        >>> qml.PauliZ._eigvals()
-        >>> array([1, -1])
-
-        Returns:
-            array: eigenvalue representation
-        """
-        raise NotImplementedError
-
-    @property
-    def eigvals(self):
-        r"""Eigenvalues of an instantiated observable.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`. This is a
-        requirement for using qubit observables in quantum functions.
-
-        **Example:**
-
-        >>> U = qml.PauliZ(wires=1)
-        >>> U.eigvals
-        >>> array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        return super().eigvals
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
@@ -1103,15 +1082,6 @@ class Observable(Operator):
             return self.__add__(other.__mul__(-1))
         raise ValueError(f"Cannot subtract {type(other)} from Observable")
 
-    def diagonalizing_gates(self):
-        r"""Returns the list of operations such that they
-        diagonalize the observable in the computational basis.
-
-        Returns:
-            list(qml.Operation): A list of gates that diagonalize
-            the observable in the computational basis.
-        """
-        raise NotImplementedError
 
 
 class Tensor(Observable):
