@@ -145,7 +145,7 @@ class TestGradientTransformIntegration:
             qml.RX(x[0, 0], wires=0)
             qml.RY(y[0, 0], wires=0)
             qml.RZ(x[1, 0], wires=0)
-            return qml.probs(wires=[0,1])
+            return qml.probs(wires=[0, 1])
 
         x = np.array([[0.1], [0.2]], requires_grad=True)
         y = np.array([[0.2], [0.3]], requires_grad=True)
@@ -165,7 +165,7 @@ class TestGradientTransformIntegration:
             qml.RX(y[0], wires=0)
             qml.RY(y[0], wires=0)
             qml.RZ(y[1], wires=0)
-            return qml.probs(wires=[0,1])
+            return qml.probs(wires=[0, 1])
 
         x = np.array([0.1], requires_grad=False)
         y = np.array([0.2, 0.3], requires_grad=True)
