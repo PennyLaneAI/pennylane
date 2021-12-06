@@ -309,7 +309,7 @@ class TestMetricTensor:
         def final(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
+            qml.RY(-y, wires=1).inv()
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             qml.RY(f, wires=1)
