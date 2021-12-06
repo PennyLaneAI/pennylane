@@ -455,6 +455,9 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* Added a new `qml.PauliError` channel that allows the application of an arbitrary number of Pauli operators on an arbitrary number of wires.
+  [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
+
 * BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
 
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
@@ -614,4 +617,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
 Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
 Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
-Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema
+Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann
