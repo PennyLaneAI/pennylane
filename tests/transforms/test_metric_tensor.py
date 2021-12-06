@@ -628,8 +628,8 @@ def fubini_ansatz2(params, wires=None):
     qml.RY(params0, wires=0)
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RX(params1, wires=0)
-    qml.RX(params1, wires=1)
+    qml.RX(params1, wires=0).inv()
+    qml.RX(params1, wires=1).inv()
 
 
 def fubini_ansatz3(params, wires=None):
@@ -640,7 +640,7 @@ def fubini_ansatz3(params, wires=None):
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
-    qml.RX(params0, wires=0)
+    qml.RX(params0, wires=0).inv()
     qml.RX(params0, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])

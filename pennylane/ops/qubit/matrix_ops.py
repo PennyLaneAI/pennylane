@@ -286,8 +286,8 @@ class DiagonalQubitUnitary(Operation):
     def _eigvals(cls, *params):
         D = qml.math.asarray(params[0])
 
-        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
-            raise ValueError("Operator must be unitary.")
+        # if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
+        # raise ValueError("Operator must be unitary.")
 
         return D
 
