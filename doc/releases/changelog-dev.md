@@ -610,6 +610,9 @@
 
 * QueueContext was not empty when importing `pennylane`.
 
+* Fixed circuit drawing problem with Interferometer and CVNeuralNet.
+  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
