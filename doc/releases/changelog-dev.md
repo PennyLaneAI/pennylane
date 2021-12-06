@@ -591,6 +591,10 @@
   optimization step updates.
   [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
+* `AmplitudeEmbedding` template no longer produces a `ComplexWarning`
+  when the `features` parameter is batched and provided as a 2D array.
+  [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
