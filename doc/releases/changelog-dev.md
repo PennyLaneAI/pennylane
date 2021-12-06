@@ -528,6 +528,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the metric tensor was computed incorrectly when using
+  gates with `gate.inverse=True`.
+  [(#1987)](https://github.com/PennyLaneAI/pennylane/pull/1987)
+
 * Corrects the documentation of `qml.transforms.classical_jacobian`
   for the Autograd interface (and improves test coverage).
   [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)
