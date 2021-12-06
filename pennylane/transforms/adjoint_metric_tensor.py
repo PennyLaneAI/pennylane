@@ -14,6 +14,7 @@
 """
 Contains the adjoint_metric_tensor.
 """
+import warnings
 from pennylane import numpy as np
 
 import pennylane as qml
@@ -81,7 +82,7 @@ def _group_operations(tape):
     # the first set of non-trainable ops are the ops "after the -1st" trainable op
     trainable_idx = -1
     group_after = []
-    for i, op in enumerate(tape.operations):
+    for op in tape.operations:
         if qml.operation.is_trainable(op):
             trainable_operations.append(op)
             group_after_trainable_op[trainable_idx] = group_after
@@ -126,10 +127,11 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     """
     if isinstance(circuit, qml.tape.QuantumTape):
         return _adjoint_metric_tensor_tape(circuit, device)
-    if not isinstance(circuit, qml.QNode):
-        raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
+    if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
+        return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
-    return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
+    raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
+
 
 
 def _adjoint_metric_tensor_tape(tape, device):
