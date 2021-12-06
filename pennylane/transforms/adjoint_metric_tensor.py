@@ -1,39 +1,22 @@
-import numpy as onp
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Contains the adjoint_metric_tensor.
+"""
 from pennylane import numpy as np
 
 import pennylane as qml
-
-""" [WIP] Attempt to register vdot with autograd. Did "almost" work out
-(some reshaping issue still)
-from autograd.extend import defvjp
-from autograd.numpy.numpy_vjps import match_complex
-from autograd.numpy import numpy_wrapper as anp
-
-def vdot_adjoint_0(B, G, A_meta, B_meta):
-    A_shape, A_ndim, *_ = A_meta
-    flat_dim = anp.prod(A_shape)
-    G = anp.conj(anp.reshape(G, (*G.shape[:-A_ndim], flat_dim)))
-    B = B.reshape(flat_dim)
-    return anp.dot(G, B)
-
-def vdot_adjoint_1(A, G, A_meta, B_meta):
-    B_shape, B_ndim, *_ = B_meta
-    flat_dim = anp.prod(B_shape)
-    G = anp.reshape(G, (*G.shape[:-B_ndim], flat_dim))
-    A = anp.conj(A.reshape(flat_dim))
-    return anp.dot(G, A)
-
-def vdot_vjp_0(ans, A, B):
-    A_meta, B_meta = anp.metadata(A), anp.metadata(B)
-    return lambda g: match_complex(A, vdot_adjoint_0(B, g, A_meta, B_meta))
-
-def vdot_vjp_1(ans, A, B):
-    A_meta, B_meta = anp.metadata(A), anp.metadata(B)
-    return lambda g: match_complex(B, vdot_adjoint_1(A, g, A_meta, B_meta))
-
-defvjp(anp.vdot, vdot_vjp_0, vdot_vjp_1)
-
-"""
 
 
 def _get_generator(op):
@@ -58,6 +41,13 @@ def _get_generator(op):
 
 
 def _apply_any_operation(state, op, device, invert=False):
+    """Wrapper that allows to apply a variety of operations---or groups
+    of operations---to a state or to prepare a new state.
+    If ``invert=True``, this function makes sure not to alter the operations.
+    The state of the device, however may be altered, depending on the
+    device and performed operation(s).
+    """
+    # pylint: disable=protected-access
     if isinstance(op, list):
         if invert:
             op = op[::-1]
@@ -88,7 +78,6 @@ def _group_operations(tape):
     of untrainable operations after each trainable one."""
     trainable_operations = []
     group_after_trainable_op = {}
-    param_number = -1
     # the first set of non-trainable ops are the ops "after the -1st" trainable op
     trainable_idx = -1
     group_after = []
@@ -145,6 +134,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
 
 def _adjoint_metric_tensor_tape(tape, device):
     """Computes the metric tensor of a tape using the adjoint method and a given device."""
+    # pylint: disable=protected-access
     if device.shots is not None:
         raise ValueError(
             "The adjoint method for the metric tensor is only implemented for shots=None"
