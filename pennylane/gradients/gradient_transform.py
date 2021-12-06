@@ -120,13 +120,10 @@ class gradient_transform(qml.batch_transform):
                 if getattr(arg, "requires_grad", True):
                     trainable_args.append(idx)
 
-        elif interface == "torch":
-            trainable_args = range(len(args))
-
         elif interface == "jax":
             trainable_args = [0]
 
-        elif interface == "tf":
+        else:
             trainable_args = range(len(args))
 
         return trainable_args
@@ -186,15 +183,12 @@ class gradient_transform(qml.batch_transform):
             if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
                 # single QNode argument
                 jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
-            elif qml.math.shape(cjac) == (*(qnode_arg_shape[::-1]), num_gate_args, num_qnode_args):
+            else:
                 # multiple QNode arguments with stacking
+                # shape(cjac) = (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args)
                 cjac = qml.math.swapaxes(cjac, -1, -2)
                 jac = qml.math.tensordot(cjac, qjac, [[-1], [-1]])
                 jac = qml.math.moveaxis(jac, -1, len(qnode_arg_shape))
-            else:
-                # default to old behaviour in case shape is not identified, remove in the future
-                jac = qml.math.squeeze(qml.math.tensordot(qml.math.T(cjac), qjac, [[-1], [-1]]))
-                return qml.math.T(jac)
 
             return qml.math.squeeze(jac)
 
