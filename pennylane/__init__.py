@@ -16,6 +16,7 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 from importlib import reload
+import types
 import pkg_resources
 
 import numpy as _np
@@ -24,7 +25,6 @@ from semantic_version import Spec, Version
 from pennylane.boolean_fn import BooleanFn
 from pennylane.queuing import apply, QueuingContext
 
-import pennylane.init
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
@@ -48,7 +48,6 @@ from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane.optimize import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 import pennylane.qnode_old
@@ -69,6 +68,7 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
 )
+from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
@@ -108,38 +108,6 @@ def refresh_devices():
 
 # get list of installed devices
 plugin_devices = _get_device_entrypoints()
-
-
-# get chemistry plugin
-class NestedAttrError:
-    """This class mocks out the qchem module in case
-    it is not installed. Any attempt to print an instance
-    of this class, or to access an attribute of this class,
-    results in an import error, directing the user to the installation
-    instructions for PennyLane Qchem"""
-
-    error_msg = (
-        "PennyLane-QChem not installed. \n\nTo access the qchem "
-        "module, you can install PennyLane-QChem via pip:"
-        "\n\npip install pennylane-qchem"
-        "\n\nFor more details, see the quantum chemistry documentation:"
-        "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html"
-    )
-
-    def __str__(self):
-        raise ImportError(self.error_msg) from None
-
-    def __getattr__(self, name):
-        raise ImportError(self.error_msg) from None
-
-    __repr__ = __str__
-
-
-qchem = NestedAttrError()
-
-for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
-    if entry.name == "OpenFermion":
-        qchem = entry.load()
 
 
 def device(name, *args, **kwargs):
@@ -315,10 +283,8 @@ def device(name, *args, **kwargs):
 
         if Version(version()) not in Spec(plugin_device_class.pennylane_requires):
             raise DeviceError(
-                "The {} plugin requires PennyLane versions {}, however PennyLane "
-                "version {} is installed.".format(
-                    name, plugin_device_class.pennylane_requires, __version__
-                )
+                f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
+                f"however PennyLane version {__version__} is installed."
             )
 
         # Construct the device
@@ -340,3 +306,45 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
+
+
+# add everything as long as it's not a module and not prefixed with _
+_all = sorted(
+    [
+        name
+        for name, function in globals().items()
+        if not (name.startswith("_") or isinstance(function, types.ModuleType))
+    ]
+)
+
+
+_qchem = None
+
+
+def __getattr__(name):
+    """Ensure that the qchem module is imported lazily"""
+    if name == "qchem":
+        global _qchem  # pylint: disable=global-statement
+
+        if _qchem is None:
+
+            for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
+                if entry.name == "OpenFermion":
+                    _qchem = entry.load()
+
+            if _qchem is None:
+                raise ImportError(
+                    "PennyLane-QChem not installed. \n\nTo access the qchem "
+                    "module, you can install PennyLane-QChem via pip:"
+                    "\n\npip install pennylane-qchem"
+                    "\n\nFor more details, see the quantum chemistry documentation:"
+                    "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html"
+                )
+
+        return _qchem
+
+    raise AttributeError(f"module {__name__} has no attribute {name}")
+
+
+def __dir__():  # pragma: no cover
+    return _all + ["qchem"]

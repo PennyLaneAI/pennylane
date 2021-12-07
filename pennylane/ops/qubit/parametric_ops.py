@@ -593,17 +593,15 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given Pauli word "{}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z".format(pauli_word)
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z"
             )
 
         num_wires = 1 if isinstance(wires, int) else len(wires)
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                "The given Pauli word has length {}, length {} was expected for wires {}".format(
-                    len(pauli_word), num_wires, wires
-                )
+                f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
     @property
@@ -661,8 +659,8 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given Pauli word "{}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z".format(pauli_word)
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z"
             )
 
         theta = params[0]
@@ -674,9 +672,16 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if pauli_word == "I" * len(pauli_word):
-            return qml.math.array(
-                qml.math.exp(-1j * theta / 2) * qml.math.eye(2 ** len(pauli_word)), like=interface
-            )
+
+            exp = qml.math.exp(-1j * theta / 2)
+            iden = qml.math.eye(2 ** len(pauli_word))
+            if interface == "torch":
+                # Use convert_like to ensure that the tensor is put on the correct
+                # Torch device
+                iden = qml.math.convert_like(iden, theta)
+                return exp * iden
+
+            return qml.math.array(exp * iden, like=interface)
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -855,7 +860,13 @@ class CRX(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        z = qml.math.zeros([4], like=interface)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([4]), theta)
+        else:
+            z = qml.math.zeros([4], like=interface)
 
         if interface == "tensorflow":
             c = qml.math.cast_like(c, 1j)
@@ -950,7 +961,13 @@ class CRY(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        z = qml.math.zeros([4], like=interface)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([4]), theta)
+        else:
+            z = qml.math.zeros([4], like=interface)
 
         mat = qml.math.diag([1, 1, c, c])
         return mat + qml.math.stack(

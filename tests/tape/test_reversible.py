@@ -112,7 +112,7 @@ class TestReversibleTape:
             op(0.542, wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="The {} gate is not currently supported".format(name)):
+        with pytest.raises(ValueError, match=f"The {name} gate is not currently supported"):
             tape.jacobian(dev)
 
     def test_var_exception(self):

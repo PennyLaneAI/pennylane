@@ -158,8 +158,8 @@ def sparse_hamiltonian(H, wires=None):
             if len(o.wires) > 1:
                 # todo: deal with operations created from multi-qubit operations such as Hermitian
                 raise ValueError(
-                    "Can only sparsify Hamiltonians whose constituent observables consist of "
-                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                    f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                    f"(tensor products of) single-qubit operators; got {op}."
                 )
             obs.append(scipy.sparse.coo_matrix(o.matrix))
 
@@ -231,7 +231,7 @@ def _unflatten(flat, model):
             res.append(val)
         return res, flat
 
-    raise TypeError("Unsupported type in the model: {}".format(type(model)))
+    raise TypeError(f"Unsupported type in the model: {type(model)}")
 
 
 def unflatten(flat, model):
