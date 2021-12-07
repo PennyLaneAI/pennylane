@@ -583,10 +583,12 @@ class Operator(abc.ABC):
         form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
 
+        Returns None if this operator does not define its diagonalizing gates.
+
         Returns:
             list(qml.Operator): A list of operators.
         """
-        raise NotImplementedError
+        return None
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -1860,3 +1862,23 @@ def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qml.math.requires_grad``."""
     return any(qml.math.requires_grad(p) for p in obj.parameters)
+
+
+@qml.BooleanFn
+def defines_diagonalizing_gates(obj):
+    """Returns ``True`` if an operator defines the diagonalizing
+    gates are defined."""
+
+    # We need to stop the tape so that the diagonalizing gates
+    # are not queued when we check if they are defined.
+    # Reassess this when queueing system is overhauled
+    tape = qml.tape.get_active_tape()
+    if tape is not None:
+        with tape.stop_recording():
+            dgates = obj.diagonalizing_gates()
+    else:
+        dgates = obj.diagonalizing_gates()
+
+    if dgates is None:
+        return False
+    return True
