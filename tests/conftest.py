@@ -204,7 +204,8 @@ def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
-@pytest.fixture(scope='function', autouse=False)
+
+@pytest.fixture(scope="function", autouse=False)
 def dask_setup_teardown():
     """Ensure Dask cluster set-up and tear-down"""
     dist = pytest.importorskip("dask.distributed")

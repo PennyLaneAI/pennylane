@@ -1120,7 +1120,7 @@ class TestDefaultQubitIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "provides_adjoint_method" : True,
+            "provides_adjoint_method": True,
             "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
