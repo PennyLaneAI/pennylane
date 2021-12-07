@@ -35,23 +35,22 @@ try:
         dask_deserialize,
     )
 
-    @dask_serialize.register(qml.numpy.tensor)
-    def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
-        "Defines a serializer for the Dask backend"
-        header, frames = dist.protocol.numpy.serialize_numpy_ndarray(tensor)
-        header["type"] = "qml.numpy.tensor"
-        header["requires_grad"] = tensor.requires_grad
-        frames = [tensor.data]
-        return header, frames
-
-    @dask_deserialize.register(qml.numpy.tensor)
-    def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
-        "Defines a deserializer for the Dask backend"
-        return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
-
 except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing dask and dask.distributed") from e
 
+@dask_serialize.register(qml.numpy.tensor)
+def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
+    "Defines a serializer for the Dask backend"
+    header, frames = dist.protocol.numpy.serialize_numpy_ndarray(tensor)
+    header["type"] = "qml.numpy.tensor"
+    header["requires_grad"] = tensor.requires_grad
+    frames = [tensor.data]
+    return header, frames
+
+@dask_deserialize.register(qml.numpy.tensor)
+def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
+    "Defines a deserializer for the Dask backend"
+    return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
 
 class ProxyInstanceCLS(classmethod):
     """
