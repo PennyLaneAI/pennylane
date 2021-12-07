@@ -38,6 +38,7 @@ try:
 except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing dask and dask.distributed") from e
 
+
 @dask_serialize.register(qml.numpy.tensor)
 def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
     "Defines a serializer for the Dask backend"
@@ -47,10 +48,12 @@ def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
     frames = [tensor.data]
     return header, frames
 
+
 @dask_deserialize.register(qml.numpy.tensor)
 def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
     "Defines a deserializer for the Dask backend"
     return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
+
 
 class ProxyInstanceCLS(classmethod):
     """
@@ -174,7 +177,10 @@ class TaskQubit(QubitDevice):
         return self.__dict__[obj]
 
     def batch_execute(self, circuits: List[qml.tape.QuantumTape]):
-        "This overloads the backt_execute functionality of QubitDevice to offload computations to a user-chosen backend device. This allows scaling of the available workers to instantiate a given number of backends for concurrent circuit evaluations."
+        # This overloads the batch_execute functionality of QubitDevice to offload
+        # computations to a user-chosen backend device. This allows scaling of the
+        # available workers to instantiate a given number of backends for concurrent
+        # circuit evaluations.
         if self._gen_report:
             filename = self._gen_report if isinstance(self._gen_report, str) else "dask-report.html"
             cm = performance_report(filename=filename)
