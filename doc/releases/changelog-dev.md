@@ -595,6 +595,11 @@
   optimization step updates.
   [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
+* `qml.circuit_drawer.CircuitDrawer` no longer produces an error
+  when attempting to draw tapes inside of circuits (e.g. from
+  decomposition of an operation or manual placement).
+  [(#1994)](https://github.com/PennyLaneAI/pennylane/pull/1994)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
