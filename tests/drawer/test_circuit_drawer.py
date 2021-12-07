@@ -73,7 +73,7 @@ class TestInitialization:
             dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
         )
 
-        assert isinstance(drawer_None.charset, UnicodeCharSet)
+        assert drawer_None.charset is UnicodeCharSet
 
     @pytest.mark.parametrize("charset", ("unicode", "ascii"))
     def test_charset_string(self, charset):
@@ -82,7 +82,7 @@ class TestInitialization:
             dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
         )
 
-        assert isinstance(drawer_str.charset, CHARSETS[charset])
+        assert drawer_str.charset is CHARSETS[charset]
 
     @pytest.mark.parametrize("charset", (UnicodeCharSet, AsciiCharSet))
     def test_charset_class(self, charset):
@@ -91,7 +91,7 @@ class TestInitialization:
             dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
         )
 
-        assert isinstance(drawer_class.charset, charset)
+        assert drawer_class.charset is charset
 
     def test_charset_error(self):
 

@@ -18,7 +18,7 @@ Operations to their string representations.
 import numpy as np
 import pennylane as qml
 
-from .charsets import UnicodeCharSet
+from .charsets import CHARSETS, UnicodeCharSet
 
 
 class RepresentationResolver:
@@ -337,7 +337,8 @@ class RepresentationResolver:
                 idx = list(self.tape_cache).index(op)
             else:
                 idx = len(self.tape_cache)
-                self.tape_cache[op] = op.draw()
+                charset_string = next((k for k, v in CHARSETS.items() if v is self.charset), None)
+                self.tape_cache[op] = op.draw(charset=charset_string)
 
             return f"QuantumTape:T{idx}"
 
