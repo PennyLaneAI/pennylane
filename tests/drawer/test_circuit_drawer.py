@@ -805,6 +805,46 @@ class TestCircuitDrawerIntegration:
         )
         assert tape.draw(max_length=60) == expected
 
+    def test_nested_tapes(self):
+
+        with qml.tape.QuantumTape() as tape:
+            with qml.tape.QuantumTape():
+                qml.PauliX(0)
+                qml.CNOT(wires=[0, 2])
+                with qml.tape.QuantumTape():
+                    qml.QuantumPhaseEstimation(
+                        qml.PauliY.matrix, target_wires=[1], estimation_wires=[2]
+                    )
+                    qml.CNOT(wires=[1, 2])
+            qml.Hadamard(1)
+            with qml.tape.QuantumTape():
+                qml.SWAP(wires=[0, 1])
+            qml.state()
+
+        expected = (
+            " 0: ──╭QuantumTape:T0─────╭QuantumTape:T1──╭┤ State \n"
+            + " 1: ──├QuantumTape:T0──H──╰QuantumTape:T1──├┤ State \n"
+            + " 2: ──╰QuantumTape:T0──────────────────────╰┤ State \n"
+            + "T0 =\n"
+            + " 0: ──X──╭C───────────────────┤  \n"
+            + " 2: ─────╰X──╭QuantumTape:T2──┤  \n"
+            + " 1: ─────────╰QuantumTape:T2──┤  \n"
+            + "T2 =\n"
+            + " 1: ──╭QuantumPhaseEstimation(M0)──╭C──┤  \n"
+            + " 2: ──╰QuantumPhaseEstimation(M0)──╰X──┤  \n"
+            + "M0 =\n"
+            + "[[ 0.+0.j -0.-1.j]\n"
+            + " [ 0.+1.j  0.+0.j]]\n"
+            + "\n"
+            + "\n"
+            + "T1 =\n"
+            + " 0: ──╭SWAP──┤  \n"
+            + " 1: ──╰SWAP──┤  \n"
+            + "\n"
+        )
+
+        assert tape.draw(wire_order=qml.wires.Wires([0, 1, 2])) == expected
+
 
 class TestWireOrdering:
     """Tests for wire ordering functionality"""
