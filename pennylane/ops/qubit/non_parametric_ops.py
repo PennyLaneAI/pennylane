@@ -61,7 +61,8 @@ class Hadamard(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
         r"""Rotates the specified wires such that they
         are in the eigenbasis of the Hadamard operator.
 
@@ -75,7 +76,7 @@ class Hadamard(Observable, Operation):
             list(~.Operation): A list of gates that diagonalize Hadamard in
             the computational basis.
         """
-        return [qml.RY(-np.pi / 4, wires=self.wires)]
+        return [qml.RY(-np.pi / 4, wires=wires)]
 
     @staticmethod
     def decomposition(wires):
@@ -128,7 +129,8 @@ class PauliX(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
         r"""Rotates the specified wires such that they
         are in the eigenbasis of the Pauli-X operator.
 
@@ -140,7 +142,7 @@ class PauliX(Observable, Operation):
             list(qml.Operation): A list of gates that diagonalize PauliY in the
             computational basis.
         """
-        return [Hadamard(wires=self.wires)]
+        return [Hadamard(wires=wires)]
 
     @staticmethod
     def decomposition(wires):
@@ -196,7 +198,8 @@ class PauliY(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
         r"""Rotates the specified wires such that they
         are in the eigenbasis of PauliY.
 
@@ -211,9 +214,9 @@ class PauliY(Observable, Operation):
                 computational basis.
         """
         return [
-            PauliZ(wires=self.wires),
-            S(wires=self.wires),
-            Hadamard(wires=self.wires),
+            PauliZ(wires=wires),
+            S(wires=wires),
+            Hadamard(wires=wires),
         ]
 
     @staticmethod
@@ -270,7 +273,8 @@ class PauliZ(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
         return []
 
     @staticmethod

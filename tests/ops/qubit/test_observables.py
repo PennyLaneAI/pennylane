@@ -95,6 +95,41 @@ class TestObservables:
         expected = np.diag(eigs)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_diagonalization_static_identity(self):
+        """Test the static compute_diagonalizing_gates method for the Identity observable."""
+        assert qml.Identity.compute_diagonalizing_gates(wires=1) == []
+
+    def test_diagonalization_static_hadamard(self):
+        """Test the static compute_diagonalizing_gates method for the Hadamard observable."""
+        res = qml.Hadamard.compute_diagonalizing_gates(wires=1)
+        assert len(res) == 1
+        assert res[0].name == "RY"
+        assert res[0].parameters[0] == -np.pi / 4
+        assert res[0].wires.tolist() == [1]
+
+    def test_diagonalization_static_paulix(self):
+        """Test the static compute_diagonalizing_gates method for the PauliX observable."""
+        res = qml.PauliX.compute_diagonalizing_gates(wires=1)
+        assert len(res) == 1
+        assert res[0].name == "Hadamard"
+        assert res[0].parameters == []
+        assert res[0].wires.tolist() == [1]
+
+    def test_diagonalization_static_pauliy(self):
+        """Test the static compute_diagonalizing_gates method for the PauliY observable."""
+        res = qml.PauliY.compute_diagonalizing_gates(wires=1)
+        assert len(res) == 3
+        assert res[0].name == "PauliZ"
+        assert res[1].name == "S"
+        assert res[2].name == "Hadamard"
+        assert res[0].wires.tolist() == [1]
+        assert res[1].wires.tolist() == [1]
+        assert res[2].wires.tolist() == [1]
+
+    def test_diagonalization_static_pauliz(self):
+        """Test the static compute_diagonalizing_gates method for the PauliZ observable."""
+        assert qml.PauliZ.compute_diagonalizing_gates(wires=1) == []
+
     @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
     def test_eigvals(self, obs, mat, eigs, tol):
         """Test eigenvalues of standard observables are correct"""
@@ -207,6 +242,14 @@ class TestObservables:
 
         assert np.allclose(qubit_unitary[0].data, eigvecs.conj().T, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
+
+    def test_hermitian_compute_diagonalizing_gates(self, tol):
+        """Tests that the compute_diagonalizing_gates method of the
+        Hermitian class returns the correct results."""
+        eigvecs = np.array([[0.38268343, -0.92387953], [-0.92387953, -0.38268343]])
+        res = qml.Hermitian.compute_diagonalizing_gates(eigvecs, wires=[0])[0].data
+        expected = eigvecs.conj().T
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
@@ -341,11 +384,15 @@ class TestProjector:
 
     @pytest.mark.parametrize("basis_state", PROJECTOR_EIGVALS_TEST_DATA)
     def test_projector_diagonalization(self, basis_state, tol):
-        """Test that the diagonalizing_gates property of the Projector class returns empty."""
+        """Test that the projector has an empty list of diagonalizing gates."""
         num_wires = len(basis_state)
         diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
-
         assert diag_gates == []
+
+        diag_gates_static = qml.Projector.compute_diagonalizing_gates(
+            basis_state, wires=range(num_wires)
+        )
+        assert diag_gates_static == []
 
     def test_projector_exceptions(self):
         """Tests that the projector construction raises the proper errors on incorrect inputs."""

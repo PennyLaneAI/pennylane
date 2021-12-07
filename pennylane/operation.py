@@ -575,6 +575,27 @@ class Operator(abc.ABC):
             return self.decomposition(wires=self.wires)
         return self.decomposition(*self.parameters, wires=self.wires)
 
+    @staticmethod
+    def compute_diagonalizing_gates(*params, wires):
+        r"""Defines a partial representation of this operator as
+        an eigendecompisition.
+
+        Multiplied together, the diagonalizing gates
+        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
+
+        This is the static version of ``diagonalizing_gates``, which can be called
+        on the class.
+
+        *Example:*
+
+        >>> qml.PauliZ.compute_diagonalizing_gates(0.5, wires=1)
+
+        Returns:
+            list(qml.Operator): A list of operators.
+        """
+        return None
+
     # pylint:disable=no-self-use
     def diagonalizing_gates(self):
         r"""Defines a partial representation of this operator as
@@ -589,7 +610,7 @@ class Operator(abc.ABC):
         Returns:
             list(qml.Operator): A list of operators.
         """
-        return None
+        return self.compute_diagonalizing_gates(*self.parameters, self.wires)
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""

@@ -24,6 +24,9 @@ The Operator class has undergone a major refactor with the following changes:
   in tape contexts without queueing.
   [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
 
+* A static `compute_diagonalizing_gates` method has been added, which is called 
+  by default in `diagonalizing_gates()`.
+
 This release contains contributions from (in alphabetical order):
 
 Maria Schuld

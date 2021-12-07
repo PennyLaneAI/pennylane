@@ -106,6 +106,23 @@ class Hermitian(Observable):
         """
         return self.eigendecomposition["eigval"]
 
+    @staticmethod
+    def compute_diagonalizing_gates(eigenvectors, wires):
+        """Return the gate set that diagonalizes a circuit according to the
+        specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Args:
+            array-like: eigenvectors, such as extracted from self.eigendecomposition["eigvec"]
+            Iterable or Wires: wires of the original operation
+
+        Returns:
+            list: list containing the gates diagonalizing the Hermitian observable
+        """
+        return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
+
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
@@ -116,7 +133,7 @@ class Hermitian(Observable):
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+        return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
 class SparseHamiltonian(Observable):
@@ -159,7 +176,8 @@ class SparseHamiltonian(Observable):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
         return A
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(sparse_hamiltonian, wires):
         return []
 
 
@@ -247,11 +265,6 @@ class Projector(Observable):
         w[idx] = 1
         return w
 
-    def diagonalizing_gates(self):
-        """Return the gate set that diagonalizes a circuit according to the
-        specified Projector observable.
-
-        Returns:
-            list: list containing the gates diagonalizing the projector observable
-        """
+    @staticmethod
+    def compute_diagonalizing_gates(basis_state, wires):
         return []

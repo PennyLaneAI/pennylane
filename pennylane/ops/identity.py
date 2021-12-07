@@ -57,7 +57,8 @@ class Identity(CVObservable, Operation):
     def _heisenberg_rep(p):
         return np.array([1, 0, 0])
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
         return []
 
     @staticmethod
