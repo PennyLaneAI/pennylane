@@ -49,7 +49,6 @@ try:
         "Defines a deserializer for the Dask backend"
         return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
 
-
 except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing dask and dask.distributed") from e
 

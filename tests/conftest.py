@@ -203,3 +203,11 @@ def mock_device(monkeypatch):
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
+
+@pytest.fixture(scope='function', autouse=False)
+def dask_setup_teardown():
+    """Ensure Dask cluster set-up and tear-down"""
+    dist = pytest.importorskip("dask.distributed")
+    cluster = dist.LocalCluster(n_workers=1, threads_per_worker=1)
+    yield cluster.scheduler_address
+    cluster.close()
