@@ -54,13 +54,16 @@ def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wi
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
 def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
-    r"""Returns a function that computes the block-diagonal approximation of the metric tensor
-    of a given QNode or quantum tape.
+    r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     .. note::
 
         Only gates that have a single parameter and define a ``generator`` are supported.
         All other parametrized gates will be decomposed if possible.
+
+        The ``generator`` of all parametrized operations, with respect to which the
+        tensor is computed, are assumed to be Hermitian.
+        This is the case for unitary single-parameter operations.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
@@ -355,6 +358,10 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
             corresponding to one tape in the first return value
         list[list[float]]: Coefficients to scale the results for each observable, one inner list
             corresponding to one tape in the first return value
+
+    This method assumes the ``generator`` of all parametrized operations with respect to
+    which the tensor is computed to be Hermitian. This is the case for unitary single-parameter
+    operations.
     """
     # get the circuit graph
     graph = tape.graph
@@ -372,6 +379,8 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         # for each operation in the layer, get the generator
         for op in curr_ops:
             gen, s = op.generator
+            if op.inverse:
+                s = -s
             w = op.wires
             coeffs_list[-1].append(s)
 

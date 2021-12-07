@@ -536,6 +536,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the metric tensor was computed incorrectly when using
+  gates with `gate.inverse=True`.
+  [(#1987)](https://github.com/PennyLaneAI/pennylane/pull/1987)
+
 * Corrects the documentation of `qml.transforms.classical_jacobian`
   for the Autograd interface (and improves test coverage).
   [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)
@@ -599,6 +603,10 @@
   optimization step updates.
   [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
+* `AmplitudeEmbedding` template no longer produces a `ComplexWarning`
+  when the `features` parameter is batched and provided as a 2D array.
+  [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
@@ -618,6 +626,9 @@
 
 * QueueContext was not empty when importing `pennylane`.
 
+* Fixed circuit drawing problem with Interferometer and CVNeuralNet.
+  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
