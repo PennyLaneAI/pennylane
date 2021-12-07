@@ -18,6 +18,7 @@ from typing import List, Union, Tuple, Dict
 from contextlib import nullcontext
 import pennylane as qml
 from pennylane import QubitDevice
+
 from .default_qubit import DefaultQubit
 from .._version import __version__
 
@@ -86,14 +87,14 @@ class ProxyHybridMethod:
         return self.finstance.__get__(instance, cls)
 
 
-# pylint: too-few-public-methods, bad-classmethod-argument
+# pylint: too-few-public-methods
 class TaskQubit(QubitDevice):
     """Proxy simulator plugin written using Dask.Distributed as a task-distribution scheduling backend.
 
     **Short name:** ``task.qubit``
 
     This device provides a pure-state qubit simulator wrapping both ``"default.qubit"`` and ``"lightning.qubit"``,
-    and written to allow batched offloading to a Dask scheduler.
+    and written to allow batched offloading to a Dask scheduler. The ``task.qubit`` device works with the TensorFlow, PyTorch and (non-JIT) JAX interfaces. The autograd interface is not supported.
 
     To use this device, you will need to install dask and dask.distributed:
 
@@ -169,7 +170,7 @@ class TaskQubit(QubitDevice):
         *,
         shots=None,
         analytic=None,
-        backend="default.qubit",
+        backend="default.qubit.tf",
         gen_report: Union[bool, str] = False,
         future=False,
     ):
