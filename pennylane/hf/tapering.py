@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 def _binary_matrix(terms, num_qubits):
-    """Get a binary matrix representation of the hamiltonian where each row coressponds to a
+    r"""Get a binary matrix representation of the hamiltonian where each row coressponds to a
     Pauli term, which is represented by a concatenation of Z and X vectors.
 
     Args:
@@ -58,7 +58,7 @@ def _binary_matrix(terms, num_qubits):
 
 
 def _reduced_row_echelon(binary_matrix):
-    """Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
+    r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
 
     Args:
         binary_matrix (ndarray): binary matrix representation of the Hamiltonian.
@@ -103,7 +103,7 @@ def _reduced_row_echelon(binary_matrix):
 
 
 def _kernel(binary_matrix):
-    """Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
+    r"""Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
 
     Args:
         binary_matrix (ndarray): binary matrix representation of the Hamiltonian.
@@ -144,7 +144,7 @@ def _kernel(binary_matrix):
 
 
 def generate_taus(nullspace, num_qubits):
-    """Compute the generators :math:`\{\tau_1, \ldots, \tau_k\}` from the nullspace of
+    r"""Compute the generators :math:`\{\tau_1, \ldots, \tau_k\}` from the nullspace of
     the binary matrix form of a Hamiltonian over the binary field :math:`\mathbb{Z}_2`.
     These correspond to the generator set of the :math:`\mathbb{Z}_2`-symmetries present
     in the Hamiltonian as given in `arXiv:1910.14644 <https://arxiv.org/abs/1910.14644>`_.
@@ -185,7 +185,7 @@ def generate_taus(nullspace, num_qubits):
 
 
 def generate_paulis(generators, num_qubits):
-    """Generate the single qubit Pauli X operators :math:`sigma^{x}_{i}` for each symmetries :math:`tau_j`,
+    r"""Generate the single qubit Pauli X operators :math:`sigma^{x}_{i}` for each symmetries :math:`tau_j`,
     such that it anti-commutes with :math:`tau_j` and commutes with all others symmetries :math:`tau_{k\neq j`}.
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
@@ -226,7 +226,7 @@ def generate_paulis(generators, num_qubits):
 
 
 def generate_symmetries(qubit_op, num_qubits):
-    """Compute the generator set of the symmeteries :math:`\mathbf{\tau}` and the corresponding single-qubit
+    r"""Compute the generator set of the symmeteries :math:`\mathbf{\tau}` and the corresponding single-qubit
     set of the Pauli-X operators :math:`\mathbf{\sigma^x}` that are used to build the Clifford operators
     :math:`U`, according to the following relation:
 
