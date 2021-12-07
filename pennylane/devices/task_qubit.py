@@ -55,7 +55,7 @@ def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
     return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
 
 
-class ProxyInstanceCLS(classmethod):
+class ProxyHybridMethod:
     """
     This utility class allows the use of both an instance
     as well as class method types. For situations where
@@ -65,12 +65,25 @@ class ProxyInstanceCLS(classmethod):
     functionality supports with the proxy `task.qubit`.
 
     The implementation is based on the Python descriptor guide
-    as mentioned https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod/28238047#28238047
+    as mentioned at https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod/28238047#28238047
     """
 
-    def __get__(self, instance, type_):
-        descr_get = super().__get__ if instance is None else self.__func__.__get__
-        return descr_get(instance, type_)
+    def __init__(self, fclass, finstance=None, doc=None):
+        self.fclass = fclass
+        self.finstance = finstance
+        self.__doc__ = doc or fclass.__doc__
+        self.__isabstractmethod__ = bool(getattr(fclass, "__isabstractmethod__", False))
+
+    def classmethod(self, fclass):
+        return type(self)(fclass, self.finstance, None)
+
+    def instancemethod(self, finstance):
+        return type(self)(self.fclass, finstance, self.__doc__)
+
+    def __get__(self, instance, cls):
+        if instance is None or self.finstance is None:
+            return self.fclass.__get__(cls, None)
+        return self.finstance.__get__(instance, cls)
 
 
 # pylint: too-few-public-methods, bad-classmethod-argument
@@ -91,6 +104,7 @@ class TaskQubit(QubitDevice):
     **Example**
 
     >>> import pennylane as qml
+    >>> import qml.numpy as np
     >>> import tensorflow as tf
     >>> import dask.distributed as dist
 
@@ -108,7 +122,7 @@ class TaskQubit(QubitDevice):
     ...         qml.RX(x[1], wires=1)
     ...         qml.RY(x[2], wires=1)
     ...         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    ...     weights = tf.Variable(qml.numpy.random.rand(3))
+    ...     weights = tf.Variable(np.random.rand(3))
     ...     def f_submit(weights):
     ...         with tf.GradientTape() as tape:
     ...             # Use the circuit to calculate the loss value
@@ -222,11 +236,10 @@ class TaskQubit(QubitDevice):
         "The apply method of task.qubit should not be explicitly used."
         pass
 
-    @ProxyInstanceCLS
-    def capabilities(self_cls):
-        "Since we are using a proxy device, capabilities are handled by chosen backend upon instantiation. If accessing class attributes, a limited set is provided."
-        if not isinstance(self_cls, type):
-            return self_cls._backend_cls.capabilities()
+    @ProxyHybridMethod
+    def capabilities(cls):
+        # Since we are using a proxy device, capabilities are handled by chosen backend
+        # upon instantiation. If accessing class attributes, a limited set is provided.
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
@@ -239,6 +252,10 @@ class TaskQubit(QubitDevice):
             passthru_devices={},
         )
         return capabilities
+
+    @capabilities.instancemethod
+    def capabilities(self):
+        return self._backend_cls.capabilities()
 
     @staticmethod
     def _execute_wrapper(
