@@ -59,6 +59,7 @@ class CircuitDrawer:
         charset=None,
         show_all_wires=False,
         max_length=None,
+        _offsets=None,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -85,7 +86,7 @@ class CircuitDrawer:
         # We add a -2 character offset to account for some downstream formatting
         self.max_length = max_length - 2 if max_length is not None else None
 
-        self.representation_resolver = RepresentationResolver(self.charset)
+        self.representation_resolver = RepresentationResolver(self.charset, offsets=_offsets)
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []
@@ -364,14 +365,33 @@ class CircuitDrawer:
 
             rendered_string += "\n"
 
-        for symbol, cache in [
-            ("U", self.representation_resolver.unitary_matrix_cache),
-            ("H", self.representation_resolver.hermitian_matrix_cache),
-            ("M", self.representation_resolver.matrix_cache),
-            ("T", self.representation_resolver.tape_cache.values())
+        for symbol, cache, offset in [
+            (
+                "U",
+                self.representation_resolver.unitary_matrix_cache,
+                self.representation_resolver.unitary_offset,
+            ),
+            (
+                "H",
+                self.representation_resolver.hermitian_matrix_cache,
+                self.representation_resolver.hermitian_offset,
+            ),
+            (
+                "M",
+                self.representation_resolver.matrix_cache,
+                self.representation_resolver.matrix_offset,
+            ),
+            (
+                "T",
+                [
+                    draw_fn(self.representation_resolver)
+                    for draw_fn in self.representation_resolver.tape_cache.values()
+                ],
+                self.representation_resolver.tape_offset,
+            ),
         ]:
             for idx, matrix in enumerate(cache):
-                rendered_string += f"{symbol}{idx} =\n{matrix}\n"
+                rendered_string += f"{symbol}{idx + offset} =\n{matrix}\n"
 
         # Restrict CLI print width to max_length
         if self.max_length is not None:

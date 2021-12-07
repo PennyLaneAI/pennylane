@@ -26,14 +26,17 @@ class RepresentationResolver:
 
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
+        offsets (dict(string, int), optional): Offset the printed index of different symbol types in nested circuits.
     """
 
-    def __init__(self, charset=UnicodeCharSet):
+    def __init__(self, charset=UnicodeCharSet, offsets=None):
         self.charset = charset
-        self.matrix_cache = []
-        self.unitary_matrix_cache = []
-        self.hermitian_matrix_cache = []
-        self.tape_cache = {}
+        if not offsets:
+            offsets = {"matrix": 0, "unitary": 0, "hermitian": 0, "tape": 0}
+        self.matrix_cache, self.matrix_offset = [], offsets["matrix"]
+        self.unitary_matrix_cache, self.unitary_offset = [], offsets["unitary"]
+        self.hermitian_matrix_cache, self.hermitian_offset = [], offsets["hermitian"]
+        self.tape_cache, self.tape_offset = {}, offsets["tape"]
 
     # Symbol for uncontrolled wires
     resolution_dict = {
@@ -122,54 +125,57 @@ class RepresentationResolver:
         return f"{1.0 * par:.3g}"
 
     @staticmethod
-    def _format_matrix_operation(operation, symbol, cache):
+    def _format_matrix_operation(operation, symbol, cache, offset):
         """Format an operation that corresponds to a single matrix.
 
         Args:
             operation (~.Operation): Operation that shall be formatted
             symbol (str): The symbol that should be used to identify matrices
             cache (List[numpy.ndarray]): The cache of already known matrices
+            offset (int): Offset the printed index to the symbol for nested circuits
 
         Returns:
             str: The formatted operation
         """
         mat = operation.data[0]
-        idx = RepresentationResolver.index_of_array_or_append(mat, cache)
+        idx = RepresentationResolver.index_of_array_or_append(mat, cache) + offset
 
         return f"{symbol}{idx}"
 
     @staticmethod
-    def _format_controlled_qubit_unitary(operation, symbol, cache):
+    def _format_controlled_qubit_unitary(operation, symbol, cache, offset):
         """Format an operation that corresponds to a single matrix with controls.
 
         Args:
             operation (~.Operation): Operation that shall be formatted
             symbol (str): The symbol that should be used to identify matrices
             cache (List[numpy.ndarray]): The cache of already known matrices
+            offset (int): Offset the printed index to the symbol for nested circuits
 
         Returns:
             str: The formatted operation
         """
         mat = operation.U
-        idx = RepresentationResolver.index_of_array_or_append(mat, cache)
+        idx = RepresentationResolver.index_of_array_or_append(mat, cache) + offset
 
         return f"{symbol}{idx}"
 
     @staticmethod
-    def _format_matrix_arguments(params, symbol, cache):
+    def _format_matrix_arguments(params, symbol, cache, offset):
         """Format a sequence of matrix parameters.
 
         Args:
             params (List[numpy.ndarray]): List of matrix parameters
             symbol (str): The symbol that should be used to identify matrices
             cache (List[numpy.ndarray]): The cache of already known matrices
+            offset (int): Offset the printed index to the symbol for nested circuits
 
         Returns:
             str: The formatted matrix arguments
         """
         param_strings = []
         for param in params:
-            idx = RepresentationResolver.index_of_array_or_append(param, cache)
+            idx = RepresentationResolver.index_of_array_or_append(param, cache) + offset
 
             param_strings.append(f"{symbol}{idx}")
 
@@ -334,11 +340,27 @@ class RepresentationResolver:
 
         if isinstance(op, qml.tape.QuantumTape):
             if op in self.tape_cache:
-                idx = list(self.tape_cache).index(op)
+                idx = list(self.tape_cache).index(op) + self.tape_offset
             else:
-                idx = len(self.tape_cache)
+                from .circuit_drawer import CircuitDrawer
+
+                grid, obs = op.graph.greedy_layers()
                 charset_string = next((k for k, v in CHARSETS.items() if v is self.charset), None)
-                self.tape_cache[op] = op.draw(charset=charset_string)
+
+                def draw_nested_tape_callback(resolver):
+                    offsets = {
+                        "matrix": resolver.matrix_offset + len(resolver.matrix_cache),
+                        "unitary": resolver.unitary_offset + len(resolver.unitary_matrix_cache),
+                        "hermitian": resolver.hermitian_offset
+                        + len(resolver.hermitian_matrix_cache),
+                        "tape": resolver.tape_offset + len(resolver.tape_cache),
+                    }
+                    return CircuitDrawer(
+                        grid, obs, wires=op.graph.wires, charset=charset_string, _offsets=offsets
+                    ).draw()
+
+                idx = len(self.tape_cache) + self.tape_offset
+                self.tape_cache[op] = draw_nested_tape_callback
 
             return f"QuantumTape:T{idx}"
 
@@ -371,7 +393,7 @@ class RepresentationResolver:
 
         elif base_name == "QubitUnitary":
             representation = RepresentationResolver._format_matrix_operation(
-                op, "U", self.unitary_matrix_cache
+                op, "U", self.unitary_matrix_cache, self.unitary_offset
             )
 
         elif base_name == "ControlledQubitUnitary":
@@ -379,12 +401,12 @@ class RepresentationResolver:
                 return self.charset.CONTROL
 
             representation = RepresentationResolver._format_controlled_qubit_unitary(
-                op, "U", self.unitary_matrix_cache
+                op, "U", self.unitary_matrix_cache, self.unitary_offset
             )
 
         elif base_name == "Hermitian":
             representation = RepresentationResolver._format_matrix_operation(
-                op, "H", self.hermitian_matrix_cache
+                op, "H", self.hermitian_matrix_cache, self.hermitian_offset
             )
 
         elif base_name == "QuadOperator":
@@ -413,7 +435,7 @@ class RepresentationResolver:
         # Operations that only have matrix arguments
         elif len(qml.math.shape(op.data[0])) != 0:
             representation = name + RepresentationResolver._format_matrix_arguments(
-                op.data, "M", self.matrix_cache
+                op.data, "M", self.matrix_cache, self.matrix_offset
             )
 
         else:
