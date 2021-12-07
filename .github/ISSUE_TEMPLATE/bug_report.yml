@@ -63,5 +63,5 @@ body:
     id: terms
     attributes:
       options:
-        - label: I have searched exisisting GitHub issues to make sure the issue does not already exist.
+        - label: I have searched existing GitHub issues to make sure the issue does not already exist.
           required: true
