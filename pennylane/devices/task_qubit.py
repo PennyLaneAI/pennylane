@@ -129,7 +129,7 @@ class TaskQubit(QubitDevice):
             to a result. This allows building of dependent workflows, but currently only works with
             explicit calls to `device.batch_execute` with a PennyLane native device type such as
             (`default.qubit`, `lightning.qubit`).
-        gen_report: Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
+        gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
     """
 
     operations = DefaultQubit.operations
