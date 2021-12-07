@@ -96,12 +96,15 @@ class Rotation(CVOperation):
     Args:
         phi (float): the rotation angle
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -119,7 +122,7 @@ class Rotation(CVOperation):
 
 
 class Squeezing(CVOperation):
-    r"""pennylane.Squeezing(r, phi, wires)
+    r"""pennylane.Squeezing(r, phi, wires, do_queue=True, id=None)
     Phase space squeezing.
 
     .. math::
@@ -146,6 +149,9 @@ class Squeezing(CVOperation):
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
@@ -155,8 +161,8 @@ class Squeezing(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
-    def __init__(self, r, phi, wires):
-        super().__init__(r, phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -177,7 +183,7 @@ class Squeezing(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""pennylane.Displacement(a, phi, wires)
+    r"""pennylane.Displacement(a, phi, wires, do_queue=True, id=None)
     Phase space displacement.
 
     .. math::
@@ -203,6 +209,9 @@ class Displacement(CVOperation):
         a (float): displacement magnitude :math:`a=|\alpha|`
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
@@ -212,8 +221,8 @@ class Displacement(CVOperation):
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
 
-    def __init__(self, a, phi, wires):
-        super().__init__(a, phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, a, phi, wires, do_queue=True, id=None):
+        super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
