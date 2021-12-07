@@ -121,9 +121,10 @@ class TaskQubit(QubitDevice):
     Args:
         wires (int): The number of wires to initialize the device with.
         backend (None, str): Indicates the PennyLane device type to use for offloading
-            computation tasks. The TensorFlow and PyTorch interfaces are the preferred types
+            computation tasks. This can be `default.qubit`, one of its subclasses or
+            `lightning.qubit`. The TensorFlow, PyTorch or JAX interfaces are the preferred types
             for gradient computations. This is due to existing support in Dask for
-            TF and Torch datatypes.
+            TF and Torch datatypes, and natural support for JAX via numpy.
         future (None, bool): Indicates whether the internal circuit evaluation returns a future
             to a result. This allows building of dependent workflows, but currently only works with
             explicit calls to `device.batch_execute` with a PennyLane native device type such as
