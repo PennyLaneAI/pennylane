@@ -575,6 +575,7 @@ class Operator(abc.ABC):
             return self.decomposition(wires=self.wires)
         return self.decomposition(*self.parameters, wires=self.wires)
 
+    # pylint:disable=no-self-use
     def diagonalizing_gates(self):
         r"""Defines a partial representation of this operator as
         an eigendecompisition.
