@@ -450,7 +450,7 @@ def test_generalize_prob_not_hermitian(operation):
 
     with pytest.raises(
         qml.QuantumFunctionError,
-        match="has not diagonalizing_gates attribute: cannot be used to rotate the probability",
+        match="does not define diagonalizing gates : cannot be used to rotate the probability",
     ):
         circuit()
 

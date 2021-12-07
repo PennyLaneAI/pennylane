@@ -439,9 +439,9 @@ def probs(wires=None, op=None):
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not hasattr(op, "diagonalizing_gates"):
+    if op is not None and not hasattr(op, "diagonalizing_gates"): #op.diagonalizing_gates() is None:
         raise qml.QuantumFunctionError(
-            f"{op} has not diagonalizing_gates attribute: cannot be used to rotate the probability"
+            f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
 
     if wires is not None:

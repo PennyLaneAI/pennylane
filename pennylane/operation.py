@@ -395,7 +395,7 @@ class Operator(abc.ABC):
 
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
 
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
@@ -576,8 +576,12 @@ class Operator(abc.ABC):
         return self.decomposition(*self.parameters, wires=self.wires)
 
     def diagonalizing_gates(self):
-        r"""Returns the list of operations such that they
-        diagonalize this operation in the computational basis.
+        r"""Defines a partial representation of this operator as
+        an eigendecompisition.
+
+        Multiplied together, the diagonalizing gates
+        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
 
         Returns:
             list(qml.Operator): A list of operators.
