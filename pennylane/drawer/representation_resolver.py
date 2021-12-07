@@ -33,6 +33,7 @@ class RepresentationResolver:
         self.matrix_cache = []
         self.unitary_matrix_cache = []
         self.hermitian_matrix_cache = []
+        self.tape_cache = {}
 
     # Symbol for uncontrolled wires
     resolution_dict = {
@@ -330,6 +331,15 @@ class RepresentationResolver:
             ]
 
             return (" " + self.charset.OTIMES + " ").join(constituent_representations)
+
+        if isinstance(op, qml.tape.QuantumTape):
+            if op in self.tape_cache:
+                idx = list(self.tape_cache).index(op)
+            else:
+                idx = len(self.tape_cache)
+                self.tape_cache[op] = op.draw()
+
+            return f"QuantumTape:T{idx}"
 
         representation = ""
         base_name = getattr(op, "base_name", op.name)

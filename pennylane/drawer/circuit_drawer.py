@@ -368,6 +368,7 @@ class CircuitDrawer:
             ("U", self.representation_resolver.unitary_matrix_cache),
             ("H", self.representation_resolver.hermitian_matrix_cache),
             ("M", self.representation_resolver.matrix_cache),
+            ("T", self.representation_resolver.tape_cache.values())
         ]:
             for idx, matrix in enumerate(cache):
                 rendered_string += f"{symbol}{idx} =\n{matrix}\n"
