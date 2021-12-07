@@ -141,4 +141,14 @@ class QuantumPhaseEstimation(Operation):
 
             qml.templates.QFT(wires=self.estimation_wires).inv()
 
+        if self.inverse:
+            tape.inv()
+
         return tape
+
+    def adjoint(self):
+        adjoint_op = QuantumPhaseEstimation(
+            *self.parameters, target_wires=self.target_wires, estimation_wires=self.estimation_wires
+        )
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

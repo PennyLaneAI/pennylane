@@ -85,7 +85,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     For a QNode with multiple QNode arguments, the arguments with respect to which the
     Jacobian is computed can be controlled with the ``argnum`` keyword argument.
-    The output for ``argnum=None`` depends on the backend:
+    The output and its format depend on the backend:
 
     .. list-table:: Output format of ``classical_jacobian``
        :widths: 25 25 25 25
@@ -100,7 +100,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array``
          - ``tuple(array)``
        * - ``'jax'``
-         - ``array``
+         - ``array`` [2]
          - ``array``
          - ``tuple(array)``
        * - ``'tf'``
@@ -112,9 +112,13 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array``
          - ``tuple(array)``
 
-    [1] If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-    arrays are stacked into one ``array``. If there only is one QNode argument, the tuple is
-    unpacked as well. Both is due to the behaviour of ``qml.jacobian``.
+    [1] If all QNode arguments are of the same shape, the tuple is unpacked and the
+    Jacobian arrays are stacked into one ``array``. If there only is one QNode argument,
+    the tuple is unpacked as well. Both is based on the behaviour of ``qml.jacobian``.
+
+    [2] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
+    interfaces. This means that only the classical Jacobian with respect to the first
+    QNode argument is computed if no ``argnum`` is provided.
 
     **Example with ``argnum``**
 
