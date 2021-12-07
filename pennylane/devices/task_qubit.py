@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains a proxy qubit object for spawning multiple instances of 
+"""This module contains a proxy qubit object for spawning multiple instances of
 a given qubit type for run on a background scheduler.
 """
 from typing import List, Union, Tuple, Dict
@@ -27,6 +27,7 @@ try:
     from dask.distributed import worker_client, performance_report
     import dask
 
+    # Ensure tasks are scheduled on processes rather than threads
     dask.config.set(scheduler="processes")
 
     from distributed.protocol import (
@@ -165,7 +166,6 @@ class TaskQubit(QubitDevice):
         self._gen_report = gen_report
         self.num_wires = wires if isinstance(wires, int) else len(wires)
         self._future = future
-        self.expand_fn = self.default_expand_fn
 
         if backend not in TaskQubit.supported_devices:
             raise Exception("Unsupported device backend.")
