@@ -59,24 +59,31 @@ def show_all_wires(tape):
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
 
-def mpl_style(tape):
-
-    with plt.style.context("Solarize_Light2"):
-        fig, ax = tape_mpl(tape)
-        plt.savefig(folder/"Solarize_Light2.png")
-        plt.close()
-
 def rcparams(tape):
 
-    plt.rcParams['patch.facecolor'] = 'white'
-    plt.rcParams['patch.edgecolor'] = 'black'
-    plt.rcParams['patch.linewidth'] = 2
+    plt.rcParams['patch.facecolor'] = 'mistyrose'
+    plt.rcParams['patch.edgecolor'] = 'maroon'
+    plt.rcParams['text.color'] = 'maroon'
+    plt.rcParams['font.weight'] = 'bold'
+    plt.rcParams['patch.linewidth'] = 4
     plt.rcParams['patch.force_edgecolor'] = True
-    plt.rcParams['lines.color'] = 'black'
+    plt.rcParams['lines.color'] = 'indigo'
+    plt.rcParams['lines.linewidth'] = 5
+    plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
     fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "rcparams.png")
+    plt.close()
+    plt.style.use('default')
+
+def use_style(tape):
+
+    qml.drawer.use_style('black_white')
+
+    fig, ax = tape_mpl(tape)
+
+    plt.savefig(folder / "black_white_style.png")
     plt.close()
     plt.style.use('default')
 
@@ -97,7 +104,7 @@ def postprocessing(tape):
     box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
     ax.add_patch(box1)
 
-    ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+    ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                 arrowprops={'facecolor': 'black'}, fontsize=14)
 
     plt.savefig(folder / "postprocessing.png")
@@ -106,7 +113,8 @@ def postprocessing(tape):
 if __name__ == "__main__":
 
     with qml.tape.QuantumTape() as tape:
-        qml.templates.GroverOperator(wires=(0,1,2,3))
+        qml.QFT(wires=(0,1,2,3))
+        qml.IsingXX(1.234, wires=(0,2))
         qml.Toffoli(wires=(0,1,2))
         qml.CSWAP(wires=(0,2,3))
         qml.RX(1.2345, wires=0)
@@ -117,7 +125,7 @@ if __name__ == "__main__":
     decimals()
     wire_order(tape)
     show_all_wires(tape)
-    mpl_style(tape)
+    use_style(tape)
     rcparams(tape)
     wires_and_labels(tape)
     postprocessing(tape)

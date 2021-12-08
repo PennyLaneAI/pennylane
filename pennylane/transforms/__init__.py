@@ -67,6 +67,9 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_rotations
     ~transforms.single_qubit_fusion
     ~transforms.unitary_to_rot
+    ~transforms.merge_amplitude_embedding
+    ~transforms.remove_barrier
+    ~transforms.undo_swaps
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -131,6 +134,7 @@ from .optimization import (
     single_qubit_fusion,
     merge_amplitude_embedding,
     remove_barrier,
+    undo_swaps,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
