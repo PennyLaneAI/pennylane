@@ -49,6 +49,7 @@ class CircuitDrawer:
         charset (str, pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
+        _label_offsets (dict[strin, int], optional): Offset the printed index of different symbol types in nested circuits.
     """
 
     def __init__(
@@ -59,7 +60,7 @@ class CircuitDrawer:
         charset=None,
         show_all_wires=False,
         max_length=None,
-        _offsets=None,
+        _label_offsets=None,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -86,7 +87,9 @@ class CircuitDrawer:
         # We add a -2 character offset to account for some downstream formatting
         self.max_length = max_length - 2 if max_length is not None else None
 
-        self.representation_resolver = RepresentationResolver(self.charset, offsets=_offsets)
+        self.representation_resolver = RepresentationResolver(
+            self.charset, label_offsets=_label_offsets
+        )
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []

@@ -26,17 +26,17 @@ class RepresentationResolver:
 
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
-        offsets (dict(string, int), optional): Offset the printed index of different symbol types in nested circuits.
+        label_offsets (dict[string, int], optional): Offset the printed index of different symbol types in nested circuits.
     """
 
-    def __init__(self, charset=UnicodeCharSet, offsets=None):
+    def __init__(self, charset=UnicodeCharSet, label_offsets=None):
         self.charset = charset
-        if not offsets:
-            offsets = {"matrix": 0, "unitary": 0, "hermitian": 0, "tape": 0}
-        self.matrix_cache, self.matrix_offset = [], offsets["matrix"]
-        self.unitary_matrix_cache, self.unitary_offset = [], offsets["unitary"]
-        self.hermitian_matrix_cache, self.hermitian_offset = [], offsets["hermitian"]
-        self.tape_cache, self.tape_offset = {}, offsets["tape"]
+        if not label_offsets:
+            label_offsets = {"matrix": 0, "unitary": 0, "hermitian": 0, "tape": 0}
+        self.matrix_cache, self.matrix_offset = [], label_offsets["matrix"]
+        self.unitary_matrix_cache, self.unitary_offset = [], label_offsets["unitary"]
+        self.hermitian_matrix_cache, self.hermitian_offset = [], label_offsets["hermitian"]
+        self.tape_cache, self.tape_offset = {}, label_offsets["tape"]
 
     # Symbol for uncontrolled wires
     resolution_dict = {
@@ -132,7 +132,7 @@ class RepresentationResolver:
             operation (~.Operation): Operation that shall be formatted
             symbol (str): The symbol that should be used to identify matrices
             cache (List[numpy.ndarray]): The cache of already known matrices
-            offset (int): Offset the printed index to the symbol for nested circuits
+            offset (int): Offset the printed index to the symbol for nested circuits.
 
         Returns:
             str: The formatted operation
@@ -150,7 +150,7 @@ class RepresentationResolver:
             operation (~.Operation): Operation that shall be formatted
             symbol (str): The symbol that should be used to identify matrices
             cache (List[numpy.ndarray]): The cache of already known matrices
-            offset (int): Offset the printed index to the symbol for nested circuits
+            offset (int): Offset the printed index to the symbol for nested circuits.
 
         Returns:
             str: The formatted operation
@@ -168,7 +168,7 @@ class RepresentationResolver:
             params (List[numpy.ndarray]): List of matrix parameters
             symbol (str): The symbol that should be used to identify matrices
             cache (List[numpy.ndarray]): The cache of already known matrices
-            offset (int): Offset the printed index to the symbol for nested circuits
+            offset (int): Offset the printed index to the symbol for nested circuits.
 
         Returns:
             str: The formatted matrix arguments
@@ -345,7 +345,6 @@ class RepresentationResolver:
                 from .circuit_drawer import CircuitDrawer
 
                 grid, obs = op.graph.greedy_layers()
-                charset_string = next((k for k, v in CHARSETS.items() if v is self.charset), None)
 
                 def draw_nested_tape_callback(resolver):
                     offsets = {
@@ -356,7 +355,7 @@ class RepresentationResolver:
                         "tape": resolver.tape_offset + len(resolver.tape_cache),
                     }
                     return CircuitDrawer(
-                        grid, obs, wires=op.graph.wires, charset=charset_string, _offsets=offsets
+                        grid, obs, op.graph.wires, charset=self.charset, _label_offsets=offsets
                     ).draw()
 
                 idx = len(self.tape_cache) + self.tape_offset
