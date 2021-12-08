@@ -301,7 +301,21 @@ class Operator(abc.ABC):
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
     @staticmethod
-    def compute_matrix(*params, wires=None, wire_order=None):
+    def _matrix(*params, **hyperparams):
+        """Base matrix for the matrix representation of this operator.
+
+        The base matrix assumes the wire order of the operator's wires.
+
+        Args:
+            params (Iterable): trainable parameters that influence the matrix representation
+            hyperparams (dict): other inputs that influence the matrix representation
+        Returns:
+            tensor-like: base matrix, or None if representation is not defined
+        """
+        return None
+
+    @classmethod
+    def compute_matrix(cls, *params, wires=None, wire_order=None, **hyperparams):
         """Matrix representation of the operator
         in the computational basis.
 
@@ -310,6 +324,7 @@ class Operator(abc.ABC):
         To return the matrices of *instantiated* operators,
         please use the :attr:`~.Operator.matrix` property instead.
 
+        Consults
         If the matrix representation is not defined for this operator,
         the method returns ``None``.
 
@@ -322,25 +337,80 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.RY.compute_matrix(0.5)
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
+        array([[ 0.96891242, -0.24740396],
+               [ 0.24740396,  0.96891242]])
+
         >>> qml.RY.compute_matrix(0.5, wires=["b"], wire_order=["a", "b"])
-        >>> tensor([[ 0.96891242+0.j, -0.24740396+0.j, 0., 0.],
-                   [ 0.24740396+0.j,  0.96891242+0.j, 0., 0.],
-                   [ 0., 0., 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0., 0., 0.24740396+0.j,  0.96891242+0.j]
-                   ])
+        tensor([[ 0.96891242, -0.24740396, 0., 0.],
+                [ 0.24740396,  0.96891242, 0., 0.],
+                [ 0., 0., 0.96891242, -0.24740396],
+                [ 0., 0., 0.24740396,  0.96891242]
+                ])
+
         >>> qml.RY.compute_matrix(0.5, wires=["b"], wire_order=["b", "a"])
-        >>> tensor([[ 0.96891242+0.j, 0., -0.24740396+0.j, 0.],
-                   [0.,  0.96891242+0.j, 0., -0.24740396+0.j],
-                   [ 0.24740396+0.j, 0., 0.96891242+0.j, 0.],
-                   [0.,  0.24740396+0.j, 0., 0.96891242+0.j+0.j],
-                   ])
+        tensor([[ 0.96891242, 0., -0.24740396, 0.],
+                [0.,  0.96891242, 0., -0.24740396],
+                [ 0.24740396, 0., 0.96891242, 0.],
+                [0.,  0.24740396, 0., 0.96891242+0.j],
+                ])
+
+        Args:
+            params (Iterable): trainable parameters that influence the matrix representation
+            wires (Iterable): wires of this operator
+            wire_order (Iterable): wire order which contain ``wires``
+            hyperparams (dict): other inputs that influence the matrix representation
 
         Returns:
-            tensor-like: matrix representation
+            tensor-like: matrix representation, or None if not defined
         """
-        return None
+        base_matrix = cls._matrix(*params, **hyperparams)
+        interface = qml.math._multi_dispatch(params)  # pylint: disable=protected-access
+
+        # representation is not defined
+        if base_matrix is None:
+            return None
+
+        # the case where wire_order is given but no wires does not make sense
+        if wires is None and wire_order is not None:
+            raise ValueError(f"Expected explicit wires to find in wire_order {wire_order}, got None.")
+
+        # intersecting this case here because it is common
+        # and we want to avoid casting to Wires unless necessary
+        if wire_order is None:
+            # TODO: cast to interface?
+            return base_matrix
+
+        wire_order = Wires(wire_order)
+        wires = Wires(wires)
+
+        # base matrix requested
+        if Wires(wires) == Wires(wire_order):
+            # TODO: cast to interface?
+            return base_matrix
+
+        n = len(wires)
+
+        # operator's wire positions relative to wire ordering
+        op_wire_pos = Wires(wire_order).indices(wires)
+
+        I = qml.math.reshape(qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2)
+        axes = (list(range(n, 2 * n)), op_wire_pos)
+
+        # reshape op.matrix
+        op_matrix_interface = qml.math.convert_like(base_matrix, I)
+        mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
+        mat_tensordot = qml.math.tensordot(
+            mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
+        )
+
+        unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
+        # permute matrix axes to match wire ordering
+        perm = op_wire_pos + unused_idxs
+        mat = qml.math.moveaxis(mat_tensordot, wire_order.indices(wire_order), perm)
+
+        mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
+
+        return mat
 
     def matrix(self, wire_order):
         r"""Matrix representation of an instantiated operator
@@ -801,9 +871,8 @@ class Operation(Operator):
             self.inverse = not self._inverse
         return self
 
-    @property
-    def matrix(self):
-        op_matrix = self._matrix(*self.parameters)
+    def matrix(self, wire_order=None):
+        op_matrix = super().compute_matrix(*self.parameters, wires=self.wires, wire_order=wire_order)
 
         if self.inverse:
             return qml.math.conj(qml.math.T(op_matrix))

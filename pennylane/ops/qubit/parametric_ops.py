@@ -116,8 +116,8 @@ class RY(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
