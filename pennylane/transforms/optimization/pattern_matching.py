@@ -16,6 +16,11 @@
 import pennylane as qml
 from pennylane import apply
 from pennylane.transforms import qfunc_transform, get_dag_commutation, make_tape
+from pennylane.ops.qubit.attributes import (
+    self_inverses,
+    symmetric_over_all_wires,
+    symmetric_over_control_wires,
+)
 
 
 @qfunc_transform
@@ -74,6 +79,12 @@ def pattern_matching(tape, pattern_tapes):
         print(pattern_dag.get_nodes())
 
         # Initial match
+        for node_c in circuit_dag.get_nodes():
+            for node_p in pattern_dag.get_nodes():
+                if compare_operation_without_qubits(node_c[1], node_p[1]):
+                    print("Match between circuit op", node_c[0])
+                    print("And pattern op", node_p[0])
+                    print("__________________")
         # Different qubit configurations
         # Forward Match
         # Backward match
@@ -81,11 +92,43 @@ def pattern_matching(tape, pattern_tapes):
         # Create optimized tape
 
     # Construct optimized circuit
-    #for op in tape.operations:
+    # for op in tape.operations:
     #    apply(op)
 
     # Queue the measurements normally
-    #for m in tape.measurements:
+    # for m in tape.measurements:
     #    apply(m)
 
 
+def compare_operation_without_qubits(node_1, node_2):
+    operation_1 = node_1.op
+    operation_2 = node_2.op
+    if operation_1.name == operation_2.name:
+        if operation_1.num_params == operation_2.num_params:
+            if operation_1.data == operation_2.data:
+                return True
+    return False
+
+
+def compare_operation(node_1, node_2):
+    operation_1 = node_1.op
+    operation_2 = node_2.op
+    if operation_1.name == operation_2.name:
+        if operation_1.num_params == operation_2.num_params:
+            if operation_1.data == operation_2.data:
+                if operation_1.is_controlled:
+                    if node_1.control_wires == node_2.control_wires:
+                        if operation_1.symmetric_over_all_wires:
+                            if set(node_1.target_wires) == set(node_2.target_wires):
+                                return True
+                        else:
+                            if node_1.target_wires == node_2.target_wires:
+                                return True
+                else:
+                    if operation_1 in symmetric_over_all_wires:
+                        if set(node_1.wires) == set(node_2.wires):
+                            return True
+                    else:
+                        if node_1.wires == node_2.wires:
+                            return True
+    return False

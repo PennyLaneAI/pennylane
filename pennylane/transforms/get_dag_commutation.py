@@ -419,7 +419,7 @@ class CommutationDAG:
                 op=operation,
                 wires=operation.wires.tolist(),
                 target_wires=operation.target_wires.tolist(),
-                control_wires=operation.control_wires.tolist(),
+                control_wires=operation.control_wires.toset(),
                 successors=[],
                 predecessors=[],
             )
@@ -427,7 +427,7 @@ class CommutationDAG:
             new_node = CommutationDAGNode(
                 op=operation,
                 wires=operation.wires.tolist(),
-                target_wires=operation.wires.tolist(),
+                target_wires=operation.wires.toset(),
                 successors=[],
                 predecessors=[],
             )
