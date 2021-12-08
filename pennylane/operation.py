@@ -300,48 +300,73 @@ class Operator(abc.ABC):
         """int: returns an integer hash uniquely representing the operator"""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def compute_matrix(*params, wires=None, wire_order=None):
         """Matrix representation of the operator
         in the computational basis.
 
-        This is a *class method* that should be defined for all
-        new operations and observables, that returns the matrix representing
-        the operator in the computational basis.
-
-        This private method allows matrices to be computed
+        This static method allows matrices to be computed
         directly without instantiating the operators first.
-
         To return the matrices of *instantiated* operators,
         please use the :attr:`~.Operator.matrix` property instead.
 
+        If the matrix representation is not defined for this operator,
+        the method returns ``None``.
+
+        If ``wires`` and ``wire_order`` are provided, the
+        numerical representation considers the position of the
+        operator's wires in the wire order of the full vector space.
+        Otherwise, the defaults ``wires=[0,...,n]`` and ``wire_order=[0,...,n]``
+        are used, where ``n`` is the number of wires of this operator.
+
         **Example:**
 
-        >>> qml.RY._matrix(0.5)
+        >>> qml.RY.compute_matrix(0.5)
         >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
                    [ 0.24740396+0.j,  0.96891242+0.j]])
+        >>> qml.RY.compute_matrix(0.5, wires=["b"], wire_order=["a", "b"])
+        >>> tensor([[ 0.96891242+0.j, -0.24740396+0.j, 0., 0.],
+                   [ 0.24740396+0.j,  0.96891242+0.j, 0., 0.],
+                   [ 0., 0., 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0., 0., 0.24740396+0.j,  0.96891242+0.j]
+                   ])
+        >>> qml.RY.compute_matrix(0.5, wires=["b"], wire_order=["b", "a"])
+        >>> tensor([[ 0.96891242+0.j, 0., -0.24740396+0.j, 0.],
+                   [0.,  0.96891242+0.j, 0., -0.24740396+0.j],
+                   [ 0.24740396+0.j, 0., 0.96891242+0.j, 0.],
+                   [0.,  0.24740396+0.j, 0., 0.96891242+0.j+0.j],
+                   ])
 
         Returns:
-            array: matrix representation
+            tensor-like: matrix representation
         """
-        raise NotImplementedError
+        return None
 
-    @property
-    def matrix(self):
+    def matrix(self, wire_order):
         r"""Matrix representation of an instantiated operator
         in the computational basis.
 
+        If ``wire_order`` is provided, the
+        numerical representation considers the position of the
+        operator's wires in the wire order of the full vector space.
+        Otherwise, the wire order defaults to ``self.wires``.
+
         **Example:**
 
-        >>> U = qml.RY(0.5, wires=1)
-        >>> U.matrix
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+        >>> U = qml.RY(0.5, wires="b")
+        >>> U.matrix()
+        >>> tensor([[ 0.96891242+0.j, -0.24740396+0.j],
                    [ 0.24740396+0.j,  0.96891242+0.j]])
-
+        >>> U.matrix(wire_order=["b", "a"])
+        >>> tensor([[ 0.96891242+0.j, 0., -0.24740396+0.j, 0.],
+                   [0.,  0.96891242+0.j, 0., -0.24740396+0.j],
+                   [ 0.24740396+0.j, 0., 0.96891242+0.j, 0.],
+                   [0.,  0.24740396+0.j, 0., 0.96891242+0.j+0.j],
+                   ])
         Returns:
-            array: matrix representation
+            tensor-like: matrix representation
         """
-        return self._matrix(*self.parameters)
+        return self.compute_matrix(*self.parameters, wires=self.wires, wire_order=wire_order)
 
     @classmethod
     def _eigvals(cls, *params):
