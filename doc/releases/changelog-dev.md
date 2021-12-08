@@ -607,6 +607,11 @@
   when the `features` parameter is batched and provided as a 2D array.
   [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
 
+* `qml.circuit_drawer.CircuitDrawer` no longer produces an error
+  when attempting to draw tapes inside of circuits (e.g. from
+  decomposition of an operation or manual placement).
+  [(#1994)](https://github.com/PennyLaneAI/pennylane/pull/1994)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
