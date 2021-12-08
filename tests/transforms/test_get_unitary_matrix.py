@@ -116,7 +116,9 @@ def test_get_unitary_matrix_CRX():
     # do not perform controlled rotation
     teststate0 = reduce(np.kron, [state1, state1, state0])
 
-    expected_state1 = reduce(np.kron, [qml.RX(testangle, wires=1).matrix() @ state1, state1, state1])
+    expected_state1 = reduce(
+        np.kron, [qml.RX(testangle, wires=1).matrix() @ state1, state1, state1]
+    )
     expected_state0 = teststate0
 
     get_matrix = get_unitary_matrix(testcircuit, wires)
@@ -210,7 +212,9 @@ def test_get_unitary_matrix_input_tape():
 
     matrix = get_matrix()
 
-    part_expected_matrix = np.kron(qml.RY(0.543, wires=0).matrix() @ qml.RX(0.432, wires=0).matrix(), I)
+    part_expected_matrix = np.kron(
+        qml.RY(0.543, wires=0).matrix() @ qml.RX(0.432, wires=0).matrix(), I
+    )
 
     expected_matrix = np.kron(I, qml.RX(0.133, wires=1).matrix()) @ CNOT @ part_expected_matrix
 
@@ -231,7 +235,9 @@ def test_get_unitary_matrix_input_tape_wireorder():
     # CNOT where the second wire is the control wire, as opposed to qml.CNOT.matrix()
     CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 
-    part_expected_matrix = np.kron(I, qml.RY(0.543, wires=0).matrix() @ qml.RX(0.432, wires=0).matrix())
+    part_expected_matrix = np.kron(
+        I, qml.RY(0.543, wires=0).matrix() @ qml.RX(0.432, wires=0).matrix()
+    )
 
     expected_matrix = np.kron(qml.RX(0.133, wires=1).matrix(), I) @ CNOT10 @ part_expected_matrix
 
@@ -341,7 +347,9 @@ def test_get_unitary_matrix_interface_tf():
 
     # expected matrix
     theta_np = theta.numpy()
-    matrix1 = np.kron(qml.RZ(beta, wires=0).matrix(), np.kron(qml.RZ(theta_np[0], wires=1).matrix(), I))
+    matrix1 = np.kron(
+        qml.RZ(beta, wires=0).matrix(), np.kron(qml.RZ(theta_np[0], wires=1).matrix(), I)
+    )
     matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
     expected_matrix = matrix2 @ matrix1
 
