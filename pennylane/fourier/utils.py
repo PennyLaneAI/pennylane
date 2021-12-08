@@ -67,7 +67,7 @@ def get_spectrum(op, decimals):
         if isinstance(g, np.ndarray):
             matrix = g
         elif hasattr(g, "matrix"):
-            matrix = g.matrix
+            matrix = g.matrix()
         else:
             no_generator = True
     else:

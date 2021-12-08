@@ -322,7 +322,7 @@ class Operator(abc.ABC):
         This static method allows matrices to be computed
         directly without instantiating the operators first.
         To return the matrices of *instantiated* operators,
-        please use the :attr:`~.Operator.matrix` property instead.
+        please use the :attr:`~.Operator.matrix()` property instead.
 
         Consults
         If the matrix representation is not defined for this operator,
@@ -372,7 +372,9 @@ class Operator(abc.ABC):
 
         # the case where wire_order is given but no wires does not make sense
         if wires is None and wire_order is not None:
-            raise ValueError(f"Expected explicit wires to find in wire_order {wire_order}, got None.")
+            raise ValueError(
+                f"Expected explicit wires to find in wire_order {wire_order}, got None."
+            )
 
         # intersecting this case here because it is common
         # and we want to avoid casting to Wires unless necessary
@@ -393,10 +395,12 @@ class Operator(abc.ABC):
         # operator's wire positions relative to wire ordering
         op_wire_pos = Wires(wire_order).indices(wires)
 
-        I = qml.math.reshape(qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2)
+        I = qml.math.reshape(
+            qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
+        )
         axes = (list(range(n, 2 * n)), op_wire_pos)
 
-        # reshape op.matrix
+        # reshape op.matrix()
         op_matrix_interface = qml.math.convert_like(base_matrix, I)
         mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
         mat_tensordot = qml.math.tensordot(
@@ -872,7 +876,9 @@ class Operation(Operator):
         return self
 
     def matrix(self, wire_order=None):
-        op_matrix = super().compute_matrix(*self.parameters, wires=self.wires, wire_order=wire_order)
+        op_matrix = super().compute_matrix(
+            *self.parameters, wires=self.wires, wire_order=wire_order
+        )
 
         if self.inverse:
             return qml.math.conj(qml.math.T(op_matrix))
@@ -1479,7 +1485,7 @@ class Tensor(Observable):
         subsystem it is defined for.
 
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix
+        >>> O.matrix()
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
                [ 0,  0, -1,  0],
@@ -1490,7 +1496,7 @@ class Tensor(Observable):
         must be explicitly included:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix
+        >>> O.matrix()
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
                [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
@@ -1507,7 +1513,7 @@ class Tensor(Observable):
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix for i in g]
+            mats = [i.matrix() for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -1579,7 +1585,7 @@ class Tensor(Observable):
                 )
             # store the single-qubit ops according to the order of their wires
             idx = wires.index(o.wires)
-            list_of_sparse_ops[idx] = coo_matrix(o.matrix)
+            list_of_sparse_ops[idx] = coo_matrix(o.matrix())
 
         return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
 
@@ -1922,13 +1928,13 @@ def operation_derivative(operation) -> np.ndarray:
         )
 
     if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
+        generator = generator.matrix()
 
     if operation.inverse:
         prefactor *= -1
         generator = qml.math.conj(qml.math.T(generator))
 
-    return 1j * prefactor * generator @ operation.matrix
+    return 1j * prefactor * generator @ operation.matrix()
 
 
 @qml.BooleanFn

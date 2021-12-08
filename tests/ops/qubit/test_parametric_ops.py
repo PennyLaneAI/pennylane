@@ -79,18 +79,18 @@ class TestOperations:
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
         copied_op = copy.copy(op)
-        np.testing.assert_allclose(op.matrix, copied_op.matrix, atol=tol)
+        np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
         op.inv()
         copied_op2 = copy.copy(op)
-        np.testing.assert_allclose(op.matrix, copied_op2.matrix, atol=tol)
+        np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
         op.inv()
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
-        res1 = np.dot(op.matrix, op_d.matrix)
-        res2 = np.dot(op_d.matrix, op.matrix)
+        res1 = np.dot(op.matrix(), op_d.matrix())
+        res2 = np.dot(op_d.matrix(), op.matrix())
         np.testing.assert_allclose(res1, np.eye(2 ** len(op.wires)), atol=tol)
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
@@ -110,10 +110,10 @@ class TestDecompositions:
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == 0.3
 
-        decomposed_matrix = res[0].matrix
-        global_phase = (decomposed_matrix[op.matrix != 0] / op.matrix[op.matrix != 0])[0]
+        decomposed_matrix = res[0].matrix()
+        global_phase = (decomposed_matrix[op.matrix() != 0] / op.matrix()[op.matrix() != 0])[0]
 
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
     def test_CRot_decomposition(self, tol, phi, theta, omega, monkeypatch):
@@ -124,13 +124,13 @@ class TestDecompositions:
         mats = []
         for i in reversed(res):
             if len(i.wires) == 1:
-                mats.append(np.kron(np.eye(2), i.matrix))
+                mats.append(np.kron(np.eye(2), i.matrix()))
             else:
-                mats.append(i.matrix)
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_isingxx_decomposition(self, tol):
         """Tests that the decomposition of the IsingXX gate is correct"""
@@ -152,13 +152,13 @@ class TestDecompositions:
         for i in reversed(res):
             if i.wires == Wires([3]):
                 # RX gate
-                mats.append(np.kron(i.matrix, np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             else:
-                mats.append(i.matrix)
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_isingyy_decomposition(self, tol):
         """Tests that the decomposition of the IsingYY gate is correct"""
@@ -180,13 +180,13 @@ class TestDecompositions:
         for i in reversed(res):
             if i.wires == Wires([3]):
                 # RY gate
-                mats.append(np.kron(i.matrix, np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             else:
-                mats.append(i.matrix)
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_isingzz_decomposition(self, tol):
         """Tests that the decomposition of the IsingZZ gate is correct"""
@@ -208,13 +208,13 @@ class TestDecompositions:
         for i in reversed(res):
             if i.wires == Wires([2]):
                 # RZ gate
-                mats.append(np.kron(np.eye(2), i.matrix))
+                mats.append(np.kron(np.eye(2), i.matrix()))
             else:
-                mats.append(i.matrix)
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.matrix, atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
@@ -227,13 +227,13 @@ class TestDecompositions:
         mats = []
         for i in reversed(decomp):
             if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix, np.eye(4)))
+                mats.append(np.kron(i.matrix(), np.eye(4)))
             elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), np.kron(i.matrix, np.eye(2))))
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix(), np.eye(2))))
             elif i.wires.tolist() == [2]:
-                mats.append(np.kron(np.eye(4), i.matrix))
+                mats.append(np.kron(np.eye(4), i.matrix()))
             elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
-                mats.append(np.kron(i.matrix, np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
                 mats.append(
                     np.array(
@@ -507,7 +507,7 @@ class TestCorrectness:
         """Tests that the ControlledPhaseShift and CPhase operation calculates the correct matrix and
         eigenvalues"""
         op = cphase_op(phi, wires=[0, 1])
-        res = op.matrix
+        res = op.matrix()
         exp = ControlledPhaseShift(phi)
         assert np.allclose(res, exp)
 
@@ -1026,7 +1026,7 @@ class TestPauliRot:
         decomp_ops = op.decompose()
 
         assert np.allclose(op.eigvals, np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
-        assert np.allclose(op.matrix, np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
+        assert np.allclose(op.matrix(), np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
 
         assert len(decomp_ops) == 1
 
@@ -1043,7 +1043,7 @@ class TestPauliRot:
         decomp_ops = op.decompose()
 
         assert np.allclose(op.eigvals, np.exp(-1j * theta / 2) * np.ones(4))
-        assert np.allclose(op.matrix / op.matrix[0, 0], np.eye(4))
+        assert np.allclose(op.matrix() / op.matrix()[0, 0], np.eye(4))
 
         assert len(decomp_ops) == 0
 
@@ -1236,7 +1236,7 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        expected_gen_mat = expected_gen.matrix
+        expected_gen_mat = expected_gen.matrix()
 
         assert np.allclose(gen[0], expected_gen_mat)
         assert gen[1] == -0.5
@@ -1254,7 +1254,7 @@ class TestPauliRot:
             pytest.skip("No GPU available")
 
         x = torch.tensor(theta, device=torch_device)
-        mat = qml.PauliRot(x, "I", wires=[0]).matrix
+        mat = qml.PauliRot(x, "I", wires=[0]).matrix()
 
         val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
@@ -1388,7 +1388,7 @@ class TestMultiRZ:
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        expected_gen_mat = expected_gen.matrix
+        expected_gen_mat = expected_gen.matrix()
 
         assert np.allclose(gen[0], expected_gen_mat)
         assert gen[1] == -0.5

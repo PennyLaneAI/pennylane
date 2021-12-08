@@ -77,13 +77,13 @@ class TestObservables:
     def test_diagonalization(self, obs, mat, eigs, tol):
         """Test the method transforms standard observables into the Z-gate."""
         ob = obs(wires=0)
-        A = ob.matrix
+        A = ob.matrix()
 
         diag_gates = ob.diagonalizing_gates()
         U = np.eye(2)
 
         if diag_gates:
-            mats = [i.matrix for i in diag_gates]
+            mats = [i.matrix() for i in diag_gates]
             # Need to revert the order in which the matrices are applied such that they adhere to the order
             # of matrix multiplication
             # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
@@ -106,7 +106,7 @@ class TestObservables:
     def test_matrices(self, obs, mat, eigs, tol):
         """Test matrices of standard observables are correct"""
         obs = obs(wires=0)
-        res = obs.matrix
+        res = obs.matrix()
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
@@ -291,7 +291,7 @@ class TestObservables:
     def test_hermitian_matrix(self, tol):
         """Test that the hermitian matrix method produces the correct output."""
         H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        out = qml.Hermitian(H, wires=0).matrix
+        out = qml.Hermitian(H, wires=0).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
@@ -305,13 +305,13 @@ class TestObservables:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.Hermitian(H[1:], wires=0).matrix
+            qml.Hermitian(H[1:], wires=0).matrix()
 
         # test non-Hermitian matrix
         H2 = H.copy()
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0).matrix
+            qml.Hermitian(H2, wires=0).matrix()
 
 
 class TestProjector:

@@ -53,9 +53,9 @@ class Hadamard(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -111,7 +111,6 @@ class PauliX(Observable, Operation):
     num_wires = 1
     basis = "X"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[0, 1], [1, 0]])
 
     @property
     def num_params(self):
@@ -120,9 +119,9 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[0, 1], [1, 0]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -179,7 +178,6 @@ class PauliY(Observable, Operation):
     num_wires = 1
     basis = "Y"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[0, -1j], [1j, 0]])
 
     @property
     def num_params(self):
@@ -188,9 +186,9 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[0, -1j], [1j, 0]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -253,7 +251,6 @@ class PauliZ(Observable, Operation):
     num_wires = 1
     basis = "Z"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[1, 0], [0, -1]])
 
     @property
     def num_params(self):
@@ -262,9 +259,9 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0], [0, -1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -458,7 +455,6 @@ class CNOT(Operation):
     """
     num_wires = 2
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @property
     def num_params(self):
@@ -467,9 +463,9 @@ class CNOT(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return CNOT.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     def adjoint(self):
         return CNOT(wires=self.wires)
@@ -506,7 +502,6 @@ class CZ(Operation):
     num_wires = 2
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @property
     def num_params(self):
@@ -515,9 +510,9 @@ class CZ(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -554,14 +549,6 @@ class CY(Operation):
     """
     num_wires = 2
     basis = "Y"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -570,9 +557,16 @@ class CY(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array(
+        [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 0, -1j],
+            [0, 0, 1j, 0],
+        ]
+    )
 
     @staticmethod
     def decomposition(wires):
@@ -608,15 +602,14 @@ class SWAP(Operation):
     """
     num_wires = 2
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
     def decomposition(wires):
@@ -779,7 +772,17 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-    matrix = np.array(
+
+    @property
+    def num_params(self):
+        return 0
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "SWAP"
+
+    @staticmethod
+    def _matrix(*params):
+        return np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0],
@@ -791,17 +794,6 @@ class CSWAP(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
-
-    def label(self, decimals=None, base_label=None):
-        return base_label or "SWAP"
-
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
 
     @staticmethod
     def decomposition(wires):
@@ -848,7 +840,17 @@ class Toffoli(Operation):
     """
     num_wires = 3
     basis = "X"
-    matrix = np.array(
+
+    @property
+    def num_params(self):
+        return 0
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
+
+    @staticmethod
+    def _matrix(*params):
+        return np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0],
@@ -860,17 +862,6 @@ class Toffoli(Operation):
             [0, 0, 0, 0, 0, 0, 1, 0],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
-
-    def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
-
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
 
     @staticmethod
     def decomposition(wires):
@@ -1005,7 +996,7 @@ class MultiControlledX(Operation):
     def _matrix(self, *params):
         if self._CX is None:
             self._CX = block_diag(
-                np.eye(self._padding_left), PauliX.matrix, np.eye(self._padding_right)
+                np.eye(self._padding_left), PauliX.matrix(), np.eye(self._padding_right)
             )
 
         return self._CX

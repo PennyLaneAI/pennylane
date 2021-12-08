@@ -645,14 +645,14 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        O_mat = O.matrix
+        O_mat = O.matrix()
         diag_gates = O.diagonalizing_gates()
 
         # group the diagonalizing gates based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(diag_gates, lambda x: x.wires.tolist()):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix for i in g]
+            mats = [i.matrix() for i in g]
 
             # Need to revert the order in which the matrices are applied such that they adhere to the order
             # of matrix multiplication
@@ -685,7 +685,7 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        res = O.matrix
+        res = O.matrix()
         expected = np.kron(qml.PauliY._matrix(), H)
         expected = np.kron(qml.PauliX._matrix(), expected)
 
@@ -696,7 +696,7 @@ class TestTensor:
         same wire, the tensor class should treat this as matrix multiplication."""
         O = qml.PauliX(0) @ qml.PauliX(0)
 
-        res = O.matrix
+        res = O.matrix()
         expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)

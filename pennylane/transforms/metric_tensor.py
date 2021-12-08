@@ -465,7 +465,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     except KeyError as e:
         if allow_nonunitary:
             if (not isinstance(gen, np.ndarray)) and issubclass(gen, qml.operation.Observable):
-                gen = gen.matrix
+                gen = gen.matrix()
             return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "

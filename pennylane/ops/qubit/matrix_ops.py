@@ -108,7 +108,7 @@ class QubitUnitary(Operation):
         )
 
     def adjoint(self):
-        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
+        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)

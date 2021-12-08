@@ -93,7 +93,7 @@ class TestSparse:
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
-        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian, range(num_wires)).matrix
+        returned_matrix = qml.SparseHamiltonian(sparse_hamiltonian, range(num_wires)).matrix()
         assert np.allclose(
             returned_matrix.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
         )

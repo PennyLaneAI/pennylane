@@ -145,8 +145,8 @@ def get_unitary_matrix(circuit, wire_order=None):
             I = qml.math.reshape(qml.math.eye(2 ** n_wires, like=interface), [2] * n_wires * 2)
             axes = (list(range(len(op.wires), 2 * len(op.wires))), op_wire_pos)
 
-            # reshape op.matrix
-            op_matrix_interface = qml.math.convert_like(op.matrix, I)
+            # reshape op.matrix()
+            op_matrix_interface = qml.math.convert_like(op.matrix(), I)
             U_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * len(op.wires) * 2)
             U_tensordot = qml.math.tensordot(
                 U_op_reshaped, qml.math.cast_like(I, U_op_reshaped), axes

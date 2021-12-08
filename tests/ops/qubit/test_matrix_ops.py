@@ -39,7 +39,7 @@ class TestQubitUnitary:
         """Test that the unitary operator produces the correct output and
         catches incorrect input with autograd."""
 
-        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
@@ -49,17 +49,17 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U.copy()
         U3[0, 0] += 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_torch(self, U, num_wires):
@@ -68,7 +68,7 @@ class TestQubitUnitary:
         torch = pytest.importorskip("torch")
 
         U = torch.tensor(U)
-        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, torch.Tensor)
@@ -78,17 +78,17 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U.detach().clone()
         U3[0, 0] += 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_tf(self, U, num_wires):
@@ -97,7 +97,7 @@ class TestQubitUnitary:
         tf = pytest.importorskip("tensorflow")
 
         U = tf.Variable(U)
-        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, tf.Variable)
@@ -107,16 +107,16 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = tf.Variable(U + 0.5)
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_jax(self, U, num_wires):
@@ -126,7 +126,7 @@ class TestQubitUnitary:
         from jax import numpy as jnp
 
         U = jnp.array(U)
-        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix
+        out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
 
         # verify output type
         assert isinstance(out, jnp.ndarray)
@@ -136,16 +136,16 @@ class TestQubitUnitary:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix
+            qml.QubitUnitary(U[1:], wires=range(num_wires)).matrix()
 
         # test non-unitary matrix
         U3 = U + 0.5
         with pytest.warns(UserWarning, match="may not be unitary"):
-            qml.QubitUnitary(U3, wires=range(num_wires)).matrix
+            qml.QubitUnitary(U3, wires=range(num_wires)).matrix()
 
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
-            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix
+            qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
     @pytest.mark.parametrize(
         "U,expected_gate,expected_params",
@@ -154,8 +154,8 @@ class TestQubitUnitary:
             (Z, qml.RZ, [np.pi]),
             (S, qml.RZ, [np.pi / 2]),
             (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+            (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
+            (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
             # Next set of gates are non-diagonal and decomposed as Rots
             (
                 np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
@@ -164,8 +164,8 @@ class TestQubitUnitary:
             ),
             (H, qml.Rot, [np.pi, np.pi / 2, 0]),
             (X, qml.Rot, [0.0, -np.pi, -np.pi]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix, qml.Rot, [-1, 2, -3]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).matrix(), qml.Rot, [-1, 2, -3]),
         ],
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
@@ -178,7 +178,7 @@ class TestQubitUnitary:
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
-        U = qml.Toffoli(wires=[0, 1, 2]).matrix
+        U = qml.Toffoli(wires=[0, 1, 2]).matrix()
 
         with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
             qml.QubitUnitary.decomposition(U, wires=[0, 1, 2])
@@ -208,7 +208,7 @@ class TestControlledQubitUnitary:
         """Test if ControlledQubitUnitary returns the correct matrix for a control-control-X
         (Toffoli) gate"""
         mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix
-        mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix
+        mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix()
         assert np.allclose(mat, mat2)
 
     def test_no_control(self):
@@ -279,7 +279,7 @@ class TestControlledQubitUnitary:
 
         # We now need to swap wires so that the control wires are [1, 3] and the target wires are
         # [2, 0]
-        swap = qml.SWAP.matrix
+        swap = qml.SWAP.matrix()
 
         # initial wire permutation: 0123
         # target wire permutation: 1302

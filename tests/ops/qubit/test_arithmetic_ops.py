@@ -33,7 +33,7 @@ def test_adjoint_with_decomposition(op_builder):
     with qml.tape.QuantumTape() as adjoint_tape:
         qml.adjoint(op_builder)()
     for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
-        np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
+        np.testing.assert_allclose(a.matrix(), np.conj(b.matrix()).T)
 
 
 label_data = [
@@ -190,7 +190,7 @@ class TestArithmetic:
 
     def test_qubit_sum_adjoint(self):
         """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
-        if it is equal to qml.QubitSum.matrix (recall that the operation is self-adjoint)"""
+        if it is equal to qml.QubitSum.matrix() (recall that the operation is self-adjoint)"""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
