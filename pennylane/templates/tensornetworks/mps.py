@@ -8,17 +8,21 @@ def compute_indices_MPS(wires, loc):
     Generate a list of wire indices that quantum gates acts on
     Args:
         wires (Iterable): the total set of wires
-        loc (int): local wire number of a single quantum gate        
+        loc (int): local wire number of a single quantum gate
     Returns:
         layers (array): array of wire indices or wire labels for each block
     """
-    
-    layers = np.array([[wires[idx] for idx in range(j, j+loc)] for j in range(0, len(wires) - loc // 2, loc // 2)])
+
+    layers = np.array(
+        [
+            [wires[idx] for idx in range(j, j + loc)]
+            for j in range(0, len(wires) - loc // 2, loc // 2)
+        ]
+    )
     return layers
 
 
 class MPS(Operation):
-    
 
     num_params = 1
     num_wires = AnyWires
@@ -41,17 +45,17 @@ class MPS(Operation):
         if n_wires < 3:
             raise ValueError(f"fnumber of wires must be greater than or equal to 3; got {n_wires}")
 
-        if loc > n_wires: 
+        if loc > n_wires:
             raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
-  
 
-        shape = qml.math.shape(weights)[-4:] # (n_params_block, n_blocks)
+
+        shape = qml.math.shape(weights)[-4:]  # (n_params_block, n_blocks)
         self.n_params_block = n_params_block
         self.n_blocks = int(n_wires / (loc / 2) - 1)
         self.block = block
 
         if weights is None:
-            self.weights = np.random.rand(n_params_block, int(self.n_blocks)) # Obsolet
+            self.weights = np.random.rand(n_params_block, int(self.n_blocks))  # Obsolet
 
         else:
 
@@ -62,7 +66,7 @@ class MPS(Operation):
             if shape[0] != self.n_params_block:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {self.n_params_block}; got {shape[0]}"
-                )                
+                )
 
             self.weights = weights
 
@@ -74,7 +78,7 @@ class MPS(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for idx, w in enumerate(self.ind_gates):
-                self.block(weights=self.weights[...,idx], wires=w.tolist())
+                self.block(weights=self.weights[..., idx], wires=w.tolist())
                 # Different ordering compared to [arXiv:1803.11537v2] -> measurement of the last instead of the first qubit
 
         return tape
@@ -94,7 +98,7 @@ class MPS(Operation):
         if n_wires % 2 ==1:
             raise ValueError(f"n_wires should be an even integer; got n_wires = {n_wires}")
 
-        if loc > n_wires: 
+        if loc > n_wires:
             raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
 
         n_blocks = int(n_wires / (loc / 2) - 1)
