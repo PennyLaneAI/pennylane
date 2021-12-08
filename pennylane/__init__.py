@@ -77,6 +77,8 @@ import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 from pennylane.interfaces.batch import execute  # pylint:disable=wrong-import-order
 
+from pennylane.taskify import taskify
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 

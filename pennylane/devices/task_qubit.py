@@ -170,11 +170,11 @@ class TaskQubit(QubitDevice):
         *,
         shots=None,
         analytic=None,
-        backend="default.qubit.tf",
+        backend="default.qubit",
         gen_report: Union[bool, str] = False,
         future=False,
     ):
-        super().__init__(0, shots, cache=False)
+        super().__init__(wires, shots, cache=False)
 
         self._backend = backend
         self._backend_cls = qml.plugin_devices[backend].load()
@@ -186,6 +186,13 @@ class TaskQubit(QubitDevice):
 
         if backend not in TaskQubit.supported_devices:
             raise Exception("Unsupported device backend.")
+
+    def __str__(self):
+        return super().__str__()+("\n"
+            f"Backend: {self._backend}\n"
+            f"Futures: {self._future}\n"
+            f"Report: {self._gen_report}"
+        )
 
     def __get__(self, obj, objtype=None):
         if obj not in self.__dict__:
