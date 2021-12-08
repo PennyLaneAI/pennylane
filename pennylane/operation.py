@@ -610,7 +610,7 @@ class Operator(abc.ABC):
         Returns:
             list(qml.Operator): A list of operators.
         """
-        return self.compute_diagonalizing_gates(*self.parameters, self.wires)
+        return self.compute_diagonalizing_gates(*self.parameters, wires=self.wires)
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
