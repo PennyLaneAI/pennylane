@@ -44,9 +44,7 @@ _OP_TO_CGEN = {
 }
 
 
-def expand_fn(
-    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -55,9 +53,7 @@ def expand_fn(
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(
-    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     .. note::
@@ -82,9 +78,6 @@ def metric_tensor(
               reducing the classical overhead but not the quantum resources
               (compared to ``"block-diag"``).
 
-        diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
-            block-diagonal approximation of the metric tensor is computed.
-            This keyword argument is deprecated in favor of ``approx`` and will be removed soon.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
@@ -252,14 +245,6 @@ def metric_tensor(
         are required in addition to the circuits for the block diagonal.
     """
     # pylint: disable=too-many-arguments
-    if diag_approx is not None:
-        warnings.warn(
-            "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
-            UserWarning,
-        )
-        if diag_approx:
-            approx = "diag"
-
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"

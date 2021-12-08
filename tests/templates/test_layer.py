@@ -18,7 +18,7 @@ Integration tests should be placed into ``test_templates.py``.
 # pylint: disable=protected-access,cell-var-from-loop
 import pytest
 import pennylane as qml
-from pennylane import layer, template
+from pennylane import layer
 
 
 def ConstantCircuit():

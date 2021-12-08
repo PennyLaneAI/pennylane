@@ -469,6 +469,14 @@
 
 <h3>Breaking changes</h3>
 
+* Certain features deprecated in `v0.19.0` have been removed:
+
+  - The `qml.template` decorator;
+  - The `default.tensor` and `default.tensor.tf` experimental devices;
+  - The `qml.fourier.spectrum` function;
+  - The `diag_approx` keyword argument of `qml.metric_tensor` and `qml.QNGOptimizer`.
+  [(#1981)](https://github.com/PennyLaneAI/pennylane/pull/1981)
+
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
   By default, the full metric tensor is computed, leading to higher cost than the previous
   default of computing the block diagonal only. At the same time, the Hadamard tests for
@@ -598,6 +606,10 @@
 * Fixes a bug where differentiating a QNode with multiple array
   arguments via `qml.gradients.param_shift` throws an error.
   [(#1989)](https://github.com/PennyLaneAI/pennylane/pull/1989)
+
+* `AmplitudeEmbedding` template no longer produces a `ComplexWarning`
+  when the `features` parameter is batched and provided as a 2D array.
+  [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
 
 <h3>Documentation</h3>
 
