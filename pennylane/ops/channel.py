@@ -22,7 +22,7 @@ from pennylane.operation import AnyWires, Channel
 
 
 class AmplitudeDamping(Channel):
-    r"""AmplitudeDamping(gamma, wires)
+    r"""AmplitudeDamping(gamma, wires, do_queue=True, id=None)
     Single-qubit amplitude damping error channel.
 
     Interaction with the environment can lead to changes in the state populations of a qubit.
@@ -50,12 +50,15 @@ class AmplitudeDamping(Channel):
     Args:
         gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires):
-        super().__init__(gamma, wires=wires, do_queue=True, id=None)
+    def __init__(self, gamma, wires, do_queue=True, id=None):
+        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -74,7 +77,7 @@ class AmplitudeDamping(Channel):
 
 
 class GeneralizedAmplitudeDamping(Channel):
-    r"""GeneralizedAmplitudeDamping(gamma, p, wires)
+    r"""GeneralizedAmplitudeDamping(gamma, p, wires, do_queue=True, id=None)
     Single-qubit generalized amplitude damping error channel.
 
     This channel models the exchange of energy between a qubit and its environment
@@ -116,12 +119,15 @@ class GeneralizedAmplitudeDamping(Channel):
         gamma (float): amplitude damping probability
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, p, wires):
-        super().__init__(gamma, p, wires=wires, do_queue=True, id=None)
+    def __init__(self, gamma, p, wires, do_queue=True, id=None):
+        super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -145,7 +151,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
 
 class PhaseDamping(Channel):
-    r"""PhaseDamping(gamma, wires)
+    r"""PhaseDamping(gamma, wires, do_queue=True, id=None)
     Single-qubit phase damping error channel.
 
     Interaction with the environment can lead to loss of quantum information changes without any
@@ -178,8 +184,8 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, gamma, wires):
-        super().__init__(gamma, wires=wires, do_queue=True, id=None)
+    def __init__(self, gamma, wires, do_queue=True, id=None):
+        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -198,7 +204,7 @@ class PhaseDamping(Channel):
 
 
 class DepolarizingChannel(Channel):
-    r"""DepolarizingChannel(p, wires)
+    r"""DepolarizingChannel(p, wires, do_queue=True, id=None)
     Single-qubit symmetrically depolarizing error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -238,13 +244,16 @@ class DepolarizingChannel(Channel):
     Args:
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires, do_queue=True, id=None)
+    def __init__(self, p, wires, do_queue=True, id=None):
+        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -265,7 +274,7 @@ class DepolarizingChannel(Channel):
 
 
 class BitFlip(Channel):
-    r"""BitFlip(p, wires)
+    r"""BitFlip(p, wires, do_queue=True, id=None)
     Single-qubit bit flip (Pauli :math:`X`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -292,13 +301,16 @@ class BitFlip(Channel):
     Args:
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires, do_queue=True, id=None)
+    def __init__(self, p, wires, do_queue=True, id=None):
+        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -317,7 +329,7 @@ class BitFlip(Channel):
 
 
 class ResetError(Channel):
-    r"""ResetError(p_0, p_1, wires)
+    r"""ResetError(p_0, p_1, wires, do_queue=True, id=None)
     Single-qubit Reset error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -364,12 +376,15 @@ class ResetError(Channel):
         p_0 (float): The probability that a reset to 0 error occurs.
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, p0, p1, wires):
-        super().__init__(p0, p1, wires=wires, do_queue=True, id=None)
+    def __init__(self, p0, p1, wires, do_queue=True, id=None):
+        super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -397,7 +412,7 @@ class ResetError(Channel):
 
 
 class PauliError(Channel):
-    r"""PauliError(operators, p, wires)
+    r"""PauliError(operators, p, wires, do_queue=True, id=None)
     Arbitrary number qubit, arbitrary Pauli operator error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -429,6 +444,9 @@ class PauliError(Channel):
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example:**
 
@@ -452,9 +470,8 @@ class PauliError(Channel):
         "Z": np.array([[1, 0], [0, -1]]),
     }
 
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-        operators, p = params[0], params[1]
+    def __init__(self, operators, p, wires=None, do_queue=True, id=None):
+        super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
 
         # check if the specified operators are legal
         if not all(c in "XYZ" for c in operators):
@@ -493,7 +510,7 @@ class PauliError(Channel):
 
 
 class PhaseFlip(Channel):
-    r"""PhaseFlip(p, wires)
+    r"""PhaseFlip(p, wires, do_queue=True, id=None)
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -520,13 +537,16 @@ class PhaseFlip(Channel):
     Args:
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    def __init__(self, p, wires):
-        super().__init__(p, wires=wires, do_queue=True, id=None)
+    def __init__(self, p, wires, do_queue=True, id=None):
+        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -545,7 +565,7 @@ class PhaseFlip(Channel):
 
 
 class QubitChannel(Channel):
-    r"""QubitChannel(K_list, wires)
+    r"""QubitChannel(K_list, wires, do_queue=True, id=None)
     Apply an arbitrary fixed quantum channel.
 
     Kraus matrices that represent the fixed channel are provided
@@ -560,12 +580,15 @@ class QubitChannel(Channel):
     Args:
         K_list (list[array[complex]]): List of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, K_list, wires=None, do_queue=True):
-        super().__init__(K_list, wires=wires, do_queue=do_queue)
+    def __init__(self, K_list, wires=None, do_queue=True, id=None):
+        super().__init__(K_list, wires=wires, do_queue=do_queue, id=id)
 
         # check all Kraus matrices are square matrices
         if not all(K.shape[0] == K.shape[1] for K in K_list):
@@ -600,7 +623,7 @@ class QubitChannel(Channel):
 
 
 class ThermalRelaxationError(Channel):
-    r"""ThermalRelaxationError(pe, t1, t2, tg, wires)
+    r"""ThermalRelaxationError(pe, t1, t2, tg, wires, do_queue=True, id=None)
     Thermal relaxation error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -675,12 +698,15 @@ class ThermalRelaxationError(Channel):
         t2 (float): the :math:`T_2` dephasing constant.
         tg (float): the gate time for relaxation error.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires):
-        super().__init__(pe, t1, t2, tq, wires=wires, do_queue=True, id=None)
+    def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
+        super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):

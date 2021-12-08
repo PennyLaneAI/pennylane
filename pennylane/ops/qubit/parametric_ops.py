@@ -31,7 +31,7 @@ INV_SQRT2 = 1 / math.sqrt(2)
 
 
 class RX(Operation):
-    r"""RX(phi, wires)
+    r"""RX(phi, wires, do_queue=True, id=None)
     The single qubit X rotation
 
     .. math:: R_x(\phi) = e^{-i\phi\sigma_x/2} = \begin{bmatrix}
@@ -49,14 +49,17 @@ class RX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -91,7 +94,7 @@ class RX(Operation):
 
 
 class RY(Operation):
-    r"""RY(phi, wires)
+    r"""RY(phi, wires, do_queue=True, id=None)
     The single qubit Y rotation
 
     .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
@@ -109,14 +112,17 @@ class RY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -145,7 +151,7 @@ class RY(Operation):
 
 
 class RZ(Operation):
-    r"""RZ(phi, wires)
+    r"""RZ(phi, wires, do_queue=True, id=None)
     The single qubit Z rotation
 
     .. math:: R_z(\phi) = e^{-i\phi\sigma_z/2} = \begin{bmatrix}
@@ -163,14 +169,17 @@ class RZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -210,7 +219,7 @@ class RZ(Operation):
 
 
 class PhaseShift(Operation):
-    r"""PhaseShift(phi, wires)
+    r"""PhaseShift(phi, wires, do_queue=True, id=None)
     Arbitrary single qubit local phase shift
 
     .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -228,14 +237,17 @@ class PhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -283,7 +295,7 @@ class PhaseShift(Operation):
 
 
 class ControlledPhaseShift(Operation):
-    r"""ControlledPhaseShift(phi, wires)
+    r"""ControlledPhaseShift(phi, wires, do_queue=True, id=None)
     A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -305,14 +317,17 @@ class ControlledPhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -366,7 +381,7 @@ CPhase = ControlledPhaseShift
 
 
 class Rot(Operation):
-    r"""Rot(phi, theta, omega, wires)
+    r"""Rot(phi, theta, omega, wires, do_queue=True, id=None)
     Arbitrary single qubit rotation
 
     .. math::
@@ -394,12 +409,15 @@ class Rot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
 
-    def __init__(self, phi, theta, omega, wires):
-        super().__init__(phi, theta, omega, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+        super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -459,7 +477,7 @@ class Rot(Operation):
 
 
 class MultiRZ(Operation):
-    r"""MultiRZ(theta, wires)
+    r"""MultiRZ(theta, wires, do_queue=True, id=None)
     Arbitrary multi Z rotation.
 
     .. math::
@@ -481,12 +499,15 @@ class MultiRZ(Operation):
     Args:
         theta (float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     grad_method = "A"
 
-    def __init__(self, theta, wires):
-        super().__init__(theta, wires=wires, do_queue=True, id=None)
+    def __init__(self, theta, wires, do_queue=True, id=None):
+        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -562,7 +583,7 @@ class MultiRZ(Operation):
 
 
 class PauliRot(Operation):
-    r"""PauliRot(theta, pauli_word, wires)
+    r"""PauliRot(theta, pauli_word, wires, do_queue=True, id=None)
     Arbitrary Pauli word rotation.
 
     .. math::
@@ -586,6 +607,9 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -609,8 +633,8 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(self, theta, pauli_word, wires=None, do_queue=True):
-        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
+    def __init__(self, theta, pauli_word, wires=None, do_queue=True, id=None):
+        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue, id=id)
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
@@ -821,7 +845,7 @@ four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class CRX(Operation):
-    r"""CRX(phi, wires)
+    r"""CRX(phi, wires, do_queue=True, id=None)
     The controlled-RX operator
 
     .. math::
@@ -856,6 +880,9 @@ class CRX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "X"
@@ -867,8 +894,8 @@ class CRX(Operation):
         -1 / 2,
     ]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
