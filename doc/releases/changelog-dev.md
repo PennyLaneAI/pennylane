@@ -8,7 +8,6 @@
 
 <h3>Breaking changes</h3>
 
-
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
