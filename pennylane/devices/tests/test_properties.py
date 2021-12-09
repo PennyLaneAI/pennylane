@@ -46,21 +46,6 @@ except ImportError:
 # Shared test data =====
 
 
-def qfunc_no_input():
-    """Model agnostic quantum function"""
-    return qml.expval(qml.Identity(wires=0))
-
-
-def qfunc_tensor_obs():
-    """Model agnostic quantum function with tensor observable"""
-    return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
-
-
-def qfunc_probs():
-    """Model agnostic quantum function returning probs"""
-    return qml.probs(wires=0)
-
-
 def qfunc_with_scalar_input(model=None):
     """Model dependent quantum function taking a single input"""
 
@@ -123,10 +108,22 @@ class TestCapabilities:
         assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
-        qnode = qml.QNode(qfunc_no_input, dev)
+        if cap["model"] == "qubit":
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.PauliX(wires=0)
+                return qml.expval(qml.PauliZ(wires=0))
+
+        else:
+
+            @qml.qnode(dev)
+            def circuit():
+                qml.Displacement(1.0, 1.2345, wires=0)
+                return qml.expval(qml.X(wires=0))
 
         # assert that device can measure observable from its model
-        qnode()
+        circuit()
 
     def test_passthru_interface_is_correct(self, device_kwargs):
         """Test that the capabilities dictionary defines a valid passthru interface, if not None."""
@@ -177,19 +174,6 @@ class TestCapabilities:
             else:
                 pytest.skip("Cannot import torch")
 
-    def test_provides_jacobian(self, device_kwargs):
-        """Test that the device computes the jacobian."""
-        device_kwargs["wires"] = 1
-        dev = qml.device(**device_kwargs)
-        cap = dev.capabilities()
-
-        if "provides_jacobian" not in cap:
-            pytest.skip("No provides_jacobian capability specified by device.")
-
-        qnode = qml.QNode(qfunc_no_input, dev)
-
-        assert cap["provides_jacobian"] == hasattr(qnode, "jacobian")
-
     def test_supports_tensor_observables(self, device_kwargs):
         """Tests that the device reports correctly whether it supports tensor observables."""
         device_kwargs["wires"] = 2
@@ -199,13 +183,20 @@ class TestCapabilities:
         if "supports_tensor_observables" not in cap:
             pytest.skip("No supports_tensor_observables capability specified by device.")
 
-        qnode = qml.QNode(qfunc_tensor_obs, dev)
+        @qml.qnode(dev)
+        def circuit():
+            """Model agnostic quantum function with tensor observable"""
+            if cap["model"] == "qubit":
+                qml.PauliX(wires=0)
+            else:
+                qml.X(wires=0)
+            return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
-            qnode()
+            circuit()
         else:
             with pytest.raises(qml.QuantumFunctionError):
-                qnode()
+                circuit()
 
     @pytest.mark.xfail
     def test_reversible_diff(self, device_kwargs):
@@ -233,8 +224,12 @@ class TestCapabilities:
         if "returns_state" not in cap:
             pytest.skip("No returns_state capability specified by device.")
 
-        qnode = qml.QNode(qfunc_no_input, dev)
-        qnode()
+        @qml.qnode(dev)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.state()
+
+        circuit()
 
         if cap["returns_state"]:
             assert dev.state is not None
@@ -255,10 +250,16 @@ class TestCapabilities:
         if "returns_probs" not in cap:
             pytest.skip("No returns_probs capability specified by device.")
 
-        qnode = qml.QNode(qfunc_probs, dev)
+        @qml.qnode(dev)
+        def circuit():
+            if cap["model"] == "qubit":
+                qml.PauliX(wires=0)
+            else:
+                qml.X(wires=0)
+            return qml.probs(wires=0)
 
         if cap["returns_probs"]:
-            qnode()
+            circuit()
         else:
             with pytest.raises(NotImplementedError):
-                qnode()
+                circuit()

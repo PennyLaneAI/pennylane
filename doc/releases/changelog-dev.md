@@ -536,6 +536,11 @@
 
 <h3>Bug fixes</h3>
 
+* Device test suite doesn't use empty circuits so that it can also
+  test the IonQ plugin, and it checks if operations are supported in
+  more places.
+  [(#1979)](https://github.com/PennyLaneAI/pennylane/pull/1979)
+
 * Fixes a bug where the metric tensor was computed incorrectly when using
   gates with `gate.inverse=True`.
   [(#1987)](https://github.com/PennyLaneAI/pennylane/pull/1987)
