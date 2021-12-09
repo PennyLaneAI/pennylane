@@ -135,9 +135,9 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiple_vector_arguments(self, tol):
+    def test_multiple_tensor_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
-        correctly when multiple vector QNode arguments are present"""
+        correctly when multiple tensor QNode arguments are present"""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)

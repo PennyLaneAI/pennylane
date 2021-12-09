@@ -111,12 +111,13 @@ class gradient_transform(qml.batch_transform):
     @staticmethod
     def _jacobian_trainable_args(args, interface):
         """Return the indices of QNode arguments for which a Jacobian was
-        computed by `qml.gradients.classical_jacobian` with argnum=None.
+        computed by `qml.transforms.classical_jacobian` with argnum=None.
         """
         trainable_args = []
 
         if interface == "autograd":
             for idx, arg in enumerate(args):
+                # TODO: make default False once this change is done in qml.jacobian
                 if getattr(arg, "requires_grad", True):
                     trainable_args.append(idx)
 
@@ -165,7 +166,7 @@ class gradient_transform(qml.batch_transform):
                 return qjac
 
             # Classical processing present of either:
-            #   a) a single argument
+            #   a) a single argument or
             #   b) multiple arguments of the same shape
             # The shape of the classical jacobian returned by qml.jacobian depends on the scenario:
             #   a) (# gate args, qnode arg shape)
@@ -176,9 +177,11 @@ class gradient_transform(qml.batch_transform):
             #   a) (qnode ouput shape, qnode arg shape)
             #   b) (reverse qnode arg shape, qnode output shape, # qnode args)
             num_gate_args = qml.math.shape(qjac)[-1]
+            # Consider only QNode arguments regarded as trainable by the interfaces.
             trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
+            # Since all arguments have the same shape, obtain shape from the first trainable arg
             qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
-            num_qnode_args = len(trainable_args_idx)  # need trainable number of qnode args only
+            num_qnode_args = len(trainable_args_idx)
 
             if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
                 # single QNode argument
