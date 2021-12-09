@@ -270,13 +270,17 @@ class DefaultQubitJax(DefaultQubit):
 
             # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
-                basis_states, counts = qml.math.unique(idx, return_counts=True, size=2**num_wires, fill_value=-1)
+                basis_states, counts = qml.math.unique(
+                    idx, return_counts=True, size=2 ** num_wires, fill_value=-1
+                )
                 prob[basis_states, b] = counts / bin_size
                 prob = qml.math.convert_like(prob, indices)
                 prob = prob.at[basis_states].set(counts / bin_size)
 
         else:
-            basis_states, counts = qml.math.unique(indices, return_counts=True, size=2**num_wires, fill_value=-1)
+            basis_states, counts = qml.math.unique(
+                indices, return_counts=True, size=2 ** num_wires, fill_value=-1
+            )
             prob = np.zeros([2 ** num_wires], dtype=np.float64)
             prob = qml.math.convert_like(prob, indices)
             prob = prob.at[basis_states].set(counts / len(samples))
