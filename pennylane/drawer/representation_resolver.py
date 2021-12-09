@@ -341,30 +341,7 @@ class RepresentationResolver:
             return (" " + self.charset.OTIMES + " ").join(constituent_representations)
 
         if isinstance(op, qml.tape.QuantumTape):
-            if op in self.tape_cache:
-                idx = list(self.tape_cache).index(op) + self.label_offsets["tape"]
-            else:
-                from .circuit_drawer import CircuitDrawer  # pylint: disable=import-outside-toplevel
-
-                grid, obs = op.graph.greedy_layers()
-
-                def draw_nested_tape_callback(resolver):
-                    offsets = {
-                        "matrix": resolver.label_offsets["matrix"] + len(resolver.matrix_cache),
-                        "unitary": resolver.label_offsets["unitary"]
-                        + len(resolver.unitary_matrix_cache),
-                        "hermitian": resolver.label_offsets["hermitian"]
-                        + len(resolver.hermitian_matrix_cache),
-                        "tape": resolver.label_offsets["tape"] + len(resolver.tape_cache),
-                    }
-                    return CircuitDrawer(
-                        grid, obs, op.graph.wires, charset=self.charset, _label_offsets=offsets
-                    ).draw()
-
-                idx = len(self.tape_cache) + self.label_offsets["tape"]
-                self.tape_cache[op] = draw_nested_tape_callback
-
-            return f"QuantumTape:T{idx}"
+            return self.draw_tape(op)
 
         representation = ""
         base_name = getattr(op, "base_name", op.name)
@@ -448,6 +425,41 @@ class RepresentationResolver:
             representation += self.charset.to_superscript("-1")
 
         return representation
+
+    def draw_tape(self, op):
+        """Draws quantum tapes and nested quantum tapes.
+
+        Args:
+            op (~.QuantumTape): the tape to draw
+
+        Returns:
+            str: the tape string to display
+        """
+
+        if op in self.tape_cache:
+            idx = list(self.tape_cache).index(op) + self.label_offsets["tape"]
+        else:
+
+            from .circuit_drawer import CircuitDrawer  # pylint: disable=import-outside-toplevel
+            grid, obs = op.graph.greedy_layers()
+
+            def draw_nested_tape_callback(resolver):
+                offsets = {
+                    "matrix": resolver.label_offsets["matrix"] + len(resolver.matrix_cache),
+                    "unitary": resolver.label_offsets["unitary"]
+                    + len(resolver.unitary_matrix_cache),
+                    "hermitian": resolver.label_offsets["hermitian"]
+                    + len(resolver.hermitian_matrix_cache),
+                    "tape": resolver.label_offsets["tape"] + len(resolver.tape_cache),
+                }
+                return CircuitDrawer(
+                    grid, obs, op.graph.wires, charset=self.charset, _label_offsets=offsets
+                ).draw()
+
+            idx = len(self.tape_cache) + self.label_offsets["tape"]
+            self.tape_cache[op] = draw_nested_tape_callback
+
+        return f"QuantumTape:T{idx}"
 
     def output_representation(self, obs, wire):
         """Return the string representation of a circuit's output.
