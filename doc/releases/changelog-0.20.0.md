@@ -528,6 +528,11 @@
 
 <h3>Bug fixes</h3>
 
+* Device test suite doesn't use empty circuits so that it can also
+  test the IonQ plugin, and it checks if operations are supported in
+  more places.
+  [(#1979)](https://github.com/PennyLaneAI/pennylane/pull/1979)
+
 * Corrects the documentation of `qml.transforms.classical_jacobian`
   for the Autograd interface (and improves test coverage).
   [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)

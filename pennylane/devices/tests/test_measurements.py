@@ -76,7 +76,7 @@ class TestSupportedObservables:
 
             @qml.qnode(dev, **kwargs)
             def circuit():
-                if dev.supports_operation(qml.PauliX): # ionq can't have empty circuits
+                if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
                     qml.PauliX(0)
                 return qml.expval(obs[observable])
 
@@ -96,7 +96,7 @@ class TestSupportedObservables:
 
         @qml.qnode(dev)
         def circuit():
-            if dev.supports_operation(qml.PauliX): # ionq can't have empty circuits
+            if dev.supports_operation(qml.PauliX):  # ionq can't have empty circuits
                 qml.PauliX(0)
             return qml.expval(qml.Identity(wires=0) @ qml.Identity(wires=1))
 

@@ -58,6 +58,7 @@ def qfunc_with_scalar_input(model=None):
 
     return qfunc
 
+
 # =======================
 
 
@@ -108,11 +109,14 @@ class TestCapabilities:
         assert cap["model"] in ["qubit", "cv"]
 
         if cap["model"] == "qubit":
+
             @qml.qnode(dev)
             def circuit():
                 qml.PauliX(wires=0)
                 return qml.expval(qml.PauliZ(wires=0))
+
         else:
+
             @qml.qnode(dev)
             def circuit():
                 qml.Displacement(1.0, 1.2345, wires=0)
@@ -182,7 +186,7 @@ class TestCapabilities:
         @qml.qnode(dev)
         def circuit():
             """Model agnostic quantum function with tensor observable"""
-            if cap['model'] == 'qubit':
+            if cap["model"] == "qubit":
                 qml.PauliX(wires=0)
             else:
                 qml.X(wires=0)
@@ -247,11 +251,11 @@ class TestCapabilities:
 
         @qml.qnode(dev)
         def circuit():
-            if cap['model'] == 'qubit':
+            if cap["model"] == "qubit":
                 qml.PauliX(wires=0)
             else:
                 qml.X(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         if cap["returns_probs"]:
             circuit()
