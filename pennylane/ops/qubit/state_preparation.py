@@ -151,8 +151,8 @@ class QubitDensityMatrix(Operation):
             dev = qml.device("default.mixed", wires=2)
             @qml.qnode(dev)
             def circuit():
-                qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
-                 return qml.state()
+                qml.QubitDensityMatrix(rho, wires=[0, 1])
+                return qml.state()
 
         Running this circuit:
 
