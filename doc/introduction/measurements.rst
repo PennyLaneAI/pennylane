@@ -129,10 +129,9 @@ Probability
 -----------
 
 You can also train QNodes on computational basis probabilities, by using
-the :func:`~.pennylane.probs` measurement function. Unlike other
-measurement functions, **this does not accept observables**.
-Instead, it will return a flat array or tensor containing the (marginal)
-probabilities of each quantum state.
+the :func:`~.pennylane.probs` measurement function. The function can
+accept either specified ``wires`` or an observable that rotates the 
+computational basis.
 
 .. code-block:: python3
 
