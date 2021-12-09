@@ -316,7 +316,7 @@ class RepresentationResolver:
 
         return self._format_polyxp_order2(coefficients)
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-return-statements
     def operator_representation(self, op, wire):
         """Return the string representation of an Operator.
 
