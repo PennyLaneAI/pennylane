@@ -372,17 +372,17 @@ class CircuitDrawer:
             (
                 "U",
                 self.representation_resolver.unitary_matrix_cache,
-                self.representation_resolver.unitary_offset,
+                self.representation_resolver.label_offsets["unitary"],
             ),
             (
                 "H",
                 self.representation_resolver.hermitian_matrix_cache,
-                self.representation_resolver.hermitian_offset,
+                self.representation_resolver.label_offsets["hermitian"],
             ),
             (
                 "M",
                 self.representation_resolver.matrix_cache,
-                self.representation_resolver.matrix_offset,
+                self.representation_resolver.label_offsets["matrix"],
             ),
             (
                 "T",
@@ -390,7 +390,7 @@ class CircuitDrawer:
                     draw_fn(self.representation_resolver)
                     for draw_fn in self.representation_resolver.tape_cache.values()
                 ],
-                self.representation_resolver.tape_offset,
+                self.representation_resolver.label_offsets["tape"],
             ),
         ]:
             for idx, matrix in enumerate(cache):
