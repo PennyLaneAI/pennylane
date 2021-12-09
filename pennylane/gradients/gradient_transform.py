@@ -186,12 +186,15 @@ class gradient_transform(qml.batch_transform):
             if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
                 # single QNode argument
                 jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
-            else:
+            elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
                 # multiple QNode arguments with stacking
-                # shape(cjac) = (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args)
                 cjac = qml.math.swapaxes(cjac, -1, -2)
                 jac = qml.math.tensordot(cjac, qjac, [[-1], [-1]])
                 jac = qml.math.moveaxis(jac, -1, len(qnode_arg_shape))
+            else:  # pragma: no cover
+                # default to old behaviour in case shape is not identified, remove in the future
+                jac = qml.math.squeeze(qml.math.tensordot(qml.math.T(cjac), qjac, [[-1], [-1]]))
+                return qml.math.T(jac)
 
             return qml.math.squeeze(jac)
 
