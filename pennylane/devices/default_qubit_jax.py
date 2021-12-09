@@ -266,7 +266,9 @@ class DefaultQubitJax(DefaultQubit):
             bins = len(samples) // bin_size
 
             indices = indices.reshape((bins, -1))
-            prob = np.zeros([2 ** num_wires, bins], dtype=np.float64)
+            prob = np.zeros(
+                [2 ** num_wires + 1, bins], dtype=np.float64
+            )  # extend it to store 'filled values'
 
             # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
@@ -277,18 +279,17 @@ class DefaultQubitJax(DefaultQubit):
                 prob = qml.math.convert_like(prob, indices)
 
                 for state, count in zip(basis_states, counts):
-                    if state != -1:  # ignore the fill value if it appears
-                        prob = prob.at[state].set(count / bin_size)
+                    prob = prob.at[state].set(count / bin_size)
 
         else:
             basis_states, counts = qml.math.unique(
                 indices, return_counts=True, size=2 ** num_wires, fill_value=-1
             )
-            prob = np.zeros([2 ** num_wires], dtype=np.float64)
+            prob = np.zeros([2 ** num_wires + 1], dtype=np.float64)
             prob = qml.math.convert_like(prob, indices)
 
             for state, count in zip(basis_states, counts):
-                if state != -1:  # ignore the fill value if it appears
-                    prob = prob.at[state].set(count / len(samples))
+                prob = prob.at[state].set(count / len(samples))
 
+        prob = jnp.resize(prob, 2 ** num_wires)  # resize prob which discards the 'filled values'
         return self._asarray(prob, dtype=self.R_DTYPE)

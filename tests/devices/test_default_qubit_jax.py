@@ -163,7 +163,7 @@ class TestQNodeIntegration:
             return qml.probs()
 
         result = circuit()
-        assert jnp.isclose(result, expected, atol=tol)
+        assert jnp.allclose(result, expected, atol=tol)
 
     def test_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit"""
@@ -177,7 +177,7 @@ class TestQNodeIntegration:
             return qml.probs()
 
         result = circuit()
-        assert jnp.isclose(result, expected, atol=tol)
+        assert jnp.allclose(result, expected, atol=tol)
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
