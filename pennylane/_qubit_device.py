@@ -24,7 +24,6 @@ import itertools
 import warnings
 
 import numpy as np
-from jax import numpy as jnp
 
 import pennylane as qml
 from pennylane.operation import (
@@ -642,7 +641,11 @@ class QubitDevice(Device):
         # convert samples from a list of 0, 1 integers, to base 10 representation
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         indices = samples @ powers_of_two
-
+        # isabs = qml.math.is_abstract(indices)
+        # print(f"\n \nInfo: "
+        #       f"\nis abstract: {isabs} "
+        #       f"\ntype:        {type(indices)}"
+        #       f"\n \n")
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
             bins = len(samples) // bin_size
@@ -652,11 +655,13 @@ class QubitDevice(Device):
 
             # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
-                basis_states, counts = jnp.unique(idx, return_counts=True, size=2**num_wires, fill_value=-1)
+                basis_states, counts = np.unique(idx, return_counts=True)
+                # basis_states, counts = np.unique(idx, return_counts=True, size=2**num_wires, fill_value=-1)
                 prob[basis_states, b] = counts / bin_size
 
         else:
-            basis_states, counts = jnp.unique(indices, return_counts=True, size=2**num_wires, fill_value=-1)
+            basis_states, counts = np.unique(indices, return_counts=True)
+            # basis_states, counts = np.unique(indices, return_counts=True, size=2**num_wires, fill_value=-1)
             prob = np.zeros([2 ** num_wires], dtype=np.float64)
             prob[basis_states] = counts / len(samples)
 
