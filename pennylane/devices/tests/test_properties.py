@@ -226,6 +226,7 @@ class TestCapabilities:
 
         @qml.qnode(dev)
         def circuit():
+            qml.PauliX(wires=0)
             return qml.state()
 
         circuit()
