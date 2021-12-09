@@ -607,6 +607,11 @@
   when the `features` parameter is batched and provided as a 2D array.
   [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
 
+* Fixes a bug where using SciPy sparse matrices with the new QNode
+  could lead to a warning being raised about prioritizing the TensorFlow
+  and PyTorch interfaces.
+  [(#2001)](https://github.com/PennyLaneAI/pennylane/pull/2001)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
