@@ -13,6 +13,12 @@ def compute_indices_MPS(wires, loc):
         layers (array): array of wire indices or wire labels for each block
     """
 
+    if len(wires)%2 != 0:
+        raise AssertionError(f"number of wires must be an even integer; got {len(wires)}")
+
+    if loc%2 != 0:
+        raise AssertionError(f"loc must be an even integer; got {loc}")
+
     layers = np.array(
         [
             [wires[idx] for idx in range(j, j + loc)]
@@ -52,7 +58,7 @@ class MPS(Operation):
     ):
         n_wires = len(wires)
         if loc < 2:
-            raise ValueError(f"number of wires in each block must be larger than or equal to 2; got {loc}")
+            raise ValueError(f"number of wires in each block must be larger than or equal to 2; got loc={loc}")
 
         if n_wires < 3:
             raise ValueError(f"fnumber of wires must be greater than or equal to 3; got {n_wires}")
@@ -67,7 +73,7 @@ class MPS(Operation):
         self.block = block
 
         if weights is None:
-            self.weights = np.random.rand(n_params_block, int(self.n_blocks))  # Obsolet
+            self.weights = np.random.rand(n_params_block, int(self.n_blocks))  
 
         else:
 
