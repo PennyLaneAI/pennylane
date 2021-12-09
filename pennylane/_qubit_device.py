@@ -633,7 +633,6 @@ class QubitDevice(Device):
         wires = Wires(wires)
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-        num_wires = len(device_wires)
 
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
         samples = self._samples[sample_slice, device_wires]
@@ -646,18 +645,16 @@ class QubitDevice(Device):
             bins = len(samples) // bin_size
 
             indices = indices.reshape((bins, -1))
-            prob = np.zeros([2 ** num_wires, bins], dtype=np.float64)
+            prob = np.zeros([2 ** len(device_wires), bins], dtype=np.float64)
 
             # count the basis state occurrences, and construct the probability vector
             for b, idx in enumerate(indices):
                 basis_states, counts = np.unique(idx, return_counts=True)
-                # basis_states, counts = np.unique(idx, return_counts=True, size=2**num_wires, fill_value=-1)
                 prob[basis_states, b] = counts / bin_size
 
         else:
             basis_states, counts = np.unique(indices, return_counts=True)
-            # basis_states, counts = np.unique(indices, return_counts=True, size=2**num_wires, fill_value=-1)
-            prob = np.zeros([2 ** num_wires], dtype=np.float64)
+            prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
             prob[basis_states] = counts / len(samples)
 
         return self._asarray(prob, dtype=self.R_DTYPE)
