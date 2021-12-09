@@ -16,7 +16,6 @@
 import itertools
 import numpy as onp
 import pytest
-import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -54,19 +53,6 @@ class TestGetMultiTensorbox:
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn._multi_dispatch([x, y])
 
-    def test_no_warning_scipy_and_autograd(self):
-        """Test that no warning is raised if the sequence of tensors contains
-        SciPy sparse matrices and autograd tensors."""
-        x = sci.sparse.eye(3)
-        y = np.array([0.5, 0.1])
-
-        warnings.filterwarnings(
-            action="error",
-            message="Contains tensors of types {.+}; dispatch will prioritize TensorFlow",
-            category=UserWarning,
-        )
-        fn._multi_dispatch([x, y])
-
     def test_warning_torch_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
         both torch and autograd tensors."""
@@ -75,6 +61,15 @@ class TestGetMultiTensorbox:
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn._multi_dispatch([x, y])
+
+    @pytest.mark.filterwarnings("error:Contains tensors of types {.+}; dispatch will prioritize")
+    def test_no_warning_scipy_and_autograd(self):
+        """Test that no warning is raised if the sequence of tensors contains
+        SciPy sparse matrices and autograd tensors."""
+        x = sci.sparse.eye(3)
+        y = np.array([0.5, 0.1])
+
+        fn._multi_dispatch([x, y])
 
     def test_return_tensorflow_box(self):
         """Test that TensorFlow is correctly identified as the dispatching library."""
