@@ -22,7 +22,7 @@ from pennylane.hf.tapering import (
     _binary_matrix,
     _reduced_row_echelon,
     _kernel,
-    generate_taus,
+    get_generators,
     generate_paulis,
     generate_symmetries,
 )
@@ -137,7 +137,47 @@ def test_binary_matrix(terms, num_qubits, result):
 )
 def test_reduced_row_echelon(binary_matrix, result):
     r"""Test that _reduced_row_echelon returns the correct result."""
+
+    # build row echelon form of the matrix
+    shape = binary_matrix.shape
+    for irow in range(shape[0]):
+        pivot_index = 0
+        if np.count_nonzero(binary_matrix[irow, :]):
+            pivot_index = np.nonzero(binary_matrix[irow, :])[0][0]
+
+        for jrow in range(shape[0]):
+            if jrow != irow and binary_matrix[jrow, pivot_index]:
+                binary_matrix[jrow, :] = (binary_matrix[jrow, :] + binary_matrix[irow, :]) % 2
+
+    indices = [
+        irow
+        for irow in range(shape[0] - 1)
+        if np.array_equal(binary_matrix[irow, :], np.zeros(shape[1]))
+    ]
+
+    temp_row_echelon_matrix = binary_matrix.copy()
+    for row in indices[::-1]:
+        temp_row_echelon_matrix = np.delete(temp_row_echelon_matrix, row, axis=0)
+
+    row_echelon_matrix = np.zeros(shape, dtype=int)
+    row_echelon_matrix[: shape[0] - len(indices), :] = temp_row_echelon_matrix
+
+    # build reduced row echelon form of the matrix from row echelon form
+    for idx in range(len(row_echelon_matrix))[:0:-1]:
+        nonzeros = np.nonzero(row_echelon_matrix[idx])[0]
+        if len(nonzeros) > 0:
+            redrow = (row_echelon_matrix[idx, :] % 2).reshape(1, -1)
+            coeffs = (
+                (-row_echelon_matrix[:idx, nonzeros[0]] / row_echelon_matrix[idx, nonzeros[0]]) % 2
+            ).reshape(1, -1)
+            row_echelon_matrix[:idx, :] = (
+                row_echelon_matrix[:idx, :] + (coeffs.T * redrow) % 2
+            ) % 2
+
+    # get reduced row echelon form from the _reduced_row_echelon function
     rref_bin_mat = _reduced_row_echelon(binary_matrix)
+
+    assert (rref_bin_mat == row_echelon_matrix).all()
     assert (rref_bin_mat == result).all()
 
 
@@ -172,7 +212,24 @@ def test_reduced_row_echelon(binary_matrix, result):
 )
 def test_kernel(binary_matrix, result):
     r"""Test that _kernel returns the correct result."""
+
+    # get the kernel from the gaussian elimination using column echelon form.
+    shape = binary_matrix.shape
+    row_aug_mat = np.vstack((binary_matrix, np.identity(shape[1], dtype=int)))
+    col_ech_mat = (_reduced_row_echelon(row_aug_mat.T)).T
+
+    kernel = []
+    for icol in range(shape[1]):
+        b_col, c_col = col_ech_mat[: shape[0], icol], col_ech_mat[shape[0] :, icol]
+        if (b_col == np.zeros(shape[0])).all() and not (c_col == np.zeros(shape[1])).all():
+            kernel.append(col_ech_mat[shape[0] :, icol].tolist())
+
+    # get the nullspace from the _kernel function.
     nullspace = _kernel(binary_matrix)
+
+    for nullvec in kernel:
+        assert nullvec in nullspace.tolist()
+
     assert (nullspace == result).all()
 
 
@@ -184,7 +241,7 @@ def test_kernel(binary_matrix, result):
                 [[0, 0, 0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 0, 1, 0], [0, 0, 0, 0, 1, 0, 0, 1]]
             ),
             4,
-            [
+            [  # Correct generators as given by Bravyi et al. (arXiv:1701.08213).
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
@@ -192,10 +249,10 @@ def test_kernel(binary_matrix, result):
         ),
     ],
 )
-def test_generate_taus(nullspace, num_qubits, result):
-    r"""Test that generate_taus returns the correct result."""
+def test_get_generators(nullspace, num_qubits, result):
+    r"""Test that get_generators returns the correct result."""
 
-    generators = generate_taus(nullspace, num_qubits)
+    generators = get_generators(nullspace, num_qubits)
     for g1, g2 in zip(generators, result):
         assert g1.compare(g2)
 
