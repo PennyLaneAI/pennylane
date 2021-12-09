@@ -607,6 +607,11 @@
   when the `features` parameter is batched and provided as a 2D array.
   [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
 
+* `qml.circuit_drawer.CircuitDrawer` no longer produces an error
+  when attempting to draw tapes inside of circuits (e.g. from
+  decomposition of an operation or manual placement).
+  [(#1994)](https://github.com/PennyLaneAI/pennylane/pull/1994)
+
 * Fixes a bug where using SciPy sparse matrices with the new QNode
   could lead to a warning being raised about prioritizing the TensorFlow
   and PyTorch interfaces.
