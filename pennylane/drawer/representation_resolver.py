@@ -342,7 +342,7 @@ class RepresentationResolver:
             if op in self.tape_cache:
                 idx = list(self.tape_cache).index(op) + self.tape_offset
             else:
-                from .circuit_drawer import CircuitDrawer
+                from .circuit_drawer import CircuitDrawer # pylint: disable=import-outside-toplevel
 
                 grid, obs = op.graph.greedy_layers()
 
