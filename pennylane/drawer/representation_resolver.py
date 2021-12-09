@@ -441,6 +441,7 @@ class RepresentationResolver:
         else:
 
             from .circuit_drawer import CircuitDrawer  # pylint: disable=import-outside-toplevel
+
             grid, obs = op.graph.greedy_layers()
 
             def draw_nested_tape_callback(resolver):
