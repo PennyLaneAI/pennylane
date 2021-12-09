@@ -275,7 +275,10 @@ class DefaultQubitJax(DefaultQubit):
                 )
                 prob[basis_states, b] = counts / bin_size
                 prob = qml.math.convert_like(prob, indices)
-                prob = prob.at[basis_states].set(counts / bin_size)
+
+                for state, count in zip(basis_states, counts):
+                    if state != -1:  # ignore the fill value if it appears
+                        prob = prob.at[state].set(count / bin_size)
 
         else:
             basis_states, counts = qml.math.unique(
@@ -283,6 +286,9 @@ class DefaultQubitJax(DefaultQubit):
             )
             prob = np.zeros([2 ** num_wires], dtype=np.float64)
             prob = qml.math.convert_like(prob, indices)
-            prob = prob.at[basis_states].set(counts / len(samples))
+
+            for state, count in zip(basis_states, counts):
+                if state != -1:  # ignore the fill value if it appears
+                    prob = prob.at[state].set(count / len(samples))
 
         return self._asarray(prob, dtype=self.R_DTYPE)
