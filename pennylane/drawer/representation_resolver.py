@@ -18,7 +18,7 @@ Operations to their string representations.
 import numpy as np
 import pennylane as qml
 
-from .charsets import CHARSETS, UnicodeCharSet
+from .charsets import UnicodeCharSet
 
 
 class RepresentationResolver:
