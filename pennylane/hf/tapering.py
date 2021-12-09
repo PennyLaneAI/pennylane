@@ -32,7 +32,8 @@ def _binary_matrix(terms, num_qubits):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
+
         >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
                      qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
                      qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
@@ -67,7 +68,8 @@ def _reduced_row_echelon(binary_matrix):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
+
         >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
                                       [1, 0, 1, 0, 0, 0, 1, 0],
                                       [0, 0, 0, 1, 1, 0, 0, 1]])
@@ -113,7 +115,8 @@ def _kernel(binary_matrix):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
+
         >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
                                       [0, 0, 1, 1, 1, 1, 1, 1],
                                       [0, 0, 0, 1, 1, 0, 0, 1]])
@@ -158,7 +161,8 @@ def get_generators(nullspace, num_qubits):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
+
         >>> kernel = np.array([[0, 1, 0, 0, 0, 0, 0, 0],
                                [0, 0, 1, 1, 1, 0, 0, 0],
                                [1, 0, 1, 0, 0, 1, 0, 0],
@@ -198,7 +202,8 @@ def generate_paulis(generators, num_qubits):
 
     **Example**
 
-    .. code-block::
+    .. code-block:: python
+
         >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                           qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                           qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
@@ -247,7 +252,8 @@ def generate_symmetries(qubit_op, num_qubits):
         pauli_x_ops (list[pennylane.Hamiltonian]): list of single-qubit Pauli X operators which will be used to build the
         Clifford operators `U`.
 
-    .. code-block::
+    .. code-block:: python
+
         >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
         >>> mol = qml.hf.Molecule(symbols, coordinates)
         >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
