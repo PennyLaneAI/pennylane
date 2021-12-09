@@ -23,6 +23,18 @@ def compute_indices_MPS(wires, loc):
 
 
 class MPS(Operation):
+    r""" Quantum circuit consisting on the broadcast of local gates, following the architecture from `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
+
+    The argument ``block`` can be either an user-defined quantum function or an existing template. 
+
+        Args:
+
+            wires (Iterable):  wires that the template acts on
+            loc (int): number of wires that each  block acts on
+            block: quantum circuit that compose each block
+            n_params_block (Integer):
+            weights (tensor_like): weight tensor
+        """
 
     num_params = 1
     num_wires = AnyWires
