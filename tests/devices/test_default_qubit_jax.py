@@ -152,6 +152,33 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
+    def test_probs_jax(self, tol):
+        """Test that returning probs works with jax"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.isclose(result, expected, atol=tol)
+
+    def test_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.isclose(result, expected, atol=tol)
+
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
 
