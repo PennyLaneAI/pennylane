@@ -58,8 +58,8 @@ class MPS(Operation):
         if loc < 2:
             raise ValueError(f"number of wires in each block must be larger than or equal to 2; got loc={loc}")
 
-        if n_wires < 3:
-            raise ValueError(f"number of wires must be greater than or equal to 3; got {n_wires}")
+        if n_wires < 2:
+            raise ValueError(f"number of wires must be greater than or equal to 2; got {n_wires}")
 
         if loc > n_wires:
             raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
