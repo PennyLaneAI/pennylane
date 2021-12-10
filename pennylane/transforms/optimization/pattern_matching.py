@@ -75,16 +75,19 @@ def pattern_matching(tape, pattern_tapes):
         circuit_dag = qml.transforms.get_dag_commutation(tape)()
         pattern_dag = qml.transforms.get_dag_commutation(pattern)()
 
-        print(circuit_dag.get_nodes())
-        print(pattern_dag.get_nodes())
-
-        # Initial match
+        # Loop through all possible initial matches
         for node_c in circuit_dag.get_nodes():
             for node_p in pattern_dag.get_nodes():
+                # Initial matches between two identical gates (No qubits comparison)
                 if compare_operation_without_qubits(node_c[1], node_p[1]):
-                    print("Match between circuit op", node_c[0])
-                    print("And pattern op", node_p[0])
+                    node_c_id = node_c[0]
+                    node_p_id = node_c[0]
+                    print("Match between circuit op", node_c_id)
+                    print("And pattern op", node_p_id)
                     print("__________________")
+                    # Fix qubits from the first (target fixed and control restrained)
+
+                    # Loop over all possible qubits configurations
         # Different qubit configurations
         # Forward Match
         # Backward match
