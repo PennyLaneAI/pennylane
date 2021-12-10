@@ -35,6 +35,14 @@ def ascii_representation_resolver():
     return RepresentationResolver(charset=qml.drawer.charsets.AsciiCharSet)
 
 
+def two_wire_quantum_tape():
+    """An instance of a QuantumTape to be used as operation in a circuit."""
+    with qml.tape.QuantumTape() as quantum_tape:
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+    return quantum_tape
+
+
 class TestRepresentationResolver:
     """Test the RepresentationResolver class."""
 
@@ -205,6 +213,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
             (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
             (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
+            (two_wire_quantum_tape(), 0, "QuantumTape:T0"),
+            (two_wire_quantum_tape(), 1, "QuantumTape:T0"),
         ],
     )
     def test_operator_representation_unicode(
@@ -347,6 +357,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
             (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
             (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
+            (two_wire_quantum_tape(), 0, "QuantumTape:T0"),
+            (two_wire_quantum_tape(), 1, "QuantumTape:T0"),
         ],
     )
     def test_operator_representation_ascii(self, ascii_representation_resolver, op, wire, target):
