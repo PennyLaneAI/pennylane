@@ -68,12 +68,12 @@ class CommutingEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
 
     Keyword args:
-        frequencies (list[int or float]): The unique positive differences between eigenvalues in
+        frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
             the spectrum of the Hamiltonian. If the frequencies are not given, the cost function
             partial derivative will be computed using the standard two-term shift rule applied to
             the constituent Pauli words in the Hamiltonian individually.
 
-        shifts (list[int or float]): The parameter shifts to use in obtaining the
+        shifts (tuple[int or float]): The parameter shifts to use in obtaining the
             generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
     .. UsageDetails::
@@ -90,7 +90,7 @@ class CommutingEvolution(Operation):
             coeffs = [1, -1]
             obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
-            frequencies = [2,4]
+            frequencies = (2,4)
 
             @qml.qnode(dev)
             def circuit(time):
