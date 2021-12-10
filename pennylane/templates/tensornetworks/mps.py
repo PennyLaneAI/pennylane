@@ -96,7 +96,7 @@ class MPS(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for idx, w in enumerate(self.ind_gates):
-                self.block(weights=self.weights[idx,:], wires=w.tolist())
+                self.block(weights=self.weights[idx][:], wires=w.tolist())
                 # Different ordering compared to [arXiv:1803.11537v2] -> measurement of the last instead of the first qubit
 
         return tape
@@ -112,9 +112,8 @@ class MPS(Operation):
         Returns:
             tuple[int]: shape
         """
-
-        # if n_wires % 2 ==1:
-        #     raise ValueError(f"n_wires should be an even integer; got n_wires = {n_wires}")
+        if n_wires % (loc/2) > 0:
+            warnings.warn(f"The number of wires should be a multiple of loc/2 = {int(loc/2)}; got {n_wires}")
 
         if loc > n_wires:
             raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
