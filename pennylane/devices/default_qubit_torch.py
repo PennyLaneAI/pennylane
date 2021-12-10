@@ -182,7 +182,7 @@ class DefaultQubitTorch(DefaultQubit):
         operations.
 
         Args:
-            ops (list): list of operations to check
+            ops (list[Operator]): list of operations to check
 
         Returns:
             str: The string of the Torch device determined.
