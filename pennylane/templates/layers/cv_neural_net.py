@@ -175,6 +175,9 @@ class CVNeuralNetLayers(Operation):
                 for i in range(len(self.wires)):
                     qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod
@@ -198,3 +201,8 @@ class CVNeuralNetLayers(Operation):
         )
 
         return shapes
+
+    def adjoint(self):
+        adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

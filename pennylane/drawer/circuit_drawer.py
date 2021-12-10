@@ -49,6 +49,7 @@ class CircuitDrawer:
         charset (str, pennylane.circuit_drawer.CharSet, optional): The CharSet that shall be used for drawing.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
+        _label_offsets (dict[strin, int], optional): Offset the printed index of different symbol types in nested circuits.
     """
 
     def __init__(
@@ -59,6 +60,7 @@ class CircuitDrawer:
         charset=None,
         show_all_wires=False,
         max_length=None,
+        _label_offsets=None,
     ):
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
@@ -66,16 +68,16 @@ class CircuitDrawer:
         self.active_wires = self.extract_active_wires(raw_operation_grid, raw_observable_grid)
 
         if charset is None:
-            self.charset = CHARSETS["unicode"]()
+            self.charset = CHARSETS["unicode"]
         elif isinstance(charset, type) and issubclass(charset, CharSet):
-            self.charset = charset()
+            self.charset = charset
         else:
             if charset not in CHARSETS:
                 supported_char = ", ".join(CHARSETS.keys())
                 raise ValueError(
                     f"Charset '{charset}' is not supported. Supported charsets: {supported_char}."
                 )
-            self.charset = CHARSETS[charset]()
+            self.charset = CHARSETS[charset]
 
         if show_all_wires:
             # if the provided wires include empty wires, make sure they are included
@@ -85,7 +87,9 @@ class CircuitDrawer:
         # We add a -2 character offset to account for some downstream formatting
         self.max_length = max_length - 2 if max_length is not None else None
 
-        self.representation_resolver = RepresentationResolver(self.charset)
+        self.representation_resolver = RepresentationResolver(
+            self.charset, label_offsets=_label_offsets
+        )
         self.operation_representation_grid = Grid()
         self.observable_representation_grid = Grid()
         self.operation_decoration_indices = []
@@ -364,13 +368,33 @@ class CircuitDrawer:
 
             rendered_string += "\n"
 
-        for symbol, cache in [
-            ("U", self.representation_resolver.unitary_matrix_cache),
-            ("H", self.representation_resolver.hermitian_matrix_cache),
-            ("M", self.representation_resolver.matrix_cache),
+        for symbol, cache, offset in [
+            (
+                "U",
+                self.representation_resolver.unitary_matrix_cache,
+                self.representation_resolver.label_offsets["unitary"],
+            ),
+            (
+                "H",
+                self.representation_resolver.hermitian_matrix_cache,
+                self.representation_resolver.label_offsets["hermitian"],
+            ),
+            (
+                "M",
+                self.representation_resolver.matrix_cache,
+                self.representation_resolver.label_offsets["matrix"],
+            ),
+            (
+                "T",
+                [
+                    draw_fn(self.representation_resolver)
+                    for draw_fn in self.representation_resolver.tape_cache.values()
+                ],
+                self.representation_resolver.label_offsets["tape"],
+            ),
         ]:
             for idx, matrix in enumerate(cache):
-                rendered_string += f"{symbol}{idx} =\n{matrix}\n"
+                rendered_string += f"{symbol}{idx + offset} =\n{matrix}\n"
 
         # Restrict CLI print width to max_length
         if self.max_length is not None:
