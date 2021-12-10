@@ -194,7 +194,7 @@ class DefaultQubitTorch(DefaultQubit):
 
                 # Using hasattr in case we don't have a Torch tensor as input
                 if hasattr(data, "is_cuda"):
-                    if data.is_cuda:
+                    if data.is_cuda: # pragma: no cover
                         return ":".join([data.device.type, str(data.device.index)])
 
                     par_torch_device = "cpu"
