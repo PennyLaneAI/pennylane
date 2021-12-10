@@ -313,7 +313,10 @@ class TestQNode:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        with pytest.raises(ValueError, match="JAX interface currently only supports quantum nodes with a single return type"):
+        with pytest.raises(
+            ValueError,
+            match="JAX interface currently only supports quantum nodes with a single return type",
+        ):
             my_circuit(1)
 
     @pytest.mark.parametrize("ret", [qml.probs(wires=0), qml.state()])
@@ -328,15 +331,18 @@ class TestQNode:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support states")
 
-
         @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
         def my_circuit(param):
             qml.RX(param, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.apply(ret)
 
-        with pytest.raises(ValueError, match="Only Variance and Expectation returns are supported for the JAX interface"):
+        with pytest.raises(
+            ValueError,
+            match="Only Variance and Expectation returns are supported for the JAX interface",
+        ):
             my_circuit(1)
+
 
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and

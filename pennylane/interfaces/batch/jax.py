@@ -86,6 +86,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         _n=_n,
     )
 
+
 def _validate_tapes(tapes):
     """Validates that the input tapes are compatible with JAX support.
 
