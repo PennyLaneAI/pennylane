@@ -172,7 +172,7 @@ class Molecule:
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
         >>> mol = qml.hf.Molecule(symbols, geometry)
-        >>> generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> qml.hf.generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
         >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128
