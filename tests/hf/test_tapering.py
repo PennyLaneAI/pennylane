@@ -57,6 +57,35 @@ def test_observable_mult(obs_a, obs_b, result):
             ),
             qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
         ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+            ),
+            qml.Hamiltonian([], []),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.0, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.25, 0.25, 0.25, -0.25]),
+                [
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                ],
+            ),
+            qml.Hamiltonian(
+                np.array([0.25, 0.25]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+        ),
     ],
 )
 def test_simplify(hamiltonian, result):
@@ -113,10 +142,12 @@ def test_cliford(generator, paulix_wires, result):
             [1, 2, 3],
             [[1, -1, -1]],
             [[1, -1, -1]],
-            qml.Hamiltonian(
-                np.array([0.79596785, -0.3210344, 0.18092703]),
-                [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
-            ),
+            [
+                qml.Hamiltonian(
+                    np.array([0.79596785, -0.3210344, 0.18092703]),
+                    [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
+                )
+            ],
         ),
         (
             ["H", "H"],
@@ -128,11 +159,42 @@ def test_cliford(generator, paulix_wires, result):
             ],
             [1, 2, 3],
             None,
-            [[1, 1, 1]],
-            qml.Hamiltonian(
-                np.array([0.82722811, -0.10718583]),
-                [qml.Identity(0), qml.PauliZ(0)],
-            ),
+            [
+                [1, 1, 1],
+                [1, 1, -1],
+                [1, -1, 1],
+                [1, -1, -1],
+                [-1, 1, 1],
+                [-1, 1, -1],
+                [-1, -1, 1],
+                [-1, -1, -1],
+            ],
+            [
+                qml.Hamiltonian(
+                    np.array([0.82722811, -0.10718583]),
+                    [qml.Identity(0), qml.PauliZ(0)],
+                ),
+                qml.Hamiltonian(
+                    np.array([0.34439101, -0.09619691]), [qml.PauliZ(0), qml.Identity(0)]
+                ),
+                qml.Hamiltonian(
+                    np.array([0.34439101, -0.09619691]), [qml.PauliZ(0), qml.Identity(0)]
+                ),
+                qml.Hamiltonian(
+                    np.array([0.79596785, 0.18092703, -0.32103439]),
+                    [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
+                ),
+                qml.Hamiltonian(
+                    np.array([-0.45157684, -0.08476536]), [qml.PauliZ(0), qml.Identity(0)]
+                ),
+                qml.Hamiltonian(np.array([-0.52452264]), [qml.Identity(0)]),
+                qml.Hamiltonian(
+                    np.array([-0.18092703, -0.34359561]), [qml.PauliX(0), qml.Identity(0)]
+                ),
+                qml.Hamiltonian(
+                    np.array([0.45157684, -0.08476536]), [qml.PauliZ(0), qml.Identity(0)]
+                ),
+            ],
         ),
     ],
 )
@@ -142,7 +204,8 @@ def test_transform_hamiltonian(
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.hf.Molecule(symbols, geometry)
     h = qml.hf.generate_hamiltonian(mol)()
-    output_sector, h_trans = transform_hamiltonian(h, generator, paulix_wires, paulix_sector)[0]
+    result = transform_hamiltonian(h, generator, paulix_wires, paulix_sector)
 
-    assert output_sector == sector_ref[0]
-    assert np.allclose(sorted(h_trans.terms[0]), sorted(ham_ref.terms[0]))
+    for i in range(len(sector_ref)):
+        assert result[i][0] == sector_ref[i]
+        assert np.allclose(sorted(result[i][1].terms[0]), sorted(ham_ref[i].terms[0]))

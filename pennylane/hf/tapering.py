@@ -26,8 +26,8 @@ from pennylane import numpy as np
 def _observable_mult(obs_a, obs_b):
     r"""Multiply two PennyLane observables together.
 
-    Each observable is a linear combination of Pauli words, e.g., :math:`\sum_{k=0}^{N} c_k O_k`,
-    and is represented by a PennyLane Hamiltonian.
+    Each observable should be a linear combination of Pauli words, e.g.,
+    :math:`\sum_{k=0}^{N} c_k O_k`, and represented as a PennyLane Hamiltonian.
 
     Args:
         obs_a (Hamiltonian): first observable
@@ -78,7 +78,8 @@ def _simplify(h, cutoff=1.0e-12):
     (1.0) [X0 Y1]
     """
     s = []
-    wiremap = dict(zip(h.wires, h.wires))
+    w = list(range(max(h.wires.tolist()) + 1))
+    wiremap = dict(zip(w, w))
     for term in h.terms[1]:
         term = qml.operation.Tensor(term).prune()
         s.append(qml.grouping.pauli_word_to_string(term, wire_map=wiremap))
@@ -87,13 +88,19 @@ def _simplify(h, cutoff=1.0e-12):
     c = [0.0] * len(o)
     for i, item in enumerate(s):
         c[o.index(item)] += h.terms[0][i]
+    c = qml.math.stack(c)
 
-    nonzero_ind = np.argwhere(abs(qml.math.stack(c)) > cutoff).flatten()
-    c = [c[i] for i in nonzero_ind]
-    o = [o[i] for i in nonzero_ind]
-    o = [qml.grouping.string_to_pauli_word(i) for i in o]
+    coeffs = []
+    ops = []
+    nonzero_ind = np.argwhere(abs(c) > cutoff).flatten()
+    for i in nonzero_ind:
+        coeffs.append(c[i])
+        ops.append(qml.grouping.string_to_pauli_word(o[i]))
 
-    return qml.Hamiltonian(qml.math.stack(c), o)
+    if coeffs:
+        coeffs = qml.math.stack(coeffs)
+
+    return qml.Hamiltonian(coeffs, ops)
 
 
 def clifford(generator, paulix_wires):
@@ -150,7 +157,8 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
         paulix_sector list([list[int]]): list of eigenvalues of the PauliX operators
 
     Returns:
-        (list[tuple[list[int], qml.Hamiltonian]]): paulix sector and its corresponding Hamiltonian
+        list[tuple[list[int], qml.Hamiltonian]]: paulix sector and its corresponding tapered
+         Hamiltonian
 
     **Example**
 
@@ -174,7 +182,8 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector=None):
         paulix_sector = itertools.product([1, -1], repeat=len(paulix_wires))
 
     result = []
-    wiremap = dict(zip(h.wires, h.wires))
+    w = list(range(max(h.wires.tolist()) + 1))
+    wiremap = dict(zip(w, w))
 
     for sector in paulix_sector:
         val = np.ones(len(h.terms[0])) * complex(1.0)
