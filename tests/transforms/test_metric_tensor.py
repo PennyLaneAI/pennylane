@@ -69,7 +69,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0))
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = [0.1, 0.2]
+        params = np.array([0.1, 0.2], requires_grad=True)
         result = qml.metric_tensor(circuit, approx="block-diag")(*params)
         assert result.shape == (2, 2)
 
@@ -216,9 +216,9 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev)
 
-        a = 0.432
-        b = 0.12
-        c = -0.432
+        a = np.array(0.432, requires_grad=True)
+        b = np.array(0.12, requires_grad=True)
+        c = np.array(-0.432, requires_grad=True)
 
         # evaluate metric tensor
         g_diag = qml.metric_tensor(circuit, approx="diag")(a, b, c)
@@ -268,7 +268,7 @@ class TestMetricTensor:
         circuit = qml.QNode(circuit, dev)
 
         a = np.array([0.432, 0.1])
-        b = 0.12
+        b = np.array(0.12, requires_grad=True)
 
         # evaluate metric tensor
         g = qml.metric_tensor(circuit, approx="block-diag")(a, b)
@@ -327,7 +327,8 @@ class TestMetricTensor:
         computation."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
 
-        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        params = np.array([-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
+            requires_grad=True)
         x, y, z, h, g, f = params
 
         G = qml.metric_tensor(circuit, approx="block-diag")(*params)
@@ -470,7 +471,8 @@ class TestMetricTensor:
         """Test that a metric tensor under the diagonal approximation evaluates
         correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
-        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
+        params = np.array([-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
+            requires_grad=True)
         x, y, z, h, g, f = params
 
         G = qml.metric_tensor(circuit, approx="diag")(*params)
@@ -740,18 +742,18 @@ fubini_params = [
                 0.16,
             ],
             (2, 3, 3),
-            requires_grad=True,
+            requires_grad=True
         ),
     ),
     (np.array([-0.1111, -0.2222], requires_grad=True),),
     (np.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
     (
-        -0.1735,
+        np.array(-0.1735, requires_grad=True),
         np.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
     ),
     (np.array([-0.1735, -0.2846], requires_grad=True),),
     (np.array([-0.1735, -0.2846], requires_grad=True),),
-    (-0.1735,),
+    (np.array(-0.1735,requires_grad=True),),
     (np.array([-0.1111, 0.3333], requires_grad=True),),
 ]
 
@@ -1284,8 +1286,10 @@ def test_no_error_missing_aux_wire_not_used():
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
-    qml.metric_tensor(circuit_single_block, approx=None)(x, z)
-    qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
+    with pytest.warns(UserWarning, match=r'The device does not have a wire'):
+        qml.metric_tensor(circuit_single_block, approx=None)(x, z)
+    with pytest.warns(UserWarning, match=r'The device does not have a wire'):
+        qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
 
