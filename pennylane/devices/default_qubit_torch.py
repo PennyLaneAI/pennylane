@@ -192,8 +192,10 @@ class DefaultQubitTorch(DefaultQubit):
         for op in ops:
             for data in op.data:
 
-                if getattr(data, "is_cuda", False):
-                    return str(data.device)
+                # Using hasattr in case we don't have a Torch tensor as input
+                if hasattr(data, "is_cuda"):
+                    if data.is_cuda:
+                        return ":".join([data.device.type, str(data.device.index)])
 
                     par_torch_device = "cpu"
 
