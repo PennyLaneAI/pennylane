@@ -102,7 +102,7 @@ def use_style(style: str):
 
     .. code-block:: python
 
-        qml.style.use_style('black_white')
+        qml.drawer.use_style('black_white')
 
         @qml.qnode(qml.device('lightning.qubit', wires=(0,1,2,3)))
         def circuit(x, z):
