@@ -1,7 +1,4 @@
-from typing import DefaultDict
 import pytest
-import sys
-sys.path.append("../")
 import random
 import numpy as np
 import pennylane as qml
