@@ -192,7 +192,7 @@ class DefaultQubitTorch(DefaultQubit):
         for op in ops:
             for data in op.data:
 
-                if getattr(data, "is_cuda, False):
+                if getattr(data, "is_cuda", False):
                     return str(data.device)
 
                     par_torch_device = "cpu"
@@ -212,7 +212,7 @@ class DefaultQubitTorch(DefaultQubit):
             if self._state.device != self._torch_device:
                 self._state = self._state.to(self._torch_device)
         else:
-            if par_torch_device is not None: # pragma: no cover
+            if par_torch_device is not None:  # pragma: no cover
                 params_cuda_device = "cuda" in par_torch_device
                 specified_device_cuda = "cuda" in self._torch_device
 
