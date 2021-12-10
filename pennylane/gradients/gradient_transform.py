@@ -14,6 +14,8 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
+import warnings
+
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
@@ -193,9 +195,13 @@ class gradient_transform(qml.batch_transform):
                 jac = qml.math.tensordot(cjac, qjac, [[-1], [-1]])
                 jac = qml.math.moveaxis(jac, -1, len(qnode_arg_shape))
             else:  # pragma: no cover
-                # default to old behaviour in case shape is not identified, remove in the future
-                jac = qml.math.squeeze(qml.math.tensordot(qml.math.T(cjac), qjac, [[-1], [-1]]))
-                return qml.math.T(jac)
+                jac = ()
+                warnings.warn(
+                    "Unexpected classical Jacobian encoutered, could not compute the hybrid "
+                    "Jacobian of the QNode. You can still attempt to obtain the quantum Jacobian "
+                    "with the `hybrid=False` parameter.",
+                    UserWarning,
+                )
 
             return qml.math.squeeze(jac)
 
