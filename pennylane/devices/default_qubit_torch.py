@@ -185,7 +185,8 @@ class DefaultQubitTorch(DefaultQubit):
             ops (list): list of operations to check
 
         Returns:
-            str: The string of the Torch device determined.
+            str or None: The string of the Torch device determined or None if
+            there is no data for any operations.
         """
         par_torch_device = None
         for op in ops:
@@ -211,7 +212,7 @@ class DefaultQubitTorch(DefaultQubit):
             if self._state.device != self._torch_device:
                 self._state = self._state.to(self._torch_device)
         else:
-            if par_torch_device is not None:
+            if par_torch_device is not None: # pragma: no cover
                 params_cuda_device = "cuda" in par_torch_device
                 specified_device_cuda = "cuda" in self._torch_device
 
