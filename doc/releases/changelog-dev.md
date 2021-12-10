@@ -387,6 +387,14 @@
 
 <h3>Improvements</h3>
 
+* The execution of QNodes that have
+
+  - multiple return types;
+  - a return type other than Variance and Expectation
+
+  now raises a descriptive error message when using the JAX interface.
+  [(#2011)](https://github.com/PennyLaneAI/pennylane/pull/2011)
+
 * The PennyLane `qchem` package is now lazily imported; it will only be imported
   the first time it is accessed.
   [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
