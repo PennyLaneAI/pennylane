@@ -1252,7 +1252,7 @@ class Tensor(Observable):
         Returns:
             list[Any]: flattened list containing all dependent parameters
         """
-        return [p for sublist in [o.data for o in self.obs] for p in sublist]
+        return sum((o.data for o in self.obs), start=[])
 
     @property
     def num_params(self):
@@ -1409,9 +1409,13 @@ class Tensor(Observable):
         Returns:
             array: matrix representation
         """
+        # Check for partially (but not fully) overlapping wires in the observables 
+        self.check_wires_partial_overlap()
         # group the observables based on what wires they act on
         U_list = []
-        for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
+        key = lambda x: x.wires.labels
+        obs = sorted(self.obs, key=key)
+        for _, g in itertools.groupby(self.obs, key):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1425,6 +1429,28 @@ class Tensor(Observable):
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
+
+    def check_wires_partial_overlap(self):
+        r"""Tests whether any two observables in the Tensor have partially
+        overlapping wires. 
+
+        Raises:
+            .wires.WireError: If any two of the observables in the Tensor
+            share some but not all wires.
+
+        .. note::
+
+            Fully overlapping wires, i.e. observables with
+            same (sets of) wires are not reported, as the ``matrix`` method is
+            well-defined and implemented for this scenario.
+        """
+        for o1, o2 in itertools.combinations(self.obs, r=2):
+            shares = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
+            if shared and shared!=o1.wires:
+                raise qml.wires.WireError(
+                    "The matrix for Tensors of Tensors/Observables with partially "
+                    "overlapping wires is not supported."
+                )
 
     def sparse_matrix(self, wires=None):
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
