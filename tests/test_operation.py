@@ -15,7 +15,7 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-import functools
+from functools import reduce
 
 import pytest
 import numpy as np
@@ -670,7 +670,7 @@ class TestTensor:
         # since the test is assuming consecutive wires for each observable
         # in the tensor product, it is sufficient to Kronecker product
         # the entire list.
-        U = functools.reduce(np.kron, U_list)
+        U = reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
         expected = np.diag(O.eigvals)
@@ -686,18 +686,59 @@ class TestTensor:
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
         res = O.matrix
-        expected = np.kron(qml.PauliY._matrix(), H)
-        expected = np.kron(qml.PauliX._matrix(), expected)
+        expected = reduce(np.kron, [qml.PauliX._matrix(), qml.PauliY._matrix(), H])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiplication_matrix(self, tol):
-        """If using the ``@`` operator on two observables acting on the
-        same wire, the tensor class should treat this as matrix multiplication."""
-        O = qml.PauliX(0) @ qml.PauliX(0)
+    def test_tensor_matrix_unsorted(self, tol):
+        """Test that the tensor product matrix method returns
+        the correct result if the observables are added unsorted
+        with respect to a canonical wire ordering."""
+        H = np.diag([1, 2, 3, 4])
+        O = qml.PauliX(0) @ qml.Hermitian(H, [2, 3]) @ qml.PauliY(1)
 
         res = O.matrix
-        expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
+        expected = reduce(np.kron, [qml.PauliX._matrix(), qml.PauliY._matrix(), H])
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_tensor_matrix_partial_wires_overlap_error(self, tol):
+        """Test that the tensor product matrix method returns
+        the correct result if the observables are added unsorted
+        with respect to a canonical wire ordering."""
+        H = np.diag([1, 2, 3, 4])
+        O1 = qml.PauliX(0) @ qml.Hermitian(H, [0, 1])
+        O2 = qml.Hermitian(H, [0, 1]) @ qml.PauliY(1)
+
+        for O in (O1, O2):
+            with pytest.raises(qml.wires.WireError, match="partially overlapping"):
+                O.matrix
+
+    @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
+    def test_multiplication_matrix(self, tol, classes):
+        """If using the ``@`` operator on two observables acting on the
+        same wire, the tensor class should treat this as matrix multiplication."""
+        c1, c2 = classes
+        O = c1(0) @ c2(0)
+
+        res = O.matrix
+        expected = c1._matrix() @ c2._matrix()
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
+    def test_multiplication_matrix_among_obs(self, tol, classes):
+        """If using the ``@`` operator on two observables acting on the
+        same wire, the tensor class should treat this as matrix multiplication
+        even if there are other observables in the Tensor that act on different
+        wires."""
+        c1, c2 = classes
+        O = c1(1) @ qml.PauliZ(0) @ qml.PauliY(2) @ c2(1)
+
+        res = O.matrix
+        expected = reduce(
+            np.kron, [qml.PauliZ._matrix(), c1._matrix() @ c2._matrix(), qml.PauliY._matrix()]
+        )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 

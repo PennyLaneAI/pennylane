@@ -1415,7 +1415,7 @@ class Tensor(Observable):
         U_list = []
         key = lambda x: x.wires.labels
         obs = sorted(self.obs, key=key)
-        for _, g in itertools.groupby(self.obs, key):
+        for _, g in itertools.groupby(obs, key):
             # extract the matrices of each diagonalizing gate
             mats = [i.matrix for i in g]
 
@@ -1445,8 +1445,9 @@ class Tensor(Observable):
             well-defined and implemented for this scenario.
         """
         for o1, o2 in itertools.combinations(self.obs, r=2):
-            shares = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
-            if shared and shared != o1.wires:
+            shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
+            print(shared)
+            if shared and (shared != o1.wires or shared != o2.wires):
                 raise qml.wires.WireError(
                     "The matrix for Tensors of Tensors/Observables with partially "
                     "overlapping wires is not supported."
