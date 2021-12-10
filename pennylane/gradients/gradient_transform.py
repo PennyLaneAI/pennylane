@@ -124,8 +124,8 @@ class gradient_transform(qml.batch_transform):
         elif interface == "jax":
             trainable_args = [0]
 
-        else:
-            trainable_args = range(len(args))
+        # Torch and Tensorflow interfaces are not considered since `classical_jacobian`
+        # always returns a tuple for them, thus not invoking this function.
 
         return trainable_args
 
@@ -168,7 +168,8 @@ class gradient_transform(qml.batch_transform):
             # Classical processing present of either:
             #   a) a single argument or
             #   b) multiple arguments of the same shape
-            # The shape of the classical jacobian returned by qml.jacobian depends on the scenario:
+            # The shape of the classical jacobian returned by qml.jacobian (invoked by
+            # classical_jacobian with autograd) depends on the scenario:
             #   a) (# gate args, qnode arg shape)
             #   b) (reverse qnode arg shape, # gate args, # qnode args)
             # It then needs to be contracted with the quantum jacobian of shape:

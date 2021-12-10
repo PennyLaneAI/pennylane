@@ -329,16 +329,6 @@ class TestGradientTransformIntegration:
         ):
             qml.gradients.param_shift(circuit)(0.2, shots=100)
 
-    def test_trainable_args_detection_default(self):
-        """Test the fallback for the `_jacobian_trainable_args` method
-        of the gradient transform (not normally reached).
-        """
-        x, y, z = [0.2, 0.3], [[0.1], [0.4]], 0.5
-
-        idx = qml.gradients.gradient_transform._jacobian_trainable_args((x, y, z), "unknown")
-
-        assert idx == range(3)
-
 
 class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable
