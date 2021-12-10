@@ -79,11 +79,11 @@ class MPS(Operation):
 
             if shape[0] != self.n_blocks:
                 raise ValueError(
-                    f"Weights tensor must have first dimension of length {self.n_blocks}; got {shape[-1]}"
+                    f"Weights tensor must have first dimension of length {self.n_blocks}; got {shape[0]}"
                 )
             if shape[-1] != self.n_params_block:
                 raise ValueError(
-                    f"Weights tensor must have last dimension of length {self.n_params_block}; got {shape[0]}"
+                    f"Weights tensor must have last dimension of length {self.n_params_block}; got {shape[-1]}"
                 )
 
             self.weights = weights
@@ -119,5 +119,4 @@ class MPS(Operation):
             raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
 
         n_blocks = int(n_wires / (loc / 2) - 1)
-
         return n_blocks, n_params_block
