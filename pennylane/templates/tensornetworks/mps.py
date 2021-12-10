@@ -1,3 +1,4 @@
+import warnings
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.operation import Operation, AnyWires
@@ -13,13 +14,10 @@ def compute_indices_MPS(wires, loc):
         layers (array): array of wire indices or wire labels for each block
     """
 
-    if loc%2 != 0:
-        raise AssertionError(f"loc must be an even integer; got {loc}")
-
     layers = np.array(
         [
             [wires[idx] for idx in range(j, j + loc)]
-            for j in range(0, len(wires) - loc // 2, loc // 2)
+            for j in range(0, len(wires) - int(len(wires) % (loc//2)) - loc//2, loc // 2)
         ]
     )
     return layers
@@ -54,6 +52,9 @@ class MPS(Operation):
         id=None,
     ):
         n_wires = len(wires)
+        if loc%2 != 0:
+            raise AssertionError(f"loc must be an even integer; got {loc}")
+
         if loc < 2:
             raise ValueError(f"number of wires in each block must be larger than or equal to 2; got loc={loc}")
 
@@ -63,6 +64,8 @@ class MPS(Operation):
         if loc > n_wires:
             raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
 
+        if n_wires % (loc/2) > 0:
+            warnings.warn(f"The number of wires should be a multiple of {int(loc/2)}; got {n_wires}")
 
         shape = qml.math.shape(weights)[-4:]  # (n_params_block, n_blocks)
         self.n_params_block = n_params_block
