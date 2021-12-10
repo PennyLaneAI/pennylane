@@ -421,8 +421,6 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
-        if not dev.supports_operation(op):
-            pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
 

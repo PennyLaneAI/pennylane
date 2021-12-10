@@ -258,8 +258,6 @@ class TestGatesQubitExpval:
         dev = device(n_wires)
 
         op = getattr(qml.ops, name)
-        if not dev.supports_operation(op):
-            pytest.skip("operation not supported")
 
         @qml.qnode(dev)
         def circuit():
