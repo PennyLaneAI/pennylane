@@ -327,14 +327,3 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
-
-    @pytest.mark.parametrize(
-        "diag_approx, approx_expected", [(True, "diag"), (False, "block-diag")]
-    )
-    def test_deprecate_diag_approx(self, diag_approx, approx_expected):
-        """Test that using the diag_approx argument raises a warning due to
-        deprecation."""
-        with pytest.warns(UserWarning, match="keyword argument diag_approx is deprecated"):
-            opt = qml.QNGOptimizer(0.1, diag_approx=True)
-
-        assert opt.approx == "diag"
