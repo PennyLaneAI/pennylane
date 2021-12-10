@@ -25,10 +25,10 @@ def _binary_matrix(terms, num_qubits):
 
     Args:
         terms (Iterable[pennylane.Observable]): operators defining the Hamiltonian
-        num_qubits (int): number of wires required to define the Hamiltonian.
+        num_qubits (int): number of wires required to define the Hamiltonian
     Returns:
-        binary_matrix (array[int]): binary matrix representation of the Hamiltonian of shape
-        :math:`len(terms) \times 2*num_qubits`.
+        array[int]: binary matrix representation of the Hamiltonian of shape
+        :math:`len(terms) \times 2*num_qubits`
 
     **Example**
 
@@ -62,9 +62,9 @@ def _reduced_row_echelon(binary_matrix):
     r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
 
     Args:
-        binary_matrix (array[int]): binary matrix representation of the Hamiltonian.
+        binary_matrix (array[int]): binary matrix representation of the Hamiltonian
     Returns:
-        rref_binary_matrix (array[int]): reduced row-echelon form of the given `binary_matrix`.
+        array[int]: reduced row-echelon form of the given `binary_matrix`
 
     **Example**
 
@@ -108,10 +108,10 @@ def _kernel(binary_matrix):
     r"""Computes the kernel of a binary matrix on the binary finite field :math:`\mathbb{Z}_2`.
 
     Args:
-        binary_matrix (array[int]): binary matrix representation of the Hamiltonian.
+        binary_matrix (array[int]): binary matrix representation of the Hamiltonian
     Returns:
-        nullspace (array[int]): nullspace of the `binary_matrix` where each row correspond to a
-        basis vector in the nullspace.
+        array[int]: nullspace of the `binary_matrix` where each row correspond to a
+        basis vector in the nullspace
 
     **Example**
 
@@ -153,11 +153,11 @@ def get_generators(nullspace, num_qubits):
     in the Hamiltonian as given in `arXiv:1910.14644 <https://arxiv.org/abs/1910.14644>`_.
 
     Args:
-        nullspace (array[int]): kernel of the binary matrix corresponding to the Hamiltonian.
-        num_qubits (int): number of wires required to define the Hamiltonian.
+        nullspace (array[int]): kernel of the binary matrix corresponding to the Hamiltonian
+        num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian.
+        list[pennylane.Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
 
     **Example**
 
@@ -194,11 +194,11 @@ def generate_paulis(generators, num_qubits):
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian.
-        num_qubits (int): number of wires required to define the Hamiltonian.
+        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        num_qubits (int): number of wires required to define the Hamiltonian
     Return:
-        pauli_x_ops (list[pennylane.Observable]): list of single-qubit Pauli-X operators which will be used to build the
-        Clifford operators `U`.
+        list[pennylane.Observable]: list of single-qubit Pauli-X operators which will be used to build the
+        Clifford operators `U`
 
     **Example**
 
@@ -244,13 +244,13 @@ def generate_symmetries(qubit_op, num_qubits):
     using :func:`~.transform_hamiltonian`.
 
     Args:
-        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering.
-        num_qubits (int): number of wires required to define the Hamiltonian.
+        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
+        num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian.
-        pauli_x_ops (list[pennylane.Hamiltonian]): list of single-qubit Pauli X operators which will be used to build the
-        Clifford operators `U`.
+        list[pennylane.Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
+        list[pennylane.Observables]: list of single-qubit Pauli X operators which will be used to build the
+        Clifford operators `U`
 
     .. code-block:: python
 
