@@ -128,14 +128,12 @@ def single_qubit_fusion(tape, exclude_gates=None):
             except (NotImplementedError, AttributeError):
                 break
 
-            cumulative_angles = fuse_rot_angles(
-                cumulative_angles, cast_like(stack(next_gate_angles), cumulative_angles)
-            )
+            cumulative_angles = fuse_rot_angles(cumulative_angles, stack(next_gate_angles))
 
             list_copy.pop(next_gate_idx + 1)
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # Only apply if the cumulative angle is not close to 0
+        # Apply the fused rotation
         Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
