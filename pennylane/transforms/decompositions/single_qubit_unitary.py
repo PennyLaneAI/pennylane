@@ -32,7 +32,7 @@ def _convert_to_su2(U):
     det = U[0, 0] * U[1, 1] - U[0, 1] * U[1, 0]
 
     exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
-    return math.cast_like(U, exp_angle) * math.exp(exp_angle)
+    return U * math.exp(exp_angle)
 
 
 def zyz_decomposition(U, wire):
