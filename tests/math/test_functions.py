@@ -28,6 +28,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+sci = pytest.importorskip("scipy")
 
 
 class TestGetMultiTensorbox:
@@ -60,6 +61,15 @@ class TestGetMultiTensorbox:
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn._multi_dispatch([x, y])
+
+    @pytest.mark.filterwarnings("error:Contains tensors of types {.+}; dispatch will prioritize")
+    def test_no_warning_scipy_and_autograd(self):
+        """Test that no warning is raised if the sequence of tensors contains
+        SciPy sparse matrices and autograd tensors."""
+        x = sci.sparse.eye(3)
+        y = np.array([0.5, 0.1])
+
+        fn._multi_dispatch([x, y])
 
     def test_return_tensorflow_box(self):
         """Test that TensorFlow is correctly identified as the dispatching library."""
@@ -535,8 +545,8 @@ class TestDot:
         assert fn.allequal(res, expected)
 
 
-class TestTensordot:
-    """Tests for the dot product function."""
+class TestTensordotTorch:
+    """Tests for the tensor product function in torch."""
 
     v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
     v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
@@ -558,7 +568,7 @@ class TestTensordot:
     M1 = torch.tensor(_arange)
     M2 = torch.tensor(_shuffled_arange)
     T1 = np.arange(0, 3 * 6 * 9 * 2).reshape((3, 6, 9, 2)).astype(np.float64)
-    T1 = np.array([T1[1], T1[0], T1[2]])
+    T1 = torch.tensor(np.array([T1[1], T1[0], T1[2]]), dtype=torch.float64)
 
     v1_dot_v2 = 9.59
     v1_outer_v2 = np.array(
@@ -1380,6 +1390,26 @@ class TestScatterElementAdd:
         assert fn.allclose(jac[0], self.expected_jac_x)
         assert fn.allclose(jac[1], self.expected_jac_y)
 
+    def test_array_batch(self):
+        """Test that a NumPy array and the addend are differentiable when using
+        scatter addition (multi dispatch)."""
+        x = np.ones((2, 3), requires_grad=True)
+        y = np.array([0.56, 0.3], requires_grad=True)
+
+        def cost_multi(weight_0, weight_1):
+            return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1 ** 2)
+
+        res = cost_multi(x, y)
+        assert isinstance(res, np.ndarray)
+        assert fn.allclose(res, onp.array([[1.0, 1.3136, 1.0], [1.0, 1.0, 1.09]]))
+
+        jac = qml.jacobian(lambda *weights: cost_multi(*weights))(x, y)
+        assert fn.allclose(jac[0], self.expected_jac_x)
+        exp_jac_y = onp.zeros((2, 3, 2))
+        exp_jac_y[0, 1, 0] = 2 * y[0]
+        exp_jac_y[1, 2, 1] = 2 * y[1]
+        assert fn.allclose(jac[1], exp_jac_y)
+
     def test_tensorflow(self):
         """Test that a TF tensor is differentiable when using scatter addition"""
         x = tf.Variable(self.x)
@@ -1534,8 +1564,6 @@ class TestScatterElementAddMultiValue:
 
         res = cost([x, y])
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
-        print(res)
-        print(self.expected_val)
         assert fn.allclose(res, self.expected_val)
 
         scalar_cost = (
@@ -1924,6 +1952,25 @@ class TestCoercion:
         res = qml.math.coerce(tensors, like="torch")
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
+
+    @pytest.mark.gpu
+    def test_torch_coercion_error(self):
+        """Test Torch coercion error if multiple devices were specified."""
+
+        if not torch.cuda.is_available():
+            pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
+
+        tensors = [
+            torch.tensor([0.2], device="cpu"),
+            np.array([1, 2, 3]),
+            torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
+        ]
+
+        with pytest.raises(
+            RuntimeError,
+            match="Expected all tensors to be on the same device, but found at least two devices",
+        ):
+            res = qml.math.coerce(tensors, like="torch")
 
 
 class TestUnwrap:

@@ -19,7 +19,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane.ops import channel
-from pennylane.wires import Wires
+from pennylane.wires import WireError
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
@@ -33,6 +33,7 @@ ch_list = [
     channel.PhaseFlip,
     channel.DepolarizingChannel,
     channel.ResetError,
+    channel.PauliError,
     channel.ThermalRelaxationError,
 ]
 
@@ -46,17 +47,20 @@ class TestChannels:
     def test_kraus_matrices_sum_identity(self, ops, p, tr_args, tol):
         """Test channels are trace-preserving"""
         if ops.__name__ == "GeneralizedAmplitudeDamping":
-            op = ops(p, p, wires=0)
+            op = [ops(p, p, wires=0)]
         elif ops.__name__ == "ResetError":
-            op = ops(p / 2, p / 3, wires=0)
+            op = [ops(p / 2, p / 3, wires=0)]
+        elif ops.__name__ == "PauliError":
+            op = [ops("X", p, wires=0), ops("XX", p, wires=[0, 1])]
         elif ops.__name__ == "ThermalRelaxationError":
-            op = ops(p, *tr_args, wires=0)
+            op = [ops(p, *tr_args, wires=0)]
         else:
-            op = ops(p, wires=0)
-        K_list = op.kraus_matrices
-        K_arr = np.array(K_list)
-        Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
-        assert np.allclose(Kraus_sum, np.eye(2), atol=tol, rtol=0)
+            op = [ops(p, wires=0)]
+        for operation in op:
+            K_list = operation.kraus_matrices
+            K_arr = np.array(K_list)
+            Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
+            assert np.allclose(Kraus_sum, np.eye(K_list[0].shape[0]), atol=tol, rtol=0)
 
 
 class TestAmplitudeDamping:
@@ -316,6 +320,102 @@ class TestResetError:
                 ]
             ),
         )
+
+
+class TestPauliError:
+    """Tests for the quantum channel PauliError"""
+
+    OPERATORS_WRONG_PARAMS = ["XXX", "XXX", "ABC", "XXX"]
+    P_WRONG_PARAMS = [0.5, 1.5, 0.5, 0.5]
+    WIRES_WRONG_PARAMS = [[0], [0, 1, 2], [0, 1, 2], [1, 1, 2]]
+    EXPECTED_ERRORS = [ValueError, ValueError, ValueError, WireError]
+    EXPECTED_MESSAGES = [
+        "The number of operators must match the number of wires",
+        "p must be between \\[0,1\\]",
+        "The specified operators need to be either of 'X', 'Y' or 'Z'",
+        "Wires must be unique",
+    ]
+
+    @pytest.mark.parametrize(
+        "operators, p, wires, error, message",
+        list(
+            zip(
+                OPERATORS_WRONG_PARAMS,
+                P_WRONG_PARAMS,
+                WIRES_WRONG_PARAMS,
+                EXPECTED_ERRORS,
+                EXPECTED_MESSAGES,
+            )
+        ),
+    )
+    def test_wrong_parameters(self, operators, p, wires, error, message):
+        """Test wrong parametrizations of PauliError"""
+        with pytest.raises(error, match=message):
+            Ks = channel.PauliError(operators, p, wires=wires)
+
+    def test_warning_many_qubits(self):
+        """Test if warning is thrown when huge matrix"""
+        with pytest.warns(UserWarning):
+            Ks = channel.PauliError("X" * 512, 0.5, wires=list(range(512)))
+
+    def test_p_zero(self, tol):
+        """Test resulting Kraus matrices for p=0"""
+        expected_Ks = [np.eye(2 ** 5), np.zeros((2 ** 5, 2 ** 5))]
+        c = channel.PauliError("XXXXX", 0, wires=[0, 1, 2, 3, 4])
+
+        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+
+    def test_p_one(self, tol):
+        """Test resulting Kraus matrices for p=1"""
+        expected_Ks = [np.zeros((2 ** 5, 2 ** 5)), np.flip(np.eye(2 ** 5), axis=1)]
+        c = channel.PauliError("XXXXX", 1, wires=[0, 1, 2, 3, 4])
+
+        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+
+    OPERATORS = ["X", "XY", "ZX"]
+    WIRES = [[1], [0, 1], [3, 1]]
+    EXPECTED_KS = [
+        [
+            np.sqrt(0.5) * np.eye(2),
+            np.array(
+                [
+                    [0.0, 0.70710678],
+                    [0.70710678, 0.0],
+                ]
+            ),
+        ],
+        [
+            np.sqrt(0.5) * np.eye(4),
+            np.array(
+                [
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.70710678j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.70710678j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 - 0.70710678j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.70710678j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                ]
+            ),
+        ],
+        [
+            np.sqrt(0.5) * np.eye(4),
+            np.array(
+                [
+                    [0.0, 0.70710678, 0.0, 0.0],
+                    [0.70710678, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, -0.0, -0.70710678],
+                    [0.0, 0.0, -0.70710678, -0.0],
+                ]
+            ),
+        ],
+    ]
+
+    @pytest.mark.parametrize(
+        "operators, wires, expected_Ks", list(zip(OPERATORS, WIRES, EXPECTED_KS))
+    )
+    def test_kraus_matrix(self, tol, operators, wires, expected_Ks):
+        """Test sevaral resulting kraus matrices for sevaral configurations"""
+        c = channel.PauliError(operators, 0.5, wires=wires)
+
+        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
 
 
 class TestQubitChannel:

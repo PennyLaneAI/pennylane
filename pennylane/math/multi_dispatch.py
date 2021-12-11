@@ -44,24 +44,24 @@ def _multi_dispatch(values):
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
-    * Vanilla NumPy arrays can be used alongside other tensor objects; they will
-      always be treated as non-differentiable constants.
+    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
+      they will always be treated as non-differentiable constants.
     """
     if "resource_variable" in getattr(values, "__module__", tuple()):
         values = np.asarray(values)
 
     interfaces = {get_interface(v) for v in values}
 
-    if len(set(interfaces) - {"numpy", "autograd"}) > 1:
+    if len(set(interfaces) - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
-    non_numpy_interfaces = set(interfaces) - {"numpy"}
+    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
 
-    if len(non_numpy_interfaces) > 1:
+    if len(non_numpy_scipy_interfaces) > 1:
         # contains autograd and another interface
         warnings.warn(
-            f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
+            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
@@ -250,6 +250,36 @@ def dot(tensor1, tensor2):
         return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     return np.dot(x, y, like=interface)
+
+
+def tensordot(tensor1, tensor2, axes=None):
+    """Returns the tensor product of two tensors.
+    In general ``axes`` specifies either the set of axes for both
+    tensors that are contracted (with the first/second entry of ``axes``
+    giving all axis indices for the first/second tensor) or --- if it is
+    an integer --- the number of last/first axes of the first/second
+    tensor to contract over.
+    There are some non-obvious special cases:
+
+    * If both tensors are 0-dimensional, ``axes`` must be 0.
+      and a 0-dimensional scalar is returned containing the simple product.
+
+    * If both tensors are 1-dimensional and ``axes=0``, the outer product
+      is returned.
+
+    * Products between a non-0-dimensional and a 0-dimensional tensor are not
+      supported in all interfaces.
+
+    Args:
+        tensor1 (tensor_like): input tensor
+        tensor2 (tensor_like): input tensor
+        axes (int or list[list[int]]): Axes to contract over, see detail description.
+
+    Returns:
+        tensor_like: the tensor product of the two input tensors
+    """
+    interface = _multi_dispatch([tensor1, tensor2])
+    return np.tensordot(tensor1, tensor2, axes=axes, like=interface)
 
 
 def get_trainable_indices(values):

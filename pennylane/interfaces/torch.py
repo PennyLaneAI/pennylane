@@ -74,11 +74,11 @@ class _TorchInterface(torch.autograd.Function):
         tape.set_parameters(ctx.all_params, trainable_only=False)
 
         if hasattr(res, "numpy"):
-            res = res.numpy()
+            res = qml.math.to_numpy(res)
 
         use_adjoint_cached_state = False
         # tape might not be a jacobian tape
-        jac_options = getattr(tape, "jacobian_options", dict())
+        jac_options = getattr(tape, "jacobian_options", {})
         # cache state for adjoint jacobian computation
         if jac_options.get("jacobian_method", None) == "adjoint_jacobian":
             if jac_options.get("adjoint_cache", True):

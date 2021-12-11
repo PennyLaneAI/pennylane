@@ -37,6 +37,7 @@ np.random.seed(42)
 
 # gates for which device support is tested
 ops = {
+    "Identity": qml.Identity(wires=[0]),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(0, wires=[0, 1]),
@@ -55,7 +56,7 @@ ops = {
     "PhaseShift": qml.PhaseShift(0, wires=[0]),
     "ControlledPhaseShift": qml.ControlledPhaseShift(0, wires=[0, 1]),
     "QubitStateVector": qml.QubitStateVector(np.array([1.0, 0.0]), wires=[0]),
-    "QubitDensityMatrix": qml.QubitStateVector(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
+    "QubitDensityMatrix": qml.QubitDensityMatrix(np.array([[0.5, 0.0], [0, 0.5]]), wires=[0]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
     "MultiControlledX": qml.MultiControlledX(control_wires=[1, 2], wires=[0]),
@@ -274,7 +275,7 @@ class TestSupportedGates:
 
             @qml.qnode(dev)
             def circuit():
-                ops[operation]
+                qml.apply(ops[operation])
                 return qml.expval(qml.Identity(wires=0))
 
             assert isinstance(circuit(), (float, np.ndarray))
@@ -420,6 +421,8 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
+        if not dev.supports_operation(op):
+            pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
 

@@ -23,6 +23,7 @@ jobs:
           - {python-version: 3.7, interfaces: ['tf']}
           - {python-version: 3.8, interfaces: ['tf', 'torch', 'jax']}
           - {python-version: 3.9, interfaces: []}
+          - {python-version: '3.10', interfaces: []}
 
     steps:
       - name: Cancel Previous Runs
