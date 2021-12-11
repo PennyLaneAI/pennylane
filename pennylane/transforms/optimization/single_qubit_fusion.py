@@ -124,7 +124,7 @@ def single_qubit_fusion(tape, exclude_gates=None):
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                next_gate_angles = next_gate.single_qubit_rot_angles()
+                next_gate_angles = stack(next_gate.single_qubit_rot_angles())
             except (NotImplementedError, AttributeError):
                 break
 
