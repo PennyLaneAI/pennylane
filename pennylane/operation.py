@@ -1412,12 +1412,12 @@ class Tensor(Observable):
         # Check for partially (but not fully) overlapping wires in the observables
         self.check_wires_partial_overlap()
         # group the observables based on what wires they act on
-        U_list = []
         key = lambda x: x.wires.labels
         obs = sorted(self.obs, key=key)
-        for _, g in itertools.groupby(obs, key):
+        U_list = []
+        for _, o in itertools.groupby(obs, key):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix for i in g]
+            mats = [i.matrix for i in o]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -1446,7 +1446,6 @@ class Tensor(Observable):
         """
         for o1, o2 in itertools.combinations(self.obs, r=2):
             shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
-            print(shared)
             if shared and (shared != o1.wires or shared != o2.wires):
                 raise qml.wires.WireError(
                     "The matrix for Tensors of Tensors/Observables with partially "
