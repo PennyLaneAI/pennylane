@@ -118,10 +118,10 @@ def fuse_rot_angles(angles_1, angles_2):
         # first Rot, and then combining this with the second one.
         first_y_cond = cond(allclose(angles_1[1], 0.0), lambda x: True, lambda x: False, angles_1)
         return cond(first_y_cond * allclose(angles_2[1], 0.0), _no_fuse, _fuse, angles_1, angles_2)
-    else:
-        # For other interfaces where we would not be jitting or tracing, we can simply check
-        # if we are dealing with the special case of Rot(a, 0, b) Rot(c, 0, d).
-        if allclose(angles_1[1], 0.0) and allclose(angles_2[1], 0.0):
-            return _no_fuse(angles_1, angles_2)
 
-        return _fuse(angles_1, angles_2)
+    # For other interfaces where we would not be jitting or tracing, we can simply check
+    # if we are dealing with the special case of Rot(a, 0, b) Rot(c, 0, d).
+    if allclose(angles_1[1], 0.0) and allclose(angles_2[1], 0.0):
+        return _no_fuse(angles_1, angles_2)
+
+    return _fuse(angles_1, angles_2)
