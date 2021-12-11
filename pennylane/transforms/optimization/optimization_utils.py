@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements
-from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch
+from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract
 from pennylane.wires import Wires
 
 # Conditionally import jax; check for special case with jax.lax.cond so that we can JIT
@@ -110,14 +110,20 @@ def fuse_rot_angles(angles_1, angles_2):
         implements the same operation as the two sets of input angles.
     """
 
-    interface = _multi_dispatch([angles_1, angles_2])
+    # Check if we are tracing; if so, use the special conditionals
+    if is_abstract(angles_1) or is_abstract(angles_2):
+        interface = _multi_dispatch([angles_1, angles_2])
 
-    # If the interface is JAX, use jax.lax.cond so that we can jit even with conditionals
-    if interface == "jax":
-        # Not sure why, but I needed to split this into 2 checks; one for the Y angle in the
-        # first Rot, and then combining this with the second one.
-        first_y_cond = cond(allclose(angles_1[1], 0.0), lambda x: True, lambda x: False, angles_1)
-        return cond(first_y_cond * allclose(angles_2[1], 0.0), _no_fuse, _fuse, angles_1, angles_2)
+        # If the interface is JAX, use jax.lax.cond so that we can jit even with conditionals
+        if interface == "jax":
+            # Not sure why, but I needed to split this into 2 checks; one for the Y angle in the
+            # first Rot, and then combining this with the second one.
+            first_y_cond = cond(
+                allclose(angles_1[1], 0.0), lambda x: True, lambda x: False, angles_1
+            )
+            return cond(
+                first_y_cond * allclose(angles_2[1], 0.0), _no_fuse, _fuse, angles_1, angles_2
+            )
 
     # For other interfaces where we would not be jitting or tracing, we can simply check
     # if we are dealing with the special case of Rot(a, 0, b) Rot(c, 0, d).
