@@ -67,18 +67,6 @@ class QubitUnitary(Operation):
                     f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
                 )
 
-            # Check for unitarity; due to variable precision across the different ML frameworks,
-            # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qml.math.allclose(
-                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-                qml.math.eye(qml.math.shape(U)[0]),
-            ):
-                warnings.warn(
-                    f"Operator {U}\n may not be unitary."
-                    "Verify unitarity of operation, or use a datatype with increased precision.",
-                    UserWarning,
-                )
-
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @property
