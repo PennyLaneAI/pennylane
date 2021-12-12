@@ -546,13 +546,11 @@
       # do something
   ```
 
-<h3>Deprecations</h3>
+<h3>Bug fixes</h3>
 
 * The init module, which contains functions to generate random parameters for
   templates, has been removed. Instead, the templates provide a `shape()` method.
   [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
-
-<h3>Bug fixes</h3>
 
 * Device test suite doesn't use empty circuits so that it can also
   test the IonQ plugin, and it checks if operations are supported in
