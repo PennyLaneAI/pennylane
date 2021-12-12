@@ -451,7 +451,7 @@
           [0., 0., 0., 0., 0., 0., 0., 5., 0.]]])>
   ```
 
-* Change all instances of `"{}".format(..)` to `f"{..}"`.
+* All instances of `str.format` have been replace with f-strings.
   [(#1970)](https://github.com/PennyLaneAI/pennylane/pull/1970)
 
 * Tests do not loop over automatically imported and instantiated operations any more,
