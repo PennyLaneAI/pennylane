@@ -26,6 +26,172 @@
 
   <img src="https://pennylane.readthedocs.io/en/latest/_images/main_example.png" width=70%/>
 
+<h4>New and improved quantum-aware optimizers</h4>
+
+* Added `qml.LieAlgebraOptimizer`, a new quantum-aware Lie Algebra optimizer
+  that allows one to perform gradient descent on the special unitary group.
+  [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
+
+* The `metric_tensor` transform can now be used to compute the full
+  tensor, beyond the block diagonal approximation.
+  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
+
+  This is performed using Hadamard tests, and requires an additional wire
+  on the device to execute the circuits produced by the transform,
+  as compared to the number of wires required by the original circuit.
+  The transform defaults to computing the full tensor, which can
+  be controlled by the `approx` keyword argument.
+  See the
+  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  for more information and usage details.
+
+  As an example, consider the QNode
+
+  ```python
+  dev = qml.device("default.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.RX(weights[0], wires=0)
+      qml.RY(weights[1], wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(weights[2], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
+  ```
+
+  Then we can compute the (block) diagonal metric tensor as before, now using the
+  ``approx="block-diag"`` keyword:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
+  [[0.25       0.         0.        ]
+   [0.         0.24013262 0.        ]
+   [0.         0.         0.21846983]]
+  ```
+
+  Instead, we now can also compute the full metric tensor, using
+  Hadamard tests on the additional wire of the device:
+
+  ```pycon
+  >>> qml.metric_tensor(circuit)(weights)
+  [[ 0.25        0.         -0.23300977]
+   [ 0.          0.24013262  0.01763859]
+   [-0.23300977  0.01763859  0.21846983]]
+  ```
+
+<h4>Faster performance with optimized quantum workflows</h4>
+
+* The QNode has been re-written to support batch execution across the board,
+  custom gradients, better decomposition strategies, and higher-order derivatives.
+  [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+  [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
+
+  - Internally, if multiple circuits are generated for simultaneous execution, they
+    will be packaged into a single job for execution on the device. This can lead to
+    significant performance improvement when executing the QNode on remote
+    quantum hardware or simulator devices with parallelization capabilities.
+
+  - Custom gradient transforms can be specified as the differentiation method:
+
+    ```python
+    @qml.gradients.gradient_transform
+    def my_gradient_transform(tape):
+        ...
+        return tapes, processing_fn
+
+    @qml.qnode(dev, diff_method=my_gradient_transform)
+    def circuit():
+    ```
+
+  - Arbitrary :math:`n`-th order derivatives are supported on hardware using gradient transforms
+    such as the parameter-shift rule. To specify that an :math:`n`-th order derivative of a QNode
+    will be computed, the `max_diff` argument should be set. By default, this is set to 1
+    (first-order derivatives only). Increasing this value allows for higher order derivatives to be
+    extracted, at the cost of additional (classical) computational overhead during the backwards
+    pass.
+
+  - When decomposing the circuit, the default decomposition strategy `expansion_strategy="gradient"`
+    will prioritize decompositions that result in the smallest number of parametrized operations
+    required to satisfy the differentiation method. While this may lead to a slight increase in
+    classical processing, it significantly reduces the number of circuit evaluations needed to
+    compute gradients of complicated unitaries.
+
+    To return to the old behaviour, `expansion_strategy="device"` can be specified.
+
+  Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
+  be removed in the next release.
+
+* Custom decompositions can now be applied to operations at the device level.
+  [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
+
+  For example, suppose we would like to implement the following QNode:
+
+  ```python
+  def circuit(weights):
+      qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
+      return qml.expval(qml.PauliZ(0))
+
+  original_dev = qml.device("default.qubit", wires=3)
+  original_qnode = qml.QNode(circuit, original_dev)
+  ```
+
+  ```pycon
+  >>> weights = np.array([[0.4, 0.5, 0.6]])
+  >>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──╭C──────╭X──┤ ⟨Z⟩
+   1: ──RX(0.5)──╰X──╭C──│───┤
+   2: ──RX(0.6)──────╰X──╰C──┤
+  ```
+
+  Now, let's swap out the decomposition of the `CNOT` gate into `CZ`
+  and `Hadamard`, and furthermore the decomposition of `Hadamard` into
+  `RZ` and `RY` rather than the decomposition already available in PennyLane.
+  We define the two decompositions like so, and pass them to a device:
+
+  ```python
+  def custom_cnot(wires):
+      return [
+          qml.Hadamard(wires=wires[1]),
+          qml.CZ(wires=[wires[0], wires[1]]),
+          qml.Hadamard(wires=wires[1])
+      ]
+
+  def custom_hadamard(wires):
+      return [
+          qml.RZ(np.pi, wires=wires),
+          qml.RY(np.pi / 2, wires=wires)
+      ]
+
+  # Can pass the operation itself, or a string
+  custom_decomps = {qml.CNOT : custom_cnot, "Hadamard" : custom_hadamard}
+
+  decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
+  decomp_qnode = qml.QNode(circuit, decomp_dev)
+  ```
+
+  Now when we draw or run a QNode on this device, the gates will be expanded
+  according to our specifications:
+
+  ```pycon
+  >>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
+  A separate context manager, `set_decomposition`, has also been implemented to enable
+  application of custom decompositions on devices that have already been created.
+
+  ```pycon
+  >>> with qml.transforms.set_decomposition(custom_decomps, original_dev):
+  ...     print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+  ```
+
 <h4>Support for TensorFlow AutoGraph mode with quantum hardware</h4>
 
 * It is now possible to use TensorFlow's [AutoGraph
@@ -114,136 +280,7 @@
   where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
   for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
 
-<h4>Custom decompositions dedicated to the device</h4>
-
-* Custom decompositions can now be applied to operations at the device level.
-  [(#1900)](https://github.com/PennyLaneAI/pennylane/pull/1900)
-
-  For example, suppose we would like to implement the following QNode:
-
-  ```python
-  def circuit(weights):
-      qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
-      return qml.expval(qml.PauliZ(0))
-
-  original_dev = qml.device("default.qubit", wires=3)
-  original_qnode = qml.QNode(circuit, original_dev)
-  ```
-
-  ```pycon
-  >>> weights = np.array([[0.4, 0.5, 0.6]])
-  >>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
-   0: ──RX(0.4)──╭C──────╭X──┤ ⟨Z⟩
-   1: ──RX(0.5)──╰X──╭C──│───┤
-   2: ──RX(0.6)──────╰X──╰C──┤
-  ```
-
-  Now, let's swap out the decomposition of the `CNOT` gate into `CZ`
-  and `Hadamard`, and furthermore the decomposition of `Hadamard` into
-  `RZ` and `RY` rather than the decomposition already available in PennyLane.
-  We define the two decompositions like so, and pass them to a device:
-
-  ```python
-  def custom_cnot(wires):
-      return [
-          qml.Hadamard(wires=wires[1]),
-          qml.CZ(wires=[wires[0], wires[1]]),
-          qml.Hadamard(wires=wires[1])
-      ]
-
-  def custom_hadamard(wires):
-      return [
-          qml.RZ(np.pi, wires=wires),
-          qml.RY(np.pi / 2, wires=wires)
-      ]
-
-  # Can pass the operation itself, or a string
-  custom_decomps = {qml.CNOT : custom_cnot, "Hadamard" : custom_hadamard}
-
-  decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
-  decomp_qnode = qml.QNode(circuit, decomp_dev)
-  ```
-
-  Now when we draw or run a QNode on this device, the gates will be expanded
-  according to our specifications:
-
-  ```pycon
-  >>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
-   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
-   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
-   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
-  ```
-
-  A separate context manager, `set_decomposition`, has also been implemented to enable
-  application of custom decompositions on devices that have already been created.
-
-  ```pycon
-  >>> with qml.transforms.set_decomposition(custom_decomps, original_dev):
-  ...     print(qml.draw(original_qnode, expansion_strategy="device")(weights))
-   0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
-   1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
-   2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
-  ```
-
-<h4>Advanced transforms</h4>
-
-* The `metric_tensor` transform can now be used to compute the full
-  tensor, beyond the block diagonal approximation.
-  [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
-
-  This is performed using Hadamard tests, and requires an additional wire
-  on the device to execute the circuits produced by the transform,
-  as compared to the number of wires required by the original circuit.
-  The transform defaults to computing the full tensor, which can
-  be controlled by the `approx` keyword argument.
-  See the
-  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
-  for more information and usage details.
-
-  As an example, consider the QNode
-
-  ```python
-  dev = qml.device("default.qubit", wires=3)
-
-  @qml.qnode(dev)
-  def circuit(weights):
-      qml.RX(weights[0], wires=0)
-      qml.RY(weights[1], wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.RZ(weights[2], wires=1)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-  weights = np.array([0.2, 1.2, -0.9], requires_grad=True)
-  ```
-
-  Then we can compute the (block) diagonal metric tensor as before, now using the
-  ``approx="block-diag"`` keyword:
-
-  ```pycon
-  >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
-  [[0.25       0.         0.        ]
-   [0.         0.24013262 0.        ]
-   [0.         0.         0.21846983]]
-  ```
-
-  Instead, we now can also compute the full metric tensor, using
-  Hadamard tests on the additional wire of the device:
-
-  ```pycon
-  >>> qml.metric_tensor(circuit)(weights)
-  [[ 0.25        0.         -0.23300977]
-   [ 0.          0.24013262  0.01763859]
-   [-0.23300977  0.01763859  0.21846983]]
-  ```
-
-* The `merge_amplitude_embedding` transformation has been created to
-  automatically merge all gates of this type into one.
-  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
-
-* The `undo_swaps` transformation has been created to automatically remove all swaps of a circuit.
-  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
-
-<h4>Reconstructing QNodes</h4>
+<h4>Characterize your quantum models with classical QNode reconstruction</h4>
 
 * The `qml.fourier.reconstruct` function is added. It can be used to
   reconstruct QNodes outputting expectation values along a specified
@@ -297,6 +334,16 @@
   For more details on usage, reconstruction cost and differentiability support, please see the
   [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.reconstruct.html).
 
+<h4>Manipulate QNodes to your ❤️s content with new transforms</h4>
+
+* The `merge_amplitude_embedding` transformation has been created to
+  automatically merge all gates of this type into one.
+  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+
+* The `undo_swaps` transformation has been created to automatically remove all
+  swaps of a circuit.
+  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+
 <h4>State-of-the-art operations and templates</h4>
 
 * The `qml.Barrier()` operator has been added. With it we can separate blocks
@@ -348,7 +395,7 @@
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
-<h4>Quantum chemistry utility</h4>
+<h3>Improvements</h3>
 
 * Added functions for computing the values of atomic and molecular orbitals at a given position.
   [(#1867)](https://github.com/PennyLaneAI/pennylane/pull/1867)
@@ -373,48 +420,6 @@
   0.6282468778183719
   0.018251285973461928
   ```
-
-<h3>Improvements</h3>
-
-* The QNode has been re-written to support batch execution across the board,
-  custom gradients, better decomposition strategies, and higher-order derivatives.
-  [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
-  [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
-
-  - Internally, if multiple circuits are generated for simultaneous execution, they
-    will be packaged into a single job for execution on the device. This can lead to
-    significant performance improvement when executing the QNode on remote
-    quantum hardware or simulator devices with parallelization capabilities.
-
-  - Custom gradient transforms can be specified as the differentiation method:
-
-    ```python
-    @qml.gradients.gradient_transform
-    def my_gradient_transform(tape):
-        ...
-        return tapes, processing_fn
-
-    @qml.qnode(dev, diff_method=my_gradient_transform)
-    def circuit():
-    ```
-
-  - Arbitrary :math:`n`-th order derivatives are supported on hardware using gradient transforms
-    such as the parameter-shift rule. To specify that an :math:`n`-th order derivative of a QNode
-    will be computed, the `max_diff` argument should be set. By default, this is set to 1
-    (first-order derivatives only). Increasing this value allows for higher order derivatives to be
-    extracted, at the cost of additional (classical) computational overhead during the backwards
-    pass.
-
-  - When decomposing the circuit, the default decomposition strategy `expansion_strategy="gradient"`
-    will prioritize decompositions that result in the smallest number of parametrized operations
-    required to satisfy the differentiation method. While this may lead to a slight increase in
-    classical processing, it significantly reduces the number of circuit evaluations needed to
-    compute gradients of complicated unitaries.
-
-    To return to the old behaviour, `expansion_strategy="device"` can be specified.
-
-  Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
-  be removed in the next release.
 
 * The execution of QNodes that have
 
@@ -663,7 +668,7 @@
 
 * Fixed circuit drawing problem with Interferometer and CVNeuralNet.
   [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
-  
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
