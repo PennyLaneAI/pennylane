@@ -416,6 +416,14 @@
   Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
   be removed in the next release.
 
+* The execution of QNodes that have
+
+  - multiple return types;
+  - a return type other than Variance and Expectation
+
+  now raises a descriptive error message when using the JAX interface.
+  [(#2011)](https://github.com/PennyLaneAI/pennylane/pull/2011)
+
 * The PennyLane `qchem` package is now lazily imported; it will only be imported
   the first time it is accessed.
   [(#1962)](https://github.com/PennyLaneAI/pennylane/pull/1962)
@@ -465,6 +473,9 @@
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
 
+* Added a new `qml.PauliError` channel that allows the application of an arbitrary number of Pauli operators on an arbitrary number of wires.
+  [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
+
 * BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
 
 * MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
@@ -475,6 +486,14 @@
    [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
 <h3>Breaking changes</h3>
+
+* Certain features deprecated in `v0.19.0` have been removed:
+
+  - The `qml.template` decorator;
+  - The `default.tensor` and `default.tensor.tf` experimental devices;
+  - The `qml.fourier.spectrum` function;
+  - The `diag_approx` keyword argument of `qml.metric_tensor` and `qml.QNGOptimizer`.
+  [(#1981)](https://github.com/PennyLaneAI/pennylane/pull/1981)
 
 * The default behaviour of the `qml.metric_tensor` transform has been modified:
   By default, the full metric tensor is computed, leading to higher cost than the previous
@@ -535,6 +554,19 @@
 
 <h3>Bug fixes</h3>
 
+* Device test suite doesn't use empty circuits so that it can also
+  test the IonQ plugin, and it checks if operations are supported in
+  more places.
+  [(#1979)](https://github.com/PennyLaneAI/pennylane/pull/1979)
+
+* Fixes a bug where the metric tensor was computed incorrectly when using
+  gates with `gate.inverse=True`.
+  [(#1987)](https://github.com/PennyLaneAI/pennylane/pull/1987)
+
+* Corrects the documentation of `qml.transforms.classical_jacobian`
+  for the Autograd interface (and improves test coverage).
+  [(#1978)](https://github.com/PennyLaneAI/pennylane/pull/1978)
+
 * Fixes a bug where differentiating a QNode with `qml.state` using the JAX
   interface raised an error.
   [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
@@ -594,6 +626,24 @@
   optimization step updates.
   [(#1929)](https://github.com/PennyLaneAI/pennylane/pull/1929)
 
+* Fixes a bug where differentiating a QNode with multiple array
+  arguments via `qml.gradients.param_shift` throws an error.
+  [(#1989)](https://github.com/PennyLaneAI/pennylane/pull/1989)
+
+* `AmplitudeEmbedding` template no longer produces a `ComplexWarning`
+  when the `features` parameter is batched and provided as a 2D array.
+  [(#1990)](https://github.com/PennyLaneAI/pennylane/pull/1990)
+
+* `qml.circuit_drawer.CircuitDrawer` no longer produces an error
+  when attempting to draw tapes inside of circuits (e.g. from
+  decomposition of an operation or manual placement).
+  [(#1994)](https://github.com/PennyLaneAI/pennylane/pull/1994)
+
+* Fixes a bug where using SciPy sparse matrices with the new QNode
+  could lead to a warning being raised about prioritizing the TensorFlow
+  and PyTorch interfaces.
+  [(#2001)](https://github.com/PennyLaneAI/pennylane/pull/2001)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
@@ -613,6 +663,9 @@
 
 * QueueContext was not empty when importing `pennylane`.
 
+* Fixed circuit drawing problem with Interferometer and CVNeuralNet.
+  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -620,4 +673,4 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
 Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
 Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
-Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs
+Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann

@@ -126,7 +126,8 @@ class DefaultQubitTorch(DefaultQubit):
             If ``shots > 0`` is used, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
-        torch_device='cpu' (str): the device on which the computation will be run, ``'cpu'`` or ``'cuda'``
+        torch_device='cpu' (str): the device on which the computation will be
+        run, e.g., ``'cpu'`` or ``'cuda'``
     """
 
     name = "Default qubit (Torch) PennyLane plugin"
@@ -167,38 +168,66 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
+    @staticmethod
+    def _get_parameter_torch_device(ops):
+        """An auxiliary function to determine the Torch device specified for
+        the gate parameters of the input operations.
+
+        Returns the first CUDA Torch device found (if any) using a string
+        format. Does not handle tensors put on multiple CUDA Torch devices.
+        Such a case raises an error with Torch.
+
+        If CUDA is not used with any of the parameters, then specifies the CPU
+        if the parameters are on the CPU or None if there were no parametric
+        operations.
+
+        Args:
+            ops (list[Operator]): list of operations to check
+
+        Returns:
+            str or None: The string of the Torch device determined or None if
+            there is no data for any operations.
+        """
+        par_torch_device = None
+        for op in ops:
+            for data in op.data:
+
+                # Using hasattr in case we don't have a Torch tensor as input
+                if hasattr(data, "is_cuda"):
+                    if data.is_cuda:  # pragma: no cover
+                        return ":".join([data.device.type, str(data.device.index)])
+
+                    par_torch_device = "cpu"
+
+        return par_torch_device
+
     def execute(self, circuit, **kwargs):
         ops_and_obs = circuit.operations + circuit.observables
 
-        some_params_cuda = any(
-            data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")
-        )
+        par_torch_device = self._get_parameter_torch_device(ops_and_obs)
+
         if not self._torch_device_specified:
-            if some_params_cuda:
+            self._torch_device = par_torch_device
 
-                self._torch_device = "cuda"
-            else:
-
-                # need to reset in case last execution moved to cuda
-                self._torch_device = "cpu"
-
-            # If we've changed the device, place the state on the correct
-            # device
+            # If we've changed the device of the parameters between device
+            # executions, need to move the state to the correct Torch device
             if self._state.device != self._torch_device:
                 self._state = self._state.to(self._torch_device)
         else:
-            cuda_params_but_not_cuda_specified = some_params_cuda and self._torch_device != "cuda"
-            not_cuda_params_but_cuda_specified = (
-                not some_params_cuda and self._torch_device == "cuda"
-            )
-            if cuda_params_but_not_cuda_specified or not_cuda_params_but_cuda_specified:
+            if par_torch_device is not None:  # pragma: no cover
+                params_cuda_device = "cuda" in par_torch_device
+                specified_device_cuda = "cuda" in self._torch_device
 
-                warnings.warn(
-                    f"Torch device {self._torch_device} specified "
-                    "upon PennyLane device creation does not match the "
-                    "Torch device of the gate parameters; "
-                    f"{self._torch_device} will be used."
-                )
+                # Raise a warning if there's a mismatch between the specified and
+                # used Torch devices
+                if params_cuda_device != specified_device_cuda:
+
+                    warnings.warn(
+                        f"Torch device {self._torch_device} specified "
+                        "upon PennyLane device creation does not match the "
+                        "Torch device of the gate parameters; "
+                        f"{self._torch_device} will be used."
+                    )
 
         return super().execute(circuit, **kwargs)
 

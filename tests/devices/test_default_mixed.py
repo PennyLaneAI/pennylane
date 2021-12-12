@@ -29,6 +29,7 @@ from pennylane.ops import (
     AmplitudeDamping,
     DepolarizingChannel,
     ResetError,
+    PauliError,
 )
 from pennylane.wires import Wires
 
@@ -115,6 +116,8 @@ class TestState:
             AmplitudeDamping(0.5, wires=0),
             DepolarizingChannel(0.5, wires=0),
             ResetError(0.1, 0.5, wires=0),
+            PauliError("X", 0.5, wires=0),
+            PauliError("ZY", 0.3, wires=[1, 0]),
         ],
     )
     def test_state_after_channel(self, nr_wires, op, tol):
@@ -162,6 +165,8 @@ class TestReset:
             AmplitudeDamping(0.5, wires=[0]),
             DepolarizingChannel(0.5, wires=[0]),
             ResetError(0.1, 0.5, wires=[0]),
+            PauliError("X", 0.5, wires=0),
+            PauliError("ZY", 0.3, wires=[1, 0]),
         ],
     )
     def test_reset_after_channel(self, nr_wires, op, tol):
@@ -253,6 +258,14 @@ class TestKrausOps:
         (PauliX, np.array([[0, 1], [1, 0]])),
         (Hadamard, np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])),
         (CNOT, np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])),
+        (
+            PauliError("X", 0.5, wires=0),
+            [np.sqrt(0.5) * np.eye(2), np.sqrt(0.5) * np.array([[0, 1], [1, 0]])],
+        ),
+        (
+            PauliError("Y", 0.3, wires=0),
+            [np.sqrt(0.7) * np.eye(2), np.sqrt(0.3) * np.array([[0, -1j], [1j, 0]])],
+        ),
     ]
 
     @pytest.mark.parametrize("ops", unitary_ops)
@@ -269,7 +282,7 @@ class TestKrausOps:
 
     @pytest.mark.parametrize("ops", diagonal_ops)
     def test_diagonal_kraus(self, ops, tol):
-        """Tests that matrices of non-diagonal unitary operations are retrieved correctly"""
+        """Tests that matrices of diagonal unitary operations are retrieved correctly"""
         dev = qml.device("default.mixed", wires=2)
 
         assert np.allclose(dev._get_kraus(ops[0]), ops[1], atol=tol, rtol=0)
@@ -301,6 +314,10 @@ class TestKrausOps:
                 np.sqrt(p_1) * np.array([[0, 0], [0, 1]]),
             ],
         ),
+        (
+            PauliError("X", p_0, wires=0),
+            [np.sqrt(1 - p_0) * np.eye(2), np.sqrt(p_0) * np.array([[0, 1], [1, 0]])],
+        ),
     ]
 
     @pytest.mark.parametrize("ops", channel_ops)
@@ -329,6 +346,8 @@ class TestApplyChannel:
             ResetError(0.1, 0.5, wires=0),
             np.array([[0.5 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.5 + 0.0j]]),
         ],
+        [1, PauliError("Z", 0.3, wires=0), basis_state(0, 1)],
+        [2, PauliError("XY", 0.5, wires=[0, 1]), 0.5 * basis_state(0, 2) + 0.5 * basis_state(3, 2)],
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_init)
@@ -339,7 +358,7 @@ class TestApplyChannel:
         target_state = np.reshape(x[2], [2] * 2 * nr_wires)
         dev = qml.device("default.mixed", wires=nr_wires)
         kraus = dev._get_kraus(op)
-        if op == CNOT:
+        if op == CNOT or (isinstance(op, PauliError) and nr_wires == 2):
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
             dev._apply_channel(kraus, wires=Wires(0))
@@ -365,6 +384,8 @@ class TestApplyChannel:
             ResetError(0.1, 0.5, wires=0),
             np.array([[0.3 + 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 0.7 + 0.0j]]),
         ],
+        [1, PauliError("Z", 0.3, wires=0), max_mixed_state(1)],
+        [2, PauliError("XY", 0.5, wires=[0, 1]), max_mixed_state(2)],
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_mixed)
@@ -377,7 +398,7 @@ class TestApplyChannel:
         max_mixed = np.reshape(max_mixed_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = max_mixed
         kraus = dev._get_kraus(op)
-        if op == CNOT:
+        if op == CNOT or (isinstance(op, PauliError) and nr_wires == 2):
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
             dev._apply_channel(kraus, wires=Wires(0))
@@ -414,6 +435,23 @@ class TestApplyChannel:
             ResetError(0.1, 0.5, wires=0),
             np.array([[0.3 + 0.0j, -0.2 + 0.0j], [-0.2 + 0.0j, 0.7 + 0.0j]]),
         ],
+        [
+            1,
+            PauliError("Z", 0.3, wires=0),
+            np.array([[0.5 + 0.0j, -0.2 + 0.0j], [-0.2 + 0.0j, 0.5 + 0.0j]]),
+        ],
+        [
+            2,
+            PauliError("XY", 0.5, wires=[0, 1]),
+            np.array(
+                [
+                    [0.25 + 0.0j, 0.0 - 0.25j, -0.25 + 0.0j, 0.0 + 0.25j],
+                    [0.0 + 0.25j, 0.25 + 0.0j, 0.0 - 0.25j, -0.25 + 0.0j],
+                    [-0.25 + 0.0j, 0.0 + 0.25j, 0.25 + 0.0j, 0.0 - 0.25j],
+                    [0.0 - 0.25j, -0.25 + 0.0j, 0.0 + 0.25j, 0.25 + 0.0j],
+                ]
+            ),
+        ],
     ]
 
     @pytest.mark.parametrize("x", x_apply_channel_root)
@@ -426,7 +464,7 @@ class TestApplyChannel:
         root = np.reshape(root_state(nr_wires), [2] * 2 * nr_wires)
         dev._state = root
         kraus = dev._get_kraus(op)
-        if op == CNOT:
+        if op == CNOT or (isinstance(op, PauliError) and nr_wires == 2):
             dev._apply_channel(kraus, wires=Wires([0, 1]))
         else:
             dev._apply_channel(kraus, wires=Wires(0))
@@ -900,6 +938,16 @@ class TestApply:
         target_rho = np.outer(ket, np.conj(ket))
 
         assert np.allclose(dev.state, target_rho, atol=tol, rtol=0)
+
+    def test_apply_pauli_error(self, tol):
+        """Tests that PauliError gate is correctly applied"""
+        nr_wires = 3
+        p = 0.3
+        dev = qml.device("default.mixed", wires=nr_wires)
+        dev.apply([PauliError("XYZ", p, wires=[0, 1, 2])])
+        target = 0.7 * basis_state(0, 3) + 0.3 * basis_state(6, 3)
+
+        assert np.allclose(dev.state, target, atol=tol, rtol=0)
 
 
 class TestInit:

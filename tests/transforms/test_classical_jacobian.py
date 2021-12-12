@@ -20,6 +20,7 @@ from pennylane.transforms.classical_jacobian import classical_jacobian
 
 a = -2.1
 b = 0.71
+w = np.array([0.3, 2.3, 0.1])
 x = np.array([0.3, 2.3, 0.1])
 y = np.array([[1.0, 2.0], [4.0, 5.0]])
 z = np.array([2.1, -0.3, 0.62, 0.89])
@@ -70,8 +71,14 @@ def circuit_5(x, y, z):
     return qml.expval(qml.PauliZ(0))
 
 
-circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5]
-all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z)]
+def circuit_6(w, x):
+    [qml.RX(w[i], wires=0) for i in range(3)]
+    [qml.RX(x[i], wires=0) for i in range(3)]
+    return qml.expval(qml.PauliZ(0))
+
+
+circuits = [circuit_0, circuit_1, circuit_2, circuit_3, circuit_4, circuit_5, circuit_6]
+all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z), (w, x)]
 interfaces = ["jax", "autograd", "tf", "torch"]
 
 class_jacs = [
@@ -109,6 +116,7 @@ class_jacs = [
         ),
         np.vstack([np.zeros((4, 4)), np.array([1, 0.4 * z[1], 0.0, 0.0])]),
     ),
+    tuple(np.eye(len(x) + len(w)).reshape((2, len(x), len(x) + len(w))).transpose([0, 2, 1])),
 ]
 
 
@@ -120,14 +128,15 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
     qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
-    # NOTE: We use stacking to replicate qml.jacobian behaviour for scalar-only inputs
-    if all((np.isscalar(arg) for arg in args)):
+    # NOTE: We use stacking to replicate qml.jacobian behaviour for equal-shaped inputs
+    arg_shapes = [qml.math.shape(arg) for arg in args]
+    if len(args) == 1:
+        # For a single argument, the Jacobian is unpacked
+        assert np.allclose(jac, expected_jac[0])
+    elif all(sh == arg_shapes[0] for sh in arg_shapes[1:]):
         expected_jac = qml.math.stack(expected_jac).T
         assert np.allclose(jac, expected_jac)
     else:
-        # For a single argument, the Jacobian is unpacked
-        if len(args) == 1:
-            expected_jac = expected_jac[0]
         assert len(jac) == len(expected_jac)
         for _jac, _expected_jac in zip(jac, expected_jac):
             assert np.allclose(_jac, _expected_jac)

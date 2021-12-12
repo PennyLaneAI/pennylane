@@ -1619,7 +1619,9 @@ class TestHighLevelIntegration:
 
         torch.manual_seed(42)
         weights = torch.rand(
-            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2), requires_grad=True
+            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2),
+            requires_grad=True,
+            device=torch_device,
         )
 
         def cost(weights):

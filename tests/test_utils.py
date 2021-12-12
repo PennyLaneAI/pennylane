@@ -623,22 +623,3 @@ class TestExpand:
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
-
-
-@qml.template
-def dummy_template(wires):
-    """Dummy template for inv tests."""
-    for wire in wires:
-        qml.RX(1, wires=[wire])
-        qml.RY(-1, wires=[wire])
-
-
-def inverted_dummy_template_operations(wires):
-    """The expected inverted operations for the dummy template."""
-    ops = []
-
-    for wire in reversed(wires):
-        ops.append(qml.RY(1, wires=[wire]))
-        ops.append(qml.RX(-1, wires=[wire]))
-
-    return ops

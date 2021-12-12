@@ -23,6 +23,7 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
+from pennylane.operation import Variance, Expectation
 
 dtype = jnp.float64
 
@@ -86,6 +87,28 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     )
 
 
+def _validate_tapes(tapes):
+    """Validates that the input tapes are compatible with JAX support.
+
+    Raises:
+        ValueError: if tapes with non-scalar outputs were provided or a return
+        type other than variance and expectation value was used
+    """
+    for t in tapes:
+
+        if len(t.observables) != 1:
+            raise ValueError(
+                "The JAX interface currently only supports quantum nodes with a single return type."
+            )
+
+        for o in t.observables:
+            return_type = o.return_type
+            if return_type is not Variance and return_type is not Expectation:
+                raise ValueError(
+                    f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
+                )
+
+
 def _execute(
     params,
     tapes=None,
@@ -95,6 +118,8 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
+    _validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
@@ -206,6 +231,8 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
+    _validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
