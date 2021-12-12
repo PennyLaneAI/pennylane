@@ -192,50 +192,6 @@
    2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
   ```
 
-<h4>Support for TensorFlow AutoGraph mode with quantum hardware</h4>
-
-* It is now possible to use TensorFlow's [AutoGraph
-  mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
-  differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
-  will result in significantly more performant model execution, at the cost of a more expensive
-  initial compilation. [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1886)
-
-  Use AutoGraph to convert your QNodes or cost functions into TensorFlow
-  graphs by decorating them with `@tf.function`:
-
-  ```python
-  dev = qml.device("lightning.qubit", wires=2)
-
-  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
-  def circuit(x):
-      qml.RX(x[0], wires=0)
-      qml.RY(x[1], wires=1)
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliZ(0))
-
-  @tf.function
-  def cost(x):
-      return tf.reduce_sum(circuit(x))
-
-  x = tf.Variable([0.5, 0.7], dtype=tf.float64)
-
-  with tf.GradientTape() as tape:
-      loss = cost(x)
-
-  grad = tape.gradient(loss, x)
-  ```
-
-  The initial execution may take slightly longer than when executing the circuit in
-  eager mode; this is because TensorFlow is tracing the function to create the graph.
-  Subsequent executions will be much more performant.
-
-  Note that using AutoGraph with backprop-enabled devices, such as `default.qubit`,
-  will yield the best performance.
-
-  For more details, please see the [TensorFlow AutoGraph
-  documentation](https://www.tensorflow.org/guide/function).
-
-<h4>Parameter shift rule generation</h4>
-
 * Given an operator of the form :math:`U=e^{iHt}`, where :math:`H` has
   commuting terms and known eigenvalues,
   `qml.gradients.generate_shift_rule` computes the generalized parameter shift rules for determining
@@ -279,6 +235,48 @@
 
   where :math:`f(\phi) = \langle 0|U(\phi)^\dagger \hat{O} U(\phi)|0\rangle`
   for some observable :math:`\hat{O}` and the unitary :math:`U(\phi)=e^{iH\phi}`.
+
+<h4>Support for TensorFlow AutoGraph mode with quantum hardware</h4>
+
+* It is now possible to use TensorFlow's [AutoGraph
+  mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
+  differentiation methods. Previously, AutoGraph mode only support `diff_method="backprop"`. This
+  will result in significantly more performant model execution, at the cost of a more expensive
+  initial compilation. [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1886)
+
+  Use AutoGraph to convert your QNodes or cost functions into TensorFlow
+  graphs by decorating them with `@tf.function`:
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=1)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliZ(0))
+
+  @tf.function
+  def cost(x):
+      return tf.reduce_sum(circuit(x))
+
+  x = tf.Variable([0.5, 0.7], dtype=tf.float64)
+
+  with tf.GradientTape() as tape:
+      loss = cost(x)
+
+  grad = tape.gradient(loss, x)
+  ```
+
+  The initial execution may take slightly longer than when executing the circuit in
+  eager mode; this is because TensorFlow is tracing the function to create the graph.
+  Subsequent executions will be much more performant.
+
+  Note that using AutoGraph with backprop-enabled devices, such as `default.qubit`,
+  will yield the best performance.
+
+  For more details, please see the [TensorFlow AutoGraph
+  documentation](https://www.tensorflow.org/guide/function).
 
 <h4>Characterize your quantum models with classical QNode reconstruction</h4>
 
