@@ -26,7 +26,7 @@
 
   <img src="https://pennylane.readthedocs.io/en/latest/_images/main_example.png" width=70%/>
 
-<h4>Support for TensorFlow AutoGraph mode</h4>
+<h4>Support for TensorFlow AutoGraph mode with quantum hardware</h4>
 
 * It is now possible to use TensorFlow's [AutoGraph
   mode](https://www.tensorflow.org/guide/function) with QNodes on all devices and with arbitrary
