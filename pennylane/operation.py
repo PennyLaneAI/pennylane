@@ -395,7 +395,6 @@ class Operator(abc.ABC):
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX.eigvals()
