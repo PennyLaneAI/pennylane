@@ -1413,7 +1413,6 @@ class TestCriteria:
 
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qml.RX(0.3, wires=1)
-    paulix = qml.PauliX(wires=0)
     cnot = qml.CNOT(wires=[1, 0])
     rot = qml.Rot(*qml.numpy.array([0.1, -0.7, 0.2], requires_grad=True), wires=0)
     stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
