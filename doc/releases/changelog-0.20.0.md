@@ -281,7 +281,7 @@
   ```python
   dev = qml.device("lightning.qubit", wires=2)
 
-  @qml.beta.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
+  @qml.qnode(dev, diff_method="adjoint", interface="tf", max_diff=1)
   def circuit(x):
       qml.RX(x[0], wires=0)
       qml.RY(x[1], wires=1)
@@ -385,7 +385,7 @@
   coeffs = [1, -1]
   obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
   hamiltonian = qml.Hamiltonian(coeffs, obs)
-  frequencies = [2,4]
+  frequencies = (2,4)
 
   @qml.qnode(dev)
   def circuit(time):
@@ -514,7 +514,7 @@
   ```pycon
   >>> X = tf.zeros((3, 2, 9), dtype=tf.float64)
   >>> indices = [(0, 0, 1, 2, 2), (0, 0, 0, 0, 1), (1, 3, 8, 6, 7)]
-  >>> values = [0.1 * i for i in range(5)]
+  >>> values = [1 * i for i in range(1,6)]
   >>> qml.math.scatter_element_add(X, indices, values)
   <tf.Tensor: shape=(3, 2, 9), dtype=float64, numpy=
   array([[[0., 1., 0., 2., 0., 0., 0., 0., 0.],
