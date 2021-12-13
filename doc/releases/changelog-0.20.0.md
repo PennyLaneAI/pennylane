@@ -8,6 +8,9 @@
 
 * PennyLane now supports drawing a QNode with matplotlib!
   [(#1803)](https://github.com/PennyLaneAI/pennylane/pull/1803)
+  [(#1811)](https://github.com/PennyLaneAI/pennylane/pull/1811)
+  [(#1931)](https://github.com/PennyLaneAI/pennylane/pull/1931)
+  [(#1954)](https://github.com/PennyLaneAI/pennylane/pull/1954)
 
   ```python
   dev = qml.device("default.qubit", wires=4)
@@ -492,6 +495,9 @@
   0.018251285973461928
   ```
 
+* Added support for Python 3.10.
+  [(#1964)](https://github.com/PennyLaneAI/pennylane/pull/1964)
+
 * The execution of QNodes that have
 
   - multiple return types;
@@ -558,7 +564,7 @@
   [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
 
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI.
-  [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
+  [(#1892)](https://github.com/PennyLaneAI/pennylane/pull/1892)
 
 * `Identity` operation is now part of both the `ops.qubit` and `ops.cv`
   modules.
@@ -639,6 +645,7 @@
 * The `num_params` attribute in the operator class is now dynamic. This makes it easier
   to define operator subclasses with a flexible number of parameters.
   [(#1898)](https://github.com/PennyLaneAI/pennylane/pull/1898)
+  [(#1909)](https://github.com/PennyLaneAI/pennylane/pull/1909)
 
 * The static method `decomposition()`, formerly in the `Operation` class, has
   been moved to the base `Operator` class.
@@ -659,9 +666,16 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with `qml.probs` when using `default.qubit.jax`.
+  [(#1998)](https://github.com/PennyLaneAI/pennylane/pull/1998)
+
 * The init module, which contains functions to generate random parameters for
   templates, has been removed. Instead, the templates provide a `shape()` method.
   [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
+
+* Fixes a bug where output tensors of a QNode would always be put on the
+  default GPU with `default.qubit.torch`.
+  [(#1982)](https://github.com/PennyLaneAI/pennylane/pull/1982)
 
 * Device test suite doesn't use empty circuits so that it can also
   test the IonQ plugin, and it checks if operations are supported in
@@ -680,6 +694,9 @@
   interface raised an error.
   [(#1906)](https://github.com/PennyLaneAI/pennylane/pull/1906)
 
+* Fixes a bug with the adjoint of `qml.QFT`.
+  [(#1955)](https://github.com/PennyLaneAI/pennylane/pull/1955)
+
 * Fixes a bug where the `ApproxTimeEvolution` template was not correctly
   computing the operation wires from the input Hamiltonian. This did not
   affect computation with the `ApproxTimeEvolution` template, but did
@@ -689,7 +706,7 @@
 * Fixes a bug where the classical preprocessing Jacobian
   computed by `qml.transforms.classical_jacobian` with JAX
   returned a reduced submatrix of the Jacobian.
-  [(#1935)](https://github.com/PennyLaneAI/pennylane/pull/1935)
+  [(#1948)](https://github.com/PennyLaneAI/pennylane/pull/1948)
 
 * Fixes a bug where the operations are not accessed in the correct order
   in `qml.fourier.qnode_spectrum`, leading to wrong outputs.
