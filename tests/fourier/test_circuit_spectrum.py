@@ -194,23 +194,3 @@ class TestInterfaces:
         for (k1, v1), (k2, v2) in zip(res.items(), expected_result.items()):
             assert k1 == k2
             assert v1 == v2
-
-
-def test_alias_spectrum():
-    """Test that the ``spectrum`` for ``circuit_spectrum``
-    works properly."""
-
-    dev = qml.device("default.qubit", wires=3)
-
-    @qml.qnode(dev)
-    def circuit(x):
-        for l in range(2):
-            for i in range(3):
-                qml.RX(x, wires=i, id="x")
-                qml.RY(0.4, wires=i)
-        return qml.expval(qml.PauliZ(wires=0))
-
-    with pytest.warns(UserWarning, match="qml.fourier.spectrum has been renamed"):
-        res_alias = qml.fourier.spectrum(circuit)(0.1)
-    res_nonalias = qml.fourier.spectrum(circuit)(0.1)
-    assert res_alias == res_nonalias
