@@ -780,7 +780,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Juan Miguel Arrazola, Samuel Banning, Benjamin Cordier, Alain Delgado,
-Olivia Di Matteo, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Shumpei
-Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Antal Száva,
-Maria Schuld, Jay Soni, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann
+Catalina Albornoz, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Samuel Banning, Benjamin Cordier, Alain Delgado,
+Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Nathan Killoran, Shumpei
+Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Lee James O'Riordan, Chae-Yeun Park, Isidor Schoch,
+Maria Schuld, Jay Soni, Antal Száva, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann
