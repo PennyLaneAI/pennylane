@@ -271,6 +271,52 @@ def metric_tensor(
     )
 
 
+def _contract_metric_tensor_with_cjac(mt, cjac):
+    """Execute the contraction of pre-computed classical Jacobian(s)
+    and the metric tensor of a tape in order to obtain the hybrid
+    metric tensor of a QNode.
+
+    Args:
+        mt (array): Metric tensor of a tape (2-dimensional)
+        cjac (array or tuple[array]): The classical Jacobian of a QNode
+
+    Returns:
+        array or tuple[array]: Hybrid metric tensor(s) of the QNode.
+        The number of metric tensors depends on the number of QNode arguments
+        for which the classical Jacobian was computed, their shape on the
+        shape of these QNode arguments.
+    """
+
+    if isinstance(cjac, tuple):
+        if len(cjac) == 1:
+            cjac = cjac[0]
+        else:
+            # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac
+            # as a tuple of contractions.
+            metric_tensors = []
+
+            for c in cjac:
+                if c is not None:
+                    _mt = qml.math.tensordot(mt, c, axes=[[-1], [0]])
+                    _mt = qml.math.tensordot(c, _mt, axes=[[0], [0]])
+                    metric_tensors.append(_mt)
+
+            return tuple(metric_tensors)
+
+    is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+
+    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+        # Classical Jacobian is the identity. No classical processing
+        # is present inside the QNode.
+        return mt
+
+    # Classical processing of a single argument is present. Return mt @ cjac.
+    mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
+    mt = qml.math.tensordot(cjac, mt, [[0], [0]])
+
+    return mt
+
+
 @metric_tensor.custom_qnode_wrapper
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
@@ -323,32 +369,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
 
-        if isinstance(cjac, tuple):
-            if len(cjac) == 1:
-                cjac = cjac[0]
-            else:
-                # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac.
-                metric_tensors = []
-
-                for c in cjac:
-                    if c is not None:
-                        _mt = qml.math.tensordot(mt, c, axes=[[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, axes=[[0], [0]])
-                        metric_tensors.append(_mt)
-
-                return tuple(metric_tensors)
-
-        is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
-
-        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-            # Classical Jacobian is the identity. No classical processing
-            # is present inside the QNode.
-            return mt
-
-        # Classical processing of a single argument is present. Return mt @ cjac.
-        mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
-        mt = qml.math.tensordot(cjac, mt, [[0], [0]])
-        return mt
+        return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper
 

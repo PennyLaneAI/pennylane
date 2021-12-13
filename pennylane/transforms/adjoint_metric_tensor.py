@@ -20,6 +20,9 @@ from pennylane import numpy as np
 
 import pennylane as qml
 
+# pylint: disable=protected-access
+from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
+
 
 def _get_generator(op):
     """Reads out the generator and prefactor of an operation and converts
@@ -86,7 +89,7 @@ def _group_operations(tape):
     # Find the indices of trainable operations in the tape operations list
     trainables = np.where([qml.operation.is_trainable(op) for op in ops])[0]
     # Add the indices incremented by one to the trainable indices
-    split_ids = list(chain.from_iterable([idx, idx+1] for idx in trainables))
+    split_ids = list(chain.from_iterable([idx, idx + 1] for idx in trainables))
 
     # Split at trainable and incremented indices to get groups after trainable
     # operations and single trainable operations (in alternating order)
@@ -259,31 +262,6 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
 
         cjac = cjac_fn(*args, **kwargs)
 
-        if isinstance(cjac, tuple):
-            if len(cjac) == 1:
-                cjac = cjac[0]
-            else:
-                # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac.
-                metric_tensors = []
-
-                for c in cjac:
-                    if c is not None:
-                        _mt = qml.math.tensordot(mt, c, axes=[[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, axes=[[0], [0]])
-                        metric_tensors.append(_mt)
-
-                return tuple(metric_tensors)
-
-        is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
-
-        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-            # Classical Jacobian is the identity. No classical processing
-            # is present inside the QNode.
-            return mt
-
-        # Classical processing of a single argument is present. Return mt @ cjac.
-        mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
-        mt = qml.math.tensordot(cjac, mt, [[0], [0]])
-        return mt
+        return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper
