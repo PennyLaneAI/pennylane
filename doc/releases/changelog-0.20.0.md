@@ -475,31 +475,38 @@
 * `qml.circuit_drawer.tape_mpl` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
-* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+* The AngleEmbedding, BasicEntanglerLayers and MottonenStatePreparation
+  templates now support the `batch_params` decorator.
+  [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
+  [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
+  [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
-* Added a new `qml.PauliError` channel that allows the application of an arbitrary number of Pauli operators on an arbitrary number of wires.
+* Added a new `qml.PauliError` channel that allows the application of an
+  arbitrary number of Pauli operators on an arbitrary number of wires.
   [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
 
-* BasicEntanglerLayers now supports `batch_params` decorator. [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
-
-* MottonenStatePreparation now supports `batch_params` decorator. [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
-
-* CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI. [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
+* CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI.
+  [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
 * `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
-   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
+  [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
 <h3>Breaking changes</h3>
 
 * Certain features deprecated in `v0.19.0` have been removed:
 
-  - The `qml.template` decorator;
+  - The `qml.template` decorator (use a [`
+    QuantumTape`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.tape.QuantumTape.html)
+    as a context manager to record operations and its `operations` attribute to
+    return them, see the linked page for examples);
   - The `default.tensor` and `default.tensor.tf` experimental devices;
-  - The `qml.fourier.spectrum` function;
-  - The `diag_approx` keyword argument of `qml.metric_tensor` and `qml.QNGOptimizer`.
+  - The `qml.fourier.spectrum` function (use the `qml.fourier.circuit_spectrum`
+    or `qml.fourier.qnode_spectrum` functions instead);
+  - The `diag_approx` keyword argument of `qml.metric_tensor` and
+    `qml.QNGOptimizer` (pass `approx='diag'` instead).
   [(#1981)](https://github.com/PennyLaneAI/pennylane/pull/1981)
 
-* The default behaviour of the `qml.metric_tensor` transform has been modified:
+* The default behaviour of the `qml.metric_tensor` transform has been modified.
   By default, the full metric tensor is computed, leading to higher cost than the previous
   default of computing the block diagonal only. At the same time, the Hadamard tests for
   the full metric tensor require an additional wire on the device, so that
@@ -524,7 +531,8 @@
   in an upcoming release.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
-* The reversible QNode differentiation method has been removed.
+* The reversible QNode differentiation method has been removed; the adjoint
+  differentiation method is preferred instead (`diff_method='adjoint'`).
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
 * `QuantumTape.trainable_params` now is a list instead of a set. This
