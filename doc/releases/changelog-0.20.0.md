@@ -388,7 +388,7 @@
 
 * Added the `qml.QubitDensityMatrix` initialization gate for
   mixed state simulation.
-  [(#1686)](https://github.com/PennyLaneAI/pennylane/issues/1686)
+  [(#1850)](https://github.com/PennyLaneAI/pennylane/pull/1850)
 
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
@@ -518,10 +518,13 @@
 * The `par_domain` attribute in the operator class has been removed.
   [(#1907)](https://github.com/PennyLaneAI/pennylane/pull/1907)
 
-- The `mutable` keyword argument has been removed from the QNode.
+* The `mutable` keyword argument has been removed from the QNode,
+  due to underlying bugs that result in incorrect results being
+  returned from immutable QNodes. This functionality will return
+  in an upcoming release.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
-- The reversible QNode differentiation method has been removed.
+* The reversible QNode differentiation method has been removed.
   [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
 
 * `QuantumTape.trainable_params` now is a list instead of a set. This
@@ -647,10 +650,10 @@
   [(#2001)](https://github.com/PennyLaneAI/pennylane/pull/2001)
 
 * Fixed a bug where the `QueueContext` was not empty when first importing PennyLane.
-  [(#1957)](https://github.com/PennyLaneAI/pennylane/issues/1957)
+  [(#1957)](https://github.com/PennyLaneAI/pennylane/pull/1957)
 
 * Fixed circuit drawing problem with `Interferometer` and `CVNeuralNet`.
-  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
+  [(#1953)](https://github.com/PennyLaneAI/pennylane/pull/1953)
 
 <h3>Documentation</h3>
 
