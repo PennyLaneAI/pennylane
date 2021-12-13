@@ -370,7 +370,6 @@ class Operator(abc.ABC):
 
         >>> qml.RZ._eigvals(0.5)
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX._eigvals()
