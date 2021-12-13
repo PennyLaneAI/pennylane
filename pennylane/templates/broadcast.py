@@ -23,7 +23,7 @@ To add a new pattern:
 import pennylane as qml
 from pennylane.wires import Wires
 
-OPTIONS = {"single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom", "MPS"}
+OPTIONS = {"single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"}
 
 ###################
 # helpers to define pattern wire sequences
@@ -60,17 +60,6 @@ def wires_all_to_all(wires):
         for j in range(i + 1, len(wires)):
             sequence += [wires.subset([i, j])]
     return sequence
-
-def wires_MPS(wires):
-    """Wire sequence for the MPS pattern"""
-    
-    
-    
-    sequence = [wires.subset([i, i + 1], periodic_boundary=True) for i in range(len(wires))]
-    
-    sqeuence = np.array([[wires[idx] for idx in range(j, j + loc)] for j in range(0, len(wires) - 2, 2)])
-    return sqeuence
-
 
 # define wire sequences for patterns
 PATTERN_TO_WIRES = {

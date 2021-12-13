@@ -1,3 +1,20 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""
+Contains the MPS template.
+"""
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
 import pennylane as qml
 import pennylane.numpy as np
@@ -5,7 +22,7 @@ from pennylane.operation import Operation, AnyWires
 
 
 def compute_indices_MPS(wires, loc):
-    """
+    r"""
     Generate a list of wire indices that quantum gates acts on
     Args:
         wires (Iterable): the total set of wires
@@ -24,12 +41,11 @@ def compute_indices_MPS(wires, loc):
 
 
 class MPS(Operation):
-    r""" Quantum circuit consisting on the broadcast of local gates, following the architecture from `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
+    r"""Quantum circuit consisting on the broadcast of local gates, following the architecture from `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
-    The argument ``block`` can be either an user-defined quantum function or an existing template. 
+    The argument ``block`` can is a user-defined quantum function. 
 
         Args:
-
             wires (Iterable):  wires that the template acts on
             loc (int): number of wires that each  block acts on
             block: quantum circuit that compose each block
