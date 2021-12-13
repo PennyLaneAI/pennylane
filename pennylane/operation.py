@@ -585,7 +585,7 @@ class Operator(abc.ABC):
         Returns `None` if this operator does not define its diagonalizing gates.
 
         Returns:
-            list(qml.Operator): A list of operators.
+            list[.Operator] or None: A list of operators.
         """
         return None
 
