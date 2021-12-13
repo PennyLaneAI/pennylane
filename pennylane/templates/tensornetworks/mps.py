@@ -32,6 +32,29 @@ def compute_indices_MPS(wires, loc):
         layers (array): array of wire indices or wire labels for each block
     """
 
+    n_wires = len(wires)
+
+    if loc % 2 != 0:
+        raise AssertionError(f"loc must be an even integer; got {loc}")
+
+    if loc < 2:
+        raise ValueError(
+            f"number of wires in each block must be larger than or equal to 2; got loc={loc}"
+        )
+
+    if n_wires < 2:
+        raise ValueError(f"number of wires must be greater than or equal to 2; got {n_wires}")
+
+    if loc > n_wires:
+        raise ValueError(
+            f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
+        )
+
+    if n_wires % (loc / 2) > 0:
+        warnings.warn(
+            f"The number of wires should be a multiple of {int(loc/2)}; got {n_wires}"
+        )
+
     layers = np.array(
         [
             [wires[idx] for idx in range(j, j + loc)]
@@ -53,7 +76,7 @@ class MPS(Operation):
         n_params_block (int): the number of parameters in a block; equal to the number of elements in ``block_weights``
         weights (Sequence): list containing the weights for all blocks; weights should have one element per block
 
-    .. Usage Details::
+    .. UsageDetails::
 
         This example demonstrates the use of ``MPS`` for a simple block.
 
@@ -78,7 +101,7 @@ class MPS(Operation):
                 qml.MPS(wires = range(n_wires),loc=loc,block=block, n_params_block=n_params_block, weights=weights)
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
-            >>> print(qml.draw(circuit)(template_weights))
+            >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
             0: ──╭C──Rot(1, 2, 3)──────────────────────────────────────┤
             1: ──╰X──Rot(4, 5, 6)──╭C──Rot(3, 4, 5)────────────────────┤
             2: ────────────────────╰X──Rot(6, 7, 8)──╭C──Rot(4, 5, 6)──┤
@@ -99,28 +122,9 @@ class MPS(Operation):
         do_queue=True,
         id=None,
     ):
+
+        self.ind_gates = compute_indices_MPS(wires, loc)
         n_wires = len(wires)
-        if loc % 2 != 0:
-            raise AssertionError(f"loc must be an even integer; got {loc}")
-
-        if loc < 2:
-            raise ValueError(
-                f"number of wires in each block must be larger than or equal to 2; got loc={loc}"
-            )
-
-        if n_wires < 2:
-            raise ValueError(f"number of wires must be greater than or equal to 2; got {n_wires}")
-
-        if loc > n_wires:
-            raise ValueError(
-                f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
-            )
-
-        if n_wires % (loc / 2) > 0:
-            warnings.warn(
-                f"The number of wires should be a multiple of {int(loc/2)}; got {n_wires}"
-            )
-
         shape = qml.math.shape(weights)[-4:]  # (n_params_block, n_blocks)
         self.n_params_block = n_params_block
         self.n_blocks = int(n_wires / (loc / 2) - 1)
@@ -141,8 +145,6 @@ class MPS(Operation):
                 )
 
             self.weights = weights
-
-        self.ind_gates = compute_indices_MPS(wires, loc)
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
