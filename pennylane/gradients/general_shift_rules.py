@@ -216,8 +216,8 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     >>> eigvals = (-0.5, 0, 0, 0.5)
     >>> frequencies = eigvals_to_frequencies(eigvals)
     >>> generate_shift_rule(frequencies)
-    [[ 0.85355339, -0.85355339, -0.14644661,  0.14644661],
-     [0.78539816,  -0.78539816,  2.35619449, -2.35619449]]
+    [[ 0.4267767  -0.4267767  -0.0732233   0.0732233 ]
+     [ 1.57079633 -1.57079633  4.71238898 -4.71238898]]
 
     An example with explicitly specified shift values:
 
