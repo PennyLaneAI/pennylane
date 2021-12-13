@@ -19,12 +19,6 @@
 
 <h3>Contributors</h3>
 
-<h3>Operator class refactor</h3>
-
-The Operator class has undergone a major refactor with the following changes:
-
-* The Operation attribute `string_for_inverse` is removed.
-
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo

@@ -599,6 +599,8 @@ class Operation(Operator):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
+    # pylint: disable=abstract-method
+    string_for_inverse = ".inv"
 
     @property
     def grad_method(self):
@@ -800,7 +802,7 @@ class Operation(Operator):
     @property
     def name(self):
         """Get and set the name of the operator."""
-        return self._name + ".inv" if self.inverse else self._name
+        return self._name + Operation.string_for_inverse if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
         if self.inverse:
