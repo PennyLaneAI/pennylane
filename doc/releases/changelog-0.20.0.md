@@ -106,20 +106,8 @@
     def circuit():
     ```
 
-  - Arbitrary :math:`n`-th order derivatives are supported on hardware using gradient transforms
-    such as the parameter-shift rule. To specify that an :math:`n`-th order derivative of a QNode
-    will be computed, the `max_diff` argument should be set. By default, this is set to 1
-    (first-order derivatives only). Increasing this value allows for higher order derivatives to be
-    extracted, at the cost of additional (classical) computational overhead during the backwards
-    pass.
-
-  - When decomposing the circuit, the default decomposition strategy `expansion_strategy="gradient"`
-    will prioritize decompositions that result in the smallest number of parametrized operations
-    required to satisfy the differentiation method. While this may lead to a slight increase in
-    classical processing, it significantly reduces the number of circuit evaluations needed to
-    compute gradients of complicated unitaries.
-
-    To return to the old behaviour, `expansion_strategy="device"` can be specified.
+  For breaking changes related to the use of the new QNode, refer to the
+  Breaking Changes section.
 
   Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
   be removed in the next release.
@@ -492,6 +480,29 @@
   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
 <h3>Breaking changes</h3>
+
+* The QNode has been re-written to support batch execution across the board,
+  custom gradients, better decomposition strategies, and higher-order derivatives.
+  [(#1807)](https://github.com/PennyLaneAI/pennylane/pull/1807)
+  [(#1969)](https://github.com/PennyLaneAI/pennylane/pull/1969)
+
+  - Arbitrary :math:`n`-th order derivatives are supported on hardware using gradient transforms
+    such as the parameter-shift rule. To specify that an :math:`n`-th order derivative of a QNode
+    will be computed, the `max_diff` argument should be set. By default, this is set to 1
+    (first-order derivatives only). Increasing this value allows for higher order derivatives to be
+    extracted, at the cost of additional (classical) computational overhead during the backwards
+    pass.
+
+  - When decomposing the circuit, the default decomposition strategy `expansion_strategy="gradient"`
+    will prioritize decompositions that result in the smallest number of parametrized operations
+    required to satisfy the differentiation method. While this may lead to a slight increase in
+    classical processing, it significantly reduces the number of circuit evaluations needed to
+    compute gradients of complicated unitaries.
+
+    To return to the old behaviour, `expansion_strategy="device"` can be specified.
+
+  Note that the old QNode remains accessible at `@qml.qnode_old.qnode`, however this will
+  be removed in the next release.
 
 * Certain features deprecated in `v0.19.0` have been removed:
 
