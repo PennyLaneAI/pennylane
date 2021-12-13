@@ -98,10 +98,16 @@ class TestOperatorConstruction:
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
+        class MyOpOverwriteInit(qml.operation.Operation):
+            num_wires = 1
+
             def __init__(self, wires):
-                super().__init__(wires=wires)
+                pass
 
         op = MyOp(wires=0)
+        assert op.hyperparameters == {}
+
+        op = MyOpOverwriteInit(wires=0)
         assert op.hyperparameters == {}
 
 
