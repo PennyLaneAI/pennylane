@@ -304,6 +304,7 @@ class S(Operation):
     """
     num_wires = 1
     basis = "Z"
+    op_eigvals = np.array([1, 1j])
 
     @property
     def num_params(self):
@@ -315,7 +316,7 @@ class S(Operation):
 
     @classmethod
     def _eigvals(cls, *params):
-        return np.array([1, 1j])
+        return cls.op_eigvals
 
     @staticmethod
     def decomposition(wires):
@@ -978,7 +979,7 @@ class MultiControlledX(Operation):
 
         self._padding_left = control_int * 2
         self._padding_right = 2 ** len(wires) - 2 - self._padding_left
-        self._CX = None
+        self._cx = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
@@ -986,14 +987,16 @@ class MultiControlledX(Operation):
     def num_params(self):
         return 0
 
-    # TODO[Maria]: make static
-    def _matrix(self, *params):
-        if self._CX is None:
-            self._CX = block_diag(
+    @staticmethod
+    def _matrix(cx):
+        return cx
+
+    def matrix(self, wire_order=None):
+        if self._cx is None:
+            self.cx = block_diag(
                 np.eye(self._padding_left), PauliX.compute_matrix(), np.eye(self._padding_right)
             )
-
-        return self._CX
+        return self.compute_matrix(self.cx, wires=self.wires, wire_order=wire_order)
 
     @property
     def control_wires(self):

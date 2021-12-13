@@ -70,10 +70,8 @@ class QFT(Operation):
     def num_params(self):
         return 0
 
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
+    def matrix(self, wire_order=None):
+        mat = self.compute_matrix(len(self.wires), wires=self.wires, wire_order=wire_order)
         if self.inverse:
             mat = mat.conj()
         return mat
