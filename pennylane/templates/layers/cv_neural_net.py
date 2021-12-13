@@ -61,7 +61,7 @@ class CVNeuralNetLayers(Operation):
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable): wires that the template acts on
 
-    .. UsageDetails:
+    .. UsageDetails::
 
         **Parameter shapes**
 
