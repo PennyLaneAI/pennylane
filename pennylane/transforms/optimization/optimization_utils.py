@@ -105,7 +105,7 @@ def fuse_rot_angles(angles_1, angles_2):
         angles_1 (float): A set of three angles for the first ``qml.Rot`` operation.
         angles_2 (float): A set of three angles for the second ``qml.Rot`` operation.
 
-    Returns:s
+    Returns:
         array[float]: Rotation angles for a single ``qml.Rot`` operation that
         implements the same operation as the two sets of input angles.
     """
