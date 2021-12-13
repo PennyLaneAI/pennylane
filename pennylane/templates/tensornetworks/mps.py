@@ -23,10 +23,11 @@ from pennylane.operation import Operation, AnyWires
 
 def compute_indices_MPS(wires, loc):
     r"""
-    Generate a list of wire indices that quantum gates acts on
+    Generate a list containing the wires for each block.
+    
     Args:
-        wires (Iterable): the total set of wires
-        loc (int): local wire number of a single quantum gate
+        wires (Iterable): wires that the template acts on
+        loc (int): number of wires per block
     Returns:
         layers (array): array of wire indices or wire labels for each block
     """
@@ -41,17 +42,48 @@ def compute_indices_MPS(wires, loc):
 
 
 class MPS(Operation):
-    r"""Quantum circuit consisting on the broadcast of local gates, following the architecture from `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
+    r"""Quantum circuit that broadcasts local gates, similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
-    The argument ``block`` can is a user-defined quantum function. 
+    The argument ``block`` is a user-defined quantum function. ``block`` must include two arguments: ``block_weights`` and ``block_wires``.
 
-        Args:
-            wires (Iterable):  wires that the template acts on
-            loc (int): number of wires that each  block acts on
-            block (Callable): quantum circuit that composes each block
-            n_params_block (int):
-            weights (tensor_like): weight tensor
-        """
+    Args:
+        wires (Iterable): wires that the template acts on
+        loc (int): number of wires per block
+        block (Callable): quantum circuit that composes a block
+        n_params_block (int): the number of parameters in a block; equal to the number of elements in ``block_weights``
+        weights (Sequence): list containing the weights for all blocks; weights should have one element per block
+
+    .. Usage Details::
+
+        This example demonstrates the use of ``MPS`` for a simple block.
+
+        .. code-block:: python
+
+            import pennylane as qml
+            import numpy as np
+
+            def block(block_weights, block_wires):
+                qml.CNOT(wires=[block_wires[0],block_wires[1]])
+                qml.Rot(block_weights[0],block_weights[1],block_weights[2],wires=block_wires[0])
+                qml.Rot(block_weights[3],block_weights[4],block_weights[5],wires=block_wires[1])
+
+            n_wires = 4
+            loc = 2
+            n_params_block = 6
+            template_weights = [[1,2,3,4,5,6],[3,4,5,6,7,8],[4,5,6,7,8,9]]
+
+            dev= qml.device('default.qubit',wires=n_wires)
+            @qml.qnode(dev)
+            def circuit(weights):
+                qml.MPS(wires = range(n_wires),loc=loc,block=block, n_params_block=n_params_block, weights=weights)
+                return qml.expval(qml.PauliZ(wires=n_wires-1))
+
+            >>> print(qml.draw(circuit)(template_weights))
+            0: ──╭C──Rot(1, 2, 3)──────────────────────────────────────┤     
+            1: ──╰X──Rot(4, 5, 6)──╭C──Rot(3, 4, 5)────────────────────┤     
+            2: ────────────────────╰X──Rot(6, 7, 8)──╭C──Rot(4, 5, 6)──┤     
+            3: ──────────────────────────────────────╰X──Rot(7, 8, 9)──┤ ⟨Z⟩ 
+    """
 
     num_params = 1
     num_wires = AnyWires
@@ -89,7 +121,7 @@ class MPS(Operation):
         self.block = block
 
         if weights is None:
-            self.weights = np.random.rand(n_params_block, int(self.n_blocks))  
+            self.weights = np.random.rand(n_params_block, int(self.n_blocks))
 
         else:
 
@@ -112,8 +144,7 @@ class MPS(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for idx, w in enumerate(self.ind_gates):
-                self.block(weights=self.weights[idx][:], wires=w.tolist())
-                # Different ordering compared to [arXiv:1803.11537v2] -> measurement of the last instead of the first qubit
+                self.block(block_weights=self.weights[idx][:], block_wires=w.tolist())
 
         return tape
 
@@ -122,11 +153,11 @@ class MPS(Operation):
 
         r"""Returns the expected shape of the weights tensor.
         Args:
-            n_wires (int): number of blocks
-            loc (int): local dimension of the block
+            n_wires (int): number of wires the template acts on
+            loc (int): number of wires per block
             n_params_block (int): number of parameters per block
         Returns:
-            tuple[int]: shape
+            tuple[int]: expected shape of ``weights`` argument
         """
         if n_wires % (loc/2) > 0:
             warnings.warn(f"The number of wires should be a multiple of loc/2 = {int(loc/2)}; got {n_wires}")
