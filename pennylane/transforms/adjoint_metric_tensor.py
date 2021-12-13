@@ -15,6 +15,7 @@
 Contains the adjoint_metric_tensor.
 """
 import warnings
+from itertools import chain
 from pennylane import numpy as np
 
 import pennylane as qml
@@ -49,7 +50,7 @@ def _apply_any_operation(state, op, device, invert=False):
     device and performed operation(s).
     """
     # pylint: disable=protected-access
-    if isinstance(op, list):
+    if isinstance(op, (list, np.ndarray)):
         if invert:
             op = op[::-1]
         for _op in op:
@@ -67,37 +68,40 @@ def _apply_any_operation(state, op, device, invert=False):
         return device._state
 
     if invert:
-        op.inv()
+        op_was_inverted = op.inverse
+        op = qml.adjoint(op.__class__)(*op.data, wires=op.wires)
+        if op_was_inverted:
+            op.inverse = not op.inverse
     state = device._apply_operation(state, op)
-    if invert:
-        op.inv()
+
     return state
 
 
 def _group_operations(tape):
     """Divide all operations of a tape into trainable operations and blocks
     of untrainable operations after each trainable one."""
-    trainable_operations = []
-    group_after_trainable_op = {}
+
+    # Extract tape operations list
+    ops = tape.operations
+    # Find the indices of trainable operations in the tape operations list
+    trainables = np.where([qml.operation.is_trainable(op) for op in ops])[0]
+    # Add the indices incremented by one to the trainable indices
+    split_ids = list(chain.from_iterable([idx, idx+1] for idx in trainables))
+
+    # Split at trainable and incremented indices to get groups after trainable
+    # operations and single trainable operations (in alternating order)
+    all_groups = np.split(ops, split_ids)
+
+    # Collect trainable operations and groups after trainable operations
     # the first set of non-trainable ops are the ops "after the -1st" trainable op
-    trainable_idx = -1
-    group_after = []
-    for op in tape.operations:
-        if qml.operation.is_trainable(op):
-            trainable_operations.append(op)
-            group_after_trainable_op[trainable_idx] = group_after
-            trainable_idx += 1
-            group_after = []
-        else:
-            group_after.append(op)
-    # store operations after last trainable op
-    group_after_trainable_op[trainable_idx] = group_after
+    group_after_trainable_op = dict(enumerate(all_groups[::2], start=-1))
+    trainable_operations = list(chain.from_iterable(all_groups[1::2]))
 
     return trainable_operations, group_after_trainable_op
 
 
 def adjoint_metric_tensor(circuit, device=None, hybrid=True):
-    """Implements the adjoint method outlined in
+    r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
     A mixture of a main forward pass and intermediate partial backwards passes is
@@ -107,8 +111,8 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     .. note::
         The adjoint metric tensor method has the following restrictions:
 
-        * As it requires knowledge of the statevector, only statevector simulator
-          devices can be used.
+        * As it requires knowledge of the statevector and uses private
+          methods of the used device, only ``"default.qubit"`` devices can be used.
 
         * We assume the circuit to be composed of unitary gates only and rely
           on the ``generator`` property of the gates to be implemented.

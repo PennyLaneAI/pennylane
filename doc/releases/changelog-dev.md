@@ -32,8 +32,8 @@
       qml.RY(y[1], wires=1)
       qml.RY(y[0], wires=2)
 
-  x = pnp.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
-  y = pnp.array([1.3, 0.2], requires_grad=True)
+  x = np.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
+  y = np.array([1.3, 0.2], requires_grad=True)
   ```
 
   ```pycon
@@ -55,3 +55,5 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+David Wierichs
