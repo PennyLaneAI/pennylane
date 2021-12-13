@@ -59,8 +59,8 @@ class RX(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -167,8 +167,8 @@ class RZ(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta = params[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
@@ -232,8 +232,8 @@ class PhaseShift(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
@@ -306,8 +306,8 @@ class ControlledPhaseShift(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
@@ -387,8 +387,8 @@ class Rot(Operation):
     def num_params(self):
         return 3
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         # There are three input parameters to be dealt with
         phi, theta, omega = params
 
@@ -471,8 +471,8 @@ class MultiRZ(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, theta, n):
+    @staticmethod
+    def _matrix(theta, wires):
         """Matrix representation of a MultiRZ gate.
 
         Args:
@@ -484,7 +484,7 @@ class MultiRZ(Operation):
         Returns:
             array[complex]: The matrix representation
         """
-        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
+        multi_Z_rot_eigs = MultiRZ._eigvals(theta, len(wires))
         multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
 
         return multi_Z_rot_matrix
@@ -497,14 +497,15 @@ class MultiRZ(Operation):
             self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
         return self._generator
 
-    @property
-    def matrix(self):
+    def matrix(self, wire_order=None):
         # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
         if self.inverse:
             # The matrix is diagonal, so there is no need to transpose
-            return qml.math.conj(self._matrix(*self.parameters, len(self.wires)))
+            return qml.math.conj(
+                self.compute_matrix(*self.parameters, self.wires, wire_order=wire_order)
+            )
 
-        return self._matrix(*self.parameters, len(self.wires))
+        return self.compute_matrix(*self.parameters, self.wires, wire_order=wire_order)
 
     @classmethod
     def _eigvals(cls, theta, n):
@@ -653,8 +654,8 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         pauli_word = params[1]
 
         if not PauliRot._check_pauli_word(pauli_word):
@@ -689,7 +690,7 @@ class PauliRot(Operation):
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(non_identity_gates))
+        multi_Z_rot_matrix = MultiRZ._matrix(theta, range(len(non_identity_gates)))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
@@ -853,8 +854,8 @@ class CRX(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta = params[0]
         interface = qml.math.get_interface(theta)
 
@@ -954,8 +955,8 @@ class CRY(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta = params[0]
         interface = qml.math.get_interface(theta)
 
@@ -1049,8 +1050,8 @@ class CRZ(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta = params[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
@@ -1137,8 +1138,8 @@ class CRot(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi, theta, omega = params
 
         # It might be that they are in different interfaces, e.g.,
@@ -1229,8 +1230,8 @@ class U1(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":
@@ -1289,8 +1290,8 @@ class U2(Operation):
     def num_params(self):
         return 2
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi, lam = params
 
         interface = qml.math._multi_dispatch(params)
@@ -1365,8 +1366,8 @@ class U3(Operation):
     def num_params(self):
         return 3
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         theta, phi, lam = params
 
         # It might be that they are in different interfaces, e.g.,
@@ -1441,8 +1442,8 @@ class IsingXX(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi = params[0]
 
         c = qml.math.cos(phi / 2)
@@ -1512,8 +1513,8 @@ class IsingYY(Operation):
             qml.CY(wires=wires),
         ]
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi = params[0]
 
         c = qml.math.cos(phi / 2)
@@ -1573,8 +1574,8 @@ class IsingZZ(Operation):
             qml.CNOT(wires=wires),
         ]
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         phi = params[0]
 
         if qml.math.get_interface(phi) == "tensorflow":

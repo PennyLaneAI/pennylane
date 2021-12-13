@@ -78,9 +78,9 @@ class QFT(Operation):
             mat = mat.conj()
         return mat
 
-    @classmethod
+    @staticmethod
     @functools.lru_cache()
-    def _matrix(cls, num_wires):
+    def _matrix(num_wires):
         dimension = 2 ** num_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)

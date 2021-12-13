@@ -49,8 +49,8 @@ class Identity(CVObservable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         return np.eye(2)
 
     @staticmethod

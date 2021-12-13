@@ -412,8 +412,8 @@ class TestValidation:
             basis = "X"
             grad_method = "F"
 
-            @classmethod
-            def _matrix(cls, *params):
+            @staticmethod
+            def _matrix(*params):
                 return qml.RX._matrix(*params)
 
         dev = qml.device("default.mixed", wires=3, shots=None)

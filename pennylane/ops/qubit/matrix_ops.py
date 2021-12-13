@@ -85,8 +85,8 @@ class QubitUnitary(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         return params[0]
 
     @staticmethod
@@ -220,6 +220,7 @@ class ControlledQubitUnitary(QubitUnitary):
     def num_params(self):
         return 1
 
+    # TODO[MARIA]: this should not be a static method
     def _matrix(self, *params):
         if self._CU is None:
             interface = qml.math.get_interface(self.U)
@@ -278,9 +279,14 @@ class DiagonalQubitUnitary(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        return qml.math.diag(cls._eigvals(*params))
+    @staticmethod
+    def _matrix(*params):
+        D = qml.math.asarray(params[0])
+
+        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
+            raise ValueError("Operator must be unitary.")
+
+        return qml.math.diag(D)
 
     @classmethod
     def _eigvals(cls, *params):

@@ -2066,7 +2066,7 @@ class TestApplyOps:
         reversed."""
         state_out = method(self.state, axes=[2, 1])
         op = op(wires=[2, 1])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2273,11 +2273,10 @@ class TestApplyOperationUnit:
         # Redefine the S gate so that it is an example for a one-qubit gate
         # that is not registered in the diagonal_in_z_basis attribute
         class TestSGate(qml.operation.Operation):
-            matrix = np.array([[0, 1], [1, 0]])
             num_wires = 1
 
-            @classmethod
-            def _matrix(cls, *params):
+            @staticmethod
+            def _matrix():
                 return np.array([[1, 0], [0, 1j]])
 
         dev.operations.add("TestSGate")

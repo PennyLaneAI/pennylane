@@ -300,6 +300,7 @@ class Operator(abc.ABC):
         """int: returns an integer hash uniquely representing the operator"""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
+    # pylint:disable=unused-argument
     @staticmethod
     def _matrix(*params, **hyperparams):
         """Base matrix for the matrix representation of this operator.
@@ -357,7 +358,7 @@ class Operator(abc.ABC):
         Args:
             params (Iterable): trainable parameters that influence the matrix representation
             wires (Iterable): wires of this operator
-            wire_order (Iterable): wire order which contain ``wires``
+            wire_order (Iterable): global wire order, must contain all wire labels in ``wires``
             hyperparams (dict): other inputs that influence the matrix representation
 
         Returns:
@@ -370,11 +371,9 @@ class Operator(abc.ABC):
         if base_matrix is None:
             return None
 
-        # the case where wire_order is given but no wires does not make sense
+        # cannot have wire_order but no wires to interpret
         if wires is None and wire_order is not None:
-            raise ValueError(
-                f"Expected explicit wires to find in wire_order {wire_order}, got None."
-            )
+            raise ValueError("Expected wires when wire order is defined, got None.")
 
         # intersecting this case here because it is common
         # and we want to avoid casting to Wires unless necessary
@@ -437,6 +436,9 @@ class Operator(abc.ABC):
                    [ 0.24740396+0.j, 0., 0.96891242+0.j, 0.],
                    [0.,  0.24740396+0.j, 0., 0.96891242+0.j+0.j],
                    ])
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels in this operator's wires
         Returns:
             tensor-like: matrix representation
         """
@@ -1475,17 +1477,15 @@ class Tensor(Observable):
 
         return diag_gates
 
-    @property
-    def matrix(self):
+    def matrix(self, wire_order=None):
         r"""Matrix representation of the tensor operator
         in the computational basis.
 
-        **Example:**
+        .. note::
 
-        Note that the returned matrix *only includes explicitly
-        declared observables* making up the tensor product;
-        that is, it only returns the matrix for the specified
-        subsystem it is defined for.
+            The wire_order argument is added for compatibility, but currently not implemented.
+
+        **Example:**
 
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
         >>> O.matrix()
@@ -1509,9 +1509,15 @@ class Tensor(Observable):
                [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
                [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
 
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels in this operator's wires
         Returns:
             array: matrix representation
         """
+
+        if wire_order is not None:
+            raise NotImplementedError("Currently, the wire_order argument is not implemented.")
+
         # group the observables based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
@@ -1931,7 +1937,9 @@ def operation_derivative(operation) -> np.ndarray:
         )
 
     if not isinstance(generator, np.ndarray):
-        generator = generator.matrix()
+        # TODO [Maria]: if generator becomes a class instance, use matrix() instead
+        # since it never takes mandatory arguments
+        generator = generator.compute_matrix()
 
     if operation.inverse:
         prefactor *= -1

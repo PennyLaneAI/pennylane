@@ -113,8 +113,8 @@ class QubitCarry(Operation):
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         return QubitCarry._mat
 
     @staticmethod
@@ -205,8 +205,8 @@ class QubitSum(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         return QubitSum._mat
 
     @staticmethod

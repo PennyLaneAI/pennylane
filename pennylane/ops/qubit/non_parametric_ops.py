@@ -304,20 +304,18 @@ class S(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_eigvals = np.array([1, 1j])
-    op_matrix = np.array([[1, 0], [0, 1j]])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0], [0, 1j]])
 
     @classmethod
     def _eigvals(cls, *params):
-        return cls.op_eigvals
+        return np.array([1, 1j])
 
     @staticmethod
     def decomposition(wires):
@@ -351,16 +349,15 @@ class T(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
     op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -398,16 +395,15 @@ class SX(Operation):
     """
     num_wires = 1
     basis = "X"
-    op_matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
     op_eigvals = np.array([1, 1j])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def _matrix(*params):
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -646,16 +642,15 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
     op_eigvals = np.array([1j, -1j, 1, 1])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -697,23 +692,22 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
-            [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
-            [0, 0, 0, 1],
-        ]
-    )
     op_eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def _matrix(*params):
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+                [0, 0, 0, 1],
+            ]
+        )
 
     @classmethod
     def _eigvals(cls, *params):
@@ -992,6 +986,7 @@ class MultiControlledX(Operation):
     def num_params(self):
         return 0
 
+    # TODO[Maria]: make static
     def _matrix(self, *params):
         if self._CX is None:
             self._CX = block_diag(
