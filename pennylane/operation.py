@@ -120,6 +120,7 @@ import itertools
 import functools
 from enum import Enum, IntEnum
 from scipy.sparse import kron, eye, coo_matrix
+import warnings
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -1412,12 +1413,10 @@ class Tensor(Observable):
         # Check for partially (but not fully) overlapping wires in the observables
         self.check_wires_partial_overlap()
         # group the observables based on what wires they act on
-        key = lambda x: x.wires.labels
-        obs = sorted(self.obs, key=key)
         U_list = []
-        for _, o in itertools.groupby(obs, key):
+        for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix for i in o]
+            mats = [i.matrix for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -1426,17 +1425,21 @@ class Tensor(Observable):
             # append diagonalizing unitary for specific wire to U_list
             U_list.append(mats[0])
 
+        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
+        wire_size = 2 ** len(self.wires)
+        if mat_size != wire_size:
+            warnings.warn(
+                f"The size of the returned matrix ({mat_size}) will not be compatible "
+                f"with the subspace of the wires of the Tensor ({wire_size})."
+            )
+
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
     def check_wires_partial_overlap(self):
         r"""Tests whether any two observables in the Tensor have partially
-        overlapping wires.
-
-        Raises:
-            .wires.WireError: If any two of the observables in the Tensor
-            share some but not all wires.
+        overlapping wires and raise a warning if they do.
 
         .. note::
 
@@ -1447,9 +1450,10 @@ class Tensor(Observable):
         for o1, o2 in itertools.combinations(self.obs, r=2):
             shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
             if shared and (shared != o1.wires or shared != o2.wires):
-                raise qml.wires.WireError(
+                warnings.warn(
                     "The matrix for Tensors of Tensors/Observables with partially "
-                    "overlapping wires is not supported."
+                    "overlapping wires might yield unexpected results. In particular "
+                    "the matrix size might deviate."
                 )
 
     def sparse_matrix(self, wires=None):
