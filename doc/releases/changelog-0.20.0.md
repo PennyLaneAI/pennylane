@@ -41,9 +41,6 @@
   as compared to the number of wires required by the original circuit.
   The transform defaults to computing the full tensor, which can
   be controlled by the `approx` keyword argument.
-  See the
-  [qml.metric_tensor docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
-  for more information and usage details.
 
   As an example, consider the QNode
 
@@ -62,7 +59,7 @@
   ```
 
   Then we can compute the (block) diagonal metric tensor as before, now using the
-  ``approx="block-diag"`` keyword:
+  `approx="block-diag"` keyword:
 
   ```pycon
   >>> qml.metric_tensor(circuit, approx="block-diag")(weights)
@@ -80,6 +77,10 @@
    [ 0.          0.24013262  0.01763859]
    [-0.23300977  0.01763859  0.21846983]]
   ```
+
+  See the
+  [metric tensor documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  for more information and usage details.
 
 <h4>Faster performance with optimized quantum workflows</h4>
 
@@ -214,7 +215,7 @@
   two-term shift rule when `R` is less than the
   number of Pauli words in the generator.
 
-  For example, consider the case where :math:`H` has eigenspectrum ``(-1, 0, 1)``:
+  For example, consider the case where :math:`H` has eigenspectrum `(-1, 0, 1)`:
 
   ```pycon
   >>> frequencies = qml.gradients.eigvals_to_frequencies((-1, 0, 1))
@@ -471,7 +472,7 @@
   [RZ(0.3, wires=[0])]
   ```
 
-* ``qml.circuit_drawer.tape_mpl`` produces a matplotlib figure and axes given a tape.
+* `qml.circuit_drawer.tape_mpl` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
 * AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
@@ -542,7 +543,7 @@
   Instead, devices can check for the diagonal
   property using attributes:
 
-  ``` python
+  ```python
   from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
   if op in diagonal_in_z_basis:
@@ -645,6 +646,12 @@
   and PyTorch interfaces.
   [(#2001)](https://github.com/PennyLaneAI/pennylane/pull/2001)
 
+* Fixed a bug where the `QueueContext` was not empty when first importing PennyLane.
+  [(#1957)](https://github.com/PennyLaneAI/pennylane/issues/1957)
+
+* Fixed circuit drawing problem with `Interferometer` and `CVNeuralNet`.
+  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
+
 <h3>Documentation</h3>
 
 * Added examples in documentation for some operations.
@@ -653,19 +660,14 @@
 * Improves the Developer's Guide Testing document.
   [(#1896)](https://github.com/PennyLaneAI/pennylane/pull/1896)
 
-* Add documentation example for AngleEmbedding, BasisEmbedding, StronglyEntanglingLayers, SqueezingEmbedding, DisplacementEmbedding,
-  MottonenStatePreparation and Interferometer.
+* Added documentation examples for `AngleEmbedding`, `BasisEmbedding`, `StronglyEntanglingLayers`,
+  `SqueezingEmbedding`, `DisplacementEmbedding`, `MottonenStatePreparation` and `Interferometer`.
   [(#1910)](https://github.com/PennyLaneAI/pennylane/pull/1910)
   [(#1908)](https://github.com/PennyLaneAI/pennylane/pull/1908)
   [(#1912)](https://github.com/PennyLaneAI/pennylane/pull/1912)
   [(#1920)](https://github.com/PennyLaneAI/pennylane/pull/1920)
   [(#1936)](https://github.com/PennyLaneAI/pennylane/pull/1936)
   [(#1937)](https://github.com/PennyLaneAI/pennylane/pull/1937)
-
-* QueueContext was not empty when importing `pennylane`.
-
-* Fixed circuit drawing problem with Interferometer and CVNeuralNet.
-  [(#1953)](https://github.com/PennyLaneAI/pennylane/issues/1953)
 
 <h3>Contributors</h3>
 
