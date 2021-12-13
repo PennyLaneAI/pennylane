@@ -365,14 +365,6 @@
 
 <h4>State-of-the-art operations and templates</h4>
 
-* The `qml.Barrier()` operator has been added. With it we can separate blocks
-  in compilation or use it as a visual tool.
-  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
-
-* Added the identity observable to be an operator. Now we can explicitly call the identity
-  operation on our quantum circuits for both qubit and CV devices.
-  [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
-
 * A circuit template for time evolution under a commuting Hamiltonian utilizing generalized
   parameter shift rules for cost function gradients is available as `qml.CommutingEvolution`.
   [(#1788)](https://github.com/PennyLaneAI/pennylane/pull/1788)
@@ -405,6 +397,14 @@
   Note that there is no internal validation that 1) the input `qml.Hamiltonian` is fully commuting
   and 2) the eigenvalue frequency spectrum is correct, since these checks become
   prohibitively expensive for large Hamiltonians.
+
+* The `qml.Barrier()` operator has been added. With it we can separate blocks
+  in compilation or use it as a visual tool.
+  [(#1844)](https://github.com/PennyLaneAI/pennylane/pull/1844)
+
+* Added the identity observable to be an operator. Now we can explicitly call the identity
+  operation on our quantum circuits for both qubit and CV devices.
+  [(#1829)](https://github.com/PennyLaneAI/pennylane/pull/1829)
 
 * Added the `qml.QubitDensityMatrix` initialization gate for
   mixed state simulation.
@@ -560,7 +560,8 @@
 * CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI.
   [#1841](https://github.com/PennyLaneAI/pennylane/pull/1841)
 
-* `Identity` operation is now part of both the `ops.qubit` and `ops.cv` modules.
+* `Identity` operation is now part of both the `ops.qubit` and `ops.cv`
+  modules.
   [(#1956)](https://github.com/PennyLaneAI/pennylane/pull/1956)
 
 <h3>Breaking changes</h3>
