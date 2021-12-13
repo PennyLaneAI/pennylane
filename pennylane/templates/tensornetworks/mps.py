@@ -35,15 +35,12 @@ def compute_indices_MPS(wires, loc):
     n_wires = len(wires)
 
     if loc % 2 != 0:
-        raise AssertionError(f"loc must be an even integer; got {loc}")
+        raise ValueError(f"loc must be an even integer; got {loc}")
 
     if loc < 2:
         raise ValueError(
             f"number of wires in each block must be larger than or equal to 2; got loc={loc}"
         )
-
-    if n_wires < 2:
-        raise ValueError(f"number of wires must be greater than or equal to 2; got {n_wires}")
 
     if loc > n_wires:
         raise ValueError(
