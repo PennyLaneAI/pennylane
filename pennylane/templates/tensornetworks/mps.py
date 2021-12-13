@@ -24,7 +24,7 @@ from pennylane.operation import Operation, AnyWires
 def compute_indices_MPS(wires, loc):
     r"""
     Generate a list containing the wires for each block.
-    
+
     Args:
         wires (Iterable): wires that the template acts on
         loc (int): number of wires per block
@@ -35,7 +35,7 @@ def compute_indices_MPS(wires, loc):
     layers = np.array(
         [
             [wires[idx] for idx in range(j, j + loc)]
-            for j in range(0, len(wires) - int(len(wires) % (loc//2)) - loc//2, loc // 2)
+            for j in range(0, len(wires) - int(len(wires) % (loc // 2)) - loc // 2, loc // 2)
         ]
     )
     return layers
@@ -79,10 +79,10 @@ class MPS(Operation):
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
             >>> print(qml.draw(circuit)(template_weights))
-            0: ──╭C──Rot(1, 2, 3)──────────────────────────────────────┤     
-            1: ──╰X──Rot(4, 5, 6)──╭C──Rot(3, 4, 5)────────────────────┤     
-            2: ────────────────────╰X──Rot(6, 7, 8)──╭C──Rot(4, 5, 6)──┤     
-            3: ──────────────────────────────────────╰X──Rot(7, 8, 9)──┤ ⟨Z⟩ 
+            0: ──╭C──Rot(1, 2, 3)──────────────────────────────────────┤
+            1: ──╰X──Rot(4, 5, 6)──╭C──Rot(3, 4, 5)────────────────────┤
+            2: ────────────────────╰X──Rot(6, 7, 8)──╭C──Rot(4, 5, 6)──┤
+            3: ──────────────────────────────────────╰X──Rot(7, 8, 9)──┤ ⟨Z⟩
     """
 
     num_params = 1
@@ -100,20 +100,26 @@ class MPS(Operation):
         id=None,
     ):
         n_wires = len(wires)
-        if loc%2 != 0:
+        if loc % 2 != 0:
             raise AssertionError(f"loc must be an even integer; got {loc}")
 
         if loc < 2:
-            raise ValueError(f"number of wires in each block must be larger than or equal to 2; got loc={loc}")
+            raise ValueError(
+                f"number of wires in each block must be larger than or equal to 2; got loc={loc}"
+            )
 
         if n_wires < 2:
             raise ValueError(f"number of wires must be greater than or equal to 2; got {n_wires}")
 
         if loc > n_wires:
-            raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
+            raise ValueError(
+                f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
+            )
 
-        if n_wires % (loc/2) > 0:
-            warnings.warn(f"The number of wires should be a multiple of {int(loc/2)}; got {n_wires}")
+        if n_wires % (loc / 2) > 0:
+            warnings.warn(
+                f"The number of wires should be a multiple of {int(loc/2)}; got {n_wires}"
+            )
 
         shape = qml.math.shape(weights)[-4:]  # (n_params_block, n_blocks)
         self.n_params_block = n_params_block
@@ -159,11 +165,15 @@ class MPS(Operation):
         Returns:
             tuple[int]: expected shape of ``weights`` argument
         """
-        if n_wires % (loc/2) > 0:
-            warnings.warn(f"The number of wires should be a multiple of loc/2 = {int(loc/2)}; got {n_wires}")
+        if n_wires % (loc / 2) > 0:
+            warnings.warn(
+                f"The number of wires should be a multiple of loc/2 = {int(loc/2)}; got {n_wires}"
+            )
 
         if loc > n_wires:
-            raise ValueError(f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}")
+            raise ValueError(
+                f"loc must be smaller than or equal to the number of wires; got loc = {loc} and number of wires = {n_wires}"
+            )
 
         n_blocks = int(n_wires / (loc / 2) - 1)
         return n_blocks, n_params_block

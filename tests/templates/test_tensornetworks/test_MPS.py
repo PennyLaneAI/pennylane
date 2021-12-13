@@ -1,3 +1,19 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""
+Tests for the MPS template.
+"""
 import pytest
 import random
 import numpy as np
@@ -68,6 +84,24 @@ class TestInputs:
         """Verifies that an exception is raised if the weights shape is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
             MPS(wires, loc, block, n_params_block, weights)
+
+    # @pytest.mark.parametrize(
+    #     ("weights"),
+    #     [
+    #         ([1,2],
+    #         (circuit1, 2, [1,2,3,4], 2,  np.random.rand(2,4), "Weights tensor must have last dimension of length 3; got 4"),
+    #     ],
+    # )
+    # def test_weights_type(self, weights):
+    #     """Verifies that both lists and numpy objects are accepted as weights"""
+
+    # def test_wire_loc_match_warning():
+    #     """Tests whether a warning is raised when the number of wires doesn't correspond to loc"""
+
+    # def test_list_array_weights():
+        # """Tests whether the template accepts both lists and numpy arrays as weights"""
+
+    
 
 class TestAttributes:
     """Tests additional methods and attributes"""
