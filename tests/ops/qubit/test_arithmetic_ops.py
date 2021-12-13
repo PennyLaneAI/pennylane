@@ -190,7 +190,7 @@ class TestArithmetic:
 
     def test_qubit_sum_adjoint(self):
         """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
-        if it is equal to qml.QubitSum.matrix() (recall that the operation is self-adjoint)"""
+        if it is equal to qml.QubitSum's matrix representation (recall that the operation is self-adjoint)"""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -200,4 +200,4 @@ class TestArithmetic:
             return qml.probs(wires=range(3))
 
         u = np.array([f(state) for state in np.eye(2 ** 3)]).T
-        assert np.allclose(u, qml.QubitSum._matrix())
+        assert np.allclose(u, qml.QubitSum.compute_matrix())

@@ -44,7 +44,6 @@ class Hadamard(Observable, Operation):
     """
     num_wires = 1
     eigvals = pauli_eigs(1)
-    matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @property
     def num_params(self):

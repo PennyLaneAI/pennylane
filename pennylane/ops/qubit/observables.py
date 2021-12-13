@@ -152,8 +152,8 @@ class SparseHamiltonian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def _matrix(*params):
         A = params[0]
         if not isinstance(A, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")

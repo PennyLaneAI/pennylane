@@ -106,8 +106,8 @@ def test_grover_diffusion_matrix(n_wires):
     probs = amplitudes ** 2
 
     # Create Grover diffusion matrix G in alternative way
-    oplist = list(itertools.repeat(Hadamard.matrix(), n_wires - 1))
-    oplist.append(PauliZ.matrix())
+    oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
+    oplist.append(PauliZ.compute_matrix())
 
     ctrl_str = "0" * (n_wires - 1)
     CX = MultiControlledX(

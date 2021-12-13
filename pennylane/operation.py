@@ -416,7 +416,7 @@ class Operator(abc.ABC):
 
         return mat
 
-    def matrix(self, wire_order):
+    def matrix(self, wire_order=None):
         r"""Matrix representation of an instantiated operator
         in the computational basis.
 
@@ -466,9 +466,12 @@ class Operator(abc.ABC):
         >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
 
         Returns:
-            array: eigenvalue representation
+            array: eigenvalue representation or None
         """
-        return np.linalg.eigvals(cls._matrix(*params))
+        mat = cls._matrix(*params)
+        if mat is None:
+            return None
+        return np.linalg.eigvals(mat)
 
     @property
     def eigvals(self):

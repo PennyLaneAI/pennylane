@@ -279,7 +279,7 @@ class TestControlledQubitUnitary:
 
         # We now need to swap wires so that the control wires are [1, 3] and the target wires are
         # [2, 0]
-        swap = qml.SWAP.matrix()
+        swap = qml.SWAP.compute_matrix()
 
         # initial wire permutation: 0123
         # target wire permutation: 1302
