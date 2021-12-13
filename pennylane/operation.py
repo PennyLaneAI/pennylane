@@ -538,8 +538,6 @@ class Operator(abc.ABC):
     @property
     def hyperparameters(self):
         """Non-trainable variables that define this operation."""
-        # TODO [Maria/Josh]: this is a placeholder; in future we want to
-        # define hyperparameters for all ops, even if they overwrite init
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
         return {}
