@@ -586,7 +586,7 @@ class Operator(abc.ABC):
         return self.decomposition(*self.parameters, wires=self.wires)
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         r"""Defines a partial representation of this operator as
         an eigendecompisition.
 

@@ -58,7 +58,7 @@ class Identity(CVObservable, Operation):
         return np.array([1, 0, 0])
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         return []
 
     @staticmethod

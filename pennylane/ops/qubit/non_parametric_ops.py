@@ -62,7 +62,7 @@ class Hadamard(Observable, Operation):
         return cls.eigvals
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         r"""Rotates the specified wires such that they
         are in the eigenbasis of the Hadamard operator.
 
@@ -130,7 +130,7 @@ class PauliX(Observable, Operation):
         return cls.eigvals
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         r"""Rotates the specified wires such that they
         are in the eigenbasis of the Pauli-X operator.
 
@@ -199,7 +199,7 @@ class PauliY(Observable, Operation):
         return cls.eigvals
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         r"""Rotates the specified wires such that they
         are in the eigenbasis of PauliY.
 
@@ -274,7 +274,7 @@ class PauliZ(Observable, Operation):
         return cls.eigvals
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         return []
 
     @staticmethod

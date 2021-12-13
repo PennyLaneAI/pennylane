@@ -262,5 +262,5 @@ class Projector(Observable):
         return w
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
         return []
