@@ -9,7 +9,6 @@
 * Insert transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
-
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
