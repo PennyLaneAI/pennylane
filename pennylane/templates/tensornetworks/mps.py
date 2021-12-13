@@ -48,8 +48,8 @@ class MPS(Operation):
         Args:
             wires (Iterable):  wires that the template acts on
             loc (int): number of wires that each  block acts on
-            block: quantum circuit that compose each block
-            n_params_block (Integer):
+            block (Callable): quantum circuit that composes each block
+            n_params_block (int):
             weights (tensor_like): weight tensor
         """
 
