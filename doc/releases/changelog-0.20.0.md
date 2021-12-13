@@ -74,7 +74,7 @@
   -2.2283086057521713
   ```
 
-* The `metric_tensor` transform can now be used to compute the full
+* The `qml.metric_tensor` transform can now be used to compute the full
   tensor, beyond the block diagonal approximation.
   [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
 
