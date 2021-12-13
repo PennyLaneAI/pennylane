@@ -363,16 +363,6 @@
   For more details on usage, reconstruction cost and differentiability support, please see the
   [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.reconstruct.html).
 
-<h4>Manipulate QNodes to your ❤️s content with new transforms</h4>
-
-* The `merge_amplitude_embedding` transformation has been created to
-  automatically merge all gates of this type into one.
-  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
-
-* The `undo_swaps` transformation has been created to automatically remove all
-  swaps of a circuit.
-  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
-
 <h4>State-of-the-art operations and templates</h4>
 
 * The `qml.Barrier()` operator has been added. With it we can separate blocks
@@ -423,6 +413,58 @@
 * A thermal relaxation channel is added to the Noisy channels. The channel description can be
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
+
+<h4>Manipulate QNodes to your ❤️s content with new transforms</h4>
+
+* The `merge_amplitude_embedding` transformation has been created to
+  automatically merge all gates of this type into one.
+  [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+  ```python
+  from pennylane.transforms import merge_amplitude_embedding
+
+  @merge_amplitude_embedding
+  def qfunc():
+
+      qml.AmplitudeEmbedding([0,1,0,0], wires = [0,1])
+      qml.AmplitudeEmbedding([0,1], wires = 2)
+
+      return qml.expval(qml.PauliZ(wires = 0))
+
+  dev = qml.device("default.qubit", wires = 3)
+  qnode = qml.QNode(qfunc, dev)
+  print(qml.draw(qnode)())
+  ```
+  ```pycon
+   0: ──╭AmplitudeEmbedding(M0)──┤ ⟨Z⟩
+   1: ──├AmplitudeEmbedding(M0)──┤
+   2: ──╰AmplitudeEmbedding(M0)──┤
+   M0 =
+   [0.+0.j 0.+0.j 0.+0.j 1.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j]
+  ```
+
+* The `undo_swaps` transformation has been created to automatically remove all
+  swaps of a circuit.
+  [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+  ```python
+  dev = qml.device('default.qubit', wires=3)
+
+  @qml.qnode(dev)
+  @qml.transforms.undo_swaps
+  def qfunc():
+      qml.Hadamard(wires=0)
+      qml.PauliX(wires=1)
+      qml.SWAP(wires=[0,1])
+      qml.SWAP(wires=[0,2])
+      qml.PauliY(wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  print(qml.draw(qfunc)())
+  ```
+  ```pycon
+   0: ──Y──┤ ⟨Z⟩
+   1: ──H──┤
+   2: ──X──┤
+  ```
 
 <h3>Improvements</h3>
 
