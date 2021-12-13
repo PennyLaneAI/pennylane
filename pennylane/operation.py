@@ -582,7 +582,7 @@ class Operator(abc.ABC):
         form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
 
-        Returns None if this operator does not define its diagonalizing gates.
+        Returns `None` if this operator does not define its diagonalizing gates.
 
         Returns:
             list(qml.Operator): A list of operators.
