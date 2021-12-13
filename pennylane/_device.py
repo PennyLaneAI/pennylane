@@ -816,7 +816,7 @@ class Device(abc.ABC):
         if isinstance(operation, str):
 
             if operation.endswith(".inv"):
-                in_ops = operation[: -4] in self.operations
+                in_ops = operation[:-4] in self.operations
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
                     "supports_inverse_operations", False
@@ -848,7 +848,7 @@ class Device(abc.ABC):
 
             # This check regards observables that are also operations
             if observable.endswith(".inv"):
-                return self.supports_operation(observable[: -4])
+                return self.supports_operation(observable[:-4])
 
             return observable in self.observables
 
