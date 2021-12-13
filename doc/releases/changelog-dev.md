@@ -8,27 +8,34 @@
 
   An example circuit that uses the `MPS` template is:
   ```python
-  def block(weights, wires):
-    qml.CNOT(wires=[wires[0],wires[1]])
-    qml.RY(weights[0],wires=wires[0])
-    qml.RY(weights[1],wires=wires[1])
+  import pennylane as qml
+  import numpy as np
 
-  weights = np.array([[1,2],[3,4],[5,6]])
-  dev = qml.device('default.qubit',wires=4)
+  def block(block_weights, block_wires):
+      qml.CNOT(wires=[block_wires[0],block_wires[1]])
+      qml.Rot(block_weights[0],block_weights[1],block_weights[2],wires=block_wires[0])
+      qml.Rot(block_weights[3],block_weights[4],block_weights[5],wires=block_wires[1])
+
+  n_wires = 4
+  loc = 2
+  n_params_block = 6
+  template_weights = [[1,2,3,4,5,6],[3,4,5,6,7,8],[4,5,6,7,8,9]]
+
+  dev= qml.device('default.qubit',wires=n_wires)
   @qml.qnode(dev)
   def circuit(weights):
-    qml.MPS(wires=range(4),loc=2,block=block,n_params_block=2,weights=weights)
-    return qml.expval(qml.PauliZ(wires=3))
+      qml.MPS(wires = range(n_wires),loc=loc,block=block, n_params_block=n_params_block, weights=weights)
+      return qml.expval(qml.PauliZ(wires=n_wires-1))
+
+  
   ```
-  Running this circuit gives:
+  The resulting circuit is:
   ```pycon
-  >>> circuit(weights)
-  tensor(0.26117758, requires_grad=True)
-  >>> print(qml.draw(circuit)(weights))
-  0: ──╭C──RY(1)────────────────────────┤     
-  1: ──╰X──RY(2)──╭C──RY(3)─────────────┤     
-  2: ─────────────╰X──RY(4)──╭C──RY(5)──┤     
-  3: ────────────────────────╰X──RY(6)──┤ ⟨Z⟩
+  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+  0: ──╭C──Rot(1, 2, 3)──────────────────────────────────────┤
+  1: ──╰X──Rot(4, 5, 6)──╭C──Rot(3, 4, 5)────────────────────┤
+  2: ────────────────────╰X──Rot(6, 7, 8)──╭C──Rot(4, 5, 6)──┤
+  3: ──────────────────────────────────────╰X──Rot(7, 8, 9)──┤ ⟨Z⟩
   ```
 
 <h3>Improvements</h3>
@@ -48,4 +55,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo
+Olivia Di Matteo, Juan Miguel Arrazola, Esther Cruz,  Diego Guala, Shaoming Zhang
