@@ -1868,16 +1868,7 @@ def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing
     gates are defined."""
 
-    # We need to stop the tape so that the diagonalizing gates
-    # are not queued when we check if they are defined.
-    # Reassess this when queueing system is overhauled
-    tape = qml.tape.get_active_tape()
-    if tape is not None:
-        with tape.stop_recording():
-            dgates = obj.diagonalizing_gates()
-    else:
+    with qml.tape.stop_recording():
         dgates = obj.diagonalizing_gates()
 
-    if dgates is None:
-        return False
-    return True
+    return dgates is not None
