@@ -97,32 +97,27 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_params = 3  # template has two trainable parameters
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = None
 
     def __init__(self, hamiltonian, time, n, do_queue=True, id=None):
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
             raise ValueError(
-                "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                    type(hamiltonian).__name__
-                )
+                f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
             )
 
         # extract the wires that the op acts on
         wire_list = [term.wires for term in hamiltonian.ops]
-        unique_wires = list(set(wire_list))
+        wires = qml.wires.Wires.all_wires(wire_list)
 
         # non-trainable and non-numeric parameters are stored as
         # attributes
         self.hamiltonian = hamiltonian
         self.n = n
-        self.num_params = len(hamiltonian.data) + 1
 
         # trainable parameters are passed to the base init method
-        super().__init__(*hamiltonian.data, time, wires=unique_wires, do_queue=do_queue, id=id)
+        super().__init__(*hamiltonian.data, time, wires=wires, do_queue=do_queue, id=id)
 
     def expand(self):
 
@@ -148,7 +143,7 @@ class ApproxTimeEvolution(Operation):
 
             except KeyError as error:
                 raise ValueError(
-                    "hamiltonian must be written in terms of Pauli matrices, got {}".format(error)
+                    f"hamiltonian must be written in terms of Pauli matrices, got {error}"
                 ) from error
 
             # skips terms composed solely of identities

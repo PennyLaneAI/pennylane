@@ -20,7 +20,7 @@ undergoing cosmetic changes.
 import pathlib
 import matplotlib.pyplot as plt
 
-from pennylane.circuit_drawer import MPLDrawer
+from pennylane.drawer import MPLDrawer, use_style
 
 folder = pathlib.Path(__file__).parent
 
@@ -100,53 +100,40 @@ def CNOT(savefile="cnot.png"):
 
 
 def SWAP(savefile="SWAP.png"):
-    drawer = MPLDrawer(n_wires=2, n_layers=1)
+    drawer = MPLDrawer(n_wires=2, n_layers=2)
 
     drawer.SWAP(0, (0, 1))
-    plt.savefig(folder / savefile)
-    plt.close()
 
+    swap_options = {"linewidth": 2, "color": "indigo"}
+    drawer.SWAP(1, (0, 1), options=swap_options)
 
-def SWAP_formatted(savefile="SWAP_formatted.png"):
-    swap_keywords = {"linewidth": 2, "color": "indigo"}
-
-    drawer = MPLDrawer(n_wires=2, n_layers=1)
-
-    drawer.SWAP(0, (0, 1), options=swap_keywords)
     plt.savefig(folder / savefile)
     plt.close()
 
 
 def measure(savefile="measure.png"):
-    drawer = MPLDrawer(n_wires=1, n_layers=1)
+    drawer = MPLDrawer(n_wires=2, n_layers=1)
+    drawer.measure(layer=0, wires=0)
 
-    drawer.measure(0, 0)
+    measure_box = {'facecolor': 'white', 'edgecolor': 'indigo'}
+    measure_lines = {'edgecolor': 'indigo', 'facecolor': 'plum', 'linewidth': 2}
+    drawer.measure(layer=0, wires=1, box_options=measure_box, lines_options=measure_lines)
+
     plt.savefig(folder / savefile)
     plt.close()
-
-
-def measure_formatted(savefile="measure_formatted.png"):
-    drawer = MPLDrawer(n_wires=1, n_layers=1)
-
-    measure_box = {"facecolor": "white", "edgecolor": "indigo"}
-    measure_lines = {"edgecolor": "indigo", "facecolor": "plum", "linewidth": 2}
-    drawer.measure(0, 0, box_options=measure_box, lines_options=measure_lines)
-    plt.savefig(folder / savefile)
-    plt.close()
-
 
 def integration(style="default", savefile="example_basic.png"):
-    plt.style.use(style)
-    drawer = MPLDrawer(n_wires=5, n_layers=5)
+    use_style(style)
+    drawer = MPLDrawer(n_wires=5, n_layers=6)
 
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers", text_options={"rotation": "vertical"})
-    drawer.box_gate(1, [0, 1], "U(θ)")
+    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
+    drawer.box_gate(1, [0, 2, 3], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
 
-    drawer.SWAP(1, (2, 3))
+    drawer.SWAP(2, (3,4))
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
@@ -165,23 +152,28 @@ def integration(style="default", savefile="example_basic.png"):
 
 
 def integration_rcParams(savefile="example_rcParams.png"):
-    plt.rcParams["patch.facecolor"] = "white"
-    plt.rcParams["patch.edgecolor"] = "black"
-    plt.rcParams["patch.linewidth"] = 2
-    plt.rcParams["patch.force_edgecolor"] = True
-
-    plt.rcParams["lines.color"] = "black"
+    plt.rcParams['patch.facecolor'] = 'mistyrose'
+    plt.rcParams['patch.edgecolor'] = 'maroon'
+    plt.rcParams['text.color'] = 'maroon'
+    plt.rcParams['font.weight'] = 'bold'
+    plt.rcParams['patch.linewidth'] = 4
+    plt.rcParams['patch.force_edgecolor'] = True
+    plt.rcParams['lines.color'] = 'indigo'
+    plt.rcParams['lines.linewidth'] = 5
+    plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
     drawer = MPLDrawer(n_wires=5, n_layers=5)
 
+    drawer = MPLDrawer(n_wires=5, n_layers=6)
+
     drawer.label(["0", "a", r"$|\Psi\rangle$", r"$|\theta\rangle$", "aux"])
 
-    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers", text_options={"rotation": "vertical"})
-    drawer.box_gate(1, [0, 1], "U(θ)")
+    drawer.box_gate(0, [0, 1, 2, 3, 4], "Entangling Layers")
+    drawer.box_gate(1, [0, 2, 3], "U(θ)")
 
     drawer.box_gate(1, 4, "Z")
 
-    drawer.SWAP(1, (2, 3))
+    drawer.SWAP(2, (3,4))
     drawer.CNOT(2, (0, 2))
 
     drawer.ctrl(3, [1, 3], control_values=[True, False])
@@ -251,11 +243,9 @@ if __name__ == "__main__":
     ctrl()
     CNOT()
     SWAP()
-    SWAP_formatted()
     measure()
-    measure_formatted()
     integration()
     float_layer()
-    integration(style="Solarize_Light2", savefile="example_Solarize_Light2.png")
+    integration(style="black_white", savefile="black_white_style.png")
     integration_rcParams()
     integration_formatted()

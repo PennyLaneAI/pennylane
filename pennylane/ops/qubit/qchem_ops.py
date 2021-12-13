@@ -77,15 +77,17 @@ class SingleExcitation(Operation):
         circuit(0.1)
     """
 
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -138,14 +140,16 @@ class SingleExcitationMinus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
 
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -212,14 +216,16 @@ class SingleExcitationPlus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
 
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -310,10 +316,7 @@ class DoubleExcitation(Operation):
 
         circuit(0.1)
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -321,6 +324,10 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -405,10 +412,7 @@ class DoubleExcitationPlus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
 
     G = -1 * np.eye(16, dtype=np.complex64)
@@ -417,6 +421,10 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -476,10 +484,7 @@ class DoubleExcitationMinus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
 
     G = np.eye(16, dtype=np.complex64)
@@ -488,6 +493,10 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -569,10 +578,7 @@ class OrbitalRotation(Operation):
                 0.99750208+0.j,  0.        +0.j,  0.        +0.j,
                 0.        +0.j])
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
@@ -599,6 +605,10 @@ class OrbitalRotation(Operation):
         -1 / 2,
     ]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
@@ -606,10 +616,17 @@ class OrbitalRotation(Operation):
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
 
         phi = params[0]
-        interface = qml.math.get_interface(phi)
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        z = qml.math.zeros([16], like=interface)
+
+        interface = qml.math.get_interface(phi)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([16]), phi)
+        else:
+            z = qml.math.zeros([16], like=interface)
 
         diag = qml.math.diag([1, c, c, c ** 2, c, 1, c ** 2, c, c, c ** 2, 1, c, c ** 2, c, c, 1])
 

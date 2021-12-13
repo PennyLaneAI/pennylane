@@ -21,7 +21,6 @@ import types
 import warnings
 
 import pennylane as qml
-from pennylane.beta import QNode
 
 
 class batch_transform:
@@ -289,7 +288,7 @@ class batch_transform:
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
             interface = qnode.interface
-            execute_kwargs = getattr(qnode, "execute_kwargs", {})
+            execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
             max_diff = execute_kwargs.pop("max_diff", 2)
             max_diff = transform_max_diff or max_diff
 
@@ -300,10 +299,12 @@ class batch_transform:
                 gradient_fn = None
 
             elif gradient_fn in ("best", "parameter-shift"):
-                gradient_fn = qml.gradients.param_shift
+                # TODO: remove when the old QNode is removed
+                gradient_fn = qml.gradients.param_shift  # pragma: no cover
 
             elif gradient_fn == "finite-diff":
-                gradient_fn = qml.gradients.finite_diff
+                # TODO: remove when the old QNode is removed
+                gradient_fn = qml.gradients.finite_diff  # pragma: no cover
 
             res = qml.execute(
                 tapes,
@@ -336,7 +337,7 @@ class batch_transform:
             # tapes, fn = some_transform(tape, *transform_args)
             return self._tape_wrapper(*targs, **tkwargs)(qnode)
 
-        if isinstance(qnode, (qml.QNode, QNode, qml.ExpvalCost)):
+        if isinstance(qnode, (qml.QNode, qml.qnode_old.QNode, qml.ExpvalCost)):
             # Input is a QNode:
             # result = some_transform(qnode, *transform_args)(*qnode_args)
             wrapper = self.qnode_wrapper(qnode, targs, tkwargs)

@@ -44,24 +44,24 @@ def _multi_dispatch(values):
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
-    * Vanilla NumPy arrays can be used alongside other tensor objects; they will
-      always be treated as non-differentiable constants.
+    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
+      they will always be treated as non-differentiable constants.
     """
     if "resource_variable" in getattr(values, "__module__", tuple()):
         values = np.asarray(values)
 
     interfaces = {get_interface(v) for v in values}
 
-    if len(set(interfaces) - {"numpy", "autograd"}) > 1:
+    if len(set(interfaces) - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
-    non_numpy_interfaces = set(interfaces) - {"numpy"}
+    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
 
-    if len(non_numpy_interfaces) > 1:
+    if len(non_numpy_scipy_interfaces) > 1:
         # contains autograd and another interface
         warnings.warn(
-            f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
+            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
@@ -235,7 +235,7 @@ def dot(tensor1, tensor2):
         if x.ndim <= 2 and y.ndim <= 2:
             return x @ y
 
-        return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     if interface == "tensorflow":
         if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
@@ -250,6 +250,36 @@ def dot(tensor1, tensor2):
         return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     return np.dot(x, y, like=interface)
+
+
+def tensordot(tensor1, tensor2, axes=None):
+    """Returns the tensor product of two tensors.
+    In general ``axes`` specifies either the set of axes for both
+    tensors that are contracted (with the first/second entry of ``axes``
+    giving all axis indices for the first/second tensor) or --- if it is
+    an integer --- the number of last/first axes of the first/second
+    tensor to contract over.
+    There are some non-obvious special cases:
+
+    * If both tensors are 0-dimensional, ``axes`` must be 0.
+      and a 0-dimensional scalar is returned containing the simple product.
+
+    * If both tensors are 1-dimensional and ``axes=0``, the outer product
+      is returned.
+
+    * Products between a non-0-dimensional and a 0-dimensional tensor are not
+      supported in all interfaces.
+
+    Args:
+        tensor1 (tensor_like): input tensor
+        tensor2 (tensor_like): input tensor
+        axes (int or list[list[int]]): Axes to contract over, see detail description.
+
+    Returns:
+        tensor_like: the tensor product of the two input tensors
+    """
+    interface = _multi_dispatch([tensor1, tensor2])
+    return np.tensordot(tensor1, tensor2, axes=axes, like=interface)
 
 
 def get_trainable_indices(values):
@@ -365,28 +395,73 @@ def stack(values, axis=0):
     return np.stack(values, axis=axis, like=interface)
 
 
-def where(condition, x, y):
-    """Returns elements chosen from x or y depending on a boolean tensor condition.
+def where(condition, x=None, y=None):
+    """Returns elements chosen from x or y depending on a boolean tensor condition,
+    or the indices of entries satisfying the condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
 
     Args:
-        condition (tensor_like[bool]): A boolean tensor. Where True, elements from
-            ``x`` will be chosen, otherwise ``y``.
+        condition (tensor_like[bool]): A boolean tensor. Where ``True`` , elements from
+            ``x`` will be chosen, otherwise ``y``. If ``x`` and ``y`` are ``None`` the
+            indices where ``condition==True`` holds will be returned.
         x (tensor_like): values from which to choose if the condition evaluates to ``True``
         y (tensor_like): values from which to choose if the condition evaluates to ``False``
 
     Returns:
-        tensor_like: A tensor with elements from ``x`` where the condition is ``True``, and
-        ``y`` otherwise. The output tensor has the same shape as the input tensors.
+        tensor_like or tuple[tensor_like]: If ``x is None`` and ``y is None``, a tensor
+        or tuple of tensors with the indices where ``condition`` is ``True`` .
+        Else, a tensor with elements from ``x`` where the ``condition`` is ``True``,
+        and ``y`` otherwise. In this case, the output tensor has the same shape as
+        the input tensors.
 
-    **Example**
+    **Example with three arguments**
 
     >>> a = torch.tensor([0.6, 0.23, 0.7, 1.5, 1.7], requires_grad=True)
     >>> b = torch.tensor([-1., -2., -3., -4., -5.], requires_grad=True)
     >>> math.where(a < 1, a, b)
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
+
+    .. warning::
+
+        The output format for ``x=None`` and ``y=None`` follows the respective
+        interface and differs between TensorFlow and all other interfaces:
+        For TensorFlow, the output is a tensor with shape
+        ``(num_true, len(condition.shape))`` where ``num_true`` is the number
+        of entries in ``condition`` that are ``True`` .
+        The entry at position ``(i, j)`` is the ``j`` th entry of the ``i`` th
+        index.
+        For all other interfaces, the output is a tuple of tensor-like objects,
+        with the ``j`` th object indicating the ``j`` th entries of all indices.
+        Also see the examples below.
+
+    **Example with single argument**
+
+    For Torch, Autograd, JAX and NumPy, the output formatting is as follows:
+
+    >>> a = [[0.6, 0.23, 1.7],[1.5, 0.7, -0.2]]
+    >>> math.where(torch.tensor(a) < 1)
+    (tensor([0, 0, 1, 1]), tensor([0, 1, 1, 2]))
+
+    This is not a single tensor-like object but corresponds to the shape
+    ``(2, 4)`` . For TensorFlow, on the other hand:
+
+    >>> math.where(tf.constant(a) < 1)
+    tf.Tensor(
+    [[0 0]
+     [0 1]
+     [1 1]
+     [1 2]], shape=(4, 2), dtype=int64)
+
+    As we can see, the dimensions are swapped and the output is a single Tensor.
+    Note that the number of dimensions of the output does *not* depend on the input
+    shape, it is always two-dimensional.
+
     """
+    if x is None and y is None:
+        interface = _multi_dispatch([condition])
+        return np.where(condition, like=interface)
+
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
 
 

@@ -21,7 +21,7 @@ import math
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, DiagonalOperation, Operation
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
@@ -50,12 +50,14 @@ class RX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -105,12 +107,14 @@ class RY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -134,7 +138,7 @@ class RY(Operation):
         return [0.0, self.data[0], 0.0]
 
 
-class RZ(DiagonalOperation):
+class RZ(Operation):
     r"""RZ(phi, wires)
     The single qubit Z rotation
 
@@ -154,12 +158,14 @@ class RZ(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -194,7 +200,7 @@ class RZ(DiagonalOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class PhaseShift(DiagonalOperation):
+class PhaseShift(Operation):
     r"""PhaseShift(phi, wires)
     Arbitrary single qubit local phase shift
 
@@ -214,12 +220,14 @@ class PhaseShift(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -262,7 +270,7 @@ class PhaseShift(DiagonalOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class ControlledPhaseShift(DiagonalOperation):
+class ControlledPhaseShift(Operation):
     r"""ControlledPhaseShift(phi, wires)
     A qubit controlled phase shift.
 
@@ -286,12 +294,14 @@ class ControlledPhaseShift(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -370,10 +380,12 @@ class Rot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 3
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 3
 
     @classmethod
     def _matrix(cls, *params):
@@ -428,7 +440,7 @@ class Rot(Operation):
         return self.data
 
 
-class MultiRZ(DiagonalOperation):
+class MultiRZ(Operation):
     r"""MultiRZ(theta, wires)
     Arbitrary multi Z rotation.
 
@@ -452,10 +464,12 @@ class MultiRZ(DiagonalOperation):
         theta (float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, theta, n):
@@ -551,11 +565,19 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
+
+    **Example**
+
+    >>> dev = qml.device('default.qubit', wires=1)
+    >>> @qml.qnode(dev)
+    ... def example_circuit():
+    ...     qml.PauliRot(0.5, 'X',  wires=0)
+    ...     return qml.expval(qml.PauliZ(0))
+    >>> print(example_circuit())
+    0.8775825618903724
     """
-    num_params = 2
     num_wires = AnyWires
     do_check_domain = False
-    par_domain = "R"
     grad_method = "A"
 
     _ALLOWED_CHARACTERS = "IXYZ"
@@ -566,25 +588,25 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-
-        pauli_word = params[1]
+    def __init__(self, theta, pauli_word, wires=None, do_queue=True):
+        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given Pauli word "{}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z".format(pauli_word)
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z"
             )
 
         num_wires = 1 if isinstance(wires, int) else len(wires)
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                "The given Pauli word has length {}, length {} was expected for wires {}".format(
-                    len(pauli_word), num_wires, wires
-                )
+                f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
+
+    @property
+    def num_params(self):
+        return 2
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -637,8 +659,8 @@ class PauliRot(Operation):
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
-                'The given Pauli word "{}" contains characters that are not allowed.'
-                " Allowed characters are I, X, Y and Z".format(pauli_word)
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
+                " Allowed characters are I, X, Y and Z"
             )
 
         theta = params[0]
@@ -650,9 +672,16 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if pauli_word == "I" * len(pauli_word):
-            return qml.math.array(
-                qml.math.exp(-1j * theta / 2) * qml.math.eye(2 ** len(pauli_word)), like=interface
-            )
+
+            exp = qml.math.exp(-1j * theta / 2)
+            iden = qml.math.eye(2 ** len(pauli_word))
+            if interface == "torch":
+                # Use convert_like to ensure that the tensor is put on the correct
+                # Torch device
+                iden = qml.math.convert_like(iden, theta)
+                return exp * iden
+
+            return qml.math.array(exp * iden, like=interface)
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -807,9 +836,7 @@ class CRX(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -818,6 +845,10 @@ class CRX(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
@@ -829,7 +860,13 @@ class CRX(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        z = qml.math.zeros([4], like=interface)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([4]), theta)
+        else:
+            z = qml.math.zeros([4], like=interface)
 
         if interface == "tensorflow":
             c = qml.math.cast_like(c, 1j)
@@ -900,9 +937,7 @@ class CRY(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -911,6 +946,10 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
@@ -922,7 +961,13 @@ class CRY(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        z = qml.math.zeros([4], like=interface)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([4]), theta)
+        else:
+            z = qml.math.zeros([4], like=interface)
 
         mat = qml.math.diag([1, 1, c, c])
         return mat + qml.math.stack(
@@ -947,7 +992,7 @@ class CRY(Operation):
         return Wires(self.wires[0])
 
 
-class CRZ(DiagonalOperation):
+class CRZ(Operation):
     r"""CRZ(phi, wires)
     The controlled-RZ operator
 
@@ -987,9 +1032,7 @@ class CRZ(DiagonalOperation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -998,6 +1041,10 @@ class CRZ(DiagonalOperation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
@@ -1079,11 +1126,13 @@ class CRot(Operation):
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
     """
-    num_params = 3
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+
+    @property
+    def num_params(self):
+        return 3
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
@@ -1172,11 +1221,13 @@ class U1(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -1231,10 +1282,12 @@ class U2(Operation):
         lambda (float): quantum phase :math:`\lambda`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
-    num_params = 2
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 2
 
     @classmethod
     def _matrix(cls, *params):
@@ -1305,10 +1358,12 @@ class U3(Operation):
         lambda (float): quantum phase :math:`\lambda`
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
-    num_params = 3
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
+
+    @property
+    def num_params(self):
+        return 3
 
     @classmethod
     def _matrix(cls, *params):
@@ -1374,15 +1429,17 @@ class IsingXX(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
 
     generator = [
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -1436,14 +1493,16 @@ class IsingYY(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1495,14 +1554,16 @@ class IsingZZ(Operation):
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    @property
+    def num_params(self):
+        return 1
 
     @staticmethod
     def decomposition(phi, wires):

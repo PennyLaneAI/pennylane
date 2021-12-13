@@ -16,7 +16,6 @@ This module contains templates, which are pre-coded routines that can be used in
 """
 
 from .broadcast import *
-from .decorator import *
 from .layer import *
 from .layers import *
 from .embeddings import *

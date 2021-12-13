@@ -15,6 +15,7 @@
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
+import warnings
 import numpy as np
 
 from pennylane.operation import AnyWires, Channel
@@ -50,10 +51,12 @@ class AmplitudeDamping(Channel):
         gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -111,10 +114,12 @@ class GeneralizedAmplitudeDamping(Channel):
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 2
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 2
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -164,10 +169,12 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -223,11 +230,13 @@ class DepolarizingChannel(Channel):
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -272,11 +281,13 @@ class BitFlip(Channel):
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -339,10 +350,12 @@ class ResetError(Channel):
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 2
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 2
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -363,6 +376,102 @@ class ResetError(Channel):
         K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
         K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
         return [K0, K1, K2, K3, K4]
+
+
+class PauliError(Channel):
+    r"""PauliError(operators, p, wires)
+    Arbitrary number qubit, arbitrary Pauli operator error channel.
+
+    This channel is modelled by the following Kraus matrices:
+
+    .. math::
+        K_0 = \sqrt{1-p} * I
+
+    .. math::
+        K_1 = \sqrt{p} * (K_{w0} \otimes K_{w1} \otimes \dots K_{wn})
+
+    Where :math:`I` is the Identity,
+    and :math:`\otimes` denotes the Kronecker Product,
+    and :math:`K_{wi}` denotes the Kraus matrix corresponding to the operator acting on wire :math:`wi`,
+    and :math:`p` denotes the probability with which the channel is applied.
+
+    .. warning::
+
+        The size of the Kraus matrices for PauliError scale exponentially
+        with the number of wires, the channel acts on. Simulations with
+        PauliError can result in a significant increase in memory and
+        computational usage. Use with caution!
+
+    **Details:**
+
+    * Number of wires: Any (the operation can act on any number of wires)
+    * Number of parameters: 3
+
+    Args:
+        operators (str): The Pauli operators acting on the specified (groups of) wires
+        p (float): The probability of the operator being applied
+        wires (Sequence[int] or int): The wires the channel acts on
+
+    **Example:**
+
+    >>> pe = PauliError("X", 0.5, wires=0)
+    >>> km = pe.kraus_matrices
+    >>> km[0]
+    array([[0.70710678, 0.        ],
+           [0.        , 0.70710678]])
+    >>> km[1]
+        array([[0.        , 0.70710678],
+               [0.70710678, 0.        ]])
+    """
+
+    num_params = 2
+    num_wires = AnyWires
+    par_domain = "L"
+
+    ops = {
+        "X": np.array([[0, 1], [1, 0]]),
+        "Y": np.array([[0, -1j], [1j, 0]]),
+        "Z": np.array([[1, 0], [0, -1]]),
+    }
+
+    def __init__(self, *params, wires=None, do_queue=True):
+        super().__init__(*params, wires=wires, do_queue=do_queue)
+        operators, p = params[0], params[1]
+
+        # check if the specified operators are legal
+        if not all(c in "XYZ" for c in operators):
+            raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
+
+        # check if probabilities are legal
+        if not 0.0 <= p <= 1.0:
+            raise ValueError("p must be between [0,1]")
+
+        # check if the number of operators matches the number of wires
+        if len(self.wires) != len(operators):
+            raise ValueError("The number of operators must match the number of wires")
+
+        nq = len(self.wires)
+
+        if nq > 20:
+            warnings.warn(
+                f"The resulting Kronecker matrices will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory for each matrix."
+            )
+
+    @classmethod
+    def _kraus_matrices(cls, *params):
+        operators, p = params[0], params[1]
+
+        nq = len(operators)
+
+        # K0 is sqrt(1-p) * Identity
+        K0 = np.sqrt(1 - p) * np.eye(2 ** nq)
+
+        # K1 is composed by Kraus matrices of operators
+        K1 = np.sqrt(p) * np.array([1])
+        for op in operators[::-1]:
+            K1 = np.kron(cls.ops[op], K1)
+
+        return [K0, K1]
 
 
 class PhaseFlip(Channel):
@@ -394,11 +503,13 @@ class PhaseFlip(Channel):
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 1
     num_wires = 1
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -429,9 +540,7 @@ class QubitChannel(Channel):
         K_list (list[array[complex]]): List of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
     """
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "L"
     grad_method = None
 
     def __init__(self, *params, wires=None, do_queue=True):
@@ -459,6 +568,10 @@ class QubitChannel(Channel):
         Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
+
+    @property
+    def num_params(self):
+        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -543,10 +656,12 @@ class ThermalRelaxationError(Channel):
         tg (float): the gate time for relaxation error.
         wires (Sequence[int] or int): the wire the channel acts on
     """
-    num_params = 4
     num_wires = 1
-    par_domain = "R"
     grad_method = "F"
+
+    @property
+    def num_params(self):
+        return 4
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -614,6 +729,7 @@ __qubit_channels__ = {
     "DepolarizingChannel",
     "BitFlip",
     "PhaseFlip",
+    "PauliError",
     "ResetError",
     "QubitChannel",
     "ThermalRelaxationError",

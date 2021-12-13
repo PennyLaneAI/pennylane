@@ -61,7 +61,7 @@ class CVNeuralNetLayers(Operation):
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable): wires that the template acts on
 
-    .. UsageDetails:
+    .. UsageDetails::
 
         **Parameter shapes**
 
@@ -80,9 +80,7 @@ class CVNeuralNetLayers(Operation):
 
     """
 
-    num_params = 11
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(
@@ -140,6 +138,10 @@ class CVNeuralNetLayers(Operation):
             id=id,
         )
 
+    @property
+    def num_params(self):
+        return 11
+
     def expand(self):
 
         with qml.tape.QuantumTape() as tape:
@@ -173,6 +175,9 @@ class CVNeuralNetLayers(Operation):
                 for i in range(len(self.wires)):
                     qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod
@@ -196,3 +201,8 @@ class CVNeuralNetLayers(Operation):
         )
 
         return shapes
+
+    def adjoint(self):
+        adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

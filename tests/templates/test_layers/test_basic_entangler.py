@@ -121,7 +121,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Weights tensor must be 2-dimensional"):
             circuit([1, 0])
 
-        with pytest.raises(ValueError, match="Weights tensor must have second dimension of length"):
+        with pytest.raises(ValueError, match="Weights tensor must have last dimension of length"):
             circuit([[1, 0], [1, 0]])
 
     def test_id(self):

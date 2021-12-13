@@ -43,11 +43,34 @@ class AngleEmbedding(Operation):
             with :math:`N\leq n`
         wires (Iterable): wires that the template acts on
         rotation (str): type of rotations used
+
+    Example:
+
+        Angle embedding encodes the features by using the specified rotation operation.
+
+        .. code-block:: python
+
+            dev = qml.device('default.qubit', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.AngleEmbedding(features=feature_vector, wires=range(3), rotation='Z')
+                qml.Hadamard(0)
+                return qml.probs(wires=range(3))
+
+            X = [1,2,3]
+
+        Here, we have also used rotation angles :class:`RZ`. If not specified, :class:`RX` is used as default.
+        The resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──RZ(1)──H──╭┤ Probs
+            1: ──RZ(2)─────├┤ Probs
+            2: ──RZ(3)─────╰┤ Probs
+
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, features, wires, rotation="X", do_queue=True, id=None):
@@ -65,6 +88,10 @@ class AngleEmbedding(Operation):
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

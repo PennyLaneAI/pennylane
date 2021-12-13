@@ -122,21 +122,23 @@ class FermionicSingleExcitation(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
     def __init__(self, weight, wires=None, do_queue=True, id=None):
         if len(wires) < 2:
-            raise ValueError("expected at least two wires; got {}".format(len(wires)))
+            raise ValueError(f"expected at least two wires; got {len(wires)}")
 
         shape = qml.math.shape(weight)
         if shape != ():
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
         super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

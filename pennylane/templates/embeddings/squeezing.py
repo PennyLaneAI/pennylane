@@ -44,11 +44,61 @@ class SqueezingEmbedding(Operation):
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    Example:
+
+        Depending on the ``method`` argument, the feature vector will be encoded in the phase or the amplitude.
+        The argument ``c`` will define the value of the other quantity.
+        The default values are :math:`0.1` for ``c`` and ``'amplitude'`` for ``method``.
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.SqueezingEmbedding(features=feature_vector, wires=range(3))
+                qml.QuadraticPhase(0.1, wires=1)
+                return qml.expval(qml.NumberOperator(wires=1))
+
+            X = [1, 2, 3]
+
+        >>> print(circuit(X))
+            13.018280763205285
+
+        And, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──S(1, 0.1)──────────┤
+            1: ──S(2, 0.1)──P(0.1)──┤ ⟨n⟩
+            2: ──S(3, 0.1)──────────┤
+
+        Using different parameters:
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=3)
+
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.SqueezingEmbedding(features=feature_vector, wires=range(3), method='phase', c=0.5)
+                qml.QuadraticPhase(0.1, wires=1)
+                return qml.expval(qml.NumberOperator(wires=1))
+
+            X = [1, 2, 3]
+
+        >>> print(circuit(X))
+            0.22319028857312428
+
+        And, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(X))
+            0: ──S(0.5, 1)──────────┤
+            1: ──S(0.5, 2)──P(0.1)──┤ ⟨n⟩
+            2: ──S(0.5, 3)──────────┤
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, features, wires, method="amplitude", c=0.1, do_queue=True, id=None):
@@ -74,6 +124,10 @@ class SqueezingEmbedding(Operation):
             raise ValueError(f"did not recognize method {method}")
 
         super().__init__(pars, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

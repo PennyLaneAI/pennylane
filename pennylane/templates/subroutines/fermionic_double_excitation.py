@@ -483,9 +483,7 @@ class FermionicDoubleExcitation(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -493,13 +491,13 @@ class FermionicDoubleExcitation(Operation):
 
         if len(wires1) < 2:
             raise ValueError(
-                "expected at least two wires representing the occupied orbitals; "
-                "got {}".format(len(wires1))
+                f"expected at least two wires representing the occupied orbitals; "
+                f"got {len(wires1)}"
             )
         if len(wires2) < 2:
             raise ValueError(
-                "expected at least two wires representing the unoccupied orbitals; "
-                "got {}".format(len(wires2))
+                f"expected at least two wires representing the unoccupied orbitals; "
+                f"got {len(wires2)}"
             )
 
         shape = qml.math.shape(weight)
@@ -511,6 +509,10 @@ class FermionicDoubleExcitation(Operation):
         wires = wires1 + wires2
 
         super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

@@ -63,10 +63,12 @@ class QFT(Operation):
 
         circuit_qft([1.0, 0.0, 0.0])
     """
-    num_params = 0
     num_wires = AnyWires
-    par_domain = None
     grad_method = None
+
+    @property
+    def num_params(self):
+        return 0
 
     @property
     def matrix(self):
@@ -113,4 +115,6 @@ class QFT(Operation):
         return decomp_ops
 
     def adjoint(self):
-        return QFT(wires=self.wires).inv()
+        adjoint_op = QFT(wires=self.wires)
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

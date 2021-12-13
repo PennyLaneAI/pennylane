@@ -20,7 +20,7 @@ import pytest
 from math import pi
 import numpy as np
 import pennylane as qml
-from pennylane.templates import template, broadcast
+from pennylane.templates import broadcast
 from pennylane.ops import RX, RY, T, S, Rot, CRX, CRot, CNOT
 from pennylane.templates.broadcast import wires_pyramid, wires_all_to_all, wires_ring
 from pennylane.wires import Wires

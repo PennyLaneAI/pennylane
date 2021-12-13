@@ -130,6 +130,33 @@ class TestDecomposition:
         # lower
         assert np.allclose(estimates[-1], phase, rtol=1e-2)
 
+    def test_adjoint(self):
+        """Test that the QPE adjoint works."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def qpe_circuit():
+
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=1)
+            qml.QuantumPhaseEstimation(
+                qml.PauliX.matrix,
+                target_wires=[0],
+                estimation_wires=[1, 2],
+            )
+
+            qml.adjoint(qml.QuantumPhaseEstimation)(
+                qml.PauliX.matrix,
+                target_wires=[0],
+                estimation_wires=[1, 2],
+            )
+            qml.Hadamard(wires=0)
+            qml.PauliX(wires=1)
+
+            return qml.state()
+
+        assert qml.math.isclose(qpe_circuit()[0], 1)
+
 
 class TestInputs:
     """Test inputs and pre-processing."""

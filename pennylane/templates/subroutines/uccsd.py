@@ -138,9 +138,7 @@ class UCCSD(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(
@@ -149,17 +147,13 @@ class UCCSD(Operation):
 
         if (not s_wires) and (not d_wires):
             raise ValueError(
-                "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
-                    s_wires, d_wires
-                )
+                f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
             )
 
         for d_wires_ in d_wires:
             if len(d_wires_) != 2:
                 raise ValueError(
-                    "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                        d_wires_, len(d_wires_)
-                    )
+                    f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
         shape = qml.math.shape(weights)
@@ -180,6 +174,10 @@ class UCCSD(Operation):
         self.init_state_flipped = np.flip(init_state)
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 

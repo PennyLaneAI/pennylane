@@ -144,7 +144,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=2)
         cache = {}
 
-        @qml.beta.qnode(dev, max_diff=3, cache=cache)
+        @qml.qnode(dev, max_diff=3, cache=cache)
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RY(x, wires=0)
@@ -160,6 +160,9 @@ class TestBatchTransform:
         fn(x)
         assert spy.call_args[1]["max_diff"] == 3
         assert spy.call_args[1]["cache"] is cache
+
+        # test that the QNode execution options remain unchanged
+        assert circuit.execute_kwargs["max_diff"] == 3
 
     def test_expand_fn(self, mocker):
         """Test that if an expansion function is provided,
@@ -210,7 +213,6 @@ class TestBatchTransform:
         transform_fn = qml.batch_transform(
             MyTransform().my_transform, expand_fn=self.expand_logic_with_kwarg
         )
-
         with qml.tape.QuantumTape() as tape:
             qml.PhaseShift(0.5, wires=0)
             qml.expval(qml.PauliX(0))
@@ -257,7 +259,6 @@ class TestBatchTransform:
 
         spy_transform.assert_called()
         spy_expand.assert_called()  # The expand_fn of transform_fn always is called
-
         input_tape = spy_transform.call_args[0][1]
         assert len(input_tape.operations) == 1
         assert input_tape.operations[0].name == ("RZ" if perform_expansion else "PhaseShift")
@@ -324,7 +325,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=1)
         dev = self.my_transform(dev, a, b)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
@@ -355,7 +356,7 @@ class TestBatchTransform:
         dev = qml.device("default.qubit", wires=1)
         dev = self.my_transform(a, b)(dev)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.Hadamard(wires=0)
             qml.RX(x, wires=0)
@@ -573,8 +574,8 @@ class TestBatchTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-        weights = torch.tensor([0.1, 0.2], requires_grad=True)
-        x = torch.tensor(0.543, requires_grad=True)
+        weights = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
+        x = torch.tensor(0.543, requires_grad=True, dtype=torch.float64)
 
         res = self.my_transform(qnode, weights)(x)
         expected = self.expval(x.detach().numpy(), weights.detach().numpy())

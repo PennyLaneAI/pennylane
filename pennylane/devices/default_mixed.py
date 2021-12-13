@@ -23,10 +23,12 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
-import numpy as np
-from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError
-from pennylane.operation import DiagonalOperation, Channel
+import pennylane.numpy as np
+import pennylane.math as qnp
+from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
+from pennylane.operation import Channel
 from pennylane.wires import Wires
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -56,8 +58,10 @@ class DefaultMixed(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Identity",
         "BasisState",
         "QubitStateVector",
+        "QubitDensityMatrix",
         "QubitUnitary",
         "ControlledQubitUnitary",
         "MultiControlledX",
@@ -91,6 +95,7 @@ class DefaultMixed(QubitDevice):
         "DepolarizingChannel",
         "BitFlip",
         "PhaseFlip",
+        "PauliError",
         "ResetError",
         "QubitChannel",
         "SingleExcitation",
@@ -208,7 +213,7 @@ class DefaultMixed(QubitDevice):
             the operation is unitary, returns a single Kraus operator. In the case of a diagonal
             unitary, returns a 1D array representing the matrix diagonal.
         """
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             return operation.eigvals
 
         if isinstance(operation, Channel):
@@ -274,16 +279,8 @@ class DefaultMixed(QubitDevice):
 
         # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
         einsum_indices = (
-            "{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
-            "{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}".format(
-                kraus_index=kraus_index,
-                new_col_indices=new_col_indices,
-                col_indices=col_indices,
-                state_indices=state_indices,
-                row_indices=row_indices,
-                new_row_indices=new_row_indices,
-                new_state_indices=new_state_indices,
-            )
+            f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
+            f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
 
         self._state = self._einsum(einsum_indices, kraus, self._state, kraus_dagger)
@@ -313,9 +310,7 @@ class DefaultMixed(QubitDevice):
         col_wires_list = [w + self.num_wires for w in row_wires_list]
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
 
-        einsum_indices = "{row_indices},{state_indices},{col_indices}->{state_indices}".format(
-            col_indices=col_indices, state_indices=state_indices, row_indices=row_indices
-        )
+        einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
         self._state = self._einsum(einsum_indices, eigvals, self._state, self._conj(eigvals))
 
@@ -389,6 +384,71 @@ class DefaultMixed(QubitDevice):
             rho = self._reshape(rho, [2] * 2 * self.num_wires)
             self._state = self._asarray(rho, dtype=self.C_DTYPE)
 
+    def _apply_density_matrix(self, state, device_wires):
+        r"""Initialize the internal state in a specified mixed state.
+        If not all the wires are specified in the full state :math:`\rho`, remaining subsystem is filled by
+        `\mathrm{tr}_in(\rho)`, which results in the full system state :math:`\mathrm{tr}_{in}(\rho) \otimes \rho_{in}`,
+        where :math:`\rho_{in}` is the argument `state` of this function and :math:`\mathrm{tr}_{in}` is a partial
+        trace over the subsystem to be replaced by this operation.
+
+           Args:
+               state (array[complex]): density matrix of length
+                   ``(2**len(wires), 2**len(wires))``
+               device_wires (Wires): wires that get initialized in the state
+        """
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(device_wires)
+
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        state = qnp.reshape(state, (-1,))
+
+        state_dim = 2 ** len(device_wires)
+        dm_dim = state_dim ** 2
+        if dm_dim != state.shape[0]:
+            raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
+
+        if not qnp.allclose(
+            qnp.trace(qnp.reshape(state, (state_dim, state_dim))), 1.0, atol=tolerance
+        ):
+            raise ValueError("Trace of density matrix is not equal one.")
+
+        if len(device_wires) == self.num_wires and sorted(device_wires.labels) == list(
+            device_wires.labels
+        ):
+            # Initialize the entire wires with the state
+            self._state = self._reshape(state, [2] * 2 * self.num_wires)
+
+        else:
+            # Initialize tr_in(ρ) ⊗ ρ_in with transposed wires where ρ is the density matrix before this operation.
+
+            complement_wires = list(sorted(list(set(range(self.num_wires)) - set(device_wires))))
+            sigma = self.density_matrix(Wires(complement_wires))
+            rho = qnp.kron(sigma, state.reshape(state_dim, state_dim))
+            rho = rho.reshape([2] * 2 * self.num_wires)
+
+            # Construct transposition axis to revert back to the original wire order
+            left_axes = []
+            right_axes = []
+            complement_wires_count = len(complement_wires)
+            for i in range(self.num_wires):
+                if i in device_wires:
+                    index = device_wires.index(i)
+                    left_axes.append(complement_wires_count + index)
+                    right_axes.append(complement_wires_count + index + self.num_wires)
+                elif i in complement_wires:
+                    index = complement_wires.index(i)
+                    left_axes.append(index)
+                    right_axes.append(index + self.num_wires)
+            transpose_axes = left_axes + right_axes
+            rho = qnp.transpose(rho, axes=transpose_axes)
+            assert qnp.allclose(
+                qnp.trace(qnp.reshape(rho, (2 ** self.num_wires, 2 ** self.num_wires))),
+                1.0,
+                atol=tolerance,
+            )
+            self._state = self._asarray(rho, dtype=self.C_DTYPE)
+
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
 
@@ -405,9 +465,13 @@ class DefaultMixed(QubitDevice):
             self._apply_basis_state(operation.parameters[0], wires)
             return
 
+        if isinstance(operation, QubitDensityMatrix):
+            self._apply_density_matrix(operation.parameters[0], wires)
+            return
+
         matrices = self._get_kraus(operation)
 
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)
         else:
             self._apply_channel(matrices, wires)
@@ -422,8 +486,8 @@ class DefaultMixed(QubitDevice):
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
+                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
+                    f"on a {self.short_name} device."
                 )
 
         for operation in operations:

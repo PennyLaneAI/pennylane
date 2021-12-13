@@ -1,12 +1,8 @@
 :orphan:
 
-# Release 0.20.0-dev (development release)
+# Release 0.21.0-dev (development release)
 
 <h3>New features since last release</h3>
-
-* A thermal relaxation channel is added to the Noisy channels. The channel description can be 
-  found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
-  [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
 * A tensor network template has been added. Quantum circuits with the shape of a matrix product state tensor network can now be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
@@ -37,26 +33,19 @@
 
 <h3>Improvements</h3>
 
-* AngleEmbedding now supports `batch_params` decorator. [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
-
 <h3>Breaking changes</h3>
-
-<h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
 
-* `qml.CSWAP` and `qml.CRot` now define `control_wires`, and `qml.SWAP` 
-  returns the default empty wires object.
-  [(#1830)](https://github.com/PennyLaneAI/pennylane/pull/1830)
-
-* The `requires_grad` attribute of `qml.numpy.tensor` objects is now
-  preserved when pickling/unpickling the object.
-  [(#1856)](https://github.com/PennyLaneAI/pennylane/pull/1856)
+* Fixes a bug in queueing of the `two_qubit_decomposition` method that
+  originally led to circuits with >3 two-qubit unitaries failing when passed
+  through the `unitary_to_rot` optimization transform.
+  [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
-This release contains contributions from (in alphabetical order): 
+This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Juan Miguel Arrazola, Esther Cruz, Diego Guala, Jalani Kanem, Christina Lee, Alejandro Montanez, Shaoming Zhang
+Olivia Di Matteo

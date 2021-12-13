@@ -227,17 +227,14 @@ class ParticleConservingU1(Operation):
             params = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
 
         if len(wires) < 2:
             raise ValueError(
-                "Expected the number of qubits to be greater than one; "
-                "got wires {}".format(wires)
+                f"Expected the number of qubits to be greater than one; " f"got wires {wires}"
             )
 
         shape = qml.math.shape(weights)
@@ -261,6 +258,10 @@ class ParticleConservingU1(Operation):
         self.init_state = qml.math.toarray(init_state)
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
 
@@ -293,6 +294,6 @@ class ParticleConservingU1(Operation):
 
         if n_wires < 2:
             raise ValueError(
-                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+                f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, n_wires - 1, 2

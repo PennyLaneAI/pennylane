@@ -365,12 +365,13 @@ class TestVQE:
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.diff_options["h"] == 123
-            assert qnode.diff_options["order"] == 2
+            assert qnode.gradient_kwargs["h"] == 123
+            assert qnode.gradient_kwargs["order"] == 2
 
     @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
-    def test_optimize(self, interface, tf_support, torch_support):
+    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
+    def test_optimize(self, interface, tf_support, torch_support, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
         if interface == "tf" and not tf_support:
@@ -378,7 +379,7 @@ class TestVQE:
         if interface == "torch" and not torch_support:
             pytest.skip("This test requires Torch")
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
         hamiltonian = big_hamiltonian
 
         cost = qml.ExpvalCost(
@@ -412,7 +413,7 @@ class TestVQE:
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
-        assert np.allclose(c1, c2)
+        assert np.allclose(c1, c2, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize_multiple_terms(self, interface, tf_support, torch_support):
@@ -585,10 +586,11 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    def test_metric_tensor(self):
+    @pytest.mark.parametrize("approx", [None, "block-diag", "diag"])
+    def test_metric_tensor(self, approx):
         """Test that the metric tensor can be calculated."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         p = np.array([1.0, 1.0, 1.0])
 
         def ansatz(params, **kwargs):
@@ -599,7 +601,7 @@ class TestVQE:
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
         qnodes = qml.ExpvalCost(ansatz, h, dev)
-        mt = qml.metric_tensor(qnodes)(p)
+        mt = qml.metric_tensor(qnodes, approx=approx)(p)
         assert mt.shape == (3, 3)
         assert isinstance(mt, np.ndarray)
 
@@ -628,7 +630,7 @@ class TestVQE:
         assert np.allclose(res, exp)
 
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
-            qml.metric_tensor(qnodes)(w)
+            qml.metric_tensor(qnodes, approx="block-diag")(w)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""

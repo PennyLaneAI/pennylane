@@ -113,14 +113,12 @@ def _process_wires(wires, n_wires=None):
 
     else:
         raise ValueError(
-            "Expected type Wires, list, tuple, or dict for `wires`, got {}".format(type(wires))
+            f"Expected type Wires, list, tuple, or dict for `wires`, got {type(wires)}"
         )
 
     if len(wires) != n_wires:
         # check length consistency when all checking and cleaning are done.
-        raise ValueError(
-            "Length of `wires` ({}) does not match `n_wires` ({})".format(len(wires), n_wires)
-        )
+        raise ValueError(f"Length of `wires` ({len(wires)}) does not match `n_wires` ({n_wires})")
 
     return wires
 
@@ -213,8 +211,8 @@ def read_structure(filepath, outpath="."):
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                "Open Babel error. See the following Open Babel "
-                "output for details:\n\n {}\n{}".format(e.stdout, e.stderr)
+                f"Open Babel error. See the following Open Babel "
+                f"output for details:\n\n {e.stdout}\n{e.stderr}"
             ) from e
     else:
         copyfile(file_in, file_out)
@@ -292,16 +290,16 @@ def meanfield(
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
-            "The size of the array 'coordinates' has to be 3*len(symbols) = {};"
-            " got 'coordinates.size' = {}".format(3 * len(symbols), coordinates.size)
+            f"The size of the array 'coordinates' has to be 3*len(symbols) = {3 * len(symbols)};"
+            f" got 'coordinates.size' = {coordinates.size}"
         )
 
     package = package.strip().lower()
 
     if package not in ("psi4", "pyscf"):
         error_message = (
-            "Integration with quantum chemistry package '{}' is not available. \n Please set"
-            " 'package' to 'pyscf' or 'psi4'.".format(package)
+            f"Integration with quantum chemistry package '{package}' is not available. \n Please set"
+            f" 'package' to 'pyscf' or 'psi4'."
         )
         raise TypeError(error_message)
 
@@ -393,39 +391,34 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     else:
         if active_electrons <= 0:
             raise ValueError(
-                "The number of active electrons ({}) "
-                "has to be greater than 0.".format(active_electrons)
+                f"The number of active electrons ({active_electrons}) " f"has to be greater than 0."
             )
 
         if active_electrons > electrons:
             raise ValueError(
-                "The number of active electrons ({}) "
-                "can not be greater than the total "
-                "number of electrons ({}).".format(active_electrons, electrons)
+                f"The number of active electrons ({active_electrons}) "
+                f"can not be greater than the total "
+                f"number of electrons ({electrons})."
             )
 
         if active_electrons < mult - 1:
             raise ValueError(
-                "For a reference state with multiplicity {}, "
-                "the number of active electrons ({}) should be "
-                "greater than or equal to {}.".format(mult, active_electrons, mult - 1)
+                f"For a reference state with multiplicity {mult}, "
+                f"the number of active electrons ({active_electrons}) should be "
+                f"greater than or equal to {mult - 1}."
             )
 
         if mult % 2 == 1:
             if active_electrons % 2 != 0:
                 raise ValueError(
-                    "For a reference state with multiplicity {}, "
-                    "the number of active electrons ({}) should be even.".format(
-                        mult, active_electrons
-                    )
+                    f"For a reference state with multiplicity {mult}, "
+                    f"the number of active electrons ({active_electrons}) should be even."
                 )
         else:
             if active_electrons % 2 != 1:
                 raise ValueError(
-                    "For a reference state with multiplicity {}, "
-                    "the number of active electrons ({}) should be odd.".format(
-                        mult, active_electrons
-                    )
+                    f"For a reference state with multiplicity {mult}, "
+                    f"the number of active electrons ({active_electrons}) should be odd."
                 )
 
         ncore_orbs = (electrons - active_electrons) // 2
@@ -436,23 +429,20 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     else:
         if active_orbitals <= 0:
             raise ValueError(
-                "The number of active orbitals ({}) "
-                "has to be greater than 0.".format(active_orbitals)
+                f"The number of active orbitals ({active_orbitals}) " f"has to be greater than 0."
             )
 
         if ncore_orbs + active_orbitals > orbitals:
             raise ValueError(
-                "The number of core ({}) + active orbitals ({}) can not be "
-                "greater than the total number of orbitals ({})".format(
-                    ncore_orbs, active_orbitals, orbitals
-                )
+                f"The number of core ({ncore_orbs}) + active orbitals ({active_orbitals}) can not be "
+                f"greater than the total number of orbitals ({orbitals})"
             )
 
         homo = (electrons + mult - 1) / 2
         if ncore_orbs + active_orbitals <= homo:
             raise ValueError(
-                "For n_active_orbitals={}, there are no virtual orbitals "
-                "in the active space.".format(active_orbitals)
+                f"For n_active_orbitals={active_orbitals}, there are no virtual orbitals "
+                f"in the active space."
             )
 
         active = list(range(ncore_orbs, ncore_orbs + active_orbitals))
@@ -509,8 +499,8 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
 
     if mapping not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
-            "The '{}' transformation is not available. \n "
-            "Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'.".format(mapping)
+            f"The '{mapping}' transformation is not available. \n "
+            f"Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'."
         )
 
     # fermionic-to-qubit transformation of the Hamiltonian
@@ -631,8 +621,8 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
         extra_obsvbs = set(op.name) - {"PauliX", "PauliY", "PauliZ", "Identity"}
         if extra_obsvbs != set():
             raise ValueError(
-                "Expected only PennyLane observables PauliX/Y/Z or Identity, "
-                + "but also got {}.".format(extra_obsvbs)
+                f"Expected only PennyLane observables PauliX/Y/Z or Identity, "
+                f"but also got {extra_obsvbs}."
             )
 
         # Pauli axis names, note s[-1] expects only 'Pauli{X,Y,Z}'
@@ -644,7 +634,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
         else:
             term_str = " ".join(
                 [
-                    "{}{}".format(pauli, qubit_indexed_wires.index(wire))
+                    f"{pauli}{qubit_indexed_wires.index(wire)}"
                     for pauli, wire in zip(pauli_names, op.wires)
                     if pauli != "Identity"
                 ]
@@ -714,8 +704,8 @@ def convert_observable(qubit_observable, wires=None, tol=1e08):
         np.iscomplex(np.real_if_close(coef, tol=tol)) for coef in qubit_observable.terms.values()
     ):
         raise TypeError(
-            "The coefficients entering the QubitOperator must be real;"
-            " got complex coefficients in the operator {}".format(qubit_observable)
+            f"The coefficients entering the QubitOperator must be real;"
+            f" got complex coefficients in the operator {qubit_observable}"
         )
 
     return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
@@ -893,21 +883,19 @@ def excitations(electrons, orbitals, delta_sz=0):
 
     if not electrons > 0:
         raise ValueError(
-            "The number of active electrons has to be greater than 0 \n"
-            "Got n_electrons = {}".format(electrons)
+            f"The number of active electrons has to be greater than 0 \n"
+            f"Got n_electrons = {electrons}"
         )
 
     if orbitals <= electrons:
         raise ValueError(
-            "The number of active spin-orbitals ({}) "
-            "has to be greater than the number of active electrons ({}).".format(
-                orbitals, electrons
-            )
+            f"The number of active spin-orbitals ({orbitals}) "
+            f"has to be greater than the number of active electrons ({electrons})."
         )
 
     if delta_sz not in (0, 1, -1, 2, -2):
         raise ValueError(
-            "Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({}).".format(delta_sz)
+            f"Expected values for 'delta_sz' are 0, +/- 1 and +/- 2 but got ({delta_sz})."
         )
 
     # define the spin projection 'sz' of the single-particle states
@@ -964,15 +952,13 @@ def hf_state(electrons, orbitals):
 
     if electrons <= 0:
         raise ValueError(
-            "The number of active electrons has to be larger than zero; got 'electrons' = {}".format(
-                electrons
-            )
+            f"The number of active electrons has to be larger than zero; got 'electrons' = {electrons}"
         )
 
     if electrons > orbitals:
         raise ValueError(
-            "The number of active orbitals cannot be smaller than the number of active electrons;"
-            " got 'orbitals'={} < 'electrons'={}".format(orbitals, electrons)
+            f"The number of active orbitals cannot be smaller than the number of active electrons;"
+            f" got 'orbitals'={orbitals} < 'electrons'={electrons}"
         )
 
     state = np.where(np.arange(orbitals) < electrons, 1, 0)
@@ -1023,28 +1009,22 @@ def excitations_to_wires(singles, doubles, wires=None):
 
     if (not singles) and (not doubles):
         raise ValueError(
-            "'singles' and 'doubles' lists can not be both empty;\
-            got singles = {}, doubles = {}".format(
-                singles, doubles
-            )
+            f"'singles' and 'doubles' lists can not be both empty; "
+            f"got singles = {singles}, doubles = {doubles}"
         )
 
     expected_shape = (2,)
     for single_ in singles:
         if np.array(single_).shape != expected_shape:
             raise ValueError(
-                "Expected entries of 'singles' to be of shape (2,); got {}".format(
-                    np.array(single_).shape
-                )
+                f"Expected entries of 'singles' to be of shape (2,); got {np.array(single_).shape}"
             )
 
     expected_shape = (4,)
     for double_ in doubles:
         if np.array(double_).shape != expected_shape:
             raise ValueError(
-                "Expected entries of 'doubles' to be of shape (4,); got {}".format(
-                    np.array(double_).shape
-                )
+                f"Expected entries of 'doubles' to be of shape (4,); got {np.array(double_).shape}"
             )
 
     max_idx = 0
@@ -1056,7 +1036,7 @@ def excitations_to_wires(singles, doubles, wires=None):
     if wires is None:
         wires = range(max_idx + 1)
     elif len(wires) != max_idx + 1:
-        raise ValueError("Expected number of wires is {}; got {}".format(max_idx + 1, len(wires)))
+        raise ValueError(f"Expected number of wires is {max_idx + 1}; got {len(wires)}")
 
     singles_wires = []
     for r, p in singles:
