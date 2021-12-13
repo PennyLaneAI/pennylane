@@ -32,6 +32,48 @@
   that allows one to perform gradient descent on the special unitary group.
   [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
 
+  ```python
+  >>> coeffs = [-1., -1., -1.]
+  >>> observables = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)]
+  >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
+  ```
+  Create an initial state and return the expectation value of the Hamiltonian:
+  ```python
+  >>> @qml.qnode(qml.device("default.qubit", wires=2))
+  ... def quant_fun():
+  ...     qml.RX(0.1, wires=[0])
+  ...     qml.RY(0.5, wires=[1])
+  ...     qml.CNOT(wires=[0,1])
+  ...     qml.RY(0.6, wires=[0])
+  ...     return qml.expval(hamiltonian)
+  ```
+  Instantiate the optimizer with the initial circuit and the cost function and
+  set the stepsize accordingly:
+  ```python
+  >>> opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1)
+  ```
+  Applying 5 steps gets us close the ground state of :math:`E\approx-2.23`:
+  ```python
+  >>> for step in range(6):
+  ...    circuit, cost = opt.step_and_cost()
+  ...    print(f"Step {step} - cost {cost}")
+  ```
+  ```pycon
+  Step 0 - cost -1.3351865007304005
+  Step 1 - cost -1.9937887238935206
+  Step 2 - cost -2.1524234485729834
+  Step 3 - cost -2.1955105378898487
+  Step 4 - cost -2.2137628169764256
+  Step 5 - cost -2.2234364822091575
+  ```
+  The optimized circuit is returned at each step, and can be used as any other QNode:
+  ```python
+  >>> circuit()
+  ```
+  ```pycon
+  -2.2283086057521713
+  ```
+
 * The `metric_tensor` transform can now be used to compute the full
   tensor, beyond the block diagonal approximation.
   [(#1725)](https://github.com/PennyLaneAI/pennylane/pull/1725)
