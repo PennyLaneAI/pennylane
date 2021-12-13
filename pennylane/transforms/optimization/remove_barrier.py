@@ -33,7 +33,7 @@ def remove_barrier(tape):
 
     .. code-block:: python
 
-        def qfunc(x, y, z):
+        def qfunc(x, y):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
             qml.Barrier(wires=[0,1])
