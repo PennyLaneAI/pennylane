@@ -61,6 +61,10 @@ class Identity(CVObservable, Operation):
         return []
 
     @staticmethod
+    def compute_decomposition(data, wires, hyperparameters):
+        return []
+
+    @staticmethod
     def identity_op(*params):
         """Returns the matrix representation of the identity operator."""
         return Identity._matrix(*params)
