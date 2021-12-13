@@ -17,6 +17,13 @@
 
 <h3>Documentation</h3>
 
+<h3>Operator class refactor</h3>
+
+The Operator class has undergone a major refactor with the following changes:
+
+* A `hyperparameters` attribute was added to the operator class.
+  [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
