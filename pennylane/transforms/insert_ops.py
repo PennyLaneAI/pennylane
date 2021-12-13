@@ -28,6 +28,7 @@ from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 
 def _check_position(position):
+"""Checks the position argument to determine if an operation or list of operations was provided."""
     not_op = False
     req_ops = False
     if isinstance(position, list):
