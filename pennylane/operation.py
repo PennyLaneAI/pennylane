@@ -1253,7 +1253,7 @@ class Tensor(Observable):
         Returns:
             list[Any]: flattened list containing all dependent parameters
         """
-        return sum((o.data for o in self.obs), start=[])
+        return sum((o.data for o in self.obs), [])
 
     @property
     def num_params(self):
