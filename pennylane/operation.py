@@ -610,7 +610,8 @@ class Operator(abc.ABC):
 
         *Example:*
 
-        >>> qml.PauliZ.compute_diagonalizing_gates(0.5, wires=1)
+        >>> qml.PauliX(wires="q1").diagonalizing_gates()
+        [Hadamard(wires=["q1"])]
 
         Returns:
             list(qml.Operator): A list of operators.
