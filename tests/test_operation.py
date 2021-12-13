@@ -92,6 +92,18 @@ class TestOperatorConstruction:
         op.name = "MyOp"
         assert op.name == "MyOp"
 
+    def test_default_hyperparams(self):
+        """Tests that the hyperparams attribute is defined for all operations."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        op = MyOp(wires=0)
+        assert op.hyperparameters == {}
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
