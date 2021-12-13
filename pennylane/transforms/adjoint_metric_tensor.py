@@ -104,8 +104,9 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
-    A mixture of a main forward pass and intermediate partial backwards passes is
-    used to evaluate the metric tensor in O(num_params^2) operations, using 4 state
+    A forward pass followed by intermediate partial backwards passes are
+    used to evaluate the metric tensor in :math:`\mathcal{O}(p^2)` operations,
+    where :math:`p` is the number of trainable operations, using 4 state
     vectors.
 
     .. note::

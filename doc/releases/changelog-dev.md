@@ -10,9 +10,9 @@
   This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
   a number of operations that scales quadratically in the number of trainable
-  parameters. As it makes use of state cloning it is inherently classical
+  parameters. As it makes use of state cloning, it is inherently classical
   and to be used on state vector simulators only.
-  It is particular useful for larger circuits for which back-propagation requires
+  It is particular useful for larger circuits for which backpropagation requires
   inconvenient or even unfeasible amounts of storage, but is slower.
   Furthermore, the adjoint method is only available for analytic computation, not
   for measurements simulation with `shots!=None`.
