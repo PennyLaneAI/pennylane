@@ -990,7 +990,7 @@ class MultiControlledX(Operation):
     def _matrix(self, *params):
         if self._CX is None:
             self._CX = block_diag(
-                np.eye(self._padding_left), PauliX.matrix(), np.eye(self._padding_right)
+                np.eye(self._padding_left), PauliX.compute_matrix(), np.eye(self._padding_right)
             )
 
         return self._CX

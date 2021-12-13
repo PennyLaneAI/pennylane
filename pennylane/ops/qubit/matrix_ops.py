@@ -212,36 +212,21 @@ class ControlledQubitUnitary(QubitUnitary):
 
         self._padding_left = control_int * len(U)
         self._padding_right = 2 ** len(wires) - len(U) - self._padding_left
-        self._CU = None
 
+        # TODO[MARIA]: decide if it is too costly to compute this at creation
+        interface = qml.math.get_interface(self.U)
+        left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
+        right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
+        cu = qml.math.block_diag([left_pad, self.U, right_pad])
+
+        # make a QubitUnitary from the controlled matrix
+        new_params = list(params)
+        new_params[0] = cu
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @property
     def num_params(self):
         return 1
-
-    def matrix(self, wire_order=None):
-        if self._CU is None:
-            interface = qml.math.get_interface(self.U)
-            left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
-            right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
-            self._CU = qml.math.block_diag([left_pad, self.U, right_pad])
-
-        params = self.parameters
-        params[0] = self._CU
-        return super()._matrix(*self.parameters, wires=self.wires, wire_order=wire_order)
-
-    # # TODO[MARIA]: this should be a static method
-    # def _matrix(self, *params):
-    #     if self._CU is None:
-    #         interface = qml.math.get_interface(self.U)
-    #         left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
-    #         right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
-    #         self._CU = qml.math.block_diag([left_pad, self.U, right_pad])
-    #
-    #     params = list(params)
-    #     params[0] = self._CU
-    #     return super()._matrix(*params)
 
     @property
     def control_wires(self):
