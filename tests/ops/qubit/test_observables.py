@@ -389,9 +389,7 @@ class TestProjector:
         diag_gates = qml.Projector(basis_state, wires=range(num_wires)).diagonalizing_gates()
         assert diag_gates == []
 
-        diag_gates_static = qml.Projector.compute_diagonalizing_gates(
-            wires=range(num_wires)
-        )
+        diag_gates_static = qml.Projector.compute_diagonalizing_gates(wires=range(num_wires))
         assert diag_gates_static == []
 
     def test_projector_exceptions(self):
