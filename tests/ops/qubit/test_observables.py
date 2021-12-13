@@ -390,7 +390,7 @@ class TestProjector:
         assert diag_gates == []
 
         diag_gates_static = qml.Projector.compute_diagonalizing_gates(
-            basis_state, wires=range(num_wires)
+            wires=range(num_wires)
         )
         assert diag_gates_static == []
 

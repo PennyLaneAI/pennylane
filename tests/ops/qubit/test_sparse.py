@@ -62,22 +62,6 @@ class TestSparse:
         assert H.label() == "𝓗"
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
-    def test_sparse_diagonalization(self, sparse_hamiltonian):
-        """Test that the projector has an empty list of diagonalizing gates."""
-        num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
-
-        diag_gates = qml.SparseHamiltonian(
-            sparse_hamiltonian, range(num_wires)
-        ).diagonalizing_gates()
-        assert diag_gates == []
-
-        diag_gates_static = qml.SparseHamiltonian.compute_diagonalizing_gates(
-            sparse_hamiltonian, wires=range(num_wires)
-        )
-        assert diag_gates_static == []
-
-    @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_typeerror(self, sparse_hamiltonian):
         """Test that the matrix property of the SparseHamiltonian class raises a TypeError on incorrect inputs."""
         num_wires = len(sparse_hamiltonian[0])

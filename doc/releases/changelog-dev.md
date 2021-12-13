@@ -29,6 +29,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 * A static `compute_diagonalizing_gates` method has been added, which is called 
   by default in `diagonalizing_gates()`.
+  [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
 
 This release contains contributions from (in alphabetical order):
 

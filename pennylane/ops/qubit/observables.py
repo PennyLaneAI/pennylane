@@ -176,10 +176,6 @@ class SparseHamiltonian(Observable):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
         return A
 
-    @staticmethod
-    def compute_diagonalizing_gates(sparse_hamiltonian, wires):
-        return []
-
 
 class Projector(Observable):
     r"""Projector(basis_state, wires)
@@ -266,5 +262,5 @@ class Projector(Observable):
         return w
 
     @staticmethod
-    def compute_diagonalizing_gates(basis_state, wires):
+    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
         return []

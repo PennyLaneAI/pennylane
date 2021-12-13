@@ -274,7 +274,7 @@ class PauliZ(Observable, Operation):
         return cls.eigvals
 
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
         return []
 
     @staticmethod

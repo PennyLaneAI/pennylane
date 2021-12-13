@@ -576,20 +576,21 @@ class Operator(abc.ABC):
         return self.decomposition(*self.parameters, wires=self.wires)
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires):
+    def compute_diagonalizing_gates(*params, wires=None, **hyperparams):
         r"""Defines a partial representation of this operator as
         an eigendecompisition.
 
         Multiplied together, the diagonalizing gates
-        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
+        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, where
+        :math:`\Sigma` is a diagonal matrix that contains the eigenvalues of :math:`O`.
 
         This is the static version of ``diagonalizing_gates``, which can be called
         on the class.
 
         *Example:*
 
-        >>> qml.PauliZ.compute_diagonalizing_gates(0.5, wires=1)
+        >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
+        [Hadamard(wires=["q1"])]
 
         Returns:
             list(qml.Operator): A list of operators.
@@ -606,6 +607,10 @@ class Operator(abc.ABC):
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
 
         Returns None if this operator does not define its diagonalizing gates.
+
+        *Example:*
+
+        >>> qml.PauliZ.compute_diagonalizing_gates(0.5, wires=1)
 
         Returns:
             list(qml.Operator): A list of operators.
