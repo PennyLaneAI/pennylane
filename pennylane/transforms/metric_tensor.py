@@ -358,13 +358,14 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
-        trainable_args = [qml.math.requires_grad(arg) for arg in args]
-        shape = qml.math.shape(args[trainable_args[0]])
-        cjac_hotfix = (
-            qnode.interface == "autograd"
-            and len(trainable_args) > 1
-            and all(qml.math.shape(args[i]) == shape for i in trainable_args[1:])
-        )
+        if qnode.interface == "autograd":
+            trainable_args = np.where([qml.math.requires_grad(arg) for arg in args])[0]
+            shape = qml.math.shape(args[trainable_args[0]])
+            cjac_hotfix = len(trainable_args) > 1 and all(
+                qml.math.shape(args[i]) == shape for i in trainable_args[1:]
+            )
+        else:
+            cjac_hotfix = False
 
         return _contract_metric_tensor_with_cjac(mt, cjac, cjac_hotfix)
 

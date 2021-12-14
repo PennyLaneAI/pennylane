@@ -203,7 +203,7 @@ def _rewind_metric_tensor_tape(tape, device):
     trainable_operations, group_after_trainable_op = _group_operations(tape)
 
     # generate and extract initial state
-    psi = device._create_basis_state(0)  # pylint: disable=protected-access
+    psi = device._create_basis_state(0)
     dim = 2 ** device.num_wires
 
     # initialize metric tensor components (which all will be real-valued)
@@ -229,6 +229,7 @@ def _rewind_metric_tensor_tape(tape, device):
         lam = psi * 1.0
         lam_real = qml.math.reshape(qml.math.real(lam), (dim,))
         lam_imag = qml.math.reshape(qml.math.imag(lam), (dim,))
+
         # this entry is missing a factor of 1j
         value = prefactor_1 * (qml.math.dot(lam_real, phi_real) + qml.math.dot(lam_imag, phi_imag))
         T = qml.math.scatter_element_add(T, (j,), value)
