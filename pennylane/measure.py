@@ -380,7 +380,8 @@ def sample(op=None, wires=None):
 def probs(wires=None, op=None):
     r"""Probability of each computational basis state.
 
-    This measurement function accepts no observables, and instead
+    This measurement function accepts either a wire specification or
+    an observable. Passing wires to the function
     instructs the QNode to return a flat array containing the
     probabilities :math:`|\langle i | \psi \rangle |^2` of measuring
     the computational basis state :math:`| i \rangle` given the current

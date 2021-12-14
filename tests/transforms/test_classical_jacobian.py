@@ -176,13 +176,21 @@ def test_tf_without_argnum(circuit, args, expected_jac, diff_method):
 def test_torch_without_argnum(circuit, args, expected_jac, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Torch."""
     torch = pytest.importorskip("torch")
-    args = tuple((torch.tensor(arg) for arg in args))
+    args = tuple((torch.tensor(arg, requires_grad=True) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="torch", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
+        assert np.allclose(_jac, _expected_jac)
+
+    # also test with an untrainable argument
+    args[0].requires_grad = False
+    jac = classical_jacobian(qnode)(*args)
+
+    assert len(jac) == len(expected_jac) - 1
+    for _jac, _expected_jac in zip(jac, expected_jac[1:]):
         assert np.allclose(_jac, _expected_jac)
 
 
