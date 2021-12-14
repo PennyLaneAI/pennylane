@@ -37,3 +37,4 @@ new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
     ~ops.qubit.attributes.self_inverses
     ~ops.qubit.attributes.symmetric_over_all_wires
     ~ops.qubit.attributes.symmetric_over_control_wires
+    ~ops.qubit.attributes.diagonal_in_z_basis
