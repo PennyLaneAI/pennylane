@@ -36,46 +36,33 @@
   [(#1911)](https://github.com/PennyLaneAI/pennylane/pull/1911)
 
   ```python
-  >>> coeffs = [-1., -1., -1.]
-  >>> observables = [qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)]
-  >>> hamiltonian = qml.Hamiltonian(coeffs, observables)
+  dev = qml.device("default.qubit", wires=2)
+  H = -1.0 * qml.PauliX(0) - qml.PauliZ(1) - qml.PauliY(0) @ qml.PauliX(1)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.RX(0.1, wires=[0])
+      qml.RY(0.5, wires=[1])
+      qml.CNOT(wires=[0,1])
+      qml.RY(0.6, wires=[0])
+      return qml.expval(H)
+  opt = qml.LieAlgebraOptimizer(circuit=circuit, stepsize=0.1)
   ```
-  Create an initial state and return the expectation value of the Hamiltonian:
-  ```python
-  >>> @qml.qnode(qml.device("default.qubit", wires=2))
-  ... def quant_fun():
-  ...     qml.RX(0.1, wires=[0])
-  ...     qml.RY(0.5, wires=[1])
-  ...     qml.CNOT(wires=[0,1])
-  ...     qml.RY(0.6, wires=[0])
-  ...     return qml.expval(hamiltonian)
-  ```
-  Instantiate the optimizer with the initial circuit and the cost function and
-  set the stepsize accordingly:
-  ```python
-  >>> opt = qml.LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1)
-  ```
-  Applying 5 steps gets us close the ground state of :math:`E\approx-2.23`:
-  ```python
-  >>> for step in range(6):
-  ...    circuit, cost = opt.step_and_cost()
-  ...    print(f"Step {step} - cost {cost}")
-  ```
+
+  Note that, unlike other optimizers, the `LieAlgebraOptimizer` accepts a QNode
+  with *no* parameters, and instead grows the circuit by appending operations
+  during the optimization:
+
   ```pycon
-  Step 0 - cost -1.3351865007304005
-  Step 1 - cost -1.9937887238935206
-  Step 2 - cost -2.1524234485729834
-  Step 3 - cost -2.1955105378898487
-  Step 4 - cost -2.2137628169764256
-  Step 5 - cost -2.2234364822091575
-  ```
-  The optimized circuit is returned at each step, and can be used as any other QNode:
-  ```python
   >>> circuit()
+  tensor(-1.3351865, requires_grad=True)
+  >>> circuit1, cost = opt.step_and_cost()
+  >>> circuit1()
+  tensor(-1.99378872, requires_grad=True)
   ```
-  ```pycon
-  -2.2283086057521713
-  ```
+
+  For more details, see the
+  [`qml.LieAlgebraOptimizer` documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.LieAlgebraOptimizer.html).
 
 * The `qml.metric_tensor` transform can now be used to compute the full
   tensor, beyond the block diagonal approximation.
@@ -377,7 +364,7 @@
   `CommutingEvolution`'s :math:`t` parameter, otherwise the shift rule for a decomposition of
   `CommutingEvolution` will be used.
 
-  The template can be initialized within a `qnode` as:
+  The template can be initialized within QNode as:
 
   ```python
   import pennylane as qml
@@ -417,27 +404,31 @@
   found on the supplementary information of [Quantum classifier with tailored quantum kernels](https://arxiv.org/abs/1909.02611).
   [(#1766)](https://github.com/PennyLaneAI/pennylane/pull/1766)
 
+* Added a new `qml.PauliError` channel that allows the application of an
+  arbitrary number of Pauli operators on an arbitrary number of wires.
+  [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
+
 <h4>Manipulate QNodes to your ❤️s content with new transforms</h4>
 
 * The `merge_amplitude_embedding` transformation has been created to
   automatically merge all gates of this type into one.
   [(#1933)](https://github.com/PennyLaneAI/pennylane/pull/1933)
+
   ```python
   from pennylane.transforms import merge_amplitude_embedding
 
+  dev = qml.device("default.qubit", wires = 3)
+  
+  @qml.qnode(dev)
   @merge_amplitude_embedding
   def qfunc():
-
       qml.AmplitudeEmbedding([0,1,0,0], wires = [0,1])
       qml.AmplitudeEmbedding([0,1], wires = 2)
-
       return qml.expval(qml.PauliZ(wires = 0))
-
-  dev = qml.device("default.qubit", wires = 3)
-  qnode = qml.QNode(qfunc, dev)
-  print(qml.draw(qnode)())
   ```
+
   ```pycon
+  >>> print(qml.draw(qnode)())
    0: ──╭AmplitudeEmbedding(M0)──┤ ⟨Z⟩
    1: ──├AmplitudeEmbedding(M0)──┤
    2: ──╰AmplitudeEmbedding(M0)──┤
@@ -448,6 +439,7 @@
 * The `undo_swaps` transformation has been created to automatically remove all
   swaps of a circuit.
   [(#1960)](https://github.com/PennyLaneAI/pennylane/pull/1960)
+
   ```python
   dev = qml.device('default.qubit', wires=3)
 
@@ -460,10 +452,10 @@
       qml.SWAP(wires=[0,2])
       qml.PauliY(wires=0)
       return qml.expval(qml.PauliZ(0))
-
-  print(qml.draw(qfunc)())
   ```
+  
   ```pycon
+  >>> print(qml.draw(qfunc)())
    0: ──Y──┤ ⟨Z⟩
    1: ──H──┤
    2: ──X──┤
@@ -553,17 +545,13 @@
 * `qml.circuit_drawer.tape_mpl` produces a matplotlib figure and axes given a tape.
   [(#1787)](https://github.com/PennyLaneAI/pennylane/pull/1787)
 
-* The AngleEmbedding, BasicEntanglerLayers and MottonenStatePreparation
-  templates now support the `batch_params` decorator.
+* The `AngleEmbedding`, `BasicEntanglerLayers` and `MottonenStatePreparation`
+  templates now support parameters with batch dimension when using the `@qml.batch_params` decorator.
   [(#1812)](https://github.com/PennyLaneAI/pennylane/pull/1812)
   [(#1883)](https://github.com/PennyLaneAI/pennylane/pull/1883)
   [(#1893)](https://github.com/PennyLaneAI/pennylane/pull/1893)
 
-* Added a new `qml.PauliError` channel that allows the application of an
-  arbitrary number of Pauli operators on an arbitrary number of wires.
-  [(#1781)](https://github.com/PennyLaneAI/pennylane/pull/1781)
-
-* CircuitDrawer now supports a `max_length` argument to help prevent text overflows when printing circuits to the CLI.
+* `qml.draw` now supports a `max_length` argument to help prevent text overflows when printing circuits.
   [(#1892)](https://github.com/PennyLaneAI/pennylane/pull/1892)
 
 * `Identity` operation is now part of both the `ops.qubit` and `ops.cv`
@@ -596,9 +584,11 @@
   be removed in the next release.
 
 * Certain features deprecated in `v0.19.0` have been removed:
+  [(#1981)](https://github.com/PennyLaneAI/pennylane/pull/1981)
+  [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
 
-  - The `qml.template` decorator (use a [`
-    QuantumTape`](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.tape.QuantumTape.html)
+  - The `qml.template` decorator (use a [
+    QuantumTape](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.tape.QuantumTape.html)
     as a context manager to record operations and its `operations` attribute to
     return them, see the linked page for examples);
   - The `default.tensor` and `default.tensor.tf` experimental devices;
@@ -606,7 +596,6 @@
     or `qml.fourier.qnode_spectrum` functions instead);
   - The `diag_approx` keyword argument of `qml.metric_tensor` and
     `qml.QNGOptimizer` (pass `approx='diag'` instead).
-  [(#1981)](https://github.com/PennyLaneAI/pennylane/pull/1981)
 
 * The default behaviour of the `qml.metric_tensor` transform has been modified.
   By default, the full metric tensor is computed, leading to higher cost than the previous
@@ -670,10 +659,6 @@
 
 * Fixes a bug with `qml.probs` when using `default.qubit.jax`.
   [(#1998)](https://github.com/PennyLaneAI/pennylane/pull/1998)
-
-* The init module, which contains functions to generate random parameters for
-  templates, has been removed. Instead, the templates provide a `shape()` method.
-  [(#1963)](https://github.com/PennyLaneAI/pennylane/pull/1963)
 
 * Fixes a bug where output tensors of a QNode would always be put on the
   default GPU with `default.qubit.torch`.
@@ -802,4 +787,4 @@ This release contains contributions from (in alphabetical order):
 Catalina Albornoz, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Samuel Banning, Benjamin Cordier, Alain Delgado,
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Jalani Kanem, Ankit Khandelwal, Nathan Killoran, Shumpei
 Kobayashi, Robert Lang, Christina Lee, Cedric Lin, Alejandro Montanez, Romain Moyard, Lee James O'Riordan, Chae-Yeun Park, Isidor Schoch,
-Maria Schuld, Jay Soni, Antal Száva, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann
+Maria Schuld, Jay Soni, Antal Száva, Rodrigo Vargas, David Wierichs, Roeland Wiersema, Moritz Willmann.
