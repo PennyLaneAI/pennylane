@@ -16,7 +16,6 @@ Tests for the MPS template.
 """
 import math
 import pytest
-import random
 import numpy as np
 import pennylane as qml
 from pennylane.templates.tensornetworks.mps import *
@@ -181,11 +180,20 @@ class TestTemplateOutputs:
         qml.RZ(weights[1][1], wires = wires[2])
         qml.RZ(weights[2][0], wires = wires[2])
         qml.RZ(weights[2][1], wires = wires[3])
+    def circuit2_block(weights, wires):
+        SELWeights = np.array([[[weights[0],weights[1],weights[2]],[weights[0],weights[1],weights[2]]]])
+        qml.StronglyEntanglingLayers(SELWeights,wires)
+    def circuit2_MPS(weights,wires):
+        SELWeights1 = np.array([[[weights[0][0],weights[0][1],weights[0][2]],[weights[0][0],weights[0][1],weights[0][2]]]])
+        SELWeights2 = np.array([[[weights[1][0],weights[1][1],weights[1][2]],[weights[1][0],weights[1][1],weights[1][2]]]])
+        qml.StronglyEntanglingLayers(SELWeights1,wires=wires[0:2])
+        qml.StronglyEntanglingLayers(SELWeights2,wires=wires[1:3])
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "template_weights", "expected_circuit"),
         [
             (circuit1_block, 2, [1,2,3,4], 2,  [[0.1,0.2],[-0.2,0.3],[0.3,0.4]],circuit1_MPS),
+            (circuit2_block, 3, [1,2,3], 2, [[0.1,0.2,0.3],[0.2,0.3,-0.4]],circuit2_MPS)
         ],
     )
     def test_output(self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit):
@@ -204,12 +212,3 @@ class TestTemplateOutputs:
 
         manual_result = circuit()
         assert np.isclose(template_result, manual_result)
-
-
-        
-
-    # def test_wire_n_block_wires_match_warning():
-    #     """Tests whether a warning is raised when the number of wires doesn't correspond to loc"""
-
-    # def test_list_array_weights():
-        # """Tests whether the template accepts both lists and numpy arrays as weights"""
