@@ -183,7 +183,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     For example, we can compute the gradient of the Frobenius norm of the metric tensor
     with respect to the QNode ``weights`` :
 
-    >>> norm_fn = lambda x: qml.math.linalg(mt_fn(x), ord="fro")
+    >>> norm_fn = lambda x: qml.math.linalg.norm(mt_fn(x), ord="fro")
     >>> grad_fn = qml.grad(norm_fn)
     >>> grad_fn(weights)
     array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
