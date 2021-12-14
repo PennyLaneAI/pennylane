@@ -29,7 +29,8 @@ def _get_generator(op):
     to matrix if necessary.
 
     Args:
-        op (:class:`~.Operation`): Operation to obtain the generator of.
+        op (.Operation): Operation to obtain the generator of.
+
     Returns:
         array[float]: Generator matrix
         float: Prefactor of the generator
@@ -59,11 +60,13 @@ def _apply_any_operation(state, op, device, invert=False):
         for _op in op:
             state = _apply_any_operation(state, _op, device, invert)
         return state
+
     if isinstance(op, qml.QubitStateVector):
         if invert:
             raise ValueError("Can't invert state preparation.")
         device._apply_state_vector(op.parameters[0], op.wires)
         return device._state
+
     if isinstance(op, qml.BasisState):
         if invert:
             raise ValueError("Can't invert state preparation.")
