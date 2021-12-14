@@ -499,12 +499,8 @@ class MultiRZ(Operation):
         return qml.math.diag(eigvals)
 
     def matrix(self, wire_order=None):
-        multi_Z_rot_eigs = self.eigvals(self.parameters[0], len(self.wires))
+        multi_Z_rot_eigs = self.eigvals
         multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
-
-        if self.inverse:
-            # The matrix is diagonal, so there is no need to transpose
-            multi_Z_rot_matrix = qml.math.conj(multi_Z_rot_matrix)
 
         # note: since the matrix is computed from attributes, we do not use the base matrix here
         return qml.operation.expand_matrix(
@@ -703,7 +699,7 @@ class PauliRot(Operation):
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        multi_Z_rot_matrix = MultiRZ._matrix(theta, range(len(non_identity_gates)))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, range(len(non_identity_gates)))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(

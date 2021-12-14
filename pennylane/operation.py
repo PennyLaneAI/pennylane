@@ -484,7 +484,7 @@ class Operator(abc.ABC):
         Returns:
             array: eigenvalue representation or None
         """
-        mat = cls._matrix(*params)
+        mat = cls.compute_matrix(*params)
         if mat is None:
             return None
         return np.linalg.eigvals(mat)

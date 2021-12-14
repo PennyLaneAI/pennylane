@@ -64,4 +64,4 @@ class Identity(CVObservable, Operation):
     @staticmethod
     def identity_op(*params):
         """Returns the matrix representation of the identity operator."""
-        return Identity._matrix(*params)
+        return Identity.compute_matrix(*params)

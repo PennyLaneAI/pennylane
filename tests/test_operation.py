@@ -19,6 +19,7 @@ import functools
 
 import pytest
 import numpy as np
+from pennylane import numpy as pnp
 from numpy.linalg import multi_dot
 
 import pennylane as qml
@@ -715,8 +716,8 @@ class TestTensor:
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
         res = O.matrix()
-        expected = np.kron(qml.PauliY._matrix(), H)
-        expected = np.kron(qml.PauliX._matrix(), expected)
+        expected = np.kron(qml.PauliY.compute_matrix(), H)
+        expected = np.kron(qml.PauliX.compute_matrix(), expected)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -726,7 +727,7 @@ class TestTensor:
         O = qml.PauliX(0) @ qml.PauliX(0)
 
         res = O.matrix()
-        expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
+        expected = qml.PauliX.compute_matrix() @ qml.PauliX.compute_matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1533,14 +1534,67 @@ class TestExpandMatrix:
         expected = np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
         assert np.allclose(expected, res)
 
-    def test_autograd(self):
-        """Tests differentiation in tensorflow"""
+    def test_autograd(self, tol):
+        """Tests differentiation in autograd by checking how a specific element of the expanded matrix depends on the
+        base matrix."""
+
+        def func(mat):
+            res = qml.operation.expand_matrix(mat, wires=[2], wire_order=[0, 2])
+            return res[0, 1]
+
+        base_matrix = pnp.array([[0.0, 1.0], [1.0, 0.0]], requires_grad=True)
+        grad_fn = qml.grad(func)
+        gradient = grad_fn(base_matrix)
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = np.array([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_torch(self, tol):
+        """Tests differentiation in torch by checking how a specific element of the expanded matrix depends on the
+        base matrix."""
         torch = pytest.importorskip("torch")
 
-        base_matrix = torch.tensor([[0, 1], [1, 0]])
+        base_matrix = torch.tensor([[0.0, 1.0], [1.0, 0.0]], requires_grad=True)
         res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[0, 2])
         element = res[0, 1]
-
         element.backward()
+        gradient = base_matrix.grad
 
-        assert np.allclose(expected, res)
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = torch.tensor([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_jax(self, tol):
+        """Tests differentiation in jax by checking how a specific element of the expanded matrix depends on the
+        base matrix."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        def func(mat):
+            res = qml.operation.expand_matrix(mat, wires=[2], wire_order=[0, 2])
+            return res[0, 1]
+
+        base_matrix = jnp.array([[0.0, 1.0], [1.0, 0.0]])
+        grad_fn = jax.grad(func)
+        gradient = grad_fn(base_matrix)
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = np.array([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_tf(self, tol):
+        """Tests differentiation in TensorFlow by checking how a specific element of the expanded matrix depends on the
+        base matrix."""
+        tf = pytest.importorskip("tensorflow")
+
+        base_matrix = tf.Variable([[0.0, 1.0], [1.0, 0.0]])
+        with tf.GradientTape() as tape:
+            res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[0, 2])
+            element = res[0, 1]
+
+        gradient = tape.gradient(element, base_matrix)
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = tf.constant([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)

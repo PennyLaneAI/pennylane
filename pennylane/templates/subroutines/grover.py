@@ -135,15 +135,19 @@ class GroverOperator(Operation):
 
         return tape
 
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        return mat
+    def matrix(self, wire_order):
 
+        # note: compute_matrix has a custom signature, which is why we need to overwrite this method
+        base_matrix = self.compute_matrix(self.wires)
+
+        if self.inverse:
+            base_matrix = qml.math.conj(qml.math.T(base_matrix))
+
+        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+
+    # pylint: disable=unused-argument
     @staticmethod
-    def _matrix(*params):
-        num_wires = params[0]
+    def compute_matrix(num_wires):
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
         s1 = np.array([1, 1]) / np.sqrt(2)

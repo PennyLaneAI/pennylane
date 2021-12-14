@@ -2276,7 +2276,7 @@ class TestApplyOperationUnit:
             num_wires = 1
 
             @staticmethod
-            def _matrix():
+            def compute_matrix(*params, **hyperparams):
                 return np.array([[1, 0], [0, 1j]])
 
         dev.operations.add("TestSGate")
@@ -2314,7 +2314,7 @@ class TestApplyOperationUnit:
             num_wires = 3
 
             @staticmethod
-            def _matrix(*params):
+            def compute_matrix(*params, **hyperparams):
                 return U_toffoli
 
         dev.operations.add("TestToffoli")

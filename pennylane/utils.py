@@ -85,7 +85,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     coeffs = []
 
     for term in itertools.product(paulis, repeat=n):
-        matrices = [i._matrix() for i in term]
+        matrices = [i.compute_matrix() for i in term]
         coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
         coeff = np.real_if_close(coeff).item()
 
