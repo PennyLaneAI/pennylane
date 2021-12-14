@@ -548,20 +548,17 @@ class Operator(abc.ABC):
         """Defines a decomposition of this operator into products of other operators.
 
         Returns:
-            list[Operator]
+            tuple[Operator]
         """
         return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
 
     @staticmethod
-    def compute_decomposition(*params, wires, **hyperparams):
+    def compute_decomposition(*params, wires=None, **hyperparameters):
         """
 
-        Args:
-            parameters (tuple[float, int, array])
-            wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
-            hyperparameters (dict):
+
         """
-        raise NotImplementedError
+        return None
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""

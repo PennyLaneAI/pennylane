@@ -61,7 +61,7 @@ class Identity(CVObservable, Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(data, wires, hyperparameters):
+    def compute_decomposition(wires=None):
         return []
 
     @staticmethod

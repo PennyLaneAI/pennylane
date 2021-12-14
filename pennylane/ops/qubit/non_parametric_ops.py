@@ -79,11 +79,11 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi / 2, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -144,11 +144,11 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -218,11 +218,11 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RY(np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -275,7 +275,7 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [qml.PhaseShift(np.pi, wires=wires)]
+        decomp_ops = (qml.PhaseShift(np.pi, wires=wires), )
         return decomp_ops
 
     def adjoint(self):
@@ -325,7 +325,7 @@ class S(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
+        decomp_ops = (qml.PhaseShift(np.pi / 2, wires=wires), )
         return decomp_ops
 
     def adjoint(self):
@@ -372,7 +372,7 @@ class T(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
+        decomp_ops = (qml.PhaseShift(np.pi / 4, wires=wires),)
         return decomp_ops
 
     def adjoint(self):
@@ -419,12 +419,12 @@ class SX(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
             qml.RZ(-np.pi, wires=wires),
             qml.PhaseShift(np.pi / 2, wires=wires),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -576,7 +576,7 @@ class CY(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
+        decomp_ops = (qml.CRY(np.pi, wires=wires), S(wires=wires[0]))
         return decomp_ops
 
     def adjoint(self):
@@ -620,11 +620,11 @@ class SWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -671,14 +671,14 @@ class ISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             S(wires=wires[0]),
             S(wires=wires[1]),
             Hadamard(wires=wires[0]),
             CNOT(wires=[wires[0], wires[1]]),
             CNOT(wires=[wires[1], wires[0]]),
             Hadamard(wires=wires[1]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -729,7 +729,7 @@ class SISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
             CNOT(wires=[wires[0], wires[1]]),
@@ -742,7 +742,7 @@ class SISWAP(Operation):
             CNOT(wires=[wires[0], wires[1]]),
             SX(wires=wires[0]),
             SX(wires=wires[1]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -805,11 +805,11 @@ class CSWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
             qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -874,7 +874,7 @@ class Toffoli(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             Hadamard(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
             T(wires=wires[2]).inv(),
@@ -890,7 +890,7 @@ class Toffoli(Operation):
             T(wires=wires[0]),
             T(wires=wires[1]).inv(),
             CNOT(wires=[wires[0], wires[1]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -996,14 +996,11 @@ class MultiControlledX(Operation):
         self._padding_right = 2 ** len(wires) - 2 - self._padding_left
         self._CX = None
 
-        self._hyperparameters = {
-            "target_wire": self._target_wire,
-            "work_wires": self._work_wires,
-            "control_wires" : self._control_wires,
-            "control_values": self.control_values
-        }
-
         super().__init__(*params, wires=wires, do_queue=do_queue)
+        self.hyperparameters['target_wire'] = self._target_wire
+        self.hyperparameters['work_wires'] = self._control_wires
+        self.hyperparameters['control_wires'] = self._control_wires
+        self.hyperparameters['control_values'] = self.control_values
 
     @property
     def num_params(self):
@@ -1049,8 +1046,9 @@ class MultiControlledX(Operation):
             work_wires=self._work_wires,
         )
 
-    # pylint: disable=unused-argument
-    def compute_decomposition(wires, **hyperparams):
+    @staticmethod
+    def compute_decomposition(wires=None, control_wires=None, work_wires=None, control_values=None,
+        target_wire=None, **kwargs):
         """Compute the decomposition of the MultiControlledX gate.
 
         Args:
@@ -1063,10 +1061,6 @@ class MultiControlledX(Operation):
             target_wire
         
         """
-        control_wires = hyperparams['control_wires']
-        work_wires = hyperparams['work_wires']
-        control_values = hyperparams['control_values']
-        target_wire = hyperparams['target_wire']
 
         if len(control_wires) > 2 and len(work_wires) == 0:
             raise ValueError(f"At least one work wire is required to decompose operation: {self}")
@@ -1100,7 +1094,7 @@ class MultiControlledX(Operation):
             if val == "0"
         ]
 
-        return flips1 + decomp + flips2
+        return tuple(flips1 + decomp + flips2)
 
     @staticmethod
     def _decomposition_with_many_workers(control_wires, target_wire, work_wires):
@@ -1201,9 +1195,11 @@ class Barrier(Operation):
     def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
         self.only_visual = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
+        self.hyperparameters['only_visual'] = only_visual
 
-    def compute_decomposition(parameters, wires, hyperparmeters):
-        return []
+    @staticmethod
+    def compute_decomposition(wires, **kwargs):
+        return tuple()
 
     def label(self, decimals=None):
         return "||"

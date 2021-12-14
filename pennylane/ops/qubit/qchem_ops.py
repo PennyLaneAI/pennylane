@@ -101,12 +101,12 @@ class SingleExcitation(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [
+    def compute_decomposition(phi, wires):
+        decomp_ops = (
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -171,18 +171,18 @@ class SingleExcitationMinus(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [
+    def compute_decomposition(phi, wires):
+        decomp_ops = (
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(-theta / 2, wires=[wires[1], wires[0]]),
+            qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(-theta / 2, wires=[wires[0], wires[1]]),
+            qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -247,18 +247,18 @@ class SingleExcitationPlus(Operation):
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [
+    def compute_decomposition(phi, wires):
+        decomp_ops = (
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(theta / 2, wires=[wires[1], wires[0]]),
+            qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(theta / 2, wires=[wires[0], wires[1]]),
+            qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
@@ -342,38 +342,38 @@ class DoubleExcitation(Operation):
         return mat
 
     @staticmethod
-    def decomposition(theta, wires):
+    def compute_decomposition(phi, wires):
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
-        decomp_ops = [
+        decomp_ops = (
             qml.CNOT(wires=[wires[2], wires[3]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[0]),
             qml.CNOT(wires=[wires[2], wires[3]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.RY(theta / 8, wires=wires[1]),
-            qml.RY(-theta / 8, wires=wires[0]),
+            qml.RY(phi / 8, wires=wires[1]),
+            qml.RY(-phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[0], wires[3]]),
             qml.Hadamard(wires=wires[3]),
             qml.CNOT(wires=[wires[3], wires[1]]),
-            qml.RY(theta / 8, wires=wires[1]),
-            qml.RY(-theta / 8, wires=wires[0]),
+            qml.RY(phi / 8, wires=wires[1]),
+            qml.RY(-phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[2], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.RY(-theta / 8, wires=wires[1]),
-            qml.RY(theta / 8, wires=wires[0]),
+            qml.RY(-phi / 8, wires=wires[1]),
+            qml.RY(phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[3], wires[1]]),
             qml.Hadamard(wires=wires[3]),
             qml.CNOT(wires=[wires[0], wires[3]]),
-            qml.RY(-theta / 8, wires=wires[1]),
-            qml.RY(theta / 8, wires=wires[0]),
+            qml.RY(-phi / 8, wires=wires[1]),
+            qml.RY(phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
             qml.Hadamard(wires=wires[0]),
             qml.Hadamard(wires=wires[3]),
             qml.CNOT(wires=[wires[0], wires[2]]),
             qml.CNOT(wires=[wires[2], wires[3]]),
-        ]
+        )
 
         return decomp_ops
 
@@ -654,9 +654,9 @@ class OrbitalRotation(Operation):
         return U
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
-        decomp_ops = [
+        decomp_ops = (
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
             qml.CNOT(wires=[wires[3], wires[1]]),
@@ -669,7 +669,7 @@ class OrbitalRotation(Operation):
             qml.CNOT(wires=[wires[2], wires[0]]),
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):

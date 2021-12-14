@@ -119,11 +119,11 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
-        ]
+        )
         return decomp_ops
 
 
@@ -211,10 +211,10 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = [
+        decomp_ops = (
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
-        ]
+        )
         return decomp_ops
 
     def adjoint(self):
