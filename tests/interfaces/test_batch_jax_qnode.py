@@ -300,6 +300,49 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_multiple_outputs_raises(self, dev_name, diff_method, mode, tol):
+        """Test executing a QNode that has multiple outputs raises an error."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "backprop":
+            pytest.skip("Test is not applicable for backprop")
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def my_circuit(param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        with pytest.raises(
+            ValueError,
+            match="JAX interface currently only supports quantum nodes with a single return type",
+        ):
+            my_circuit(1)
+
+    @pytest.mark.parametrize("ret", [qml.probs(wires=0), qml.state()])
+    def test_not_expval_or_var_raises(self, dev_name, diff_method, mode, ret, tol):
+        """Test executing a QNode that has a return type other than expval or
+        var raises an error."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "backprop":
+            pytest.skip("Test is not applicable for backprop")
+
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support states")
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def my_circuit(param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.apply(ret)
+
+        with pytest.raises(
+            ValueError,
+            match="Only Variance and Expectation returns are supported for the JAX interface",
+        ):
+            my_circuit(1)
+
 
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
