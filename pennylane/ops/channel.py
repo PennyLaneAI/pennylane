@@ -380,7 +380,7 @@ class ResetError(Channel):
 
 class PauliError(Channel):
     r"""PauliError(operators, p, wires)
-    Pauli operator error channel for arbitrary number of qubits.
+    Pauli operator error channel for an arbitrary number of qubits.
 
     This channel is modelled by the following Kraus matrices:
 
