@@ -129,7 +129,7 @@ def test_cliford(generator, paulix_wires, result):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "generator", "paulix_wires", "paulix_sector", "sector_ref", "ham_ref"),
+    ("symbols", "geometry", "generator", "paulix_wires", "paulix_sector", "ham_ref"),
     [
         (
             ["H", "H"],
@@ -140,72 +140,18 @@ def test_cliford(generator, paulix_wires, result):
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
             ],
             [1, 2, 3],
-            [[1, -1, -1]],
-            [[1, -1, -1]],
-            [
-                qml.Hamiltonian(
-                    np.array([0.79596785, -0.3210344, 0.18092703]),
-                    [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
-                )
-            ],
-        ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
-            [
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
-            ],
-            [1, 2, 3],
-            None,
-            [
-                [1, 1, 1],
-                [1, 1, -1],
-                [1, -1, 1],
-                [1, -1, -1],
-                [-1, 1, 1],
-                [-1, 1, -1],
-                [-1, -1, 1],
-                [-1, -1, -1],
-            ],
-            [
-                qml.Hamiltonian(
-                    np.array([0.82722811, -0.10718583]),
-                    [qml.Identity(0), qml.PauliZ(0)],
-                ),
-                qml.Hamiltonian(
-                    np.array([0.34439101, -0.09619691]), [qml.PauliZ(0), qml.Identity(0)]
-                ),
-                qml.Hamiltonian(
-                    np.array([0.34439101, -0.09619691]), [qml.PauliZ(0), qml.Identity(0)]
-                ),
-                qml.Hamiltonian(
-                    np.array([0.79596785, 0.18092703, -0.32103439]),
-                    [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
-                ),
-                qml.Hamiltonian(
-                    np.array([-0.45157684, -0.08476536]), [qml.PauliZ(0), qml.Identity(0)]
-                ),
-                qml.Hamiltonian(np.array([-0.52452264]), [qml.Identity(0)]),
-                qml.Hamiltonian(
-                    np.array([-0.18092703, -0.34359561]), [qml.PauliX(0), qml.Identity(0)]
-                ),
-                qml.Hamiltonian(
-                    np.array([0.45157684, -0.08476536]), [qml.PauliZ(0), qml.Identity(0)]
-                ),
-            ],
+            [1, -1, -1],
+            qml.Hamiltonian(
+                np.array([0.79596785, -0.3210344, 0.18092703]),
+                [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
+            ),
         ),
     ],
 )
-def test_transform_hamiltonian(
-    symbols, geometry, generator, paulix_wires, paulix_sector, sector_ref, ham_ref
-):
+def test_transform_hamiltonian(symbols, geometry, generator, paulix_wires, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.hf.Molecule(symbols, geometry)
     h = qml.hf.generate_hamiltonian(mol)()
-    result = transform_hamiltonian(h, generator, paulix_wires, paulix_sector)
+    h_calc = transform_hamiltonian(h, generator, paulix_wires, paulix_sector)
 
-    for i in range(len(sector_ref)):
-        assert result[i][0] == sector_ref[i]
-        assert np.allclose(sorted(result[i][1].terms[0]), sorted(ham_ref[i].terms[0]))
+    assert np.allclose(sorted(h_calc.terms[0]), sorted(ham_ref.terms[0]))
