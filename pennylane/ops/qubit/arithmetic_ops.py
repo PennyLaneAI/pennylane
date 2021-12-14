@@ -118,7 +118,7 @@ class QubitCarry(Operation):
         return QubitCarry._mat
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
         decomp_ops = [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -210,7 +210,7 @@ class QubitSum(Operation):
         return QubitSum._mat
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
         decomp_ops = [
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
