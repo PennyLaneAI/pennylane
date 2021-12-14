@@ -996,11 +996,12 @@ class MultiControlledX(Operation):
         self._padding_right = 2 ** len(wires) - 2 - self._padding_left
         self._CX = None
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
         self.hyperparameters['target_wire'] = self._target_wire
         self.hyperparameters['work_wires'] = self._control_wires
         self.hyperparameters['control_wires'] = self._control_wires
         self.hyperparameters['control_values'] = self.control_values
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @property
     def num_params(self):
@@ -1194,8 +1195,8 @@ class Barrier(Operation):
 
     def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
         self.only_visual = only_visual
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
         self.hyperparameters['only_visual'] = only_visual
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_decomposition(wires, **kwargs):
