@@ -62,7 +62,7 @@
   ```
 
   For more details, see the
-  [`qml.LieAlgebraOptimizer` documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.LieAlgebraOptimizer.html).
+  [LieAlgebraOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.LieAlgebraOptimizer.html).
 
 * The `qml.metric_tensor` transform can now be used to compute the full
   tensor, beyond the block diagonal approximation.
@@ -111,7 +111,7 @@
   ```
 
   See the
-  [metric tensor documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.metric_tensor.html).
+  [metric tensor documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.transforms.metric_tensor.html).
   for more information and usage details.
 
 <h4>Faster performance with optimized quantum workflows</h4>
@@ -351,7 +351,7 @@
   ```
 
   For more details on usage, reconstruction cost and differentiability support, please see the
-  [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.fourier.reconstruct.html).
+  [fourier.reconstruct docstring](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.fourier.reconstruct.html).
 
 <h4>State-of-the-art operations and templates</h4>
 
