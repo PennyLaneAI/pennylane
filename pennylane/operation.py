@@ -184,7 +184,8 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     if 2 ** len(wires) != shp[0]:
         raise ValueError(
-            f"Expected base matrix of size {2 ** len(wires)} to act on {len(wires)} wires; got size {dim}.")
+            f"Expected base matrix of size {2 ** len(wires)} to act on {len(wires)} wires; got size {dim}."
+        )
 
     if wire_order is None:
         return base_matrix
@@ -221,6 +222,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
 
     return mat
+
 
 # =============================================================================
 # Wire types

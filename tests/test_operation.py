@@ -136,7 +136,7 @@ class TestOperationConstruction:
             grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
 
         with pytest.raises(
-                AssertionError, match="Gradient recipe must have one entry for each parameter"
+            AssertionError, match="Gradient recipe must have one entry for each parameter"
         ):
             DummyOp(0.5, wires=[0, 1])
 
@@ -337,8 +337,8 @@ class TestOperatorIntegration:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-                qml.QuantumFunctionError,
-                match=f"Operator {DummyOp.__name__} must act on all wires",
+            qml.QuantumFunctionError,
+            match=f"Operator {DummyOp.__name__} must act on all wires",
         ):
             circuit()
 
@@ -394,8 +394,8 @@ class TestInverse:
             return qml.expval(qml.NumberOperator(0))
 
         with pytest.raises(
-                qml.DeviceError,
-                match=r"inverse of gates are not supported on device default\.gaussian",
+            qml.DeviceError,
+            match=r"inverse of gates are not supported on device default\.gaussian",
         ):
             mean_photon_gaussian(0.015, 0.02, 0.005)
 
@@ -438,7 +438,7 @@ class TestTensor:
         assert T.obs == [X, Y, Y]
 
         with pytest.raises(
-                ValueError, match="Can only perform tensor products between observables"
+            ValueError, match="Can only perform tensor products between observables"
         ):
             Tensor(T, qml.CNOT(wires=[0, 1]))
 
@@ -578,18 +578,18 @@ class TestTensor:
         Z = qml.PauliZ(0)
 
         with pytest.raises(
-                ValueError, match="Can only perform tensor products between observables"
+            ValueError, match="Can only perform tensor products between observables"
         ):
             X @ Y
 
         with pytest.raises(
-                ValueError, match="Can only perform tensor products between observables"
+            ValueError, match="Can only perform tensor products between observables"
         ):
             T = X @ Z
             T @ Y
 
         with pytest.raises(
-                ValueError, match="Can only perform tensor products between observables"
+            ValueError, match="Can only perform tensor products between observables"
         ):
             T = X @ Z
             Y @ T
@@ -1011,8 +1011,8 @@ class TestTensorObservableOperations:
         tensor = qml.PauliZ(0) @ qml.PauliX(1)
         A = [[1, 0], [0, -1]]
         with pytest.raises(
-                ValueError,
-                match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.",
+            ValueError,
+            match=r"Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor.",
         ):
             obs.compare(A)
             tensor.compare(A)
@@ -1142,12 +1142,12 @@ class TestDecomposition:
         expected = CRotx(phi)
 
         obtained = (
-                np.kron(I, Rotz(-np.pi / 2))
-                @ CNOT
-                @ np.kron(I, Roty(-phi / 2))
-                @ CNOT
-                @ np.kron(I, Roty(phi / 2))
-                @ np.kron(I, Rotz(np.pi / 2))
+            np.kron(I, Rotz(-np.pi / 2))
+            @ CNOT
+            @ np.kron(I, Roty(-phi / 2))
+            @ CNOT
+            @ np.kron(I, Roty(phi / 2))
+            @ np.kron(I, Rotz(np.pi / 2))
         )
         assert np.allclose(expected, obtained, atol=tol, rtol=0)
 
@@ -1510,25 +1510,16 @@ class TestExpandMatrix:
 
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
-        base_matrix = np.array([[1, 2, 3, 4],
-                                [5, 6, 7, 8],
-                                [9, 10, 11, 12],
-                                [13, 14, 15, 16]])
+        base_matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
         res = qml.operation.expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
         assert np.allclose(base_matrix, res)
 
     def test_permutation(self):
         """Tests the case where the original matrix is permuted"""
-        base_matrix = np.array([[1, 2, 3, 4],
-                                [5, 6, 7, 8],
-                                [9, 10, 11, 12],
-                                [13, 14, 15, 16]])
+        base_matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
         res = qml.operation.expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0])
 
-        expected = np.array([[1, 3, 2, 4],
-                             [9, 11, 10, 12],
-                             [5, 7, 6, 8],
-                             [13, 15, 14, 16]])
+        expected = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
         assert np.allclose(expected, res)
 
     def test_expansion(self):
@@ -1542,7 +1533,6 @@ class TestExpandMatrix:
         expected = np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
         assert np.allclose(expected, res)
 
-
     def test_autograd(self):
         """Tests differentiation in tensorflow"""
         torch = pytest.importorskip("torch")
@@ -1553,7 +1543,4 @@ class TestExpandMatrix:
 
         element.backward()
 
-
-
         assert np.allclose(expected, res)
-

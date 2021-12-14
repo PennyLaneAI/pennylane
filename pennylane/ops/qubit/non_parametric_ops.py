@@ -960,13 +960,13 @@ class MultiControlledX(Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(
-            self,
-            *params,
-            control_wires=None,
-            wires=None,
-            control_values=None,
-            work_wires=None,
-            do_queue=True,
+        self,
+        *params,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        work_wires=None,
+        do_queue=True,
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
@@ -976,7 +976,7 @@ class MultiControlledX(Operation):
             raise ValueError("MultiControlledX accepts a single target wire.")
 
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
-                [control_wires, work_wires]
+            [control_wires, work_wires]
         ):
             raise ValueError("The work wires must be different from the control and target wires")
 

@@ -504,12 +504,12 @@ class MultiRZ(Operation):
 
         if self.inverse:
             # The matrix is diagonal, so there is no need to transpose
-             multi_Z_rot_matrix = qml.math.conj(
-                multi_Z_rot_matrix
-            )
+            multi_Z_rot_matrix = qml.math.conj(multi_Z_rot_matrix)
 
         # note: since the matrix is computed from attributes, we do not use the base matrix here
-        return qml.operation.expand_matrix(multi_Z_rot_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(
+            multi_Z_rot_matrix, wires=self.wires, wire_order=wire_order
+        )
 
     _generator = None
 

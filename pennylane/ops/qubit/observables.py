@@ -241,7 +241,7 @@ class Projector(Observable):
     @staticmethod
     def compute_matrix(*params, **hyperparams):
         basis_state = params[0]
-        m = np.zeros((2**len(basis_state), 2**len(basis_state)))
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1
         return m
