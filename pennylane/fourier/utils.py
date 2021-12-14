@@ -67,7 +67,8 @@ def get_spectrum(op, decimals):
         if isinstance(g, np.ndarray):
             matrix = g
         elif hasattr(g, "matrix"):
-            # TODO [Maria]: if generators are class instances, change to matrix()
+            # hotfix: this only works because all
+            # non-numerical generators are Paulis.
             matrix = g.compute_matrix()
         else:
             no_generator = True
