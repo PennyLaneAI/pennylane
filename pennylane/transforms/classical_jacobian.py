@@ -173,11 +173,12 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
         def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
             jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
-            if argnum is not None:
-                if np.isscalar(argnum):
-                    jac = jac[argnum]
-                else:
-                    jac = tuple((jac[idx] for idx in argnum))
+
+            torch_argnum = argnum if argnum is not None else qml.math.get_trainable_indices(args)
+            if np.isscalar(torch_argnum):
+                jac = jac[torch_argnum]
+            else:
+                jac = tuple((jac[idx] for idx in torch_argnum))
             return jac
 
         return _jacobian
