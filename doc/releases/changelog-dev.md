@@ -24,6 +24,9 @@ The Operator class has undergone a major refactor with the following changes:
 * A `hyperparameters` attribute was added to the operator class.
   [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
 
+* The `string_for_inverse` attribute is removed.
+  [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
