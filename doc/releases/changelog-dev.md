@@ -10,8 +10,11 @@
   This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
   a number of operations that scales quadratically in the number of trainable
-  parameters. As it makes use of state cloning, it is inherently classical
+  parameters.
+  
+  Note that as it makes use of state cloning, it is inherently classical
   and to be used on state vector simulators only.
+
   It is particular useful for larger circuits for which backpropagation requires
   inconvenient or even unfeasible amounts of storage, but is slower.
   Furthermore, the rewind method is only available for analytic computation, not
@@ -47,6 +50,11 @@
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug in `classical_jacobian` when used with Torch, where the
+  Jacobian of the preprocessing was also computed for non-trainable
+  parameters.
+  [(#2020)](https://github.com/PennyLaneAI/pennylane/pull/2020)
 
 * Fixes a bug in queueing of the `two_qubit_decomposition` method that
   originally led to circuits with >3 two-qubit unitaries failing when passed
