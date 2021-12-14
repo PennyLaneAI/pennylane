@@ -362,7 +362,7 @@ class Operator(abc.ABC):
             hyperparams (dict): other inputs that influence the matrix representation
 
         Returns:
-            tensor-like: matrix representation, or None if not defined
+            tensor_like or None: matrix representation, or None if not defined
         """
         base_matrix = cls._matrix(*params, **hyperparams)
         interface = qml.math._multi_dispatch(params)  # pylint: disable=protected-access
