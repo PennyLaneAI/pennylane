@@ -10,6 +10,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in `classical_jacobian` when used with Torch, where the
+  Jacobian of the preprocessing was also computed for non-trainable
+  parameters.
+  [(#2020)](https://github.com/PennyLaneAI/pennylane/pull/2020)
+
 * Fixes a bug in queueing of the `two_qubit_decomposition` method that
   originally led to circuits with >3 two-qubit unitaries failing when passed
   through the `unitary_to_rot` optimization transform.
@@ -23,20 +28,18 @@ The Operator class has undergone a major refactor with the following changes:
 
 * A `hyperparameters` attribute was added to the operator class.
   [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
-
-<h3>Operator class refactor</h3>
-
-The Operator class has undergone a major refactor with the following changes:
-
+  
 * The `matrix` representation has been modified to be a method that accepts a 
   `wire_order` argument and calculate the correct numerical representation 
   with respect to that ordering. The "base matrix", which is independent of wires,
   is defined in `compute_matrix()`.
   [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
+* The `string_for_inverse` attribute is removed.
+  [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Maria Schuld
-
+Olivia Di Matteo, Christina Lee, Maria Schuld, David Wierichs
