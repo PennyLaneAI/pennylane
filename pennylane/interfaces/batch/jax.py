@@ -162,7 +162,8 @@ def _execute(
                 dy = args[-1]
 
                 for t, a in zip(tapes, p):
-                    new_tapes.append(t.copy(copy_operations=True))
+                    new_tape = t.copy(copy_operations=True)
+                    new_tapes.append(new_tape)
                     new_tapes[-1].set_parameters(a)
                     new_tapes[-1].trainable_params = t.trainable_params
 
