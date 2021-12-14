@@ -20,10 +20,15 @@
   through the `unitary_to_rot` optimization transform.
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
+* Fixes a bug which allows using `jax.jit` to be compatible with circuits 
+  which return `qml.probs` when the given device is provided a custom shot 
+  vector.
+  [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, David Wierichs
+Olivia Di Matteo, Jay Soni, David Wierichs
