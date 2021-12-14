@@ -234,6 +234,10 @@ class ControlledQubitUnitary(QubitUnitary):
             self._cu = qml.math.block_diag([left_pad, self.U, right_pad])
 
         base_matrix = self.compute_matrix(self._cu)
+
+        if wire_order is None or self.wires == Wires(wire_order):
+            return base_matrix
+
         return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     @property

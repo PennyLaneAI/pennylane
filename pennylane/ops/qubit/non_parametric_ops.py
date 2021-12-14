@@ -989,11 +989,7 @@ class MultiControlledX(Operation):
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        control_int = self._parse_control_values(control_wires, control_values)
         self.control_values = control_values
-
-        self._padding_left = control_int * 2
-        self._padding_right = 2 ** len(wires) - 2 - self._padding_left
         self._cx = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
@@ -1032,15 +1028,20 @@ class MultiControlledX(Operation):
         return cx
 
     def matrix(self, wire_order=None):
+
         if self._cx is None:
-            self._cx = block_diag(
-                np.eye(self._padding_left), PauliX.compute_matrix(), np.eye(self._padding_right)
-            )
+            # store matrix, so we do not have to do this each time
+            control_int = self._parse_control_values(self.control_wires, self.control_values)
+            self._cx = self.compute_matrix(control_int, len(self.wires))
+
         base_matrix = self._cx
+
         if self.inverse:
             base_matrix = qml.math.conj(qml.math.T(base_matrix))
 
-        # note: we do not call compute_matrix here, since the base matrix is constructed from inputs
+        if wire_order is None or self.wires == Wires(wire_order):
+            return base_matrix
+
         return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     @property

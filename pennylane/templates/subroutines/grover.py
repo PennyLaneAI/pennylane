@@ -135,13 +135,16 @@ class GroverOperator(Operation):
 
         return tape
 
-    def matrix(self, wire_order):
+    def matrix(self, wire_order=None):
 
         # note: compute_matrix has a custom signature, which is why we need to overwrite this method
         base_matrix = self.compute_matrix(self.wires)
 
         if self.inverse:
             base_matrix = qml.math.conj(qml.math.T(base_matrix))
+
+        if wire_order is None or self.wires == Wires(wire_order):
+            return base_matrix
 
         return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 

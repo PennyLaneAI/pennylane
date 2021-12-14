@@ -41,7 +41,7 @@ def test_get_unitary_matrix_nonparam_1qubit_ops(op, wire):
     if wire == 0:
         expected_matrix = np.kron(op(wires=wire).matrix(), np.eye(4))
     if wire == 1:
-        expected_matrix = np.kron(np.eye(2), np.kron(op(wires=wire).matrix, np.eye(2)))
+        expected_matrix = np.kron(np.eye(2), np.kron(op(wires=wire).matrix(), np.eye(2)))
     if wire == 2:
         expected_matrix = np.kron(np.eye(4), op(wires=wire).matrix())
 

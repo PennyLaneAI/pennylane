@@ -71,10 +71,14 @@ class QFT(Operation):
         return 0
 
     def matrix(self, wire_order=None):
-        mat = self.compute_matrix(len(self.wires), wires=self.wires, wire_order=wire_order)
+        base_matrix = self.compute_matrix(len(self.wires), wires=self.wires, wire_order=wire_order)
         if self.inverse:
-            mat = mat.conj()
-        return mat
+            base_matrix = base_matrix.conj()
+
+        if wire_order is None or self.wires == qml.wires.Wires(wire_order):
+            return base_matrix
+
+        return base_matrix
 
     @staticmethod
     @functools.lru_cache()

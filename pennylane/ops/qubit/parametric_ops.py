@@ -499,13 +499,12 @@ class MultiRZ(Operation):
         return qml.math.diag(eigvals)
 
     def matrix(self, wire_order=None):
-        multi_Z_rot_eigs = self.eigvals
-        multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
+        base_matrix = self.compute_matrix(self.parameters[0], len(self.wires))
 
-        # note: since the matrix is computed from attributes, we do not use the base matrix here
-        return qml.operation.expand_matrix(
-            multi_Z_rot_matrix, wires=self.wires, wire_order=wire_order
-        )
+        if wire_order is None or self.wires == Wires(wire_order):
+            return base_matrix
+
+        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     _generator = None
 
