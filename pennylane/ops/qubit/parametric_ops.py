@@ -1173,7 +1173,7 @@ class CRot(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(phi, theta, omega, wires):
+    def compute_decomposition(phi, theta, omega, wires):
         decomp_ops = (
             RZ((phi - omega) / 2, wires=wires[1]),
             qml.CNOT(wires=wires),

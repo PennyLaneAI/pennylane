@@ -464,7 +464,6 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self._hyperparameters = {}
 
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
@@ -543,20 +542,24 @@ class Operator(abc.ABC):
         self._hyperparameters = {}
         return self._hyperparameters
 
-    @staticmethod
-    def decomposition(*params, wires):
+    def decomposition(self):
         """Defines a decomposition of this operator into products of other operators.
 
         Returns:
-            tuple[Operator]
+            tuple[Operator]: decomposition of the Operator into lower level operations
         """
         return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
-        """
+        """Determine the Operator's decomposition for specified parameters, wires,
+        and hyperparameters.
 
+        This is a static method and can provide the decomposition of a given operator
+        without creating a specific instance.
 
+        Returns:
+            tuple[Operator]: decomposition of the Operator into lower level operations
         """
         return None
 

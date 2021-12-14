@@ -62,7 +62,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_decomposition(wires=None):
-        return []
+        return tuple()
 
     @staticmethod
     def identity_op(*params):

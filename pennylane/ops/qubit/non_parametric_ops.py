@@ -997,7 +997,7 @@ class MultiControlledX(Operation):
         self._CX = None
 
         self.hyperparameters['target_wire'] = self._target_wire
-        self.hyperparameters['work_wires'] = self._control_wires
+        self.hyperparameters['work_wires'] = self._work_wires
         self.hyperparameters['control_wires'] = self._control_wires
         self.hyperparameters['control_values'] = self.control_values
 
@@ -1064,7 +1064,7 @@ class MultiControlledX(Operation):
         """
 
         if len(control_wires) > 2 and len(work_wires) == 0:
-            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
+            raise ValueError(f"At least one work wire is required to decompose operation: MultiControlledX")
 
         flips1 = [
             qml.PauliX(control_wires[i])
@@ -1074,18 +1074,18 @@ class MultiControlledX(Operation):
 
         if len(control_wires) == 1:
             decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
-        elif len(self.control_wires) == 2:
+        elif len(control_wires) == 2:
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2
 
             if len(work_wires) >= num_work_wires_needed:
-                decomp = self._decomposition_with_many_workers(
+                decomp = MultiControlledX._decomposition_with_many_workers(
                     control_wires, target_wire, work_wires
                 )
             else:
                 work_wire = work_wires[0]
-                decomp = self._decomposition_with_one_worker(
+                decomp = MultiControlledX._decomposition_with_one_worker(
                     control_wires, target_wire, work_wire
                 )
 
