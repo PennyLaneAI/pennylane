@@ -370,7 +370,6 @@ class Operator(abc.ABC):
 
         >>> qml.RZ._eigvals(0.5)
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX._eigvals()
@@ -396,7 +395,6 @@ class Operator(abc.ABC):
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX.eigvals()
@@ -555,12 +553,11 @@ class Operator(abc.ABC):
 
     @property
     def hyperparameters(self):
-        """Non-trainable variables that define this operation."""
-        # TODO [Maria/Josh]: this is a placeholder; in future we want to
-        # define hyperparameters for all ops, even if they overwrite init
+        """dict: Dictionary of non-trainable variables that define this operation."""
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
-        return {}
+        self._hyperparameters = {}
+        return self._hyperparameters
 
     @staticmethod
     def decomposition(*params, wires):
@@ -615,7 +612,7 @@ class Operator(abc.ABC):
         form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
 
-        Returns None if this operator does not define its diagonalizing gates.
+        Returns `None` if this operator does not define its diagonalizing gates.
 
         *Example:*
 
@@ -623,7 +620,7 @@ class Operator(abc.ABC):
         [Hadamard(wires=["q1"])]
 
         Returns:
-            list(qml.Operator): A list of operators.
+            list[.Operator] or None: A list of operators.
         """
         return self.compute_diagonalizing_gates(
             *self.parameters, wires=self.wires, **self.hyperparameters
@@ -671,8 +668,6 @@ class Operation(Operator):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
-    # pylint: disable=abstract-method
-    string_for_inverse = ".inv"
 
     @property
     def grad_method(self):
@@ -874,7 +869,7 @@ class Operation(Operator):
     @property
     def name(self):
         """Get and set the name of the operator."""
-        return self._name + Operation.string_for_inverse if self.inverse else self._name
+        return self._name + ".inv" if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
         if self.inverse:
@@ -1908,16 +1903,7 @@ def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing
     gates are defined."""
 
-    # We need to stop the tape so that the diagonalizing gates
-    # are not queued when we check if they are defined.
-    # Reassess this when queueing system is overhauled
-    tape = qml.tape.get_active_tape()
-    if tape is not None:
-        with tape.stop_recording():
-            dgates = obj.diagonalizing_gates()
-    else:
+    with qml.tape.stop_recording():
         dgates = obj.diagonalizing_gates()
 
-    if dgates is None:
-        return False
-    return True
+    return dgates is not None

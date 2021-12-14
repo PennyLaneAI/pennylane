@@ -10,6 +10,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in `classical_jacobian` when used with Torch, where the
+  Jacobian of the preprocessing was also computed for non-trainable
+  parameters.
+  [(#2020)](https://github.com/PennyLaneAI/pennylane/pull/2020)
+
 * Fixes a bug in queueing of the `two_qubit_decomposition` method that
   originally led to circuits with >3 two-qubit unitaries failing when passed
   through the `unitary_to_rot` optimization transform.
@@ -31,7 +36,15 @@ The Operator class has undergone a major refactor with the following changes:
   by default in `diagonalizing_gates()`.
   [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
 
+* A `hyperparameters` attribute was added to the operator class.
+  [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
+
+* The `string_for_inverse` attribute is removed.
+  [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
+
+<h3>Contributors</h3>
+
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Maria Schuld
+Olivia Di Matteo, Maria Schuld, David Wierichs
 
