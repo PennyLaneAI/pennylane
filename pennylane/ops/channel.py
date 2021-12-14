@@ -380,7 +380,7 @@ class ResetError(Channel):
 
 class PauliError(Channel):
     r"""PauliError(operators, p, wires)
-    Arbitrary number qubit, arbitrary Pauli operator error channel.
+    Pauli operator error channel for an arbitrary number of qubits.
 
     This channel is modelled by the following Kraus matrices:
 
@@ -650,9 +650,9 @@ class ThermalRelaxationError(Channel):
     * Number of parameters: 4
 
     Args:
-        pe (float): exited state population.
+        pe (float): exited state population. Must be between ``0`` and ``1``.
         t1 (float): the :math:`T_1` relaxation constant.
-        t2 (float): the :math:`T_2` dephasing constant.
+        t2 (float): the :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`.
         tg (float): the gate time for relaxation error.
         wires (Sequence[int] or int): the wire the channel acts on
     """
@@ -670,9 +670,9 @@ class ThermalRelaxationError(Channel):
         t2 = params[2]
         tg = params[3]
         if not 0.0 <= pe <= 1.0:
-            raise ValueError("pe must be between")
+            raise ValueError("pe must be between 0 and 1.")
         if tg < 0:
-            raise ValueError(f"Invalid gate_time ({tg} < 0)")
+            raise ValueError(f"Invalid gate_time tg ({tg} < 0)")
         if t1 <= 0:
             raise ValueError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
         if t2 <= 0:
