@@ -315,6 +315,7 @@ def fubini_ansatz9(params, wires=None):
     qml.CNOT(wires=[0, 1])
     qml.RX(fixed_pars[2], wires=[1])
 
+
 def fubini_ansatz10(weights, wires=None):
     qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
 
@@ -670,6 +671,7 @@ diff_fubini_params = [
     fubini_params[10],
 ]
 
+
 @pytest.mark.parametrize("ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params)))
 class TestRewindMetricTensorDifferentiability:
     """Test the differentiability of the rewind method for the metric
@@ -775,7 +777,7 @@ class TestRewindMetricTensorDifferentiability:
 
         mt_jac = t.jacobian(mt, t_params)
         if isinstance(mt_jac, tuple):
-            if not isinstance(expected, tuple) and len(mt_jac)==1:
+            if not isinstance(expected, tuple) and len(mt_jac) == 1:
                 expected = (expected,)
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
