@@ -136,7 +136,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     This function is fully differentiable.
 
-    **Examples:**
+    **Example**
 
     If the wire order is identical to ``wires``, the original matrix gets returned:
 
