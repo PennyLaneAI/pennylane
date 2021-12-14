@@ -210,6 +210,18 @@ class TestInputs:
         template = qml.ApproxTimeEvolution(h, 2, 3, id="a")
         assert template.id == "a"
 
+    def test_wire_indices(self):
+        """Tests that correct wires are set."""
+        wire_indices = [0, 1]
+        H = (
+            qml.PauliX(wire_indices[0])
+            + qml.PauliZ(wire_indices[1])
+            + 0.5 * qml.PauliX(wire_indices[0]) @ qml.PauliX(wire_indices[1])
+        )
+        qml.ApproxTimeEvolution(H, 0.5, 2)
+        assert wire_indices[0] in H.wires
+        assert wire_indices[1] in H.wires
+
 
 # test data for gradient tests
 

@@ -18,7 +18,8 @@ Contains the drawing function.
 """
 from functools import wraps
 
-import pennylane as qml
+from pennylane.drawer import tape_mpl
+from pennylane.wires import Wires
 
 
 def draw(
@@ -117,7 +118,7 @@ def draw(
             qnode.expansion_strategy = original_expansion_strategy
 
         _wire_order = wire_order or qnode.device.wires
-        _wire_order = qml.wires.Wires(_wire_order)
+        _wire_order = Wires(_wire_order)
 
         if show_all_wires and len(_wire_order) < qnode.device.num_wires:
             raise ValueError(
@@ -162,9 +163,13 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
+        fontsize (float or str): fontsize for text. Valid strings are
+            ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
+            Default is ``14``.
         wire_options (dict): matplotlib formatting options for the wire lines
         label_options (dict): matplotlib formatting options for the wire labels
-
+        active_wire_notches (bool): whether or not to add notches indicating active wires.
+            Defaults to ``True``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -180,6 +185,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         @qml.qnode(dev)
         def circuit(x, z):
             qml.QFT(wires=(0,1,2,3))
+            qml.IsingXX(1.234, wires=(0,2))
             qml.Toffoli(wires=(0,1,2))
             qml.CSWAP(wires=(0,2,3))
             qml.RX(x, wires=0)
@@ -259,7 +265,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
             box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
             ax.add_patch(box1)
 
-            ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+            ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                         arrowprops={'facecolor': 'black'}, fontsize=14)
             fig.show()
 
@@ -270,38 +276,42 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         **Formatting:**
 
-        You can globally control the style with ``plt.rcParams`` and styles, see the
-        `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
-        If we customize ``plt.rcParams``, we get a
-        different style:
+        PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
+        All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
+        Any available string can then be passed to ``qml.drawer.use_style``.
 
         .. code-block:: python
 
-            plt.rcParams['patch.facecolor'] = 'white'
-            plt.rcParams['patch.edgecolor'] = 'black'
-            plt.rcParams['patch.linewidth'] = 2
+            qml.drawer.use_style('black_white')
+            fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
+            fig.show()
+
+
+        .. figure:: ../../_static/draw_mpl/black_white_style.png
+                :align: center
+                :width: 60%
+                :target: javascript:void(0);
+
+        You can also control the appearance with matplotlib's provided tools, see the
+        `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
+        For example, we can customize ``plt.rcParams``:
+
+        .. code-block:: python
+
+            plt.rcParams['patch.facecolor'] = 'mistyrose'
+            plt.rcParams['patch.edgecolor'] = 'maroon'
+            plt.rcParams['text.color'] = 'maroon'
+            plt.rcParams['font.weight'] = 'bold'
+            plt.rcParams['patch.linewidth'] = 4
             plt.rcParams['patch.force_edgecolor'] = True
-            plt.rcParams['lines.color'] = 'black'
+            plt.rcParams['lines.color'] = 'indigo'
+            plt.rcParams['lines.linewidth'] = 5
+            plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
             fig, ax = qml.draw_mpl(circuit)(1.2345,1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/rcparams.png
-                :align: center
-                :width: 60%
-                :target: javascript:void(0);
-
-        Instead of manually customizing everything, you can choose one of
-        the provided styles. You can see available styles with ``plt.style.available``.
-        We can set the ``'Solarize_Light2'`` style and instead get:
-
-        .. code-block:: python
-
-            with plt.style.context("Solarize_Light2):
-                fig, ax = draw_mpl(circuit)(1.2345,1.2345)
-            fig.show()
-
-        .. figure:: ../../_static/draw_mpl/Solarize_Light2.png
                 :align: center
                 :width: 60%
                 :target: javascript:void(0);
@@ -329,7 +339,7 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
         _wire_order = wire_order or qnode.device.wires
 
-        return qml.circuit_drawer.tape_mpl(
+        return tape_mpl(
             qnode.qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,

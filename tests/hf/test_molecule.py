@@ -19,6 +19,7 @@ import pytest
 from pennylane import numpy as np
 from pennylane.hf.molecule import Molecule
 from pennylane.hf.basis_set import BasisFunction
+from pennylane.hf.hartree_fock import generate_scf
 
 
 class TestMolecule:
@@ -177,3 +178,79 @@ class TestMolecule:
         assert np.allclose(mol.alpha, alpha)
         assert np.allclose(mol.coeff, coeff)
         assert np.allclose(mol.r, r)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff", "index", "position", "ref_value"),
+        [
+            (
+                # normalized primitive Gaussians centered at 0, G(0, 0, 0) = coeff * exp(alpha * 0)
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                np.array(
+                    [
+                        [3.425250914, 3.425250914, 3.425250914],
+                        [3.425250914, 3.425250914, 3.425250914],
+                    ],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [[1.79444183, 1.79444183, 1.79444183], [1.79444183, 1.79444183, 1.79444183]],
+                    requires_grad=False,
+                ),
+                0,
+                (0.0, 0.0, 0.0),
+                1.79444183,
+            ),
+            (
+                # normalized primitive Gaussians centered at z=1, G(0, 0, 0) = coeff * exp(alpha *1)
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                np.array(
+                    [
+                        [3.425250914, 3.425250914, 3.425250914],
+                        [3.425250914, 3.425250914, 3.425250914],
+                    ],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [[1.79444183, 1.79444183, 1.79444183], [1.79444183, 1.79444183, 1.79444183]],
+                    requires_grad=False,
+                ),
+                1,
+                (0.0, 0.0, 0.0),
+                0.05839313784917416,
+            ),
+        ],
+    )
+    def test_atomic_orbital(self, symbols, geometry, alpha, coeff, index, position, ref_value):
+        r"""Test that the computed atomic orbital value is correct."""
+        mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+
+        x, y, z = position
+        ao = mol.atomic_orbital(index)
+        ao_value = ao(x, y, z)
+
+        assert np.allclose(ao_value, ref_value)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "index", "position", "ref_value"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                1,
+                (0.0, 0.0, 0.0),
+                0.01825128,
+            ),
+        ],
+    )
+    def test_molecular_orbital(self, symbols, geometry, index, position, ref_value):
+        r"""Test that the computed atomic orbital value is correct."""
+        mol = Molecule(symbols, geometry)
+
+        x, y, z = position
+        _ = generate_scf(mol)()
+        mo = mol.molecular_orbital(index)
+        mo_value = mo(x, y, z)
+
+        assert np.allclose(mo_value, ref_value)

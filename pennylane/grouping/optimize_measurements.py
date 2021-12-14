@@ -84,7 +84,7 @@ def optimize_measurements(observables, coefficients=None, grouping="qwc", colour
         ) = diagonalize_qwc_groupings(grouped_obs)
     else:
         raise NotImplementedError(
-            "Measurement reduction by '{}' grouping not implemented.".format(grouping.lower())
+            f"Measurement reduction by '{grouping.lower()}' grouping not implemented."
         )
 
     if coefficients is None:
