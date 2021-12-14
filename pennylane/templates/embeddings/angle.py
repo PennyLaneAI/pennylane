@@ -88,21 +88,16 @@ class AngleEmbedding(Operation):
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+        self.hyperparameters["rotation"] = self.rotation
 
     @property
     def num_params(self):
         return 1
 
-    def expand(self):
-
-        features = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(features, wires, rotation=RX, **hyperparameters):
         batched = len(qml.math.shape(features)) > 1
 
         features = features.T if batched else features
 
-        with qml.tape.QuantumTape() as tape:
-
-            for i in range(len(self.wires)):
-                self.rotation(features[i], wires=self.wires[i])
-
-        return tape
+        return tuple(rotation(f, wires=w) for (f, w) in zip(features, wires))

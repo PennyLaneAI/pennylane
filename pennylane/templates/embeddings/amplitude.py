@@ -137,12 +137,9 @@ class AmplitudeEmbedding(Operation):
     def adjoint(self):  # pylint: disable=arguments-differ
         return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
 
-    def expand(self):
-
-        with qml.tape.QuantumTape() as tape:
-            QubitStateVector(self.parameters[0], wires=self.wires)
-
-        return tape
+    @staticmethod
+    def compute_decomposition(features, wires, **hyperparameters):
+        return (QubitStateVector(features, wires=wires), )
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):
