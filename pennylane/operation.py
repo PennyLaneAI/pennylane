@@ -651,10 +651,11 @@ class Operator(abc.ABC):
 
     @property
     def hyperparameters(self):
-        """Non-trainable variables that define this operation."""
+        """dict: Dictionary of non-trainable variables that define this operation."""
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
-        return {}
+        self._hyperparameters = {}
+        return self._hyperparameters
 
     @staticmethod
     def decomposition(*params, wires):
