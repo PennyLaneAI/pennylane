@@ -1,3 +1,16 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
@@ -151,6 +164,49 @@ class TestQNodeIntegration:
 
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
+    def test_probs_jax(self, tol):
+        """Test that returning probs works with jax"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        expected = jnp.array([0.0, 1.0])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        with pytest.raises(
+            ValueError, match="doesn't support getting probabilities when using a shot vector"
+        ):
+            result = circuit()
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
