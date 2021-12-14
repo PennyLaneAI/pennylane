@@ -263,23 +263,9 @@ class DefaultQubitJax(DefaultQubit):
         indices = samples @ powers_of_two
 
         if bin_size is not None:
-            bins = len(samples) // bin_size
-
-            indices = indices.reshape((bins, -1))
-            prob = np.zeros(
-                [2 ** num_wires + 1, bins], dtype=np.float64
-            )  # extend it to store 'filled values'
-
-            # count the basis state occurrences, and construct the probability vector
-            for b, idx in enumerate(indices):
-                basis_states, counts = qml.math.unique(
-                    idx, return_counts=True, size=2 ** num_wires, fill_value=-1
-                )
-                prob[basis_states, b] = counts / bin_size
-                prob = qml.math.convert_like(prob, indices)
-
-                for state, count in zip(basis_states, counts):
-                    prob = prob.at[state].set(count / bin_size)
+            raise ValueError(
+                "The default.qubit.jax device doesn't support getting probabilities when using a shot vector."
+            )
 
         else:
             basis_states, counts = qml.math.unique(
