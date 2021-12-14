@@ -579,6 +579,7 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
+        self._hyperparameters = {}
 
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
@@ -648,6 +649,13 @@ class Operator(abc.ABC):
     def parameters(self):
         """Current parameter values."""
         return self.data.copy()
+
+    @property
+    def hyperparameters(self):
+        """Non-trainable variables that define this operation."""
+        if hasattr(self, "_hyperparameters"):
+            return self._hyperparameters
+        return {}
 
     @staticmethod
     def decomposition(*params, wires):
