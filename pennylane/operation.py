@@ -129,6 +129,99 @@ from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
+
+def expand_matrix(base_matrix, wires, wire_order):
+    """Re-express a base matrix acting on a subspace defined by a set of wire labels
+    according to a global wire order.
+
+    This function is fully differentiable.
+
+    **Examples:**
+
+    If the wire order is identical to ``wires``, the original matrix gets returned:
+
+    >>> base_matrix = np.array([[1, 2, 3, 4],
+    >>>                         [5, 6, 7, 8],
+    >>>                         [9, 10, 11, 12],
+    >>>                         [13, 14, 15, 16]])
+    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+
+    If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
+
+    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0])
+    [[ 1  3  2  4]
+     [ 9 11 10 12]
+     [ 5  7  6  8]
+     [13 15 14 16]]
+
+    If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
+
+    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2])
+    [[ 1  2  0  0  3  4  0  0]
+     [ 5  6  0  0  7  8  0  0]
+     [ 0  0  1  2  0  0  3  4]
+     [ 0  0  5  6  0  0  7  8]
+     [ 9 10  0  0 11 12  0  0]
+     [13 14  0  0 15 16  0  0]
+     [ 0  0  9 10  0  0 11 12]
+     [ 0  0 13 14  0  0 15 16]]
+
+    Args:
+        base_matrix (tensor_like): base matrix to expand
+        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
+            contain additional labels
+    """
+
+    shp = qml.math.shape(base_matrix)
+    if shp[0] != shp[1]:
+        raise ValueError(f"Expected square matrix to expand; got shape {shp}.")
+
+    if 2 ** len(wires) != shp[0]:
+        raise ValueError(
+            f"Expected base matrix of size {2 ** len(wires)} to act on {len(wires)} wires; got size {dim}.")
+
+    if wire_order is None:
+        return base_matrix
+
+    wire_order = Wires(wire_order)
+    wires = Wires(wires)
+
+    if Wires(wires) == Wires(wire_order):
+        return base_matrix
+
+    n = len(wires)
+    interface = qml.math._multi_dispatch(base_matrix)  # pylint: disable=protected-access
+
+    # operator's wire positions relative to wire ordering
+    op_wire_pos = Wires(wire_order).indices(wires)
+
+    I = qml.math.reshape(
+        qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
+    )
+    axes = (list(range(n, 2 * n)), op_wire_pos)
+
+    # reshape op.matrix()
+    op_matrix_interface = qml.math.convert_like(base_matrix, I)
+    mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
+    mat_tensordot = qml.math.tensordot(
+        mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
+    )
+
+    unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
+    # permute matrix axes to match wire ordering
+    perm = op_wire_pos + unused_idxs
+    mat = qml.math.moveaxis(mat_tensordot, wire_order.indices(wire_order), perm)
+
+    mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
+
+    return mat
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -302,147 +395,65 @@ class Operator(abc.ABC):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params, **hyperparams):
-        """Base matrix for the matrix representation of this operator.
+    def compute_matrix(*params, **hyperparams):
+        """Basic matrix representation of this operator in the computational basis.
 
-        The base matrix assumes the wire order of the operator's wires.
+        **Examples:**
+
+        >>> qml.CNOT.compute_matrix()
+        [[1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 1, 0]]
+
+        The matrix representation may depend on parameters or hyperparameters:
+
+        >>> qml.Rot.compute_matrix(0.1, 0.2, 0.3)
+        XXXX
 
         Args:
-            params (Iterable): trainable parameters that influence the matrix representation
-            hyperparams (dict): other inputs that influence the matrix representation
+            params (Iterable): trainable parameters that may influence the base matrix
+            hyperparams (dict): non-trainable hyperparameters that may influence the base matrix
+
         Returns:
-            tensor-like: base matrix, or None if representation is not defined
+            tensor-like or None: matrix representation
         """
         return None
 
-    @classmethod
-    def compute_matrix(cls, *params, wires=None, wire_order=None, **hyperparams):
-        """Matrix representation of the operator
-        in the computational basis.
-
-        This static method allows matrices to be computed
-        directly without instantiating the operators first.
-        To return the matrices of *instantiated* operators,
-        please use the :attr:`~.Operator.matrix()` property instead.
-
-        Consults
-        If the matrix representation is not defined for this operator,
-        the method returns ``None``.
-
-        If ``wires`` and ``wire_order`` are provided, the
-        numerical representation considers the position of the
-        operator's wires in the wire order of the full vector space.
-        Otherwise, the defaults ``wires=[0,...,n]`` and ``wire_order=[0,...,n]``
-        are used, where ``n`` is the number of wires of this operator.
-
-        **Example:**
-
-        >>> qml.RY.compute_matrix(0.5)
-        array([[ 0.96891242, -0.24740396],
-               [ 0.24740396,  0.96891242]])
-
-        >>> qml.RY.compute_matrix(0.5, wires=["b"], wire_order=["a", "b"])
-        tensor([[ 0.96891242, -0.24740396, 0., 0.],
-                [ 0.24740396,  0.96891242, 0., 0.],
-                [ 0., 0., 0.96891242, -0.24740396],
-                [ 0., 0., 0.24740396,  0.96891242]
-                ])
-
-        >>> qml.RY.compute_matrix(0.5, wires=["b"], wire_order=["b", "a"])
-        tensor([[ 0.96891242, 0., -0.24740396, 0.],
-                [0.,  0.96891242, 0., -0.24740396],
-                [ 0.24740396, 0., 0.96891242, 0.],
-                [0.,  0.24740396, 0., 0.96891242+0.j],
-                ])
-
-        Args:
-            params (Iterable): trainable parameters that influence the matrix representation
-            wires (Iterable): wires of this operator
-            wire_order (Iterable): global wire order, must contain all wire labels in ``wires``
-            hyperparams (dict): other inputs that influence the matrix representation
-
-        Returns:
-            tensor-like: matrix representation, or None if not defined
-        """
-        base_matrix = cls._matrix(*params, **hyperparams)
-        interface = qml.math._multi_dispatch(params)  # pylint: disable=protected-access
-
-        # representation is not defined
-        if base_matrix is None:
-            return None
-
-        # cannot have wire_order but no wires to interpret
-        if wires is None and wire_order is not None:
-            raise ValueError("Expected wires when wire order is defined, got None.")
-
-        # intersecting this case here because it is common
-        # and we want to avoid casting to Wires unless necessary
-        if wire_order is None:
-            # TODO: cast to interface?
-            return base_matrix
-
-        wire_order = Wires(wire_order)
-        wires = Wires(wires)
-
-        # base matrix requested
-        if Wires(wires) == Wires(wire_order):
-            # TODO: cast to interface?
-            return base_matrix
-
-        n = len(wires)
-
-        # operator's wire positions relative to wire ordering
-        op_wire_pos = Wires(wire_order).indices(wires)
-
-        I = qml.math.reshape(
-            qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
-        )
-        axes = (list(range(n, 2 * n)), op_wire_pos)
-
-        # reshape op.matrix()
-        op_matrix_interface = qml.math.convert_like(base_matrix, I)
-        mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
-        mat_tensordot = qml.math.tensordot(
-            mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
-        )
-
-        unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
-        # permute matrix axes to match wire ordering
-        perm = op_wire_pos + unused_idxs
-        mat = qml.math.moveaxis(mat_tensordot, wire_order.indices(wire_order), perm)
-
-        mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
-
-        return mat
-
     def matrix(self, wire_order=None):
-        r"""Matrix representation of an instantiated operator
+        r"""Matrix representation of instantiated operator
         in the computational basis.
 
         If ``wire_order`` is provided, the
         numerical representation considers the position of the
-        operator's wires in the wire order of the full vector space.
+        operator's wires in global wire order.
         Otherwise, the wire order defaults to ``self.wires``.
+
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
 
         **Example:**
 
-        >>> U = qml.RY(0.5, wires="b")
+        >>> U = qml.PauliX(wires="b")
         >>> U.matrix()
-        >>> tensor([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
-        >>> U.matrix(wire_order=["b", "a"])
-        >>> tensor([[ 0.96891242+0.j, 0., -0.24740396+0.j, 0.],
-                   [0.,  0.96891242+0.j, 0., -0.24740396+0.j],
-                   [ 0.24740396+0.j, 0., 0.96891242+0.j, 0.],
-                   [0.,  0.24740396+0.j, 0., 0.96891242+0.j+0.j],
-                   ])
+        [[0 1]
+         [1 0]]
+        >>> U.matrix(wire_order=["a", "b"])
+        [[0 1 0 0]
+         [1 0 0 0]
+         [0 0 0 1]
+         [0 0 1 0]]
+        >>> qml.RY(tf.Variable(0.5), wires="b").matrix()
+        tf.Tensor([[ 0.9689124  -0.24740396]
+                   [ 0.24740396  0.9689124 ]], shape=(2, 2), dtype=float32)
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels in this operator's wires
         Returns:
-            tensor-like: matrix representation
+            tensor-like or None: matrix representation
         """
-        return self.compute_matrix(*self.parameters, wires=self.wires, wire_order=wire_order)
+        base_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
+        return expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     @classmethod
     def _eigvals(cls, *params):
@@ -881,9 +892,7 @@ class Operation(Operator):
         return self
 
     def matrix(self, wire_order=None):
-        op_matrix = super().compute_matrix(
-            *self.parameters, wires=self.wires, wire_order=wire_order
-        )
+        op_matrix = super().compute_matrix(wire_order=wire_order)
 
         if self.inverse:
             return qml.math.conj(qml.math.T(op_matrix))
@@ -1516,7 +1525,7 @@ class Tensor(Observable):
         """
 
         if wire_order is not None:
-            raise NotImplementedError("Currently, the wire_order argument is not implemented.")
+            raise NotImplementedError("The wire_order argument is currently not implemented.")
 
         # group the observables based on what wires they act on
         U_list = []
@@ -1937,8 +1946,8 @@ def operation_derivative(operation) -> np.ndarray:
         )
 
     if not isinstance(generator, np.ndarray):
-        # TODO [Maria]: if generator becomes a class instance, use matrix() instead
-        # since it never takes mandatory arguments
+        # hotfix: this works because all non-numeric generators in PL
+        # are currently Pauli operators
         generator = generator.compute_matrix()
 
     if operation.inverse:

@@ -61,8 +61,9 @@ class Hermitian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         A = qml.math.asarray(params[0])
 
         if A.shape[0] != A.shape[1]:
@@ -152,8 +153,9 @@ class SparseHamiltonian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         A = params[0]
         if not isinstance(A, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
@@ -234,6 +236,15 @@ class Projector(Observable):
             return base_label
         basis_string = "".join(str(int(i)) for i in self.parameters[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
+
+    # pylint:disable=unused-argument
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        basis_state = params[0]
+        m = np.zeros((2**len(basis_state), 2**len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
 
     @classmethod
     def _eigvals(cls, *params):

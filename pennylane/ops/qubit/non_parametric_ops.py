@@ -52,8 +52,9 @@ class Hadamard(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @classmethod
@@ -118,8 +119,9 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[0, 1], [1, 0]])
 
     @classmethod
@@ -185,8 +187,9 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[0, -1j], [1j, 0]])
 
     @classmethod
@@ -258,8 +261,9 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0], [0, -1]])
 
     @classmethod
@@ -310,8 +314,9 @@ class S(Operation):
     def num_params(self):
         return 0
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0], [0, 1j]])
 
     @classmethod
@@ -356,8 +361,9 @@ class T(Operation):
     def num_params(self):
         return 0
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @classmethod
@@ -402,8 +408,9 @@ class SX(Operation):
     def num_params(self):
         return 0
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
@@ -459,8 +466,9 @@ class CNOT(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     def adjoint(self):
@@ -506,8 +514,9 @@ class CZ(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @classmethod
@@ -553,8 +562,9 @@ class CY(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -603,8 +613,9 @@ class SWAP(Operation):
     def num_params(self):
         return 0
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
@@ -649,8 +660,9 @@ class ISWAP(Operation):
     def num_params(self):
         return 0
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -699,8 +711,9 @@ class SISWAP(Operation):
     def num_params(self):
         return 0
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -774,8 +787,9 @@ class CSWAP(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -842,8 +856,9 @@ class Toffoli(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -945,13 +960,13 @@ class MultiControlledX(Operation):
 
     # pylint: disable=too-many-arguments
     def __init__(
-        self,
-        *params,
-        control_wires=None,
-        wires=None,
-        control_values=None,
-        work_wires=None,
-        do_queue=True,
+            self,
+            *params,
+            control_wires=None,
+            wires=None,
+            control_values=None,
+            work_wires=None,
+            do_queue=True,
     ):
         wires = Wires(wires)
         control_wires = Wires(control_wires)
@@ -961,7 +976,7 @@ class MultiControlledX(Operation):
             raise ValueError("MultiControlledX accepts a single target wire.")
 
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
-            [control_wires, work_wires]
+                [control_wires, work_wires]
         ):
             raise ValueError("The work wires must be different from the control and target wires")
 
@@ -988,15 +1003,41 @@ class MultiControlledX(Operation):
         return 0
 
     @staticmethod
-    def _matrix(cx):
+    def compute_matrix(control_int, n_wires):
+        """Basic matrix representation of this operator in the computational basis.
+
+        **Examples:**
+
+        >>> qml.MultiControlledX.compute_matrix(0, 2)
+        [[1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 1, 0]]
+        >>> qml.MultiControlledX.compute_matrix(1, 2)
+        [[0. 1. 0. 0.]
+         [1. 0. 0. 0.]
+         [0. 0. 1. 0.]
+         [0. 0. 0. 1.]]
+
+        Args:
+           control_int (int): index of wire that the X gate acts on
+           n_wires (int): total number of wires
+
+        Returns:
+           tensor-like or None: matrix representation
+        """
+        padding_left = control_int * 2
+        padding_right = 2 ** n_wires - 2 - padding_left
+        cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
         return cx
 
     def matrix(self, wire_order=None):
         if self._cx is None:
-            self.cx = block_diag(
+            self._cx = block_diag(
                 np.eye(self._padding_left), PauliX.compute_matrix(), np.eye(self._padding_right)
             )
-        return self.compute_matrix(self.cx, wires=self.wires, wire_order=wire_order)
+        # note: we do not call compute_matrix here, since the base matrix is constructed from inputs
+        return qml.operation.expand_matrix(self._cx, wires=self.wires, wire_order=wire_order)
 
     @property
     def control_wires(self):

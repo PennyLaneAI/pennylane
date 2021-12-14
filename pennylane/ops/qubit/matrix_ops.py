@@ -85,8 +85,9 @@ class QubitUnitary(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return params[0]
 
     @staticmethod
@@ -221,16 +222,19 @@ class ControlledQubitUnitary(QubitUnitary):
         return 1
 
     @staticmethod
-    def _matrix(cu):
+    def compute_matrix(cu):
         return cu
 
     def matrix(self, wire_order=None):
+        # overwrite to compute, store and pass on the matrix representation of controlled unitary
         if self._cu is None:
             interface = qml.math.get_interface(self.U)
             left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
             right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
             self._cu = qml.math.block_diag([left_pad, self.U, right_pad])
-        return self.compute_matrix(self._cu, wires=self.wires, wire_order=wire_order)
+
+        base_matrix = self.compute_matrix(self._cu)
+        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
     def control_wires(self):
@@ -279,8 +283,9 @@ class DiagonalQubitUnitary(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         D = qml.math.asarray(params[0])
 
         if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):

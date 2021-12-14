@@ -88,7 +88,15 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
-    _mat = np.array(
+
+    @property
+    def num_params(self):
+        return 0
+
+    # pylint:disable=unused-argument
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -108,14 +116,6 @@ class QubitCarry(Operation):
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
-
-    @staticmethod
-    def _matrix(*params):
-        return QubitCarry._mat
 
     @staticmethod
     def decomposition(wires):
@@ -185,7 +185,18 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
-    _mat = np.array(
+
+    @property
+    def num_params(self):
+        return 0
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "Σ")
+
+    # pylint:disable=unused-argument
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
             [0, 1, 0, 0, 0, 0, 0, 0],
@@ -197,17 +208,6 @@ class QubitSum(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
-
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Σ")
-
-    @staticmethod
-    def _matrix(*params):
-        return QubitSum._mat
 
     @staticmethod
     def decomposition(wires):

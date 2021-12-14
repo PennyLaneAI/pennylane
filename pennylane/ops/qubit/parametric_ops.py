@@ -584,8 +584,8 @@ class PauliRot(Operation):
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": Hadamard._matrix(),
-        "Y": RX._matrix(np.pi / 2),
+        "X": Hadamard.compute_matrix(),
+        "Y": RX.compute_matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
 

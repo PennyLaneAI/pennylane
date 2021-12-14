@@ -18,9 +18,8 @@ The Operator class has undergone a major refactor with the following changes:
 
 * The `matrix` representation has been modified to be a method that accepts a 
   `wire_order` argument and calculate the correct numerical representation 
-  with respect to that ordering. Internally, `op.matrix()` calls the new static 
-  version `compute_matrix()`, which in turn derives its information from the existing 
-  `_matrix()` method which defines the "base matrix" which uses the operator's wire order.
+  with respect to that ordering. The "base matrix", which uses the operator's wire order, 
+  is defined in `compute_matrix()`.
   [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
 This release contains contributions from (in alphabetical order):

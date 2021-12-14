@@ -25,7 +25,6 @@ from gate_data import (
     H,
 )
 
-
 # Standard observables, their matrix representation, and eigenvalues
 OBSERVABLES = [
     (qml.PauliX, X, [1, -1]),
@@ -34,7 +33,6 @@ OBSERVABLES = [
     (qml.Hadamard, H, [1, -1]),
     (qml.Identity, I, [1, 1]),
 ]
-
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
 EIGVALS_TEST_DATA = [
@@ -60,7 +58,6 @@ EIGVALS_TEST_DATA = [
 ]
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
-
 
 # Testing Projector observable with the basis states.
 PROJECTOR_EIGVALS_TEST_DATA = [
@@ -181,7 +178,7 @@ class TestObservables:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigvals_eigvecs_same_observable_twice(
-        self, observable, eigvals, eigvecs, tol
+            self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the eigvals method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
@@ -252,7 +249,7 @@ class TestObservables:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gatesi_same_observable_twice(
-        self, observable, eigvals, eigvecs, tol
+            self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the diagonalizing_gates method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
@@ -367,6 +364,22 @@ class TestProjector:
         with pytest.raises(ValueError, match="Basis state must only consist of 0s"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
+
+    pytest.mark.parametrize("basis_state, expected", [([0], np.array([[1, 0], [0, 1]])),
+                                                      ([1, 0], np.array([[0, 0, 0, 0, ],
+                                                                         [0, 0, 0, 0],
+                                                                         [0, 0, 1, 0],
+                                                                         [0, 0, 0, 0]])),
+                                                      ([1, 1], np.array([[0, 0, 0, 0, ],
+                                                                         [0, 0, 0, 0],
+                                                                         [0, 0, 0, 0],
+                                                                         [0, 0, 0, 1]])),
+                                                      ])
+
+    def test_matrix_representation(self, basis_state, expected, tol):
+        """Test the matrix method"""
+        res = qml.Projector.compute_matrix(basis_state)
+        assert np.allclose(res, expected, atol=tol)
 
 
 def test_identity_eigvals(tol):
