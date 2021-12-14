@@ -399,7 +399,7 @@ class TestTorchExecuteIntegration:
             dev = qml.device("default.qubit.autograd", wires=2)
             return dev.batch_execute([tape])[0]
 
-        expected = qml.grad(cost)(0.1)
+        expected = qml.grad(cost, argnum=0)(0.1)
         assert torch.allclose(a.grad, torch.tensor(expected, device=torch_device), atol=tol, rtol=0)
 
     def test_jacobian(self, torch_device, execute_kwargs, tol):
