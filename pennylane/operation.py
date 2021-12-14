@@ -537,14 +537,14 @@ class Operator(abc.ABC):
 
     @property
     def hyperparameters(self):
-        """Non-trainable variables that define this operation."""
-        # TODO [Maria/Josh]: this is a placeholder; in future we want to
-        # define hyperparameters for all ops, even if they overwrite init
+        """dict: Dictionary of non-trainable variables that define this operation."""
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
-        return {}
+        self._hyperparameters = {}
+        return self._hyperparameters
 
-    def decomposition(self):
+    @staticmethod
+    def decomposition(*params, wires):
         """Defines a decomposition of this operator into products of other operators.
 
         Returns:
