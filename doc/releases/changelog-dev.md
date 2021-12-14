@@ -13,7 +13,7 @@
 * Fixes a bug in `classical_jacobian` when used with Torch, where the
   Jacobian of the preprocessing was also computed for non-trainable
   parameters.
-  [(#20xx)](https://github.com/PennyLaneAI/pennylane/pull/20xx)
+  [(#2020)](https://github.com/PennyLaneAI/pennylane/pull/2020)
 
 * Fixes a bug in queueing of the `two_qubit_decomposition` method that
   originally led to circuits with >3 two-qubit unitaries failing when passed
