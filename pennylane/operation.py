@@ -409,7 +409,8 @@ class Operator(abc.ABC):
         The matrix representation may depend on parameters or hyperparameters:
 
         >>> qml.Rot.compute_matrix(0.1, 0.2, 0.3)
-        XXXX
+        [[ 0.97517033-0.19767681j -0.09933467+0.00996671j]
+         [ 0.09933467+0.00996671j  0.97517033+0.19767681j]]
 
         Args:
             params (Iterable): trainable parameters that may influence the base matrix
@@ -900,12 +901,12 @@ class Operation(Operator):
         return self
 
     def matrix(self, wire_order=None):
-        op_matrix = super().compute_matrix(wire_order=wire_order)
+        base_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
-            return qml.math.conj(qml.math.T(op_matrix))
+            base_matrix = qml.math.conj(qml.math.T(base_matrix))
 
-        return op_matrix
+        return expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
     def eigvals(self):

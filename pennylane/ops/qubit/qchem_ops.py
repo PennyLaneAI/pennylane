@@ -89,8 +89,9 @@ class SingleExcitation(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -151,8 +152,9 @@ class SingleExcitationMinus(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -227,8 +229,9 @@ class SingleExcitationPlus(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -329,8 +332,9 @@ class DoubleExcitation(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -426,8 +430,9 @@ class DoubleExcitationPlus(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -498,8 +503,9 @@ class DoubleExcitationMinus(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         theta = params[0]
 
         c = qml.math.cos(theta / 2)
@@ -609,8 +615,9 @@ class OrbitalRotation(Operation):
     def num_params(self):
         return 1
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.

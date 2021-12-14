@@ -49,8 +49,9 @@ class Identity(CVObservable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
+    # pylint:disable=unused-argument
     @staticmethod
-    def _matrix(*params):
+    def compute_matrix(*params, **hyperparams):
         return np.eye(2)
 
     @staticmethod

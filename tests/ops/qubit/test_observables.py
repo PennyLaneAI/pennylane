@@ -365,7 +365,7 @@ class TestProjector:
             basis_state = np.array([0, 2])
             circuit(basis_state)
 
-    pytest.mark.parametrize("basis_state, expected", [([0], np.array([[1, 0], [0, 1]])),
+    @pytest.mark.parametrize("basis_state,expected", [([0], np.array([[1, 0], [0, 0]])),
                                                       ([1, 0], np.array([[0, 0, 0, 0, ],
                                                                          [0, 0, 0, 0],
                                                                          [0, 0, 1, 0],
@@ -375,7 +375,6 @@ class TestProjector:
                                                                          [0, 0, 0, 0],
                                                                          [0, 0, 0, 1]])),
                                                       ])
-
     def test_matrix_representation(self, basis_state, expected, tol):
         """Test the matrix method"""
         res = qml.Projector.compute_matrix(basis_state)

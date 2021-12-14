@@ -1036,8 +1036,12 @@ class MultiControlledX(Operation):
             self._cx = block_diag(
                 np.eye(self._padding_left), PauliX.compute_matrix(), np.eye(self._padding_right)
             )
+        base_matrix = self._cx
+        if self.inverse:
+            base_matrix = qml.math.conj(qml.math.T(base_matrix))
+
         # note: we do not call compute_matrix here, since the base matrix is constructed from inputs
-        return qml.operation.expand_matrix(self._cx, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
     def control_wires(self):
