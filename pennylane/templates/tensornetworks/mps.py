@@ -55,7 +55,11 @@ def compute_indices_MPS(wires, n_block_wires):
     layers = np.array(
         [
             [wires[idx] for idx in range(j, j + n_block_wires)]
-            for j in range(0, len(wires) - int(len(wires) % (n_block_wires // 2)) - n_block_wires // 2, n_block_wires // 2)
+            for j in range(
+                0,
+                len(wires) - int(len(wires) % (n_block_wires // 2)) - n_block_wires // 2,
+                n_block_wires // 2,
+            )
         ]
     )
     return layers
@@ -76,7 +80,7 @@ class MPS(Operation):
         template_weights (Sequence): list containing the weights for all blocks
 
     .. note::
-        The expected number of blocks can be obtained from ``qml.MPS.n_blocks(wires, n_block_wires)``. 
+        The expected number of blocks can be obtained from ``qml.MPS.n_blocks(wires, n_block_wires)``.
         The length of ``template_weights`` argument should match the number of blocks.
 
     .. UsageDetails::
@@ -155,7 +159,7 @@ class MPS(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for idx, w in enumerate(self.ind_gates):
-                self.block(weights = self.template_weights[idx][:], wires = w.tolist())
+                self.block(weights=self.template_weights[idx][:], wires=w.tolist())
 
         return tape
 
@@ -172,7 +176,7 @@ class MPS(Operation):
         n_wires = len(wires)
         if n_wires % (n_block_wires / 2) > 0:
             warnings.warn(
-                f"The number of wires should be a multiple of n_block_wires/2 = {int(n_block_wires/2)}; got {n_wires}"
+                f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}"
             )
 
         if n_block_wires > n_wires:

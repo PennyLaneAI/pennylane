@@ -127,21 +127,48 @@ class TestTemplateInputs:
 
 class TestAttributes:
     """Tests additional methods and attributes"""
-    @pytest.mark.filterwarnings("ignore")
+
     @pytest.mark.parametrize(
-        ("wires", "n_block_wires", "expected_n_blocks", "block", "n_params_block"),
+        ("wires", "n_block_wires"),
         [
-            (range(4), 2, 3, None, 2),
-            (range(5), 2, 4, None, 2),
-            (range(6), 2, 5, None, 2),
-            (range(10), 4, 4, None, 2),
-            (range(11), 4, 4, None, 2)
+            (range(7), 4),
+            (range(13), 6)
         ],
     )
-    def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks, block, n_params_block):
-        """Test that the number of blocks attribute returns the correct number of blocks"""
+    def test_get_n_blocks_warning(self,wires,n_block_wires):
+        """Test that get_n_blocks() warns the user when there are too many wires."""
+        with pytest.warns(Warning, match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {len(wires)}"):
+            qml.MPS.get_n_blocks(wires,n_block_wires)
+
+    @pytest.mark.filterwarnings("ignore")
+    @pytest.mark.parametrize(
+        ("wires", "n_block_wires", "expected_n_blocks"),
+        [
+            (range(4), 2, 3),
+            (range(5), 2, 4),
+            (range(6), 2, 5),
+            (range(10), 4, 4),
+            (range(11), 4, 4)
+        ],
+    )
+    def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
+        """Test that the number of blocks attribute returns the correct number of blocks."""
 
         assert qml.MPS.get_n_blocks(wires,n_block_wires) == expected_n_blocks
+
+    @pytest.mark.filterwarnings("ignore")
+    @pytest.mark.parametrize(
+        ("wires", "n_block_wires"),
+        [
+            (range(4), 5),
+            (range(9), 20)
+        ],
+    )
+    def test_get_n_blocks(self, wires, n_block_wires):
+        """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
+
+        with pytest.raises(ValueError, match=f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {len(wires)}"):
+            qml.MPS.get_n_blocks(wires,n_block_wires)
 
 class TestTemplateOutputs:
     def circuit1_block(weights, wires):
