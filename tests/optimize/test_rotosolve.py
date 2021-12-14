@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RotosolveOptimizer``.
 """
+import functools
 import pytest
 from scipy.optimize import shgo
 
@@ -139,6 +140,7 @@ classical_functions = [
     + np.sin(3 * y - 2.01)
     - np.cos(z - 1.35) * 0.111,
 ]
+
 classical_minima = [
     (-np.pi / 2 - 0.124,),
     ([-0.12, -np.pi / 2 + 2.01, 1.35],),
@@ -147,6 +149,7 @@ classical_minima = [
     (-0.12, -np.pi / 2 + 2.01, 1.35),
     (-0.12 / 2, (-np.pi / 2 + 2.01) / 3, 1.35),
 ]
+
 classical_params = [
     (0.24,),
     ([0.2, -0.3, 0.1],),
@@ -155,7 +158,19 @@ classical_params = [
     (0.1, 0.2, 0.5),
     (0.9, 0.7, 0.2),
 ]
-classical_num_freqs = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], 1, [2, 3, 1]]
+
+classical_num_freqs = [
+    {"x": {(): 1}},
+    {"x": {(0,): 1, (1,): 1, (2,): 1}},
+    {"x": {(): 1}, "y": {(0,): 1, (1,): 1}},
+    {"x": {(): 1}, "y": {(0,): 2, (1,): 2}},
+    {"x": {(): 1}, "y": {(): 1}, "z": {(): 1}},
+    {"x": {(): 2}, "y": {(): 3}, "z": {(): 1}},
+]
+
+classical_expected_num_calls = [
+    3, 9, 9, 13, 9, 15
+]
 
 
 def custom_optimizer(fun, **kwargs):
@@ -174,71 +189,96 @@ optimizer_kwargs = [
 
 
 @pytest.mark.parametrize(
-    "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs)),
+    "fun, x_min, param, nums_freq, exp_num_calls",
+    list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs, classical_expected_num_calls)),
 )
 @pytest.mark.parametrize(
     "optimizer, optimizer_kwargs",
     list(zip(optimizers, optimizer_kwargs)),
 )
-class TestWithClassicalFunctions:
+class TestWithClassicalFunction:
+
     def test_number_of_function_calls(
-        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, optimizer, optimizer_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         global num_calls
         num_calls = 0
 
+        @functools.wraps(fun)
         def _fun(*args, **kwargs):
             global num_calls
             num_calls += 1
             return fun(*args, **kwargs)
 
-        opt = RotosolveOptimizer()
+        opt = RotosolveOptimizer(optimizer, optimizer_kwargs)
+
+        # Parameters are not marked as trainable -> Expect only one execution for f0
         new_param = opt.step(
             _fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq
         )
+        assert num_calls == 1
+        num_calls = 0 
 
-        expected_num_calls = np.sum(
-            np.fromiter(_flatten(expand_num_freq(num_freq, param)), dtype=int) * 2 + 1
+        # Parameters are now marked as trainable -> Expect full number of executions
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        new_param = opt.step(
+            _fun,
+            *param,
+            nums_frequency=nums_freq
         )
-        assert num_calls == expected_num_calls
+        assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, optimizer, optimizer_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        opt = RotosolveOptimizer()
+        opt = RotosolveOptimizer(optimizer, optimizer_kwargs)
 
+        # Without trainable parameters, param should not be changed
         new_param_step = opt.step(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
+        )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step = (new_param_step,)
+
+        assert np.allclose(
+            np.fromiter(_flatten(param), dtype=float),
+            np.fromiter(_flatten(new_param_step), dtype=float),
+            atol=1e-5,
+        )
+
+        # With trainable parameters, training should happen
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        new_param_step = opt.step(
+            fun,
+            *param,
+            nums_frequency=nums_freq,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step = (new_param_step,)
 
         assert len(x_min) == len(new_param_step)
+        print(x_min)
+        print(new_param_step)
         assert np.allclose(
             np.fromiter(_flatten(x_min), dtype=float),
             np.fromiter(_flatten(new_param_step), dtype=float),
             atol=1e-5,
         )
 
+        # Now with step_and_cost and trainable params
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -252,25 +292,21 @@ class TestWithClassicalFunctions:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs):
+    def test_full_output(self, fun, x_min, param, nums_freq, exp_num_calls, optimizer, optimizer_kwargs):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
-        opt = RotosolveOptimizer()
+        opt = RotosolveOptimizer(optimizer, optimizer_kwargs)
 
         _, y_output_step = opt.step(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
             full_output=True,
         )
         new_param, old_cost, y_output_step_and_cost = opt.step_and_cost(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
             full_output=True,
         )
         # The following accounts for the unpacking functionality for length-1 param

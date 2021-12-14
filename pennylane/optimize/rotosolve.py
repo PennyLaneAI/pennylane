@@ -14,61 +14,17 @@
 """Rotosolve gradient free optimizer"""
 # pylint: disable=too-many-branches,cell-var-from-loop
 
+from inspect import signature
+from functools import lru_cache
 import numpy as np
 from scipy.optimize import brute, shgo
-from pennylane.utils import _flatten, unflatten
 
-
-def _assert_integer(x):
-    """Raises a ValueError if x is not of a sub-datatype of np.integer."""
-    x_type = type(x)
-    if not np.issubdtype(x_type, np.integer):
-        raise ValueError(
-            f"The numbers of frequencies are expected to be integers. Received {x_type}."
-        )
-
-
-def _validate_num_freqs(num_freqs, requires_grad):
-    """Checks whether a number of frequencies input is valid
-    Args:
-        num_freqs (int or array[int]): Number of frequencies data
-        requires_grad (list[bool]): Information whether an argument is to be optimized, per arg
-    Returns:
-        array[int]: Parsed input value to correct shape or simply return input if array
-        array[int]: List of flattened inputs, with each input being unwrapped if it has length 1
-    """
-    if num_freqs is None:
-        num_freqs = [1] * sum(requires_grad)
-        num_freqs_flat = num_freqs
-    elif np.isscalar(num_freqs):
-        _assert_integer(num_freqs)
-        num_freqs = [num_freqs] * sum(requires_grad)
-        num_freqs_flat = num_freqs
-    else:
-        num_freqs_flat = []
-        for num_frequency in num_freqs:
-            if np.isscalar(num_frequency):
-                _assert_integer(num_frequency)
-                num_frequency_flat = num_frequency
-            else:
-                num_frequency_flat = list(_flatten(num_frequency))
-                for _num_freq in num_frequency_flat:
-                    _assert_integer(_num_freq)
-                num_frequency_flat = np.array(num_frequency_flat, dtype=int)
-            num_freqs_flat.append(num_frequency_flat)
-        if len(num_freqs) != sum(requires_grad):
-            raise ValueError(
-                "The length of the provided numbers of frequencies "
-                f"({len(num_freqs)}) does not match the number of function arguments "
-                f"({sum(requires_grad)})."
-            )
-    return num_freqs, num_freqs_flat
-
+import pennylane as qml
 
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
-    ``num_steps`` times. Signature is as expected by ``RotosolveOptimizer._rotosolve``
-    below, providing a scalar minimal position and the function value at that position."""
+    ``num_steps`` times. Signature is as expected by ``RotosolveOptimizer._min_numeric``
+    below, returning a scalar minimal position and the function value at that position."""
     width = 2 * np.pi
     x_min = 0.0
     Ns = kwargs.pop("Ns")
@@ -82,7 +38,7 @@ def _brute_optimizer(fun, num_steps, **kwargs):
 
 def _shgo_optimizer(fun, **kwargs):
     r"""Wrapper for ``scipy.optimize.shgo`` (Simplicial Homology global optimizer).
-    Signature is as expected by ``RotosolveOptimizer._rotosolve`` below, providing
+    Signature is as expected by ``RotosolveOptimizer._min_numeric`` below, providing
     a scalar minimal position and the function value at that position."""
     opt_res = shgo(fun, **kwargs)
     return opt_res.x, opt_res.fun
@@ -202,13 +158,52 @@ class RotosolveOptimizer:
     """
     # pylint: disable=too-few-public-methods
 
+    def __init__(self, optimizer=None, optimizer_kwargs=None):
+        self.optimizer, self.optimizer_kwargs = self._prepare_optimizer(optimizer, optimizer_kwargs)
+
+    def _prepare_optimizer(self, optimizer, optimizer_kwargs):
+        """Set default optimizer and optimizer keyword arguments
+        for the one-dimensional optimization in each substep of Rotosolve."""
+        optimizer_kwargs = optimizer_kwargs or {}
+        optimizer = optimizer or "brute"
+
+        if optimizer == "brute":
+            optimizer = _brute_optimizer
+            optimizer_kwargs.setdefault("num_steps", 4)
+            optimizer_kwargs.setdefault("Ns", 100)
+        elif optimizer == "shgo":
+            optimizer = _shgo_optimizer
+            optimizer_kwargs.setdefault("bounds", ((-np.pi, np.pi),))
+
+        return optimizer, optimizer_kwargs
+
+    def _validate_inputs(self, requires_grad, args, nums_frequency, spectra):
+        """Checks that for each trainable argument either the number of
+        frequencies or the frequency spectrum is given."""
+
+        for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
+            if _requires_grad:
+                _nums_frequency = nums_frequency.get(arg_name, {})
+                _spectra = spectra.get(arg_name, {})
+                all_keys = set(_nums_frequency) | set(_spectra)
+
+                shape = qml.math.shape(arg)
+                indices = np.ndindex(shape) if len(shape)>0 else [()]
+                for par_idx in indices:
+                    if par_idx not in all_keys:
+                        raise ValueError(
+                            "Neither the number of frequencies nor the frequency spectrum "
+                            f"was provided for the entry {par_idx} of argument {arg_name}."
+                        )
+
+
     def step_and_cost(
         self,
         objective_fn,
         *args,
-        num_freqs=None,
-        optimizer=None,
-        optimizer_kwargs=None,
+        nums_frequency=None,
+        spectra=None,
+        shifts=None,
         full_output=False,
         **kwargs,
     ):
@@ -246,22 +241,18 @@ class RotosolveOptimizer:
             If a single arg is provided, list [array] is replaced by array.
             list [float]: the intermediate energy values, only returned if ``full_output=True``.
         """
-        _requires_grad = [getattr(arg, "requires_grad", True) for arg in args]
-        num_freqs, num_freqs_flat = _validate_num_freqs(num_freqs, _requires_grad)
+        # todo: does this signature call cover all cases?
+        sign_fn = objective_fn.func if isinstance(objective_fn, qml.QNode) else objective_fn
+        arg_names = list(signature(sign_fn).parameters.keys())
+        requires_grad = {
+            arg_name: qml.math.requires_grad(arg) for arg_name, arg in zip(arg_names, args)
+        }
+        nums_frequency = nums_frequency or {}
+        spectra = spectra or {}
+        self._validate_inputs(requires_grad, args, nums_frequency, spectra)
 
-        optimizer_kwargs = optimizer_kwargs or {}
-        optimizer = optimizer or "brute"
-
-        if optimizer == "brute":
-            optimizer = _brute_optimizer
-            optimizer_kwargs.setdefault("num_steps", 4)
-            optimizer_kwargs.setdefault("Ns", 100)
-        elif optimizer == "shgo":
-            optimizer = _shgo_optimizer
-            optimizer_kwargs.setdefault("bounds", ((-np.pi, np.pi),))
-
-        # will single out one arg to change at a time
-        # these hold the arguments not getting updated
+        # we will single out one arg to change at a time
+        # the following hold the arguments not getting updated
         before_args = []
         after_args = list(args)
         # mutable version of args to get updated
@@ -272,69 +263,77 @@ class RotosolveOptimizer:
             y_output = []
         # Compute the very first evaluation in order to be able to cache it
         fun_at_zero = objective_fn(*args, **kwargs)
+        first_sub_update = True
 
-        train_arg_index = 0
-        for arg_index, arg in enumerate(args):
+        for arg_idx, (arg, arg_name) in enumerate(zip(args, arg_names)):
             del after_args[0]
 
-            if _requires_grad[arg_index]:
-                num_frequency_flat = num_freqs_flat[train_arg_index]
-                x_flat = np.fromiter(_flatten(arg), dtype=float)
-                num_params = len(x_flat)
-                if np.isscalar(num_frequency_flat):
-                    num_frequency_flat = [num_frequency_flat] * num_params
+            if not requires_grad[arg_name]:
+                before_args.append(arg)
+                continue
+            shape = qml.math.shape(arg)
+            indices = np.ndindex(shape) if len(shape)>0 else [()]
+            for par_idx in indices:
+                # Set a single parameter in a single argument to be reconstructed
+                num_freq = nums_frequency.get(arg_name, {}).get(par_idx, None)
+                spectrum = spectra.get(arg_name, {}).get(par_idx, None)
+                if spectrum is not None:
+                    spectrum = np.array(spectrum)
+                _fun_at_zero = fun_at_zero if first_sub_update else None
+
+                if num_freq==1 or (spectrum is not None and len(spectrum[spectrum>0]))==1:
+                    univariate = self._restrict_to_univariate(
+                        objective_fn, arg_idx, par_idx, args, kwargs
+                    )
+                    freq = 1. if num_freq is not None else spectrum[0]
+                    x_min, y_min = self._min_analytic(univariate, freq, _fun_at_zero)
+
                 else:
-                    if len(num_frequency_flat) != num_params:
-                        raise ValueError(
-                            "The number of the frequency counts "
-                            f"({len(num_frequency_flat)}) for the {arg_index}th argument does "
-                            f"not match the number of parameters in that argument ({num_params})."
-                        )
-                shift_vecs = np.eye(num_params)
+                    ids = {arg_name: (par_idx,)}
+                    _nums_frequency = {arg_name: {par_idx: num_freq}} if num_freq is not None else None
+                    _spectra = {arg_name: {par_idx: spectrum}} if spectrum is not None else None
 
-                # Iterate over current arg:
-                for par_index, _num_frequency in enumerate(num_frequency_flat):
-                    shift_vec = shift_vecs[par_index]
-                    # univariate objective function
-                    univariate_obj_fn = lambda x: objective_fn(
-                        *before_args,
-                        unflatten(x_flat + shift_vec * x, arg),
-                        *after_args,
-                        **kwargs,
+                    # Set up the reconstruction generator
+                    print(ids, _nums_frequency, _spectra)
+                    recon_fn = qml.fourier.reconstruct(
+                        objective_fn, ids, _nums_frequency, _spectra, shifts
                     )
-                    x_min, y_min = self._rotosolve(
-                        univariate_obj_fn,
-                        _num_frequency,
-                        optimizer,
-                        optimizer_kwargs,
-                        full_output,
-                        fun_at_zero=(fun_at_zero if train_arg_index + par_index == 0 else None),
-                    )
-                    x_flat += shift_vec * x_min
-                    if full_output:
-                        y_output.append(y_min)
+                    # Perform the reconstruction
+                    _args = before_args + [arg] + after_args
+                    recon = recon_fn(*_args, f0=_fun_at_zero, **kwargs)[arg_name][par_idx]
+                    __args = before_args + [qml.math.scatter_element_add(arg, par_idx, 0.3)] + after_args
+                    print(recon(0.3), objective_fn(*__args))
+                    print("Using numeric")
+                    x_min, y_min = self._min_numeric(recon)
 
-                args_new[arg_index] = unflatten(x_flat, arg)
-                train_arg_index += 1
+                # Update the currently treated argument
+                arg = qml.math.scatter_element_add(arg, par_idx, x_min)
+                first_sub_update = False
 
-            # updating before_args for next loop
-            before_args.append(args_new[arg_index])
+                if full_output:
+                    y_output.append(y_min)
 
+            # updating before_args for next argument
+            before_args.append(arg)
+
+        # All arguments have been updated and/or passed to before_args
+        args = before_args
         # unwrap arguments if only one, backward compatible and cleaner
-        if len(args_new) == 1:
-            args_new = args_new[0]
+        if len(args) == 1:
+            args = args[0]
 
         if full_output:
-            return args_new, fun_at_zero, y_output
-        return args_new, fun_at_zero
+            return args, fun_at_zero, y_output
+
+        return args, fun_at_zero
 
     def step(
         self,
         objective_fn,
         *args,
-        num_freqs=None,
-        optimizer=None,
-        optimizer_kwargs=None,
+        nums_frequency=None,
+        spectra=None,
+        shifts=None,
         full_output=False,
         **kwargs,
     ):
@@ -373,9 +372,9 @@ class RotosolveOptimizer:
         x_new, _, *y_output = self.step_and_cost(
             objective_fn,
             *args,
-            num_freqs=num_freqs,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_frequency,
+            spectra=spectra,
+            shifts=shifts,
             full_output=full_output,
             **kwargs,
         )
@@ -383,41 +382,8 @@ class RotosolveOptimizer:
             return x_new, y_output
         return x_new
 
-    @staticmethod
-    def full_reconstruction_equ(fun, num_frequency, fun_at_zero=None):
-        r"""Reconstruct a univariate trigonometric function using trigonometric interpolation.
-        See `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ or
-        `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
-
-        Args:
-            fun (callable): the function to reconstruct
-            num_frequency (int): the number of (integer) frequencies present in ``fun``.
-            fun_at_zero (float): The value of ``fun`` at 0. Computed if not provided.
-
-        Returns:
-            callable: The reconstruction function with ``num_frequency`` frequencies,
-            coinciding with ``fun`` on the same number of points.
-        """
-        fun_at_zero = float(fun(0.0)) if fun_at_zero is None else fun_at_zero
-        mus = np.arange(1, num_frequency + 1)
-        shifts_pos = 2 * mus * np.pi / (2 * num_frequency + 1)
-        shifts_neg = -shifts_pos[::-1]
-        evals = list(map(fun, shifts_neg)) + [fun_at_zero] + list(map(fun, shifts_pos))
-        shifts = np.concatenate([shifts_neg, [0.0], shifts_pos])
-        a, b = (num_frequency + 0.5) / np.pi, 0.5 / np.pi
-        reconstruction = lambda x: np.sum(
-            np.array(
-                [
-                    _eval * np.sinc(a * (x - shift)) / np.sinc(b * (x - shift))
-                    for _eval, shift in zip(evals, shifts)
-                ]
-            )
-        )
-        return reconstruction
-
-    @staticmethod
     def _rotosolve(
-        objective_fn, num_frequency, optimizer, optimizer_kwargs, full_output, fun_at_zero=None
+        objective_fn, single_frequency, optimizer, optimizer_kwargs, full_output, fun_at_zero=None
     ):
         r"""The rotosolve step for a univariate (restriction of a) cost function.
 
@@ -443,27 +409,95 @@ class RotosolveOptimizer:
             x_min (float): the minimizing input of ``objective_fn`` within :math:`(-\pi, \pi]`.
             y_min (float): the minimal value of ``objective_fn``.
         """
-        # pylint: disable=too-many-arguments
-        fun_at_zero = float(objective_fn(0.0)) if fun_at_zero is None else fun_at_zero
-        # Use closed form expression from Ostaszewski et al., using notation of App. A
-        if num_frequency == 1:
-            H_p = float(objective_fn(0.5 * np.pi))
-            H_m = float(objective_fn(-0.5 * np.pi))
-            C = 0.5 * (H_p + H_m)
-            B = np.arctan2(2 * (fun_at_zero - C), H_p - H_m)
-            x_min = -np.pi / 2 - B
-            if full_output:
-                A = np.sqrt((fun_at_zero - C) ** 2 + 0.25 * (H_p - H_m) ** 2)
-                y_min = -A + C
-            else:
-                y_min = None
+
+    def _restrict_to_univariate(self, fn, arg_idx, par_idx, args, kwargs):
+        r"""Restrict a function to a univariate function for given argument
+        and parameter indices.
+
+        Args:
+            fn (callable): Multivariate function
+            arg_idx (int): Index of the argument that contains the parameter to restrict to
+            par_idx (tuple[int]): Index of the parameter to restrict to within the argument
+            args (tuple): Arguments at which to restrict the function.
+            kwargs (dict): Keyword arguments at which to restrict the function.
+
+        Returns:
+            callable: Univariate restriction of ``fn``. That is, this callable takes
+            a single float value as input and has the same return type as ``fn``.
+            All arguments are set to the given ``args`` and the input value to this
+            function is added to the marked parameter.
+        """
+        if len(qml.math.shape(args[arg_idx])) == 0:
+            shift_vec = qml.math.ones_like(args[arg_idx])
         else:
-            reconstruction = RotosolveOptimizer.full_reconstruction_equ(
-                objective_fn, num_frequency, fun_at_zero
-            )
-            x_min, y_min = optimizer(reconstruction, **optimizer_kwargs)
-            if y_min is None and full_output:
-                y_min = reconstruction(x_min)
+            shift_vec = qml.math.zeros_like(args[arg_idx])
+            shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
+
+        def _univariate_fn(x):
+            new_arg = args[arg_idx] + shift_vec * x
+            new_args = args[:arg_idx] + (new_arg,) + args[arg_idx + 1 :]
+            return fn(*new_args, **kwargs)
+
+        return _univariate_fn
+
+
+    def _min_analytic(self, objective_fn, freq, f0):
+        r"""Analytically minimize a trigonometric function that depends on a
+        single parameter and has a single frequency. Uses two or
+        three function evaluations.
+
+        Args:
+            objective_fn (callable): Trigonometric function to minimize
+            freq (float): Frequency in the ``objective_fn``
+            f0 (float): Value of the ``objective_fn`` at zero. Reduces the
+                number of calls to the function from three to two if given.
+
+        Returns:
+            float: Position of the minimum of ``objective_fn``
+            float: Value of the minimum of ``objective_fn``
+
+        The closed form expression used here was derived in
+        `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
+        `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
+        `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
+        We use the notation of Appendix A of the latter reference, allowing
+        for an arbitrary frequency instead of restricting to ``freq=1``.
+        The returned position is guaranteed to lie within :math:`(-\pi, \pi]`.
+        """
+        if f0 is None:
+            f0 = objective_fn(0.0)
+        fp = objective_fn(0.5 * np.pi / freq)
+        fm = objective_fn(-0.5 * np.pi / freq)
+        C = 0.5 * (fp + fm)
+        B = np.arctan2(2 * f0 - fp - fm, fp - fm)
+        x_min = (-np.pi / 2 - B) / freq
+        A = np.sqrt((f0 - C) ** 2 + 0.25 * (fp - fm) ** 2)
+        y_min = -A + C
+
+        if x_min <= -np.pi:
+            x_min = x_min + 2 * np.pi
+
+        return x_min, y_min
+
+    def _min_numeric(self, objective_fn):
+        r"""Numerically minimize a trigonometric function that depends on a
+        single parameter. Uses potentially large numbers of function evaluations.
+        The optimization method and options are stored in
+        ``RotosolveOptimizer.optimizer`` and ``RotosolveOptimizer.optimizer_kwargs``.
+
+        Args:
+            objective_fn (callable): Trigonometric function to minimize
+
+        Returns:
+            float: Position of the minimum of ``objective_fn``
+            float: Value of the minimum of ``objective_fn``
+
+        The returned position is guaranteed to lie within :math:`(-\pi, \pi]`.
+        """
+
+        x_min, y_min = self.optimizer(objective_fn, **self.optimizer_kwargs)
+        if y_min is None:
+            y_min = objective_fn(x_min)
 
         if x_min <= -np.pi:
             x_min += 2 * np.pi
