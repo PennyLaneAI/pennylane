@@ -482,6 +482,7 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
+        self._hyperparameters = {}
 
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
@@ -551,6 +552,14 @@ class Operator(abc.ABC):
     def parameters(self):
         """Current parameter values."""
         return self.data.copy()
+
+    @property
+    def hyperparameters(self):
+        """dict: Dictionary of non-trainable variables that define this operation."""
+        if hasattr(self, "_hyperparameters"):
+            return self._hyperparameters
+        self._hyperparameters = {}
+        return self._hyperparameters
 
     @staticmethod
     def decomposition(*params, wires):
@@ -633,8 +642,6 @@ class Operation(Operator):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
-    # pylint: disable=abstract-method
-    string_for_inverse = ".inv"
 
     @property
     def grad_method(self):
@@ -836,7 +843,7 @@ class Operation(Operator):
     @property
     def name(self):
         """Get and set the name of the operator."""
-        return self._name + Operation.string_for_inverse if self.inverse else self._name
+        return self._name + ".inv" if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
         if self.inverse:
