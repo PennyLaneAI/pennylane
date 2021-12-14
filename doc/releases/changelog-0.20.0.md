@@ -663,6 +663,8 @@
   if op in diagonal_in_z_basis:
       # do something
   ```
+  Custom operations can be added to this attribute at runtime via
+  `diagonal_in_z_basis.add("MyCustomOp")`.
 
 <h3>Bug fixes</h3>
 
