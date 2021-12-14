@@ -138,11 +138,10 @@ class TestAttributes:
             (range(11), 4, 4, None, 2)
         ],
     )
-    def test_n_blocks(self, wires, n_block_wires, expected_n_blocks, block, n_params_block):
+    def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks, block, n_params_block):
         """Test that the number of blocks attribute returns the correct number of blocks"""
 
-        mps = MPS(wires, n_block_wires, block, n_params_block)
-        assert mps.n_blocks == expected_n_blocks
+        assert qml.MPS.get_n_blocks(wires,n_block_wires) == expected_n_blocks
 
 class TestTemplateOutputs:
     def circuit1_block(weights, wires):

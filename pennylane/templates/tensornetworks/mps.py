@@ -160,7 +160,7 @@ class MPS(Operation):
         return tape
 
     @staticmethod
-    def n_blocks(wires, n_block_wires):
+    def get_n_blocks(wires, n_block_wires):
 
         r"""Returns the expected number of blocks for a set of wires and number of wires per block.
         Args:
@@ -180,6 +180,5 @@ class MPS(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        # n_blocks = int(n_wires / (n_block_wires / 2) - 1)
-        n_blocks = int(n_wires // (n_block_wires/2) -1)
+        n_blocks = int(n_wires / (n_block_wires / 2) - 1)
         return n_blocks
