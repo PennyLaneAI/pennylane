@@ -370,7 +370,6 @@ class Operator(abc.ABC):
 
         >>> qml.RZ._eigvals(0.5)
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX._eigvals()
@@ -396,7 +395,6 @@ class Operator(abc.ABC):
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX.eigvals()
@@ -593,10 +591,10 @@ class Operator(abc.ABC):
         form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
 
-        Returns None if this operator does not define its diagonalizing gates.
+        Returns `None` if this operator does not define its diagonalizing gates.
 
         Returns:
-            list(qml.Operator): A list of operators.
+            list[.Operator] or None: A list of operators.
         """
         return None
 
@@ -1877,16 +1875,7 @@ def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing
     gates are defined."""
 
-    # We need to stop the tape so that the diagonalizing gates
-    # are not queued when we check if they are defined.
-    # Reassess this when queueing system is overhauled
-    tape = qml.tape.get_active_tape()
-    if tape is not None:
-        with tape.stop_recording():
-            dgates = obj.diagonalizing_gates()
-    else:
+    with qml.tape.stop_recording():
         dgates = obj.diagonalizing_gates()
 
-    if dgates is None:
-        return False
-    return True
+    return dgates is not None
