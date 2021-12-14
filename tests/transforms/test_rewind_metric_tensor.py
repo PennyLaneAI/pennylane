@@ -18,17 +18,17 @@ import pytest
 from pennylane import numpy as np
 import pennylane as qml
 
-from pennylane.transforms.rewind_metric_tensor import _apply_any_operation
+from pennylane.transforms.rewind_metric_tensor import _apply_operations
 
 
-class TestApplyAnyOperation:
+class TestApplyOperations:
 
     device = qml.device("default.qubit", wires=2)
     x = 0.5
 
     def test_simple_operation(self):
         op = qml.RX(self.x, wires=0)
-        out = _apply_any_operation(self.device._state, op, self.device)
+        out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -36,7 +36,7 @@ class TestApplyAnyOperation:
 
     def test_simple_operation_inv(self):
         op = qml.RX(self.x, wires=0)
-        out = _apply_any_operation(self.device._state, op, self.device, invert=True)
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -44,7 +44,7 @@ class TestApplyAnyOperation:
 
     def test_inv_operation(self):
         op = qml.RX(self.x, wires=0).inv()
-        out = _apply_any_operation(self.device._state, op, self.device)
+        out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, 1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -52,7 +52,7 @@ class TestApplyAnyOperation:
 
     def test_inv_operation_inv(self):
         op = qml.RX(self.x, wires=0).inv()
-        out = _apply_any_operation(self.device._state, op, self.device, invert=True)
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
         out = qml.math.reshape(out, 4)
         exp = np.array([np.cos(self.x / 2), 0.0, -1j * np.sin(self.x / 2), 0.0])
         assert np.allclose(out, exp)
@@ -60,7 +60,7 @@ class TestApplyAnyOperation:
 
     def test_operation_group(self):
         op = [qml.RX(self.x, wires=0).inv(), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
-        out = _apply_any_operation(self.device._state, op, self.device)
+        out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
         exp = np.array(
             [
@@ -77,7 +77,7 @@ class TestApplyAnyOperation:
 
     def test_operation_group_inv(self):
         op = [qml.RX(self.x, wires=0).inv(), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
-        out = _apply_any_operation(self.device._state, op, self.device, invert=True)
+        out = _apply_operations(self.device._state, op, self.device, invert=True)
         out = qml.math.reshape(out, 4)
         exp = np.array(
             [
@@ -96,7 +96,7 @@ class TestApplyAnyOperation:
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
         op = qml.QubitStateVector(state, wires=self.device.wires)
-        out = _apply_any_operation(None, op, self.device, invert=False)
+        out = _apply_operations(None, op, self.device, invert=False)
         out = qml.math.reshape(out, 4)
         assert np.allclose(out, state)
 
@@ -105,11 +105,11 @@ class TestApplyAnyOperation:
         state /= np.linalg.norm(state, ord=2)
         op = qml.QubitStateVector(state, wires=self.device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
-            _apply_any_operation(None, op, self.device, invert=True)
+            _apply_operations(None, op, self.device, invert=True)
 
     def test_basisstate(self):
         op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
-        out = _apply_any_operation(None, op, self.device, invert=False)
+        out = _apply_operations(None, op, self.device, invert=False)
         out = qml.math.reshape(out, 4)
         exp = np.array([0.0, 0.0, 1.0, 0.0])
         assert np.allclose(out, exp)
@@ -117,7 +117,84 @@ class TestApplyAnyOperation:
     def test_error_basisstate(self):
         op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
-            _apply_any_operation(None, op, self.device, invert=True)
+            _apply_operations(None, op, self.device, invert=True)
+
+
+@pytest.mark.parametrize("invert", [False, True])
+class TestApplyOperationsDifferentiability:
+
+    x = 0.5
+
+    def test_simple_operation_autograd(self, invert):
+        device = qml.device("default.qubit.autograd", wires=2)
+        x = np.array(self.x, requires_grad=True)
+        r_fn = lambda x: qml.math.real(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        i_fn = lambda x: qml.math.imag(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        out = qml.jacobian(r_fn)(x) + 1j * qml.jacobian(i_fn)(x)
+        exp = (
+            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
+            / 2
+        )
+        assert np.allclose(out, exp)
+
+    def test_simple_operation_jax(self, invert):
+        jax = pytest.importorskip("jax")
+        device = qml.device("default.qubit.jax", wires=2)
+        x = jax.numpy.array(self.x)
+        r_fn = lambda x: qml.math.real(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        i_fn = lambda x: qml.math.imag(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        out = jax.jacobian(r_fn)(x) + 1j * jax.jacobian(i_fn)(x)
+        exp = (
+            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
+            / 2
+        )
+        assert np.allclose(out, exp)
+
+    def test_simple_operation_tf(self, invert):
+        tf = pytest.importorskip("tensorflow")
+        device = qml.device("default.qubit.tf", wires=2)
+        x = tf.Variable(self.x, dtype=tf.float64)
+        r_fn = lambda x: qml.math.real(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        i_fn = lambda x: qml.math.imag(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        with tf.GradientTape(persistent=True) as tape:
+            r_state = r_fn(x)
+            i_state = i_fn(x)
+        out = qml.math.complex(tape.jacobian(r_state, x), tape.jacobian(i_state, x))
+        exp = (
+            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
+            / 2
+        )
+        assert np.allclose(out, exp)
+
+    def test_simple_operation_torch(self, invert):
+        torch = pytest.importorskip("torch")
+        jac_fn = torch.autograd.functional.jacobian
+        device = qml.device("default.qubit.torch", wires=2)
+        x = torch.tensor(self.x, requires_grad=True)
+        r_fn = lambda x: qml.math.real(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        i_fn = lambda x: qml.math.imag(
+            _apply_operations(device._state, qml.RX(x, wires=0), device, invert)
+        )
+        out = jac_fn(r_fn, x) + 1j * jac_fn(i_fn, x)
+        exp = (
+            np.array([[-np.sin(self.x / 2), 0.0], [-1j * (-1) ** invert * np.cos(self.x / 2), 0.0]])
+            / 2
+        )
+        assert np.allclose(out, exp)
 
 
 fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
@@ -203,12 +280,16 @@ def fubini_ansatz6(params, wires=None):
     fubini_ansatz4(params[0], [params[0], params[1], -params[1]], wires=wires)
 
 
-def fubini_ansatz7(x, wires=None):
+def fubini_ansatz7(params0, params1, wires=None):
+    fubini_ansatz4(params0[0], [params0[1], params1[0], params1[1]], wires=wires)
+
+
+def fubini_ansatz8(x, wires=None):
     qml.RX(fixed_pars[0], wires=0)
     qml.RX(x, wires=0)
 
 
-def fubini_ansatz8(params, wires=None):
+def fubini_ansatz9(params, wires=None):
     params0 = params[0]
     params1 = params[1]
     qml.RX(fixed_pars[1], wires=[0])
@@ -234,6 +315,9 @@ def fubini_ansatz8(params, wires=None):
     qml.CNOT(wires=[0, 1])
     qml.RX(fixed_pars[2], wires=[1])
 
+def fubini_ansatz10(weights, wires=None):
+    qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+
 
 B = np.array(
     [
@@ -250,11 +334,11 @@ B = np.array(
     ],
     requires_grad=True,
 )
-fubini_ansatze_tape = [fubini_ansatz0, fubini_ansatz1, fubini_ansatz7]
+fubini_ansatze_tape = [fubini_ansatz0, fubini_ansatz1, fubini_ansatz8]
 fubini_params_tape = [
     (np.array([0.3434, -0.7245345], requires_grad=True),),
     (B,),
-    (-0.1735,),
+    (np.array(-0.1735, requires_grad=True),),
 ]
 
 fubini_ansatze = [
@@ -267,6 +351,8 @@ fubini_ansatze = [
     fubini_ansatz6,
     fubini_ansatz7,
     fubini_ansatz8,
+    fubini_ansatz9,
+    fubini_ansatz10,
 ]
 
 fubini_params = [
@@ -275,13 +361,18 @@ fubini_params = [
     (np.array([-0.1111, -0.2222], requires_grad=True),),
     (np.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
     (
-        -0.1735,
+        np.array(-0.1735, requires_grad=True),
         np.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
     ),
     (np.array([-0.1735, -0.2846], requires_grad=True),),
     (np.array([-0.1735, -0.2846], requires_grad=True),),
-    (-0.1735,),
+    (
+        np.array([-0.1735, -0.2846], requires_grad=True),
+        np.array([0.9812, -0.1492], requires_grad=True),
+    ),
+    (np.array(-0.1735, requires_grad=True),),
     (np.array([-0.1111, 0.3333], requires_grad=True),),
+    (np.array([[0.21, 9.29], [-0.2, 0.12], [0.3, -2.1]], requires_grad=True),),
 ]
 
 
@@ -301,6 +392,13 @@ def autodiff_metric_tensor(ansatz, num_wires):
         iqnode = lambda *params: np.imag(qnode(*params))
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
+
+        if len(params) > 1 and all(
+            qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
+        ):
+            rjac = tuple(qml.math.transpose(rjac))
+            ijac = tuple(qml.math.transpose(ijac))
+
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
@@ -324,7 +422,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
     return mt
 
 
-@pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze_tape, fubini_params_tape))
+@pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze_tape, fubini_params_tape)))
 class TestRewindMetricTensorTape:
     """Test the rewind method for the metric tensor when calling it directly on
     a tape.
@@ -427,7 +525,8 @@ class TestRewindMetricTensorTape:
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.rewind_metric_tensor(circuit, hybrid=False)(*t_params)
+        with tf.GradientTape() as t:
+            mt = qml.rewind_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
 
@@ -438,7 +537,7 @@ class TestRewindMetricTensorQNode:
 
     num_wires = 3
 
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
         calling the rewind metric tensor on a QNode."""
@@ -459,7 +558,7 @@ class TestRewindMetricTensorQNode:
             assert qml.math.allclose(mt, expected)
 
     @pytest.mark.skip("JAX does not support forward pass executiong of the metric tensor.")
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
         calling the rewind metric tensor on a QNode."""
@@ -486,7 +585,7 @@ class TestRewindMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_torch(self, ansatz, params):
         """Test that the output is correct when using Torch and
         calling the rewind metric tensor on a QNode."""
@@ -510,7 +609,7 @@ class TestRewindMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_tf(self, ansatz, params):
         """Test that the output is correct when using TensorFlow and
         calling the rewind metric tensor on a QNode."""
@@ -559,10 +658,19 @@ class TestRewindMetricTensorQNode:
             assert qml.math.allclose(mt, expected)
 
 
-@pytest.mark.skip(
-    "Autodifferentiation of the rewind method is not supported yet (Runtime problems)"
-)
-@pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+diff_fubini_ansatze = [
+    fubini_ansatz0,
+    fubini_ansatz2,
+    fubini_ansatz10,
+]
+
+diff_fubini_params = [
+    fubini_params[0],
+    fubini_params[2],
+    fubini_params[10],
+]
+
+@pytest.mark.parametrize("ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params)))
 class TestRewindMetricTensorDifferentiability:
     """Test the differentiability of the rewind method for the metric
     tensor when calling it on a QNode.
@@ -583,13 +691,17 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.jacobian(qml.rewind_metric_tensor(circuit))(*params)
+        mt_jac = qml.jacobian(qml.rewind_metric_tensor(circuit))(*params)
 
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+        if isinstance(mt_jac, tuple):
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
-            assert qml.math.allclose(mt, expected)
+            assert qml.math.allclose(mt_jac, expected)
 
+    @pytest.mark.skip(
+        "For JAX, the number of trainable parameters is not known at QNode"
+        "construction time, disabling the approach."
+    )
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the derivative is correct when using JAX and
         calling the rewind metric tensor on a QNode."""
@@ -609,12 +721,14 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.rewind_metric_tensor(circuit)(*j_params)
+        mt_fn = qml.rewind_metric_tensor(circuit)
+        argnums = list(range(len(params)))
+        mt_jac = jax.jacobian(mt_fn)(*j_params)
 
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+        if isinstance(mt_jac, tuple):
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
-            assert qml.math.allclose(mt, expected)
+            assert qml.math.allclose(mt_jac, expected)
 
     def test_correct_output_qnode_torch(self, ansatz, params):
         """Test that the derivative is correct when using Torch and
@@ -632,12 +746,13 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.rewind_metric_tensor(circuit)(*t_params)
+        mt_fn = qml.rewind_metric_tensor(circuit)
+        mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
 
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+        if isinstance(mt_jac, tuple):
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
-            assert qml.math.allclose(mt, expected)
+            assert qml.math.allclose(mt_jac, expected)
 
     def test_correct_output_qnode_tf(self, ansatz, params):
         """Test that the derivative is correct when using TensorFlow and
@@ -658,10 +773,13 @@ class TestRewindMetricTensorDifferentiability:
         with tf.GradientTape() as t:
             mt = qml.rewind_metric_tensor(circuit)(*t_params)
 
-        if isinstance(mt, tuple):
-            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+        mt_jac = t.jacobian(mt, t_params)
+        if isinstance(mt_jac, tuple):
+            if not isinstance(expected, tuple) and len(mt_jac)==1:
+                expected = (expected,)
+            assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
-            assert qml.math.allclose(mt, expected)
+            assert qml.math.allclose(mt_jac, expected)
 
 
 class TestErrors:

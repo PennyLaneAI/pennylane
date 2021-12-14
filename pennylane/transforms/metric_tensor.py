@@ -259,7 +259,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     )
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac):
+def _contract_metric_tensor_with_cjac(mt, cjac, cjac_hotfix=False):
     """Execute the contraction of pre-computed classical Jacobian(s)
     and the metric tensor of a tape in order to obtain the hybrid
     metric tensor of a QNode.
@@ -274,6 +274,8 @@ def _contract_metric_tensor_with_cjac(mt, cjac):
         for which the classical Jacobian was computed, their shape on the
         shape of these QNode arguments.
     """
+    if cjac_hotfix:
+        cjac = tuple(qml.math.transpose(cjac))
 
     if isinstance(cjac, tuple):
         if len(cjac) == 1:
@@ -356,8 +358,15 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
+        trainable_args = [qml.math.requires_grad(arg) for arg in args]
+        shape = qml.math.shape(args[trainable_args[0]])
+        cjac_hotfix = (
+            qnode.interface == "autograd"
+            and len(trainable_args) > 1
+            and all(qml.math.shape(args[i]) == shape for i in trainable_args[1:])
+        )
 
-        return _contract_metric_tensor_with_cjac(mt, cjac)
+        return _contract_metric_tensor_with_cjac(mt, cjac, cjac_hotfix)
 
     return wrapper
 
