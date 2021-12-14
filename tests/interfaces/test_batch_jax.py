@@ -612,11 +612,8 @@ class TestJaxExecuteIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_independent_expval(self, execute_kwargs):
-
-
-        # TODO: param_shift is failing because the output_dim of the tape is
-        # [0,3], instead of [1,3] and this causes empty lists to be returned
-
+        """Tests computing an expectation value that is independent trainable
+        parameters."""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
@@ -640,6 +637,7 @@ class TestJaxExecuteIntegration:
         assert res.shape == (1, 3)
 
     def test_multiple_expvals(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
