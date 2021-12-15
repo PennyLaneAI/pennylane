@@ -141,7 +141,7 @@ The bridge between the quantum and classical worlds is provided in PennyLane via
 Currently, there are four built-in interfaces: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
 <interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. These
 interfaces make each of these libraries quantum-aware, allowing quantum circuits to be treated just
-like any other operation. Each interface can be chosen with any device.
+like any other operation. Any interface can be chosen with any device.
 
 In PennyLane, an interface is declared when creating a :class:`QNode <pennylane.QNode>`, e.g.,
 
