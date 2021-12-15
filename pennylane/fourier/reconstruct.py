@@ -438,7 +438,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     >>> recon_Y1 = rec["Y"][(1,)]
     >>> np.isclose(recon_Y0(Y[0]), circuit_value)
     True
-    >>> np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3)
+    >>> np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3))
     True
 
     We successfully reconstructed the dependence on the two entries of ``Y`` ,
@@ -459,7 +459,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     dict_keys(['x', 'Y'])
     >>> spectra["x"]
     {(): [-1.0, 0.0, 1.0]}
-    >>> print(*_spectra["Y"].items(), sep="\n")
+    >>> print(*spectra["Y"].items(), sep="\n")
     ((0,), [-1.0, 0.0, 1.0])
     ((1,), [-6.0, -5.0, -4.0, -1.0, 0.0, 1.0, 4.0, 5.0, 6.0])
 
