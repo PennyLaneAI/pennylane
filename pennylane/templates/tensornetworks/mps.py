@@ -100,7 +100,8 @@ class MPS(Operation):
             n_wires = 4
             n_block_wires = 2
             n_params_block = 2
-            template_weights = [[0.1,-0.3],[0.4,0.2],[-0.15,0.5]]
+            n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
+            template_weights = [[0.1,-0.3]]*n_blocks
 
             dev= qml.device('default.qubit',wires=range(n_wires))
             @qml.qnode(dev)
@@ -110,9 +111,9 @@ class MPS(Operation):
 
             >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
             0: ──╭C──RY(0.1)───────────────────────────────┤
-            1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
-            2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
-            3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
+            1: ──╰X──RY(-0.3)──╭C──RY(0.1)─────────────────┤
+            2: ────────────────╰X──RY(-0.3)──╭C──RY(0.1)───┤
+            3: ──────────────────────────────╰X──RY(-0.3)──┤ ⟨Z⟩
     """
 
     num_params = 1
