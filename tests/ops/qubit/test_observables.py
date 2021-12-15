@@ -67,8 +67,8 @@ PROJECTOR_EIGVALS_TEST_DATA = [
 
 
 @pytest.mark.usefixtures("tear_down_hermitian")
-class TestObservables:
-    """Tests for observables"""
+class TestSimpleObservables:
+    """Tests for simple single-qubit observables"""
 
     @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
     def test_diagonalization(self, obs, mat, eigs, tol):
@@ -106,6 +106,10 @@ class TestObservables:
         res = obs.matrix()
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
+
+class TestHermitian:
+    """Test the Hermitian observable"""
+
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigegendecomposition_single_wire(self, observable, eigvals, eigvecs, tol):
         """Tests that the eigendecomposition property of the Hermitian class returns the correct results
@@ -121,7 +125,7 @@ class TestObservables:
         assert len(qml.Hermitian._eigs) == 1
 
     @pytest.mark.parametrize("observable", EIGVALS_TEST_DATA_MULTI_WIRES)
-    def test_hermitian_eigegendecomposition_multiple_wires(self, observable, tol):
+    def test_hermitian_eigendecomposition_multiple_wires(self, observable, tol):
         """Tests that the eigendecomposition property of the Hermitian class returns the correct results
         for multiple wires."""
 
@@ -178,7 +182,7 @@ class TestObservables:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigvals_eigvecs_same_observable_twice(
-        self, observable, eigvals, eigvecs, tol
+            self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the eigvals method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
@@ -249,7 +253,7 @@ class TestObservables:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gatesi_same_observable_twice(
-        self, observable, eigvals, eigvecs, tol
+            self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the diagonalizing_gates method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
@@ -310,6 +314,15 @@ class TestObservables:
         with pytest.raises(ValueError, match="must be Hermitian"):
             qml.Hermitian(H2, wires=0).matrix()
 
+    def test_matrix_representation(self, tol):
+        """Test that the base matrix is defined correctly"""
+        A = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        res_static = qml.Hermitian.compute_matrix(A)
+        res_dynamic = qml.Hermitian(A, wires=0).matrix()
+        expected = np.array([[6.+0.j, 1.-2.j], [1.+2.j, -1.+0.j]])
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
 
 class TestProjector:
     """Tests for projector observable"""
@@ -366,9 +379,9 @@ class TestProjector:
             circuit(basis_state)
 
     @pytest.mark.parametrize(
-        "basis_state,expected",
+        "basis_state,expected,n_wires",
         [
-            ([0], np.array([[1, 0], [0, 0]])),
+            ([0], np.array([[1, 0], [0, 0]]), 1),
             (
                 [1, 0],
                 np.array(
@@ -382,8 +395,9 @@ class TestProjector:
                         [0, 0, 0, 0],
                         [0, 0, 1, 0],
                         [0, 0, 0, 0],
-                    ]
+                    ],
                 ),
+                2
             ),
             (
                 [1, 1],
@@ -398,22 +412,18 @@ class TestProjector:
                         [0, 0, 0, 0],
                         [0, 0, 0, 0],
                         [0, 0, 0, 1],
-                    ]
+                    ],
                 ),
+                2
             ),
         ],
     )
-    def test_matrix_representation(self, basis_state, expected, tol):
+    def test_matrix_representation(self, basis_state, expected, n_wires, tol):
         """Test the matrix method"""
-        res = qml.Projector.compute_matrix(basis_state)
-        assert np.allclose(res, expected, atol=tol)
-
-
-def test_identity_eigvals(tol):
-    """Test identity eigenvalues are correct"""
-    res = qml.Identity._eigvals()
-    expected = np.array([1, 1])
-    assert np.allclose(res, expected, atol=tol, rtol=0)
+        res_dynamic = qml.Projector(basis_state, wires=range(n_wires)).matrix()
+        res_static = qml.Projector.compute_matrix(basis_state)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+        assert np.allclose(res_static, expected, atol=tol)
 
 
 label_data = [

@@ -51,7 +51,18 @@ class Identity(CVObservable, Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Identity.compute_matrix()
+        [[1. 0.]
+         [0. 1.]]
+        """
         return np.eye(2)
 
     @staticmethod

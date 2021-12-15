@@ -183,6 +183,15 @@ def expand_matrix(base_matrix, wires, wire_order):
      [ 0  0  9 10  0  0 11 12]
      [ 0  0 13 14  0  0 15 16]]
 
+    The method works with tensors from all autodifferentiation frameworks, for example:
+
+    >>> base_matrix_torch = torch.tensor([[1., 2.],
+    ...                                   [3., 4.]], requires_grad=True)
+    >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
+    >>> type(res)
+    <class 'torch.Tensor'>
+    >>> res.requires_grad
+    True
     """
     # TODO[Maria]: In future we should consider making ``utils.expand`` differentiable and calling it here.
     wire_order = Wires(wire_order)
@@ -388,14 +397,25 @@ class Operator(abc.ABC):
     # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix(*params, **hyperparams):
-        """Basic matrix representation of this operator in the computational basis.
+        """Canonical matrix of this operator in the computational basis.
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the glabal wire order.
+
+        .. note::
+            This method gets overwritten by subclasses to define the matrix representation
+            of a particular operator. By default, it should always take the
+            operator's parameters and hyperparameters as inputs.
+
+            Alternatively, a custom signature can be defined, in which case the `matrix()`
+            method has to be overwritten as well.
 
         Args:
-            params (Iterable): trainable parameters that may influence the base matrix
-            hyperparams (dict): non-trainable hyperparameters that may influence the base matrix
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            tensor-like or None: matrix representation
+            tensor_like or None: matrix representation
 
         **Example**
 
@@ -410,26 +430,41 @@ class Operator(abc.ABC):
         >>> qml.Rot.compute_matrix(0.1, 0.2, 0.3)
         [[ 0.97517033-0.19767681j -0.09933467+0.00996671j]
          [ 0.09933467+0.00996671j  0.97517033+0.19767681j]]
+
+        If parameters are tensors, a tensor of the same type is returned:
+
+        >>> res = qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        >>> type(res)
+        <class 'torch.Tensor'>
         """
         return None
 
     def matrix(self, wire_order=None):
-        r"""Matrix representation of instantiated operator
-        in the computational basis.
+        r"""Matrix representation of this operator in the computational basis.
 
         If ``wire_order`` is provided, the
         numerical representation considers the position of the
-        operator's wires in global wire order.
+        operator's wires in the global wire order.
         Otherwise, the wire order defaults to ``self.wires``.
 
         If the matrix depends on trainable parameters, the result
         will be cast in the same autodifferentiation framework as the parameters.
 
+        .. note::
+            By default, this method calls the static method ``compute_matrix``,
+            which is used by subclasses to define the actual matrix representation.
+            The call assumes that the static method has the signature ``(*params, **hyperparams)``,
+            where ``params`` refers to ``op.parameters`` and ``hyperparams``
+            to ``op.hyperparameters``, and ``op`` is an instance of this operator.
+
+            If a subclass overwrites ``compute_matrix`` to use a custom signature,
+            this method has to be likewise overwritten.
+
         Args:
-            wire_order (Iterable): global wire order, must contain all wire labels in this operator's wires
+            wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
 
         Returns:
-            tensor-like or None: matrix representation
+            tensor_like or None: matrix representation
 
         **Example**
 
@@ -447,12 +482,12 @@ class Operator(abc.ABC):
                    [ 0.24740396  0.9689124 ]], shape=(2, 2), dtype=float32)
 
         """
-        base_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
+        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if wire_order is None or self.wires == Wires(wire_order):
-            return base_matrix
+            return canonical_matrix
 
-        return expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @classmethod
     def _eigvals(cls, *params):
@@ -898,15 +933,15 @@ class Operation(Operator):
         return self
 
     def matrix(self, wire_order=None):
-        base_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
+        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
-            base_matrix = qml.math.conj(qml.math.T(base_matrix))
+            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
 
         if wire_order is None or self.wires == Wires(wire_order):
-            return base_matrix
+            return canonical_matrix
 
-        return expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
     def eigvals(self):
@@ -1496,12 +1531,13 @@ class Tensor(Observable):
         return diag_gates
 
     def matrix(self, wire_order=None):
-        r"""Matrix representation of the tensor operator
+        r"""Matrix representation of the Tensor operator
         in the computational basis.
 
         .. note::
 
             The wire_order argument is added for compatibility, but currently not implemented.
+            The Tensor class is planned to be removed soon.
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels in this operator's wires

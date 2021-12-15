@@ -95,7 +95,32 @@ class QubitCarry(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.QubitCarry.compute_matrix()
+        [[1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0]]
+        """
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -195,7 +220,24 @@ class QubitSum(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.QubitSum.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 1]]
+        """
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],

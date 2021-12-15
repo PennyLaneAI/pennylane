@@ -183,6 +183,15 @@ class TestQubitUnitary:
         with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
             qml.QubitUnitary.decomposition(U, wires=[0, 1, 2])
 
+    def test_matrix_representation(self, tol):
+        """Test that the canonical matrix is defined correctly"""
+        U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        res_static = qml.QubitUnitary.compute_matrix(U)
+        res_dynamic = qml.QubitUnitary(U, wires=0).matrix()
+        expected = U
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
 
 class TestDiagonalQubitUnitary:
     """Test the DiagonalQubitUnitary operation."""
@@ -196,6 +205,15 @@ class TestDiagonalQubitUnitary:
         assert decomp[0].name == "QubitUnitary"
         assert decomp[0].wires == Wires([0, 1, 2])
         assert np.allclose(decomp[0].data[0], np.diag(D))
+
+    def test_matrix_representation(self, tol):
+        """Test that the base matrix is defined correctly"""
+        diag = np.array([1, -1])
+        res_static = qml.DiagonalQubitUnitary.compute_matrix(diag)
+        res_dynamic = qml.DiagonalQubitUnitary(diag, wires=0).matrix()
+        expected = np.array([[1, 0], [0, -1]])
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
 
 
 X = np.array([[0, 1], [1, 0]])
@@ -396,6 +414,17 @@ class TestControlledQubitUnitary:
 
         assert np.allclose(mixed_polarity_state, pauli_x_state)
 
+    def test_matrix_representation(self, tol):
+        """Test that the base matrix is defined correctly"""
+        U = np.array([[0.94877869, 0.31594146], [-0.31594146, 0.94877869]])
+        # res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1])
+        res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
+        expected = np.array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+                             [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+                             [0.+0.j, 0.+0.j, 0.94877869+0.j, 0.31594146+0.j],
+                             [0.+0.j, 0.+0.j, -0.31594146+0.j, 0.94877869+0.j]])
+        #assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
 
 label_data = [
     (qml.QubitUnitary(X, wires=0), "U"),

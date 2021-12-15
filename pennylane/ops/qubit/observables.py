@@ -61,10 +61,24 @@ class Hermitian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        A = qml.math.asarray(params[0])
+    def compute_matrix(A):
+        """Canonical matrix representation of this operator.
+
+        Args:
+            A (tensor_like): hermitian matrix
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> A = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> qml.Hermitian.compute_matrix(A)
+        [[ 6.+0.j  1.-2.j]
+         [ 1.+2.j -1.+0.j]]
+        """
+        A = qml.math.asarray(A)
 
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -121,8 +135,7 @@ class Hermitian(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r"""SparseHamiltonian(H)
-    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+    r"""A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     .. warning::
 
@@ -153,13 +166,33 @@ class SparseHamiltonian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        A = params[0]
-        if not isinstance(A, coo_matrix):
+    def compute_matrix(H):
+        """Canonical matrix representation of this operator.
+
+        Args:
+            H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_matrix(H)
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo.coo_matrix'>
+        """
+        # ToDo[Maria/Josh]: return H.toarray() and add a separate `sparse_matrix` method
+        if not isinstance(H, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
-        return A
+        return H
 
     def diagonalizing_gates(self):
         return []
@@ -239,8 +272,23 @@ class Projector(Observable):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        basis_state = params[0]
+    def compute_matrix(basis_state):
+        """Canonical matrix representation of this operator.
+
+        Args:
+            basis_state (Iterable): basis state to project on
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Projector.compute_matrix([0, 1])
+        [[0. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 0.]
+         [0. 0. 0. 0.]]
+        """
         m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
         idx = int("".join(str(i) for i in basis_state), 2)
         m[idx, idx] = 1

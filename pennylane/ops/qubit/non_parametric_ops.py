@@ -52,9 +52,19 @@ class Hadamard(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
-    # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Hadamard.compute_matrix()
+        [[ 0.70710678  0.70710678]
+         [ 0.70710678 -0.70710678]]
+        """
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @classmethod
@@ -119,9 +129,19 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
 
-    # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliX.compute_matrix()
+        [[0 1]
+         [1 0]]
+        """
         return np.array([[0, 1], [1, 0]])
 
     @classmethod
@@ -189,7 +209,18 @@ class PauliY(Observable, Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliY.compute_matrix()
+        [[ 0.+0.j -0.-1.j]
+         [ 0.+1.j  0.+0.j]]
+        """
         return np.array([[0, -1j], [1j, 0]])
 
     @classmethod
@@ -261,9 +292,19 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliZ.compute_matrix()
+        [[ 1  0]
+         [ 0 -1]]
+        """
         return np.array([[1, 0], [0, -1]])
 
     @classmethod
@@ -316,7 +357,18 @@ class S(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.S.compute_matrix()
+        [[1.+0.j 0.+0.j]
+         [0.+0.j 0.+1.j]]
+        """
         return np.array([[1, 0], [0, 1j]])
 
     @classmethod
@@ -363,7 +415,18 @@ class T(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.T.compute_matrix()
+        [[1.+0.j         0.        +0.j        ]
+         [0.+0.j         0.70710678+0.70710678j]]
+        """
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @classmethod
@@ -410,7 +473,18 @@ class SX(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SX.compute_matrix()
+        [[0.5+0.5j 0.5-0.5j]
+         [0.5-0.5j 0.5+0.5j]]
+        """
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
@@ -468,7 +542,20 @@ class CNOT(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CNOT.compute_matrix()
+        [[1 0 0 0]
+         [0 1 0 0]
+         [0 0 0 1]
+         [0 0 1 0]]
+        """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     def adjoint(self):
@@ -516,7 +603,20 @@ class CZ(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CZ.compute_matrix()
+        [[ 1  0  0  0]
+         [ 0  1  0  0]
+         [ 0  0  1  0]
+         [ 0  0  0 -1]]
+        """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @classmethod
@@ -564,7 +664,20 @@ class CY(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CY.compute_matrix()
+        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
+         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
+        """
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -615,7 +728,20 @@ class SWAP(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SWAP.compute_matrix()
+        [[1 0 0 0]
+         [0 0 1 0]
+         [0 1 0 0]
+         [0 0 0 1]]
+        """
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
@@ -662,7 +788,20 @@ class ISWAP(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.ISWAP.compute_matrix()
+        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+1.j 0.+0.j]
+         [0.+0.j 0.+1.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+0.j 1.+0.j]]
+        """
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
@@ -713,7 +852,20 @@ class SISWAP(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SISWAP.compute_matrix()
+        [[1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
+         [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
+         [0.+0.j  0.+0.j  0.+0.j  1.+0.j]]
+        """
         return np.array(
             [
                 [1, 0, 0, 0],
@@ -789,7 +941,24 @@ class CSWAP(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CSWAP.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]]
+        """
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -858,7 +1027,24 @@ class Toffoli(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix():
+        """Canonical matrix representation of this operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Toffoli.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 1 0]]
+        """
         return np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
@@ -1001,7 +1187,7 @@ class MultiControlledX(Operation):
 
     @staticmethod
     def compute_matrix(control_int, n_wires):
-        """Basic matrix representation of this operator in the computational basis.
+        """Canonical matrix representation of this operator.
 
         **Examples:**
 
@@ -1034,15 +1220,15 @@ class MultiControlledX(Operation):
             # store matrix, so we do not have to do this each time
             self._cx = self.compute_matrix(self.control_int, len(self.wires))
 
-        base_matrix = self._cx
+        canonical_matrix = self._cx
 
         if self.inverse:
-            base_matrix = qml.math.conj(qml.math.T(base_matrix))
+            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
 
         if wire_order is None or self.wires == Wires(wire_order):
-            return base_matrix
+            return canonical_matrix
 
-        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
     def control_wires(self):

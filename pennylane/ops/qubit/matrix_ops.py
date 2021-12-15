@@ -87,8 +87,23 @@ class QubitUnitary(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        return params[0]
+    def compute_matrix(U):
+        """Canonical matrix representation of this operator.
+
+        Args:
+            U (tensor_like): unitary matrix
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> qml.QubitUnitary.compute_matrix(U)
+        [[0.98877108+0.j, 0.-0.14943813j],
+        [0.-0.14943813j, 0.98877108+0.j]]
+        """
+        return U
 
     @staticmethod
     def decomposition(U, wires):
@@ -221,24 +236,66 @@ class ControlledQubitUnitary(QubitUnitary):
     def num_params(self):
         return 1
 
-    @staticmethod
-    def compute_matrix(cu):
-        return cu
+    # @staticmethod
+    # def compute_matrix(U, control_int, n_controls, control_values=None):
+    #     """Canonical matrix representation of this operator.
+    #
+    #     Args:
+    #         U (tensor_like): unitary matrix
+    #         control_int (Iterable): wires that the unitary is controlled on
+    #
+    #     Returns:
+    #         tensor_like: canonical matrix
+    #
+    #     **Example**
+    #
+    #     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
+    #     >>> qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[0, 1])
+    #     XXX
+    #     """
+    #
+    #     # If control values unspecified, we control on the all-ones string
+    #     if not control_values:
+    #         control_values = "1" * len(control_wires)
+    #
+    #
+    #     padding_left = control_int * len(U)
+    #     padding_right = 2 ** len(wires) - len(U) - padding_left
+    #     interface = qml.math.get_interface(U)
+    #     left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
+    #     right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
+    #     self._cu =
+    #     return qml.math.block_diag([left_pad, U, right_pad])
 
     def matrix(self, wire_order=None):
-        # overwrite to compute, store and pass on the matrix representation of controlled unitary
+        """Matrix representation of this operator.
+
+        Returns:
+            array: matrix representation
+
+        **Example**
+
+        >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
+        >>> qml.ControlledQubitUnitary(U, wires=0).matrix(U)
+        [[ 1.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j]
+         [ 0.        +0.j  1.        +0.j  0.        +0.j  0.        +0.j]
+         [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]
+         [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
+        """
+        # we do not call compute_matrix here to avoid replicating logic already computed before
+
         if self._cu is None:
             interface = qml.math.get_interface(self.U)
             left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
             right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
             self._cu = qml.math.block_diag([left_pad, self.U, right_pad])
 
-        base_matrix = self.compute_matrix(self._cu)
+        canonical_matrix = self._cu
 
         if wire_order is None or self.wires == Wires(wire_order):
-            return base_matrix
+            return canonical_matrix
 
-        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @property
     def control_wires(self):
@@ -289,8 +346,22 @@ class DiagonalQubitUnitary(Operation):
 
     # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        D = qml.math.asarray(params[0])
+    def compute_matrix(D):
+        """Canonical matrix representation of this operator.
+
+        Args:
+            D (tensor_like): diagonal of the matrix
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.DiagonalQubitUnitary.compute_matrix(np.array([1, -1]))
+        [[ 1  0]
+         [ 0 -1]]
+        """
+        D = qml.math.asarray(D)
 
         if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")

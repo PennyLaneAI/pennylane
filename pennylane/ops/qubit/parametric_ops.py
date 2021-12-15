@@ -499,15 +499,15 @@ class MultiRZ(Operation):
         return qml.math.diag(eigvals)
 
     def matrix(self, wire_order=None):
-        base_matrix = self.compute_matrix(self.parameters[0], len(self.wires))
+        canonical_matrix = self.compute_matrix(self.parameters[0], len(self.wires))
 
         if self.inverse:
-            return qml.math.conj(qml.math.T(base_matrix))
+            return qml.math.conj(qml.math.T(canonical_matrix))
 
         if wire_order is None or self.wires == Wires(wire_order):
-            return base_matrix
+            return canonical_matrix
 
-        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     _generator = None
 

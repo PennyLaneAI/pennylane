@@ -1536,7 +1536,7 @@ class TestExpandMatrix:
 
     def test_autograd(self, tol):
         """Tests differentiation in autograd by checking how a specific element of the expanded matrix depends on the
-        base matrix."""
+        canonical matrix."""
 
         def func(mat):
             res = qml.operation.expand_matrix(mat, wires=[2], wire_order=[0, 2])
@@ -1552,7 +1552,7 @@ class TestExpandMatrix:
 
     def test_torch(self, tol):
         """Tests differentiation in torch by checking how a specific element of the expanded matrix depends on the
-        base matrix."""
+        canonical matrix."""
         torch = pytest.importorskip("torch")
 
         base_matrix = torch.tensor([[0.0, 1.0], [1.0, 0.0]], requires_grad=True)
@@ -1567,7 +1567,7 @@ class TestExpandMatrix:
 
     def test_jax(self, tol):
         """Tests differentiation in jax by checking how a specific element of the expanded matrix depends on the
-        base matrix."""
+        canonical matrix."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
@@ -1585,7 +1585,7 @@ class TestExpandMatrix:
 
     def test_tf(self, tol):
         """Tests differentiation in TensorFlow by checking how a specific element of the expanded matrix depends on the
-        base matrix."""
+        canonical matrix."""
         tf = pytest.importorskip("tensorflow")
 
         base_matrix = tf.Variable([[0.0, 1.0], [1.0, 0.0]])

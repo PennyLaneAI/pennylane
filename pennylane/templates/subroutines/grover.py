@@ -138,15 +138,15 @@ class GroverOperator(Operation):
     def matrix(self, wire_order=None):
 
         # note: compute_matrix has a custom signature, which is why we need to overwrite this method
-        base_matrix = self.compute_matrix(len(self.wires))
+        canonical_matrix = self.compute_matrix(len(self.wires))
 
         if self.inverse:
-            base_matrix = qml.math.conj(qml.math.T(base_matrix))
+            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
 
         if wire_order is None or self.wires == qml.wires.Wires(wire_order):
-            return base_matrix
+            return canonical_matrix
 
-        return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=unused-argument
     @staticmethod
