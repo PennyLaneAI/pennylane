@@ -77,6 +77,11 @@ class Hadamard(Observable, Operation):
 
         Returns:
             list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Hadamard.compute_diagonalizing_gates(wires=[0])
+        [RY(-0.7853981633974483, wires=[0])]
         """
         return [qml.RY(-np.pi / 4, wires=wires)]
 
@@ -145,6 +150,11 @@ class PauliX(Observable, Operation):
 
         Returns:
            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliX.compute_diagonalizing_gates(wires=[0])
+        [Hadamard(wires=[0])]
         """
         return [Hadamard(wires=wires)]
 
@@ -218,6 +228,11 @@ class PauliY(Observable, Operation):
 
         Returns:
             list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliY.compute_diagonalizing_gates(wires=[0])
+        [PauliZ(wires=[0]), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
             PauliZ(wires=wires),
@@ -288,6 +303,11 @@ class PauliZ(Observable, Operation):
 
         Returns:
             list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliZ.compute_diagonalizing_gates(wires=[0])
+        []
         """
         return []
 
