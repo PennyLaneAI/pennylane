@@ -69,7 +69,7 @@ class MPS(Operation):
     r"""The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
     The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
-    The argument ``block`` is a user-defined quantum function.``block`` should have two arguments: ``weights`` and ``wires``.
+    The argument ``block`` is a user-defined quantum circuit.``block`` should have two arguments: ``weights`` and ``wires``.
     For clarity, it is recommended to use a one-dimensional list or array for the block weights.
 
     Args:
