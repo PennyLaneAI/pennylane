@@ -78,8 +78,7 @@ def _simplify(h, cutoff=1.0e-12):
     (1.0) [X0 Y1]
     """
     s = []
-    w = list(range(max(h.wires.tolist()) + 1))
-    wiremap = dict(zip(w, w))
+    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
     for term in h.terms[1]:
         term = qml.operation.Tensor(term).prune()
         s.append(qml.grouping.pauli_word_to_string(term, wire_map=wiremap))
@@ -95,7 +94,7 @@ def _simplify(h, cutoff=1.0e-12):
     nonzero_ind = np.argwhere(abs(c) > cutoff).flatten()
     for i in nonzero_ind:
         coeffs.append(c[i])
-        ops.append(qml.grouping.string_to_pauli_word(o[i]))
+        ops.append(qml.grouping.string_to_pauli_word(o[i], wire_map=wiremap))
     try:
         coeffs = qml.math.stack(coeffs)
     except ValueError:
@@ -179,11 +178,9 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector):
     u = clifford(generator, paulix_wires)
     h = _observable_mult(_observable_mult(u, h), u)
 
-    w = list(range(max(h.wires.tolist()) + 1))
-    wiremap = dict(zip(w, w))
-
     val = np.ones(len(h.terms[0])) * complex(1.0)
 
+    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
     for idx, w in enumerate(paulix_wires):
         for i in range(len(h.terms[0])):
             s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
@@ -191,10 +188,14 @@ def transform_hamiltonian(h, generator, paulix_wires, paulix_sector):
                 val[i] *= paulix_sector[idx]
 
     o = []
+    wires_tap = [h.wires[i] for i in range(len(h.wires)) if i not in paulix_wires]
+    wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
     for i in range(len(h.terms[0])):
         s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
         wires = [x for x in h.wires if x not in paulix_wires]
-        o.append(qml.grouping.string_to_pauli_word("".join([s[i] for i in wires])))
+        o.append(
+            qml.grouping.string_to_pauli_word("".join([s[i] for i in wires]), wire_map=wiremap_tap)
+        )
 
     c = anp.multiply(val, h.terms[0])
     c = qml.math.stack(c)
