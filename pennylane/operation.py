@@ -584,44 +584,73 @@ class Operator(abc.ABC):
 
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, **hyperparams):
-        r"""Defines a partial representation of this operator as
-        an eigendecompisition.
+        r"""Defines a partial representation of this operator via
+        its eigendecompisition.
 
-        Multiplied together, the diagonalizing gates
-        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, where
-        :math:`\Sigma` is a diagonal matrix that contains the eigenvalues of :math:`O`.
+        Given the eigendecomposition :math:`U` in `O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        In other words, the diagonalizing gates rotate a state into the computational
+        basis.
 
         This is the static version of ``diagonalizing_gates``, which can be called
-        on the class.
+        without creating an instance of the class.
+
+        .. note::
+
+            This method gets overwritten by subclasses to define the representation of a particular operator.
+            By default, this method should always take the operator's parameters, wires and hyperparameters as
+            signature (even if the diagonalizing gates may be defined without making use of this input).
+
+            Alternatively, a custom signature can be defined, in which case the `diagonalizing_gates()`
+            method has to be overwritten to consider the custom signature,
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            wires (Iterable): trainable parameters of this operator, as stored in ``op.wires``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+
+        Returns:
+            list[.Operator]: A list of operators.
 
         *Example:*
 
         >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
         [Hadamard(wires=["q1"])]
-
-        Returns:
-            list(qml.Operator): A list of operators.
         """
         return None
 
     # pylint:disable=no-self-use
     def diagonalizing_gates(self):
-        r"""Defines a partial representation of this operator as
-        an eigendecompisition.
+        r"""Defines a partial representation of this operator via
+        its eigendecompisition.
 
-        Multiplied together, the diagonalizing gates
-        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
+        Given the eigendecomposition :math:`U` in `O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        In other words, the diagonalizing gates rotate a state into the computational
+        basis.
 
         Returns `None` if this operator does not define its diagonalizing gates.
+
+        .. note::
+
+            By default, this method calls the static method ``compute_diagonalizing_gates``,
+            which is used by subclasses to define the actual representation.
+            The call assumes that the static method has the signature ``(*params, wires, **hyperparams)``,
+            where ``params`` refers to ``op.parameters``, wires to ``op.wires`` and ``hyperparams``
+            to ``op.hyperparameters``, and ``op`` is an instance of this operator.
+
+            If a subclass overwrites ``compute_diagonalizing_gates`` to use a custom signature,
+            this method has to be likewise overwritten to respect that signature.
+
+        Returns:
+            list[.Operator] or None: a list of operators
 
         *Example:*
 
         >>> qml.PauliX(wires="q1").diagonalizing_gates()
         [Hadamard(wires=["q1"])]
-
-        Returns:
-            list[.Operator] or None: A list of operators.
         """
         return self.compute_diagonalizing_gates(
             *self.parameters, wires=self.wires, **self.hyperparameters
