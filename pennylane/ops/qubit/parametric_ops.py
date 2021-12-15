@@ -489,7 +489,7 @@ class MultiRZ(Operation):
         Returns:
             array[complex]: The matrix representation
         """
-        eigs = qml.math.convert_like(pauli_eigs(n_wires, theta))
+        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -501,8 +501,12 @@ class MultiRZ(Operation):
     def matrix(self, wire_order=None):
         base_matrix = self.compute_matrix(self.parameters[0], len(self.wires))
 
+        if self.inverse:
+            return qml.math.conj(qml.math.T(base_matrix))
+
         if wire_order is None or self.wires == Wires(wire_order):
             return base_matrix
+
 
         return qml.operation.expand_matrix(base_matrix, wires=self.wires, wire_order=wire_order)
 
