@@ -590,8 +590,8 @@ class Operator(abc.ABC):
         Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
-        In other words, the diagonalizing gates rotate this operator into the computational
-        basis.
+        In other words, the diagonalizing gates rotate the state into the eigenbasis
+        of this operator.
 
         This is the static version of ``diagonalizing_gates``, which can be called
         without creating an instance of the class.
@@ -628,8 +628,8 @@ class Operator(abc.ABC):
         Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
-        In other words, the diagonalizing gates rotate this operator into the computational
-        basis.
+        In other words, the diagonalizing gates rotate the state into the eigenbasis
+        of this operator.
 
         Returns `None` if this operator does not define its diagonalizing gates.
 
