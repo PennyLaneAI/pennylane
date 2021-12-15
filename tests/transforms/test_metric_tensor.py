@@ -262,7 +262,7 @@ class TestMetricTensor:
             qml.RX(a[1], wires=0)
             qml.RY(a[0], wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(b, wires=1)
+            qml.U1(b, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
         circuit = qml.QNode(circuit, dev)
