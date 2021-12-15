@@ -136,6 +136,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     .. note::
 
+<<<<<<< HEAD
         This function has essentially the same behaviour as ``pennylane.utils.expand`` but is fully
         differentiable, and uses default returns if no expansion is needed.
         We should consider making ``expand`` differentiable and calling it here.
@@ -150,14 +151,16 @@ def expand_matrix(base_matrix, wires, wire_order):
     Returns:
         tensor_like: expanded matrix
 
+=======
+>>>>>>> b2a1e01f9b643d9c601e80670fcf945668ac18c6
     **Example**
 
     If the wire order is identical to ``wires``, the original matrix gets returned:
 
     >>> base_matrix = np.array([[1, 2, 3, 4],
-    >>>                         [5, 6, 7, 8],
-    >>>                         [9, 10, 11, 12],
-    >>>                         [13, 14, 15, 16]])
+    ...                         [5, 6, 7, 8],
+    ...                         [9, 10, 11, 12],
+    ...                         [13, 14, 15, 16]])
     >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
     [[ 1  2  3  4]
      [ 5  6  7  8]
