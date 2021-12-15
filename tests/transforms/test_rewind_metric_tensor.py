@@ -197,7 +197,7 @@ class TestApplyOperationsDifferentiability:
         assert np.allclose(out, exp)
 
 
-fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
+fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 
 
 def fubini_ansatz0(params, wires=None):
@@ -700,10 +700,6 @@ class TestRewindMetricTensorDifferentiability:
         else:
             assert qml.math.allclose(mt_jac, expected)
 
-    @pytest.mark.skip(
-        "For JAX, the number of trainable parameters is not known at QNode"
-        "construction time, disabling the approach."
-    )
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the derivative is correct when using JAX and
         calling the rewind metric tensor on a QNode."""
@@ -723,11 +719,13 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.rewind_metric_tensor(circuit)
+        mt_fn = qml.rewind_metric_tensor(circuit, hybrid=True)
         argnums = list(range(len(params)))
-        mt_jac = jax.jacobian(mt_fn)(*j_params)
+        mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
         if isinstance(mt_jac, tuple):
+            if not isinstance(expected, tuple) and len(mt_jac) == 1:
+                expected = (expected,)
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
         else:
             assert qml.math.allclose(mt_jac, expected)

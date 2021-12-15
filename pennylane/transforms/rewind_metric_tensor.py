@@ -307,6 +307,7 @@ def _rewind_metric_tensor_qnode(qnode, device, hybrid):
             return mt
 
         cjac = cjac_fn(*args, **kwargs)
+
         if qnode.interface == "autograd":
             trainable_args = np.where([qml.math.requires_grad(arg) for arg in args])[0]
             shape = qml.math.shape(args[trainable_args[0]])
