@@ -10,6 +10,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where PennyLane didn't require v0.20.0 of PennyLane-Lightning,
+  but raised an error with versions of Lightning earlier than v0.20.0 due to
+  the new batch execution pipeline.
+  [(#2033)](https://github.com/PennyLaneAI/pennylane/pull/2033)
+
 * Fixes a bug in `classical_jacobian` when used with Torch, where the
   Jacobian of the preprocessing was also computed for non-trainable
   parameters.
