@@ -71,7 +71,7 @@ class QFT(Operation):
         return 0
 
     def matrix(self, wire_order=None):
-        base_matrix = self.compute_matrix(len(self.wires), wires=self.wires, wire_order=wire_order)
+        base_matrix = self.compute_matrix(len(self.wires))
         if self.inverse:
             base_matrix = base_matrix.conj()
 
@@ -82,7 +82,7 @@ class QFT(Operation):
 
     @staticmethod
     @functools.lru_cache()
-    def _matrix(num_wires):
+    def compute_matrix(num_wires):
         dimension = 2 ** num_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)

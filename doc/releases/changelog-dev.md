@@ -29,10 +29,11 @@ The Operator class has undergone a major refactor with the following changes:
 * A `hyperparameters` attribute was added to the operator class.
   [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
   
-* The `matrix` representation has been modified to be a method that accepts a 
+* The `matrix()` representation has been modified to be a method that accepts a 
   `wire_order` argument and calculate the correct numerical representation 
   with respect to that ordering. The "base matrix", which is independent of wires,
-  is defined in `compute_matrix()`.
+  is defined in `compute_matrix()`. The new `matrix()` method is now used in the 
+  `pennylane.transforms.get_qubit_unitary()` transform.
   [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
 * The `string_for_inverse` attribute is removed.
