@@ -115,7 +115,7 @@ class Hermitian(Observable):
         possible and stores the corresponding eigenvectors from the eigendecomposition.
 
         Args:
-            array-like: eigenvectors, such as extracted from self.eigendecomposition["eigvec"]
+            array-like: eigenvectors, such as extracted from op.eigendecomposition["eigvec"]
             Iterable or Wires: wires of the original operation
 
         Returns:
@@ -127,12 +127,10 @@ class Hermitian(Observable):
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
+        # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
@@ -262,5 +260,5 @@ class Projector(Observable):
         return w
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires, **hyperparams):
+    def compute_diagonalizing_gates(basis_state, wires):
         return []
