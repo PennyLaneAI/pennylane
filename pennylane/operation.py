@@ -559,7 +559,9 @@ class Operator(abc.ABC):
         return self._hyperparameters
 
     def decomposition(self):
-        """Defines a decomposition of this operator into products of other operators.
+        """The decomposition of the Operator into a product of more fundamental gates.
+
+        .. math:: O = O_1 O_2 \dots O_n
 
         Returns:
             tuple[Operator]: decomposition of the Operator into lower level operations
@@ -569,10 +571,22 @@ class Operator(abc.ABC):
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         """Determine the Operator's decomposition for specified parameters, wires,
-        and hyperparameters.
+        and hyperparameters. This decomposition is a tuple of more fundamental gates,
+        that when multiplied together, give the Operator:
+
+        .. math:: O = O_1 O_2 \dots O_n
 
         This is a static method and can provide the decomposition of a given operator
-        without creating a specific instance.
+        without creating a specific instance. The instance method ``decomposition`` uses
+        this method and the instance's variables.
+
+        Args:
+            *params: Variable length argument list.  Should match the ``parameters`` attribute
+
+        Keyword Args:
+            wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
+            **hyperparameters: Variable length keyword arguments.  Should match the
+            ``hyperparameters`` attribute.
 
         Returns:
             tuple[Operator]: decomposition of the Operator into lower level operations
