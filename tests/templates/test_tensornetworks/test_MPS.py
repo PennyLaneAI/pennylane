@@ -53,8 +53,8 @@ class TestIndicesMPS:
 
         with pytest.raises(
             ValueError,
-            match="n_block_wires must be smaller than or equal to the number of wires; "\
-                f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}",
+            match="n_block_wires must be smaller than or equal to the number of wires; "
+            f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}",
         ):
             compute_indices_MPS(range(n_wires), n_block_wires)
 
@@ -65,7 +65,7 @@ class TestIndicesMPS:
         n_block_wires = 0
         with pytest.raises(
             ValueError,
-            match=f"number of wires in each block must be larger than or equal to 2; "\
+            match=f"number of wires in each block must be larger than or equal to 2; "
             f"got n_block_wires = {n_block_wires}",
         ):
             compute_indices_MPS(range(n_wires), n_block_wires)
@@ -83,7 +83,7 @@ class TestIndicesMPS:
 
         with pytest.warns(
             Warning,
-            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "\
+            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "
             f"got {n_wires}",
         ):
             compute_indices_MPS(range(n_wires), n_block_wires)
@@ -114,7 +114,7 @@ class TestTemplateInputs:
                 None,
                 [1, 2, 3, 4],
                 6,
-                "n_block_wires must be smaller than or equal to the number of wires; "\
+                "n_block_wires must be smaller than or equal to the number of wires; "
                 "got n_block_wires = 6 and number of wires = 4",
             ),
             (
@@ -122,7 +122,7 @@ class TestTemplateInputs:
                 None,
                 [1, 2, 3, 4],
                 0,
-                "number of wires in each block must be larger than or equal to 2; "\
+                "number of wires in each block must be larger than or equal to 2; "
                 "got n_block_wires = 0",
             ),
         ],
@@ -185,8 +185,8 @@ class TestAttributes:
         """Test that get_n_blocks() warns the user when there are too many wires."""
         with pytest.warns(
             Warning,
-            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "\
-                f"got {len(wires)}",
+            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "
+            f"got {len(wires)}",
         ):
             qml.MPS.get_n_blocks(wires, n_block_wires)
 
@@ -216,8 +216,8 @@ class TestAttributes:
 
         with pytest.raises(
             ValueError,
-            match=f"n_block_wires must be smaller than or equal to the number of wires; "\
-                f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
+            match=f"n_block_wires must be smaller than or equal to the number of wires; "
+            f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
             qml.MPS.get_n_blocks(wires, n_block_wires)
 
