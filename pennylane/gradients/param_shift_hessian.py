@@ -86,22 +86,22 @@ class hessian_transform(qml.batch_transform):
         _wrapper = super().default_qnode_wrapper(qnode, targs, tkwargs)
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
-        def jacobian_wrapper(*args, **kwargs):
-            qjac = _wrapper(*args, **kwargs)
+        def hessian_wrapper(*args, **kwargs):
+            hessian = _wrapper(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
-                qjac = qml.math.squeeze(qjac)
+                hessian = qml.math.squeeze(hessian)
 
             if not hybrid:
-                return qjac
+                return hessian
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
-                # Classical processing of multiple arguments is present. Return qjac @ cjac.
+                # Classical processing of multiple arguments is present. Return hessian @ cjac.
                 jacs = [
-                    qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
+                    qml.math.squeeze(qml.math.tensordot(c, hessian, [[0], [-1]]))
                     for c in cjac
                     if c is not None
                 ]
@@ -112,28 +112,28 @@ class hessian_transform(qml.batch_transform):
             if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
-                return qjac
+                return hessian
 
             # Classical processing of a single argument is present.
-            # Given a classical jacobian of shape (x, y..), a quantum jacobian of shape (z.., x, x),
+            # Given a classical jacobian of shape (x, y..), a quantum hessian of shape (z.., x, x),
             # where x = # of gate args, y.. = shape of QNode args, and z.. = shape of QNode outputs,
             # we apply the following trasformation: (z.., x0, x1) -> (z.., y0.., y1..)
             # While the dimensions x0 and x1, and y0.. and y1.., are the same respectively, they are
             # labeled to keep track of the swapping that occurs during the transformation.
 
             num_out_dims = len(cjac.shape) - 1  # number of dims in y..
-            jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])  # -> (z.., x0, y1..)
+            jac = qml.math.tensordot(hessian, cjac, [[-1], [0]])  # -> (z.., x0, y1..)
             jac = qml.math.tensordot(jac, cjac, [[-1 - num_out_dims], [0]])  # -> (z.., y1.., y0..)
             for i in range(num_out_dims):
                 jac = qml.math.swapaxes(jac, -1 - i, -1 - num_out_dims - i)  # -> (z.., y0.., y1..)
 
             return jac
 
-        return jacobian_wrapper
+        return hessian_wrapper
 
 
 def compute_hessian_tapes(tape, diff_methods, f0=None):
-    r"""Generate the Hessian tapes that are used in the computation of the second derivate of a
+    r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
     post-processing function to combine the results of evaluating the gradient tapes.
 
@@ -258,7 +258,7 @@ def param_shift_hessian(tape, f0=None):
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor representing the output of the hybrid Jacobian matrix
+        - If the input is a QNode, a tensor representing the output of the hybrid Hessian matrix
           of size ``(QNode output dimensions, QNode input dimensions, QNode input dimensions)``
           is returned. When the keyword ``hybrid=False`` is specified, the purely quantum Hessian
           matrix is returned instead, with the dimesions
