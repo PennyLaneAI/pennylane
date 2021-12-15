@@ -611,9 +611,8 @@ def two_qubit_decomposition(U, wires):
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.tape.get_active_tape()
 
-    if current_tape:
-        with current_tape:
-            for op in decomp:
-                qml.apply(op)
+    if current_tape is not None:
+        for op in decomp:
+            qml.apply(op, context=current_tape)
 
     return decomp

@@ -28,6 +28,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+sci = pytest.importorskip("scipy")
 
 
 class TestGetMultiTensorbox:
@@ -60,6 +61,15 @@ class TestGetMultiTensorbox:
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn._multi_dispatch([x, y])
+
+    @pytest.mark.filterwarnings("error:Contains tensors of types {.+}; dispatch will prioritize")
+    def test_no_warning_scipy_and_autograd(self):
+        """Test that no warning is raised if the sequence of tensors contains
+        SciPy sparse matrices and autograd tensors."""
+        x = sci.sparse.eye(3)
+        y = np.array([0.5, 0.1])
+
+        fn._multi_dispatch([x, y])
 
     def test_return_tensorflow_box(self):
         """Test that TensorFlow is correctly identified as the dispatching library."""

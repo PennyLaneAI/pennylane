@@ -74,11 +74,11 @@ class QNode:
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient computation.
 
-            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
-              devices that are classically end-to-end differentiable, for example
-              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
-              QNode can only be used with the machine-learning framework supported
-              by the device.
+            * ``"backprop"``: Use classical backpropagation. Only allowed on
+              simulator devices that are classically end-to-end differentiable,
+              for example :class:`default.qubit <~.DefaultQubit>`. Note that
+              the returned QNode can only be used with the machine-learning
+              framework supported by the device.
 
             * ``"adjoint"``: Uses an `adjoint method <https://arxiv.org/abs/2009.02823>`__ that
               reverses through the circuit after a forward pass by iteratively applying the inverse
