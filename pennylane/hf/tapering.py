@@ -252,7 +252,7 @@ def generate_symmetries(qubit_op, num_qubits):
 
             * list[pennylane.Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
               for the Hamiltonian.
-            * list[pennylane.operation.Operation]: list of single-qubit Pauli-X operators which will be used 
+            * list[pennylane.operation.Operation]: list of single-qubit Pauli-X operators which will be used
               to build the Clifford operators :math:`U`.
 
     .. code-block:: python
