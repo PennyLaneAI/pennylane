@@ -610,3 +610,45 @@ class TestJaxExecuteIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_independent_expval(self, execute_kwargs):
+        """Tests computing an expectation value that is independent trainable
+        parameters."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0][0]
+
+        res = jax.grad(cost)(params, cache=None)
+        assert res.shape == (1, 3)
+
+    def test_multiple_expvals(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0]
+
+        res = jax.grad(cost)(params, cache=None)
+        assert res.shape == (2, 3)

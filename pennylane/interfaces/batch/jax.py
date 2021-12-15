@@ -23,7 +23,7 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Variance, Expectation
+from pennylane.operation import Variance, Expectation, State
 
 dtype = jnp.float64
 
@@ -108,6 +108,29 @@ def _validate_tapes(tapes):
                     f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
                 )
 
+def get_shapes_and_dtype(tapes, device):
+    dtype = jnp.float64
+
+    shapes = []
+    for t in tapes:
+        out_dim = t.output_dim
+        if out_dim == 0:
+            obs = t.observables[0]
+            if obs.return_type == State:
+                dtype = jnp.complex128
+                if obs.wires:
+                    shapes.append(jax.ShapeDtypeStruct((1, obs.wires), dtype))
+                else:
+                    shapes.append(jax.ShapeDtypeStruct((1, 2 ** len(device.wires)), dtype))
+
+        elif out_dim == 1:
+            shapes.append(jax.ShapeDtypeStruct((1,), dtype))
+        if out_dim > 1:
+            shapes.append(jax.ShapeDtypeStruct((1, out_dim), dtype))
+
+    return shapes, dtype
+
+
 
 def _execute(
     params,
@@ -119,7 +142,7 @@ def _execute(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
-    _validate_tapes(tapes)
+    #_validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
@@ -140,7 +163,7 @@ def _execute(
 
             return res
 
-        shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
+        shapes, _ = get_shapes_and_dtype(tapes, device)
         res = host_callback.call(wrapper, params, result_shape=shapes)
         return res
 
@@ -232,7 +255,7 @@ def _execute_with_fwd(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
-    _validate_tapes(tapes)
+    #_validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
