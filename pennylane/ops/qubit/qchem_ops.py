@@ -437,7 +437,27 @@ class DoubleExcitationPlus(Operation):
     grad_method = "A"
 
     def generator(self):
-        H = coo_matrix(([0.5j, -0.5j], ([3, 12], [12, 3])))
+        rows = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 3, 12]
+        cols = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 12, 3]
+        data = [
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5,
+            0.5j,
+            -0.5j,
+        ]
+        H = coo_matrix((data, (rows, cols)), shape=(16, 16))
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @property
@@ -526,7 +546,7 @@ class DoubleExcitationMinus(Operation):
             0.5j,
             -0.5j,
         ]
-        H = coo_matrix((data, (rows, cols)))
+        H = coo_matrix((data, (rows, cols)), shape=(16, 16))
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @property
