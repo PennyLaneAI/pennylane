@@ -749,7 +749,10 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition()
+            d = self.decomposition()
+
+        if d is None:
+            return None
 
         if not self.data:
             # original operation has no trainable parameters

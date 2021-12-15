@@ -42,7 +42,7 @@ class TestDecomposition:
         n = np.array([0,1,0])
         wires = (0,1,2)
         ops1 = qml.BasisState.compute_decomposition(n, wires)
-        ops2 = qml.BasisState(n, wires).decomposition()
+        ops2 = qml.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qml.BasisStatePreparation)
@@ -55,7 +55,7 @@ class TestDecomposition:
         wires = (0,1)
 
         ops1 = qml.QubitStateVector.compute_decomposition(U, wires)
-        ops2 = qml.QubitStateVector(U, wires=wires).decompostion()
+        ops2 = qml.QubitStateVector(U, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
