@@ -702,7 +702,7 @@ class PauliRot(Operation):
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, range(len(non_identity_gates)))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
