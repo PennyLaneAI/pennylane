@@ -625,11 +625,7 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(1))
 
             res = qml.interfaces.batch.execute(
-                [tape],
-                dev,
-                cache=cache,
-                interface='jax',
-                **execute_kwargs
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
             )
             return res[0]
 
@@ -650,14 +646,10 @@ class TestJaxExecuteIntegration:
                 qml.expval(qml.PauliZ(1))
 
             res = qml.interfaces.batch.execute(
-                [tape],
-                dev,
-                cache=cache,
-                interface='jax',
-                **execute_kwargs
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
             )
             return res[0]
 
         res = jax.jacobian(cost)(params, cache=None)
-        assert res.shape == (2,3)
-        #cost(params, cache=None)
+        assert res.shape == (2, 3)
+        # cost(params, cache=None)
