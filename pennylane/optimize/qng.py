@@ -206,11 +206,8 @@ class QNGOptimizer(GradientDescentOptimizer):
 
             _metric_tensor = metric_tensor_fn(*args, **kwargs)
             # Reshape metric tensor to be square
-            print(_metric_tensor)
             shape = qml.math.shape(_metric_tensor)
-            print(shape)
             size = qml.math.prod(shape[: len(shape) // 2])
-            print(size)
             self.metric_tensor = qml.math.reshape(_metric_tensor, (size, size))
             # Add regularization
             self.metric_tensor = self.metric_tensor + self.lam * qml.math.eye(
