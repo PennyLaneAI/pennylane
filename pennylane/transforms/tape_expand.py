@@ -200,7 +200,7 @@ def _custom_decomp_context(custom_decomps):
         if isinstance(obj, str):
             obj = getattr(qml, obj)
 
-        original_decomp_method = obj.decompose
+        original_decomp_method = obj.decomposition
 
         # This is the method that will override the operations .decompose method
         def new_decomp_method(self):
@@ -211,11 +211,11 @@ def _custom_decomp_context(custom_decomps):
 
         try:
             # Explicitly set the new .decompose method
-            obj.decompose = new_decomp_method
+            obj.decomposition = new_decomp_method
             yield
 
         finally:
-            obj.decompose = original_decomp_method
+            obj.decomposition = original_decomp_method
 
     # Loop through the decomposition dictionary and create all the contexts
     try:

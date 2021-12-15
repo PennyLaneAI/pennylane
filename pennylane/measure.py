@@ -83,10 +83,11 @@ class MeasurementProcess:
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        try:
-            return self.expand().operations
-        except NotImplementedError:
+        expansion = self.expand()
+        if expansion is None:
             return []
+        return expansion.operations
+
 
     def __repr__(self):
         """Representation of this class."""
@@ -177,7 +178,7 @@ class MeasurementProcess:
         None
         """
         if self.obs is None:
-            raise NotImplementedError("Cannot expand a measurement process with no observable.")
+            return None
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 

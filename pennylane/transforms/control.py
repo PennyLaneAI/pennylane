@@ -50,13 +50,8 @@ def expand_with_control(tape, control_wire):
                 # Attempt to decompose the operation and apply
                 # controls to each gate in the decomposition.
                 with new_tape.stop_recording():
-                    try:
-                        tmp_tape = op.expand()
-
-                    except NotImplementedError:
-                        # No decomposition is defined. Create a
-                        # ControlledQubitUnitary gate using the operation
-                        # matrix representation.
+                    tmp_tape = op.expand()
+                    if tmp_tape is None:
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
                                 op.matrix, control_wires=control_wire, wires=op.wires

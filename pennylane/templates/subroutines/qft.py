@@ -93,7 +93,7 @@ class QFT(Operation):
         return mat / np.sqrt(dimension)
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
         num_wires = len(wires)
         shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
 
