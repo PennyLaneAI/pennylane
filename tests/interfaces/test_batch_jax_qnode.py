@@ -371,9 +371,10 @@ class TestQNode:
             qml.Hadamard(0)
             return qml.state()
 
-        expected = 1/jnp.sqrt(2) * jnp.ones(2)
+        expected = 1 / jnp.sqrt(2) * jnp.ones(2)
 
         assert jnp.allclose(my_circuit(1), expected)
+
 
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and

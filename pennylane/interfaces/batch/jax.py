@@ -108,6 +108,7 @@ def _validate_tapes(tapes):
                     f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
                 )
 
+
 def get_shapes_and_dtype(tapes, device):
     dtype = jnp.float64
 
@@ -126,12 +127,11 @@ def get_shapes_and_dtype(tapes, device):
         else:
             obs = t.observables[0]
             if obs.return_type == Probability:
-                shapes.append(jax.ShapeDtypeStruct((1,out_dim), dtype))
+                shapes.append(jax.ShapeDtypeStruct((1, out_dim), dtype))
             else:
                 shapes.append(jax.ShapeDtypeStruct((out_dim,), dtype))
 
     return shapes, dtype
-
 
 
 def _execute(
@@ -144,7 +144,7 @@ def _execute(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
-    #_validate_tapes(tapes)
+    # _validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
@@ -258,7 +258,7 @@ def _execute_with_fwd(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
-    #_validate_tapes(tapes)
+    # _validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
@@ -279,7 +279,9 @@ def _execute_with_fwd(
             return res, jacs
 
         fwd_shapes = [jax.ShapeDtypeStruct((t.output_dim,), dtype) for t in tapes]
-        jacobian_shape = [jax.ShapeDtypeStruct((t.output_dim, len(p)), dtype) for t, p in zip(tapes, params)]
+        jacobian_shape = [
+            jax.ShapeDtypeStruct((t.output_dim, len(p)), dtype) for t, p in zip(tapes, params)
+        ]
         res, jacs = host_callback.call(
             wrapper,
             params,
