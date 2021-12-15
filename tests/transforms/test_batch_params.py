@@ -45,6 +45,26 @@ def test_simple_circuit(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+def test_basic_entangler_layers(mocker):
+    """Test that batching works for BasicEngtanglerLayers"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+        qml.RY(0.2, wires=1)
+        return qml.probs(wires=[0, 1])
+
+    batch_size = 5
+    weights = np.random.random((batch_size, 2, 2))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(weights)
+    assert res.shape == (batch_size, 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+
 def test_angle_embedding(mocker):
     """Test that batching works for AngleEmbedding"""
     dev = qml.device("default.qubit", wires=3)

@@ -41,14 +41,6 @@ def skip_if_no_cvxpy_support(cvxpy_support):
         pytest.skip("Skipped, no cvxpy support")
 
 
-@qml.template
-def _simple_ansatz(x, params):
-    """A simple quantum circuit ansatz."""
-    qml.RX(params[0], wires=[0])
-    qml.RZ(x, wires=[0])
-    qml.RX(params[1], wires=[0])
-
-
 def _mock_kernel(x1, x2, history):
     """A kernel that memorizes its calls and encodes a fixed values for equal/unequal
     datapoint pairs."""

@@ -132,6 +132,56 @@ def Interferometer(theta, phi, varphi, wires, mesh="rectangular", beamsplitter="
 
     Raises:
         ValueError: if inputs do not have the correct format
+
+    Example:
+
+        The template requires :math:`3` sets of parameters. The ``mesh`` and ``beamsplitter`` keyword arguments are optional and
+        have ``'rectangular'`` and ``'pennylane'`` as default values.
+
+        .. code-block:: python
+
+            dev = qml.device('default.gaussian', wires=4)
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.Interferometer(*params, wires=range(4))
+                return qml.expval(qml.Identity(0))
+
+            shapes = [[6, ], [6, ], [4, ]]
+            params = []
+            for shape in shapes:
+                params.append(np.random.random(shape))
+
+        Using these random parameters, the resulting circuit is:
+
+        >>> print(qml.draw(circuit)(params))
+            0: ──╭BS(0.0522, 0.0472)────────────────────╭BS(0.438, 0.222)───R(0.606)────────────────────┤ ⟨I⟩
+            1: ──╰BS(0.0522, 0.0472)──╭BS(0.994, 0.59)──╰BS(0.438, 0.222)──╭BS(0.823, 0.623)──R(0.221)──┤
+            2: ──╭BS(0.636, 0.298)────╰BS(0.994, 0.59)──╭BS(0.0818, 0.72)──╰BS(0.823, 0.623)──R(0.807)──┤
+            3: ──╰BS(0.636, 0.298)──────────────────────╰BS(0.0818, 0.72)───R(0.854)────────────────────┤
+
+        Using different values for optional arguments:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(params):
+                qml.Interferometer(*params, wires=range(4), mesh='triangular', beamsplitter='clements')
+                return qml.expval(qml.Identity(0))
+
+            shapes = [[6, ], [6, ], [4, ]]
+            params = []
+            for shape in shapes:
+                params.append(np.random.random(shape))
+
+        The resulting circuit in this case is:
+
+        >>> print(qml.draw(circuit)(params))
+            0: ──R(0.713)──────────────────────────────────╭BS(0.213, 0)───R(0.681)──────────────────────────────────────────────────────────┤ ⟨I⟩
+            1: ──R(0.00912)─────────────────╭BS(0.239, 0)──╰BS(0.213, 0)───R(0.388)──────╭BS(0.622, 0)──R(0.567)─────────────────────────────┤
+            2: ──R(0.43)─────╭BS(0.534, 0)──╰BS(0.239, 0)───R(0.189)──────╭BS(0.809, 0)──╰BS(0.622, 0)──R(0.309)──╭BS(0.00845, 0)──R(0.757)──┤
+            3: ──────────────╰BS(0.534, 0)────────────────────────────────╰BS(0.809, 0)───────────────────────────╰BS(0.00845, 0)──R(0.527)──┤
+
     """
 
     wires = Wires(wires)

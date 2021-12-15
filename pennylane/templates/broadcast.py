@@ -107,7 +107,7 @@ def _preprocess(parameters, pattern, wires):
     if isinstance(pattern, str):
         _wires = wires
         if pattern not in OPTIONS:
-            raise ValueError(f"did not recognize pattern {pattern}".format())
+            raise ValueError(f"did not recognize pattern {pattern}")
     else:
         # turn custom pattern into list of Wires objects
         _wires = [Wires(w) for w in pattern]
@@ -131,9 +131,7 @@ def _preprocess(parameters, pattern, wires):
         num_params = PATTERN_TO_NUM_PARAMS[pattern](_wires)
         if shape[0] != num_params:
             raise ValueError(
-                "Parameters must contain entries for {} unitaries; got {} entries".format(
-                    num_params, shape[0]
-                )
+                f"Parameters must contain entries for {num_params} unitaries; got {shape[0]} entries"
             )
 
     wire_sequence = PATTERN_TO_WIRES[pattern](_wires)

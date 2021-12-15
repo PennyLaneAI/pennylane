@@ -14,7 +14,7 @@
 r"""
 Contains the CommutingEvolution template.
 """
-# pylint: disable-msg=too-many-arguments
+# pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -68,12 +68,12 @@ class CommutingEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
 
     Keyword args:
-        frequencies (list[int or float]): The unique positive differences between eigenvalues in
+        frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
             the spectrum of the Hamiltonian. If the frequencies are not given, the cost function
             partial derivative will be computed using the standard two-term shift rule applied to
             the constituent Pauli words in the Hamiltonian individually.
 
-        shifts (list[int or float]): The parameter shifts to use in obtaining the
+        shifts (tuple[int or float]): The parameter shifts to use in obtaining the
             generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
     .. UsageDetails::
@@ -90,7 +90,7 @@ class CommutingEvolution(Operation):
             coeffs = [1, -1]
             obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
-            frequencies = [2,4]
+            frequencies = (2,4)
 
             @qml.qnode(dev)
             def circuit(time):
@@ -108,22 +108,20 @@ class CommutingEvolution(Operation):
     grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
-        from pennylane.gradients.general_shift_rules import (  # pylint: disable=import-outside-toplevel
-            get_shift_rule,
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients.general_shift_rules import (
+            generate_shift_rule,
         )
 
         if not isinstance(hamiltonian, qml.Hamiltonian):
-            raise TypeError(
-                "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                    type(hamiltonian).__name__
-                )
-            )
+            type_name = type(hamiltonian).__name__
+            raise TypeError(f"hamiltonian must be of type pennylane.Hamiltonian, got {type_name}")
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
         if frequencies is not None and not trainable_hamiltonian:
-            self.grad_recipe = (get_shift_rule(frequencies, shifts)[0],) + (None,) * len(
-                hamiltonian.data
-            )
+            c, s = generate_shift_rule(frequencies, shifts)
+            recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
+            self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
         self.hamiltonian = hamiltonian

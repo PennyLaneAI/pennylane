@@ -399,30 +399,30 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                     f"The return_type {m.return_type.value} is not supported as it likely does "
                     "not admit a Fourier spectrum."
                 )
-        class_jacs = jac_fn(*args, **kwargs)
+        cjacs = jac_fn(*args, **kwargs)
         spectra = {}
         tape = qml.transforms.expand_multipar(qnode.qtape)
         par_info = tape._par_info
 
         # Iterate over jacobians per argument
-        for jac_idx, class_jac in enumerate(class_jacs):
+        for jac_idx, cjac in enumerate(cjacs):
             # Obtain argument name for the jacobian index
             arg_name = arg_name_map[jac_idx]
             # Extract requested parameter indices for the current argument
             if encoding_args[arg_name] is Ellipsis:
                 # If no index for this argument is specified, request all parameters within
                 # the argument (Recall () is a valid index for scalar-valued arguments here)
-                requested_par_ids = set(product(*(range(sh) for sh in class_jac.shape[1:])))
+                requested_par_ids = set(product(*(range(sh) for sh in cjac.shape[1:])))
             else:
                 requested_par_ids = set(encoding_args[arg_name])
             # Each requested parameter at least "contributes" as a constant
             _spectra = {par_idx: {0} for par_idx in requested_par_ids}
 
             # Iterate over the axis of the current Jacobian that corresponds to the tape operations
-            for op_idx, jac_of_op in enumerate(np.round(class_jac, decimals=decimals)):
+            for op_idx, jac_of_op in enumerate(np.round(cjac, decimals=decimals)):
                 op = par_info[op_idx]["op"]
                 # Find parameters that both were requested and feed into the operation
-                if len(class_jac.shape) == 1:
+                if len(cjac.shape) == 1:
                     # Scalar argument, only axis of Jacobian is for operations
                     if np.isclose(jac_of_op, 0.0, atol=atol, rtol=0):
                         continue

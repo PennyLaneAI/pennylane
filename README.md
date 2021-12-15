@@ -32,23 +32,6 @@
 </p>
 
 <p align="center">
-  <a href="https://pennylane.ai/carnival/">
-    <img width=100% src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/carnival_splash_bg.png">
-  </a>
-</p>
-
-<p align="center">
-  Announcing <strong>PennyLane Quantum Carnival</strong>. We're throwing a party to celebrate the 3rd anniversary of Pennylane's release! Throughout November, we will have special events, announcements, and releases, all happening under one big tent. <a href="https://pennylane.ai/carnival">Join the fun!</a>
-</p>
-
-<p align="center">
-  <strong>This is a Quantum Carnival ticket! Can you collect them all?</strong>
-  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme_image.png" width="300px">
-</p>
-
-<hr>
-
-<p align="center">
   <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
   href="https://en.wikipedia.org/wiki/Differentiable_programming">differentiable
   programming</a> of quantum computers.

@@ -569,3 +569,25 @@ class TestWireOrdering:
         ]
 
         assert res == "".join(expected)
+
+
+class TestOpsIntegration:
+    """Integration tests for drawing specific operations and templates"""
+
+    def test_approx_time_evolution(self):
+        """Test that a QNode with the ApproxTimeEvolution template draws
+        correctly when having the expansion strategy set."""
+        H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit(t):
+            qml.ApproxTimeEvolution(H, t, 2)
+            return qml.probs(wires=0)
+
+        res = qml.draw(circuit, expansion_strategy="device")(0.5)
+        expected = [
+            " 0: ──H────────RZ(0.5)──H──H──╭RZ(0.25)──H──H────────RZ(0.5)──H──H──╭RZ(0.25)──H──┤ Probs \n",
+            " 1: ──RZ(0.5)──H──────────────╰RZ(0.25)──H──RZ(0.5)──H──────────────╰RZ(0.25)──H──┤       \n",
+        ]
+
+        assert res == "".join(expected)

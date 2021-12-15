@@ -621,9 +621,7 @@ class QNode:
             if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(
-                        "Operator {} must act on all wires".format(obj.name)
-                    )
+                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             if (
                 isinstance(obj, qml.ops.qubit.SparseHamiltonian)
@@ -730,39 +728,6 @@ class QNode:
             return res
 
         return qml.math.squeeze(res)
-
-    def metric_tensor(
-        self,
-        *args,
-        allow_nonunitary=True,
-        approx=None,
-        diag_approx=None,
-        only_construct=False,
-        **kwargs,
-    ):
-        """Evaluate the value of the metric tensor.
-
-        Args:
-            args (tuple[Any]): positional arguments
-            kwargs (dict[str, Any]): auxiliary arguments
-            diag_approx (bool): iff True, use the diagonal approximation
-            only_construct (bool): Iff True, construct the circuits used for computing
-                the metric tensor but do not execute them, and return the tapes.
-
-        Returns:
-            array[float]: metric tensor
-        """
-        warnings.warn(
-            "The QNode.metric_tensor method has been deprecated. "
-            "Please use the qml.metric_tensor transform instead.",
-            UserWarning,
-        )
-
-        if only_construct:
-            self.construct(args, kwargs)
-            return qml.metric_tensor.construct(self.qtape, allow_nonunitary, approx, diag_approx)
-
-        return qml.metric_tensor(self, allow_nonunitary, approx, diag_approx)(*args, **kwargs)
 
     def draw(
         self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None

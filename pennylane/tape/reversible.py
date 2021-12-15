@@ -115,11 +115,7 @@ class ReversibleTape(JacobianTape):
             vec1_indices,
         )
 
-        einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
-            vec1_indices=vec1_indices,
-            obs_indices=obs_indices,
-            vec2_indices=vec2_indices,
-        )
+        einsum_str = f"{vec1_indices},{obs_indices},{vec2_indices}->"
 
         return np.einsum(einsum_str, np.conj(vec1), mat, vec2)
 
@@ -172,8 +168,8 @@ class ReversibleTape(JacobianTape):
 
         if op.name not in ["RX", "RY", "RZ", "Rot"]:
             raise ValueError(
-                "The {} gate is not currently supported with the "
-                "reversible gradient method.".format(op.name)
+                f"The {op.name} gate is not currently supported with the "
+                f"reversible gradient method."
             )
 
         # get the stored final state of the original circuit, which we start from here
