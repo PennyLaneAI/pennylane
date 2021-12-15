@@ -22,7 +22,7 @@ from pennylane.operation import Operation, AnyWires
 
 
 def compute_indices_MPS(wires, n_block_wires):
-    r"""
+    """
     Generate a list containing the wires for each block.
 
     Args:
@@ -66,7 +66,7 @@ def compute_indices_MPS(wires, n_block_wires):
 
 
 class MPS(Operation):
-    r"""The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
+    """The MPS template broadcasts an input circuit across many wires following the architecture of a Matrix Product State tensor network.
     The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
 
     The argument ``block`` is a user-defined quantum circuit.``block`` should have two arguments: ``weights`` and ``wires``.
@@ -166,8 +166,7 @@ class MPS(Operation):
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):
-
-        r"""Returns the expected number of blocks for a set of wires and number of wires per block.
+        """Returns the expected number of blocks for a set of wires and number of wires per block.
         Args:
             wires (Sequence): number of wires the template acts on
             n_block_wires (int): number of wires per block
