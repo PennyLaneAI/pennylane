@@ -108,18 +108,19 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):
-        """Return the gate set that diagonalizes a circuit according to the
-        specified Hermitian observable.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
+        """Diagonalizing gates of this operator.
 
         Args:
-            array-like: eigenvectors, such as extracted from op.eigendecomposition["eigvec"]
-            Iterable or Wires: wires of the original operation
+            eigenvectors (array): eigenvectors of this operator, as extracted from op.eigendecomposition["eigvec"]
+            wires (Iterable): wires that the operator acts on
 
         Returns:
-            list: list containing the gates diagonalizing the Hermitian observable
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Hermitian.compute_diagonalizing_gates(np.array([[0, 1],[1, 0]]), wires=[0])
+        [QubitUnitary(tensor([[0, 1], [1, 0]], requires_grad=True), wires=[0])]
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
 
@@ -261,4 +262,20 @@ class Projector(Observable):
 
     @staticmethod
     def compute_diagonalizing_gates(basis_state, wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            basis_state (Iterable): basis state that the operator projects on
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Projector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
+        []
+        """
         return []
+
+

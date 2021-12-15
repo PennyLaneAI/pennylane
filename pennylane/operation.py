@@ -585,12 +585,12 @@ class Operator(abc.ABC):
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, **hyperparams):
         r"""Defines a partial representation of this operator via
-        its eigendecompisition.
+        its eigendecomposition.
 
         Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
-        In other words, the diagonalizing gates rotate a state into the computational
+        In other words, the diagonalizing gates rotate this operator into the computational
         basis.
 
         This is the static version of ``diagonalizing_gates``, which can be called
@@ -623,12 +623,12 @@ class Operator(abc.ABC):
     # pylint:disable=no-self-use
     def diagonalizing_gates(self):
         r"""Defines a partial representation of this operator via
-        its eigendecompisition.
+        its eigendecomposition.
 
         Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
-        In other words, the diagonalizing gates rotate a state into the computational
+        In other words, the diagonalizing gates rotate this operator into the computational
         basis.
 
         Returns `None` if this operator does not define its diagonalizing gates.

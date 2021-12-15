@@ -63,18 +63,20 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Hadamard operator.
+        r"""Diagonalizing gates of this operator.
 
-        For the Hadamard operator,
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of the Hadamard operator:
 
         .. math:: H = U^\dagger Z U
 
         where :math:`U = R_y(-\pi/4)`.
 
+        Args:
+            wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(~.Operation): A list of gates that diagonalize Hadamard in
-            the computational basis.
+            list[.Operator]: list of diagonalizing gates
         """
         return [qml.RY(-np.pi / 4, wires=wires)]
 
@@ -131,16 +133,18 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Pauli-X operator.
+        r"""Diagonalizing gates of this operator.
 
-        For the Pauli-X operator,
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of PauliX:
 
         .. math:: X = H^\dagger Z H.
 
+        Args:
+           wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(qml.Operation): A list of gates that diagonalize PauliY in the
-            computational basis.
+           list[.Operator]: list of diagonalizing gates
         """
         return [Hadamard(wires=wires)]
 
@@ -200,18 +204,20 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of PauliY.
+        r"""Diagonalizing gates of this operator.
 
-        For the Pauli-Y observable,
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of PauliY:
 
         .. math:: Y = U^\dagger Z U
 
         where :math:`U=HSZ`.
 
+        Args:
+            wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(~.Operation): A list of gates that diagonalize PauliY in the
-                computational basis.
+            list[.Operator]: list of diagonalizing gates
         """
         return [
             PauliZ(wires=wires),
@@ -275,6 +281,14 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+        """
         return []
 
     @staticmethod
