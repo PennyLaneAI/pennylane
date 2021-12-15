@@ -35,8 +35,8 @@ def _binary_matrix(terms, num_qubits):
     .. code-block:: python
 
         >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
-                     qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
-                     qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
+        ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
+        ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
         >>> _binary_matrix(terms, 4)
          array([[1, 0, 0, 0, 0, 1, 0, 0],
                 [1, 0, 1, 0, 0, 0, 1, 0],
@@ -71,8 +71,8 @@ def _reduced_row_echelon(binary_matrix):
     .. code-block:: python
 
         >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-                                      [1, 0, 1, 0, 0, 0, 1, 0],
-                                      [0, 0, 0, 1, 1, 0, 0, 1]])
+        ...                           [1, 0, 1, 0, 0, 0, 1, 0],
+        ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
         >>> _reduced_row_echelon(binary_matrix)
          array([[1, 0, 0, 0, 0, 1, 0, 0],
                 [0, 0, 1, 1, 1, 1, 1, 1],
@@ -110,7 +110,7 @@ def _kernel(binary_matrix):
     Args:
         binary_matrix (array[int]): binary matrix representation of the Hamiltonian
     Returns:
-        array[int]: nullspace of the `binary_matrix` where each row correspond to a
+        array[int]: nullspace of the `binary_matrix` where each row corresponds to a
         basis vector in the nullspace
 
     **Example**
@@ -118,8 +118,8 @@ def _kernel(binary_matrix):
     .. code-block:: python
 
         >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-                                      [0, 0, 1, 1, 1, 1, 1, 1],
-                                      [0, 0, 0, 1, 1, 0, 0, 1]])
+        ...                          [0, 0, 1, 1, 1, 1, 1, 1],
+        ...                          [0, 0, 0, 1, 1, 0, 0, 1]])
         >>> _kernel(binary_matrix)
          array([[0, 1, 0, 0, 0, 0, 0, 0],
                 [0, 0, 1, 1, 1, 0, 0, 0],
@@ -164,10 +164,10 @@ def get_generators(nullspace, num_qubits):
     .. code-block:: python
 
         >>> kernel = np.array([[0, 1, 0, 0, 0, 0, 0, 0],
-                               [0, 0, 1, 1, 1, 0, 0, 0],
-                               [1, 0, 1, 0, 0, 1, 0, 0],
-                               [0, 0, 1, 0, 0, 0, 1, 0],
-                               [0, 0, 1, 1, 0, 0, 0, 1]])
+        ...                    [0, 0, 1, 1, 1, 0, 0, 0],
+        ...                    [1, 0, 1, 0, 0, 1, 0, 0],
+        ...                    [0, 0, 1, 0, 0, 0, 1, 0],
+        ...                    [0, 0, 1, 1, 0, 0, 0, 1]])
         >>> generate_taus(kernel, 4)
          [(1.0) [X1], (1.0) [Z0 X2 X3], (1.0) [X0 Z1 X2], (1.0) [Y2], (1.0) [X2 Y3]]
 
@@ -189,8 +189,8 @@ def get_generators(nullspace, num_qubits):
 
 
 def generate_paulis(generators, num_qubits):
-    r"""Generate the single qubit Pauli-X operators :math:`sigma^{x}_{i}` for each symmetries :math:`tau_j`,
-    such that it anti-commutes with :math:`tau_j` and commutes with all others symmetries :math:`tau_{k\neq j`}.
+    r"""Generate the single qubit Pauli-X operators :math:`\sigma^{x}_{i}` for each symmetry :math:`\tau_j`,
+    such that it anti-commutes with :math:`\tau_j` and commutes with all others symmetries :math:`\tau_{k\neq j}`.
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
@@ -198,15 +198,15 @@ def generate_paulis(generators, num_qubits):
         num_qubits (int): number of wires required to define the Hamiltonian
     Return:
         list[pennylane.Observable]: list of single-qubit Pauli-X operators which will be used to build the
-        Clifford operators `U`
+        Clifford operators :math:`U`.
 
     **Example**
 
     .. code-block:: python
 
         >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-                          qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-                          qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
+        ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+        ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
         >>> generate_paulis(generators, qubits)
          [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
 
@@ -236,9 +236,9 @@ def generate_symmetries(qubit_op, num_qubits):
     :math:`U`, according to the following relation:
 
     .. math:
-        U_i = \frac{1}{\sqrt{2}}(\tau_i+\sigma^{x}_{q})
+        U_i = \frac{1}{\sqrt{2}}(\tau_i+\sigma^{x}_{q}).
 
-    Here, \sigma^{x}_{q} is the Pauli-X operator acting on q:math:`^{th}` qubit. These $U_i$ can be
+    Here, :math:`\sigma^{x}_{q}` is the Pauli-X operator acting on qubit :math:`q`. These :math:`U_i` can be
     used to transform the Hamiltonian :math:`H` in such a way that it acts trivially or at most with one
     Pauli-gate on a subset of qubits, which allows us to taper off those qubits from the simulation
     using :func:`~.transform_hamiltonian`.
@@ -248,13 +248,17 @@ def generate_symmetries(qubit_op, num_qubits):
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        list[pennylane.Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
-        list[pennylane.Observables]: list of single-qubit Pauli X operators which will be used to build the
-        Clifford operators `U`
+        tuple (list[pennylane.Hamiltonian], list[pennylane.operation.Observable]):
+
+            * list[pennylane.Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
+              for the Hamiltonian.
+            * list[pennylane.operation.Operation]: list of single-qubit Pauli-X operators which will be used 
+              to build the Clifford operators :math:`U`.
 
     .. code-block:: python
 
-        >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+        >>> symbols = ['H', 'H']
+        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
         >>> mol = qml.hf.Molecule(symbols, coordinates)
         >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
         >>> generators, pauli_x = generate_symmetries(H, qubits)
