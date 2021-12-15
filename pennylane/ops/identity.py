@@ -49,7 +49,6 @@ class Identity(CVObservable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.

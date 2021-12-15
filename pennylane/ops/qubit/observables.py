@@ -270,7 +270,6 @@ class Projector(Observable):
         basis_string = "".join(str(int(i)) for i in self.parameters[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix(basis_state):
         """Canonical matrix representation of this operator.

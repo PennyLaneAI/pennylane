@@ -93,7 +93,6 @@ class QubitCarry(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -218,7 +217,6 @@ class QubitSum(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.

@@ -85,7 +85,6 @@ class QubitUnitary(Operation):
     def num_params(self):
         return 1
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix(U):
         """Canonical matrix representation of this operator.
@@ -344,7 +343,6 @@ class DiagonalQubitUnitary(Operation):
     def num_params(self):
         return 1
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix(D):
         """Canonical matrix representation of this operator.

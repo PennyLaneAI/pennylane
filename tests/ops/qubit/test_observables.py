@@ -66,7 +66,6 @@ PROJECTOR_EIGVALS_TEST_DATA = [
 ]
 
 
-@pytest.mark.usefixtures("tear_down_hermitian")
 class TestSimpleObservables:
     """Tests for simple single-qubit observables"""
 
@@ -107,6 +106,7 @@ class TestSimpleObservables:
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
 
+@pytest.mark.usefixtures("tear_down_hermitian")
 class TestHermitian:
     """Test the Hermitian observable"""
 

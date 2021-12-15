@@ -207,7 +207,6 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -355,7 +354,6 @@ class S(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -413,7 +411,6 @@ class T(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -471,7 +468,6 @@ class SX(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -540,7 +536,6 @@ class CNOT(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -601,7 +596,6 @@ class CZ(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -662,7 +656,6 @@ class CY(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -726,7 +719,6 @@ class SWAP(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -786,7 +778,6 @@ class ISWAP(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -850,7 +841,6 @@ class SISWAP(Operation):
     def num_params(self):
         return 0
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -939,7 +929,6 @@ class CSWAP(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
@@ -1025,7 +1014,6 @@ class Toffoli(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    # pylint:disable=unused-argument
     @staticmethod
     def compute_matrix():
         """Canonical matrix representation of this operator.
