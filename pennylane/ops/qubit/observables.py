@@ -119,8 +119,12 @@ class Hermitian(Observable):
 
         **Example**
 
-        >>> qml.Hermitian.compute_diagonalizing_gates(np.array([[0, 1],[1, 0]]), wires=[0])
-        [QubitUnitary(tensor([[0, 1], [1, 0]], requires_grad=True), wires=[0])]
+        >>> A = np.array([[-6, 2 + 1j], [2 - 1j, 0]])
+        >>> _, evecs = np.linalg.eigh(A)
+        >>> qml.Hermitian.compute_diagonalizing_gates(evecs, wires=[0])
+        [QubitUnitary(tensor([[-0.94915323-0.j,  0.2815786 +0.1407893j ],
+                              [ 0.31481445-0.j,  0.84894846+0.42447423j]], requires_grad=True), wires=[0])]
+
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
 
