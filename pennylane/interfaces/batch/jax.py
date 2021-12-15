@@ -121,7 +121,9 @@ def _execute(
             result.append(res)
 
         host_callback.id_tap(wrapper, params, tap_with_device=True)
-        return result[0]
+        if isinstance(result, list) and len(result) > 0:
+            return result[0]
+        return result
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
@@ -134,8 +136,7 @@ def _execute(
             def non_diff_wrapper(args, t, device=None):
                 """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []
-                p = args[:-1]
-                dy = args[-1]
+                p = args
 
                 for t, a in zip(tapes, p):
                     new_tape = t.copy(copy_operations=True)
@@ -143,9 +144,15 @@ def _execute(
                     new_tapes[-1].set_parameters(a)
                     new_tapes[-1].trainable_params = t.trainable_params
 
+                # Note: the cotangent (g) is pulled from the outside because it
+                # needs to stay a Traced JAX BatchTrace. Otherwise issues with
+                # the output shape of this function arises as jax.vmap is being
+                # used.
+                g_on_device = jax.device_put(g, device)
+
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
-                    dy,
+                    g_on_device,
                     gradient_fn,
                     reduction="append",
                     gradient_kwargs=gradient_kwargs,
@@ -158,7 +165,7 @@ def _execute(
                 res = [jax.device_put(jnp.array(r), device) for r in res]
                 result.extend(res)
 
-            args = tuple(params) + (g,)
+            args = tuple(params)
             host_callback.id_tap(non_diff_wrapper, args, tap_with_device=True)
             res = result
 
