@@ -637,7 +637,36 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
-    def test_multiple_expvals(self, execute_kwargs):
+    ret_and_output_dim = [([qml.probs(wires=0)], (1, 2)), ([qml.state()], (1,4)), ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,) )]
+
+    @pytest.mark.parametrize("ret, out_dim", ret_and_output_dim)
+    def test_vector_valued_qnode(self, execute_kwargs, ret, out_dim):
+        """Tests computing multiple expectation values in a tape."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        grad_meth = execute_kwargs["gradient_kwargs"]['method'] if "gradient_kwargs" in execute_kwargs else ""
+        if "adjoint" in grad_meth and ret[0].return_type in (qml.operation.Probability, qml.operation.State):
+            pytest.skip("Adjoint does not support probs")
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+                for r in ret:
+                    qml.apply(r)
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )[0]
+            return res
+
+        res = cost(params, cache=None)
+        assert res.shape == out_dim
+
+    def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
