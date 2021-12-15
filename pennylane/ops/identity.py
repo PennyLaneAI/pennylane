@@ -59,6 +59,19 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Identity.compute_diagonalizing_gates(wires=[0])
+        []
+        """
         return []
 
     @staticmethod
