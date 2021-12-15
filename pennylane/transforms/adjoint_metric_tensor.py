@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the rewind_metric_tensor.
+Contains the adjoint_metric_tensor.
 """
 import warnings
 from itertools import chain
@@ -104,8 +104,8 @@ def _group_operations(tape):
     return trainable_operations, group_after_trainable_op
 
 
-def rewind_metric_tensor(circuit, device=None, hybrid=True):
-    r"""Implements the rewind method outlined in
+def adjoint_metric_tensor(circuit, device=None, hybrid=True):
+    r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 
     A forward pass followed by intermediate partial backwards passes are
@@ -114,7 +114,7 @@ def rewind_metric_tensor(circuit, device=None, hybrid=True):
     vectors.
 
     .. note::
-        The rewind metric tensor method has the following restrictions:
+        The adjoint metric tensor method has the following restrictions:
 
         * As it requires knowledge of the statevector and uses private
           methods of the used device, only ``"default.qubit"`` devices can be used.
@@ -125,7 +125,7 @@ def rewind_metric_tensor(circuit, device=None, hybrid=True):
 
     Args:
         circuit (.QuantumTape or .QNode): Circuit to compute the metric tensor of
-        device (.Device): Device to use for the rewind method
+        device (.Device): Device to use for the adjoint method
         hybrid (bool): Whether to take classical preprocessing into account. Ignored if
             ``circuit`` is a tape.
 
@@ -152,10 +152,10 @@ def rewind_metric_tensor(circuit, device=None, hybrid=True):
             qml.RZ(weights[3], wires=0)
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
 
-    We can use the ``rewind_metric_tensor`` transform to generate a new function
+    We can use the ``adjoint_metric_tensor`` transform to generate a new function
     that returns the metric tensor of this QNode:
 
-    >>> mt_fn = qml.rewind_metric_tensor(circuit)
+    >>> mt_fn = qml.adjoint_metric_tensor(circuit)
     >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
     >>> mt_fn(weights)
     tensor([[ 0.25  ,  0.    , -0.0497, -0.0497],
@@ -178,23 +178,23 @@ def rewind_metric_tensor(circuit, device=None, hybrid=True):
     0.025
 
     This speedup becomes more drastic for larger circuits.
-    The drawback of the rewind method is that it is only available on simulators and without
+    The drawback of the adjoint method is that it is only available on simulators and without
     shot simulations.
     """
     if isinstance(circuit, qml.tape.QuantumTape):
-        return _rewind_metric_tensor_tape(circuit, device)
+        return _adjoint_metric_tensor_tape(circuit, device)
     if isinstance(circuit, (qml.QNode, qml.ExpvalCost)):
-        return _rewind_metric_tensor_qnode(circuit, device, hybrid)
+        return _adjoint_metric_tensor_qnode(circuit, device, hybrid)
 
     raise qml.QuantumFunctionError("The passed object is not a QuantumTape or QNode.")
 
 
-def _rewind_metric_tensor_tape(tape, device):
-    """Computes the metric tensor of a tape using the rewind method and a given device."""
+def _adjoint_metric_tensor_tape(tape, device):
+    """Computes the metric tensor of a tape using the adjoint method and a given device."""
     # pylint: disable=protected-access
     if device.shots is not None:
         raise ValueError(
-            "The rewind method for the metric tensor is only implemented for shots=None"
+            "The adjoint method for the metric tensor is only implemented for shots=None"
         )
     tape = qml.transforms.expand_trainable_multipar(tape)
 
@@ -279,8 +279,8 @@ def _rewind_metric_tensor_tape(tape, device):
     return metric_tensor
 
 
-def _rewind_metric_tensor_qnode(qnode, device, hybrid):
-    """Computes the metric tensor of a qnode using the rewind method and its device.
+def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
+    """Computes the metric tensor of a qnode using the adjoint method and its device.
     For ``hybrid==True`` this wrapper accounts for classical preprocessing within the
     QNode.
     """
@@ -289,7 +289,7 @@ def _rewind_metric_tensor_qnode(qnode, device, hybrid):
             if qnode._multiple_devices:  # pylint: disable=protected-access
                 warnings.warn(
                     "ExpvalCost was instantiated with multiple devices. Only the first device "
-                    "will be used to evaluate the metric tensor with the rewind method.",
+                    "will be used to evaluate the metric tensor with the adjoint method.",
                     UserWarning,
                 )
             qnode = qnode.qnodes.qnodes[0]
@@ -301,7 +301,7 @@ def _rewind_metric_tensor_qnode(qnode, device, hybrid):
 
     def wrapper(*args, **kwargs):
         qnode.construct(args, kwargs)
-        mt = _rewind_metric_tensor_tape(qnode.qtape, device)
+        mt = _adjoint_metric_tensor_tape(qnode.qtape, device)
 
         if not hybrid:
             return mt

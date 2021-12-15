@@ -35,7 +35,7 @@ that compute the desired quantity.
     ~draw_mpl
     ~transforms.get_unitary_matrix
     ~metric_tensor
-    ~rewind_metric_tensor
+    ~adjoint_metric_tensor
     ~specs
     ~transforms.mitigate_with_zne
 
@@ -127,7 +127,7 @@ from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
-from .rewind_metric_tensor import rewind_metric_tensor
+from .adjoint_metric_tensor import adjoint_metric_tensor
 from .insert_ops import insert
 from .mitigate import mitigate_with_zne
 from .optimization import (

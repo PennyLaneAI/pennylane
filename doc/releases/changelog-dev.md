@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Added the rewind method for the metric tensor.
+* Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
   This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
@@ -17,7 +17,7 @@
 
   It is particular useful for larger circuits for which backpropagation requires
   inconvenient or even unfeasible amounts of storage, but is slower.
-  Furthermore, the rewind method is only available for analytic computation, not
+  Furthermore, the adjoint method is only available for analytic computation, not
   for measurements simulation with `shots!=None`.
 
   ```python
@@ -40,7 +40,7 @@
   ```
 
   ```pycon
-  >>> qml.rewind_metric_tensor(circuit)(x, y)
+  >>> qml.adjoint_metric_tensor(circuit)(x, y)
   tensor([[ 0.25495723, -0.07086695],
           [-0.07086695,  0.24945606]], requires_grad=True)
   ```

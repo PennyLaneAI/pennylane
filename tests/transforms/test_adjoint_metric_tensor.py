@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the rewind_metric_tensor function.
+Unit tests for the adjoint_metric_tensor function.
 """
 import pytest
 from pennylane import numpy as np
 import pennylane as qml
 
-from pennylane.transforms.rewind_metric_tensor import _apply_operations
+from pennylane.transforms.adjoint_metric_tensor import _apply_operations
 
 
 class TestApplyOperations:
@@ -424,8 +424,8 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
 
 @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze_tape, fubini_params_tape)))
-class TestRewindMetricTensorTape:
-    """Test the rewind method for the metric tensor when calling it directly on
+class TestAdjointMetricTensorTape:
+    """Test the adjoint method for the metric tensor when calling it directly on
     a tape.
     """
 
@@ -433,7 +433,7 @@ class TestRewindMetricTensorTape:
 
     def test_correct_output_tape_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
-        calling the rewind metric tensor directly on a tape."""
+        calling the adjoint metric tensor directly on a tape."""
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires)
 
@@ -444,17 +444,17 @@ class TestRewindMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*params)
-        mt = qml.rewind_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.rewind_metric_tensor(circuit, hybrid=False)(*params)
+        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*params)
         assert qml.math.allclose(mt, expected)
 
     @pytest.mark.skip("JAX does not support forward pass executiong of the metric tensor.")
     def test_correct_output_tape_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
-        calling the rewind metric tensor directly on a tape."""
+        calling the adjoint metric tensor directly on a tape."""
 
         jax = pytest.importorskip("jax")
         from jax.config import config
@@ -472,16 +472,16 @@ class TestRewindMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*j_params)
-        mt = qml.rewind_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
-        mt = qml.rewind_metric_tensor(circuit, hybrid=False)(*j_params)
+        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*j_params)
         assert qml.math.allclose(mt, expected)
 
     def test_correct_output_tape_torch(self, ansatz, params):
         """Test that the output is correct when using Torch and
-        calling the rewind metric tensor directly on a tape."""
+        calling the adjoint metric tensor directly on a tape."""
 
         torch = pytest.importorskip("torch")
 
@@ -496,16 +496,16 @@ class TestRewindMetricTensorTape:
             return qml.expval(qml.PauliZ(0))
 
         circuit(*t_params)
-        mt = qml.rewind_metric_tensor(circuit.qtape, dev)
+        mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt.detach().numpy(), expected)
 
-        mt = qml.rewind_metric_tensor(circuit, hybrid=False)(*t_params)
+        mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
     def test_correct_output_tape_tf(self, ansatz, params):
         """Test that the output is correct when using TensorFlow and
-        calling the rewind metric tensor directly on a tape."""
+        calling the adjoint metric tensor directly on a tape."""
 
         tf = pytest.importorskip("tensorflow")
 
@@ -521,18 +521,18 @@ class TestRewindMetricTensorTape:
 
         with tf.GradientTape() as t:
             circuit(*t_params)
-            mt = qml.rewind_metric_tensor(circuit.qtape, dev)
+            mt = qml.adjoint_metric_tensor(circuit.qtape, dev)
 
         expected = qml.math.reshape(expected, qml.math.shape(mt))
         assert qml.math.allclose(mt, expected)
 
         with tf.GradientTape() as t:
-            mt = qml.rewind_metric_tensor(circuit, hybrid=False)(*t_params)
+            mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
 
-class TestRewindMetricTensorQNode:
-    """Test the rewind method for the metric tensor when calling it on
+class TestAdjointMetricTensorQNode:
+    """Test the adjoint method for the metric tensor when calling it on
     a QNode.
     """
 
@@ -541,7 +541,7 @@ class TestRewindMetricTensorQNode:
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
@@ -551,7 +551,7 @@ class TestRewindMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.rewind_metric_tensor(circuit)(*params)
+        mt = qml.adjoint_metric_tensor(circuit)(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -562,7 +562,7 @@ class TestRewindMetricTensorQNode:
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
 
         jax = pytest.importorskip("jax")
         from jax.config import config
@@ -579,7 +579,7 @@ class TestRewindMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.rewind_metric_tensor(circuit)(*j_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*j_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -589,7 +589,7 @@ class TestRewindMetricTensorQNode:
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_torch(self, ansatz, params):
         """Test that the output is correct when using Torch and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
 
         torch = pytest.importorskip("torch")
 
@@ -603,7 +603,7 @@ class TestRewindMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.rewind_metric_tensor(circuit)(*t_params)
+        mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -613,7 +613,7 @@ class TestRewindMetricTensorQNode:
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_tf(self, ansatz, params):
         """Test that the output is correct when using TensorFlow and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
 
         tf = pytest.importorskip("tensorflow")
 
@@ -628,7 +628,7 @@ class TestRewindMetricTensorQNode:
             return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as t:
-            mt = qml.rewind_metric_tensor(circuit)(*t_params)
+            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -651,7 +651,7 @@ class TestRewindMetricTensorQNode:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt = qml.jacobian(qml.rewind_metric_tensor(circuit, device=dev2))(*params)
+        mt = qml.jacobian(qml.adjoint_metric_tensor(circuit, device=dev2))(*params)
 
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
@@ -673,8 +673,8 @@ diff_fubini_params = [
 
 
 @pytest.mark.parametrize("ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params)))
-class TestRewindMetricTensorDifferentiability:
-    """Test the differentiability of the rewind method for the metric
+class TestAdjointMetricTensorDifferentiability:
+    """Test the differentiability of the adjoint method for the metric
     tensor when calling it on a QNode.
     """
 
@@ -682,7 +682,7 @@ class TestRewindMetricTensorDifferentiability:
 
     def test_autograd(self, ansatz, params):
         """Test that the derivative is correct when using Autograd and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
         exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
@@ -693,7 +693,7 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_jac = qml.jacobian(qml.rewind_metric_tensor(circuit))(*params)
+        mt_jac = qml.jacobian(qml.adjoint_metric_tensor(circuit))(*params)
 
         if isinstance(mt_jac, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
@@ -702,7 +702,7 @@ class TestRewindMetricTensorDifferentiability:
 
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the derivative is correct when using JAX and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
 
         jax = pytest.importorskip("jax")
         from jax.config import config
@@ -719,7 +719,7 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.rewind_metric_tensor(circuit, hybrid=True)
+        mt_fn = qml.adjoint_metric_tensor(circuit, hybrid=True)
         argnums = list(range(len(params)))
         mt_jac = jax.jacobian(mt_fn, argnums=argnums)(*j_params)
 
@@ -732,7 +732,7 @@ class TestRewindMetricTensorDifferentiability:
 
     def test_correct_output_qnode_torch(self, ansatz, params):
         """Test that the derivative is correct when using Torch and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
 
         torch = pytest.importorskip("torch")
 
@@ -746,7 +746,7 @@ class TestRewindMetricTensorDifferentiability:
             ansatz(*params, dev.wires)
             return qml.expval(qml.PauliZ(0))
 
-        mt_fn = qml.rewind_metric_tensor(circuit)
+        mt_fn = qml.adjoint_metric_tensor(circuit)
         mt_jac = torch.autograd.functional.jacobian(mt_fn, *t_params)
 
         if isinstance(mt_jac, tuple):
@@ -756,7 +756,7 @@ class TestRewindMetricTensorDifferentiability:
 
     def test_correct_output_qnode_tf(self, ansatz, params):
         """Test that the derivative is correct when using TensorFlow and
-        calling the rewind metric tensor on a QNode."""
+        calling the adjoint metric tensor on a QNode."""
 
         tf = pytest.importorskip("tensorflow")
 
@@ -771,7 +771,7 @@ class TestRewindMetricTensorDifferentiability:
             return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as t:
-            mt = qml.rewind_metric_tensor(circuit)(*t_params)
+            mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
         mt_jac = t.jacobian(mt, t_params)
         if isinstance(mt_jac, tuple):
@@ -795,7 +795,7 @@ class TestErrors:
         dev = qml.device("default.qubit", wires=2)
 
         with pytest.raises(qml.QuantumFunctionError, match="The passed object is not a "):
-            qml.rewind_metric_tensor(ansatz, device=dev)
+            qml.adjoint_metric_tensor(ansatz, device=dev)
 
     def test_error_finite_shots(self):
         """Test that an error is raised if the device has a finite number of shots set."""
@@ -804,8 +804,8 @@ class TestErrors:
             qml.RY(1.9, wires=1)
         dev = qml.device("default.qubit", wires=2, shots=1)
 
-        with pytest.raises(ValueError, match="The rewind method for the metric tensor"):
-            qml.rewind_metric_tensor(tape, device=dev)
+        with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
+            qml.adjoint_metric_tensor(tape, device=dev)
 
     def test_warning_multiple_devices(self):
         """Test that a warning is issued if an ExpvalCost with multiple
@@ -819,4 +819,4 @@ class TestErrors:
 
         cost = qml.ExpvalCost(ansatz, H, [dev1, dev2])
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated"):
-            mt = qml.rewind_metric_tensor(cost)
+            mt = qml.adjoint_metric_tensor(cost)
