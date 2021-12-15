@@ -134,7 +134,7 @@ class QubitDensityMatrix(Operation):
         target device.
 
     Args:
-        state (array[complex]): a density matrix of size (2**len(wires), 2**len(wires))
+        state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
     .. UsageDetails::
@@ -151,8 +151,8 @@ class QubitDensityMatrix(Operation):
             dev = qml.device("default.mixed", wires=2)
             @qml.qnode(dev)
             def circuit():
-                qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
-                 return qml.state()
+                qml.QubitDensityMatrix(rho, wires=[0, 1])
+                return qml.state()
 
         Running this circuit:
 
