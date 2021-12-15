@@ -604,6 +604,7 @@ class Operator(abc.ABC):
         """
         return None
 
+    # pylint:disable=no-self-use
     def diagonalizing_gates(self):
         r"""Defines a partial representation of this operator as
         an eigendecompisition.
