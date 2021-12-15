@@ -333,9 +333,6 @@ class CommutationDAGNode:
         successors (array[int]): List of the node's successors in the DAG.
         predecessors (array[int]): List of the node's predecessors in the DAG.
         reachable (bool): Attribute used to check reachability by pairewise commutation.
-        matchedwith (array[int]): Id of the matched node in the pattern.
-        isblocked (bool): Id of the matched node in the pattern.
-        successortovisit (array[int]): List of nodes (ids) to visit in the forward part of the algorithm.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -351,9 +348,6 @@ class CommutationDAGNode:
         "successors",
         "predecessors",
         "reachable",
-        "matchedwith",
-        "isblocked",
-        "successorstovisit",
     ]
 
     def __init__(
@@ -365,9 +359,6 @@ class CommutationDAGNode:
         successors=None,
         predecessors=None,
         reachable=None,
-        matchedwith=None,
-        successorstovisit=None,
-        isblocked=None,
         node_id=-1,
     ):
         self.op = op
@@ -378,9 +369,6 @@ class CommutationDAGNode:
         self.successors = successors if successors is not None else []
         self.predecessors = predecessors if predecessors is not None else []
         self.reachable = reachable
-        self.matchedwith = matchedwith if matchedwith is not None else []
-        self.isblocked = isblocked
-        self.successorstovisit = successorstovisit if successorstovisit is not None else []
 
 
 class CommutationDAG:
@@ -563,6 +551,15 @@ class CommutationDAG:
             networkx.MultiDiGraph(): Networkx representation of the DAG.
         """
         return self._multi_graph
+
+    @property
+    def size(self):
+        """Return the size of the DAG object.
+
+        Returns:
+            int: Number of nodes in the DAG.
+        """
+        return len(self._multi_graph)
 
     def _pred_update(self, node_id):
         self.get_node(node_id).predecessors = []
