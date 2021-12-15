@@ -23,7 +23,7 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Variance, Expectation, State
+from pennylane.operation import Variance, Expectation, State, Probability
 
 dtype = jnp.float64
 
@@ -123,10 +123,12 @@ def get_shapes_and_dtype(tapes, device):
                 else:
                     shapes.append(jax.ShapeDtypeStruct((1, 2 ** len(device.wires)), dtype))
 
-        elif out_dim == 1:
-            shapes.append(jax.ShapeDtypeStruct((1,), dtype))
-        if out_dim > 1:
-            shapes.append(jax.ShapeDtypeStruct((1, out_dim), dtype))
+        else:
+            obs = t.observables[0]
+            if obs.return_type == Probability:
+                shapes.append(jax.ShapeDtypeStruct((1,out_dim), dtype))
+            else:
+                shapes.append(jax.ShapeDtypeStruct((out_dim,), dtype))
 
     return shapes, dtype
 
@@ -198,6 +200,7 @@ def _execute(
                 return np.concatenate(res)
 
             args = tuple(params) + (g,)
+
             vjps = host_callback.call(
                 non_diff_wrapper,
                 args,
@@ -275,8 +278,8 @@ def _execute_with_fwd(
             # On the forward execution return the jacobian too
             return res, jacs
 
-        fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        fwd_shapes = [jax.ShapeDtypeStruct((t.output_dim,), dtype) for t in tapes]
+        jacobian_shape = [jax.ShapeDtypeStruct((t.output_dim, len(p)), dtype) for t, p in zip(tapes, params)]
         res, jacs = host_callback.call(
             wrapper,
             params,
