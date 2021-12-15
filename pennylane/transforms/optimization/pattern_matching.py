@@ -168,7 +168,6 @@ def pattern_matching(tape, pattern_tapes):
                     
                     # Choose the first configuration
                     qubit = group.qubit_config[0]
-
                     # First add all the predecessors of the given match.
                     for elem in pred:
                         node = circuit_dag.get_node(elem)
@@ -188,9 +187,7 @@ def pattern_matching(tape, pattern_tapes):
                         node = group.template_dag.get_node(index)
                         inst = copy.deepcopy(node.op)
                         inst._wires = Wires(wires)
-                        inst = qml.adjoint(inst)
-                        apply(inst)
-
+                        inst.adjoint()
                 # Add the unmatched gates.
                 for node_id in substitution.unmatched_list:
                     node = circuit_dag.get_node(node_id)
