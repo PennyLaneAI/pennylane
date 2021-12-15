@@ -682,34 +682,25 @@ class Operation(Operator):
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
 
-    def generators(self):
-        r"""list[.Operation] or None: Generators of the operation.
+    def generator(self):
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
 
-        Each element of the returned list corresponds to a trainable
-        parameter of the operation.
-
-        For example, for operator with two trainable parameters,
+        For example, for operator
 
         .. math::
 
-            U(\theta, \phi) = e^{i\left[\theta X + \phi (0.5 Y + Z\otimes X)\right]}
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
 
-        the returned list of generators will have length 2:
-
-        >>> U.generators
-        [PauliX(wires=[0]), <Hamiltonian: terms=2, wires=[0, 1]>]
-
-        The first element is the generator corresponding to parameter :math:`\theta`,
-        while the second corresponds to parameter :math:`\phi`:
-
-        >>> print(U.generators[0])
-        PauliX(wires=[0])
-        >>> print(U.generators[1])
+        >>> U.generator()
           (0.5) [Y0]
         + (1.0) [Z0 X1]
 
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
+
         The default value to return is ``None``, indicating that the operation has
-        no defined generators.
+        no defined generator.
         """
         return None
 
@@ -1819,12 +1810,10 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generators = operation.generators()
+    generator = operation.generator()
 
-    if generators is None:
+    if generator is None:
         raise ValueError(f"Operation {operation.name} does not have a generator")
-
-    generator = generators[0]
 
     if operation.num_params != 1:
         raise ValueError(
@@ -1850,7 +1839,7 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generators") and obj.generators() is not None
+    return hasattr(obj, "generator") and obj.generator() is not None
 
 
 @qml.BooleanFn

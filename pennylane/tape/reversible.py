@@ -190,10 +190,10 @@ class ReversibleTape(JacobianTape):
 
         if op.name == "Rot":
             decomp = op.decompose()
-            generator = decomp[p_idx].generators()[0]
+            generator = decomp[p_idx].generator()
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:
-            generator = op.generators()[0]
+            generator = op.generator()
 
         # construct circuit to compute differentiated state
         between_ops_inverse = [copy.copy(op) for op in between_ops[::-1]]

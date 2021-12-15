@@ -577,13 +577,13 @@ class TestMetricTensor:
 
         tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 4
-        assert [len(tape.operations) for tape in tapes] == [2, 4, 5, 6]
+        assert [len(tape.operations) for tape in tapes] == [3, 5, 4, 5]
         assert [len(tape.measurements) for tape in tapes] == [1] * 4
         expected_ops = [
-            [qml.Hadamard, qml.QubitUnitary],
-            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.QubitUnitary],
-            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.QubitUnitary],
-            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.Hadamard],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.Hadamard, qml.Hadamard],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ],
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
@@ -1157,7 +1157,7 @@ def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
     operation with generator object that is not an observable"""
     with monkeypatch.context() as m:
-        m.setattr("pennylane.RX.generator", [qml.RX, 1])
+        m.setattr("pennylane.RX.generator", lambda self: qml.RX(0.1, wires=0))
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.5, requires_grad=True), wires=0)
