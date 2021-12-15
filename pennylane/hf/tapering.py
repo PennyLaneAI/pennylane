@@ -235,7 +235,8 @@ def generate_symmetries(qubit_op, num_qubits):
     set of the Pauli-X operators :math:`\mathbf{\sigma^x}` that are used to build the Clifford operators
     :math:`U`, according to the following relation:
 
-    .. math:
+    .. math::
+
         U_i = \frac{1}{\sqrt{2}}(\tau_i+\sigma^{x}_{q}).
 
     Here, :math:`\sigma^{x}_{q}` is the Pauli-X operator acting on qubit :math:`q`. These :math:`U_i` can be
