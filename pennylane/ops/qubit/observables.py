@@ -281,5 +281,3 @@ class Projector(Observable):
         []
         """
         return []
-
-
