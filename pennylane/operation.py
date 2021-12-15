@@ -587,7 +587,7 @@ class Operator(abc.ABC):
         r"""Defines a partial representation of this operator via
         its eigendecompisition.
 
-        Given the eigendecomposition :math:`U` in `O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
         In other words, the diagonalizing gates rotate a state into the computational
@@ -600,10 +600,10 @@ class Operator(abc.ABC):
 
             This method gets overwritten by subclasses to define the representation of a particular operator.
             By default, this method should always take the operator's parameters, wires and hyperparameters as
-            signature (even if the diagonalizing gates may be defined without making use of this input).
+            inputs (even if the diagonalizing gates are independent of these values).
 
             Alternatively, a custom signature can be defined, in which case the `diagonalizing_gates()`
-            method has to be overwritten to consider the custom signature,
+            method has to be overwritten to use the right signature.
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -625,7 +625,7 @@ class Operator(abc.ABC):
         r"""Defines a partial representation of this operator via
         its eigendecompisition.
 
-        Given the eigendecomposition :math:`U` in `O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
         In other words, the diagonalizing gates rotate a state into the computational
