@@ -18,6 +18,9 @@ from itertools import product, combinations
 import numpy as np
 
 
+from pennylane.utils import get_generator
+
+
 def format_nvec(nvec):
     """Nice strings representing tuples of integers."""
 
@@ -60,7 +63,7 @@ def get_spectrum(op, decimals):
     Returns:
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
-    matrix, coeff = qml.utils.get_generator(op, return_matrix=True)
+    matrix, coeff = get_generator(op, return_matrix=True)
     matrix = coeff * matrix
 
     # todo: use qml.math.linalg once it is tested properly

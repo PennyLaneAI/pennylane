@@ -1794,11 +1794,6 @@ def operation_derivative(operation) -> np.ndarray:
             trainable parameter
     """
     generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
-
-    if operation.inverse:
-        prefactor = -1
-        generator = qml.math.conj(qml.math.T(generator))
-
     return 1j * prefactor * generator @ operation.matrix
 
 
