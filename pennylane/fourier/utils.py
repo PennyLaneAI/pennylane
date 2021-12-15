@@ -60,12 +60,8 @@ def get_spectrum(op, decimals):
     Returns:
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
-    gen = getattr(op, "generator", lambda: None)()
-
-    if gen is None:
-        raise ValueError(f"Generator of operation {op} is not defined.")
-
-    matrix = g.matrix
+    matrix, coeff = qml.utils.get_generator(op, return_matrix=True)
+    matrix = coeff * matrix
 
     # todo: use qml.math.linalg once it is tested properly
     evals = np.linalg.eigvalsh(matrix)

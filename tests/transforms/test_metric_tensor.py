@@ -1163,7 +1163,7 @@ def test_generator_no_expval(monkeypatch):
             qml.RX(np.array(0.5, requires_grad=True), wires=0)
             qml.expval(qml.PauliX(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="is not an observable"):
             qml.metric_tensor(tape, approx="block-diag")
 
 

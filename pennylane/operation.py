@@ -1793,18 +1793,7 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator = operation.generator()
-
-    if generator is None:
-        raise ValueError(f"Operation {operation.name} does not have a generator")
-
-    if operation.num_params != 1:
-        raise ValueError(
-            f"Operation {operation.name} is not written in terms of a single parameter"
-        )
-
-    generator = generator.matrix
-    prefactor = 1
+    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
 
     if operation.inverse:
         prefactor = -1

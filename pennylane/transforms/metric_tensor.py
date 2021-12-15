@@ -359,33 +359,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            gen = op.generator()
-
-            if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-                obs = gen
-                s = 1.0
-
-            elif isinstance(gen, qml.operation.Observable):
-                gen = 1.0 * gen  # convert to a qml.Hamiltonian
-
-                if len(gen.ops) == 1:
-                    # case where the Hamiltonian is a single Pauli word
-                    obs = gen.ops[0]
-                    s = gen.coeffs[0]
-                else:
-                    # otherwise, we convert to a sparse array
-                    H = qml.utils.sparse_hamiltonian(gen)
-                    obs = qml.SparseHamiltonian(H, wires=gen.wires)
-                    s = 1.0
-            else:
-                raise qml.QuantumFunctionError(
-                    f"Can't generate metric tensor, generator {gen}"
-                    "has no corresponding observable"
-                )
-
-            if op.inverse:
-                s *= -1.0
-
+            obs, s = qml.utils.get_generator(op)
             obs_list[-1].append(obs)
             coeffs_list[-1].append(s)
 
