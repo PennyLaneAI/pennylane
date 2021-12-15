@@ -61,22 +61,20 @@ def get_spectrum(op, decimals):
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
     no_generator = False
-    if hasattr(op, "generator"):
-        g, coeff = op.generator
 
-        if isinstance(g, np.ndarray):
-            matrix = g
-        elif hasattr(g, "matrix"):
-            matrix = g.matrix
-        else:
+    if hasattr(op, "generator"):
+        g = op.generators()
+
+        if g is None:
             no_generator = True
+        else:
+            matrix = g[0].matrix
     else:
         no_generator = True
 
     if no_generator:
         raise ValueError(f"Generator of operation {op} is not defined.")
 
-    matrix = coeff * matrix
     # todo: use qml.math.linalg once it is tested properly
     evals = np.linalg.eigvalsh(matrix)
 

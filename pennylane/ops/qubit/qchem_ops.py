@@ -18,6 +18,7 @@ from quantum chemistry applications.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -80,10 +81,10 @@ class SingleExcitation(Operation):
     num_wires = 2
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
-        -1 / 2,
-    ]
+
+    def generators(self):
+        w1, w2 = self.wires
+        return [0.25 * qml.PauliX(w1) @ qml.PauliY(w2) - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)]
 
     @property
     def num_params(self):
@@ -142,10 +143,15 @@ class SingleExcitationMinus(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
-        -1 / 2,
-    ]
+
+    def generators(self):
+        w1, w2 = self.wires
+        return [
+            -0.25 * qml.Identity(w1)
+            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w2)
+            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
+            - 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
+        ]
 
     @property
     def num_params(self):
@@ -218,10 +224,15 @@ class SingleExcitationPlus(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
-        -1 / 2,
-    ]
+
+    def generators(self):
+        w1, w2 = self.wires
+        return [
+            0.25 * qml.Identity(w1)
+            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w2)
+            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
+            + 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
+        ]
 
     @property
     def num_params(self):
@@ -320,10 +331,20 @@ class DoubleExcitation(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    G = np.zeros((16, 16), dtype=np.complex64)
-    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-    generator = [G, -1 / 2]
+    def generators(self):
+        w0, w1, w2, w3 = self.wires
+        coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
+        obs = [
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+        ]
+        return [qml.Hamiltonian(coeffs, obs)]
 
     @property
     def num_params(self):
@@ -415,12 +436,50 @@ class DoubleExcitationPlus(Operation):
     num_wires = 4
     grad_method = "A"
 
-    G = -1 * np.eye(16, dtype=np.complex64)
-    G[3, 3] = 0
-    G[12, 12] = 0
-    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-    generator = [G, -1 / 2]
+    def generators(self):
+        w0, w1, w2, w3 = self.wires
+
+        coeffs = [
+            0.4375,
+            -0.0625,
+            0.0625,
+            0.0625,
+            0.0625,
+            0.0625,
+            -0.0625,
+            0.0625,
+            -0.0625,
+            0.0625,
+            -0.0625,
+            -0.0625,
+            0.0625,
+            0.0625,
+            -0.0625,
+            -0.0625,
+        ]
+
+        obs = [
+            qml.Identity(w0),
+            qml.PauliZ(w2) @ qml.PauliZ(w3),
+            qml.PauliZ(w1) @ qml.PauliZ(w3),
+            qml.PauliZ(w1) @ qml.PauliZ(w2),
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+            qml.PauliZ(w0) @ qml.PauliZ(w3),
+            qml.PauliZ(w0) @ qml.PauliZ(w2),
+            qml.PauliZ(w0) @ qml.PauliZ(w1),
+            qml.PauliZ(w0) @ qml.PauliZ(w1) @ qml.PauliZ(w2) @ qml.PauliZ(w3),
+        ]
+        return [qml.Hamiltonian(coeffs, obs)]
+
+        H = coo_matrix(([0.5j, -0.5j], ([3, 12], [12, 3])))
+        return [qml.SparseHamiltonian(H, wires=self.wires)]
 
     @property
     def num_params(self):
@@ -487,12 +546,38 @@ class DoubleExcitationMinus(Operation):
     num_wires = 4
     grad_method = "A"
 
-    G = np.eye(16, dtype=np.complex64)
-    G[3, 3] = 0
-    G[12, 12] = 0
-    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-    generator = [G, -1 / 2]
+    def generators(self):
+        w0, w1, w2, w3 = self.wires
+
+        coeffs = [-0.4375,  0.0625, -0.0625, -0.0625,  0.0625,  0.0625, -0.0625,
+        0.0625, -0.0625,  0.0625, -0.0625, -0.0625, -0.0625, -0.0625,
+        0.0625,  0.0625]
+
+        obs = [
+            qml.Identity(w0),
+            qml.PauliZ(w2) @ qml.PauliZ(w3),
+            qml.PauliZ(w1) @ qml.PauliZ(w3),
+            qml.PauliZ(w1) @ qml.PauliZ(w2),
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+            qml.PauliZ(w0) @ qml.PauliZ(w3),
+            qml.PauliZ(w0) @ qml.PauliZ(w2),
+            qml.PauliZ(w0) @ qml.PauliZ(w1),
+            qml.PauliZ(w0) @ qml.PauliZ(w1) @ qml.PauliZ(w2) @ qml.PauliZ(w3)
+        ]
+        return [qml.Hamiltonian(coeffs, obs)]
+
+        rows = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 3, 12]
+        cols = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 12, 3]
+        data = [-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, 0.5j, -0.5j]
+        H = coo_matrix((data, (rows, cols)))
+        return [qml.SparseHamiltonian(H, wires=self.wires)]
 
     @property
     def num_params(self):
@@ -581,29 +666,15 @@ class OrbitalRotation(Operation):
     num_wires = 4
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
-    generator = [
-        qml.math.array(
-            [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, -1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, -1j, 0, 0, -1j, 0, 0, 0, 0, 0, 0],
-                [0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0],
-                [0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0],
-                [0, 0, 0, 0, 0, 0, 1j, 0, 0, 1j, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1j, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            ]
-        ),
-        -1 / 2,
-    ]
+
+    def generators(self):
+        w0, w1, w2, w3 = self.wires
+        return [
+            0.25 * qml.PauliX(w0) @ qml.PauliY(w2)
+            -0.25 * qml.PauliY(w0) @ qml.PauliX(w2)
+            +0.25 * qml.PauliX(w1) @ qml.PauliY(w3)
+            -0.25 * qml.PauliY(w1) @ qml.PauliX(w3)
+        ]
 
     @property
     def num_params(self):

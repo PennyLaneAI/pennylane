@@ -378,26 +378,21 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            gen, s = op.generator
-            if op.inverse:
-                s = -s
-            w = op.wires
-            coeffs_list[-1].append(s)
+            gen = op.generators()
 
-            # get the observable corresponding to the generator of the current operation
-            if isinstance(gen, np.ndarray):
-                # generator is a Hermitian matrix
-                obs_list[-1].append(qml.Hermitian(gen, w))
-
-            elif issubclass(gen, qml.operation.Observable):
-                # generator is an existing PennyLane operation
-                obs_list[-1].append(gen(w))
-
-            else:
+            if gen is None:
                 raise qml.QuantumFunctionError(
                     f"Can't generate metric tensor, generator {gen}"
                     "has no corresponding observable"
                 )
+
+            gen = gen[0]
+
+            if op.inverse:
+                gen = -1.0 * gen
+
+            obs_list[-1].append(gen)
+            coeffs_list[-1].append(gen.coeffs)
 
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations

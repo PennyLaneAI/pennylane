@@ -426,6 +426,9 @@ class Hamiltonian(Observable):
 
         return data
 
+    def diagonalizing_gates(self):
+        return [word.diagonalizing_gates() for word in self.ops]
+
     def compare(self, other):
         r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
         to determine if they are equivalent.

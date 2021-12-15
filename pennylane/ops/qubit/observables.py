@@ -145,6 +145,9 @@ class SparseHamiltonian(Observable):
     num_wires = AllWires
     grad_method = None
 
+    def __init__(self, H, wires=None, do_queue=True, id=None):
+        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 1

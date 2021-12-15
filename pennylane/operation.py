@@ -682,30 +682,36 @@ class Operation(Operator):
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
 
-    @property
-    def generator(self):
-        r"""Generator of the operation.
+    def generators(self):
+        r"""list[.Operation] or None: Generators of the operation.
 
-        A length-2 list ``[generator, scaling_factor]``, where
+        Each element of the returned list corresponds to a trainable
+        parameter of the operation.
 
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
+        For example, for operator with two trainable parameters,
 
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
+        .. math::
 
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
+            U(\theta, \phi) = e^{i\left[\theta X + \phi (0.5 Y + Z\otimes X)\right]}
 
-        .. code-block:: python
+        the returned list of generators will have length 2:
 
-            generator = [PauliX, 0.7]
+        >>> U.generators
+        [PauliX(wires=[0]), <Hamiltonian: terms=2, wires=[0, 1]>]
 
-        Default is ``[None, 1]``, indicating the operation has no generator.
+        The first element is the generator corresponding to parameter :math:`\theta`,
+        while the second corresponds to parameter :math:`\phi`:
+
+        >>> print(U.generators[0])
+        PauliX(wires=[0])
+        >>> print(U.generators[1])
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        The default value to return is ``None``, indicating that the operation has
+        no defined generators.
         """
-        return [None, 1]
+        return None
 
     @property
     def inverse(self):
@@ -1813,23 +1819,23 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = operation.generator
+    generators = operation.generators()
 
-    if generator is None:
+    if generators is None:
         raise ValueError(f"Operation {operation.name} does not have a generator")
+
+    generator = generators[0]
+
     if operation.num_params != 1:
-        # Note, this case should already be caught by the previous raise since we haven't worked out
-        # how to have an operator for multiple parameters. It is added here in case of a future
-        # change
         raise ValueError(
             f"Operation {operation.name} is not written in terms of a single parameter"
         )
 
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
+    generator = generator.matrix
+    prefactor = 1
 
     if operation.inverse:
-        prefactor *= -1
+        prefactor = -1
         generator = qml.math.conj(qml.math.T(generator))
 
     return 1j * prefactor * generator @ operation.matrix
@@ -1844,7 +1850,7 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator[0] is not None
+    return hasattr(obj, "generators") and obj.generators() is not None
 
 
 @qml.BooleanFn

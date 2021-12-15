@@ -190,10 +190,10 @@ class ReversibleTape(JacobianTape):
 
         if op.name == "Rot":
             decomp = op.decompose()
-            generator, multiplier = decomp[p_idx].generator
+            generator = decomp[p_idx].generators()[0]
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:
-            generator, multiplier = op.generator
+            generator = op.generators()[0]
 
         # construct circuit to compute differentiated state
         between_ops_inverse = [copy.copy(op) for op in between_ops[::-1]]
@@ -207,7 +207,7 @@ class ReversibleTape(JacobianTape):
                 op.queue().inv()
 
             # apply generator needed for differentiation
-            generator(wires)
+            qml.apply(generator)
 
             # evolve forwards again
             for op in between_ops:
