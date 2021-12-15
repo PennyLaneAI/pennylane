@@ -26,6 +26,12 @@
 
 The Operator class has undergone a major refactor with the following changes:
 
+* The `diagonalizing_gates()` representation has been moved to the highest-level 
+  `Operator` class and is therefore available to all subclasses. A condition 
+  `qml.operation.defines_diagonalizing_gates` has been added, which can be used 
+  in tape contexts without queueing.
+  [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
+
 * A `hyperparameters` attribute was added to the operator class.
   [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
   
@@ -42,5 +48,6 @@ The Operator class has undergone a major refactor with the following changes:
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
 
 Olivia Di Matteo, Christina Lee, Maria Schuld, David Wierichs
