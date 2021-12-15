@@ -416,8 +416,6 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     generator but ``allow_nonunitary=False``, the operation ``op`` should have been decomposed
     before, leading to a ``ValueError``.
     """
-    gen = op.generator()
-
     op_to_cgen = {
         qml.RX: qml.CNOT,
         qml.RY: qml.CY,
@@ -431,13 +429,8 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-
-            try:
-                gen = gen.matrix
-            except NotImplementedError:
-                gen = qml.utils.sparse_hamiltonian(gen).toarray()
-
-            return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
+            gen, coeff = qml.utils.get_generator(op, return_matrix=True)
+            return qml.ControlledQubitUnitary(coeff * gen, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "

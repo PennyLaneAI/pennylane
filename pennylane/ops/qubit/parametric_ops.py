@@ -1398,7 +1398,7 @@ class IsingXX(Operation):
     grad_method = "A"
 
     def generator(self):
-        return -0.5 * PauliX(wires=[0]) @ PauliX(wires=[1])
+        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
     @property
     def num_params(self):
