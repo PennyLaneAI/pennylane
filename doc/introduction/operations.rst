@@ -170,6 +170,7 @@ Qubit state preparation
 
     ~pennylane.BasisState
     ~pennylane.QubitStateVector
+    ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
 
