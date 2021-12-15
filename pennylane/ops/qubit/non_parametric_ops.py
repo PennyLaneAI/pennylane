@@ -990,6 +990,7 @@ class MultiControlledX(Operation):
             control_values = "1" * len(control_wires)
 
         self.control_values = control_values
+        self.control_int = self._parse_control_values(self.control_wires, self.control_values)
         self._cx = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
@@ -1031,8 +1032,7 @@ class MultiControlledX(Operation):
 
         if self._cx is None:
             # store matrix, so we do not have to do this each time
-            control_int = self._parse_control_values(self.control_wires, self.control_values)
-            self._cx = self.compute_matrix(control_int, len(self.wires))
+            self._cx = self.compute_matrix(self.control_int, len(self.wires))
 
         base_matrix = self._cx
 

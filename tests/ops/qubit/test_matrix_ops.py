@@ -207,7 +207,7 @@ class TestControlledQubitUnitary:
     def test_matrix(self):
         """Test if ControlledQubitUnitary returns the correct matrix for a control-control-X
         (Toffoli) gate"""
-        mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix
+        mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix()
         mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix()
         assert np.allclose(mat, mat2)
 
