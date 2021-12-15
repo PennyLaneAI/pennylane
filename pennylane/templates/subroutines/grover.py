@@ -146,7 +146,9 @@ class GroverOperator(Operation):
         if wire_order is None or self.wires == qml.wires.Wires(wire_order):
             return canonical_matrix
 
-        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+        return qml.operation.expand_matrix(
+            canonical_matrix, wires=self.wires, wire_order=wire_order
+        )
 
     # pylint: disable=unused-argument
     @staticmethod

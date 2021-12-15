@@ -95,12 +95,8 @@ class TestSparse:
         sparse_hamiltonian = coo_matrix(sparse_hamiltonian)
         res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian, range(num_wires)).matrix()
         res_static = qml.SparseHamiltonian.compute_matrix(sparse_hamiltonian)
-        assert np.allclose(
-            res_dynamic.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
-        )
-        assert np.allclose(
-            res_static.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0
-        )
+        assert np.allclose(res_dynamic.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0)
+        assert np.allclose(res_static.toarray(), sparse_hamiltonian.toarray(), atol=tol, rtol=0)
 
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the

@@ -182,7 +182,7 @@ class TestHermitian:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_eigvals_eigvecs_same_observable_twice(
-            self, observable, eigvals, eigvecs, tol
+        self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the eigvals method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
@@ -253,7 +253,7 @@ class TestHermitian:
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gatesi_same_observable_twice(
-            self, observable, eigvals, eigvecs, tol
+        self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the diagonalizing_gates method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         qubit_unitary = qml.Hermitian(observable, wires=[0]).diagonalizing_gates()
@@ -319,7 +319,7 @@ class TestHermitian:
         A = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         res_static = qml.Hermitian.compute_matrix(A)
         res_dynamic = qml.Hermitian(A, wires=0).matrix()
-        expected = np.array([[6.+0.j, 1.-2.j], [1.+2.j, -1.+0.j]])
+        expected = np.array([[6.0 + 0.0j, 1.0 - 2.0j], [1.0 + 2.0j, -1.0 + 0.0j]])
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
@@ -397,7 +397,7 @@ class TestProjector:
                         [0, 0, 0, 0],
                     ],
                 ),
-                2
+                2,
             ),
             (
                 [1, 1],
@@ -414,7 +414,7 @@ class TestProjector:
                         [0, 0, 0, 1],
                     ],
                 ),
-                2
+                2,
             ),
         ],
     )

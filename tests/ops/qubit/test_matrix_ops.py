@@ -185,7 +185,9 @@ class TestQubitUnitary:
 
     def test_matrix_representation(self, tol):
         """Test that the canonical matrix is defined correctly"""
-        U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
         res_static = qml.QubitUnitary.compute_matrix(U)
         res_dynamic = qml.QubitUnitary(U, wires=0).matrix()
         expected = U
@@ -419,12 +421,17 @@ class TestControlledQubitUnitary:
         U = np.array([[0.94877869, 0.31594146], [-0.31594146, 0.94877869]])
         # res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1])
         res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
-        expected = np.array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-                             [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-                             [0.+0.j, 0.+0.j, 0.94877869+0.j, 0.31594146+0.j],
-                             [0.+0.j, 0.+0.j, -0.31594146+0.j, 0.94877869+0.j]])
-        #assert np.allclose(res_static, expected, atol=tol)
+        expected = np.array(
+            [
+                [1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.94877869 + 0.0j, 0.31594146 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, -0.31594146 + 0.0j, 0.94877869 + 0.0j],
+            ]
+        )
+        # assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
 
 label_data = [
     (qml.QubitUnitary(X, wires=0), "U"),

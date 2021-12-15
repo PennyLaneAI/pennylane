@@ -239,7 +239,7 @@ class TestQubitSum:
 
         res_static = qml.QubitSum.compute_matrix()
         res_dynamic = qml.QubitSum(wires=[0, 1, 2]).matrix()
-        expected =  np.array(
+        expected = np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
                 [0, 1, 0, 0, 0, 0, 0, 0],

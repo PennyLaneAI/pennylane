@@ -27,6 +27,6 @@ def test_matrix_representation(tol):
     """Test the matrix representation"""
     res_static = qml.Identity.compute_matrix()
     res_dynamic = qml.Identity(wires=0).matrix()
-    expected = np.array([[1., 0.], [0., 1.]])
+    expected = np.array([[1.0, 0.0], [0.0, 1.0]])
     assert np.allclose(res_static, expected, atol=tol)
     assert np.allclose(res_dynamic, expected, atol=tol)

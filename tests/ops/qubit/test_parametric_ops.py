@@ -292,7 +292,7 @@ class TestMatrix:
         # test identity for theta=pi/2
         expected = np.array([[1, -1j], [-1j, 1]]) / np.sqrt(2)
         assert np.allclose(qml.RX.compute_matrix(np.pi / 2), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.RX(np.pi/2, wires=0).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.RX(np.pi / 2, wires=0).matrix(), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
         expected = -1j * np.array([[0, 1], [1, 0]])
@@ -309,7 +309,7 @@ class TestMatrix:
         # test identity for theta=pi/2
         expected = np.array([[1, -1], [1, 1]]) / np.sqrt(2)
         assert np.allclose(qml.RY.compute_matrix(np.pi / 2), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.RY(np.pi/2, wires=0).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.RY(np.pi / 2, wires=0).matrix(), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
         expected = np.array([[0, -1], [1, 0]])
@@ -348,11 +348,15 @@ class TestMatrix:
 
         param = np.pi / 2
         assert np.allclose(qml.IsingXX.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
 
         param = np.pi
         assert np.allclose(qml.IsingXX.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
 
     def test_isingzz(self, tol):
         """Test that the IsingZZ operation is correct"""
@@ -369,11 +373,15 @@ class TestMatrix:
 
         param = np.pi / 2
         assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
 
         param = np.pi
         assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -407,7 +415,7 @@ class TestMatrix:
 
         # test identity for theta=0
         assert np.allclose(qml.CRX.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRX(0, wires=[0,1]).matrix(), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.CRX(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
 
         # test identity for theta=pi/2
         expected = np.array(
@@ -419,12 +427,12 @@ class TestMatrix:
             ]
         )
         assert np.allclose(qml.CRX.compute_matrix(np.pi / 2), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRX(np.pi / 2, wires=[0,1]).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.CRX(np.pi / 2, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
         expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, -1j, 0]])
         assert np.allclose(qml.CRX.compute_matrix(np.pi), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRX(np.pi, wires=[0,1]).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.CRX(np.pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
 
     def test_CRY(self, tol):
         """Test controlled y rotation is correct"""
@@ -443,7 +451,7 @@ class TestMatrix:
             ]
         )
         assert np.allclose(qml.CRY.compute_matrix(np.pi / 2), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRY(np.pi / 2,  wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.CRY(np.pi / 2, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
         expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
@@ -467,8 +475,7 @@ class TestMatrix:
             ]
         )
         assert np.allclose(qml.CRZ.compute_matrix(np.pi / 2), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRZ(np.pi / 2 , wires = [0, 1]).matrix(), expected, atol=tol, rtol=0)
-
+        assert np.allclose(qml.CRZ(np.pi / 2, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
 
         # test identity for theta=pi
         expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, -1j, 0], [0, 0, 0, 1j]])
@@ -480,12 +487,16 @@ class TestMatrix:
 
         # test identity for phi,theta,omega=0
         assert np.allclose(qml.CRot.compute_matrix(0, 0, 0), np.identity(4), atol=tol, rtol=0)
-        assert np.allclose(qml.CRot(0, 0, 0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.CRot(0, 0, 0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0
+        )
 
         # test identity for phi,theta,omega=pi
         expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
         assert np.allclose(qml.CRot.compute_matrix(np.pi, np.pi, np.pi), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.CRot(np.pi, np.pi, np.pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(
+            qml.CRot(np.pi, np.pi, np.pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0
+        )
 
         def arbitrary_Crotation(x, y, z):
             """controlled arbitrary single qubit rotation"""
@@ -516,7 +527,7 @@ class TestMatrix:
             [[1, -np.exp(1j * lam)], [np.exp(1j * phi), np.exp(1j * (phi + lam))]]
         ) / np.sqrt(2)
         assert np.allclose(qml.U2.compute_matrix(phi, lam), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.U2(phi, lam , wires = [0]).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.U2(phi, lam, wires=[0]).matrix(), expected, atol=tol, rtol=0)
 
     def test_U3_gate(self, tol):
         """Test U3 gate matrix matches the documentation"""
@@ -535,7 +546,7 @@ class TestMatrix:
         )
 
         assert np.allclose(qml.U3.compute_matrix(theta, phi, lam), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.U3(theta, phi, lam, wires = [0]).matrix(), expected, atol=tol, rtol=0)
+        assert np.allclose(qml.U3(theta, phi, lam, wires=[0]).matrix(), expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
