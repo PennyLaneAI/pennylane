@@ -363,7 +363,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
             if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
                 obs = gen
-                s = 1.
+                s = 1.0
 
             elif isinstance(gen, qml.operation.Observable):
                 gen = 1.0 * gen  # convert to a qml.Hamiltonian
@@ -376,7 +376,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
                     # otherwise, we convert to a sparse array
                     H = qml.utils.sparse_hamiltonian(gen)
                     obs = qml.SparseHamiltonian(H, wires=gen.wires)
-                    s = 1.
+                    s = 1.0
             else:
                 raise qml.QuantumFunctionError(
                     f"Can't generate metric tensor, generator {gen}"
@@ -448,7 +448,7 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
         qml.RX: qml.CNOT,
         qml.RY: qml.CY,
         qml.RZ: qml.CZ,
-        qml.PhaseShift: qml.CZ, # PhaseShift is the same as RZ up to a global phase
+        qml.PhaseShift: qml.CZ,  # PhaseShift is the same as RZ up to a global phase
     }
 
     try:
@@ -457,8 +457,12 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            print(gen)
-            gen = gen.matrix
+
+            try:
+                gen = gen.matrix
+            except NotImplementedError:
+                gen = qml.utils.sparse_hamiltonian(gen).toarray()
+
             return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(

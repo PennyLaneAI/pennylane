@@ -250,6 +250,14 @@ class Projector(Observable):
         w[idx] = 1
         return w
 
+    @classmethod
+    def _matrix(cls, *params):
+        basis_state = params[0]
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
+
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
         specified Projector observable.

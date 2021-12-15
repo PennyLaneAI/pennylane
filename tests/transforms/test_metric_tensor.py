@@ -1236,16 +1236,19 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
             with pytest.raises(ValueError, match="Generator for operation"):
                 qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
+    class RX(qml.RX):
+        def generator(self):
+            return qml.Hadamard(self.wires)
+
     @qml.qnode(dev)
     def circuit(x, z):
-        qml.RX(x, wires="wire1")
+        RX(x, wires="wire1")
         qml.RZ(z, wires="wire1")
         return qml.expval(qml.PauliZ("wire2"))
 
     with monkeypatch.context() as m:
         exp_fn = lambda tape, *args, **kwargs: tape
         m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
-        m.setattr("pennylane.RX.generator", [qml.Hadamard, 1.0])
 
         if allow_nonunitary:
             qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
