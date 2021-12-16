@@ -208,7 +208,7 @@ class ControlledQubitUnitary(QubitUnitary):
         self._control_wires = control_wires
         self.U = U
 
-        wires = control_wires + wires
+        total_wires = control_wires + wires
 
         # If control values unspecified, we control on the all-ones string
         if not control_values:
@@ -226,45 +226,52 @@ class ControlledQubitUnitary(QubitUnitary):
         # to the left and right with the correct amount of identity blocks.
 
         self._padding_left = control_int * len(U)
-        self._padding_right = 2 ** len(wires) - len(U) - self._padding_left
+        self._padding_right = 2 ** len(total_wires) - len(U) - self._padding_left
         self._cu = None
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=total_wires, do_queue=do_queue)
 
     @property
     def num_params(self):
         return 1
 
-    # @staticmethod
-    # def compute_matrix(U, control_int, n_controls, control_values=None):
-    #     """Canonical matrix representation of this operator.
-    #
-    #     Args:
-    #         U (tensor_like): unitary matrix
-    #         control_int (Iterable): wires that the unitary is controlled on
-    #
-    #     Returns:
-    #         tensor_like: canonical matrix
-    #
-    #     **Example**
-    #
-    #     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-    #     >>> qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[0, 1])
-    #     XXX
-    #     """
-    #
-    #     # If control values unspecified, we control on the all-ones string
-    #     if not control_values:
-    #         control_values = "1" * len(control_wires)
-    #
-    #
-    #     padding_left = control_int * len(U)
-    #     padding_right = 2 ** len(wires) - len(U) - padding_left
-    #     interface = qml.math.get_interface(U)
-    #     left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
-    #     right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
-    #     self._cu =
-    #     return qml.math.block_diag([left_pad, U, right_pad])
+    @staticmethod
+    def compute_matrix(U, control_wires, wires, control_values=None):
+        """Canonical matrix representation of the ControlledQubitUnitary operator.
+
+        Args:
+            U (tensor_like): unitary matrix
+            control_wires (Iterable): the control wire(s)
+            wires (Iterable): the wire(s) the unitary acts on
+            control_values (str): a string of bits representing the state of the control
+                qubits to control on (default is the all 1s state)
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
+        >>> qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], wires=[0], control_values="1")
+        [[ 1.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j]
+         [ 0.        +0.j  1.        +0.j  0.        +0.j  0.        +0.j]
+         [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]
+         [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
+        """
+        # this method reproduces the logic contained in the init function and the matrix() method
+
+        total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(wires)
+        # if control values unspecified, we control on the all-ones string
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
+        control_int = int(control_values, 2)
+        padding_left = control_int * len(U)
+        padding_right = 2 ** len(total_wires) - len(U) - padding_left
+        interface = qml.math.get_interface(U)
+        left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
+        right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
+        return qml.math.block_diag([left_pad, U, right_pad])
 
     def matrix(self, wire_order=None):
         """Matrix representation of this operator.
@@ -275,20 +282,20 @@ class ControlledQubitUnitary(QubitUnitary):
         **Example**
 
         >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-        >>> qml.ControlledQubitUnitary(U, wires=0).matrix(U)
+        >>> op = qml.ControlledQubitUnitary(U, control_wires=[1], wires=[0], control_values="1")
+        >>> op.matrix(wire_order=[0, 1])
         [[ 1.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j]
-         [ 0.        +0.j  1.        +0.j  0.        +0.j  0.        +0.j]
-         [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]
-         [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
+         [ 0.        +0.j  0.94877869+0.j  0.        +0.j  0.31594146+0.j]
+         [ 0.        +0.j  0.        +0.j  1.        +0.j  0.        +0.j]
+         [ 0.        +0.j -0.31594146+0.j  0.        +0.j  0.94877869+0.j]]
         """
-        # we do not call compute_matrix here to avoid replicating logic already computed before
-
         if self._cu is None:
             interface = qml.math.get_interface(self.U)
             left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
             right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
             self._cu = qml.math.block_diag([left_pad, self.U, right_pad])
 
+        # we do not call compute_matrix here to avoid replicating logic already computed before
         canonical_matrix = self._cu
 
         if wire_order is None or self.wires == Wires(wire_order):

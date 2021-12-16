@@ -454,17 +454,17 @@ class Rot(Operation):
     def compute_matrix(phi, theta, omega):
         """Canonical matrix representation of the Rot operator.
 
-         Args:
-             phi (tensor_like or float): first rotation angle
-             theta (tensor_like or float): second rotation angle
-             omega (tensor_like or float): third rotation angle
+        Args:
+            phi (tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
 
-         Returns:
-             tensor_like: canonical matrix
+        Returns:
+            tensor_like: canonical matrix
 
-         **Example**
+        **Example**
 
-         >>> qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        >>> qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
         tensor([[ 0.9752-0.1977j, -0.0993+0.0100j],
                 [ 0.0993+0.0100j,  0.9752+0.1977j]])
 
@@ -1290,23 +1290,22 @@ class CRot(Operation):
     def compute_matrix(phi, theta, omega):
         """Canonical matrix representation of the CRot operator.
 
-         Args:
-             phi (tensor_like or float): first rotation angle
-             theta (tensor_like or float): second rotation angle
-             omega (tensor_like or float): third rotation angle
+        Args:
+            phi(tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
 
-         Returns:
-             tensor_like: canonical matrix
+        Returns:
+            tensor_like: canonical matrix
 
-         **Example**
+        **Example**
 
          >>> qml.CRot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
-        tensor([[ 1.0+0.0j,  0.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+         tensor([[ 1.0+0.0j,  0.0+0.0j,        0.0+0.0j,        0.0+0.0j],
                 [ 0.0+0.0j,  1.0+0.0j,        0.0+0.0j,        0.0+0.0j],
                 [ 0.0+0.0j,  0.0+0.0j,  0.9752-0.1977j, -0.0993+0.0100j],
                 [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
         """
-
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type

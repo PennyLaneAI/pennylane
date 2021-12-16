@@ -224,13 +224,6 @@ X = np.array([[0, 1], [1, 0]])
 class TestControlledQubitUnitary:
     """Tests for the ControlledQubitUnitary operation"""
 
-    def test_matrix(self):
-        """Test if ControlledQubitUnitary returns the correct matrix for a control-control-X
-        (Toffoli) gate"""
-        mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix()
-        mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix()
-        assert np.allclose(mat, mat2)
-
     def test_no_control(self):
         """Test if ControlledQubitUnitary raises an error if control wires are not specified"""
         with pytest.raises(ValueError, match="Must specify control wires"):
@@ -416,10 +409,17 @@ class TestControlledQubitUnitary:
 
         assert np.allclose(mixed_polarity_state, pauli_x_state)
 
+    def test_same_as_Toffoli(self):
+        """Test if ControlledQubitUnitary returns the correct matrix for a control-control-X
+        (Toffoli) gate"""
+        mat = qml.ControlledQubitUnitary(X, control_wires=[0, 1], wires=2).matrix()
+        mat2 = qml.Toffoli(wires=[0, 1, 2]).matrix()
+        assert np.allclose(mat, mat2)
+
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         U = np.array([[0.94877869, 0.31594146], [-0.31594146, 0.94877869]])
-        # res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1])
+        res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], wires=0)
         res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
         expected = np.array(
             [
@@ -429,7 +429,7 @@ class TestControlledQubitUnitary:
                 [0.0 + 0.0j, 0.0 + 0.0j, -0.31594146 + 0.0j, 0.94877869 + 0.0j],
             ]
         )
-        # assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
 
