@@ -78,8 +78,6 @@ class TestMetricTensor:
         assert isinstance(result, tuple)
         assert qml.math.shape(result[0]) == ()
         assert qml.math.shape(result[1]) == ()
-        print(exp)
-        print(result)
         assert np.allclose(exp[0], result[0])
         assert np.allclose(exp[1], result[1])
 
