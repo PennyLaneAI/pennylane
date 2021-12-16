@@ -116,8 +116,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
     .. note::
         The adjoint metric tensor method has the following restrictions:
 
-        * As it requires knowledge of the statevector and uses private
-          methods of the used device, only ``"default.qubit"`` devices can be used.
+        * Currently only ``"default.qubit"`` with ``shots=None`` is supported.
 
         * We assume the circuit to be composed of unitary gates only and rely
           on the ``generator`` property of the gates to be implemented.
@@ -133,7 +132,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
         array: the metric tensor of the tape with respect to its trainable parameters.
         Dimensions are ``(tape.num_params, tape.num_params)``.
 
-    .. seealso:: :class:`~.metric_tensor` for hardware-compatible metric tensor computations.
+    .. seealso:: :func:`~.metric_tensor` for hardware-compatible metric tensor computations.
 
     **Example**
 
