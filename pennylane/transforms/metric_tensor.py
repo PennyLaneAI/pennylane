@@ -289,12 +289,12 @@ def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
 
         return metric_tensors
 
-    #is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+    is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
 
-    #if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
         # Classical Jacobian is the identity. No classical processing
         # is present inside the QNode.
-        #return mt
+        return mt
 
     # TODO: Remove the following behaviour once the stacking behaviour in `qml.jacobian`
     # has been removed. The additional arguments `args` and `interface` can be removed
