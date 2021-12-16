@@ -587,7 +587,7 @@ class Operator(abc.ABC):
         r"""Defines a partial representation of this operator via
         its eigendecomposition.
 
-        Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
         In other words, the diagonalizing gates rotate the state into the eigenbasis
@@ -602,7 +602,7 @@ class Operator(abc.ABC):
             By default, this method should always take the operator's parameters, wires and hyperparameters as
             inputs (even if the diagonalizing gates are independent of these values).
 
-            Alternatively, a custom signature can be defined, in which case the `diagonalizing_gates()`
+            Alternatively, a custom signature can be defined, in which case the ``diagonalizing_gates()``
             method has to be overwritten to use the right signature.
 
         Args:
@@ -613,7 +613,7 @@ class Operator(abc.ABC):
         Returns:
             list[.Operator]: A list of operators.
 
-        *Example:*
+        **Example**
 
         >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
         [Hadamard(wires=["q1"])]
@@ -625,13 +625,13 @@ class Operator(abc.ABC):
         r"""Defines a partial representation of this operator via
         its eigendecomposition.
 
-        Given the eigendecomposition `O = U \Sigma U^{\dagger}` where
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
         In other words, the diagonalizing gates rotate the state into the eigenbasis
         of this operator.
 
-        Returns `None` if this operator does not define its diagonalizing gates.
+        Returns ``None`` if this operator does not define its diagonalizing gates.
 
         .. note::
 
@@ -647,7 +647,7 @@ class Operator(abc.ABC):
         Returns:
             list[.Operator] or None: a list of operators
 
-        *Example:*
+        **Example**
 
         >>> qml.PauliX(wires="q1").diagonalizing_gates()
         [Hadamard(wires=["q1"])]
