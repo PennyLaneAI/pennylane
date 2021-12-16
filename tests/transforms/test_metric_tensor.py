@@ -794,8 +794,10 @@ def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
                 )
             return tuple(out)
 
-        if mimic_autograd and len(params) > 1 and all(
-            qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
+        if (
+            mimic_autograd
+            and len(params) > 1
+            and all(qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:])
         ):
             jac_contract = [-2]
         else:
@@ -1018,9 +1020,7 @@ class TestDifferentiability:
         def cost_full(*weights):
             return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
 
-        _cost_full = lambda *weights: np.array(
-            autodiff_metric_tensor(ansatz, 3, True)(*weights)
-        )
+        _cost_full = lambda *weights: np.array(autodiff_metric_tensor(ansatz, 3, True)(*weights))
         _c = _cost_full(*weights)
         c = cost_full(*weights)
         assert all(
@@ -1304,7 +1304,7 @@ def test_no_error_missing_aux_wire_not_used(recwarn):
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
 
-    assert len(recwarn)==0
+    assert len(recwarn) == 0
 
 
 def aux_wire_ansatz_0(x, y):

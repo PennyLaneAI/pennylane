@@ -414,8 +414,10 @@ def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
                 )
             return tuple(out)
 
-        if mimic_autograd and len(params) > 1 and all(
-            qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
+        if (
+            mimic_autograd
+            and len(params) > 1
+            and all(qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:])
         ):
             jac_contract = [-2]
         else:
