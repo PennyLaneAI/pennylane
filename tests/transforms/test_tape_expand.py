@@ -147,7 +147,8 @@ class TestExpandMultipar:
         dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
-            generator = [None, 1]
+            def generator(self):
+                return None
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(1.5, wires=0)
@@ -205,7 +206,8 @@ class TestExpandNonunitaryGen:
         unitary generators and non-parametric operations is not touched."""
 
         class _PhaseShift(qml.PhaseShift):
-            generator = [None, 1]
+            def generator(self):
+                return None
 
         with qml.tape.JacobianTape() as tape:
             qml.RX(0.2, wires=0)

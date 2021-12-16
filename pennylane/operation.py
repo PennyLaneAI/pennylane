@@ -781,30 +781,27 @@ class Operation(Operator):
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
 
-    @property
     def generator(self):
-        r"""Generator of the operation.
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
 
-        A length-2 list ``[generator, scaling_factor]``, where
+        For example, for operator
 
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
+        .. math::
 
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
 
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
 
-        .. code-block:: python
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
 
-            generator = [PauliX, 0.7]
-
-        Default is ``[None, 1]``, indicating the operation has no generator.
+        The default value to return is ``None``, indicating that the operation has
+        no defined generator.
         """
-        return [None, 1]
+        return None
 
     @property
     def inverse(self):
@@ -1854,25 +1851,7 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = operation.generator
-
-    if generator is None:
-        raise ValueError(f"Operation {operation.name} does not have a generator")
-    if operation.num_params != 1:
-        # Note, this case should already be caught by the previous raise since we haven't worked out
-        # how to have an operator for multiple parameters. It is added here in case of a future
-        # change
-        raise ValueError(
-            f"Operation {operation.name} is not written in terms of a single parameter"
-        )
-
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
-
-    if operation.inverse:
-        prefactor *= -1
-        generator = qml.math.conj(qml.math.T(generator))
-
+    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
     return 1j * prefactor * generator @ operation.matrix
 
 
@@ -1885,7 +1864,7 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator[0] is not None
+    return hasattr(obj, "generator") and obj.generator() is not None
 
 
 @qml.BooleanFn
