@@ -107,7 +107,7 @@ class Rotation(CVOperation):
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
@@ -160,7 +160,7 @@ class Squeezing(CVOperation):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
@@ -216,7 +216,7 @@ class Displacement(CVOperation):
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         a, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
@@ -276,7 +276,7 @@ class Beamsplitter(CVOperation):
         U[3:5, 1:3] = s * R
         return U
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         theta, phi = self.parameters
         return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
 
@@ -342,7 +342,7 @@ class TwoModeSqueezing(CVOperation):
         U[3:5, 1:3] = S @ R.T
         return U
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
         return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
@@ -450,7 +450,7 @@ class ControlledAddition(CVOperation):
         U[3, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
@@ -506,7 +506,7 @@ class ControlledPhase(CVOperation):
         U[4, 1] = p[0]
         return U
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
@@ -537,7 +537,7 @@ class Kerr(CVOperation):
     def num_params(self):
         return 1
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
@@ -565,7 +565,7 @@ class CrossKerr(CVOperation):
     def num_params(self):
         return 1
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
@@ -593,7 +593,7 @@ class CubicPhase(CVOperation):
     def num_params(self):
         return 1
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
@@ -655,7 +655,7 @@ class InterferometerUnitary(CVOperation):
         M[1 : 2 * N + 1, 1 : 2 * N + 1] = S
         return M
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=True):
         U = self.parameters[0]
         return InterferometerUnitary(
             qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue

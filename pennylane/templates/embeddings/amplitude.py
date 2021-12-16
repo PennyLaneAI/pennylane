@@ -205,6 +205,6 @@ class AmplitudeEmbedding(Operation):
                         "Use 'normalize=True' to automatically normalize."
                     )
 
-            features_batch[i] = qml.math.cast(feature_set, np.complex128)
+            features_batch[i] = feature_set
 
-        return features_batch if batched else features_batch[0]
+        return qml.math.cast(features_batch if batched else features_batch[0], np.complex128)

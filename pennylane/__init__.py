@@ -43,12 +43,11 @@ from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
-from pennylane.templates import broadcast, layer, template
+from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane.optimize import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 import pennylane.qnode_old
@@ -69,6 +68,7 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
 )
+from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 
 # QueuingContext and collections needs to be imported after all other pennylane imports

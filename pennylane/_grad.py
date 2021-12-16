@@ -93,7 +93,7 @@ class grad:
             if trainable is None and not array_box:
 
                 warnings.warn(
-                    "Starting with PennyLane v0.20.0, when using Autograd, inputs "
+                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
                     "have to explicitly specify requires_grad=True (or the "
                     "argnum argument must be passed) in order for trainable parameters to be "
                     "identified.",
@@ -197,7 +197,7 @@ def jacobian(func, argnum=None):
             if trainable is None and not array_box:
 
                 warnings.warn(
-                    "Starting with PennyLane v0.20.0, when using Autograd, inputs "
+                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
                     "have to explicitly specify requires_grad=True (or the "
                     "argnum argument must be passed) in order for trainable parameters to be "
                     "identified.",
