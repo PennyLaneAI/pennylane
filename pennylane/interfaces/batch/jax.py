@@ -122,20 +122,23 @@ def get_shapes_and_dtype(tapes, device):
                 if obs.wires:
                     # qml.density_matrix
                     dim = 2 ** len(obs.wires)
-                    state_shape = (dim, dim)
+                    state_shape = (1, dim, dim)
                     shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
                 else:
                     dim = 2 ** len(device.wires)
-                    state_shape = (dim,)
+                    state_shape = (1, dim,)
                     shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
 
         else:
             shape = []
             num_sampled = 0
+            scalar_val = False
+
+            # Assume: only one "type" of return type for all observables
             for obs in t.observables:
                 if obs.return_type == Probability:
                     dim = 2 ** len(obs.wires)
-                    shape.append(dim)
+                    shape += [1, dim]
                 elif obs.return_type == Sample:
                     if num_sampled == 0:
                         shape.append(device.shots)
@@ -144,8 +147,11 @@ def get_shapes_and_dtype(tapes, device):
                     else:
                         shape[0] += 1
                     num_sampled += 1
-            #     else:
-            #         shape.append(out_dim)
+                else:
+                    scalar_val = True
+
+            if scalar_val:
+                shape.append(out_dim)
 
             if num_sampled > 0:
                 dtype = jnp.int64
@@ -179,7 +185,6 @@ def _execute(
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-            res = [jnp.squeeze(r) for r in res]
             return res
 
         shapes, _ = get_shapes_and_dtype(tapes, device)
