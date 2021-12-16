@@ -202,9 +202,9 @@ def _adjoint_metric_tensor_tape(tape, device):
     # of untrainable operations after each trainable one.
     trainable_operations, group_after_trainable_op = _group_operations(tape)
 
+    dim = 2 ** device.num_wires
     # generate and extract initial state
     psi = device._create_basis_state(0)
-    dim = 2 ** device.num_wires
 
     # initialize metric tensor components (which all will be real-valued)
     like_real = qml.math.real(psi[0])
@@ -217,7 +217,7 @@ def _adjoint_metric_tensor_tape(tape, device):
         generator_1, prefactor_1 = _get_generator(outer_op)
 
         # the state vector phi is missing a factor of 1j * prefactor_1
-        phi = device._apply_unitary(psi, qml.math.convert_like(generator_1, psi), outer_op.wires)
+        phi = device._apply_unitary(psi, qml.math.convert_like(generator_1, like_real), outer_op.wires)
 
         phi_real = qml.math.reshape(qml.math.real(phi), (dim,))
         phi_imag = qml.math.reshape(qml.math.imag(phi), (dim,))
@@ -308,6 +308,10 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
 
         cjac = cjac_fn(*args, **kwargs)
 
+        # TODO: Remove this hotfix once the stacking behaviour in `qml.jacobian`
+        # has been removed. The hotfix in `_contract_metric_tensor_with_cjac`
+        # reverts the transpose that is applied within `qml.jacobian`
+        # and the stacking, by casting to a tuple.
         if qnode.interface == "autograd":
             trainable_args = np.where([qml.math.requires_grad(arg) for arg in args])[0]
             shape = qml.math.shape(args[trainable_args[0]])

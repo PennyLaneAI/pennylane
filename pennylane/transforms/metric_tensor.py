@@ -267,6 +267,9 @@ def _contract_metric_tensor_with_cjac(mt, cjac, cjac_hotfix=False):
     Args:
         mt (array): Metric tensor of a tape (2-dimensional)
         cjac (array or tuple[array]): The classical Jacobian of a QNode
+        cjac_hotfix (bool): Whether to apply a transpose to ``cjac``
+            and cast to a tuple, to revert stacking and transposing
+            behaviour in ``qml.jacobian`` with Autograd.
 
     Returns:
         array or tuple[array]: Hybrid metric tensor(s) of the QNode.
@@ -358,6 +361,11 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
+
+        # TODO: Remove this hotfix once the stacking behaviour in `qml.jacobian`
+        # has been removed. The hotfix in `_contract_metric_tensor_with_cjac`
+        # reverts the transpose that is applied within `qml.jacobian`
+        # and the stacking, by casting to a tuple.
         if qnode.interface == "autograd":
             trainable_args = np.where([qml.math.requires_grad(arg) for arg in args])[0]
             shape = qml.math.shape(args[trainable_args[0]])

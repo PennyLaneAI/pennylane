@@ -10,10 +10,10 @@
   This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
   a number of operations that scales quadratically in the number of trainable
-  parameters.
+  parameters (see below for details).
   
   Note that as it makes use of state cloning, it is inherently classical
-  and to be used on state vector simulators only.
+  and to be used on state vector simulators and without shots only.
 
   It is particular useful for larger circuits for which backpropagation requires
   inconvenient or even unfeasible amounts of storage, but is slower.
@@ -44,6 +44,17 @@
   tensor([[ 0.25495723, -0.07086695],
           [-0.07086695,  0.24945606]], requires_grad=True)
   ```
+
+  Computational cost
+
+  The adjoint method uses :math:`2P^2+4P+1` gates and state cloning operations if the circuit
+  is composed only of trainable gates, where :math:`P` is the number of trainable operations.
+  If non-trainable gates are included, each of them is applied about :math:`n^2-n` times, where
+  :math:`n` is the number of trainable operations that follow after the respective 
+  non-trainable operation in the circuit. This means that non-trainable gates later in the 
+  circuit are executed less often, making the adjoint method a bit cheaper if such gates
+  appear later.
+
 
 <h3>Improvements</h3>
 
