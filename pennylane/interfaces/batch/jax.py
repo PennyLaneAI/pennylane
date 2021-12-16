@@ -23,7 +23,7 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Variance, Expectation, State, Probability
+from pennylane.operation import Variance, Expectation, State, Probability, Sample
 
 dtype = jnp.float64
 
@@ -130,11 +130,30 @@ def get_shapes_and_dtype(tapes, device):
                     shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
 
         else:
-            obs = t.observables[0]
-            if obs.return_type == Probability:
-                shapes.append(jax.ShapeDtypeStruct((1, out_dim), dtype))
-            else:
-                shapes.append(jax.ShapeDtypeStruct((out_dim,), dtype))
+            shape = []
+            num_sampled = 0
+            for obs in t.observables:
+                if obs.return_type == Probability:
+                    dim = 2 ** len(obs.wires)
+                    shape.append(dim)
+                elif obs.return_type == Sample:
+                    if num_sampled == 0:
+                        shape.append(device.shots)
+                    elif num_sampled == 1:
+                        shape = [2] + shape
+                    else:
+                        shape[0] += 1
+                    num_sampled += 1
+                else:
+                    shape.append(out_dim)
+
+            if len(shape) == 1:
+                shape = [1] + shape
+
+            if num_sampled > 0:
+                dtype = jnp.int64
+
+            shapes.append(jax.ShapeDtypeStruct(tuple(shape), dtype))
 
     return shapes, dtype
 
