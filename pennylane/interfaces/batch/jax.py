@@ -122,11 +122,11 @@ def get_shapes_and_dtype(tapes, device):
                 if obs.wires:
                     # qml.density_matrix
                     dim = 2 ** len(obs.wires)
-                    state_shape = (1, dim, dim)
+                    state_shape = (dim, dim)
                     shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
                 else:
                     dim = 2 ** len(device.wires)
-                    state_shape = (1, dim)
+                    state_shape = (dim,)
                     shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
 
         else:
@@ -144,11 +144,8 @@ def get_shapes_and_dtype(tapes, device):
                     else:
                         shape[0] += 1
                     num_sampled += 1
-                else:
-                    shape.append(out_dim)
-
-            if len(shape) == 1:
-                shape = [1] + shape
+            #     else:
+            #         shape.append(out_dim)
 
             if num_sampled > 0:
                 dtype = jnp.int64
@@ -167,11 +164,6 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # _validate_tapes(tapes)
-
-    # Only have scalar outputs
-    total_size = len(tapes)
     total_params = np.sum([len(p) for p in params])
 
     @jax.custom_vjp
@@ -187,6 +179,7 @@ def _execute(
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
+            res = [jnp.squeeze(r) for r in res]
             return res
 
         shapes, _ = get_shapes_and_dtype(tapes, device)
@@ -281,11 +274,6 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # _validate_tapes(tapes)
-
-    # Only have scalar outputs
-    total_size = len(tapes)
 
     @jax.custom_vjp
     def wrapped_exec(params):
