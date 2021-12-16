@@ -232,7 +232,8 @@ class Hamiltonian(Observable):
         """
         return self._ops
 
-    def compute_terms(self, *params, wires, **hyperparams):
+    @staticmethod
+    def compute_terms( *params, wires, **hyperparams):
         return list(params), hyperparams["ops"]
 
     @property
