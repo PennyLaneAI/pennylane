@@ -309,19 +309,6 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
 
         cjac = cjac_fn(*args, **kwargs)
 
-        # TODO: Remove this hotfix once the stacking behaviour in `qml.jacobian`
-        # has been removed. The hotfix in `_contract_metric_tensor_with_cjac`
-        # reverts the transpose that is applied within `qml.jacobian`
-        # and the stacking, by casting to a tuple.
-        if qnode.interface == "autograd":
-            trainable_args = np.where([qml.math.requires_grad(arg) for arg in args])[0]
-            shape = qml.math.shape(args[trainable_args[0]])
-            cjac_hotfix = len(trainable_args) > 1 and all(
-                qml.math.shape(args[i]) == shape for i in trainable_args[1:]
-            )
-        else:
-            cjac_hotfix = False
-
-        return _contract_metric_tensor_with_cjac(mt, cjac, cjac_hotfix)
+        return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
 
     return wrapper

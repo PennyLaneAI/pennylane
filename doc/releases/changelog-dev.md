@@ -54,6 +54,8 @@
   non-trainable operation in the circuit. This means that non-trainable gates later in the 
   circuit are executed less often, making the adjoint method a bit cheaper if such gates
   appear later.
+  The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
+  to storing a state vector of a system with 2 additional qubits.
 
 
 <h3>Improvements</h3>

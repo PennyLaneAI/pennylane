@@ -63,23 +63,15 @@ class TestMetricTensor:
         """Test that the MultiRZ gate is correctly decomposed"""
         dev = qml.device("default.qubit", wires=3)
 
-        def ansatz(a, b, wires=None):
-            qml.RX(a, wires=0)
-            qml.MultiRZ(b, wires=[0, 1, 2])
-
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(a, b):
-            ansatz(a, b)
+            qml.RX(a, wires=0)
+            qml.MultiRZ(b, wires=[0, 1, 2])
             return qml.expval(qml.PauliX(0))
 
         params = np.array([0.1, 0.2], requires_grad=True)
         result = qml.metric_tensor(circuit, approx="block-diag")(*params)
-        exp = autodiff_metric_tensor(ansatz, num_wires=4)(*params)
-        assert isinstance(result, tuple)
-        assert qml.math.shape(result[0]) == ()
-        assert qml.math.shape(result[1]) == ()
-        assert np.allclose(exp[0], result[0])
-        assert np.allclose(exp[1], result[1])
+        assert qml.math.shape(result) == (2, 2)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_parameter_fan_out(self, diff_method):
@@ -239,12 +231,8 @@ class TestMetricTensor:
             )
             / 4
         )
-        assert all(
-            qml.math.isclose(_d, _exp, atol=tol, rtol=0) for _d, _exp in zip(g_diag, expected)
-        )
-        assert all(
-            qml.math.isclose(_d, _exp, atol=tol, rtol=0) for _d, _exp in zip(g_blockdiag, expected)
-        )
+        assert qml.math.allclose(g_diag, np.diag(expected), atol=tol, rtol=0)
+        assert qml.math.allclose(g_blockdiag, np.diag(expected), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("strategy", ["gradient", "device"])
     def test_template_integration(self, strategy, tol):
@@ -769,7 +757,7 @@ fubini_params = [
 ]
 
 
-def autodiff_metric_tensor(ansatz, num_wires):
+def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
     """Compute the metric tensor by full state vector
     differentiation via autograd."""
     dev = qml.device("default.qubit", wires=num_wires)
@@ -786,11 +774,12 @@ def autodiff_metric_tensor(ansatz, num_wires):
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
 
-        if len(params) > 1 and all(
-            qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
-        ):
-            rjac = tuple(qml.math.transpose(rjac))
-            ijac = tuple(qml.math.transpose(ijac))
+        if not mimic_autograd:
+            if len(params) > 1 and all(
+                qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
+            ):
+                rjac = tuple(qml.math.transpose(rjac))
+                ijac = tuple(qml.math.transpose(ijac))
 
         if isinstance(rjac, tuple):
             out = []
@@ -805,10 +794,16 @@ def autodiff_metric_tensor(ansatz, num_wires):
                 )
             return tuple(out)
 
+        if mimic_autograd and len(params) > 1 and all(
+            qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
+        ):
+            jac_contract = [-2]
+        else:
+            jac_contract = [0]
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
+        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], jac_contract))
         return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
+            np.tensordot(np.conj(jac), jac, axes=(jac_contract, jac_contract))
             - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
         )
 
@@ -821,7 +816,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_autograd(self, ansatz, params):
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires, True)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires + 1)
 
         @qml.qnode(dev, interface="autograd")
@@ -1024,7 +1019,7 @@ class TestDifferentiability:
             return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
 
         _cost_full = lambda *weights: np.array(
-            autodiff_metric_tensor(ansatz, num_wires=3)(*weights)
+            autodiff_metric_tensor(ansatz, 3, True)(*weights)
         )
         _c = _cost_full(*weights)
         c = cost_full(*weights)
@@ -1274,7 +1269,7 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
                 qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
-def test_no_error_missing_aux_wire_not_used():
+def test_no_error_missing_aux_wire_not_used(recwarn):
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
     because ``approx`` is used or because there only is a diagonal contribution."""
@@ -1308,6 +1303,8 @@ def test_no_error_missing_aux_wire_not_used():
     qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
+
+    assert len(recwarn)==0
 
 
 def aux_wire_ansatz_0(x, y):
