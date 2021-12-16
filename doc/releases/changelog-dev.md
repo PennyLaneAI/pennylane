@@ -29,4 +29,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Olivia Di Matteo, David Wierichs
+Olivia Di Matteo, Ankit Khandelwal, David Wierichs
