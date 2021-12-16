@@ -19,7 +19,7 @@ import pennylane as qml
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.wires import Wires
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import CVOperation, AnyWires
 
 
 def _preprocess(theta, phi, varphi, wires):
@@ -55,7 +55,7 @@ def _preprocess(theta, phi, varphi, wires):
     return shape_varphi
 
 
-class Interferometer(Operation):
+class Interferometer(CVOperation):
     r"""General linear interferometer, an array of beamsplitters and phase shifters.
 
     For :math:`M` wires, the general interferometer is specified by
