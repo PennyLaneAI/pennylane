@@ -1690,3 +1690,66 @@ class TestHashing:
             qml.expval(H)
 
         assert tape1.hash == tape2.hash
+
+def cost(tape, dev):
+    return qml.execute([tape], dev, interface="autograd", gradient_fn = qml.gradients.param_shift)
+
+class TestOutputShapeSingle:
+    """Tests for determining the tape output shape"""
+    pass
+
+measures = [
+
+([
+    qml.expval(qml.PauliZ(0)),
+    qml.expval(qml.PauliZ(1))
+], "real"),
+([
+    qml.probs(wires=[0]),
+    qml.probs(wires=[1])
+], "real"),
+([
+    qml.probs(wires=[0]),
+    qml.probs(wires=[1, 2])
+], "real"),
+([
+    qml.probs(wires=[0, 2]),
+    qml.probs(wires=[1])
+], "real"),
+([
+    qml.probs(wires=[0]),
+    qml.probs(wires=[1,2]),
+    qml.probs(wires=[0,1,2])
+], "real"),
+
+([
+    qml.sample(qml.PauliZ(0)),
+    qml.sample(qml.PauliZ(1)),
+    qml.sample(qml.PauliZ(2))
+], "integer")
+]
+
+class TestOutputShapeMultiOneType:
+    """Tests for determining the tape output shape"""
+
+    @pytest.mark.parametrize("measures, domain", measures)
+    @pytest.mark.parametrize("shots", [1, 10, (1,1,5,1)])
+    def test_sample(self, measures, domain, shots):
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for m in measures:
+                qml.apply(m)
+
+        execution_results = cost(tape, dev)
+        res, dom = tape.get_output_shape_and_domain(dev)
+
+        print(execution_results)
+        expected = execution_results[0].shape
+        assert res == expected
+        assert dom == domain

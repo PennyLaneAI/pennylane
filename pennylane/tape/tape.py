@@ -872,6 +872,145 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
 
+    @staticmethod
+    def _single_measurement_shape(measurement_process, device):
+        """
+
+        Note: these shapes and dtypes are specific to tapes and may differ from
+        QNode outputs.
+        """
+
+        shape = tuple()
+
+        output_domain = "real"
+        ret_type = measurement_process.return_type
+        if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+
+            shape = (1,)
+
+        elif ret_type == qml.operation.Probability:
+
+            dim = 2 ** len(measurement_process.wires)
+            shape = (1, dim)
+
+        elif ret_type == qml.operation.State:
+            output_domain = "complex"
+
+            if obs.wires:
+                # qml.density_matrix, acts on wires specified in the meas process
+                dim = 2 ** len(measurement_process.wires)
+                shape = (1, dim, dim)
+            else:
+                # qml.state, acts on all device wires
+                dim = 2 ** len(device.wires)
+                shape = (1, dim,)
+
+        elif ret_type == qml.operation.Sample:
+
+            output_domain = "integer"
+            if not isinstance(device.shots, tuple):
+                shape = (1, device.shots)
+
+            else:
+                shot_vector = device.shots
+                shape = shape = tuple((shot_val,) if shot_val!=1 else tuple() for shot_val in shot_vector)
+
+        return shape, output_domain
+
+    @staticmethod
+    def _multi_same_measurement_shape(mps, device):
+        """
+
+        Note: these shapes and dtypes are specific to tapes and may differ from
+        QNode outputs.
+        """
+
+        shape = tuple()
+
+        output_domain = "real"
+
+        # We know that there's one type of return_type, gather it from the
+        # first one
+        ret_type = mps[0].return_type
+        if ret_type == qml.operation.State:
+            raise ValueError("Multiple state measurements are not supported.")
+
+        if device.shot_vector is None:
+            if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+
+                shape = (len(mps),)
+
+            elif ret_type == qml.operation.Probability:
+
+                wires_num_set = {len(meas.wires) for meas in mps}
+                same_num_wires = len(wires_num_set) == 1
+                if same_num_wires:
+                    # We know that all probability meas processes have the same
+                    # number of wires, gather the length from the first one
+                    dim = 2 ** len(mps[0].wires)
+                    shape = (len(mps), dim)
+
+                else:
+                    # There are varying number of wires that the probability
+                    # measurement processes act on; the output shape is a sum
+                    #
+                    # E.g., for
+                    # return qml.probs(wires=[0]), qml.probs(wires=[1,2])
+                    #
+                    # We'll have a shape of 2 ** 1 + 2 ** 2, where the exponents
+                    # come from the length of the wires specified: 1 == len([0])
+                    # and 2 == len([1, 2])
+                    shape = (sum(2 ** len(m.wires) for m in mps),)
+
+            elif ret_type == qml.operation.Sample:
+
+                output_domain = "integer"
+                shape = (len(mps), device.shots)
+
+        else:
+            if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+                num = sum(shottup.copies for shottup in device.shot_vector)
+                shape = (num, len(mps))
+
+            elif ret_type == qml.operation.Probability:
+                pass
+            elif ret_type == qml.operation.Sample:
+                output_domain = "integer"
+                shape = []
+                for shot_val in device.shot_vector:
+                    for _ in range(shot_val.copies):
+                        shots = shot_val.shots
+                        if shots!=1:
+                            shape.append(tuple([shots,len(mps)]))
+                        else:
+                            shape.append((len(mps),))
+
+        return shape, output_domain
+
+    def get_output_shape_and_domain(self, device):
+
+        # TODO: cache result and return first if avail?
+
+        if not self._measurements:
+            self._process_queue()
+
+        # TODO: and dtype
+        #dtype = jnp.float64
+
+        output_shape, out_domain = tuple(), "real"
+
+        if len(self._measurements) == 1:
+            output_shape, out_domain = self._single_measurement_shape(self._measurements[0], device)
+        else:
+            num_measurements = len(set(meas.return_type for meas in self._measurements))
+            if num_measurements == 1:
+                output_shape, out_domain = self._multi_same_measurement_shape(self._measurements, device)
+            else:
+                pass
+                # TODO: this is madness
+
+        return output_shape, out_domain
+
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
         to NumPy arrays.
