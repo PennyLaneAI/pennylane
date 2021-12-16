@@ -265,6 +265,9 @@ class Interferometer(Operation):
                     act_on = wires[i]
                     Rotation(varphi[i], wires=act_on)
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod
@@ -282,3 +285,15 @@ class Interferometer(Operation):
         shapes = [(n_if,)] * 2 + [(n_wires,)]
 
         return shapes
+
+    def adjoint(self):
+        adjoint_op = Interferometer(
+            theta=self.parameters[0],
+            phi=self.parameters[1],
+            varphi=self.parameters[2],
+            mesh=self.parameters[3],
+            beamsplitter=self.parameters[4],
+            wires=self.wires,
+        )
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op
