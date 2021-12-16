@@ -14,7 +14,7 @@
 r"""
 Contains the CVNeuralNetLayers template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -102,6 +102,7 @@ class CVNeuralNetLayers(Operation):
     ):
 
         n_wires = len(wires)
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         # check that first dimension is the same
@@ -191,6 +192,7 @@ class CVNeuralNetLayers(Operation):
         Returns:
             list[tuple[int]]: list of shapes
         """
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         shapes = (
