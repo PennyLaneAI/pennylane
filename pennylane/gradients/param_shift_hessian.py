@@ -15,6 +15,7 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -155,6 +156,27 @@ class hessian_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
+    @staticmethod
+    def _jacobian_trainable_args(args, interface):
+        """Return the indices of QNode arguments for which a Jacobian was
+        computed by `qml.transforms.classical_jacobian` with argnum=None.
+        """
+        trainable_args = []
+
+        if interface == "autograd":
+            for idx, arg in enumerate(args):
+                # TODO: make default False once this change is done in qml.jacobian
+                if getattr(arg, "requires_grad", True):
+                    trainable_args.append(idx)
+
+        elif interface == "jax":
+            trainable_args = [0]
+
+        # Torch and Tensorflow interfaces are not considered since `classical_jacobian`
+        # always returns a tuple for them, thus not invoking this function.
+
+        return trainable_args
+
     def default_qnode_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
@@ -164,21 +186,21 @@ class hessian_transform(qml.batch_transform):
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def hessian_wrapper(*args, **kwargs):
-            hessian = _wrapper(*args, **kwargs)
+            qhess = _wrapper(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
-                hessian = qml.math.squeeze(hessian)
+                qhess = qml.math.squeeze(qhess)
 
             if not hybrid:
-                return hessian
+                return qhess
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
-                # Classical processing of multiple arguments is present. Return hessian @ cjac.
+                # Classical processing of multiple arguments is present. Return cjac.T @ hess @ cjac
                 jacs = [
-                    qml.math.squeeze(qml.math.tensordot(c, hessian, [[0], [-1]]))
+                    qml.math.squeeze(qml.math.tensordot(c, qhess, [[0], [-1]]))
                     for c in cjac
                     if c is not None
                 ]
@@ -189,22 +211,52 @@ class hessian_transform(qml.batch_transform):
             if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
-                return hessian
+                return qhess
 
-            # Classical processing of a single argument is present.
-            # Given a classical jacobian of shape (x, y..), a quantum hessian of shape (z.., x, x),
-            # where x = # of gate args, y.. = shape of QNode args, and z.. = shape of QNode outputs,
-            # we apply the following trasformation: (z.., x0, x1) -> (z.., y0.., y1..)
-            # While the dimensions x0 and x1, and y0.. and y1.., are the same respectively, they are
-            # labeled to keep track of the swapping that occurs during the transformation.
+            # Classical processing present of either:
+            #   a) a single argument or
+            #   b) multiple arguments of the same shape
+            # The shape of the classical jacobian returned by qml.jacobian (gets invoked by
+            # qml.transforms.classical_jacobian with autograd) depends on the scenario:
+            #   a) (# gate args, qnode arg shape)
+            #   b) (reverse qnode arg shape, # gate args, # qnode args)
+            # It then needs to be contracted twice (cjac.T @ hess @ cjac for scalar-valued QNodes)
+            # with the quantum Hessian of shape:
+            #      (qnode output shape, # gate args, # gate args)
+            # The result should have shape:
+            #   a) (qnode output shape, qnode arg shape, qnode arg shape)
+            #   b) (reverse qnode arg shape A, # qnode args B, qnode output shape, qnode arg shape B, # qnode args A)
+            num_gate_args = qml.math.shape(qhess)[-1]
+            # Consider only QNode arguments regarded as trainable by the interfaces.
+            trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
+            # Since all arguments have the same shape, obtain shape from the first trainable arg
+            qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
+            num_qnode_args = len(trainable_args_idx)
 
-            num_out_dims = len(cjac.shape) - 1  # number of dims in y..
-            jac = qml.math.tensordot(hessian, cjac, [[-1], [0]])  # -> (z.., x0, y1..)
-            jac = qml.math.tensordot(jac, cjac, [[-1 - num_out_dims], [0]])  # -> (z.., y1.., y0..)
-            for i in range(num_out_dims):
-                jac = qml.math.swapaxes(jac, -1 - i, -1 - num_out_dims - i)  # -> (z.., y0.., y1..)
+            if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
+                # single QNode argument
+                num_arg_dims = len(cjac.shape) - 1  # number of dimensions in the QNode output
+                hess = qml.math.tensordot(qhess, cjac, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape A)
+                hess = qml.math.tensordot(hess, cjac, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape A, qnode arg shape B)
+                for i in range(num_arg_dims):
+                    hess = qml.math.swapaxes(hess, -1 - i, -1 - num_arg_dims - i)  # -> (qnode output shape, qnode arg shape B, qnode arg shape A)
+            elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
+                # multiple QNode arguments with stacking
+                num_out_dims = len(cjac.shape) - 2  # number of dimensions in the QNode output
+                hess = qml.math.tensordot(cjac, qhess, [[-2], [-2]])  # -> (reverse qnode output shape A, # qnode args A, qnode output shape, # gate args)
+                cjac = qml.math.moveaxis(qml.math.transpose(cjac), 0, -1)  # (# gate args, qnode arg shape B, # qnode args B)
+                hess = qml.math.tensordot(hess, cjac, [[-1], [0]])  # -> (reverse qnode output shape A, # qnode args A, qnode output shape, qnode arg shape B, # qnode args B)
+                hess = qml.math.swapaxes(hess, num_out_dims, -1)  # -> (reverse qnode output shape A, # qnode args B, qnode output shape, qnode arg shape B, # qnode args A)
+            else:  # pragma: no cover
+                hess = ()
+                warnings.warn(
+                    "Unexpected classical Jacobian encoutered, could not compute the hybrid "
+                    "Hessian of the QNode. You can still attempt to obtain the quantum Hessian "
+                    "with the `hybrid=False` parameter.",
+                    UserWarning,
+                )
 
-            return jac
+            return hess
 
         return hessian_wrapper
 
