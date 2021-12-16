@@ -29,7 +29,7 @@
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
 * Fixes a bug which allows using `jax.jit` to be compatible with circuits 
-  which return `qml.probs` when the given device is provided a custom shot 
+  which return `qml.probs` when the `default.qubit.jax` is provided with a custom shot 
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
