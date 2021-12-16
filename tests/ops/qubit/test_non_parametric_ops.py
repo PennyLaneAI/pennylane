@@ -684,9 +684,7 @@ class TestMultiControlledX:
         target_wire = 4
         op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire)
 
-        match = (
-            f"At least one work wire is required to decompose operation: MultiControlledX"
-        )
+        match = f"At least one work wire is required to decompose operation: MultiControlledX"
         with pytest.raises(ValueError, match=match):
             op.decomposition()
 

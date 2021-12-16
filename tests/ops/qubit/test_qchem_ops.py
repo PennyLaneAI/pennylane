@@ -45,7 +45,7 @@ class TestDecomposition:
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
         decomp1 = qml.SingleExcitationPlus(phi, wires=[0, 1]).decomposition()
-        decomp2 = qml.SingleExcitationPlus.compute_decomposition(phi, wires=[0,1])
+        decomp2 = qml.SingleExcitationPlus.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
             mats = []
@@ -82,8 +82,7 @@ class TestDecomposition:
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
         decomp1 = qml.SingleExcitationMinus(phi, wires=[0, 1]).decomposition()
-        decomp2 = qml.SingleExcitationMinus.compute_decomposition(phi, wires=[0,1])
-
+        decomp2 = qml.SingleExcitationMinus.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
             mats = []
@@ -128,7 +127,7 @@ class TestSingleExcitation:
         Need to consider the matrix of CRY separately, as the control is wire 1
         and the target is wire 0 in the decomposition."""
         decomp1 = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
-        decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0,1])
+        decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
             mats = []
@@ -308,7 +307,7 @@ class TestDoubleExcitation:
     def test_double_excitation_decomp(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct decomposition"""
         decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0,1,2,3])
+        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         for decomp in [decomp1, decomp2]:
             mats = [m.matrix for m in decomp]
@@ -337,7 +336,7 @@ class TestDoubleExcitation:
         four-qubit tensor product matrix and then multiply them together.
         """
         decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0,1,2,3])
+        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 
@@ -605,7 +604,7 @@ class TestOrbitalRotation:
         four-qubit tensor product matrix and then multiply them together.
         """
         decomp1 = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decomposition()
-        decomp2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0,1,2,3])
+        decomp2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 

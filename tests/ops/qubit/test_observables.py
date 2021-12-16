@@ -369,16 +369,8 @@ class TestProjector:
             circuit(basis_state)
 
 
-def test_identity_eigvals(tol):
-    """Test identity eigenvalues are correct"""
-    res = qml.Identity._eigvals()
-    expected = np.array([1, 1])
-    assert np.allclose(res, expected, atol=tol, rtol=0)
-
-
 label_data = [
     (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
-    (qml.Identity(wires=0), "I"),
     (qml.Projector([1, 0, 1], wires=(0, 1, 2)), "|101⟩⟨101|"),
 ]
 

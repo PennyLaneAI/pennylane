@@ -193,16 +193,16 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             if isinstance(obj, (qml.operation.Operation, qml.measure.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
-                #try:
+                # try:
                 expanded_obj = obj.expand()
                 if expanded_obj is None:
                     getattr(new_tape, queue).append(obj)
                     continue
                 else:
                     obj = expanded_obj
-                #except NotImplementedError:
-                    # Object does not define an expansion; treat this as
-                    # a stopping condition.
+                # except NotImplementedError:
+                # Object does not define an expansion; treat this as
+                # a stopping condition.
                 #    getattr(new_tape, queue).append(obj)
                 #    continue
 

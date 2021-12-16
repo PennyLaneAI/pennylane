@@ -275,7 +275,7 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = (qml.PhaseShift(np.pi, wires=wires), )
+        decomp_ops = (qml.PhaseShift(np.pi, wires=wires),)
         return decomp_ops
 
     def adjoint(self):
@@ -325,7 +325,7 @@ class S(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        decomp_ops = (qml.PhaseShift(np.pi / 2, wires=wires), )
+        decomp_ops = (qml.PhaseShift(np.pi / 2, wires=wires),)
         return decomp_ops
 
     def adjoint(self):
@@ -996,10 +996,10 @@ class MultiControlledX(Operation):
         self._padding_right = 2 ** len(wires) - 2 - self._padding_left
         self._CX = None
 
-        self.hyperparameters['target_wire'] = self._target_wire
-        self.hyperparameters['work_wires'] = self._work_wires
-        self.hyperparameters['control_wires'] = self._control_wires
-        self.hyperparameters['control_values'] = self.control_values
+        self.hyperparameters["target_wire"] = self._target_wire
+        self.hyperparameters["work_wires"] = self._work_wires
+        self.hyperparameters["control_wires"] = self._control_wires
+        self.hyperparameters["control_values"] = self.control_values
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
@@ -1048,28 +1048,34 @@ class MultiControlledX(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires=None, control_wires=None, work_wires=None, control_values=None,
-        target_wire=None, **kwargs):
+    def compute_decomposition(
+        wires=None,
+        control_wires=None,
+        work_wires=None,
+        control_values=None,
+        target_wire=None,
+        **kwargs,
+    ):
         """Compute the decomposition of the MultiControlledX gate.
 
         Args:
-            wires: (Union[Wires or int]) The single target wire 
-        
+            wires: (Union[Wires or int]) The single target wire
+
         Keyword Args:
-            control_wires 
+            control_wires
             work_wires
             control_values
             target_wire
-        
+
         """
 
         if len(control_wires) > 2 and len(work_wires) == 0:
-            raise ValueError(f"At least one work wire is required to decompose operation: MultiControlledX")
+            raise ValueError(
+                f"At least one work wire is required to decompose operation: MultiControlledX"
+            )
 
         flips1 = [
-            qml.PauliX(control_wires[i])
-            for i, val in enumerate(control_values)
-            if val == "0"
+            qml.PauliX(control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         if len(control_wires) == 1:
@@ -1090,9 +1096,7 @@ class MultiControlledX(Operation):
                 )
 
         flips2 = [
-            qml.PauliX(control_wires[i])
-            for i, val in enumerate(control_values)
-            if val == "0"
+            qml.PauliX(control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         return tuple(flips1 + decomp + flips2)
@@ -1195,7 +1199,7 @@ class Barrier(Operation):
 
     def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
         self.only_visual = only_visual
-        self.hyperparameters['only_visual'] = only_visual
+        self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

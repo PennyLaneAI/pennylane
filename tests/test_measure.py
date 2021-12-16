@@ -551,6 +551,26 @@ class TestExpansion:
         assert m.expand() is None
 
 
+class TestDiagonalizingGates:
+    def test_no_expansion(self):
+        """Test a measurement that has no expansion"""
+        m = qml.sample()
+
+        assert m.diagonalizing_gates() == []
+
+    def test_obs_diagonalizing_gates(self):
+        """Test diagonalizing_gates method with and observable."""
+        m = qml.expval(qml.PauliY(0))
+
+        res = m.diagonalizing_gates()
+
+        assert len(res) == 3
+
+        expected_classes = [qml.PauliZ, qml.S, qml.Hadamard]
+        for op, c in zip(res, expected_classes):
+            assert isinstance(op, c)
+
+
 class TestState:
     """Tests for the state function"""
 

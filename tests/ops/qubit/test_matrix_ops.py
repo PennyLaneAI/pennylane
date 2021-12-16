@@ -194,7 +194,7 @@ class TestDiagonalQubitUnitary:
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
 
         decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
-        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0,1,2]).decomposition()
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
 
         assert decomp[0].name == "QubitUnitary" == decomp2[0].name
         assert decomp[0].wires == Wires([0, 1, 2]) == decomp2[0].wires

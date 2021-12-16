@@ -34,13 +34,13 @@ class TestOperations:
         with pytest.raises(qml.ops.AdjointError):
             op.adjoint()
 
-class TestDecomposition:
 
+class TestDecomposition:
     def test_BasisState_decomposition(self):
         """Test the decomposition for BasisState"""
 
-        n = np.array([0,1,0])
-        wires = (0,1,2)
+        n = np.array([0, 1, 0])
+        wires = (0, 1, 2)
         ops1 = qml.BasisState.compute_decomposition(n, wires)
         ops2 = qml.BasisState(n, wires=wires).decomposition()
 
@@ -51,8 +51,8 @@ class TestDecomposition:
     def test_QubitStateVector_decomposition(self):
         """Test the decomposition for QubitStateVector."""
 
-        U = np.array([1,0,0,0])
-        wires = (0,1)
+        U = np.array([1, 0, 0, 0])
+        wires = (0, 1)
 
         ops1 = qml.QubitStateVector.compute_decomposition(U, wires)
         ops2 = qml.QubitStateVector(U, wires=wires).decomposition()

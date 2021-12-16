@@ -1060,8 +1060,9 @@ class TestDecomposition:
 
     def test_compute_decomposition_default(self):
         """Tests None is default for compute_decomposition."""
+
         class MyOp(Operator):
-            num_wires=1
+            num_wires = 1
 
         assert MyOp.compute_decomposition() is None
 
@@ -1072,7 +1073,7 @@ class TestDecomposition:
         """Test None is default for decomposition."""
 
         class MyOp(Operator):
-            num_wires=1
+            num_wires = 1
 
         op = MyOp(wires=1)
         assert op.decomposition() is None

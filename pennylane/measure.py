@@ -88,7 +88,6 @@ class MeasurementProcess:
             return []
         return expansion.operations
 
-
     def __repr__(self):
         """Representation of this class."""
         if self.obs is None:

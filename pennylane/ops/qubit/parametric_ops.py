@@ -256,7 +256,7 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        decomp_ops = (RZ(phi, wires=wires), )
+        decomp_ops = (RZ(phi, wires=wires),)
         return decomp_ops
 
     def adjoint(self):
@@ -331,7 +331,7 @@ class ControlledPhaseShift(Operation):
     @staticmethod
     def compute_decomposition(phi, wires):
         decomp_ops = (
-            qml.PhaseShift(phi/ 2, wires=wires[0]),
+            qml.PhaseShift(phi / 2, wires=wires[0]),
             qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -757,7 +757,7 @@ class PauliRot(Operation):
     @staticmethod
     def compute_decomposition(theta, pauli_word, wires):
 
-        if isinstance(wires, int):# Catch cases when the wire is passed as a single int.
+        if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
             wires = [wires]
 
         # Check for identity and do nothing
@@ -881,7 +881,7 @@ class CRX(Operation):
     def compute_decomposition(phi, wires):
         decomp_ops = (
             RZ(np.pi / 2, wires=wires[1]),
-            RY(phi/ 2, wires=wires[1]),
+            RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -976,7 +976,7 @@ class CRY(Operation):
         decomp_ops = (
             RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            RY(-phi/ 2, wires=wires[1]),
+            RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         )
         return decomp_ops
@@ -1239,7 +1239,7 @@ class U1(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        return (PhaseShift(phi, wires=wires), )
+        return (PhaseShift(phi, wires=wires),)
 
     def adjoint(self):
         return U1(-self.data[0], wires=self.wires)
