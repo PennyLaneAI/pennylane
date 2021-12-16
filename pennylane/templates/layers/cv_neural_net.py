@@ -102,6 +102,7 @@ class CVNeuralNetLayers(Operation):
     ):
 
         n_wires = len(wires)
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         # check that first dimension is the same
@@ -191,6 +192,7 @@ class CVNeuralNetLayers(Operation):
         Returns:
             list[tuple[int]]: list of shapes
         """
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         shapes = (
@@ -202,7 +204,7 @@ class CVNeuralNetLayers(Operation):
 
         return shapes
 
-    def adjoint(self):
+    def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
         adjoint_op.inverse = not self.inverse
         return adjoint_op
