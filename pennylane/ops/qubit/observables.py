@@ -27,7 +27,7 @@ from .matrix_ops import QubitUnitary
 
 
 class Hermitian(Observable):
-    r"""Hermitian(A, wires)
+    r"""Hermitian(A, wires, do_queue=True, id=None)
     An arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
@@ -49,13 +49,16 @@ class Hermitian(Observable):
     Args:
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     grad_method = "F"
     _eigs = {}
 
-    def __init__(self, A, wires):
-        super().__init__(A, wires=wires, do_queue=True, id=None)
+    def __init__(self, A, wires, do_queue=True, id=None):
+        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -123,7 +126,7 @@ class Hermitian(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r"""SparseHamiltonian(H, wires)
+    r"""SparseHamiltonian(H, wires, do_queue=True, id=None)
     A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     .. warning::
@@ -145,12 +148,15 @@ class SparseHamiltonian(Observable):
         H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AllWires
     grad_method = None
 
-    def __init__(self, H, wires):
-        super().__init__(H, wires=wires, do_queue=True, id=None)
+    def __init__(self, H, wires, do_queue=True, id=None):
+        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -171,7 +177,7 @@ class SparseHamiltonian(Observable):
 
 
 class Projector(Observable):
-    r"""Projector(basis_state, wires)
+    r"""Projector(basis_state, wires, do_queue=True, id=None)
     Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
 
     The expectation of this observable returns the value
@@ -192,10 +198,13 @@ class Projector(Observable):
     Args:
         basis_state (tensor-like): binary input of shape ``(n, )``
         wires (Iterable): wires that the projector acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
 
-    def __init__(self, basis_state, wires, do_queue=True):
+    def __init__(self, basis_state, wires, do_queue=True, id=None):
         wires = Wires(wires)
         shape = qml.math.shape(basis_state)
 
@@ -213,7 +222,7 @@ class Projector(Observable):
         if not set(basis_state).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
-        super().__init__(basis_state, wires=wires, do_queue=do_queue)
+        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):

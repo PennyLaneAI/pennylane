@@ -952,7 +952,7 @@ class CRX(Operation):
 
 
 class CRY(Operation):
-    r"""CRY(phi, wires)
+    r"""CRY(phi, wires, do_queue=True, id=None)
     The controlled-RY operator
 
     .. math::
@@ -987,6 +987,9 @@ class CRY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "Y"
@@ -998,8 +1001,8 @@ class CRY(Operation):
         -1 / 2,
     ]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1047,7 +1050,7 @@ class CRY(Operation):
 
 
 class CRZ(Operation):
-    r"""CRZ(phi, wires)
+    r"""CRZ(phi, wires, do_queue=True, id=None)
     The controlled-RZ operator
 
     .. math::
@@ -1085,6 +1088,9 @@ class CRZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "Z"
@@ -1096,8 +1102,8 @@ class CRZ(Operation):
         -1 / 2,
     ]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1147,7 +1153,7 @@ class CRZ(Operation):
 
 
 class CRot(Operation):
-    r"""CRot(phi, theta, omega, wires)
+    r"""CRot(phi, theta, omega, wires, do_queue=True, id=None)
     The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -1182,13 +1188,16 @@ class CRot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
-    def __init__(self, phi, theta, omega, wires):
-        super().__init__(phi, theta, omega, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+        super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1258,7 +1267,7 @@ class CRot(Operation):
 
 
 class U1(Operation):
-    r"""U1(phi)
+    r"""U1(phi, do_queue=True, id=None)
     U1 gate.
 
     .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -1280,13 +1289,16 @@ class U1(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1312,7 +1324,7 @@ class U1(Operation):
 
 
 class U2(Operation):
-    r"""U2(phi, delta, wires)
+    r"""U2(phi, delta, wires, do_queue=True, id=None)
     U2 gate.
 
     .. math::
@@ -1344,12 +1356,15 @@ class U2(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
 
-    def __init__(self, phi, delta, wires):
-        super().__init__(phi, delta, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, delta, wires, do_queue=True, id=None):
+        super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1390,7 +1405,7 @@ class U2(Operation):
 
 
 class U3(Operation):
-    r"""U3(theta, phi, delta, wires)
+    r"""U3(theta, phi, delta, wires, do_queue=True, id=None)
     Arbitrary single qubit unitary.
 
     .. math::
@@ -1423,12 +1438,15 @@ class U3(Operation):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
 
-    def __init__(self, theta, phi, delta, wires):
-        super().__init__(theta, phi, delta, wires=wires, do_queue=True, id=None)
+    def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
+        super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1477,7 +1495,7 @@ class U3(Operation):
 
 
 class IsingXX(Operation):
-    r"""IsingXX(phi, wires)
+    r"""IsingXX(phi, wires, do_queue=True, id=None)
     Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
@@ -1497,6 +1515,9 @@ class IsingXX(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
@@ -1506,8 +1527,8 @@ class IsingXX(Operation):
         -1 / 2,
     ]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1544,7 +1565,7 @@ class IsingXX(Operation):
 
 
 class IsingYY(Operation):
-    r"""IsingYY(phi, wires)
+    r"""IsingYY(phi, wires, do_queue=True, id=None)
     Ising YY coupling gate
 
     .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
@@ -1564,6 +1585,9 @@ class IsingYY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
@@ -1572,8 +1596,8 @@ class IsingYY(Operation):
         -1 / 2,
     ]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1608,7 +1632,7 @@ class IsingYY(Operation):
 
 
 class IsingZZ(Operation):
-    r""" IsingZZ(phi, wires)
+    r""" IsingZZ(phi, wires, do_queue=True, id=None)
     Ising ZZ coupling gate
 
     .. math:: ZZ(\phi) = \begin{bmatrix}
@@ -1628,6 +1652,9 @@ class IsingZZ(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
@@ -1636,8 +1663,8 @@ class IsingZZ(Operation):
         -1 / 2,
     ]
 
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires, do_queue=True, id=None)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
