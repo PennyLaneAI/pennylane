@@ -20,13 +20,6 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
-def expected_shapes(n_wires):
-    # compute the expected shapes for a given number of wires
-    n_if = n_wires * (n_wires - 1) // 2
-    expected = [(n_if,)] * 2 + [(n_wires,)]
-    return expected
-
-
 class TestInterferometer:
     """Tests for the Interferometer from the pennylane.template.layers module."""
 
@@ -301,18 +294,16 @@ class TestInterferometer:
             circuit(theta, phi, wrong_varphi)
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires",
+        "n_layers, n_wires, expected",
         [
-            (2, 3),
-            (3, 1),
-            (4, 2),
+            (2, 3, [(3,), (3,), (3,)]),
+            (3, 1, [(0,), (0,), (1,)]),
+            (4, 2, [(1,), (1,), (2,)]),
         ],
     )
-    def test_shapes(self, n_layers, n_wires, tol):
+    def test_shapes(self, n_layers, n_wires, tol, expected):
         """Test that the shape method returns the correct shapes for
         the weight tensors"""
 
         shapes = qml.Interferometer.shape(n_wires)
-        expected = expected_shapes(n_wires)
-
         assert np.allclose(shapes, expected, atol=tol, rtol=0)
