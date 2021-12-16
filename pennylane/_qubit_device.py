@@ -24,7 +24,7 @@ import itertools
 import warnings
 
 import numpy as np
-from jax._src.errors import TracerArrayConversionError
+from jax.errors import TracerArrayConversionError
 
 import pennylane as qml
 from pennylane.operation import (
