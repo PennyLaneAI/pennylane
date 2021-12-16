@@ -281,7 +281,9 @@ class DefaultQubitJax(DefaultQubit):
                 for state, count in zip(basis_states, counts):
                     prob = prob.at[state, b].set(count / bin_size)
 
-            prob = jnp.resize(prob, (2 ** num_wires, bins))  # resize prob which discards the 'filled values'
+            prob = jnp.resize(
+                prob, (2 ** num_wires, bins)
+            )  # resize prob which discards the 'filled values'
 
         else:
             basis_states, counts = qml.math.unique(
@@ -293,6 +295,8 @@ class DefaultQubitJax(DefaultQubit):
             for state, count in zip(basis_states, counts):
                 prob = prob.at[state].set(count / len(samples))
 
-            prob = jnp.resize(prob, 2 ** num_wires)  # resize prob which discards the 'filled values'
+            prob = jnp.resize(
+                prob, 2 ** num_wires
+            )  # resize prob which discards the 'filled values'
 
         return self._asarray(prob, dtype=self.R_DTYPE)
