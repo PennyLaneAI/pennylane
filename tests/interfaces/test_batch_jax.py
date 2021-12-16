@@ -637,7 +637,12 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
-    ret_and_output_dim = [([qml.probs(wires=0)], (1, 2)), ([qml.state()], (1,4)), ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,) )]
+    ret_and_output_dim = [
+        ([qml.probs(wires=0)], (1, 2)),
+        ([qml.state()], (1, 4)),
+        ([qml.density_matrix(wires=0)], (1, 2, 2)),
+        ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+    ]
 
     @pytest.mark.parametrize("ret, out_dim", ret_and_output_dim)
     def test_vector_valued_qnode(self, execute_kwargs, ret, out_dim):
@@ -645,8 +650,15 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
-        grad_meth = execute_kwargs["gradient_kwargs"]['method'] if "gradient_kwargs" in execute_kwargs else ""
-        if "adjoint" in grad_meth and ret[0].return_type in (qml.operation.Probability, qml.operation.State):
+        grad_meth = (
+            execute_kwargs["gradient_kwargs"]["method"]
+            if "gradient_kwargs" in execute_kwargs
+            else ""
+        )
+        if "adjoint" in grad_meth and ret[0].return_type in (
+            qml.operation.Probability,
+            qml.operation.State,
+        ):
             pytest.skip("Adjoint does not support probs")
 
         def cost(a, cache):

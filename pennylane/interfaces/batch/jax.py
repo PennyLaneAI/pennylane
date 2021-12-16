@@ -120,9 +120,14 @@ def get_shapes_and_dtype(tapes, device):
             if obs.return_type == State:
                 dtype = jnp.complex128
                 if obs.wires:
-                    shapes.append(jax.ShapeDtypeStruct((1, obs.wires), dtype))
+                    # qml.density_matrix
+                    dim = 2 ** len(obs.wires)
+                    state_shape = (1, dim, dim)
+                    shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
                 else:
-                    shapes.append(jax.ShapeDtypeStruct((1, 2 ** len(device.wires)), dtype))
+                    dim = 2 ** len(device.wires)
+                    state_shape = (1, dim)
+                    shapes.append(jax.ShapeDtypeStruct(state_shape, dtype))
 
         else:
             obs = t.observables[0]
