@@ -210,8 +210,11 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                print(f"\n\n\n\n\n\n {r}, {type(r)} \n\n\n\n\n\n")
-                r = qml.math.squeeze(r)
+
+                if isinstance(r, list):
+                    r = r[0]
+                else:
+                    r = qml.math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
