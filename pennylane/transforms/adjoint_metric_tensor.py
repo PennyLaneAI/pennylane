@@ -216,7 +216,9 @@ def _adjoint_metric_tensor_tape(tape, device):
         generator_1, prefactor_1 = _get_generator(outer_op)
 
         # the state vector phi is missing a factor of 1j * prefactor_1
-        phi = device._apply_unitary(psi, qml.math.convert_like(generator_1, like_real), outer_op.wires)
+        phi = device._apply_unitary(
+            psi, qml.math.convert_like(generator_1, like_real), outer_op.wires
+        )
 
         phi_real = qml.math.reshape(qml.math.real(phi), (dim,))
         phi_imag = qml.math.reshape(qml.math.imag(phi), (dim,))

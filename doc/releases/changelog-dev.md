@@ -60,6 +60,61 @@
 
 <h3>Breaking changes</h3>
 
+* The `metric_tensor` function now returns a tuple of tensors for QNodes with
+  multiple arguments, instead of a stacked tensor.
+  [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
+
+  This applies to the Autograd interface and QNodes with multiple arguments
+  that all have the same shape only.
+  As a consequence, the `QNGOptimizer` may stop working, as it is not
+  implemented for multiple split QNode arguments.
+
+  **Example**
+
+  Consider the QNode
+  ```python
+  dev = qml.device("default.qubit.autograd", wires=2)
+
+  @qml.qnode(dev, interface="autograd")
+  def circuit1(x, y):
+      qml.RY(x, wires=0)
+      qml.RY(y, wires=1)
+      return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))  
+
+  @qml.qnode(dev, interface="autograd")
+  def circuit2(x, y):
+      qml.RY(x, wires=0)
+      qml.RY(y[0], wires=1)
+      return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))  
+
+  x = pnp.array(0.1, requires_grad=True)
+  y1 = pnp.array(0.5, requires_grad=True)
+  y2 = pnp.array([0.5, 2.1], requires_grad=True)
+  ```
+
+  Previously, the following behaviour of `metric_tensor` was implemented:
+  ```pycon
+  >>> qml.metric_tensor(circuit1)(x, y1)
+  tensor([[2.50000000e-01, 0.00000000e+00],
+          [0.00000000e+00, 1.11022302e-16]], requires_grad=True)
+  >>> qml.metric_tensor(circuit2)(x, y2)
+  (tensor(0.25, requires_grad=True),
+   tensor([[1.11022302e-16, 0.00000000e+00],
+           [0.00000000e+00, 0.00000000e+00]], requires_grad=True))
+  ```
+  That is, the metric tensor was stacked into one tensor if all
+  QNode arguments had the same shape, but not if they do not.
+
+  Now, the tensor is output per QNode argument in all cases:
+  ```pycon
+  >>> qml.metric_tensor(circuit1)(x, y1)
+  (tensor(0.25, requires_grad=True), tensor(1.11022302e-16, requires_grad=True))
+  >>> qml.metric_tensor(circuit2)(x, y2)
+  (tensor(0.25, requires_grad=True),
+   tensor([[1.11022302e-16, 0.00000000e+00],
+           [0.00000000e+00, 0.00000000e+00]], requires_grad=True))
+  ```
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug in `classical_jacobian` when used with Torch, where the
