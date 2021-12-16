@@ -67,6 +67,9 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_rotations
     ~transforms.single_qubit_fusion
     ~transforms.unitary_to_rot
+    ~transforms.merge_amplitude_embedding
+    ~transforms.remove_barrier
+    ~transforms.undo_swaps
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -76,6 +79,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
+    ~transforms.set_decomposition
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,6 +107,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~qfunc_transform
     ~transforms.make_tape
     ~transforms.create_expand_fn
+    ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
     ~transforms.expand_multipar
     ~transforms.expand_nonunitary_gen
@@ -127,6 +132,9 @@ from .optimization import (
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
+    merge_amplitude_embedding,
+    remove_barrier,
+    undo_swaps,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
@@ -137,4 +145,6 @@ from .tape_expand import (
     expand_multipar,
     expand_nonunitary_gen,
     create_expand_fn,
+    create_decomp_expand_fn,
+    set_decomposition,
 )

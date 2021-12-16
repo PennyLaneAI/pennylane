@@ -69,18 +69,15 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         if grouping_type.lower() not in GROUPING_TYPES:
             raise ValueError(
-                "Grouping type must be one of: {}, instead got {}.".format(
-                    GROUPING_TYPES, grouping_type
-                )
+                f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
             )
 
         self.grouping_type = grouping_type.lower()
 
         if graph_colourer.lower() not in GRAPH_COLOURING_METHODS.keys():
             raise ValueError(
-                "Graph colouring method must be one of: {}, instead got {}.".format(
-                    list(GRAPH_COLOURING_METHODS.keys()), graph_colourer
-                )
+                f"Graph colouring method must be one of: {list(GRAPH_COLOURING_METHODS.keys())}, "
+                f"instead got {graph_colourer}."
             )
 
         self.graph_colourer = GRAPH_COLOURING_METHODS[graph_colourer.lower()]

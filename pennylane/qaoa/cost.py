@@ -59,7 +59,7 @@ def bit_driver(wires, b):
     elif b == 1:
         coeffs = [1 for _ in wires]
     else:
-        raise ValueError("'b' must be either 0 or 1, got {}".format(b))
+        raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
     ops = [qml.PauliZ(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)
@@ -160,7 +160,7 @@ def edge_driver(graph, reward):
         )
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
 
     coeffs = []
     ops = []
@@ -251,7 +251,7 @@ def maxcut(graph):
     """
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
 
     identity_h = qml.Hamiltonian(
         [-0.5 for e in graph.edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph.edges]
@@ -320,7 +320,7 @@ def max_independent_set(graph, constrained=True):
     """
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
 
     if constrained:
         cost_h = bit_driver(graph.nodes, 1)
@@ -396,7 +396,7 @@ def min_vertex_cover(graph, constrained=True):
     """
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
 
     if constrained:
         cost_h = bit_driver(graph.nodes, 0)
@@ -474,7 +474,7 @@ def max_clique(graph, constrained=True):
     """
 
     if not isinstance(graph, nx.Graph):
-        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
 
     if constrained:
         cost_h = bit_driver(graph.nodes, 1)
@@ -626,7 +626,7 @@ def max_weight_cycle(graph, constrained=True):
         ``0`` and ``3`` wires.
     """
     if not isinstance(graph, nx.Graph):
-        raise ValueError("Input graph must be a nx.Graph, got {}".format(type(graph).__name__))
+        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
 
     mapping = qaoa.cycle.wires_to_edges(graph)
 

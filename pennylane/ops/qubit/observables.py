@@ -63,12 +63,12 @@ class Hermitian(Observable):
 
     @classmethod
     def _matrix(cls, *params):
-        A = np.asarray(params[0])
+        A = qml.math.asarray(params[0])
 
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
-        if not np.allclose(A, A.conj().T):
+        if not qml.math.allclose(A, A.conj().T):
             raise ValueError("Observable must be Hermitian.")
 
         return A
@@ -86,6 +86,7 @@ class Hermitian(Observable):
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         Hmat = self.matrix
+        Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
             w, U = np.linalg.eigh(Hmat)
@@ -143,6 +144,9 @@ class SparseHamiltonian(Observable):
     """
     num_wires = AllWires
     grad_method = None
+
+    def __init__(self, H, wires=None, do_queue=True, id=None):
+        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -245,6 +249,14 @@ class Projector(Observable):
         idx = int("".join(str(i) for i in params[0]), 2)
         w[idx] = 1
         return w
+
+    @classmethod
+    def _matrix(cls, *params):
+        basis_state = params[0]
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the

@@ -36,15 +36,17 @@ def about():
     """
     plugin_devices = iter_entry_points("pennylane.plugins")
     _internal_main.main(["show", "pennylane"])
-    print("Platform info:           {}".format(platform.platform(aliased=True)))
-    print("Python version:          {0}.{1}.{2}".format(*sys.version_info[0:3]))
-    print("Numpy version:           {}".format(numpy.__version__))
-    print("Scipy version:           {}".format(scipy.__version__))
+    print(f"Platform info:           {platform.platform(aliased=True)}")
+    print(
+        f"Python version:          {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
+    )
+    print(f"Numpy version:           {numpy.__version__}")
+    print(f"Scipy version:           {scipy.__version__}")
 
     print("Installed devices:")
 
     for d in plugin_devices:
-        print("- {} ({}-{})".format(d.name, d.dist.project_name, d.dist.version))
+        print(f"- {d.name} ({d.dist.project_name}-{d.dist.version})")
 
 
 if __name__ == "__main__":

@@ -235,11 +235,15 @@ def classproperty(func):
 
 
 def _process_data(op):
+
+    # Use qml.math.real to take the real part. We may get complex inputs for
+    # example when differentiating holomorphic functions with JAX: a complex
+    # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([d % (2 * np.pi) for d in op.data])
+        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([d % (4 * np.pi) for d in op.data])
+        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
 
     return str(op.data)
 
@@ -345,8 +349,13 @@ class Operator(abc.ABC):
 
         This is a *class method* that should be defined for all
         new operations and observables that returns the eigenvalues
-        of the operator. Note that the eigenvalues are not guaranteed
-        to be in any particular order.
+        of the operator.
+
+        If :attr:`diagonalizing_gates` are specified, the order of the
+        eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using these ops. Otherwise, no particular order is
+        guaranteed.
 
         This private method allows eigenvalues to be computed
         directly without instantiating the operators first.
@@ -360,7 +369,11 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.RZ._eigvals(0.5)
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> qml.PauliX(wires=0).diagonalizing_gates()
+        [Hadamard(wires=[0])]
+        >>> qml.PauliX._eigvals()
+        array([1, -1])
 
         Returns:
             array: eigenvalue representation
@@ -371,14 +384,21 @@ class Operator(abc.ABC):
     def eigvals(self):
         r"""Eigenvalues of an instantiated operator.
 
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
+        If :attr:`diagonalizing_gates` are specified, the order of the
+        eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using these ops. Otherwise, no particular order is
+        guaranteed.
 
         **Example:**
 
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> qml.PauliX(wires=0).diagonalizing_gates()
+        [Hadamard(wires=[0])]
+        >>> qml.PauliX.eigvals()
+        array([1, -1])
 
         Returns:
             array: eigvals representation
@@ -460,9 +480,10 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
+        self._hyperparameters = {}
 
         if wires is None:
-            raise ValueError("Must specify the wires that {} acts on".format(self.name))
+            raise ValueError(f"Must specify the wires that {self.name} acts on")
 
         self._num_params = len(params)
         # Check if the expected number of parameters coincides with the one received.
@@ -470,8 +491,8 @@ class Operator(abc.ABC):
         # subclasses may overwrite it to define a fixed expected value.
         if len(params) != self.num_params:
             raise ValueError(
-                "{}: wrong number of parameters. "
-                "{} parameters passed, {} expected.".format(self.name, len(params), self.num_params)
+                f"{self.name}: wrong number of parameters. "
+                f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
         if isinstance(wires, Wires):
@@ -486,8 +507,8 @@ class Operator(abc.ABC):
             and len(self._wires) != self.num_wires
         ):
             raise ValueError(
-                "{}: wrong number of wires. "
-                "{} wires given, {} expected.".format(self.name, len(self._wires), self.num_wires)
+                f"{self.name}: wrong number of wires. "
+                f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
         self.data = list(params)  #: list[Any]: parameters of the operator
@@ -499,8 +520,8 @@ class Operator(abc.ABC):
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return "{}({}, wires={})".format(self.name, params, self.wires.tolist())
-        return "{}(wires={})".format(self.name, self.wires.tolist())
+            return f"{self.name}({params}, wires={self.wires.tolist()})"
+        return f"{self.name}(wires={self.wires.tolist()})"
 
     @property
     def num_params(self):
@@ -529,6 +550,14 @@ class Operator(abc.ABC):
     def parameters(self):
         """Current parameter values."""
         return self.data.copy()
+
+    @property
+    def hyperparameters(self):
+        """dict: Dictionary of non-trainable variables that define this operation."""
+        if hasattr(self, "_hyperparameters"):
+            return self._hyperparameters
+        self._hyperparameters = {}
+        return self._hyperparameters
 
     @staticmethod
     def decomposition(*params, wires):
@@ -560,6 +589,22 @@ class Operator(abc.ABC):
             tuple[list[tensor_like], ~.Operator]: tuple of scalar coefficients and their respective operators
         """
         return NotImplementedError
+
+    # pylint:disable=no-self-use
+    def diagonalizing_gates(self):
+        r"""Defines a partial representation of this operator as
+        an eigendecompisition.
+
+        Multiplied together, the diagonalizing gates
+        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
+
+        Returns `None` if this operator does not define its diagonalizing gates.
+
+        Returns:
+            list[.Operator] or None: A list of operators.
+        """
+        return None
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -603,8 +648,6 @@ class Operation(Operator):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
-    # pylint: disable=abstract-method
-    string_for_inverse = ".inv"
 
     @property
     def grad_method(self):
@@ -688,30 +731,27 @@ class Operation(Operator):
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
 
-    @property
     def generator(self):
-        r"""Generator of the operation.
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
 
-        A length-2 list ``[generator, scaling_factor]``, where
+        For example, for operator
 
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
+        .. math::
 
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
 
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
 
-        .. code-block:: python
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
 
-            generator = [PauliX, 0.7]
-
-        Default is ``[None, 1]``, indicating the operation has no generator.
+        The default value to return is ``None``, indicating that the operation has
+        no defined generator.
         """
-        return [None, 1]
+        return None
 
     @property
     def inverse(self):
@@ -806,7 +846,7 @@ class Operation(Operator):
     @property
     def name(self):
         """Get and set the name of the operator."""
-        return self._name + Operation.string_for_inverse if self.inverse else self._name
+        return self._name + ".inv" if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
         if self.inverse:
@@ -940,54 +980,6 @@ class Observable(Operator):
     # pylint: disable=abstract-method
     return_type = None
 
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the observable.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`.
-
-        This is a *class method* that must be defined for all
-        new diagonal operations, that returns the eigenvalues
-        of the operator in the computational basis.
-
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
-
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
-
-        **Example:**
-
-        >>> qml.PauliZ._eigvals()
-        >>> array([1, -1])
-
-        Returns:
-            array: eigenvalue representation
-        """
-        raise NotImplementedError
-
-    @property
-    def eigvals(self):
-        r"""Eigenvalues of an instantiated observable.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`. This is a
-        requirement for using qubit observables in quantum functions.
-
-        **Example:**
-
-        >>> U = qml.PauliZ(wires=1)
-        >>> U.eigvals
-        >>> array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        return super().eigvals
-
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
         if wires is None:
@@ -1010,7 +1002,7 @@ class Observable(Operator):
             return temp
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+            return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + temp + ")"
 
@@ -1106,16 +1098,6 @@ class Observable(Operator):
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
         raise ValueError(f"Cannot subtract {type(other)} from Observable")
-
-    def diagonalizing_gates(self):
-        r"""Returns the list of operations such that they
-        diagonalize the observable in the computational basis.
-
-        Returns:
-            list(qml.Operation): A list of gates that diagonalize
-            the observable in the computational basis.
-        """
-        raise NotImplementedError
 
 
 class Tensor(Observable):
@@ -1218,7 +1200,7 @@ class Tensor(Observable):
             return s
 
         if self.return_type is Probability:
-            return repr(self.return_type) + "(wires={})".format(self.wires.tolist())
+            return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + s + ")"
 
@@ -1484,8 +1466,8 @@ class Tensor(Observable):
             if len(o.wires) > 1:
                 # todo: deal with multi-qubit operations that do not act on consecutive qubits
                 raise ValueError(
-                    "Can only compute sparse representation for tensors whose operations "
-                    "act on consecutive wires; got {}.".format(o)
+                    f"Can only compute sparse representation for tensors whose operations "
+                    f"act on consecutive wires; got {o}."
                 )
             # store the single-qubit ops according to the order of their wires
             idx = wires.index(o.wires)
@@ -1569,7 +1551,7 @@ class CV:
             raise ValueError("Only order-1 and order-2 arrays supported.")
 
         if U_dim != 1 + 2 * nw:
-            raise ValueError("{}: Heisenberg matrix is the wrong size {}.".format(self.name, U_dim))
+            raise ValueError(f"{self.name}: Heisenberg matrix is the wrong size {U_dim}.")
 
         if len(wires) == 0 or len(self.wires) == len(wires):
             # no expansion necessary (U is a full-system matrix in the correct order)
@@ -1577,9 +1559,7 @@ class CV:
 
         if not wires.contains_wires(self.wires):
             raise ValueError(
-                "{}: Some observable wires {} do not exist on this device with wires {}".format(
-                    self.name, self.wires, wires
-                )
+                f"{self.name}: Some observable wires {self.wires} do not exist on this device with wires {wires}"
             )
 
         # get the indices that the operation's wires have on the device
@@ -1753,9 +1733,7 @@ class CVOperation(CV, Operation):
         # not defined?
         if U is None:
             raise RuntimeError(
-                "{} is not a Gaussian operation, or is missing the _heisenberg_rep method.".format(
-                    self.name
-                )
+                f"{self.name} is not a Gaussian operation, or is missing the _heisenberg_rep method."
             )
 
         return self.heisenberg_expand(U, wires)
@@ -1823,25 +1801,7 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = operation.generator
-
-    if generator is None:
-        raise ValueError(f"Operation {operation.name} does not have a generator")
-    if operation.num_params != 1:
-        # Note, this case should already be caught by the previous raise since we haven't worked out
-        # how to have an operator for multiple parameters. It is added here in case of a future
-        # change
-        raise ValueError(
-            f"Operation {operation.name} is not written in terms of a single parameter"
-        )
-
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
-
-    if operation.inverse:
-        prefactor *= -1
-        generator = qml.math.conj(qml.math.T(generator))
-
+    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
     return 1j * prefactor * generator @ operation.matrix
 
 
@@ -1854,7 +1814,7 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator[0] is not None
+    return hasattr(obj, "generator") and obj.generator() is not None
 
 
 @qml.BooleanFn
@@ -1895,3 +1855,14 @@ def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qml.math.requires_grad``."""
     return any(qml.math.requires_grad(p) for p in obj.parameters)
+
+
+@qml.BooleanFn
+def defines_diagonalizing_gates(obj):
+    """Returns ``True`` if an operator defines the diagonalizing
+    gates are defined."""
+
+    with qml.tape.stop_recording():
+        dgates = obj.diagonalizing_gates()
+
+    return dgates is not None

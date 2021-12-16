@@ -422,7 +422,7 @@ class QuantumTape(AnnotatedQueue):
                     )
 
                 # invert the operation if required
-                obj.inverse = info.get("inverse", False)
+                obj.inverse = info.get("inverse", obj.inverse)
 
                 if isinstance(obj, STATE_PREP_OPS):
                     if self._ops:
@@ -1007,12 +1007,11 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
-            try:
-                # some observables do not have diagonalizing gates,
-                # in which case we just don't append any
+            # some observables do not have diagonalizing gates,
+            # in which case we just don't append any
+            diag = observable.diagonalizing_gates()
+            if diag is not None:
                 rotation_gates.extend(observable.diagonalizing_gates())
-            except NotImplementedError:
-                pass
 
         return rotation_gates
 
@@ -1166,8 +1165,8 @@ class QuantumTape(AnnotatedQueue):
             return qasm_str
 
         # create the quantum and classical registers
-        qasm_str += "qreg q[{}];\n".format(len(wires))
-        qasm_str += "creg c[{}];\n".format(len(wires))
+        qasm_str += f"qreg q[{len(wires)}];\n"
+        qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations
         operations = self.operations
@@ -1202,9 +1201,7 @@ class QuantumTape(AnnotatedQueue):
                 # with parameter values.
                 params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
-            qasm_str += "{name}{params} {wires};\n".format(
-                name=gate, params=params, wires=wire_labels
-            )
+            qasm_str += f"{gate}{params} {wire_labels};\n"
 
         # apply computational basis measurements to each quantum register
         # NOTE: This is not strictly necessary, we could inspect self.observables,

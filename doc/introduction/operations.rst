@@ -170,6 +170,7 @@ Qubit state preparation
 
     ~pennylane.BasisState
     ~pennylane.QubitStateVector
+    ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
 
@@ -192,7 +193,9 @@ Noisy channels
     ~pennylane.BitFlip
     ~pennylane.PhaseFlip
     ~pennylane.ResetError
+    ~pennylane.PauliError
     ~pennylane.QubitChannel
+    ~pennylane.ThermalRelaxationError
 
 :html:`</div>`
 

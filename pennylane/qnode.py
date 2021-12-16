@@ -74,11 +74,11 @@ class QNode:
             * ``"device"``: Queries the device directly for the gradient.
               Only allowed on devices that provide their own gradient computation.
 
-            * ``"backprop"``: Use classical backpropagation. Only allowed on simulator
-              devices that are classically end-to-end differentiable, for example
-              :class:`default.tensor.tf <~.DefaultTensorTF>`. Note that the returned
-              QNode can only be used with the machine-learning framework supported
-              by the device.
+            * ``"backprop"``: Use classical backpropagation. Only allowed on
+              simulator devices that are classically end-to-end differentiable,
+              for example :class:`default.qubit <~.DefaultQubit>`. Note that
+              the returned QNode can only be used with the machine-learning
+              framework supported by the device.
 
             * ``"adjoint"``: Uses an `adjoint method <https://arxiv.org/abs/2009.02823>`__ that
               reverses through the circuit after a forward pass by iteratively applying the inverse
@@ -517,9 +517,7 @@ class QNode:
             if getattr(obj, "num_wires", None) is qml.operation.WiresEnum.AllWires:
                 # check here only if enough wires
                 if len(obj.wires) != self.device.num_wires:
-                    raise qml.QuantumFunctionError(
-                        "Operator {} must act on all wires".format(obj.name)
-                    )
+                    raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
@@ -586,6 +584,6 @@ class QNode:
         return qml.math.squeeze(res)
 
 
-qnode = lambda dev, **kwargs: functools.partial(QNode, device=dev, **kwargs)
+qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
 qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)

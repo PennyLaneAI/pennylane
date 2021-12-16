@@ -92,9 +92,7 @@ def cost_layer(gamma, hamiltonian):
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
+            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
 
     if not _diagonal_terms(hamiltonian):
@@ -152,9 +150,7 @@ def mixer_layer(alpha, hamiltonian):
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
+            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
 
     qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)

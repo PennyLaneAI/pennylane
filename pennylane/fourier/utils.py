@@ -18,13 +18,16 @@ from itertools import product, combinations
 import numpy as np
 
 
+from pennylane.utils import get_generator
+
+
 def format_nvec(nvec):
     """Nice strings representing tuples of integers."""
 
     if isinstance(nvec, int):
         return str(nvec)
 
-    nvec_str = ["{}".format(n) if n < 0 else " {}".format(n) for n in nvec]
+    nvec_str = [f"{n}" if n < 0 else f" {n}" for n in nvec]
 
     return " ".join(nvec_str)
 
@@ -60,23 +63,9 @@ def get_spectrum(op, decimals):
     Returns:
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
-    no_generator = False
-    if hasattr(op, "generator"):
-        g, coeff = op.generator
-
-        if isinstance(g, np.ndarray):
-            matrix = g
-        elif hasattr(g, "matrix"):
-            matrix = g.matrix
-        else:
-            no_generator = True
-    else:
-        no_generator = True
-
-    if no_generator:
-        raise ValueError(f"Generator of operation {op} is not defined.")
-
+    matrix, coeff = get_generator(op, return_matrix=True)
     matrix = coeff * matrix
+
     # todo: use qml.math.linalg once it is tested properly
     evals = np.linalg.eigvalsh(matrix)
 

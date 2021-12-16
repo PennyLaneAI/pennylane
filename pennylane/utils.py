@@ -158,8 +158,8 @@ def sparse_hamiltonian(H, wires=None):
             if len(o.wires) > 1:
                 # todo: deal with operations created from multi-qubit operations such as Hermitian
                 raise ValueError(
-                    "Can only sparsify Hamiltonians whose constituent observables consist of "
-                    "(tensor products of) single-qubit operators; got {}.".format(op)
+                    f"Can only sparsify Hamiltonians whose constituent observables consist of "
+                    f"(tensor products of) single-qubit operators; got {op}."
                 )
             obs.append(scipy.sparse.coo_matrix(o.matrix))
 
@@ -231,7 +231,7 @@ def _unflatten(flat, model):
             res.append(val)
         return res, flat
 
-    raise TypeError("Unsupported type in the model: {}".format(type(model)))
+    raise TypeError(f"Unsupported type in the model: {type(model)}")
 
 
 def unflatten(flat, model):
@@ -417,3 +417,57 @@ def expand_vector(vector, original_wires, expanded_wires):
     )
 
     return qml.math.reshape(expanded_tensor, 2 ** M)
+
+
+def get_generator(op, return_matrix=False):
+    """Utility function to help return the generator of an operation.
+
+    This utility function is used to abstract away the API differences
+    between different operators that could be returned as
+    generators, including ``SparseHamiltonian``, ``Hamiltonian``,
+    ``Observable``, ``Tensor``, and ``Hermitian``.
+
+    This utility function should be removed once the aforementioned classes
+    no longer differ in behaviour.
+    """
+    gen = getattr(op, "generator", lambda: None)()
+
+    if gen is None:
+        raise ValueError(f"Operation {op.name} does not have a generator")
+
+    if op.num_params != 1:
+        raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
+
+    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
+        obs = gen
+        s = 1.0
+
+    elif isinstance(gen, qml.operation.Observable):
+        gen = 1.0 * gen  # convert to a qml.Hamiltonian
+
+        if len(gen.ops) == 1:
+            # case where the Hamiltonian is a single Pauli word
+            obs = gen.ops[0]
+            s = gen.coeffs[0]
+        else:
+            # otherwise, we convert to a sparse array
+            H = qml.utils.sparse_hamiltonian(gen)
+            obs = qml.SparseHamiltonian(H, wires=gen.wires)
+            s = 1.0
+
+    else:
+        raise qml.QuantumFunctionError(f"Generator {gen} is not an observable")
+
+    if op.inverse:
+        s *= -1.0
+
+    if return_matrix:
+        obs = obs.matrix
+
+        if not isinstance(obs, np.ndarray):
+            obs = obs.toarray()
+
+        if op.inverse:
+            obs = qml.math.conj(qml.math.T(obs))
+
+    return obs, s

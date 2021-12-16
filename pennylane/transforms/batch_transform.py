@@ -288,7 +288,7 @@ class batch_transform:
             tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 
             interface = qnode.interface
-            execute_kwargs = getattr(qnode, "execute_kwargs", {})
+            execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
             max_diff = execute_kwargs.pop("max_diff", 2)
             max_diff = transform_max_diff or max_diff
 

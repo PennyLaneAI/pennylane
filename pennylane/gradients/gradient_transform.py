@@ -14,6 +14,8 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
+import warnings
+
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
@@ -108,6 +110,27 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
+    @staticmethod
+    def _jacobian_trainable_args(args, interface):
+        """Return the indices of QNode arguments for which a Jacobian was
+        computed by `qml.transforms.classical_jacobian` with argnum=None.
+        """
+        trainable_args = []
+
+        if interface == "autograd":
+            for idx, arg in enumerate(args):
+                # TODO: make default False once this change is done in qml.jacobian
+                if getattr(arg, "requires_grad", True):
+                    trainable_args.append(idx)
+
+        elif interface == "jax":
+            trainable_args = [0]
+
+        # Torch and Tensorflow interfaces are not considered since `classical_jacobian`
+        # always returns a tuple for them, thus not invoking this function.
+
+        return trainable_args
+
     def default_qnode_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
@@ -144,8 +167,42 @@ class gradient_transform(qml.batch_transform):
                 # is present inside the QNode.
                 return qjac
 
-            # Classical processing of a single argument is present. Return qjac @ cjac.
-            jac = qml.math.squeeze(qml.math.tensordot(qml.math.T(cjac), qjac, [[-1], [-1]]))
-            return qml.math.T(jac)
+            # Classical processing present of either:
+            #   a) a single argument or
+            #   b) multiple arguments of the same shape
+            # The shape of the classical jacobian returned by qml.jacobian (invoked by
+            # classical_jacobian with autograd) depends on the scenario:
+            #   a) (# gate args, qnode arg shape)
+            #   b) (reverse qnode arg shape, # gate args, # qnode args)
+            # It then needs to be contracted with the quantum jacobian of shape:
+            #      (qnode output shape, # gate args)
+            # The result should have shape:
+            #   a) (qnode ouput shape, qnode arg shape)
+            #   b) (reverse qnode arg shape, qnode output shape, # qnode args)
+            num_gate_args = qml.math.shape(qjac)[-1]
+            # Consider only QNode arguments regarded as trainable by the interfaces.
+            trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
+            # Since all arguments have the same shape, obtain shape from the first trainable arg
+            qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
+            num_qnode_args = len(trainable_args_idx)
+
+            if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
+                # single QNode argument
+                jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
+            elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
+                # multiple QNode arguments with stacking
+                cjac = qml.math.swapaxes(cjac, -1, -2)
+                jac = qml.math.tensordot(cjac, qjac, [[-1], [-1]])
+                jac = qml.math.moveaxis(jac, -1, len(qnode_arg_shape))
+            else:  # pragma: no cover
+                jac = ()
+                warnings.warn(
+                    "Unexpected classical Jacobian encoutered, could not compute the hybrid "
+                    "Jacobian of the QNode. You can still attempt to obtain the quantum Jacobian "
+                    "with the `hybrid=False` parameter.",
+                    UserWarning,
+                )
+
+            return qml.math.squeeze(jac)
 
         return jacobian_wrapper

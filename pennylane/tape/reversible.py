@@ -115,11 +115,7 @@ class ReversibleTape(JacobianTape):
             vec1_indices,
         )
 
-        einsum_str = "{vec1_indices},{obs_indices},{vec2_indices}->".format(
-            vec1_indices=vec1_indices,
-            obs_indices=obs_indices,
-            vec2_indices=vec2_indices,
-        )
+        einsum_str = f"{vec1_indices},{obs_indices},{vec2_indices}->"
 
         return np.einsum(einsum_str, np.conj(vec1), mat, vec2)
 
@@ -172,8 +168,8 @@ class ReversibleTape(JacobianTape):
 
         if op.name not in ["RX", "RY", "RZ", "Rot"]:
             raise ValueError(
-                "The {} gate is not currently supported with the "
-                "reversible gradient method.".format(op.name)
+                f"The {op.name} gate is not currently supported with the "
+                f"reversible gradient method."
             )
 
         # get the stored final state of the original circuit, which we start from here
@@ -194,10 +190,10 @@ class ReversibleTape(JacobianTape):
 
         if op.name == "Rot":
             decomp = op.decompose()
-            generator, multiplier = decomp[p_idx].generator
+            generator, multiplier = qml.utils.get_generator(decomp[p_idx])
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:
-            generator, multiplier = op.generator
+            generator, multiplier = qml.utils.get_generator(op)
 
         # construct circuit to compute differentiated state
         between_ops_inverse = [copy.copy(op) for op in between_ops[::-1]]
@@ -211,7 +207,7 @@ class ReversibleTape(JacobianTape):
                 op.queue().inv()
 
             # apply generator needed for differentiation
-            generator(wires)
+            qml.apply(generator)
 
             # evolve forwards again
             for op in between_ops:
