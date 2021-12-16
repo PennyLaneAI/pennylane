@@ -38,6 +38,11 @@ The Operator class has undergone a major refactor with the following changes:
 * The `string_for_inverse` attribute is removed.
   [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
 
+* A `terms()` method and a `compute_terms` static method were added to `Operator`. 
+  Currently, only the `Hamiltonian` class overwrites `compute_terms` to store 
+  coefficients and operators. The `Hamiltonian.terms` property is thereby superseded  
+  by `Hamiltonian.terms()`.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

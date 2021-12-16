@@ -405,6 +405,55 @@ class Operator(abc.ABC):
         """
         return self._eigvals(*self.parameters)
 
+    @staticmethod
+    def compute_terms(*params, wires, **hyperparams):
+        r"""Representation of this operation as a linear combination.
+
+        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that
+
+        .. math:: O = \sum_i c_i O_i
+
+        results in this operator :math:`O`.
+
+        If no representation by terms is defined, ``None`` is returned.
+
+        This is the static version of the representation.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+
+        Returns:
+            list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
+
+        **Example**
+
+        >>> qml.Hamiltonian().terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+        """
+        return None
+
+    def terms(self):
+        r"""Representation of this operation as a linear combination.
+
+        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that
+
+        .. math:: O = \sum_i c_i O_i
+
+        results in this operator :math:`O`.
+
+        If no representation by terms is defined, ``None`` is returned.
+
+        Returns:
+            list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
+
+        **Example**
+
+        >>> qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)]).terms()
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+        """
+        return self.compute_terms(*self.parameters, wires=self.wires, **self.hyperparameters)
+
     @property
     @abc.abstractmethod
     def num_wires(self):

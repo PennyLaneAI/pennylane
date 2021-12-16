@@ -188,7 +188,6 @@ class Hamiltonian(Observable):
         self._coeffs = coeffs
         self._ops = list(observables)
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
-
         self.return_type = None
 
         # attribute to store indices used to form groups of
@@ -209,6 +208,8 @@ class Hamiltonian(Observable):
         # this causes H.data to be a list of tensor scalars,
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+        # add to hyperparams so we can pass it to representations
+        self._hyperparameters["ops"] = self.ops
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -231,14 +232,8 @@ class Hamiltonian(Observable):
         """
         return self._ops
 
-    @property
-    def terms(self):
-        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
-
-        Returns:
-            (tuple, tuple): tuples of coefficients and operations, each of length N
-        """
-        return self.coeffs, self.ops
+    def compute_terms(self, *params, wires, **hyperparams):
+        return list(params), hyperparams["ops"]
 
     @property
     def wires(self):

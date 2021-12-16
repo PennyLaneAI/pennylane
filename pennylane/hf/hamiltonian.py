@@ -223,7 +223,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = generate_hamiltonian(mol)(*args)
-    >>> h.terms[0]
+    >>> h.terms()[0]
     tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
             -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,

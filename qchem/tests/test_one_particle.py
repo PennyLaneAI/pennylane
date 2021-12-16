@@ -130,7 +130,7 @@ def test_table_one_particle(core, active, t_op_exp):
 
     t_op = qchem.one_particle(hf.one_body_integrals, core=core, active=active)
 
-    assert t_op.terms == t_op_exp
+    assert t_op.terms() == t_op_exp
 
 
 table_1D = np.array([1, 2, 3])
