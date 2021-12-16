@@ -112,9 +112,11 @@ class TestSingleExcitation:
     def test_single_excitation_matrix(self, phi):
         """Tests that the SingleExcitation operation calculates the correct matrix"""
         op = qml.SingleExcitation(phi, wires=[0, 1])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.SingleExcitation.compute_matrix(phi)
         exp = SingleExcitation(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
@@ -157,9 +159,11 @@ class TestSingleExcitation:
     def test_single_excitation_plus_matrix(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
         op = qml.SingleExcitationPlus(phi, wires=[0, 1])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.SingleExcitationPlus.compute_matrix(phi)
         exp = SingleExcitationPlus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus_generator(self, phi):
@@ -174,9 +178,11 @@ class TestSingleExcitation:
     def test_single_excitation_minus_matrix(self, phi):
         """Tests that the SingleExcitationMinus operation calculates the correct matrix"""
         op = qml.SingleExcitationMinus(phi, wires=[0, 1])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.SingleExcitationMinus.compute_matrix(phi)
         exp = SingleExcitationMinus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_minus_generator(self, phi):
@@ -293,9 +299,11 @@ class TestDoubleExcitation:
     def test_double_excitation_matrix(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct matrix"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.DoubleExcitation.compute_matrix(phi)
         exp = DoubleExcitation(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_decomp(self, phi):
@@ -371,9 +379,11 @@ class TestDoubleExcitation:
     def test_double_excitation_plus_matrix(self, phi):
         """Tests that the DoubleExcitationPlus operation calculates the correct matrix"""
         op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.DoubleExcitationPlus.compute_matrix(phi)
         exp = DoubleExcitationPlus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_plus_generator(self, phi):
@@ -390,9 +400,11 @@ class TestDoubleExcitation:
     def test_double_excitation_minus_matrix(self, phi):
         """Tests that the DoubleExcitationMinus operation calculates the correct matrix"""
         op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.DoubleExcitationMinus.compute_matrix(phi)
         exp = DoubleExcitationMinus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_minus_generator(self, phi):
@@ -570,10 +582,11 @@ class TestOrbitalRotation:
     def test_orbital_rotation_matrix(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct matrix"""
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        res = op.matrix()
+        res_dynamic = op.matrix()
+        res_static = qml.OrbitalRotation.compute_matrix(phi)
         exp = OrbitalRotation(phi)
-
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_generator(self, phi):

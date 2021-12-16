@@ -571,11 +571,11 @@ class DoubleExcitationMinus(Operation):
         interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(phi, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(-1j * theta / 2)
+        e = qml.math.exp(-1j * phi / 2)
         mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 3), c)
         mat = qml.math.scatter_element_add(mat, (3, 12), -s)

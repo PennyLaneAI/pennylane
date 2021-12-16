@@ -761,13 +761,13 @@ class QubitDevice(Device):
 
         # exact expectation value
         if self.shots is None:
-            try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            except NotImplementedError as e:
+            eigvals = observable.eigvals
+            if eigvals is None:
+                # eigenvalue representation is not defined
                 raise ValueError(
                     f"Cannot compute analytic expectations of {observable.name}."
-                ) from e
-
+                )
+            eigvals = self._asarray(eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
@@ -787,11 +787,11 @@ class QubitDevice(Device):
 
         # exact variance value
         if self.shots is None:
-            try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            except NotImplementedError as e:
-                # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute analytic variance of {observable.name}.") from e
+            eigvals = observable.eigvals
+            if eigvals is None:
+                # no eigenvalue representation defined
+                raise ValueError(f"Cannot compute analytic variance of {observable.name}.")
+            eigvals = self._asarray(eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=observable.wires)
             return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
 
@@ -829,11 +829,12 @@ class QubitDevice(Device):
             ]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
-            try:
-                samples = observable.eigvals[indices]
-            except NotImplementedError as e:
-                # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute samples of {observable.name}.") from e
+
+            evals = observable.eigvals
+            if evals is None:
+                # the eigenvalue representation is not defined
+                raise ValueError(f"Cannot compute samples of {observable.name}.")
+            samples = evals[indices]
 
         if bin_size is None:
             return samples

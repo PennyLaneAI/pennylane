@@ -498,10 +498,22 @@ class TestExpval:
         assert res == obs
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
-        """Tests that an error is thrown if expval is called with an observable that does not have eigenvalues defined."""
+        """Tests that an error is thrown if expval is called with an observable that does
+        not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            @property
+            def eigvals(self):
+                return None
+
+        obs = MyObs(wires=0)
+
         with pytest.raises(ValueError, match="Cannot compute analytic expectations"):
-            dev.expval(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.expval(obs)
 
 
 class TestVar:
@@ -551,8 +563,19 @@ class TestVar:
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            @property
+            def eigvals(self):
+                return None
+
+        obs = MyObs(wires=0)
+
         with pytest.raises(ValueError, match="Cannot compute analytic variance"):
-            dev.var(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+            dev.var(obs)
 
 
 class TestSample:
