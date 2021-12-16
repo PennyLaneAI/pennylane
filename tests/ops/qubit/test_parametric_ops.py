@@ -1268,7 +1268,7 @@ class TestPauliRot:
     def test_multirz_generator(self, pauli_word):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.PauliRot(0.3, pauli_word, wires=range(len(pauli_word)))
-        gen = op.generator
+        gen = op.generator()
 
         if pauli_word[0] == "I":
             # this is the identity
@@ -1283,10 +1283,8 @@ class TestPauliRot:
             else:
                 expected_gen = expected_gen @ getattr(qml, f"Pauli{pauli}")(wires=i)
 
-        expected_gen_mat = expected_gen.matrix()
+        assert gen.compare(-0.5 * expected_gen)
 
-        assert np.allclose(gen[0], expected_gen_mat)
-        assert gen[1] == -0.5
 
     @pytest.mark.gpu
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
@@ -1429,16 +1427,13 @@ class TestMultiRZ:
     def test_multirz_generator(self, qubits, mocker):
         """Test that the generator of the MultiRZ gate is correct."""
         op = qml.MultiRZ(0.3, wires=range(qubits))
-        gen = op.generator
+        gen = op.generator()
 
         expected_gen = qml.PauliZ(wires=0)
         for i in range(1, qubits):
             expected_gen = expected_gen @ qml.PauliZ(wires=i)
 
-        expected_gen_mat = expected_gen.matrix()
-
-        assert np.allclose(gen[0], expected_gen_mat)
-        assert gen[1] == -0.5
+        assert gen.compare(-0.5 * expected_gen)
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 
