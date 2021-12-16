@@ -439,8 +439,8 @@ class DoubleExcitationPlus(Operation):
     def generator(self):
         G = -1 * np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
-        G[3, 12] = -1j # 3 (dec) = 0011 (bin)
-        G[12, 3] = 1j # 12 (dec) = 1100 (bin)
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = coo_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
@@ -513,8 +513,8 @@ class DoubleExcitationMinus(Operation):
         G = np.eye(16, dtype=np.complex64)
         G[3, 3] = 0
         G[12, 12] = 0
-        G[3, 12] = -1j # 3 (dec) = 0011 (bin)
-        G[12, 3] = 1j # 12 (dec) = 1100 (bin)
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = coo_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 

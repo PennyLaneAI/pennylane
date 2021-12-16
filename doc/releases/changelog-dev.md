@@ -26,9 +26,9 @@
 
 The Operator class has undergone a major refactor with the following changes:
 
-* The `diagonalizing_gates()` representation has been moved to the highest-level 
-  `Operator` class and is therefore available to all subclasses. A condition 
-  `qml.operation.defines_diagonalizing_gates` has been added, which can be used 
+* The `diagonalizing_gates()` representation has been moved to the highest-level
+  `Operator` class and is therefore available to all subclasses. A condition
+  `qml.operation.defines_diagonalizing_gates` has been added, which can be used
   in tape contexts without queueing.
   [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
 
@@ -38,9 +38,34 @@ The Operator class has undergone a major refactor with the following changes:
 * The `string_for_inverse` attribute is removed.
   [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
 
+* The generator property has been updated to an instance method,
+  `Operation.generator()`. It now returns an instantiated operation,
+  representing the generator of the instantiated operator.
+  [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
+
+  Various operators have been updated to specify the generator as either
+  an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
+  operator.
+
+  In addition, a temporary utility function get_generator has been added
+  to the utils module, to automate:
+
+  - Extracting the matrix representation
+  - Extracting the 'coefficient' if possible (only occurs if the generator is a single Pauli word)
+  - Converting a Hamiltonian to a sparse matrix if there are more than 1 Pauli word present.
+  - Negating the coefficient/taking the adjoint of the matrix if the operation was inverted
+
+  This utility logic is currently needed because:
+
+  - Extracting the matrix representation is not supported natively on
+    Hamiltonians and SparseHamiltonians.
+  - By default, calling `op.generator()` does not take into account `op.inverse()`.
+  - If the generator is a single Pauli word, it is convenient to have access to
+    both the coefficient and the observable separately.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Maria Schuld, David Wierichs
+Olivia Di Matteo, Josh Izaac, Christina Lee, Maria Schuld, David Wierichs.
 
