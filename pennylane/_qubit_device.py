@@ -24,7 +24,6 @@ import itertools
 import warnings
 
 import numpy as np
-from jax.errors import TracerArrayConversionError
 
 import pennylane as qml
 from pennylane.operation import (
@@ -211,11 +210,7 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-
-                try:
-                    r = qml.math.squeeze(r)
-                except TracerArrayConversionError:  # when using jit, the squeeze method tries to cast
-                    r = r[0]  # r as a numpy array, so here we manually 'squeeze' it
+                r = qml.math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
