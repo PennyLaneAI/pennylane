@@ -211,7 +211,7 @@ class QubitDevice(Device):
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
 
-                if isinstance(r, list):
+                if type(r) == 'list':
                     r = r[0]
                 else:
                     r = qml.math.squeeze(r)
