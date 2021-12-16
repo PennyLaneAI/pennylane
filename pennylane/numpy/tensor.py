@@ -125,7 +125,7 @@ class tensor(_np.ndarray):
 
     def __repr__(self):
         string = super().__repr__()
-        return string[:-1] + ", requires_grad={})".format(self.requires_grad)
+        return string[:-1] + f", requires_grad={self.requires_grad})"
 
     def __array_wrap__(self, obj):
         out_arr = tensor(obj, requires_grad=self.requires_grad)
@@ -196,6 +196,24 @@ class tensor(_np.ndarray):
             return hash((self.item(), self.requires_grad))
 
         raise TypeError("unhashable type: 'numpy.tensor'")
+
+    def __reduce__(self):
+        # Called when pickling the object.
+        # Numpy ndarray uses __reduce__ instead of __getstate__ to prepare an object for
+        # pickling. self.requires_grad needs to be included in the tuple returned by
+        # __reduce__ in order to be preserved in the unpickled object.
+        reduced_obj = super().__reduce__()
+        # The last (2nd) element of this tuple holds the data. Add requires_grad to this:
+        full_reduced_data = reduced_obj[2] + (self.requires_grad,)
+        return (reduced_obj[0], reduced_obj[1], full_reduced_data)
+
+    def __setstate__(self, reduced_obj) -> None:
+        # Called when unpickling the object.
+        # Set self.requires_grad with the last element in the tuple returned by __reduce__:
+        # pylint: disable=attribute-defined-outside-init
+        self.requires_grad = reduced_obj[-1]
+        # And call parent's __setstate__ without this element:
+        super().__setstate__(reduced_obj[:-1])
 
     def unwrap(self):
         """Converts the tensor to a standard, non-differentiable NumPy ndarray or Python scalar if
@@ -285,7 +303,7 @@ def tensor_to_arraybox(x, *args):
             return ArrayBox(x, *args)
 
         raise NonDifferentiableError(
-            "{} is non-differentiable. Set the requires_grad attribute to True.".format(x)
+            f"{x} is non-differentiable. Set the requires_grad attribute to True."
         )
 
     return ArrayBox(x, *args)

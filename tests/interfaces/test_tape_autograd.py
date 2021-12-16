@@ -46,7 +46,7 @@ class TestAutogradQuantumTape:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
-        assert tape.trainable_params == {0, 2}
+        assert tape.trainable_params == [0, 2]
         assert np.all(tape.get_parameters(trainable_only=True) == [a, c])
         assert np.all(tape.get_parameters(trainable_only=False) == [a, b, c, d])
 
@@ -60,7 +60,7 @@ class TestAutogradQuantumTape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
-            assert tape.trainable_params == {0}
+            assert tape.trainable_params == [0]
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=1)
@@ -75,7 +75,7 @@ class TestAutogradQuantumTape:
             with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            assert tape.trainable_params == {0}
+            assert tape.trainable_params == [0]
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=2)
@@ -87,7 +87,7 @@ class TestAutogradQuantumTape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
+        tape.trainable_params = [0]
         expected = tape.jacobian(dev)
         assert expected.shape == (1, 1)
         assert np.allclose(res, np.squeeze(expected), atol=tol, rtol=0)
@@ -104,7 +104,7 @@ class TestAutogradQuantumTape:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
-            assert tape.trainable_params == {0, 1}
+            assert tape.trainable_params == [0, 1]
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=2)
@@ -156,7 +156,7 @@ class TestAutogradQuantumTape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
             tape.set_parameters([a, b])
@@ -192,7 +192,7 @@ class TestAutogradQuantumTape:
                 qml.RZ(b, wires=0)
                 qml.RX(c + c ** 2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
-            assert tape.trainable_params == {0, 2}
+            assert tape.trainable_params == [0, 2]
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=2)
@@ -211,7 +211,7 @@ class TestAutogradQuantumTape:
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
-            assert tape.trainable_params == set()
+            assert tape.trainable_params == []
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=2)
@@ -240,7 +240,7 @@ class TestAutogradQuantumTape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
-            assert tape.trainable_params == {1}
+            assert tape.trainable_params == [1]
             return tape.execute(device)
 
         dev = qml.device("default.qubit", wires=2)
@@ -276,7 +276,7 @@ class TestAutogradQuantumTape:
 
             tape = AutogradInterface.apply(tape.expand())
 
-            assert tape.trainable_params == {1, 2, 3, 4}
+            assert tape.trainable_params == [1, 2, 3, 4]
             assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
             assert np.all(np.array(tape.get_parameters()) == [p[2], p[0], -p[2], p[1] + p[2]])
 

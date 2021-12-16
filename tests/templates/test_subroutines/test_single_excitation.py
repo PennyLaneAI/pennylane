@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the SingleExcitationUnitary template.
+Tests for the FermionicSingleExcitation template.
 """
 import pytest
 import numpy as np
@@ -81,14 +81,14 @@ class TestDecomposition:
         ],
     )
     def test_single_ex_unitary_operations(self, single_wires, ref_gates):
-        """Test the correctness of the SingleExcitationUnitary template including the gate count
+        """Test the correctness of the FermionicSingleExcitation template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
 
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
-        op = qml.SingleExcitationUnitary(weight, wires=single_wires)
+        op = qml.FermionicSingleExcitation(weight, wires=single_wires)
         queue = op.expand().operations
 
         assert len(queue) == sqg + cnots
@@ -116,12 +116,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.SingleExcitationUnitary(0.4, wires=[1, 0, 2])
+            qml.FermionicSingleExcitation(0.4, wires=[1, 0, 2])
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.SingleExcitationUnitary(0.4, wires=["a", "z", "k"])
+            qml.FermionicSingleExcitation(0.4, wires=["a", "z", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -142,12 +142,12 @@ class TestInputs:
         ],
     )
     def test_single_excitation_unitary_exceptions(self, weight, single_wires, msg_match):
-        """Test that SingleExcitationUnitary throws an exception if ``weight`` or
+        """Test that FermionicSingleExcitation throws an exception if ``weight`` or
         ``single_wires`` parameter has illegal shapes, types or values."""
         dev = qml.device("default.qubit", wires=5)
 
         def circuit(weight=weight):
-            qml.SingleExcitationUnitary(weight=weight, wires=single_wires)
+            qml.FermionicSingleExcitation(weight=weight, wires=single_wires)
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, dev)
@@ -157,12 +157,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.SingleExcitationUnitary(0.4, wires=[1, 0, 2], id="a")
+        template = qml.FermionicSingleExcitation(0.4, wires=[1, 0, 2], id="a")
         assert template.id == "a"
 
 
 def circuit_template(weight):
-    qml.SingleExcitationUnitary(weight, wires=[0, 1])
+    qml.FermionicSingleExcitation(weight, wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 

@@ -177,10 +177,24 @@ class ExpvalCost:
 
             def cost_fn(*qnode_args, **qnode_kwargs):
                 """Combine results from grouped QNode executions with grouped coefficients"""
-                total = 0
-                for o, c in zip(obs_groupings, coeffs_groupings):
-                    res = circuit(*qnode_args, obs=o, **qnode_kwargs)
-                    total += sum([r * c_ for r, c_ in zip(res, c)])
+                if device.shot_vector:
+                    shots_batch = 0
+
+                    for i in device.shot_vector:
+                        shots_batch += i[1]
+
+                    total = [0] * shots_batch
+
+                    for o, c in zip(obs_groupings, coeffs_groupings):
+                        res = circuit(*qnode_args, obs=o, **qnode_kwargs)
+
+                        for i, batch_res in enumerate(res):
+                            total[i] += sum(batch_res * c)
+                else:
+                    total = 0
+                    for o, c in zip(obs_groupings, coeffs_groupings):
+                        res = circuit(*qnode_args, obs=o, **qnode_kwargs)
+                        total += sum([r * c_ for r, c_ in zip(res, c)])
                 return total
 
             self.cost_fn = cost_fn

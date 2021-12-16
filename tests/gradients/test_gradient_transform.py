@@ -135,6 +135,46 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_multiple_tensor_arguments(self, tol):
+        """Test that a gradient transform acts on QNodes
+        correctly when multiple tensor QNode arguments are present"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x[0, 0], wires=0)
+            qml.RY(y[0, 0], wires=0)
+            qml.RZ(x[1, 0], wires=0)
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([[0.1], [0.2]], requires_grad=True)
+        y = np.array([[0.2], [0.3]], requires_grad=True)
+
+        expected = qml.jacobian(circuit)(x, y)
+        res = qml.gradients.param_shift(circuit)(x, y)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_first_non_trainable_argument(self, tol):
+        """Test that a gradient transform acts on QNodes
+        correctly when the first argument is non-trainable"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(y[0], wires=0)
+            qml.RY(y[0], wires=0)
+            qml.RZ(y[1], wires=0)
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1], requires_grad=False)
+        y = np.array([0.2, 0.3], requires_grad=True)
+
+        expected = qml.jacobian(circuit)(x, y)
+        res = qml.gradients.param_shift(circuit)(x, y)
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_classical_processing_arguments(self, mocker, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed"""
@@ -241,7 +281,7 @@ class TestGradientTransformIntegration:
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.beta.qnode(dev, expansion_strategy=strategy)
+        @qml.qnode(dev, expansion_strategy=strategy)
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qml.probs(wires=[0, 1])
@@ -259,7 +299,7 @@ class TestGradientTransformIntegration:
 
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -279,7 +319,7 @@ class TestGradientTransformIntegration:
         """Raise an exception if shots is used within the QNode"""
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
-        @qml.beta.qnode(dev)
+        @qml.qnode(dev)
         def circuit(x, shots):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))

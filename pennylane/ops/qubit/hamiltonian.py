@@ -160,8 +160,6 @@ class Hamiltonian(Observable):
     """
 
     num_wires = qml.operation.AnyWires
-    num_params = 1
-    par_domain = "A"
     grad_method = "A"  # supports analytic gradients
 
     def __init__(
@@ -206,8 +204,6 @@ class Hamiltonian(Observable):
                 )
 
         coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
-        # overwrite this attribute, now that we have the correct info
-        self.num_params = qml.math.shape(self._coeffs)[0]
 
         # create the operator using each coefficient as a separate parameter;
         # this causes H.data to be a list of tensor scalars,
@@ -299,8 +295,8 @@ class Hamiltonian(Observable):
             or any(i not in range(len(self.ops)) for i in [i for sl in value for i in sl])
         ):
             raise ValueError(
-                "The grouped index value needs to be a list of lists of integers between 0 and the "
-                "number of observables in the Hamiltonian; got {}".format(value)
+                f"The grouped index value needs to be a list of lists of integers between 0 and the "
+                f"number of observables in the Hamiltonian; got {value}"
             )
         self._grouping_indices = value
 

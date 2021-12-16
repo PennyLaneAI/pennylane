@@ -29,7 +29,7 @@ import pennylane as qml
 def test_adjoint_with_decomposition(op_builder):
     """Tests the ``QubitCarry`` op under adjoint and decomposition."""
     op = op_builder()
-    decomposed_ops = op.decomposition(wires=op.wires)
+    decomposed_ops = op.decompose()
     with qml.tape.QuantumTape() as adjoint_tape:
         qml.adjoint(op_builder)()
     for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):

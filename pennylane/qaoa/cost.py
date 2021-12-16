@@ -63,7 +63,7 @@ def bit_driver(wires, b):
     elif b == 1:
         coeffs = [1 for _ in wires]
     else:
-        raise ValueError("'b' must be either 0 or 1, got {}".format(b))
+        raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
     ops = [qml.PauliZ(w) for w in wires]
     return qml.Hamiltonian(coeffs, ops)

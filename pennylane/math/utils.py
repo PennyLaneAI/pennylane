@@ -200,6 +200,119 @@ def get_interface(tensor):
     return res
 
 
+def is_abstract(tensor, like=None):
+    """Returns True if the tensor is considered abstract.
+
+    Abstract arrays have no internal value, and are used primarily when
+    tracing Python functions, for example, in order to perform just-in-time
+    (JIT) compilation.
+
+    Abstract tensors most commonly occur within a function that has been
+    decorated using ``@tf.function`` or ``@jax.jit``.
+
+    .. note::
+
+        Currently Autograd tensors and Torch tensors will always return ``False``.
+        This is because:
+
+        - Autograd does not provide JIT compilation, and
+
+        - ``@torch.jit.script`` is not currently compatible with QNodes.
+
+    Args:
+        tensor (tensor_like): input tensor
+        like (str): The name of the interface. Will be determined automatically
+            if not provided.
+
+    Returns:
+        bool: whether the tensor is abstract or not
+
+    **Example**
+
+    Consider the following JAX function:
+
+    .. code-block:: python
+
+        import jax
+        from jax import numpy as jnp
+
+        def function(x):
+            print("Value:", x)
+            print("Abstract:", qml.math.is_abstract(x))
+            return jnp.sum(x ** 2)
+
+    When we execute it, we see that the tensor is not abstract; it has known value:
+
+    >>> x = jnp.array([0.5, 0.1])
+    >>> function(x)
+    Value: [0.5, 0.1]
+    Abstract: False
+    DeviceArray(0.26, dtype=float32)
+
+    However, if we use the ``@jax.jit`` decorator, the tensor will now be abstract:
+
+    >>> x = jnp.array([0.5, 0.1])
+    >>> jax.jit(function)(x)
+    Value: Traced<ShapedArray(float32[2])>with<DynamicJaxprTrace(level=0/1)>
+    Abstract: True
+    DeviceArray(0.26, dtype=float32)
+
+    Note that JAX uses an abstract *shaped* array, so although we won't be able to
+    include conditionals within our function that depend on the value of the tensor,
+    we *can* include conditionals that depend on the shape of the tensor.
+
+    Similarly, consider the following TensorFlow function:
+
+    .. code-block:: python
+
+        import tensorflow as tf
+
+        def function(x):
+            print("Value:", x)
+            print("Abstract:", qml.math.is_abstract(x))
+            return tf.reduce_sum(x ** 2)
+
+    >>> x = tf.Variable([0.5, 0.1])
+    >>> function(x)
+    Value: <tf.Variable 'Variable:0' shape=(2,) dtype=float32, numpy=array([0.5, 0.1], dtype=float32)>
+    Abstract: False
+    <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
+
+    If we apply the ``@tf.function`` decorator, the tensor will now be abstract:
+
+    >>> tf.function(function)(x)
+    Value: <tf.Variable 'Variable:0' shape=(2,) dtype=float32>
+    Abstract: True
+    <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
+    """
+    interface = like or get_interface(tensor)
+
+    if interface == "jax":
+        import jax
+        from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+        if isinstance(tensor, (jax.ad.JVPTracer, jax.interpreters.batching.BatchTracer)):
+            # Tracer objects will be used when computing gradients or applying transforms.
+            # If the value of the tracer is known, it will contain a ConcreteArray.
+            # Otherwise, it will be abstract.
+            return not isinstance(tensor.aval, jax.core.ConcreteArray)
+
+        return isinstance(tensor, DynamicJaxprTracer)
+
+    if interface == "tensorflow":
+        import tensorflow as tf
+        from tensorflow.python.framework.ops import EagerTensor
+
+        return not isinstance(tf.convert_to_tensor(tensor), EagerTensor)
+
+    # Autograd does not have a JIT
+
+    # QNodes do not currently support TorchScript:
+    #   NotSupportedError: Compiled functions can't take variable number of arguments or
+    #   use keyword-only arguments with defaults.
+    return False
+
+
 def requires_grad(tensor, interface=None):
     """Returns True if the tensor is considered trainable.
 

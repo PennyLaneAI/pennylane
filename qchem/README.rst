@@ -32,7 +32,7 @@ Installation
 
 PennyLane-Qchem requires Python version 3.5 and above, and the following dependencies:
 
-* `pySCF <https://sunqm.github.io/pyscf>`__
+* `pySCF <https://sunqm.github.io/pyscf>`__ < 2.0
   and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.5
 
 * (optional) `Psi4 <http://www.psicode.org/>`__

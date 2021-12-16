@@ -50,7 +50,7 @@ class DefaultQubitAutograd(DefaultQubit):
     ...     qml.RX(x[1], wires=0)
     ...     qml.Rot(x[0], x[1], x[2], wires=0)
     ...     return qml.expval(qml.PauliZ(0))
-    >>> weights = np.array([0.2, 0.5, 0.1])
+    >>> weights = np.array([0.2, 0.5, 0.1], requires_grad=True)
     >>> grad_fn = qml.grad(circuit)
     >>> print(grad_fn(weights))
     array([-2.2526717e-01 -1.0086454e+00  1.3877788e-17])

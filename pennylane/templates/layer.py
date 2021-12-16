@@ -15,7 +15,6 @@ r"""
 Contains the ``layer`` template constructor.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-from pennylane.templates.decorator import template as temp
 from pennylane.math import shape
 
 
@@ -33,13 +32,10 @@ def _preprocess(args, depth):
 
         if shape(arg)[0] != depth:
             raise ValueError(
-                "Each positional argument must have length matching 'depth'; expected {} got {}".format(
-                    depth, len(arg)
-                )
+                f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
             )
 
 
-@temp
 def layer(template, depth, *args, **kwargs):
     r"""Repeatedly applies a unitary a given number of times.
 

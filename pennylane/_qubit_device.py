@@ -420,7 +420,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
-                    "Unsupported return type specified for observable {}".format(obs.name)
+                    f"Unsupported return type specified for observable {obs.name}"
                 )
 
         return results
@@ -920,7 +920,7 @@ class QubitDevice(Device):
         for op in reversed(tape.operations):
             if op.num_params > 1:
                 if isinstance(op, qml.Rot) and not op.inverse:
-                    ops = op.decomposition(*op.parameters, wires=op.wires)
+                    ops = op.decompose()
                     expanded_ops.extend(reversed(ops))
                 else:
                     raise qml.QuantumFunctionError(

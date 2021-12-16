@@ -14,6 +14,7 @@
 """This module contains a PyTorch implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import warnings
 import semantic_version
 
 try:
@@ -27,7 +28,7 @@ except ImportError as e:
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
-from pennylane.operation import DiagonalOperation
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from . import DefaultQubit
 
 
@@ -125,7 +126,8 @@ class DefaultQubitTorch(DefaultQubit):
             If ``shots > 0`` is used, the ``diff_method="backprop"``
             QNode differentiation method is not supported and it is recommended to consider
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
-        torch_device='cpu' (str): the device on which the computation will be run, ``'cpu'`` or ``'cuda'``
+        torch_device='cpu' (str): the device on which the computation will be
+        run, e.g., ``'cpu'`` or ``'cuda'``
     """
 
     name = "Default qubit (Torch) PennyLane plugin"
@@ -152,9 +154,12 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
-        self._torch_device = "cpu"
+        # Store if the user specified a Torch device. Otherwise the execute
+        # method attempts to infer the Torch device from the gate parameters.
+        self._torch_device_specified = torch_device is not None
+        self._torch_device = torch_device
 
         super().__init__(wires, shots=shots, cache=0, analytic=analytic)
 
@@ -163,13 +168,67 @@ class DefaultQubitTorch(DefaultQubit):
         self._state = self._state.to(self._torch_device)
         self._pre_rotated_state = self._state
 
+    @staticmethod
+    def _get_parameter_torch_device(ops):
+        """An auxiliary function to determine the Torch device specified for
+        the gate parameters of the input operations.
+
+        Returns the first CUDA Torch device found (if any) using a string
+        format. Does not handle tensors put on multiple CUDA Torch devices.
+        Such a case raises an error with Torch.
+
+        If CUDA is not used with any of the parameters, then specifies the CPU
+        if the parameters are on the CPU or None if there were no parametric
+        operations.
+
+        Args:
+            ops (list[Operator]): list of operations to check
+
+        Returns:
+            str or None: The string of the Torch device determined or None if
+            there is no data for any operations.
+        """
+        par_torch_device = None
+        for op in ops:
+            for data in op.data:
+
+                # Using hasattr in case we don't have a Torch tensor as input
+                if hasattr(data, "is_cuda"):
+                    if data.is_cuda:  # pragma: no cover
+                        return ":".join([data.device.type, str(data.device.index)])
+
+                    par_torch_device = "cpu"
+
+        return par_torch_device
+
     def execute(self, circuit, **kwargs):
         ops_and_obs = circuit.operations + circuit.observables
-        if any(data.is_cuda for op in ops_and_obs for data in op.data if hasattr(data, "is_cuda")):
-            self._torch_device = "cuda"
+
+        par_torch_device = self._get_parameter_torch_device(ops_and_obs)
+
+        if not self._torch_device_specified:
+            self._torch_device = par_torch_device
+
+            # If we've changed the device of the parameters between device
+            # executions, need to move the state to the correct Torch device
+            if self._state.device != self._torch_device:
+                self._state = self._state.to(self._torch_device)
         else:
-            # need to reset in case last execution moved to cuda
-            self._torch_device = "cpu"
+            if par_torch_device is not None:  # pragma: no cover
+                params_cuda_device = "cuda" in par_torch_device
+                specified_device_cuda = "cuda" in self._torch_device
+
+                # Raise a warning if there's a mismatch between the specified and
+                # used Torch devices
+                if params_cuda_device != specified_device_cuda:
+
+                    warnings.warn(
+                        f"Torch device {self._torch_device} specified "
+                        "upon PennyLane device creation does not match the "
+                        "Torch device of the gate parameters; "
+                        f"{self._torch_device} will be used."
+                    )
+
         return super().execute(circuit, **kwargs)
 
     def _asarray(self, a, dtype=None):
@@ -237,7 +296,7 @@ class DefaultQubitTorch(DefaultQubit):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        if isinstance(unitary, DiagonalOperation):
+        if unitary in diagonal_in_z_basis:
             return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
 
@@ -257,17 +316,3 @@ class DefaultQubitTorch(DefaultQubit):
         return super().sample_basis_states(
             number_of_states, state_probability.cpu().detach().numpy()
         )
-
-    def _apply_operation(self, state, operation):
-        """Applies operations to the input state.
-
-        Args:
-            state (torch.Tensor[complex]): input state
-            operation (~.Operation): operation to apply on the device
-
-        Returns:
-            torch.Tensor[complex]: output state
-        """
-        if state.device != self._torch_device:
-            state = state.to(self._torch_device)
-        return super()._apply_operation(state, operation)

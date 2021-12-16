@@ -148,9 +148,9 @@ For example:
 Executing this, we will get an output of size ``(3, 2)``:
 
 >>> circuit(0.5)
-[[0.33333333 1.        ]
-[0.2        1.        ]
-[0.012      0.868     ]]
+tensor([[ 1.   ,  1.   ],
+        [ 0.2  ,  1.   ],
+        [-0.022,  0.876]], requires_grad=True)
 
 Custom wire labels
 ^^^^^^^^^^^^^^^^^^
@@ -166,7 +166,7 @@ This is done by passing an iterable of wire labels to the ``wires`` argument:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=['wire1', 'wire2'], shots=1000)
+    dev = qml.device('default.qubit', wires=['wire1', 'wire2'])
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -180,13 +180,13 @@ In the quantum function you can now use your own labels to address wires:
 
 Allowed wire labels can be of the following types:
 
-* *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['ancilla', 'q1', 'q2', ...]``,
+* *strings* like ``wires=['a', 'd', 'b', ...]`` or ``wires=['auxiliary', 'q1', 'q2', ...]``,
 
 * *integers* like ``wires=[0, 4, 7]`` or even ``wires=[-1, 0, 4]``
 
 * *floats* and other *numbers* like ``wires=[1., 2., 4.]``
 
-* *mixed types* like ``wires=['ancilla', -1, 0, 'q3']``
+* *mixed types* like ``wires=['auxiliary', -1, 0, 'q3']``
 
 .. note::
 
@@ -212,14 +212,14 @@ The QNode can be used to compute the result of a quantum circuit as if it was a 
 function. It takes the same arguments as the original quantum function:
 
 >>> circuit(np.pi/4, 0.7)
-0.7648421872844883
+tensor(0.764, requires_grad=True)
 
 To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
 transform:
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
-0: ──RZ(0.785)──╭C───────────┤
-1: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩
+ wire1: ──RZ(0.785)──╭C───────────┤     
+ wire2: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩ 
 
 .. _intro_vcirc_decorator:
 
@@ -328,7 +328,6 @@ pennylane.collections.qnode_collection.QNodeCollection
 >>> params = [0.54, 0.12]
 >>> qnodes(params)
 array([-0.02854835  0.99280864])
-
 Functions are available to process QNode collections, including :func:`~.pennylane.collections.dot`,
 :func:`~.pennylane.collections.sum`, and :func:`~.pennylane.collections.apply`:
 

@@ -49,9 +49,9 @@ E = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / n
 Edag = E.conj().T
 
 # Helpful to have static copies of these since they are needed in a few places.
-CNOT01 = qml.CNOT(wires=[0, 1]).matrix
+CNOT01 = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
-SWAP = qml.SWAP(wires=[0, 1]).matrix
+SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
 # S \otimes SX
 S_SX = np.array(
@@ -181,7 +181,7 @@ def _su2su2_to_tensor_products(U):
         a2 *= -1
 
     # Construct A
-    A = math.stack([[a1, a2], [-math.conj(a2), math.conj(a1)]])
+    A = math.stack([math.stack([a1, a2]), math.stack([-math.conj(a2), math.conj(a1)])])
 
     # Next, extract B. Can do from any of the C, just need to be careful in
     # case one of the elements of A is 0.
@@ -611,9 +611,8 @@ def two_qubit_decomposition(U, wires):
     # If there is an active tape, queue the decomposition so that expand works
     current_tape = qml.tape.get_active_tape()
 
-    if current_tape:
-        with current_tape:
-            for op in decomp:
-                qml.apply(op)
+    if current_tape is not None:
+        for op in decomp:
+            qml.apply(op, context=current_tape)
 
     return decomp

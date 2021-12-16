@@ -196,7 +196,7 @@ def bit_flip_mixer(graph, b):
         )
 
     if b not in [0, 1]:
-        raise ValueError("'b' must be either 0 or 1, got {}".format(b))
+        raise ValueError(f"'b' must be either 0 or 1, got {b}")
 
     sign = 1 if b == 0 else -1
 

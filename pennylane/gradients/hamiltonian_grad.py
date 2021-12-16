@@ -29,6 +29,7 @@ def hamiltonian_grad(tape, idx, params=None):
     new_tape = tape.copy(copy_operations=True)
 
     if params is not None:
+        # TODO: remove the params argument when the old QNode is removed
         new_tape.set_parameters(params=params)
 
     # get position in queue

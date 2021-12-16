@@ -35,7 +35,7 @@ class CVNeuralNetLayers(Operation):
 
     This example shows a 4-mode CVNeuralNet layer with squeezing gates :math:`S`, displacement gates :math:`D` and
     Kerr gates :math:`K`. The two big blocks are interferometers of type
-    :mod:`pennylane.templates.layers.Interferometer`:
+    :mod:`pennylane.Interferometer`:
 
     .. figure:: ../../_static/layer_cvqnn.png
         :align: center
@@ -61,7 +61,7 @@ class CVNeuralNetLayers(Operation):
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable): wires that the template acts on
 
-    .. UsageDetails:
+    .. UsageDetails::
 
         **Parameter shapes**
 
@@ -80,9 +80,7 @@ class CVNeuralNetLayers(Operation):
 
     """
 
-    num_params = 11
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(
@@ -104,6 +102,7 @@ class CVNeuralNetLayers(Operation):
     ):
 
         n_wires = len(wires)
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         # check that first dimension is the same
@@ -140,13 +139,17 @@ class CVNeuralNetLayers(Operation):
             id=id,
         )
 
+    @property
+    def num_params(self):
+        return 11
+
     def expand(self):
 
         with qml.tape.QuantumTape() as tape:
 
             for l in range(self.n_layers):
 
-                qml.templates.Interferometer(
+                qml.Interferometer(
                     theta=self.parameters[0][l],
                     phi=self.parameters[1][l],
                     varphi=self.parameters[2][l],
@@ -158,7 +161,7 @@ class CVNeuralNetLayers(Operation):
                         self.parameters[3][l, i], self.parameters[4][l, i], wires=self.wires[i]
                     )
 
-                qml.templates.Interferometer(
+                qml.Interferometer(
                     theta=self.parameters[5][l],
                     phi=self.parameters[6][l],
                     varphi=self.parameters[7][l],
@@ -173,6 +176,9 @@ class CVNeuralNetLayers(Operation):
                 for i in range(len(self.wires)):
                     qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod
@@ -186,6 +192,7 @@ class CVNeuralNetLayers(Operation):
         Returns:
             list[tuple[int]]: list of shapes
         """
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         shapes = (
@@ -196,3 +203,8 @@ class CVNeuralNetLayers(Operation):
         )
 
         return shapes
+
+    def adjoint(self):  # pylint: disable=arguments-differ
+        adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

@@ -88,8 +88,51 @@ Device gradients
     If not specified, the default differentiation method is ``diff_method="best"``. PennyLane
     will attempt to determine the *best* differentiation method given the device and interface.
     Typically, PennyLane will prioritize device-provided gradients, backpropagation, parameter-shift
-    rule, and finally finite-differences, in that order.
+    rule, and finally finite differences, in that order.
 
+
+Gradient transforms
+-------------------
+
+In addition to registering the differentiation method of QNodes to be used with autodifferentiation
+frameworks, PennyLane also provides a library of **gradient transforms** via the
+:mod:`qml.gradients <pennylane.gradients>` module.
+
+Quantum gradient transforms are strategies for computing the gradient of a quantum
+circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
+They accompany these circuits with a function that **post-processes** their output.
+These gradient circuits, once executed and post-processed, return the gradient
+of the original circuit.
+
+Examples of quantum gradient transforms include finite-difference rules and parameter-shift
+rules; these can be applied *directly* to QNodes:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(weights):
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RX(weights[2], wires=1)
+        return qml.probs(wires=1)
+
+>>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> circuit(weights)
+tensor([0.9658079, 0.0341921], requires_grad=True)
+>>> qml.gradients.param_shift(circuit)(weights)
+tensor([[-0.04673668, -0.09442394, -0.14409127],
+        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+
+Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
+this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
+``qml.grad()`` if using Autograd, ``loss.backward()`` for PyTorch, or ``tape.gradient()`` for TensorFlow).
+This is because gradient transforms do not take into account classical processing, and only support
+gradients of quantum components.
+For more details on available gradient transforms, as well as learning how to define your own
+gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
 
 Training and interfaces
 -----------------------
@@ -98,7 +141,7 @@ The bridge between the quantum and classical worlds is provided in PennyLane via
 Currently, there are four built-in interfaces: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
 <interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. These
 interfaces make each of these libraries quantum-aware, allowing quantum circuits to be treated just
-like any other operation.
+like any other operation. Any interface can be chosen with any device.
 
 In PennyLane, an interface is declared when creating a :class:`QNode <pennylane.QNode>`, e.g.,
 
@@ -116,6 +159,11 @@ This will allow native numerical objects of the specified library (NumPy arrays,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
 optimization of arbitrary hybrid circuits.
+
+When specifying an interface, the objects of the chosen framework are converted
+into NumPy objects and are passed to a device in most cases. Exceptions include
+cases when the devices support end-to-end computations in a framework. Such
+devices may be referred to as backpropagation or passthru devices.
 
 See the links below for walkthroughs of each specific interface:
 

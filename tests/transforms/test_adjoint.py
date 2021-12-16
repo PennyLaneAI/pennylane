@@ -53,6 +53,18 @@ def test_adjoint_directly_on_op():
     np.testing.assert_allclose(my_circuit(), np.array([0.92388, 0.382683j]), atol=1e-6, rtol=1e-6)
 
 
+def test_barrier_adjoint():
+    """Check that the adjoint for the Barrier is working"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        qml.adjoint(qml.Barrier)(wires=0)
+        return qml.state()
+
+    assert my_circuit()[0] == 1.0
+
+
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)
@@ -138,8 +150,8 @@ class TestOutsideOfQueuing:
     def test_cv_template_adjoint(self):
         """Test that the adjoint correctly inverts CV templates"""
         template, par, wires = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]
-        result = qml.adjoint(template)(*par, wires=wires)
-        expected_ops = template(*par, wires=wires)
+        result = qml.adjoint(template)(*par, wires=wires).expand().operations
+        expected_ops = template(*par, wires=wires).expand().operations
 
         for o1, o2 in zip(result, reversed(expected_ops)):
             o2 = o2.adjoint()
@@ -378,7 +390,7 @@ class TestTemplateIntegration:
     def test_single_excitation(self):
         """Test that the adjoint correctly inverts the single excitation unitary"""
         dev = qml.device("default.qubit", wires=3)
-        template = qml.templates.SingleExcitationUnitary
+        template = qml.templates.FermionicSingleExcitation
 
         @qml.qnode(dev)
         def circuit(weights):
@@ -395,7 +407,7 @@ class TestTemplateIntegration:
     def test_double_excitation(self):
         """Test that the adjoint correctly inverts the double excitation unitary"""
         dev = qml.device("default.qubit", wires=4)
-        template = qml.templates.DoubleExcitationUnitary
+        template = qml.templates.FermionicDoubleExcitation
 
         @qml.qnode(dev)
         def circuit(weights):

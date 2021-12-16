@@ -240,15 +240,13 @@ class TorchLayer(Module):
 
         if self.input_arg not in sig:
             raise TypeError(
-                "QNode must include an argument with name {} for inputting data".format(
-                    self.input_arg
-                )
+                f"QNode must include an argument with name {self.input_arg} for inputting data"
             )
 
         if self.input_arg in set(weight_shapes.keys()):
             raise ValueError(
-                "{} argument should not have its dimension specified in "
-                "weight_shapes".format(self.input_arg)
+                f"{self.input_arg} argument should not have its dimension specified in "
+                f"weight_shapes"
             )
 
         param_kinds = [p.kind for p in sig.values()]

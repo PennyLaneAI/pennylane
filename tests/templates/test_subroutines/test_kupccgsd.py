@@ -84,19 +84,17 @@ class TestDecomposition:
         weights = np.random.normal(0, 2 * np.pi, (k, n_excit_terms))
 
         n_gates = 1 + n_excit_terms * k
-        exp_unitary = [qml.templates.DoubleExcitationUnitary] * len(pair_double_terms_wires)
-        exp_unitary += [qml.templates.SingleExcitationUnitary] * len(gen_single_terms_wires)
+        exp_unitary = [qml.FermionicDoubleExcitation] * len(pair_double_terms_wires)
+        exp_unitary += [qml.FermionicSingleExcitation] * len(gen_single_terms_wires)
 
-        op = qml.templates.kUpCCGSD(
-            weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state
-        )
+        op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
         queue = op.expand().operations
 
         # number of gates
         assert len(queue) == n_gates
 
         # initialization
-        assert isinstance(queue[0], qml.templates.BasisEmbedding)
+        assert isinstance(queue[0], qml.BasisEmbedding)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_unitary):
@@ -132,7 +130,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.kUpCCGSD(
+            qml.kUpCCGSD(
                 weights,
                 wires=range(4),
                 k=1,
@@ -143,7 +141,7 @@ class TestDecomposition:
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.kUpCCGSD(
+            qml.kUpCCGSD(
                 weights,
                 wires=["z", "a", "k", "e"],
                 k=1,
@@ -246,7 +244,7 @@ class TestDecomposition:
 
         wires = range(num_qubits)
 
-        shape = qml.templates.kUpCCGSD.shape(k=k, n_wires=num_qubits, delta_sz=0)
+        shape = qml.kUpCCGSD.shape(k=k, n_wires=num_qubits, delta_sz=0)
         weight = np.pi / 2 * qml.math.ones(shape)
 
         dev = qml.device("default.qubit", wires=wires)
@@ -255,7 +253,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(weight):
-            qml.templates.kUpCCGSD(weight, wires=wires, k=k, delta_sz=0, init_state=init_state)
+            qml.kUpCCGSD(weight, wires=wires, k=k, delta_sz=0, init_state=init_state)
             return qml.state()
 
         circuit(weight)
@@ -331,14 +329,12 @@ class TestDecomposition:
         """Test the correctness of the wire indices for the generalized singles and paired doubles excitaitons
         used by the template."""
 
-        shape = qml.templates.kUpCCGSD.shape(k=1, n_wires=len(wires), delta_sz=delta_sz)
+        shape = qml.kUpCCGSD.shape(k=1, n_wires=len(wires), delta_sz=delta_sz)
         weights = np.pi / 2 * qml.math.ones(shape)
 
         ref_state = qml.math.array([1, 1, 0, 0])
 
-        op = qml.templates.kUpCCGSD(
-            weights, wires=wires, k=1, delta_sz=delta_sz, init_state=ref_state
-        )
+        op = qml.kUpCCGSD(weights, wires=wires, k=1, delta_sz=delta_sz, init_state=ref_state)
         gen_singles_wires, gen_doubles_wires = op.s_wires, op.d_wires
 
         assert gen_singles_wires == generalized_singles_wires
@@ -417,7 +413,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.kUpCCGSD(
+            qml.kUpCCGSD(
                 weights=weights,
                 wires=wires,
                 k=k,
@@ -433,7 +429,7 @@ class TestInputs:
 
     def test_id(self):
         """Test that the id attribute can be set."""
-        template = qml.templates.kUpCCGSD(
+        template = qml.kUpCCGSD(
             qml.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]]),
             wires=range(4),
             k=1,
@@ -461,7 +457,7 @@ class TestAttributes:
     def test_shape(self, k, n_wires, delta_sz, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor."""
 
-        shape = qml.templates.kUpCCGSD.shape(k, n_wires, delta_sz)
+        shape = qml.kUpCCGSD.shape(k, n_wires, delta_sz)
         assert shape == expected_shape
 
     def test_shape_exception_not_enough_qubits(self):
@@ -470,17 +466,17 @@ class TestAttributes:
         with pytest.raises(
             ValueError, match="This template requires the number of qubits to be greater than four"
         ):
-            qml.templates.kUpCCGSD.shape(k=2, n_wires=1, delta_sz=0)
+            qml.kUpCCGSD.shape(k=2, n_wires=1, delta_sz=0)
 
     def test_shape_exception_not_even_qubits(self):
         """Test that the shape function warns if the number of qubits are not even."""
 
         with pytest.raises(ValueError, match="This template requires an even number of qubits"):
-            qml.templates.kUpCCGSD.shape(k=2, n_wires=5, delta_sz=0)
+            qml.kUpCCGSD.shape(k=2, n_wires=5, delta_sz=0)
 
 
 def circuit_template(weights):
-    qml.templates.kUpCCGSD(
+    qml.kUpCCGSD(
         weights,
         wires=range(4),
         k=1,
@@ -492,12 +488,12 @@ def circuit_template(weights):
 
 def circuit_decomposed(weights):
     qml.BasisState(np.array([0, 0, 1, 1]), wires=[0, 1, 2, 3])
-    qml.templates.DoubleExcitationUnitary(weights[0][4], wires1=[0, 1], wires2=[2, 3])
-    qml.templates.DoubleExcitationUnitary(weights[0][5], wires1=[2, 3], wires2=[0, 1])
-    qml.templates.SingleExcitationUnitary(weights[0][0], wires=[0, 1, 2])
-    qml.templates.SingleExcitationUnitary(weights[0][1], wires=[1, 2, 3])
-    qml.templates.SingleExcitationUnitary(weights[0][2], wires=[2, 1, 0])
-    qml.templates.SingleExcitationUnitary(weights[0][3], wires=[3, 2, 1])
+    qml.FermionicDoubleExcitation(weights[0][4], wires1=[0, 1], wires2=[2, 3])
+    qml.FermionicDoubleExcitation(weights[0][5], wires1=[2, 3], wires2=[0, 1])
+    qml.FermionicSingleExcitation(weights[0][0], wires=[0, 1, 2])
+    qml.FermionicSingleExcitation(weights[0][1], wires=[1, 2, 3])
+    qml.FermionicSingleExcitation(weights[0][2], wires=[2, 1, 0])
+    qml.FermionicSingleExcitation(weights[0][3], wires=[3, 2, 1])
     return qml.expval(qml.PauliZ(0))
 
 

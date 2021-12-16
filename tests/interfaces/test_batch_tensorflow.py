@@ -267,7 +267,7 @@ class TestCaching:
 
         expected_runs_ideal = 1  # forward pass
         expected_runs_ideal += 2 * N  # Jacobian
-        expected_runs_ideal += 2 * N + 1  # Hessian diagonal
+        expected_runs_ideal += N + 1  # Hessian diagonal
         expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs_ideal
         assert expected_runs_ideal < nonideal_runs
@@ -337,7 +337,7 @@ class TestTensorFlowExecuteIntegration:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
+        tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
 
@@ -414,7 +414,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliY(1))
 
-            assert tape.trainable_params == {0, 1}
+            assert tape.trainable_params == [0, 1]
             res = execute([tape], dev, **execute_kwargs)[0]
 
         jac = t.jacobian(res, [a, b])
@@ -455,7 +455,7 @@ class TestTensorFlowExecuteIntegration:
 
         with tf.GradientTape() as t:
             tape.set_parameters([a, b])
-            assert tape.trainable_params == {0, 1}
+            assert tape.trainable_params == [0, 1]
             res = execute([tape], dev, **execute_kwargs)[0]
 
         jac = t.jacobian(res, [a, b])
@@ -493,7 +493,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             res = execute([tape], dev, **execute_kwargs)[0]
-            assert tape.trainable_params == {0, 2}
+            assert tape.trainable_params == [0, 2]
             assert tape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
 
         res = t.jacobian(res, [a, b, c])
@@ -539,7 +539,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             res = execute([tape], dev, **execute_kwargs)[0]
-            assert tape.trainable_params == {1}
+            assert tape.trainable_params == [1]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
@@ -577,7 +577,7 @@ class TestTensorFlowExecuteIntegration:
             qtape = qtape.expand()
             res = execute([qtape], dev, **execute_kwargs)[0]
 
-            assert qtape.trainable_params == {1, 2, 3, 4}
+            assert qtape.trainable_params == [1, 2, 3, 4]
             assert [i.name for i in qtape.operations] == ["RX", "Rot", "PhaseShift"]
             assert np.all(qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
 

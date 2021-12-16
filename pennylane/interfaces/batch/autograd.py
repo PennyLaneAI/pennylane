@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2):
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
@@ -44,11 +44,14 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             the maximum order of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
@@ -101,15 +104,22 @@ def _execute(
     if the nth-order derivative is requested. Do not set this argument unless you
     understand the consequences!
     """
-    with qml.tape.Unwrap(*tapes, set_trainable=False):
+    with qml.tape.Unwrap(*tapes):
         res, jacs = execute_fn(tapes, **gradient_kwargs)
 
     for i, r in enumerate(res):
-        res[i] = np.tensor(r)
 
-        if res[i].dtype == np.dtype("object"):
+        if isinstance(res[i], np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
-            res[i] = np.hstack(r)
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+            res[i] = np.tensor(r)
+
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(np.tensor(r) for r in res[i])
+
+        else:
+            res[i] = qml.math.toarray(res[i])
 
     return res, jacs
 
@@ -174,7 +184,7 @@ def vjp(
 
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
-                    with qml.tape.Unwrap(*tapes, set_trainable=False):
+                    with qml.tape.Unwrap(*tapes):
                         vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                             tapes,
                             dy,

@@ -25,7 +25,7 @@ class UCCSD(Operation):
     r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
 
     The UCCSD ansatz calls the
-    :func:`~.SingleExcitationUnitary` and :func:`~.DoubleExcitationUnitary`
+    :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`
     templates to exponentiate the coupled-cluster excitation operator. UCCSD is a VQE ansatz
     commonly used to run quantum chemistry simulations.
 
@@ -61,9 +61,9 @@ class UCCSD(Operation):
     Args:
         weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
-            :func:`~.SingleExcitationUnitary`
+            :func:`~.FermionicSingleExcitation`
             and
-            :func:`~.DoubleExcitationUnitary`. These parameters are the coupled-cluster
+            :func:`~.FermionicDoubleExcitation`. These parameters are the coupled-cluster
             amplitudes that need to be optimized for each single and double excitation generated
             with the :func:`~.excitations` function.
         wires (Iterable): wires that the template acts on
@@ -104,7 +104,6 @@ class UCCSD(Operation):
 
             import pennylane as qml
             from pennylane import qchem
-            from pennylane.templates import UCCSD
             import numpy as np
             from functools import partial
 
@@ -128,7 +127,7 @@ class UCCSD(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the UCCSD ansatz
-            ansatz = partial(UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
+            ansatz = partial(qml.UCCSD, init_state=ref_state, s_wires=s_wires, d_wires=d_wires)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
@@ -139,9 +138,7 @@ class UCCSD(Operation):
 
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
     grad_method = None
 
     def __init__(
@@ -150,17 +147,13 @@ class UCCSD(Operation):
 
         if (not s_wires) and (not d_wires):
             raise ValueError(
-                "s_wires and d_wires lists can not be both empty; got ph={}, pphh={}".format(
-                    s_wires, d_wires
-                )
+                f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
             )
 
         for d_wires_ in d_wires:
             if len(d_wires_) != 2:
                 raise ValueError(
-                    "expected entries of d_wires to be of size 2; got {} of length {}".format(
-                        d_wires_, len(d_wires_)
-                    )
+                    f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
         shape = qml.math.shape(weights)
@@ -182,6 +175,10 @@ class UCCSD(Operation):
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
+    @property
+    def num_params(self):
+        return 1
+
     def expand(self):
 
         weights = self.parameters[0]
@@ -191,11 +188,9 @@ class UCCSD(Operation):
             BasisState(self.init_state_flipped, wires=self.wires)
 
             for i, (w1, w2) in enumerate(self.d_wires):
-                qml.templates.DoubleExcitationUnitary(
-                    weights[len(self.s_wires) + i], wires1=w1, wires2=w2
-                )
+                qml.FermionicDoubleExcitation(weights[len(self.s_wires) + i], wires1=w1, wires2=w2)
 
             for j, s_wires_ in enumerate(self.s_wires):
-                qml.templates.SingleExcitationUnitary(weights[j], wires=s_wires_)
+                qml.FermionicSingleExcitation(weights[j], wires=s_wires_)
 
         return tape

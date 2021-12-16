@@ -294,7 +294,7 @@ class TestInputs:
         """Tests that the correct error messages is raised if
         the given state vector is not normalized."""
 
-        with pytest.raises(ValueError, match="State vector has to be of norm"):
+        with pytest.raises(ValueError, match="State vectors have to be of norm"):
             qml.MottonenStatePreparation(state_vector, wires)
 
     # fmt: off
@@ -308,21 +308,21 @@ class TestInputs:
         the number of entries in the given state vector does not match
         with the number of wires in the system."""
 
-        with pytest.raises(ValueError, match="State vector must be of (length|shape)"):
+        with pytest.raises(ValueError, match="State vectors must be of (length|shape)"):
             qml.MottonenStatePreparation(state_vector, wires)
 
     @pytest.mark.parametrize(
         "state_vector",
         [
-            ([[0, 0, 1, 0]]),
-            ([[0, 1], [1, 0], [0, 0], [0, 0]]),
+            ([[[0, 0, 1, 0]]]),
+            ([[[0, 1], [1, 0], [0, 0], [0, 0]]]),
         ],
     )
     def test_exception_wrong_shape(self, state_vector):
         """Verifies that exception is raised if the
         number of dimensions of features is incorrect."""
 
-        with pytest.raises(ValueError, match="State vector must be a one-dimensional"):
+        with pytest.raises(ValueError, match="State vectors must be one-dimensional"):
             qml.MottonenStatePreparation(state_vector, 2)
 
     def test_id(self):

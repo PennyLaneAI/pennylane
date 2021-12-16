@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.beta import qnode, QNode
+from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
 
 qubit_device_and_diff_method = [
@@ -59,7 +59,7 @@ class TestQNode:
         assert circuit.interface == "jax"
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = jax.grad(circuit)(a)
@@ -90,7 +90,7 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
         assert res.shape == (2,)
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
@@ -187,7 +187,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -200,7 +200,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -212,7 +212,7 @@ class TestQNode:
         a = np.array(0.54, requires_grad=False)
         b = np.array(0.8, requires_grad=True)
         circuit(a, b)
-        assert circuit.qtape.trainable_params == {1}
+        assert circuit.qtape.trainable_params == [1]
 
     def test_classical_processing(self, dev_name, diff_method, mode, tol):
         """Test classical processing within the quantum tape"""
@@ -232,7 +232,7 @@ class TestQNode:
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
 
         assert len(res) == 2
 
@@ -254,7 +254,7 @@ class TestQNode:
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
     def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
         """Test that operation and nested tape expansion
@@ -299,6 +299,49 @@ class TestQNode:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_multiple_outputs_raises(self, dev_name, diff_method, mode, tol):
+        """Test executing a QNode that has multiple outputs raises an error."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "backprop":
+            pytest.skip("Test is not applicable for backprop")
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def my_circuit(param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        with pytest.raises(
+            ValueError,
+            match="JAX interface currently only supports quantum nodes with a single return type",
+        ):
+            my_circuit(1)
+
+    @pytest.mark.parametrize("ret", [qml.probs(wires=0), qml.state()])
+    def test_not_expval_or_var_raises(self, dev_name, diff_method, mode, ret, tol):
+        """Test executing a QNode that has a return type other than expval or
+        var raises an error."""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "backprop":
+            pytest.skip("Test is not applicable for backprop")
+
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support states")
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def my_circuit(param):
+            qml.RX(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.apply(ret)
+
+        with pytest.raises(
+            ValueError,
+            match="Only Variance and Expectation returns are supported for the JAX interface",
+        ):
+            my_circuit(1)
 
 
 class TestShotsIntegration:
