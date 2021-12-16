@@ -25,8 +25,12 @@
 
 <h3>Documentation</h3>
 
+* Extended the interfaces description page to explicitly mention device
+  compatibility.
+  [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Ankit Khandelwal, David Wierichs
+Olivia Di Matteo, Ankit Khandelwal, Antal Száva, David Wierichs
