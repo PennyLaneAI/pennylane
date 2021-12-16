@@ -238,9 +238,7 @@ def _adjoint_metric_tensor_tape(tape, device):
         for i in range(j - 1, -1, -1):
             # after first iteration of inner loop: apply U_{i+1}^\dagger
             if i < j - 1:
-                trainable_operations[i + 1].inv()
-                phi = device._apply_operation(phi, trainable_operations[i + 1])
-                trainable_operations[i + 1].inv()
+                phi = _apply_operations(phi, trainable_operations[i + 1], device, invert=True)
             # apply V_{i}^\dagger
             phi = _apply_operations(phi, group_after_trainable_op[i], device, invert=True)
             lam = _apply_operations(lam, group_after_trainable_op[i], device, invert=True)
@@ -263,14 +261,10 @@ def _adjoint_metric_tensor_tape(tape, device):
                 L, [(i, j), (j, i)], value * qml.math.convert_like(qml.math.ones((2,)), value)
             )
             # apply U_i^\dagger
-            inner_op.inv()
-            lam = device._apply_operation(lam, inner_op)
-            inner_op.inv()
+            lam = _apply_operations(lam, inner_op, device, invert=True)
 
-        # apply U_j
-        psi = device._apply_operation(psi, outer_op)
-        # apply V_j
-        psi = _apply_operations(psi, group_after_trainable_op[j], device)
+        # apply U_j and V_j
+        psi = _apply_operations(psi, [outer_op, *group_after_trainable_op[j]], device)
 
     # postprocessing: combine L and T into the metric tensor.
     # We require outer(conj(T), T) here, but as we skipped the factor 1j above,

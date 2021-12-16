@@ -382,19 +382,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
 
-        # TODO: Remove this behaviour once the stacking behaviour in `qml.jacobian`
-        # has been removed. additional arguments `qnode_arg_shape` and `num_qnode_args`
-        # in `_contract_metric_tensor_with_cjac` are only used to detect the
-        # stacking behaviour and can be removed accordingly.
-        # if qnode.interface == "autograd":
-        # trainable_args = np.where([qml.math.requires_grad(arg) for arg in args])[0]
-        # shape = qml.math.shape(args[trainable_args[0]])
-        # cjac_hotfix = len(trainable_args) > 1 and all(
-        # qml.math.shape(args[i]) == shape for i in trainable_args[1:]
-        # )
-        # else:
-        # cjac_hotfix = False
-
         return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
 
     return wrapper

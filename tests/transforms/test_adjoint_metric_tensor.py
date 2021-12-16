@@ -22,11 +22,14 @@ from pennylane.transforms.adjoint_metric_tensor import _apply_operations
 
 
 class TestApplyOperations:
+    """Tests the application of operations via the helper function
+    _apply_operations used in the adjoint metric tensor."""
 
     device = qml.device("default.qubit", wires=2)
     x = 0.5
 
     def test_simple_operation(self):
+        """Test that an operation is applied correctly."""
         op = qml.RX(self.x, wires=0)
         out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
@@ -35,6 +38,8 @@ class TestApplyOperations:
         assert not op.inverse
 
     def test_simple_operation_inv(self):
+        """Test that an operation is applied correctly when using invert=True
+        but does not alter the operation (in particular its inverse flag) that is used."""
         op = qml.RX(self.x, wires=0)
         out = _apply_operations(self.device._state, op, self.device, invert=True)
         out = qml.math.reshape(out, 4)
@@ -43,6 +48,8 @@ class TestApplyOperations:
         assert not op.inverse
 
     def test_inv_operation(self):
+        """Test that an operation with inverse=True is applied correctly
+        but does not alter the operation (in particular its inverse flag) that is used."""
         op = qml.RX(self.x, wires=0).inv()
         out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
@@ -51,6 +58,8 @@ class TestApplyOperations:
         assert op.inverse
 
     def test_inv_operation_inv(self):
+        """Test that an operation with inverse=True is applied correctly when using invert=True
+        but does not alter the operation (in particular its inverse flag) that is used."""
         op = qml.RX(self.x, wires=0).inv()
         out = _apply_operations(self.device._state, op, self.device, invert=True)
         out = qml.math.reshape(out, 4)
@@ -59,6 +68,9 @@ class TestApplyOperations:
         assert op.inverse
 
     def test_operation_group(self):
+        """Test that a group of operations with is applied correctly
+        but does not alter the operations (in particular their order and
+        inverse flags) that are used."""
         op = [qml.RX(self.x, wires=0).inv(), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
         out = _apply_operations(self.device._state, op, self.device)
         out = qml.math.reshape(out, 4)
@@ -76,6 +88,9 @@ class TestApplyOperations:
         assert isinstance(op[2], qml.CNOT) and not op[2].inverse
 
     def test_operation_group_inv(self):
+        """Test that a group of operations with is applied correctly when using invert=True
+        but does not alter the operations (in particular their order and
+        inverse flags) that are used."""
         op = [qml.RX(self.x, wires=0).inv(), qml.Hadamard(wires=1), qml.CNOT(wires=[1, 0])]
         out = _apply_operations(self.device._state, op, self.device, invert=True)
         out = qml.math.reshape(out, 4)
@@ -93,6 +108,7 @@ class TestApplyOperations:
         assert isinstance(op[2], qml.CNOT) and not op[2].inverse
 
     def test_qubit_statevector(self):
+        """Test that a statevector preparation is applied correctly."""
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
         op = qml.QubitStateVector(state, wires=self.device.wires)
@@ -101,6 +117,8 @@ class TestApplyOperations:
         assert np.allclose(out, state)
 
     def test_error_qubit_statevector(self):
+        """Test that an error is raised for a statevector preparation with invert=True."""
+        state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state = np.array([0.4, 1.2 - 0.2j, 9.5, -0.3 + 1.1j])
         state /= np.linalg.norm(state, ord=2)
         op = qml.QubitStateVector(state, wires=self.device.wires)
@@ -108,6 +126,7 @@ class TestApplyOperations:
             _apply_operations(None, op, self.device, invert=True)
 
     def test_basisstate(self):
+        """Test that a basis state preparation is applied correctly."""
         op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
         out = _apply_operations(None, op, self.device, invert=False)
         out = qml.math.reshape(out, 4)
@@ -115,6 +134,7 @@ class TestApplyOperations:
         assert np.allclose(out, exp)
 
     def test_error_basisstate(self):
+        """Test that an error is raised for a basis state preparation with invert=True."""
         op = qml.BasisState(np.array([1, 0]), wires=self.device.wires)
         with pytest.raises(ValueError, match="Can't invert state preparation."):
             _apply_operations(None, op, self.device, invert=True)
@@ -122,10 +142,13 @@ class TestApplyOperations:
 
 @pytest.mark.parametrize("invert", [False, True])
 class TestApplyOperationsDifferentiability:
+    """Tests the differentiability of applying operations via the helper function
+    _apply_operations used in the adjoint metric tensor."""
 
     x = 0.5
 
     def test_simple_operation_autograd(self, invert):
+        """Test differentiability for a simple operation with Autograd."""
         device = qml.device("default.qubit.autograd", wires=2)
         x = np.array(self.x, requires_grad=True)
         r_fn = lambda x: qml.math.real(
@@ -142,6 +165,7 @@ class TestApplyOperationsDifferentiability:
         assert np.allclose(out, exp)
 
     def test_simple_operation_jax(self, invert):
+        """Test differentiability for a simple operation with JAX."""
         jax = pytest.importorskip("jax")
         device = qml.device("default.qubit.jax", wires=2)
         x = jax.numpy.array(self.x)
@@ -159,6 +183,7 @@ class TestApplyOperationsDifferentiability:
         assert np.allclose(out, exp)
 
     def test_simple_operation_tf(self, invert):
+        """Test differentiability for a simple operation with TensorFlow."""
         tf = pytest.importorskip("tensorflow")
         device = qml.device("default.qubit.tf", wires=2)
         x = tf.Variable(self.x, dtype=tf.float64)
@@ -179,6 +204,7 @@ class TestApplyOperationsDifferentiability:
         assert np.allclose(out, exp)
 
     def test_simple_operation_torch(self, invert):
+        """Test differentiability for a simple operation with Torch."""
         torch = pytest.importorskip("torch")
         jac_fn = torch.autograd.functional.jacobian
         device = qml.device("default.qubit.torch", wires=2)
