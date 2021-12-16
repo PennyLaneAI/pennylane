@@ -38,15 +38,15 @@ def _preprocess(theta, phi, varphi, wires):
     """
 
     n_wires = len(wires)
-    n_if = n_wires * (n_wires - 1) // 2
+    shape_theta_phi = n_wires * (n_wires - 1) // 2
 
     shape = qml.math.shape(theta)
-    if shape != (n_if,):
-        raise ValueError(f"Theta must be of shape {(n_if,)}; got {shape}.")
+    if shape != (shape_theta_phi,):
+        raise ValueError(f"Theta must be of shape {(shape_theta_phi,)}; got {shape}.")
 
     shape = qml.math.shape(phi)
-    if shape != (n_if,):
-        raise ValueError(f"Phi must be of shape {(n_if,)}; got {shape}.")
+    if shape != (shape_theta_phi,):
+        raise ValueError(f"Phi must be of shape {(shape_theta_phi,)}; got {shape}.")
 
     shape_varphi = qml.math.shape(varphi)
     if shape_varphi != (n_wires,):
@@ -280,9 +280,9 @@ class Interferometer(CVOperation):
         Returns:
             list[tuple[int]]: list of shapes
         """
-        n_if = n_wires * (n_wires - 1) // 2
+        shape_theta_phi = n_wires * (n_wires - 1) // 2
 
-        shapes = [(n_if,)] * 2 + [(n_wires,)]
+        shapes = [(shape_theta_phi,)] * 2 + [(n_wires,)]
 
         return shapes
 
