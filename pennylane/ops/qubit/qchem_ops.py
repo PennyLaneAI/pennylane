@@ -437,27 +437,11 @@ class DoubleExcitationPlus(Operation):
     grad_method = "A"
 
     def generator(self):
-        rows = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 3, 12]
-        cols = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 12, 3]
-        data = [
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5j,
-            -0.5j,
-        ]
-        H = coo_matrix((data, (rows, cols)), shape=(16, 16))
+        G = -1 * np.eye(16, dtype=np.complex64)
+        G[3, 3] = G[12, 12] = 0
+        G[3, 12] = -1j # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j # 12 (dec) = 1100 (bin)
+        H = coo_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @property
@@ -526,27 +510,12 @@ class DoubleExcitationMinus(Operation):
     grad_method = "A"
 
     def generator(self):
-        rows = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 3, 12]
-        cols = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 12, 3]
-        data = [
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            -0.5,
-            0.5j,
-            -0.5j,
-        ]
-        H = coo_matrix((data, (rows, cols)), shape=(16, 16))
+        G = np.eye(16, dtype=np.complex64)
+        G[3, 3] = 0
+        G[12, 12] = 0
+        G[3, 12] = -1j # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j # 12 (dec) = 1100 (bin)
+        H = coo_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @property
