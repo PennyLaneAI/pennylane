@@ -294,7 +294,7 @@ takes either quantum gates or templates and applies them to wires in a specific 
 
         <div style='clear:both'></div>
 
-.. _intro_ref_temp_init:
+.. _intro_ref_temp_tn:
 
 Tensor networks
 -------------------------
@@ -305,7 +305,11 @@ can be broadcast with the shape and connectivity of tensor networks.
 .. customgalleryitem::
     :link: ../code/api/pennylane.tensornetworks.html
     :description: MPS
-    :figure: ../_static/templates/tensornetworks/MPS.png
+    :figure: ../_static/templates/tensornetworks/MPS_template.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
 
 .. _intro_ref_temp_init:
 

@@ -22,8 +22,7 @@ from pennylane.operation import Operation, AnyWires
 
 
 def compute_indices_MPS(wires, n_block_wires):
-    """
-    Generate a list containing the wires for each block.
+    """Generate a list containing the wires for each block.
 
     Args:
         wires (Iterable): wires that the template acts on
@@ -80,6 +79,7 @@ class MPS(Operation):
         template_weights (Sequence): list containing the weights for all blocks
 
     .. note::
+
         The expected number of blocks can be obtained from ``qml.MPS.n_blocks(wires, n_block_wires)``.
         The length of ``template_weights`` argument should match the number of blocks.
 
@@ -109,11 +109,11 @@ class MPS(Operation):
                 qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
-            >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-            0: ──╭C──RY(0.1)───────────────────────────────┤
-            1: ──╰X──RY(-0.3)──╭C──RY(0.1)─────────────────┤
-            2: ────────────────╰X──RY(-0.3)──╭C──RY(0.1)───┤
-            3: ──────────────────────────────╰X──RY(-0.3)──┤ ⟨Z⟩
+        >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+        0: ──╭C──RY(0.1)───────────────────────────────┤
+        1: ──╰X──RY(-0.3)──╭C──RY(0.1)─────────────────┤
+        2: ────────────────╰X──RY(-0.3)──╭C──RY(0.1)───┤
+        3: ──────────────────────────────╰X──RY(-0.3)──┤ ⟨Z⟩
     """
 
     num_params = 1
