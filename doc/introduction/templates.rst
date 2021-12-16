@@ -296,6 +296,19 @@ takes either quantum gates or templates and applies them to wires in a specific 
 
 .. _intro_ref_temp_init:
 
+Tensor networks
+-------------------------
+
+Tensor-network templates create quantum circuit architectures where circuit blocks
+can be broadcast with the shape and connectivity of tensor networks.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.tensornetworks.html
+    :description: MPS
+    :figure: ../_static/templates/tensornetworks/MPS.png
+
+.. _intro_ref_temp_init:
+
 Parameter initializations
 -------------------------
 
