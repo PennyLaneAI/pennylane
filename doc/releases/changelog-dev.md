@@ -72,6 +72,9 @@ The Operator class has undergone a major refactor with the following changes:
   `pennylane.transforms.get_qubit_unitary()` transform.
   [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
+* The eigenvalues representation of operators has been overhauled.
+  XXX
+
 * The `string_for_inverse` attribute is removed.
   [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
 

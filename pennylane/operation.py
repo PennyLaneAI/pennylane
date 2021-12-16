@@ -490,12 +490,8 @@ class Operator(abc.ABC):
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @classmethod
-    def _eigvals(cls, *params):
+    def compute_eigvals(cls, *params, **hyperparams):
         """Eigenvalues of the operator.
-
-        This is a *class method* that should be defined for all
-        new operations and observables that returns the eigenvalues
-        of the operator.
 
         If :attr:`diagonalizing_gates` are specified, the order of the
         eigenvalues needs to match the order of
@@ -503,41 +499,56 @@ class Operator(abc.ABC):
         diagonalized using these ops. Otherwise, no particular order is
         guaranteed.
 
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
+        The default implementation extracts the matrix representation of the operator
+        and diagonalizes it.
 
-        The default implementation relies on the presence of the
-        :attr:`_matrix` method.
+        .. note::
+            This method gets overwritten by subclasses to define the eigenvalues
+            of a particular operator. By default, it should always take the
+            operator's parameters and hyperparameters as inputs.
+
+            Alternatively, a custom signature can be defined, in which case the `eigvals()`
+            method has to be overwritten as well.
 
         To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
+        please use the :attr:`~.Operator.eigvals` method instead.
 
         **Example:**
 
-        >>> qml.RZ._eigvals(0.5)
+        >>> qml.RZ.compute_eigvals(0.5)
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
-        >>> qml.PauliX._eigvals()
+        >>> qml.PauliX.compute_eigvals()
         array([1, -1])
 
         Returns:
-            array: eigenvalue representation or None
+            array or None: eigenvalue representation
         """
-        mat = cls.compute_matrix(*params)
+        mat = cls.compute_matrix(*params, **hyperparams)
         if mat is None:
             return None
         return np.linalg.eigvals(mat)
 
     @property
     def eigvals(self):
-        r"""Eigenvalues of an instantiated operator.
+        r"""Eigenvalue representation of this operator.
 
         If :attr:`diagonalizing_gates` are specified, the order of the
         eigenvalues needs to match the order of
         the computational basis vectors when the observable is
         diagonalized using these ops. Otherwise, no particular order is
         guaranteed.
+
+        .. note::
+            By default, this method calls the static method ``compute_eigvals``,
+            which is used by subclasses to.
+            The call assumes that the static method has the signature ``(*params, **hyperparams)``,
+            where ``params`` refers to ``op.parameters`` and ``hyperparams``
+            to ``op.hyperparameters``, and ``op`` is an instance of this operator.
+
+            If a subclass overwrites ``compute_eigvals`` to use a custom signature,
+            this method has to be likewise overwritten.
 
         **Example:**
 
@@ -552,7 +563,7 @@ class Operator(abc.ABC):
         Returns:
             array: eigvals representation
         """
-        return self._eigvals(*self.parameters)
+        return self.compute_eigvals(*self.parameters, **self.hyperparameters)
 
     @property
     @abc.abstractmethod
@@ -977,7 +988,7 @@ class Operation(Operator):
 
     @property
     def eigvals(self):
-        op_eigvals = self._eigvals(*self.parameters)
+        op_eigvals = self.compute_eigvals(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
             return qml.math.conj(op_eigvals)

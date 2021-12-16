@@ -98,7 +98,7 @@ def measurement_process_equality(mp1, mp2):
     same_return_type = mp1.return_type == mp2.return_type
     same_obs = mp1.obs == mp2.obs
     same_wires = mp1._wires == mp2._wires
-    same_eigs = mp1._eigvals == mp2._eigvals
+    same_eigs = mp1.compute_eigvals() == mp2.compute_eigvals()
     same_name = mp1.name == mp2.name
     same_data = mp1.data == mp2.data
 

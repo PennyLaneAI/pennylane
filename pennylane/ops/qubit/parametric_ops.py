@@ -601,7 +601,7 @@ class MultiRZ(Operation):
         return self._generator
 
     @classmethod
-    def _eigvals(cls, theta, n):
+    def compute_eigvals(cls, theta, n):
         eigs = qml.math.convert_like(pauli_eigs(n), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
@@ -610,13 +610,14 @@ class MultiRZ(Operation):
 
         return qml.math.exp(-1j * theta / 2 * eigs)
 
-    @property
     def eigvals(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
-        if self.inverse:
-            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
+        theta = self.parameters[0]
 
-        return self._eigvals(*self.parameters, len(self.wires))
+        # Redefine the property here to pass additionally the number of wires to the ``compute_eigvals`` method
+        if self.inverse:
+            return qml.math.conj(self.compute_eigvals(theta, len(self.wires)))
+
+        return self.compute_eigvals(theta, len(self.wires))
 
     @staticmethod
     def decomposition(theta, wires):
@@ -853,7 +854,7 @@ class PauliRot(Operation):
         return self._generator
 
     @classmethod
-    def _eigvals(cls, theta, pauli_word):
+    def compute_eigvals(cls, theta, pauli_word):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -861,7 +862,7 @@ class PauliRot(Operation):
         if pauli_word == "I" * len(pauli_word):
             return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
 
-        return MultiRZ._eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
     @staticmethod
     def decomposition(theta, pauli_word, wires):
