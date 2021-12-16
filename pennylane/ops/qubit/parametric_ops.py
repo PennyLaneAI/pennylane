@@ -18,6 +18,8 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import functools
 import math
+from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -53,7 +55,9 @@ class RX(Operation):
     num_wires = 1
     basis = "X"
     grad_method = "A"
-    generator = [PauliX, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliX(wires=self.wires)
 
     @property
     def num_params(self):
@@ -110,7 +114,9 @@ class RY(Operation):
     num_wires = 1
     basis = "Y"
     grad_method = "A"
-    generator = [PauliY, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliY(wires=self.wires)
 
     @property
     def num_params(self):
@@ -161,7 +167,9 @@ class RZ(Operation):
     num_wires = 1
     basis = "Z"
     grad_method = "A"
-    generator = [PauliZ, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliZ(wires=self.wires)
 
     @property
     def num_params(self):
@@ -223,7 +231,9 @@ class PhaseShift(Operation):
     num_wires = 1
     basis = "Z"
     grad_method = "A"
-    generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1]), wires=self.wires)
 
     @property
     def num_params(self):
@@ -297,7 +307,9 @@ class ControlledPhaseShift(Operation):
     num_wires = 2
     basis = "Z"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1, 1]), wires=self.wires)
 
     @property
     def num_params(self):
@@ -489,13 +501,8 @@ class MultiRZ(Operation):
 
         return multi_Z_rot_matrix
 
-    _generator = None
-
-    @property
     def generator(self):
-        if self._generator is None:
-            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
-        return self._generator
+        return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
     @property
     def matrix(self):
@@ -590,7 +597,6 @@ class PauliRot(Operation):
 
     def __init__(self, theta, pauli_word, wires=None, do_queue=True):
         super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
-
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
@@ -706,46 +712,9 @@ class PauliRot(Operation):
             list(range(len(pauli_word))),
         )
 
-    _generator = None
-
-    @property
     def generator(self):
-        if self._generator is None:
-            pauli_word = self.parameters[1]
-
-            # Simplest case is if the Pauli is the identity matrix
-            if pauli_word == "I" * len(pauli_word):
-                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
-                return self._generator
-
-            # We first generate the matrix excluding the identity parts and expand it afterwards.
-            # To this end, we have to store on which wires the non-identity parts act
-            non_identity_wires, non_identity_gates = zip(
-                *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
-            )
-
-            # get MultiRZ's generator
-            multi_Z_rot_generator = qml.math.diag(pauli_eigs(len(non_identity_gates)))
-
-            # now we conjugate with Hadamard and RX to create the Pauli string
-            conjugation_matrix = functools.reduce(
-                qml.math.kron,
-                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
-            )
-
-            self._generator = [
-                expand(
-                    qml.math.dot(
-                        qml.math.conj(qml.math.T(conjugation_matrix)),
-                        qml.math.dot(multi_Z_rot_generator, conjugation_matrix),
-                    ),
-                    non_identity_wires,
-                    list(range(len(pauli_word))),
-                ),
-                -1 / 2,
-            ]
-
-        return self._generator
+        pauli_word = self.parameters[1]
+        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
 
     @classmethod
     def _eigvals(cls, theta, pauli_word):
@@ -841,10 +810,8 @@ class CRX(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
 
     @property
     def num_params(self):
@@ -942,10 +909,8 @@ class CRY(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
 
     @property
     def num_params(self):
@@ -1037,10 +1002,8 @@ class CRZ(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
 
     @property
     def num_params(self):
@@ -1223,7 +1186,9 @@ class U1(Operation):
     """
     num_wires = 1
     grad_method = "A"
-    generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1]), wires=self.wires)
 
     @property
     def num_params(self):
@@ -1432,10 +1397,8 @@ class IsingXX(Operation):
     num_wires = 2
     grad_method = "A"
 
-    generator = [
-        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
     @property
     def num_params(self):
@@ -1495,10 +1458,9 @@ class IsingYY(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
-        -1 / 2,
-    ]
+
+    def generator(self):
+        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
 
     @property
     def num_params(self):
@@ -1556,10 +1518,9 @@ class IsingZZ(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
-        -1 / 2,
-    ]
+
+    def generator(self):
+        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
 
     @property
     def num_params(self):

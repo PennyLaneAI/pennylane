@@ -145,6 +145,9 @@ class SparseHamiltonian(Observable):
     num_wires = AllWires
     grad_method = None
 
+    def __init__(self, H, wires=None, do_queue=True, id=None):
+        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 1
@@ -246,6 +249,14 @@ class Projector(Observable):
         idx = int("".join(str(i) for i in params[0]), 2)
         w[idx] = 1
         return w
+
+    @classmethod
+    def _matrix(cls, *params):
+        basis_state = params[0]
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
 
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
