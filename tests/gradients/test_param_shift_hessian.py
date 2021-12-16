@@ -234,7 +234,7 @@ class TestParameterShiftHessian:
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
-            qml.RZ(z[0]+z[1], wires=1)
+            qml.RZ(z[0] + z[1], wires=1)
             qml.RY(y[1], wires=1)
             qml.RX(x[1], wires=0)
             return qml.probs(wires=[0, 1])
@@ -270,6 +270,31 @@ class TestParameterShiftHessian:
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
         assert np.allclose(expected, hessian)
+
+    def test_multiple_qnode_arguments_mixed(self):
+        """Test that the correct Hessian is calculated with multiple mixed-shape QNode arguments"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(z[0] + z[1], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(y[1, 0], wires=0)
+            qml.RY(y[0, 1], wires=0)
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        x = np.array(0.1, requires_grad=True)
+        y = np.array([[0.5, 0.6], [0.2, 0.1]], requires_grad=True)
+        z = np.array([0.3, 0.4], requires_grad=True)
+
+        expected = tuple(
+            qml.jacobian(qml.jacobian(circuit, argnum=i), argnum=i)(x, y, z) for i in range(3)
+        )
+        hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
+
+        assert all(np.allclose(expected[i], hessian[i]) for i in range(3))
 
     # Some bounds we could choose to meet on the efficiency of the hessian implementation
     # for operations with two eigenvalues (2-term shift rule):
