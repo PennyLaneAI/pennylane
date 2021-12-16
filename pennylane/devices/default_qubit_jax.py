@@ -267,7 +267,7 @@ class DefaultQubitJax(DefaultQubit):
 
             indices = indices.reshape((bins, -1))
             prob = np.zeros(
-                [2 ** num_wires + 1, bins], dtype=np.float64
+                [2 ** num_wires + 1, bins], dtype=jnp.float64
             )  # extend it to store 'filled values'
             prob = qml.math.convert_like(prob, indices)
 
@@ -277,20 +277,22 @@ class DefaultQubitJax(DefaultQubit):
                 basis_states, counts = qml.math.unique(
                     idx, return_counts=True, size=2 ** num_wires, fill_value=-1
                 )
-                prob = prob.at[basis_states, b].set(counts / bin_size)
 
                 for state, count in zip(basis_states, counts):
-                    prob = prob.at[state].set(count / bin_size)
+                    prob = prob.at[state, b].set(count / bin_size)
+
+            prob = jnp.resize(prob, (2 ** num_wires, bins))  # resize prob which discards the 'filled values'
 
         else:
             basis_states, counts = qml.math.unique(
                 indices, return_counts=True, size=2 ** num_wires, fill_value=-1
             )
-            prob = np.zeros([2 ** num_wires + 1], dtype=np.float64)
+            prob = np.zeros([2 ** num_wires + 1], dtype=jnp.float64)
             prob = qml.math.convert_like(prob, indices)
 
             for state, count in zip(basis_states, counts):
                 prob = prob.at[state].set(count / len(samples))
 
-        prob = jnp.resize(prob, 2 ** num_wires)  # resize prob which discards the 'filled values'
+            prob = jnp.resize(prob, 2 ** num_wires)  # resize prob which discards the 'filled values'
+
         return self._asarray(prob, dtype=self.R_DTYPE)

@@ -204,6 +204,7 @@ class TestQNodeIntegration:
             return qml.probs()
 
         result = circuit()
+        print(f"\n \n ******* This is the result: {result} ******* \n \n")
         assert jnp.allclose(result, expected, atol=tol)
 
     def test_sampling_with_jit(self):
