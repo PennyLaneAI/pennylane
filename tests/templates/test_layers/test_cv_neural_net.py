@@ -195,6 +195,23 @@ def circuit_decomposed(*weights):
     return qml.expval(qml.X(0))
 
 
+def test_adjoint():
+    """Test that the adjoint method works"""
+    dev = DummyDevice(wires=2)
+    np.random.seed(42)
+
+    shapes = qml.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
+    weights = [np.random.random(shape) for shape in shapes]
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.CVNeuralNetLayers(*weights, wires=[0, 1])
+        qml.adjoint(qml.CVNeuralNetLayers)(*weights, wires=[0, 1])
+        return qml.expval(qml.X(0))
+
+    assert qml.math.allclose(circuit(), 0)
+
+
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""

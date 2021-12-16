@@ -79,9 +79,7 @@ def skip_if():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
                 pytest.skip(
-                    "Test skipped for {} device with capability {}:{}.".format(
-                        dev.name, capability, value
-                    )
+                    f"Test skipped for {dev.name} device with capability {capability}:{value}."
                 )
 
     return _skip_if
@@ -99,12 +97,11 @@ def device(device_kwargs):
         try:
             dev = qml.device(**device_kwargs)
         except qml.DeviceError:
+            dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
             pytest.exit(
-                "Device {} cannot be created. To run the device tests on an external device, the "
-                "plugin and all of its dependencies must be installed.".format(
-                    device_kwargs["name"]
-                )
+                f"Device {dev_name} cannot be created. To run the device tests on an external device, the "
+                f"plugin and all of its dependencies must be installed."
             )
 
         capabilities = dev.capabilities()
@@ -123,7 +120,7 @@ def pytest_runtest_setup(item):
     # skip tests marked as broken
     for mark in item.iter_markers(name="broken"):
         if mark.args:
-            pytest.skip("Broken test skipped: {}".format(*mark.args))
+            pytest.skip(f"Broken test skipped: {mark.args}")
         else:
             pytest.skip("Test skipped as corresponding code base is currently broken!")
 

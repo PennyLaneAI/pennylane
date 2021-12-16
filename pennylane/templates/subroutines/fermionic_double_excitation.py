@@ -491,13 +491,13 @@ class FermionicDoubleExcitation(Operation):
 
         if len(wires1) < 2:
             raise ValueError(
-                "expected at least two wires representing the occupied orbitals; "
-                "got {}".format(len(wires1))
+                f"expected at least two wires representing the occupied orbitals; "
+                f"got {len(wires1)}"
             )
         if len(wires2) < 2:
             raise ValueError(
-                "expected at least two wires representing the unoccupied orbitals; "
-                "got {}".format(len(wires2))
+                f"expected at least two wires representing the unoccupied orbitals; "
+                f"got {len(wires2)}"
             )
 
         shape = qml.math.shape(weight)

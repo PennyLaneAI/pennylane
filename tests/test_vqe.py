@@ -586,10 +586,11 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    def test_metric_tensor(self):
+    @pytest.mark.parametrize("approx", [None, "block-diag", "diag"])
+    def test_metric_tensor(self, approx):
         """Test that the metric tensor can be calculated."""
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
         p = np.array([1.0, 1.0, 1.0])
 
         def ansatz(params, **kwargs):
@@ -600,7 +601,7 @@ class TestVQE:
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
         qnodes = qml.ExpvalCost(ansatz, h, dev)
-        mt = qml.metric_tensor(qnodes)(p)
+        mt = qml.metric_tensor(qnodes, approx=approx)(p)
         assert mt.shape == (3, 3)
         assert isinstance(mt, np.ndarray)
 
@@ -629,7 +630,7 @@ class TestVQE:
         assert np.allclose(res, exp)
 
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
-            qml.metric_tensor(qnodes)(w)
+            qml.metric_tensor(qnodes, approx="block-diag")(w)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""

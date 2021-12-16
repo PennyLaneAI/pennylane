@@ -15,6 +15,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+pytestmark = pytest.mark.gpu
+
 torch = pytest.importorskip("torch")
 
 
@@ -34,7 +36,7 @@ class TestTorchDevice:
         res = dev.execute(tape)
 
         assert res.is_cuda
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
 
         res.backward()
         assert x.grad.is_cuda
@@ -55,7 +57,7 @@ class TestTorchDevice:
         res = dev.execute(tape)
 
         assert res.is_cuda
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
 
         res.backward()
         assert x.grad.is_cuda
@@ -75,7 +77,7 @@ class TestTorchDevice:
 
         res = dev.execute(tape)
         assert res.is_cuda
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
 
     def test_resets(self):
         """Asserts reverts to cpu after execution on gpu"""
@@ -90,7 +92,7 @@ class TestTorchDevice:
             qml.expval(qml.PauliZ(0))
 
         res1 = dev.execute(tape1)
-        assert dev._torch_device == "cuda"
+        assert "cuda" in dev._torch_device
         assert res1.is_cuda
 
         with qml.tape.QuantumTape() as tape2:
@@ -118,9 +120,30 @@ class TestTorchDevice:
         res = circ(x, y)
         assert res.is_cuda
 
-        assert circ.device._torch_device == "cuda"
+        assert "cuda" in circ.device._torch_device
         res.backward()
         assert x.grad.is_cuda
+
+    @pytest.mark.parametrize("init_device, par_device", [("cpu", "cuda"), ("cuda", "cpu")])
+    def test_different_devices_creation_and_parameters_warn(self, init_device, par_device):
+        """Test that a warning is raised if the Torch device specified on
+        PennyLane device creation differs from the Torch device of gate
+        parameters.
+        """
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=init_device)
+
+        p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        with pytest.warns(
+            UserWarning,
+            match=f"Torch device {init_device} specified upon PennyLane device creation does not match",
+        ):
+            circuit(p)
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
@@ -147,7 +170,7 @@ class TestqnnTorchLayer:
         x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
         res = qlayer(x)
         assert circuit.device.short_name == "default.qubit.torch"
-        assert circuit.device._torch_device == "cuda"
+        assert "cuda" in circuit.device._torch_device
         assert res.is_cuda
 
         loss = torch.sum(res).squeeze()

@@ -278,7 +278,7 @@ class TestCaching:
 
         expected_runs_ideal = 1  # forward pass
         expected_runs_ideal += 2 * N  # Jacobian
-        expected_runs_ideal += 2 * N + 1  # Hessian diagonal
+        expected_runs_ideal += N + 1  # Hessian diagonal
         expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
@@ -349,6 +349,7 @@ execute_kwargs = [
 ]
 
 
+@pytest.mark.gpu
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestTorchExecuteIntegration:
@@ -398,7 +399,7 @@ class TestTorchExecuteIntegration:
             dev = qml.device("default.qubit.autograd", wires=2)
             return dev.batch_execute([tape])[0]
 
-        expected = qml.grad(cost)(0.1)
+        expected = qml.grad(cost, argnum=0)(0.1)
         assert torch.allclose(a.grad, torch.tensor(expected, device=torch_device), atol=tol, rtol=0)
 
     def test_jacobian(self, torch_device, execute_kwargs, tol):
@@ -462,9 +463,8 @@ class TestTorchExecuteIntegration:
             qml.expval(qml.PauliZ(0))
 
         res = sum(execute([tape1, tape2, tape3], dev, **execute_kwargs))
-        expected = torch.tensor(
-            1 + np.cos(0.5) + torch.cos(x) * torch.cos(y), dtype=res.dtype, device=res.device
-        )
+        expected = torch.tensor(1 + np.cos(0.5), dtype=res.dtype) + torch.cos(x) * torch.cos(y)
+        expected = expected.to(device=res.device)
 
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 

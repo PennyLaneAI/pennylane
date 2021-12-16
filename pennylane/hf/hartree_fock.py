@@ -164,6 +164,8 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
             p = p_update
 
+        mol.mo_coefficients = coeffs
+
         return eigvals, coeffs, fock_matrix, h_core, repulsion_tensor
 
     return scf

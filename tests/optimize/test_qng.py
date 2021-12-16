@@ -14,7 +14,6 @@
 """Tests for the QNG optimizer"""
 import pytest
 import scipy as sp
-import warnings
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -180,15 +179,16 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(theta), -0.9963791, atol=tol, rtol=0)
 
-    def test_single_qubit_vqe(self, tol):
+    @pytest.mark.parametrize("approx", [None, "block-diag"])
+    def test_single_qubit_vqe(self, tol, approx):
         """Test single-qubit VQE has the correct QNG value
         every step, the correct parameter updates,
         and correct cost after 200 steps"""
-        dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=(2 if approx is None else 1))
 
-        def circuit(params, wires=0):
-            qml.RX(params[0], wires=wires)
-            qml.RY(params[1], wires=wires)
+        def circuit(params, wires=None):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
 
         coeffs = [1, 1]
         obs_list = [qml.PauliX(0), qml.PauliZ(0)]
@@ -212,7 +212,7 @@ class TestOptimize:
         # optimization for 200 steps total
         for t in range(num_steps):
             theta_new = opt.step(
-                cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0])
+                cost_fn, theta, metric_tensor_fn=qml.metric_tensor(qnodes.qnodes[0], approx=approx)
             )
 
             # check metric tensor
@@ -327,14 +327,3 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
-
-    @pytest.mark.parametrize(
-        "diag_approx, approx_expected", [(True, "diag"), (False, "block-diag")]
-    )
-    def test_deprecate_diag_approx(self, diag_approx, approx_expected):
-        """Test that using the diag_approx argument raises a warning due to
-        deprecation."""
-        with pytest.warns(UserWarning, match="keyword argument diag_approx is deprecated"):
-            opt = qml.QNGOptimizer(0.1, diag_approx=True)
-
-        assert opt.approx == "diag"

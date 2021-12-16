@@ -155,8 +155,8 @@ class ParticleConservingU2(Operation):
 
         if len(wires) < 2:
             raise ValueError(
-                "This template requires the number of qubits to be greater than one;"
-                "got a wire sequence with {} elements".format(len(wires))
+                f"This template requires the number of qubits to be greater than one;"
+                f"got a wire sequence with {len(wires)} elements"
             )
 
         shape = qml.math.shape(weights)
@@ -212,6 +212,6 @@ class ParticleConservingU2(Operation):
 
         if n_wires < 2:
             raise ValueError(
-                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+                f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, 2 * n_wires - 1

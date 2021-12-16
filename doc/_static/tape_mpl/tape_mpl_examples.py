@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file generates the images used in docstrings for``qml.circuit_drawer.draw_mpl``.
+This file generates the images used in docstrings for``qml.circuit_drawer.tape_mpl``.
 This makes it easier to keep docstrings up to date with the latest styling.
 
 It is not intended to be used in any Continuous Integration, but save time and hassle
@@ -24,13 +24,13 @@ import matplotlib.pyplot as plt
 import pennylane as qml
 
 
-from pennylane.circuit_drawer import draw_mpl
+from pennylane.drawer import tape_mpl
 
 folder = pathlib.Path(__file__).parent
 
 def default(tape):
 
-    fig, ax = draw_mpl(tape)
+    fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "default.png")
     plt.close()
@@ -42,47 +42,54 @@ def decimals():
         qml.Rot(1.2345,2.3456,3.456, wires=0)
         qml.expval(qml.PauliZ(0))
 
-    fig, ax = draw_mpl(tape2, decimals=2)
+    fig, ax = tape_mpl(tape2, decimals=2)
     plt.savefig(folder / "decimals.png")
     plt.close()
 
 def wire_order(tape):
 
-    fig, ax = draw_mpl(tape, wire_order=[3,2,1,0])
+    fig, ax = tape_mpl(tape, wire_order=[3,2,1,0])
 
     plt.savefig(folder / "wire_order.png")
     plt.close()
 
 def show_all_wires(tape):
 
-    fig, ax = draw_mpl(tape, wire_order=["aux"], show_all_wires=show_all_wires)
+    fig, ax = tape_mpl(tape, wire_order=["aux"], show_all_wires=show_all_wires)
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
 
-def mpl_style(tape):
-
-    with plt.style.context("Solarize_Light2"):
-        fig, ax = draw_mpl(tape)
-        plt.savefig(folder/"Solarize_Light2.png")
-        plt.close()
-
 def rcparams(tape):
 
-    plt.rcParams['patch.facecolor'] = 'white'
-    plt.rcParams['patch.edgecolor'] = 'black'
-    plt.rcParams['patch.linewidth'] = 2
+    plt.rcParams['patch.facecolor'] = 'mistyrose'
+    plt.rcParams['patch.edgecolor'] = 'maroon'
+    plt.rcParams['text.color'] = 'maroon'
+    plt.rcParams['font.weight'] = 'bold'
+    plt.rcParams['patch.linewidth'] = 4
     plt.rcParams['patch.force_edgecolor'] = True
-    plt.rcParams['lines.color'] = 'black'
+    plt.rcParams['lines.color'] = 'indigo'
+    plt.rcParams['lines.linewidth'] = 5
+    plt.rcParams['figure.facecolor'] = 'ghostwhite'
 
-    fig, ax = draw_mpl(tape)
+    fig, ax = tape_mpl(tape)
 
     plt.savefig(folder / "rcparams.png")
     plt.close()
     plt.style.use('default')
 
+def use_style(tape):
+
+    qml.drawer.use_style('black_white')
+
+    fig, ax = tape_mpl(tape)
+
+    plt.savefig(folder / "black_white_style.png")
+    plt.close()
+    plt.style.use('default')
+
 def wires_and_labels(tape):
 
-    fig, ax = draw_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
+    fig, ax = tape_mpl(tape, wire_options={'color':'black', 'linewidth': 5},
                   label_options={'size': 20})
 
     plt.savefig(folder / "wires_labels.png")
@@ -90,14 +97,14 @@ def wires_and_labels(tape):
 
 def postprocessing(tape):
 
-    fig, ax = draw_mpl(tape)
+    fig, ax = tape_mpl(tape)
     fig.suptitle("My Circuit", fontsize="xx-large")
 
     options = {'facecolor': "white", 'edgecolor': "#f57e7e", "linewidth": 6, "zorder": -1}
     box1 = plt.Rectangle((-0.5, -0.5), width=3.0, height=4.0, **options)
     ax.add_patch(box1)
 
-    ax.annotate("CSWAP", xy=(2, 2.5), xycoords='data', xytext=(2.8,1.5), textcoords='data',
+    ax.annotate("CSWAP", xy=(3, 2.5), xycoords='data', xytext=(3.8,1.5), textcoords='data',
                 arrowprops={'facecolor': 'black'}, fontsize=14)
 
     plt.savefig(folder / "postprocessing.png")
@@ -106,7 +113,8 @@ def postprocessing(tape):
 if __name__ == "__main__":
 
     with qml.tape.QuantumTape() as tape:
-        qml.templates.GroverOperator(wires=(0,1,2,3))
+        qml.QFT(wires=(0,1,2,3))
+        qml.IsingXX(1.234, wires=(0,2))
         qml.Toffoli(wires=(0,1,2))
         qml.CSWAP(wires=(0,2,3))
         qml.RX(1.2345, wires=0)
@@ -117,7 +125,7 @@ if __name__ == "__main__":
     decimals()
     wire_order(tape)
     show_all_wires(tape)
-    mpl_style(tape)
+    use_style(tape)
     rcparams(tape)
     wires_and_labels(tape)
     postprocessing(tape)
