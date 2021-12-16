@@ -61,7 +61,7 @@ class RX(Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the RX operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -130,7 +130,7 @@ class RY(Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the RY operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -194,7 +194,7 @@ class RZ(Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the RZ operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -271,7 +271,7 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the PhaseShift operator.
 
         Args:
             phi (tensor_like or float): phase shift
@@ -357,7 +357,7 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the ControlledPhaseShift operator.
 
         Args:
             phi (tensor_like or float): phase shift
@@ -452,7 +452,7 @@ class Rot(Operation):
 
     @staticmethod
     def compute_matrix(phi, theta, omega):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the Rot operator.
 
          Args:
              phi (tensor_like or float): first rotation angle
@@ -549,7 +549,7 @@ class MultiRZ(Operation):
 
     @staticmethod
     def compute_matrix(theta, n_wires):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the MultiRZ operator.
 
         Args:
             theta (tensor_like or float): Rotation angle.
@@ -748,7 +748,7 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_matrix(theta, pauli_word):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the PauliRot operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -959,7 +959,7 @@ class CRX(Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CRX operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1075,7 +1075,7 @@ class CRY(Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CRY operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1185,7 +1185,7 @@ class CRZ(Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CRZ operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1287,7 +1287,7 @@ class CRot(Operation):
 
     @staticmethod
     def compute_matrix(phi, theta, omega):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CRot operator.
 
          Args:
              phi (tensor_like or float): first rotation angle
@@ -1396,7 +1396,7 @@ class U1(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the U1 operator.
 
         Args:
             phi (tensor_like or float): rotation angle
@@ -1468,7 +1468,7 @@ class U2(Operation):
 
     @staticmethod
     def compute_matrix(phi, lam):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the U2 operator.
 
         Args:
             phi (tensor_like or float): azimuthal angle
@@ -1557,12 +1557,13 @@ class U3(Operation):
 
     @staticmethod
     def compute_matrix(theta, phi, lam):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the U3 operator.
 
         Args:
             theta (tensor_like or float): polar angle
             phi (tensor_like or float): azimuthal angle
             lambda (tensor_like or float): quantum phase
+
         Returns:
             tensor_like: canonical matrix
 
@@ -1646,7 +1647,7 @@ class IsingXX(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the IsingXX operator.
 
         Args:
            phi (tensor_like or float): phase angle
@@ -1732,7 +1733,7 @@ class IsingYY(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the IsingYY operator.
 
         Args:
            phi (tensor_like or float): phase angle
@@ -1807,7 +1808,7 @@ class IsingZZ(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the IsingZZ operator.
 
         Args:
            phi (tensor_like or float): phase angle

@@ -95,7 +95,7 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the QubitCarry operator.
 
         Returns:
             array: canonical matrix
@@ -219,7 +219,7 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the QubitSum operator.
 
         Returns:
             array: canonical matrix

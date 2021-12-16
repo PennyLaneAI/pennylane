@@ -63,7 +63,7 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_matrix(A):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the Hermitian operator.
 
         Args:
             A (tensor_like): hermitian matrix
@@ -135,7 +135,8 @@ class Hermitian(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r"""A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
+    r"""SparseHamiltonian(H)
+    A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     .. warning::
 
@@ -168,7 +169,7 @@ class SparseHamiltonian(Observable):
 
     @staticmethod
     def compute_matrix(H):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SparseHamiltonian operator.
 
         Args:
             H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
@@ -272,7 +273,7 @@ class Projector(Observable):
 
     @staticmethod
     def compute_matrix(basis_state):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the Projector operator.
 
         Args:
             basis_state (Iterable): basis state to project on

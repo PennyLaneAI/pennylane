@@ -87,7 +87,7 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_matrix(U):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the QubitUnitary operator.
 
         Args:
             U (tensor_like): unitary matrix
@@ -347,7 +347,7 @@ class DiagonalQubitUnitary(Operation):
 
     @staticmethod
     def compute_matrix(D):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the DiagonalQubitUnitary operator.
 
         Args:
             D (tensor_like): diagonal of the matrix

@@ -184,7 +184,7 @@ class TestQubitUnitary:
             qml.QubitUnitary.decomposition(U, wires=[0, 1, 2])
 
     def test_matrix_representation(self, tol):
-        """Test that the canonical matrix is defined correctly"""
+        """Test that the matrix representation is defined correctly"""
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
@@ -209,7 +209,7 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(decomp[0].data[0], np.diag(D))
 
     def test_matrix_representation(self, tol):
-        """Test that the base matrix is defined correctly"""
+        """Test that the matrix representation is defined correctly"""
         diag = np.array([1, -1])
         res_static = qml.DiagonalQubitUnitary.compute_matrix(diag)
         res_dynamic = qml.DiagonalQubitUnitary(diag, wires=0).matrix()
@@ -417,7 +417,7 @@ class TestControlledQubitUnitary:
         assert np.allclose(mixed_polarity_state, pauli_x_state)
 
     def test_matrix_representation(self, tol):
-        """Test that the base matrix is defined correctly"""
+        """Test that the matrix representation is defined correctly"""
         U = np.array([[0.94877869, 0.31594146], [-0.31594146, 0.94877869]])
         # res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1])
         res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()

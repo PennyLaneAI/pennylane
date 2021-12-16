@@ -315,7 +315,7 @@ class TestHermitian:
             qml.Hermitian(H2, wires=0).matrix()
 
     def test_matrix_representation(self, tol):
-        """Test that the base matrix is defined correctly"""
+        """Test that the matrix representation is defined correctly"""
         A = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         res_static = qml.Hermitian.compute_matrix(A)
         res_dynamic = qml.Hermitian(A, wires=0).matrix()
@@ -419,7 +419,7 @@ class TestProjector:
         ],
     )
     def test_matrix_representation(self, basis_state, expected, n_wires, tol):
-        """Test the matrix method"""
+        """Test that the matrix representation is defined correctly"""
         res_dynamic = qml.Projector(basis_state, wires=range(n_wires)).matrix()
         res_static = qml.Projector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)

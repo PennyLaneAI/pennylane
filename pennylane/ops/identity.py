@@ -51,7 +51,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the Identity operator.
 
         Returns:
             array: canonical matrix

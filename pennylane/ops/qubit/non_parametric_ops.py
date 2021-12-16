@@ -54,7 +54,7 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the Hadamard operator.
 
         Returns:
             array: canonical matrix
@@ -131,7 +131,7 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the PauliX operator.
 
         Returns:
             array: canonical matrix
@@ -209,7 +209,7 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the PauliY operator.
 
         Returns:
             array: canonical matrix
@@ -293,7 +293,7 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the PauliZ operator.
 
         Returns:
             array: canonical matrix
@@ -356,7 +356,7 @@ class S(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the S operator.
 
         Returns:
             array: canonical matrix
@@ -413,7 +413,7 @@ class T(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the T operator.
 
         Returns:
             array: canonical matrix
@@ -470,7 +470,7 @@ class SX(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SX operator.
 
         Returns:
             array: canonical matrix
@@ -538,7 +538,7 @@ class CNOT(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CNOT operator.
 
         Returns:
             array: canonical matrix
@@ -598,7 +598,7 @@ class CZ(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CZ operator.
 
         Returns:
             array: canonical matrix
@@ -658,7 +658,7 @@ class CY(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CY operator.
 
         Returns:
             array: canonical matrix
@@ -721,7 +721,7 @@ class SWAP(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SWAP operator.
 
         Returns:
             array: canonical matrix
@@ -780,7 +780,7 @@ class ISWAP(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the ISWAP operator.
 
         Returns:
             array: canonical matrix
@@ -843,7 +843,7 @@ class SISWAP(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SISWAP operator.
 
         Returns:
             array: canonical matrix
@@ -851,10 +851,10 @@ class SISWAP(Operation):
         **Example**
 
         >>> qml.SISWAP.compute_matrix()
-        [[1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+        [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
          [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
          [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
-         [0.+0.j  0.+0.j  0.+0.j  1.+0.j]]
+         [0.+0.j          0.+0.j          0.+0.j  1.+0.j]]
         """
         return np.array(
             [
@@ -931,7 +931,7 @@ class CSWAP(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the CSWAP operator.
 
         Returns:
             array: canonical matrix
@@ -1016,7 +1016,7 @@ class Toffoli(Operation):
 
     @staticmethod
     def compute_matrix():
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the Toffoli operator.
 
         Returns:
             array: canonical matrix
@@ -1175,7 +1175,7 @@ class MultiControlledX(Operation):
 
     @staticmethod
     def compute_matrix(control_int, n_wires):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the MultiControlledX operator.
 
         **Examples:**
 

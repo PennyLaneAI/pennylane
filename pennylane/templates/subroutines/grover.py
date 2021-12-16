@@ -150,7 +150,6 @@ class GroverOperator(Operation):
             canonical_matrix, wires=self.wires, wire_order=wire_order
         )
 
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(num_wires):
 

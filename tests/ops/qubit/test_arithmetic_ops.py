@@ -131,7 +131,7 @@ class TestQubitCarry:
         assert np.allclose(result, 0.5)
 
     def test_matrix_representation(self, tol):
-        """Test that the canonical matrix is defined correctly"""
+        """Test that the matrix representation is defined correctly"""
 
         res_static = qml.QubitCarry.compute_matrix()
         res_dynamic = qml.QubitCarry(wires=[0, 1, 2, 3]).matrix()
@@ -235,7 +235,7 @@ class TestQubitSum:
         assert np.allclose(u, qml.QubitSum.compute_matrix())
 
     def test_matrix_representation(self, tol):
-        """Test that the canonical matrix is defined correctly"""
+        """Test that the matrix representation is defined correctly"""
 
         res_static = qml.QubitSum.compute_matrix()
         res_dynamic = qml.QubitSum(wires=[0, 1, 2]).matrix()

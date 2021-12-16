@@ -829,7 +829,6 @@ class QubitDevice(Device):
             ]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
-
             evals = observable.eigvals
             if evals is None:
                 # the eigenvalue representation is not defined

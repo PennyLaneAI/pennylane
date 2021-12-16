@@ -91,7 +91,7 @@ class SingleExcitation(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SingleExcitation operator.
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -167,7 +167,7 @@ class SingleExcitationMinus(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SingleExcitationMinus operator.
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -257,7 +257,7 @@ class SingleExcitationPlus(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the SingleExcitationPlus operator.
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -373,14 +373,13 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the DoubleExcitation operator.
 
         Args:
           phi (tensor_like or float): rotation angle
 
         Returns:
           tensor_like: canonical matrix
-
         """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
@@ -477,7 +476,7 @@ class DoubleExcitationPlus(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the DoubleExcitationPlus operator.
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -556,7 +555,7 @@ class DoubleExcitationMinus(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the DoubleExcitationMinus operator.
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -674,7 +673,7 @@ class OrbitalRotation(Operation):
 
     @staticmethod
     def compute_matrix(phi):
-        """Canonical matrix representation of this operator.
+        """Canonical matrix representation of the OrbitalRotation operator.
 
         Args:
           phi (tensor_like or float): rotation angle
