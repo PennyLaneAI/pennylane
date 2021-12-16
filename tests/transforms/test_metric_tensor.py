@@ -309,7 +309,7 @@ class TestMetricTensor:
         def final(x, y, z, h, g, f):
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
+            qml.RY(-y, wires=1).inv()
             qml.RZ(z, wires=2)
             non_parametrized_layer(a, b, c)
             qml.RY(f, wires=1)
@@ -467,16 +467,13 @@ class TestMetricTensor:
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
 
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
-        """Test that a metric tensor under the
-        diagonal approximation evaluates correctly and that the old option
-        ``diag_approx`` raises a Warning."""
+        """Test that a metric tensor under the diagonal approximation evaluates
+        correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
         params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
         x, y, z, h, g, f = params
 
         G = qml.metric_tensor(circuit, approx="diag")(*params)
-        with pytest.warns(UserWarning):
-            G_alias = qml.metric_tensor(circuit, diag_approx=True)(*params)
 
         # ============================================
         # Test block-diag metric tensor of first layer is correct.
@@ -502,7 +499,6 @@ class TestMetricTensor:
         G1[2, 2] = (3 - np.cos(2 * a) - 2 * np.cos(a) ** 2 * np.cos(2 * (b + c))) / 16
 
         assert qml.math.allclose(G[:3, :3], G1, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias[:3, :3], G1, atol=tol, rtol=0)
 
         # =============================================
         # Test block-diag metric tensor of second layer is correct.
@@ -532,7 +528,6 @@ class TestMetricTensor:
         G2[1, 1] = varK1 / 4
 
         assert qml.math.allclose(G[4:6, 4:6], G2, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias[4:6, 4:6], G2, atol=tol, rtol=0)
 
         # =============================================
         # Test metric tensor of third layer is correct.
@@ -560,7 +555,6 @@ class TestMetricTensor:
         layer3_diag = qml.QNode(layer3_diag, dev)
         G3 = layer3_diag(x, y, z, h, g, f) / 4
         assert qml.math.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
         # Finally, double check that the entire metric
@@ -568,7 +562,6 @@ class TestMetricTensor:
 
         G_expected = block_diag(G1, G3, G2)
         assert qml.math.allclose(G, G_expected, atol=tol, rtol=0)
-        assert qml.math.allclose(G_alias, G_expected, atol=tol, rtol=0)
 
     def test_multi_qubit_gates(self):
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
@@ -628,8 +621,8 @@ def fubini_ansatz2(params, wires=None):
     qml.RY(params0, wires=0)
     qml.RY(params0, wires=1)
     qml.CNOT(wires=[0, 1])
-    qml.RX(params1, wires=0)
-    qml.RX(params1, wires=1)
+    qml.RX(params1, wires=0).inv()
+    qml.RX(params1, wires=1).inv()
 
 
 def fubini_ansatz3(params, wires=None):
@@ -640,7 +633,7 @@ def fubini_ansatz3(params, wires=None):
     qml.RX(fixed_pars[3], wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
-    qml.RX(params0, wires=0)
+    qml.RX(params0, wires=0).inv()
     qml.RX(params0, wires=1)
     qml.CNOT(wires=[0, 1])
     qml.CNOT(wires=[1, 2])
@@ -1335,60 +1328,3 @@ def test_get_aux_wire_with_device_wires():
     assert _get_aux_wire("one", tape, device_wires) == "one"
     assert _get_aux_wire("two", tape, device_wires) == "aux"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
-
-
-class TestDeprecatedQNodeMethod:
-    """The QNode.metric_tensor method has been deprecated.
-    These tests ensure it still works, but raises a deprecation
-    warning. These tests can be deleted when the method is removed."""
-
-    def test_warning(self, tol):
-        """Test that a warning is emitted"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode_old.qnode(dev)
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(c, wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
-
-        a = 0.432
-        b = 0.12
-        c = -0.432
-
-        # evaluate metric tensor
-        with pytest.warns(UserWarning, match="has been deprecated"):
-            g = circuit.metric_tensor(a, b, c, approx="block-diag")
-
-        # check that the metric tensor is correct
-        expected = (
-            np.array(
-                [1, np.cos(a) ** 2, (3 - 2 * np.cos(a) ** 2 * np.cos(2 * b) - np.cos(2 * a)) / 4]
-            )
-            / 4
-        )
-        assert qml.math.allclose(g, np.diag(expected), atol=tol, rtol=0)
-
-    def test_tapes_returned(self, tol):
-        """Test that a warning is emitted"""
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode_old.qnode(dev)
-        def circuit(a, b, c):
-            qml.RX(a, wires=0)
-            qml.RY(b, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(c, wires=1)
-            return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
-
-        a = 0.432
-        b = 0.12
-        c = -0.432
-
-        # evaluate metric tensor
-        with pytest.warns(UserWarning, match="has been deprecated"):
-            tapes, fn = circuit.metric_tensor(a, b, c, approx="block-diag", only_construct=True)
-
-        assert len(tapes) == 3

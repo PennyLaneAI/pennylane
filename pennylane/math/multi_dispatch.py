@@ -44,24 +44,24 @@ def _multi_dispatch(values):
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
-    * Vanilla NumPy arrays can be used alongside other tensor objects; they will
-      always be treated as non-differentiable constants.
+    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
+      they will always be treated as non-differentiable constants.
     """
     if "resource_variable" in getattr(values, "__module__", tuple()):
         values = np.asarray(values)
 
     interfaces = {get_interface(v) for v in values}
 
-    if len(set(interfaces) - {"numpy", "autograd"}) > 1:
+    if len(set(interfaces) - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
-    non_numpy_interfaces = set(interfaces) - {"numpy"}
+    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
 
-    if len(non_numpy_interfaces) > 1:
+    if len(non_numpy_scipy_interfaces) > 1:
         # contains autograd and another interface
         warnings.warn(
-            f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
+            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
