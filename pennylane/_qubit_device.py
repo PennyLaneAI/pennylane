@@ -764,9 +764,7 @@ class QubitDevice(Device):
             eigvals = observable.eigvals
             if eigvals is None:
                 # eigenvalue representation is not defined
-                raise ValueError(
-                    f"Cannot compute analytic expectations of {observable.name}."
-                )
+                raise ValueError(f"Cannot compute analytic expectations of {observable.name}.")
             eigvals = self._asarray(eigvals, dtype=self.R_DTYPE)
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)

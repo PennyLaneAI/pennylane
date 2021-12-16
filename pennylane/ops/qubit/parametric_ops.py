@@ -466,7 +466,8 @@ class Rot(Operation):
 
          >>> qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
         tensor([[ 0.9752-0.1977j, -0.0993+0.0100j],
-        [ 0.0993+0.0100j,  0.9752+0.1977j]])
+                [ 0.0993+0.0100j,  0.9752+0.1977j]])
+
         """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
@@ -1572,6 +1573,7 @@ class U3(Operation):
         >>> qml.U3.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
         tensor([[ 0.9988+0.0000j, -0.0477-0.0148j],
                 [ 0.0490+0.0099j,  0.8765+0.4788j]])
+
         """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
