@@ -642,6 +642,8 @@ class TestJaxExecuteIntegration:
         ([qml.state()], (1, 4)),
         ([qml.density_matrix(wires=0)], (1, 2, 2)),
         ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+        ([qml.var(qml.PauliZ(0)), qml.var(qml.PauliZ(1))], (2,)),
+        ([qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))], (2,)),
     ]
 
     @pytest.mark.parametrize("ret, out_dim", ret_and_output_dim)
@@ -655,9 +657,11 @@ class TestJaxExecuteIntegration:
             if "gradient_kwargs" in execute_kwargs
             else ""
         )
-        if "adjoint" in grad_meth and ret[0].return_type in (
+        if "adjoint" in grad_meth and any(r.return_type in (
             qml.operation.Probability,
             qml.operation.State,
+            qml.operation.Variance)
+            for r in ret
         ):
             pytest.skip("Adjoint does not support probs")
 
