@@ -259,8 +259,8 @@ def generate_symmetries(qubit_op, num_qubits):
     >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
     >>> mol = qml.hf.Molecule(symbols, coordinates)
     >>> H, qubits = qml.hf.generate_hamiltonian(mol)(geometry), 4
-    >>> generators, pauli_x = qml.hf.tapering.generate_symmetries(H, qubits)
-    >>> generators, pauli_x
+    >>> generators, paulix_ops = qml.hf.tapering.generate_symmetries(H, qubits)
+    >>> generators, paulix_ops
     ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
     [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
     """
