@@ -71,21 +71,29 @@ class Hadamard(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Hadamard operator.
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        r"""Diagonalizing gates of this operator.
 
-        For the Hadamard operator,
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of the Hadamard operator:
 
         .. math:: H = U^\dagger Z U
 
         where :math:`U = R_y(-\pi/4)`.
 
+        Args:
+            wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(~.Operation): A list of gates that diagonalize Hadamard in
-            the computational basis.
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Hadamard.compute_diagonalizing_gates(wires=[0])
+        [RY(-0.7853981633974483, wires=[0])]
         """
-        return [qml.RY(-np.pi / 4, wires=self.wires)]
+        return [qml.RY(-np.pi / 4, wires=wires)]
 
     @staticmethod
     def decomposition(wires):
@@ -148,19 +156,27 @@ class PauliX(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Pauli-X operator.
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        r"""Diagonalizing gates of this operator.
 
-        For the Pauli-X operator,
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of PauliX:
 
         .. math:: X = H^\dagger Z H.
 
+        Args:
+           wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(qml.Operation): A list of gates that diagonalize PauliY in the
-            computational basis.
+           list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliX.compute_diagonalizing_gates(wires=[0])
+        [Hadamard(wires=[0])]
         """
-        return [Hadamard(wires=self.wires)]
+        return [Hadamard(wires=wires)]
 
     @staticmethod
     def decomposition(wires):
@@ -226,24 +242,32 @@ class PauliY(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of PauliY.
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        r"""Diagonalizing gates of this operator.
 
-        For the Pauli-Y observable,
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of PauliY:
 
         .. math:: Y = U^\dagger Z U
 
         where :math:`U=HSZ`.
 
+        Args:
+            wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(~.Operation): A list of gates that diagonalize PauliY in the
-                computational basis.
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliY.compute_diagonalizing_gates(wires=[0])
+        [PauliZ(wires=[0]), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
-            PauliZ(wires=self.wires),
-            S(wires=self.wires),
-            Hadamard(wires=self.wires),
+            PauliZ(wires=wires),
+            S(wires=wires),
+            Hadamard(wires=wires),
         ]
 
     @staticmethod
@@ -310,7 +334,21 @@ class PauliZ(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliZ.compute_diagonalizing_gates(wires=[0])
+        []
+        """
         return []
 
     @staticmethod
