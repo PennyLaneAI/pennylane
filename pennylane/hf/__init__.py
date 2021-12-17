@@ -48,4 +48,5 @@ from .tapering import (
     get_generators,
     generate_paulis,
     generate_symmetries,
+    find_optimal_sector,
 )

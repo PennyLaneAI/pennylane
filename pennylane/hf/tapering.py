@@ -15,6 +15,8 @@
 This module contains the functions needed for tapering qubits using symmetries.
 """
 import numpy as np
+import scipy as sp
+import itertools as it
 import pennylane as qml
 
 
@@ -301,3 +303,98 @@ def generate_symmetries(qubit_op, num_qubits):
     pauli_x_ops = generate_paulis(generators, num_qubits)
 
     return generators, pauli_x_ops
+
+
+def _sector_energy(sector):
+    """Computes energy of the given tapered Hamiltonian.
+
+    Args:
+        sector (pennylane.Hamiltonian): tapered Hamiltonian whose energy has to be calculated
+
+    Returns:
+        energy (float): energy of the tapered hamiltonian
+    """
+
+    if len(sector.wires) < 2:
+        energy = min(sp.linalg.eigvals(qml.utils.sparse_hamiltonian(sector).toarray()))
+    else:
+        energy = sp.sparse.linalg.eigs(qml.utils.sparse_hamiltonian(sector), k=2)[0].min()
+
+    return energy
+
+
+def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num_electrons=0):
+    r"""Get the optimal sector which contains the ground state.
+
+    To obtain the optimal sector one can brute force through all the permutation or by utilize the following
+    relation between the Pauli-Z qubit operator and the occupation number under Jordan-Wigner transform.
+
+    .. math::
+
+        \sigma_z^{i} = a_{i}^{\dagger}a_{i} - 1
+
+    This relation allows us to figure out whether the orbital is occupied or unoccupied in a given symmetry sector,
+    to build the correct eigensector.
+
+    Args:
+        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated for performing tapering
+        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        pauli_x_ops (list[pennylane.operation.Observable]):  list of single-qubit Pauli X operators
+        brute_force (bool): determines whether to use brute-force strategy to pick the correct sector or not
+        num_electrons (int): If `brute_force = True`, user must provide the number of active electrons in
+                              the system for generating the Hartree-Fock bitstring
+
+    Returns:
+        tuple (list[int], float):
+
+            * list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
+            * float: energy of the computed optimal sector
+
+    .. code-block:: python
+
+        >>> symbols = ['H', 'H']
+        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+        >>> mol = qml.hf.Molecule(symbols, coordinates)
+        >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
+        >>> generators, pauli_x_ops = generate_symmetries(H, qubits)
+        >>> find_optimal_sector(H, generators, pauli_x_ops, False, 2)
+          ((1, -1, -1), -1.1372701746609024)
+
+    """
+
+    if not brute_force:
+
+        if num_electrons < 1:
+            raise ValueError(
+                "Brute force search is disabled; the number of electrons must be provided."
+            )
+
+        hf_str = qml.qchem.hf_state(num_electrons, len(qubit_op.wires))
+        perm = []
+
+        for op in generators:
+            symmstr = np.zeros(len(qubit_op.wires), dtype=int)
+            for wire in op.wires:
+                symmstr[wire] = 1
+            coeff = -1 if np.logical_xor.reduce(np.logical_and(symmstr, hf_str)) else 1
+            perm.append(coeff)
+
+        pauli_wires = [p.wires[0] for p in pauli_x_ops]
+        sector = transform_hamiltonian(qubit_op, generators, pauli_wires, perm)
+        energy = _sector_energy(sector)
+
+        return perm, energy
+
+    sectors = []
+    energies = []
+    perms = list(it.product([1, -1], repeat=len(generators)))
+    pauli_wires = [p.wires[0] for p in pauli_x_ops]
+
+    for perm in perms:
+        sector = transform_hamiltonian(qubit_op, generators, pauli_wires, perm)
+        energy = _sector_energy(sector)
+        sectors.append(sector)
+        energies.append(float(energy.real))
+
+    index = energies.index(min(energies))
+    return perms[index], energies[index]
