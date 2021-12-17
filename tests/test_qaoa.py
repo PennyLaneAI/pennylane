@@ -14,7 +14,6 @@
 """
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
-from networkx.algorithms.similarity import graph_edit_distance
 import pytest
 import itertools
 import numpy as np

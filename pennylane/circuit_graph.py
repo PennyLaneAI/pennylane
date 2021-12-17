@@ -18,7 +18,6 @@ representation of a quantum circuit from an Operator queue.
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
 from collections import Counter, OrderedDict, namedtuple
 
-import networkx as nx
 import retworkx as rx
 
 import pennylane as qml
@@ -168,30 +167,30 @@ class CircuitGraph:
 
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
-        # self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
-        self._graph = rx.PyDiGraph(multigraph=False)  #: rx.PyDiGraph: DAG representation of the quantum circuit
+        self._graph = rx.PyDiGraph(
+            multigraph=False
+        )  #: rx.PyDiGraph: DAG representation of the quantum circuit
+
         # Iterate over each (populated) wire in the grid
         for wire in self._grid.values():
             # Add the first operator on the wire to the graph
             # This operator does not depend on any others
 
-            if wire[0] not in self._graph.nodes(): # rx.
+            if wire[0] not in self._graph.nodes():
                 self._graph.add_node(wire[0])
-            
+
             for i in range(1, len(wire)):
                 # For subsequent operators on the wire:
-                # if wire[i] not in self._graph:
-                if wire[i] not in self._graph.nodes(): # rx.
+                if wire[i] not in self._graph.nodes():
                     # Add them to the graph if they are not already
                     # in the graph (multi-qubit operators might already have been placed)
                     self._graph.add_node(wire[i])
 
                 # Create an edge between this and the previous operator
-                # self._graph.add_edge(wire[i - 1], wire[i])
-                self._graph.add_edge(self._graph.nodes().index(wire[i - 1]), 
-                    self._graph.nodes().index(wire[i]), 
-                    '') # rx.
-                
+                self._graph.add_edge(
+                    self._graph.nodes().index(wire[i - 1]), self._graph.nodes().index(wire[i]), ""
+                )
+
         # For computing depth; want only a graph with the operations, not
         # including the observables
         self._operation_graph = None
@@ -272,8 +271,7 @@ class CircuitGraph:
         Returns:
             list[Observable]: observables
         """
-        # nodes = [node for node in self._graph.nodes if _is_observable(node)]
-        nodes = [node for node in self._graph.nodes() if _is_observable(node)] # rx.
+        nodes = [node for node in self._graph.nodes() if _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
     @property
@@ -293,8 +291,7 @@ class CircuitGraph:
         Returns:
             list[Operation]: operations
         """
-        # nodes = [node for node in self._graph.nodes if not _is_observable(node)]
-        nodes = [node for node in self._graph.nodes() if not _is_observable(node)] # rx.
+        nodes = [node for node in self._graph.nodes() if not _is_observable(node)]
         return sorted(nodes, key=_by_idx)
 
     @property
@@ -334,9 +331,13 @@ class CircuitGraph:
         Returns:
             set[Operator]: ancestors of the given operators
         """
-        # return set().union(*(nx.dag.ancestors(self._graph, o) for o in ops)) - set(ops)
-        anc = set(self._graph.get_node_data(n) for n in set().union(*(rx.ancestors(self._graph, self._graph.nodes().index(o)) for o in ops))) # rx.
-        return anc - set(ops) # rx.
+        anc = set(
+            self._graph.get_node_data(n)
+            for n in set().union(
+                *(rx.ancestors(self._graph, self._graph.nodes().index(o)) for o in ops)
+            )
+        )
+        return anc - set(ops)
 
     def descendants(self, ops):
         """Descendants of a given set of operators.
@@ -347,9 +348,13 @@ class CircuitGraph:
         Returns:
             set[Operator]: descendants of the given operators
         """
-        # return set().union(*(nx.dag.descendants(self._graph, o) for o in ops)) - set(ops)
-        des = set(self._graph.get_node_data(n) for n in set().union(*(rx.descendants(self._graph, self._graph.nodes().index(o)) for o in ops))) # rx.
-        return des - set(ops) # rx.
+        des = set(
+            self._graph.get_node_data(n)
+            for n in set().union(
+                *(rx.descendants(self._graph, self._graph.nodes().index(o)) for o in ops)
+            )
+        )
+        return des - set(ops)
 
     def _in_topological_order(self, ops):
         """Sorts a set of operators in the circuit in a topological order.
@@ -360,11 +365,9 @@ class CircuitGraph:
         Returns:
             Iterable[Operator]: same set of operators, topologically ordered
         """
-        # G = nx.DiGraph(self._graph.subgraph(ops))
-        # return nx.dag.topological_sort(G)
-        G = self._graph.subgraph(list(self._graph.nodes().index(o) for o in ops)) # rx.
-        indexes = rx.topological_sort(G) # rx.
-        return list(G[x] for x in indexes) # rx.
+        G = self._graph.subgraph(list(self._graph.nodes().index(o) for o in ops))
+        indexes = rx.topological_sort(G)
+        return list(G[x] for x in indexes)
 
     def ancestors_in_order(self, ops):
         """Operator ancestors in a topological order.
@@ -377,8 +380,7 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
-        # return self._in_topological_order(self.ancestors(ops))  # an abitrary topological order
-        return sorted(self.ancestors(ops), key=_by_idx)
+        return sorted(self.ancestors(ops), key=_by_idx)  # an abitrary topological order
 
     def descendants_in_order(self, ops):
         """Operator descendants in a topological order.
@@ -603,10 +605,8 @@ class CircuitGraph:
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
         new.queue_idx = old.queue_idx
-        
-        # nx.relabel_nodes(self._graph, {old: new}, copy=False)  # change the graph in place
-        # self._graph[old] = new # rx.
-        self._graph[self._graph.nodes().index(old)] = new # rx.
+
+        self._graph[self._graph.nodes().index(old)] = new
 
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
@@ -653,12 +653,10 @@ class CircuitGraph:
         # expressed in terms of edges, and we want it in terms of nodes).
         if self._depth is None and self.operations:
             if self._operation_graph is None:
-                # self._operation_graph = self.graph.subgraph(self.operations)
-                self._operation_graph = self._graph.subgraph(list(self._graph.nodes().index(node) for node in self.operations)) # rx/
-
-                # self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
-                self._depth = rx.dag_longest_path_length(self._operation_graph) + 1 # rx.
-
+                self._operation_graph = self._graph.subgraph(
+                    list(self._graph.nodes().index(node) for node in self.operations)
+                )
+                self._depth = rx.dag_longest_path_length(self._operation_graph) + 1
         return self._depth
 
     def has_path(self, a, b):
@@ -671,8 +669,17 @@ class CircuitGraph:
         Returns:
             bool: returns ``True`` if a path exists
         """
-        # return nx.has_path(self._graph, a, b)
-        return len(rx.dijkstra_shortest_paths(self._graph, self._graph.nodes().index(a), self._graph.nodes().index(b))) != 0 # rx.
+        if a == b:
+            return True
+
+        return (
+            len(
+                rx.dijkstra_shortest_paths(
+                    self._graph, self._graph.nodes().index(a), self._graph.nodes().index(b)
+                )
+            )
+            != 0
+        )
 
     @property
     def max_simultaneous_measurements(self):

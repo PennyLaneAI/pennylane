@@ -18,9 +18,6 @@ different optimization problems.
 import networkx as nx
 import retworkx as rx
 
-from networkx.algorithms.similarity import graph_edit_distance
-from networkx.generators.expanders import paley_graph
-
 import pennylane as qml
 from pennylane import qaoa
 
@@ -185,7 +182,7 @@ def edge_driver(graph, reward):
     ops = []
 
     is_rx = isinstance(graph, rx.PyGraph)
-    graph_nodes = graph.nodes() if is_rx else graph.nodes
+    graph_nodes = graph.nodes()
     graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
     get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
@@ -302,7 +299,7 @@ def maxcut(graph):
         )
 
     is_rx = isinstance(graph, rx.PyGraph)
-    graph_nodes = graph.nodes() if is_rx else graph.nodes
+    graph_nodes = graph.nodes()
     graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
     get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
@@ -378,7 +375,7 @@ def max_independent_set(graph, constrained=True):
             "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
         )
 
-    graph_nodes = graph.nodes() if isinstance(graph, rx.PyGraph) else graph.nodes
+    graph_nodes = graph.nodes()
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
@@ -458,7 +455,7 @@ def min_vertex_cover(graph, constrained=True):
             "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
         )
 
-    graph_nodes = graph.nodes() if isinstance(graph, rx.PyGraph) else graph.nodes
+    graph_nodes = graph.nodes()
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 0)
@@ -540,9 +537,10 @@ def max_clique(graph, constrained=True):
             "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
         )
 
-    is_rx = isinstance(graph, rx.PyGraph)
-    graph_nodes = graph.nodes() if is_rx else graph.nodes
-    graph_complement = rx.complement(graph) if is_rx else nx.complement(graph)
+    graph_nodes = graph.nodes()
+    graph_complement = (
+        rx.complement(graph) if isinstance(graph, rx.PyGraph) else nx.complement(graph)
+    )
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)

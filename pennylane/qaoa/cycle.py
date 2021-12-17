@@ -71,7 +71,10 @@ def edges_to_wires(graph) -> Dict[Tuple, int]:
         return {edge: i for i, edge in enumerate(graph.edges)}
     elif isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
         gnodes = graph.nodes()
-        return {(gnodes[e[0]], gnodes[e[1]]): i for i, e in enumerate(sorted(graph.edge_list()))}
+        return {
+            (gnodes.index(e[0]), gnodes.index(e[1])): i
+            for i, e in enumerate(sorted(graph.edge_list()))
+        }
     else:
         raise ValueError(
             "Input graph must be a nx.Graph, rx.Py(Di)Graph, got {}".format(type(graph).__name__)
@@ -123,7 +126,10 @@ def wires_to_edges(graph) -> Dict[int, Tuple]:
         return {i: edge for i, edge in enumerate(graph.edges)}
     elif isinstance(graph, (rx.PyGraph, rx.PyDiGraph)):
         gnodes = graph.nodes()
-        return {i: (gnodes[e[0]], gnodes[e[1]]) for i, e in enumerate(sorted(graph.edge_list()))}
+        return {
+            i: (gnodes.index(e[0]), gnodes.index(e[1]))
+            for i, e in enumerate(sorted(graph.edge_list()))
+        }
     else:
         raise ValueError(
             "Input graph must be a nx.Graph or rx.Py(Di)Graph, got {}".format(type(graph).__name__)
@@ -255,7 +261,7 @@ def _partial_cycle_mixer(graph, edge: Tuple) -> Hamiltonian:
     edges_to_qubits = edges_to_wires(graph)
     graph_nodes = graph.node_indexes() if is_rx else graph.nodes
     graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
-    get_nvalues = lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]]) if is_rx else T
+    get_nvalues = lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
 
     for node in graph_nodes:
         out_edge = (edge[0], node)
@@ -372,7 +378,7 @@ def loss_hamiltonian(graph) -> Hamiltonian:
 
     is_rx = isinstance(graph, (rx.PyGraph, rx.PyDiGraph))
     edges_data = sorted(graph.weighted_edge_list()) if is_rx else graph.edges(data=True)
-    get_nvalues = lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]]) if is_rx else T
+    get_nvalues = lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1])) if is_rx else T
 
     for edge_data in edges_data:
         edge = edge_data[:2]
@@ -563,7 +569,7 @@ def _inner_out_flow_constraint_hamiltonian(graph, node) -> Hamiltonian:
     ops = []
 
     get_nvalues = (
-        lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]])
+        lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1]))
         if isinstance(graph, rx.PyDiGraph)
         else T
     )
@@ -631,7 +637,7 @@ def _inner_net_flow_constraint_hamiltonian(graph, node) -> Hamiltonian:
     in_edges = sorted(graph.in_edges(node))
 
     get_nvalues = (
-        lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]])
+        lambda T: (graph.nodes().index(T[0]), graph.nodes().index(T[1]))
         if isinstance(graph, rx.PyDiGraph)
         else T
     )
