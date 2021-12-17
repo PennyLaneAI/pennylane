@@ -90,7 +90,7 @@ def _reduced_row_echelon(binary_matrix):
             # get the nonzero indices in the remainder of column icol
             non_zero_idx = rref_mat[irow:, icol].nonzero()[0]
 
-            if not len(non_zero_idx):  # if remainder of column icol is all zero
+            if len(non_zero_idx) == 0:  # if remainder of column icol is all zero
                 icol += 1
             else:
                 # find value and index of largest element in remainder of column icol
