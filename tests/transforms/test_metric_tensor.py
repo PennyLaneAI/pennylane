@@ -63,15 +63,15 @@ class TestMetricTensor:
         """Test that the MultiRZ gate is correctly decomposed"""
         dev = qml.device("default.qubit", wires=3)
 
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.MultiRZ(b, wires=[0, 1, 2])
             return qml.expval(qml.PauliX(0))
 
-        circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = [0.1, 0.2]
+        params = np.array([0.1, 0.2], requires_grad=True)
         result = qml.metric_tensor(circuit, approx="block-diag")(*params)
-        assert result.shape == (2, 2)
+        assert qml.math.shape(result) == (2, 2)
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_parameter_fan_out(self, diff_method):
@@ -216,9 +216,9 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev)
 
-        a = 0.432
-        b = 0.12
-        c = -0.432
+        a = np.array(0.432, requires_grad=True)
+        b = np.array(0.12, requires_grad=True)
+        c = np.array(-0.432, requires_grad=True)
 
         # evaluate metric tensor
         g_diag = qml.metric_tensor(circuit, approx="diag")(a, b, c)
@@ -306,7 +306,8 @@ class TestMetricTensor:
         b = 0.1
         c = 0.5
 
-        def final(x, y, z, h, g, f):
+        def final(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(-y, wires=1).inv()
@@ -327,10 +328,12 @@ class TestMetricTensor:
         computation."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
 
-        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        x, y, z, h, g, f = params
+        params = np.array(
+            [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
+            requires_grad=True,
+        )
 
-        G = qml.metric_tensor(circuit, approx="block-diag")(*params)
+        G = qml.metric_tensor(circuit, approx="block-diag")(params)
 
         # ============================================
         # Test block-diag metric tensor of first layer is correct.
@@ -388,7 +391,8 @@ class TestMetricTensor:
         #   qml.RZ(g, wires=2)
         G2 = np.zeros([2, 2])
 
-        def layer2_diag(x, y, z, h, g, f):
+        def layer2_diag(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -398,7 +402,8 @@ class TestMetricTensor:
 
         layer2_diag = qml.QNode(layer2_diag, dev)
 
-        def layer2_off_diag_first_order(x, y, z, h, g, f):
+        def layer2_off_diag_first_order(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -408,7 +413,8 @@ class TestMetricTensor:
 
         layer2_off_diag_first_order = qml.QNode(layer2_off_diag_first_order, dev)
 
-        def layer2_off_diag_second_order(x, y, z, h, g, f):
+        def layer2_off_diag_second_order(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -419,13 +425,13 @@ class TestMetricTensor:
         layer2_off_diag_second_order = qml.QNode(layer2_off_diag_second_order, dev)
 
         # calculate the diagonal terms
-        varK0, varK1 = layer2_diag(x, y, z, h, g, f)
+        varK0, varK1 = layer2_diag(params)
         G2[0, 0] = varK0 / 4
         G2[1, 1] = varK1 / 4
 
         # calculate the off-diagonal terms
-        exK0, exK1 = layer2_off_diag_first_order(x, y, z, h, g, f)
-        exK01 = layer2_off_diag_second_order(x, y, z, h, g, f)
+        exK0, exK1 = layer2_off_diag_first_order(params)
+        exK01 = layer2_off_diag_second_order(params)
 
         G2[0, 1] = (exK01 - exK0 * exK1) / 4
         G2[1, 0] = (exK01 - exK0 * exK1) / 4
@@ -446,7 +452,8 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
-        def layer3_diag(x, y, z, h, g, f):
+        def layer3_diag(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -456,7 +463,7 @@ class TestMetricTensor:
             return qml.var(qml.PauliX(1))
 
         layer3_diag = qml.QNode(layer3_diag, dev)
-        G3 = layer3_diag(x, y, z, h, g, f) / 4
+        G3 = layer3_diag(params) / 4
         assert qml.math.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
@@ -470,10 +477,12 @@ class TestMetricTensor:
         """Test that a metric tensor under the diagonal approximation evaluates
         correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
-        params = [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272]
-        x, y, z, h, g, f = params
+        params = np.array(
+            [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
+            requires_grad=True,
+        )
 
-        G = qml.metric_tensor(circuit, approx="diag")(*params)
+        G = qml.metric_tensor(circuit, approx="diag")(params)
 
         # ============================================
         # Test block-diag metric tensor of first layer is correct.
@@ -512,7 +521,8 @@ class TestMetricTensor:
         #   qml.RZ(g, wires=2)
         G2 = np.zeros([2, 2])
 
-        def layer2_diag(x, y, z, h, g, f):
+        def layer2_diag(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -523,7 +533,7 @@ class TestMetricTensor:
         layer2_diag = qml.QNode(layer2_diag, dev)
 
         # calculate the diagonal terms
-        varK0, varK1 = layer2_diag(x, y, z, h, g, f)
+        varK0, varK1 = layer2_diag(params)
         G2[0, 0] = varK0 / 4
         G2[1, 1] = varK1 / 4
 
@@ -543,7 +553,8 @@ class TestMetricTensor:
         # Note: since this layer only consists of a single parameter,
         # only need to compute a single diagonal element.
 
-        def layer3_diag(x, y, z, h, g, f):
+        def layer3_diag(params):
+            x, y, z, h, g, f = params
             non_parametrized_layer(a, b, c)
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -553,7 +564,7 @@ class TestMetricTensor:
             return qml.var(qml.PauliX(1))
 
         layer3_diag = qml.QNode(layer3_diag, dev)
-        G3 = layer3_diag(x, y, z, h, g, f) / 4
+        G3 = layer3_diag(params) / 4
         assert qml.math.allclose(G[3:4, 3:4], G3, atol=tol, rtol=0)
 
         # ============================================
@@ -715,48 +726,38 @@ fubini_ansatze = [
     fubini_ansatz8,
 ]
 
+B = np.array(
+    [
+        [
+            [0.73, 0.49, 0.04],
+            [0.29, 0.45, 0.59],
+            [0.64, 0.06, 0.26],
+        ],
+        [
+            [0.93, 0.14, 0.46],
+            [0.31, 0.83, 0.79],
+            [0.25, 0.40, 0.16],
+        ],
+    ],
+    requires_grad=True,
+)
 fubini_params = [
     (np.array([0.3434, -0.7245345], requires_grad=True),),
-    (
-        np.reshape(
-            [
-                0.73,
-                0.49,
-                0.04,
-                0.29,
-                0.45,
-                0.59,
-                0.64,
-                0.06,
-                0.26,
-                0.93,
-                0.14,
-                0.46,
-                0.31,
-                0.83,
-                0.79,
-                0.25,
-                0.40,
-                0.16,
-            ],
-            (2, 3, 3),
-            requires_grad=True,
-        ),
-    ),
+    (B,),
     (np.array([-0.1111, -0.2222], requires_grad=True),),
     (np.array([-0.1111, -0.2222, 0.4554], requires_grad=True),),
     (
-        -0.1735,
+        np.array(-0.1735, requires_grad=True),
         np.array([-0.1735, -0.2846, -0.2846], requires_grad=True),
     ),
     (np.array([-0.1735, -0.2846], requires_grad=True),),
     (np.array([-0.1735, -0.2846], requires_grad=True),),
-    (-0.1735,),
+    (np.array(-0.1735, requires_grad=True),),
     (np.array([-0.1111, 0.3333], requires_grad=True),),
 ]
 
 
-def autodiff_metric_tensor(ansatz, num_wires):
+def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
     """Compute the metric tensor by full state vector
     differentiation via autograd."""
     dev = qml.device("default.qubit", wires=num_wires)
@@ -772,6 +773,14 @@ def autodiff_metric_tensor(ansatz, num_wires):
         iqnode = lambda *params: np.imag(qnode(*params))
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
+
+        if not mimic_autograd:
+            if len(params) > 1 and all(
+                qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
+            ):
+                rjac = tuple(qml.math.transpose(rjac))
+                ijac = tuple(qml.math.transpose(ijac))
+
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
@@ -785,10 +794,18 @@ def autodiff_metric_tensor(ansatz, num_wires):
                 )
             return tuple(out)
 
+        if (
+            mimic_autograd
+            and len(params) > 1
+            and all(qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:])
+        ):
+            jac_contract = [-2]
+        else:
+            jac_contract = [0]
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
+        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], jac_contract))
         return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
+            np.tensordot(np.conj(jac), jac, axes=(jac_contract, jac_contract))
             - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
         )
 
@@ -801,7 +818,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_autograd(self, ansatz, params):
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires, True)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires + 1)
 
         @qml.qnode(dev, interface="autograd")
@@ -1003,9 +1020,7 @@ class TestDifferentiability:
         def cost_full(*weights):
             return np.array(qml.metric_tensor(qnode, approx=None)(*weights))
 
-        _cost_full = lambda *weights: np.array(
-            autodiff_metric_tensor(ansatz, num_wires=3)(*weights)
-        )
+        _cost_full = lambda *weights: np.array(autodiff_metric_tensor(ansatz, 3, True)(*weights))
         _c = _cost_full(*weights)
         c = cost_full(*weights)
         assert all(
@@ -1254,7 +1269,7 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
                 qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
 
-def test_no_error_missing_aux_wire_not_used():
+def test_no_error_missing_aux_wire_not_used(recwarn):
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
     because ``approx`` is used or because there only is a diagonal contribution."""
@@ -1288,6 +1303,8 @@ def test_no_error_missing_aux_wire_not_used():
     qml.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
     qml.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
+
+    assert len(recwarn) == 0
 
 
 def aux_wire_ansatz_0(x, y):
