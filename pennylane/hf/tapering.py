@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed for tapering qubits.
+This module contains the functions needed for tapering qubits using symmetries.
 """
 # pylint: disable=unnecessary-lambda
 import functools

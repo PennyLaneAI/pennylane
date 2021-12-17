@@ -482,8 +482,8 @@ def test_cliford(generator, pauli_x_ops, result):
             [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
             [1, -1, -1],
             qml.Hamiltonian(
-                np.array([0.79596785, -0.3210344, 0.18092703]),
-                [qml.PauliZ(0), qml.PauliX(0), qml.Identity(0)],
+                np.array([-0.3210344, 0.18092703, 0.79596785]),
+                [qml.Identity(0), qml.PauliX(0), qml.PauliZ(0)],
             ),
         ),
     ],
@@ -492,6 +492,10 @@ def test_transform_hamiltonian(symbols, geometry, generator, pauli_x_ops, paulix
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.hf.Molecule(symbols, geometry)
     h = qml.hf.generate_hamiltonian(mol)()
-    h_calc = transform_hamiltonian(h, generator, pauli_x_ops, paulix_sector)
+    ham_calc = transform_hamiltonian(h, generator, pauli_x_ops, paulix_sector)
 
-    assert np.allclose(sorted(h_calc.terms[0]), sorted(ham_ref.terms[0]))
+    # sort Hamiltonian terms and then compare with reference
+    sorted_terms = list(sorted(zip(ham_calc.terms[0], ham_calc.terms[1])))
+    for i, term in enumerate(sorted_terms):
+        assert np.allclose(term[0], ham_ref.terms[0][i])
+        assert term[1].compare(ham_ref.terms[1][i])
