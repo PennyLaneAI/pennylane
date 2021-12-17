@@ -1177,7 +1177,14 @@ class MultiControlledX(Operation):
     def compute_matrix(control_int, n_wires):
         """Canonical matrix representation of the MultiControlledX operator.
 
-        **Examples**
+        Args:
+           control_int (int): index of wire that the X gate acts on
+           n_wires (int): total number of wires
+
+        Returns:
+           tensor-like or None: matrix representation
+
+        **Example**
 
         >>> qml.MultiControlledX.compute_matrix(0, 2)
         [[1, 0, 0, 0],
@@ -1189,13 +1196,6 @@ class MultiControlledX(Operation):
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
-
-        Args:
-           control_int (int): index of wire that the X gate acts on
-           n_wires (int): total number of wires
-
-        Returns:
-           tensor-like or None: matrix representation
         """
         padding_left = control_int * 2
         padding_right = 2 ** n_wires - 2 - padding_left
