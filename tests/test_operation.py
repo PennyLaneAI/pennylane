@@ -1675,14 +1675,18 @@ class TestExpandMatrix:
         # test applied to wire 0,2,3
         res = qml.operation.expand_matrix(U_toffoli, [0, 2, 3], [0, 1, 2, 3])
         expected = (
-            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            @ np.kron(I, U_toffoli)
+            @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 0,1,3
         res = qml.operation.expand_matrix(U_toffoli, [0, 1, 3], [0, 1, 2, 3])
         expected = (
-            np.kron(np.kron(I, I), qml.SWAP.compute_matrix()) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
+            np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
+            @ np.kron(U_toffoli, I)
+            @ np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 

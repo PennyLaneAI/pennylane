@@ -454,9 +454,9 @@ class Operator(abc.ABC):
             By default, this method calls the static method ``compute_matrix``,
             which is used by subclasses to define the actual matrix representation.
             The call assumes that the static method has the signature
-            
+
             .. code-block:: python
-            
+
                 self.compute_matrix(*self.params, **self.hyperparams)
 
             If a subclass overwrites ``compute_matrix`` to use a custom signature,

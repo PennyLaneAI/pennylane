@@ -1285,7 +1285,6 @@ class TestPauliRot:
 
         assert gen.compare(-0.5 * expected_gen)
 
-
     @pytest.mark.gpu
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("torch_device", [None, "cuda"])
