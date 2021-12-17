@@ -25,6 +25,7 @@ from pennylane.hf.tapering import (
     get_generators,
     generate_paulis,
     generate_symmetries,
+    taper_hartree_fock,
 )
 
 
@@ -355,3 +356,81 @@ def test_generate_symmetries(hamiltonian, num_qubits, res_generators, res_pauli_
 
     for p1, p2 in zip(pauli_ops, res_pauli_ops):
         assert p1.compare(p2)
+
+
+@pytest.mark.parametrize(
+    ("num_electrons", "num_wires", "generators", "pauli_x_ops", "paulix_sector", "result"),
+    [
+        (
+            2,
+            4,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            (1, -1, -1),
+            [1],
+        ),
+        (
+            3,
+            6,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+            ],
+            [qml.PauliX(wires=[0]), qml.PauliX(wires=[1])],
+            (1, -1),
+            [1, 0, 0, 0],
+        ),
+        (
+            4,
+            12,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(6) @ qml.PauliZ(7)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(8) @ qml.PauliZ(9)]),
+                qml.Hamiltonian(
+                    [1.0],
+                    [
+                        qml.PauliZ(wires=[0])
+                        @ qml.PauliZ(wires=[2])
+                        @ qml.PauliZ(wires=[4])
+                        @ qml.PauliZ(wires=[6])
+                        @ qml.PauliZ(wires=[8])
+                        @ qml.PauliZ(wires=[10])
+                    ],
+                ),
+                qml.Hamiltonian(
+                    [1.0],
+                    [
+                        qml.PauliZ(wires=[1])
+                        @ qml.PauliZ(wires=[3])
+                        @ qml.PauliZ(wires=[5])
+                        @ qml.PauliZ(wires=[6])
+                        @ qml.PauliZ(wires=[8])
+                        @ qml.PauliZ(wires=[11])
+                    ],
+                ),
+            ],
+            [
+                qml.PauliX(wires=[7]),
+                qml.PauliX(wires=[9]),
+                qml.PauliX(wires=[0]),
+                qml.PauliX(wires=[1]),
+            ],
+            (1, 1, 1, 1),
+            [1, 1, 0, 0, 0, 0, 0, 0],
+        ),
+    ],
+)
+def test_taper_hartree_fock(
+    num_electrons, num_wires, generators, pauli_x_ops, paulix_sector, result
+):
+    r"""Test that taper_hartree_fock returns the correct result."""
+
+    tapered_hf_state = taper_hartree_fock(
+        num_electrons, num_wires, generators, pauli_x_ops, paulix_sector
+    )
+
+    assert np.all(tapered_hf_state, result)
