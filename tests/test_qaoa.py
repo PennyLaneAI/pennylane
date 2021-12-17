@@ -1802,10 +1802,8 @@ class TestCycles:
             elif max(num_edges_leaving_node.values()) <= 1:
                 assert energy == min(energies_bitstrings)[0]
 
-    @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])]
-    )
-    def test_out_flow_constraint_undirected_raises_error(self,g):
+    @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
+    def test_out_flow_constraint_undirected_raises_error(self, g):
         """Test `out_flow_constraint` raises ValueError if input graph is not directed"""
 
         with pytest.raises(ValueError):
@@ -1864,9 +1862,7 @@ class TestCycles:
             else:
                 assert energy > min(energies_states)[0]
 
-    @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])]
-    )
+    @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_net_flow_constraint_undirected_raises_error(self, g):
         """Test `net_flow_constraint` raises ValueError if input graph is not directed"""
 

@@ -307,7 +307,8 @@ def maxcut(graph):
     get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
     identity_h = qml.Hamiltonian(
-        [-0.5 for e in graph_edges], [qml.Identity(get_nvalue(e[0])) @ qml.Identity(get_nvalue(e[1])) for e in graph_edges]
+        [-0.5 for e in graph_edges],
+        [qml.Identity(get_nvalue(e[0])) @ qml.Identity(get_nvalue(e[1])) for e in graph_edges],
     )
     H = edge_driver(graph, ["10", "01"]) + identity_h
     # store the valuable information that all observables are in one commuting group

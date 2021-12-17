@@ -376,7 +376,7 @@ def loss_hamiltonian(graph) -> Hamiltonian:
 
     for edge_data in edges_data:
         edge = edge_data[:2]
- 
+
         if edge[0] == edge[1]:
             raise ValueError("Graph contains self-loops")
 
@@ -562,7 +562,11 @@ def _inner_out_flow_constraint_hamiltonian(graph, node) -> Hamiltonian:
     coeffs = []
     ops = []
 
-    get_nvalues = lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]]) if isinstance(graph, rx.PyDiGraph) else T
+    get_nvalues = (
+        lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]])
+        if isinstance(graph, rx.PyDiGraph)
+        else T
+    )
 
     edges_to_qubits = edges_to_wires(graph)
     out_edges = sorted(graph.out_edges(node))
@@ -626,7 +630,11 @@ def _inner_net_flow_constraint_hamiltonian(graph, node) -> Hamiltonian:
     out_edges = sorted(graph.out_edges(node))
     in_edges = sorted(graph.in_edges(node))
 
-    get_nvalues = lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]]) if isinstance(graph, rx.PyDiGraph) else T
+    get_nvalues = (
+        lambda T: (graph.nodes()[T[0]], graph.nodes()[T[1]])
+        if isinstance(graph, rx.PyDiGraph)
+        else T
+    )
 
     coeffs.append(len(out_edges) - len(in_edges))
     ops.append(qml.Identity(0))
