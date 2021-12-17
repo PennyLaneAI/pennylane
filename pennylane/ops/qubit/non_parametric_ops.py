@@ -1177,7 +1177,7 @@ class MultiControlledX(Operation):
     def compute_matrix(control_int, n_wires):
         """Canonical matrix representation of the MultiControlledX operator.
 
-        **Examples:**
+        **Examples**
 
         >>> qml.MultiControlledX.compute_matrix(0, 2)
         [[1, 0, 0, 0],

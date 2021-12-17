@@ -136,7 +136,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     .. note::
 
-        This function has essentially the same behaviour as ``pennylane.utils.expand`` but is fully
+        This function has essentially the same behaviour as :func:`.utils.expand` but is fully
         differentiable.
 
     Args:
@@ -407,7 +407,7 @@ class Operator(abc.ABC):
             of a particular operator. By default, it should always take the
             operator's parameters and hyperparameters as inputs.
 
-            Alternatively, a custom signature can be defined, in which case the `matrix()`
+            Alternatively, a custom signature can be defined, in which case the ``matrix()``
             method has to be overwritten as well.
 
         Args:
@@ -453,9 +453,11 @@ class Operator(abc.ABC):
         .. note::
             By default, this method calls the static method ``compute_matrix``,
             which is used by subclasses to define the actual matrix representation.
-            The call assumes that the static method has the signature ``(*params, **hyperparams)``,
-            where ``params`` refers to ``op.parameters`` and ``hyperparams``
-            to ``op.hyperparameters``, and ``op`` is an instance of this operator.
+            The call assumes that the static method has the signature
+            
+            .. code-block:: python
+            
+                self.compute_matrix(*self.params, **self.hyperparams)
 
             If a subclass overwrites ``compute_matrix`` to use a custom signature,
             this method has to be likewise overwritten.
