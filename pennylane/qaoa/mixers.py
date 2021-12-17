@@ -101,7 +101,7 @@ def xy_mixer(graph):
     + (0.5) [X1 X2]
     + (0.5) [Y1 Y2]
 
-    >>> import retworkx as rx 
+    >>> import retworkx as rx
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
     >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
@@ -115,16 +115,20 @@ def xy_mixer(graph):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(type(graph).__name__)
+            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(
+                type(graph).__name__
+            )
         )
 
-    edges = graph.edge_list() if isinstance(graph, rx.PyGraph) else graph.edges 
+    is_rx = isinstance(graph, rx.PyGraph)
+    edges = graph.edge_list() if is_rx else graph.edges
+    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
     coeffs = 2 * [0.5 for e in edges]
 
     obs = []
     for node1, node2 in edges:
-        obs.append(qml.PauliX(node1) @ qml.PauliX(node2))
-        obs.append(qml.PauliY(node1) @ qml.PauliY(node2))
+        obs.append(qml.PauliX(get_nvalue(node1)) @ qml.PauliX(get_nvalue(node2)))
+        obs.append(qml.PauliY(get_nvalue(node1)) @ qml.PauliY(get_nvalue(node2)))
 
     return qml.Hamiltonian(coeffs, obs)
 
@@ -192,7 +196,9 @@ def bit_flip_mixer(graph, b):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(type(graph).__name__)
+            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(
+                type(graph).__name__
+            )
         )
 
     if b not in [0, 1]:
@@ -203,14 +209,18 @@ def bit_flip_mixer(graph, b):
     coeffs = []
     terms = []
 
-    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.node_indexes() if is_rx else graph.nodes
+    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
 
     for i in graph_nodes:
 
-        neighbours = list(graph.neighbors(i))
+        neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 
-        n_terms = [[qml.PauliX(i)]] + [[qml.Identity(n), qml.PauliZ(n)] for n in neighbours]
+        n_terms = [[qml.PauliX(get_nvalue(i))]] + [
+            [qml.Identity(get_nvalue(n)), qml.PauliZ(get_nvalue(n))] for n in neighbours
+        ]
         n_coeffs = [[1, sign] for n in neighbours]
 
         final_terms = [qml.operation.Tensor(*list(m)).prune() for m in itertools.product(*n_terms)]

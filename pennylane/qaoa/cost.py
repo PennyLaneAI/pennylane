@@ -105,9 +105,9 @@ def edge_driver(graph, reward):
     + (0.25) [Z1 Z2]
 
     >>> import retworkx as rx
-    >>> g = rx.PyGraph()
-    >>> g.add_nodes_from([0, 1, 2])
-    >>> g.add_edges_from([(0, 1,""), (1,2,"")])
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
       (0.25) [Z0]
@@ -177,13 +177,17 @@ def edge_driver(graph, reward):
         )
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
+        raise ValueError(
+            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+        )
 
     coeffs = []
     ops = []
 
-    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
-    graph_edges = graph.edge_list() if isinstance(graph, rx.PyGraph) else graph.edges 
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.nodes() if is_rx else graph.nodes
+    graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
+    get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
     if len(reward) == 0 or len(reward) == 4:
         coeffs = [1 for _ in graph_nodes]
@@ -204,19 +208,27 @@ def edge_driver(graph, reward):
             for e in graph_edges:
                 coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
-                    [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
+                    [
+                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
+                        qml.PauliZ(get_nvalue(e[0])),
+                        qml.PauliZ(get_nvalue(e[1])),
+                    ]
                 )
 
         if reward == "10":
             for e in graph_edges:
                 coeffs.append(-0.5 * sign)
-                ops.append(qml.PauliZ(e[0]) @ qml.PauliZ(e[1]))
+                ops.append(qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])))
 
         if reward == "11":
             for e in graph_edges:
                 coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
-                    [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
+                    [
+                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
+                        qml.PauliZ(get_nvalue(e[0])),
+                        qml.PauliZ(get_nvalue(e[1])),
+                    ]
                 )
 
     return qml.Hamiltonian(coeffs, ops)
@@ -268,16 +280,34 @@ def maxcut(graph):
       (1) [X0]
     + (1) [X1]
     + (1) [X2]
+
+    >>> import retworkx as rx
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
+    >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
+    >>> print(cost_h)
+      (-1.0) [I0]
+    + (0.5) [Z0 Z1]
+    + (0.5) [Z1 Z2]
+    >>> print(mixer_h)
+      (1) [X0]
+    + (1) [X1]
+    + (1) [X2]
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
+        raise ValueError(
+            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+        )
 
-    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
-    graph_edges = graph.edge_list() if isinstance(graph, rx.PyGraph) else graph.edges 
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.nodes() if is_rx else graph.nodes
+    graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
+    get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
     identity_h = qml.Hamiltonian(
-        [-0.5 for e in graph_edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph_edges]
+        [-0.5 for e in graph_edges], [qml.Identity(get_nvalue(e[0])) @ qml.Identity(get_nvalue(e[1])) for e in graph_edges]
     )
     H = edge_driver(graph, ["10", "01"]) + identity_h
     # store the valuable information that all observables are in one commuting group
@@ -343,9 +373,11 @@ def max_independent_set(graph, constrained=True):
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
+        raise ValueError(
+            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+        )
 
-    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
+    graph_nodes = graph.nodes() if isinstance(graph, rx.PyGraph) else graph.nodes
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
@@ -421,9 +453,11 @@ def min_vertex_cover(graph, constrained=True):
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
+        raise ValueError(
+            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+        )
 
-    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
+    graph_nodes = graph.nodes() if isinstance(graph, rx.PyGraph) else graph.nodes
 
     if constrained:
         cost_h = bit_driver(graph_nodes, 0)
@@ -501,11 +535,14 @@ def max_clique(graph, constrained=True):
     """
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
+        raise ValueError(
+            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+        )
 
-    graph_nodes = graph.node_indexes() if isinstance(graph, rx.PyGraph) else graph.nodes
-    graph_complement = rx.complement(graph) if isinstance(graph, rx.PyGraph) else nx.complement(graph)
-    
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.nodes() if is_rx else graph.nodes
+    graph_complement = rx.complement(graph) if is_rx else nx.complement(graph)
+
     if constrained:
         cost_h = bit_driver(graph_nodes, 1)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -536,7 +573,7 @@ def max_weight_cycle(graph, constrained=True):
     our subset of edges composes a `cycle <https://en.wikipedia.org/wiki/Cycle_(graph_theory)>`__.
 
     Args:
-        graph (nx.Graph or rx.PyGraph): the directed graph on which the Hamiltonians are defined
+        graph (nx.Graph or rx.Py(Di)Graph): the directed graph on which the Hamiltonians are defined
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -655,8 +692,10 @@ def max_weight_cycle(graph, constrained=True):
         can be prepared using :class:`~.BasisState` or simple :class:`~.PauliX` rotations on the
         ``0`` and ``3`` wires.
     """
-    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
-        raise ValueError("Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__))
+    if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
+        raise ValueError(
+            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+        )
 
     mapping = qaoa.cycle.wires_to_edges(graph)
 

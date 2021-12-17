@@ -147,7 +147,7 @@ class TestCircuitGraph:
         circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         graph = circuit.graph
         # assert len(graph) == 9
-        assert len(graph.node_indexes()) == 9 # rx.
+        assert len(graph.node_indexes()) == 9  # rx.
         assert len(graph.edges()) == 9
 
         queue = ops + obs
@@ -155,11 +155,11 @@ class TestCircuitGraph:
         # all ops should be nodes in the graph
         for k in queue:
             # assert k in graph.nodes
-            assert k in graph.nodes() # rx.
+            assert k in graph.nodes()  # rx.
 
         # all nodes in the graph should be ops
         # for k in graph.nodes:
-        for k in graph.nodes(): # rx.
+        for k in graph.nodes():  # rx.
             assert k is queue[k.queue_idx]
 
         # Finally, checking the adjacency of the returned DAG:
@@ -177,8 +177,9 @@ class TestCircuitGraph:
         #         (6, 8),
         #     ]
         # )
-        a = set((graph.get_node_data(e[0]), graph.get_node_data(e[1])) 
-                for e in graph.edge_list()) # rx.
+        a = set(
+            (graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list()
+        )  # rx.
         b = set(
             (queue[a], queue[b])
             for a, b in [
@@ -192,9 +193,8 @@ class TestCircuitGraph:
                 (5, 8),
                 (6, 8),
             ]
-        ) # rx.
-        assert a == b # rx.
-
+        )  # rx.
+        assert a == b  # rx.
 
     def test_ancestors_and_descendants_example(self, ops, obs):
         """
@@ -223,12 +223,12 @@ class TestCircuitGraph:
     def test_observables(self, circuit, obs):
         """Test that the `observables` property returns the list of observables in the circuit."""
         # assert circuit.observables == obs
-        assert str(circuit.observables) == str(obs) # rx.
+        assert str(circuit.observables) == str(obs)  # rx.
 
     def test_operations(self, circuit, ops):
         """Test that the `operations` property returns the list of operations in the circuit."""
         # assert circuit.operations == ops
-        assert str(circuit.operations) == str(ops) # rx.
+        assert str(circuit.operations) == str(ops)  # rx.
 
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for

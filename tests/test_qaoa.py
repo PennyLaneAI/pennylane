@@ -50,13 +50,13 @@ graph.add_edges_from([(0, 1), (1, 2)])
 
 graph_rx = rx.PyGraph()
 graph_rx.add_nodes_from([0, 1, 2])
-graph_rx.add_edges_from([(0, 1, ''), (1, 2, '')])
+graph_rx.add_edges_from([(0, 1, ""), (1, 2, "")])
 
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 
 non_consecutive_graph_rx = rx.PyGraph()
 non_consecutive_graph_rx.add_nodes_from([0, 1, 2, 3, 4])
-non_consecutive_graph_rx.add_edges_from([(0, 4, ''), (0, 2, ''), (4, 3, ''), (2, 1, '')])
+non_consecutive_graph_rx.add_edges_from([(0, 4, ""), (0, 2, ""), (4, 3, ""), (2, 1, "")])
 
 digraph_complete = nx.complete_graph(3).to_directed()
 complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
@@ -64,6 +64,9 @@ for k, v in complete_edge_weight_data.items():
     digraph_complete[k[0]][k[1]]["weight"] = v
 
 digraph_complete_rx = rx.generators.directed_mesh_graph(3)
+complete_edge_weight_data = {
+    edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete.edges()))
+}
 for k, v in complete_edge_weight_data.items():
     digraph_complete_rx.update_edge(k[0], k[1], {"weight": v})
 
@@ -71,13 +74,18 @@ g1 = Graph([(0, 1), (1, 2)])
 
 g1_rx = rx.PyGraph()
 g1_rx.add_nodes_from([0, 1, 2])
-g1_rx.add_edges_from([(0, 1, ''), (1, 2, '')])
+g1_rx.add_edges_from([(0, 1, ""), (1, 2, "")])
 
 g2 = nx.Graph([(0, 1), (1, 2), (2, 3)])
 
 g2_rx = rx.PyGraph()
-g2_rx.add_nodes_from([0,1,2,3])
-g2_rx.add_edges_from([(0, 1, ''), (1, 2, ''), (2, 3, '')])
+g2_rx.add_nodes_from([0, 1, 2, 3])
+g2_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (2, 3, "")])
+
+b_rx = rx.PyGraph()
+b_rx.add_nodes_from(["b", 1, 0.3])
+b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
+
 
 def decompose_hamiltonian(hamiltonian):
 
@@ -159,7 +167,9 @@ class TestMixerHamiltonians:
 
         graph = [(0, 1), (1, 2)]
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object, got list"
+        ):
             qaoa.xy_mixer(graph)
 
     @pytest.mark.parametrize(
@@ -176,20 +186,6 @@ class TestMixerHamiltonians:
                         qml.PauliY(1) @ qml.PauliY(2),
                         qml.PauliX(2) @ qml.PauliX(3),
                         qml.PauliY(2) @ qml.PauliY(3),
-                    ],
-                ),
-            ),
-            (
-                Graph((np.array([0, 1]), np.array([1, 2]), np.array([2, 0]))),
-                qml.Hamiltonian(
-                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
-                    [
-                        qml.PauliX(0) @ qml.PauliX(1),
-                        qml.PauliY(0) @ qml.PauliY(1),
-                        qml.PauliX(0) @ qml.PauliX(2),
-                        qml.PauliY(0) @ qml.PauliY(2),
-                        qml.PauliX(1) @ qml.PauliX(2),
-                        qml.PauliY(1) @ qml.PauliY(2),
                     ],
                 ),
             ),
@@ -263,6 +259,20 @@ class TestMixerHamiltonians:
                     ],
                 ),
             ),
+            (
+                Graph((np.array([0, 1]), np.array([1, 2]), np.array([2, 0]))),
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+                    [
+                        qml.PauliX(0) @ qml.PauliX(1),
+                        qml.PauliY(0) @ qml.PauliY(1),
+                        qml.PauliX(0) @ qml.PauliX(2),
+                        qml.PauliY(0) @ qml.PauliY(2),
+                        qml.PauliX(1) @ qml.PauliX(2),
+                        qml.PauliY(1) @ qml.PauliY(2),
+                    ],
+                ),
+            ),
         ],
     )
     def test_xy_mixer_output(self, graph, target_hamiltonian):
@@ -286,7 +296,9 @@ class TestMixerHamiltonians:
         """Tests that the bit-flip mixer throws the correct errors"""
 
         graph = [(0, 1), (1, 2)]
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph object"
+        ):
             qaoa.bit_flip_mixer(graph, 0)
 
         n = 2
@@ -327,6 +339,23 @@ class TestMixerHamiltonians:
                 ),
             ),
             (
+                g1_rx,
+                0,
+                qml.Hamiltonian(
+                    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
+                    [
+                        qml.PauliX(0),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(2),
+                        qml.PauliX(1) @ qml.PauliZ(0),
+                        qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
+                        qml.PauliX(2),
+                        qml.PauliX(2) @ qml.PauliZ(1),
+                    ],
+                ),
+            ),
+            (
                 Graph([("b", 1), (1, 0.3), (0.3, "b")]),
                 1,
                 qml.Hamiltonian(
@@ -347,6 +376,27 @@ class TestMixerHamiltonians:
                     ],
                 ),
             ),
+            (
+                b_rx,
+                1,
+                qml.Hamiltonian(
+                    [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
+                    [
+                        qml.PauliX("b"),
+                        qml.PauliX("b") @ qml.PauliZ(0.3),
+                        qml.PauliX("b") @ qml.PauliZ(1),
+                        qml.PauliX("b") @ qml.PauliZ(1) @ qml.PauliZ(0.3),
+                        qml.PauliX(1),
+                        qml.PauliX(1) @ qml.PauliZ(0.3),
+                        qml.PauliX(1) @ qml.PauliZ("b"),
+                        qml.PauliX(1) @ qml.PauliZ("b") @ qml.PauliZ(0.3),
+                        qml.PauliX(0.3),
+                        qml.PauliX(0.3) @ qml.PauliZ(1),
+                        qml.PauliX(0.3) @ qml.PauliZ("b"),
+                        qml.PauliX(0.3) @ qml.PauliZ("b") @ qml.PauliZ(1),
+                    ],
+                ),
+            ),
         ],
     )
     def test_bit_flip_mixer_output(self, graph, n, target_hamiltonian):
@@ -360,14 +410,22 @@ class TestMixerHamiltonians:
 
 GRAPHS = [
     g1,
+    g1_rx,
     Graph((np.array([0, 1]), np.array([1, 2]), np.array([0, 2]))),
     graph,
-    g1_rx,
+    graph_rx,
 ]
 
-COST_COEFFS = [[0.5, 0.5, -1.0], [0.5, 0.5, 0.5, -1.5], [0.5, 0.5, -1.0], [0.5, 0.5, -1.0]]
+COST_COEFFS = [
+    [0.5, 0.5, -1.0],
+    [0.5, 0.5, -1.0],
+    [0.5, 0.5, 0.5, -1.5],
+    [0.5, 0.5, -1.0],
+    [0.5, 0.5, -1.0],
+]
 
 COST_TERMS = [
+    [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
     [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
     [
         qml.PauliZ(0) @ qml.PauliZ(1),
@@ -379,28 +437,48 @@ COST_TERMS = [
     [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliZ(1) @ qml.PauliZ(2), qml.Identity(0)],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(5)]
 
-MIXER_COEFFS = [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]
+MIXER_COEFFS = [
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+]
 
 MIXER_TERMS = [
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(5)]
 
 MAXCUT = list(zip(GRAPHS, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES THE CASES TO TEST THE MAX INDEPENDENT SET PROBLEM"""
 
-CONSTRAINED = [True, True, False, True]
+CONSTRAINED = [
+    True,
+    True,
+    True,
+    False,
+    False,
+]
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, -0.5, 0.75, 0.25], [1, 1, 1]]
+COST_COEFFS = [
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+    [0.75, 0.25, -0.5, 0.75, 0.25],
+    [0.75, 0.25, -0.5, 0.75, 0.25],
+]
 
 COST_TERMS = [
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [
@@ -410,19 +488,37 @@ COST_TERMS = [
         qml.PauliZ(1) @ qml.PauliZ(2),
         qml.PauliZ(2),
     ],
-    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    # [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.PauliZ(0),
+        qml.PauliZ(1),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+    ],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(5)]
 
 MIXER_COEFFS = [
     [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
+    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
     [0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25],
     [1, 1, 1],
-    [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5],
+    [1, 1, 1],
 ]
 
 MIXER_TERMS = [
+    [
+        qml.PauliX(0),
+        qml.PauliX(0) @ qml.PauliZ(1),
+        qml.PauliX(1),
+        qml.PauliX(1) @ qml.PauliZ(2),
+        qml.PauliX(1) @ qml.PauliZ(0),
+        qml.PauliX(1) @ qml.PauliZ(0) @ qml.PauliZ(2),
+        qml.PauliX(2),
+        qml.PauliX(2) @ qml.PauliZ(1),
+    ],
     [
         qml.PauliX(0),
         qml.PauliX(0) @ qml.PauliZ(1),
@@ -448,27 +544,25 @@ MIXER_TERMS = [
         qml.PauliX(2) @ qml.PauliZ(1) @ qml.PauliZ(0),
     ],
     [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-    [
-        qml.PauliX(0),
-        qml.PauliX(0) @ qml.PauliZ(1),
-        qml.PauliX(1),
-        qml.PauliX(1) @ qml.PauliZ(0),
-        qml.PauliX(1) @ qml.PauliZ(2),
-        qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(0),
-        qml.PauliX(2),
-        qml.PauliX(2) @ qml.PauliZ(1),
-    ],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(5)]
 
 MIS = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES THE CASES TO TEST THE MIN VERTEX COVER PROBLEM"""
 
-COST_COEFFS = [[-1, -1, -1], [-1, -1, -1], [0.75, -0.25, 0.5, 0.75, -0.25], [-1, -1, -1]]
+COST_COEFFS = [
+    [-1, -1, -1],
+    [-1, -1, -1],
+    [-1, -1, -1],
+    [0.75, -0.25, 0.5, 0.75, -0.25],
+    [0.75, -0.25, 0.5, 0.75, -0.25],
+]
 
 COST_TERMS = [
+    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [
@@ -478,36 +572,56 @@ COST_TERMS = [
         qml.PauliZ(1) @ qml.PauliZ(2),
         qml.PauliZ(2),
     ],
-    [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [
+        qml.PauliZ(0) @ qml.PauliZ(1),
+        qml.PauliZ(0),
+        qml.PauliZ(1),
+        qml.PauliZ(1) @ qml.PauliZ(2),
+        qml.PauliZ(2),
+    ],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(5)]
 
 MIXER_COEFFS = [
     [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
+    [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
     [0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25, 0.25, -0.25, -0.25, 0.25],
     [1, 1, 1],
-    [0.5, -0.5, 0.25, -0.25, -0.25, 0.25, 0.5, -0.5],
+    [1, 1, 1],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(5)]
 
 MVC = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES THE CASES TO TEST THE MAXCLIQUE PROBLEM"""
 
-COST_COEFFS = [[1, 1, 1], [1, 1, 1], [0.75, 0.25, 0.25, 1], [1, 1, 1]]
+COST_COEFFS = [
+    [1, 1, 1],
+    [1, 1, 1],
+    [1, 1, 1],
+    [0.75, 0.25, 0.25, 1],
+    [0.75, 0.25, 0.25, 1],
+]
 
 COST_TERMS = [
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
-    [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)],
     [qml.PauliZ(0), qml.PauliZ(1), qml.PauliZ(2)],
+    [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)],
+    [qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(0), qml.PauliZ(2), qml.PauliZ(1)],
 ]
 
-COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(4)]
+COST_HAMILTONIANS = [qml.Hamiltonian(COST_COEFFS[i], COST_TERMS[i]) for i in range(5)]
 
-MIXER_COEFFS = [[0.5, 0.5, 1.0, 0.5, 0.5], [1.0, 1.0, 1.0], [1, 1, 1], [0.5, 0.5, 1.0, 0.5, 0.5]]
+MIXER_COEFFS = [
+    [0.5, 0.5, 1.0, 0.5, 0.5],
+    [0.5, 0.5, 1.0, 0.5, 0.5],
+    [1.0, 1.0, 1.0],
+    [1, 1, 1],
+    [1, 1, 1],
+]
 
 MIXER_TERMS = [
     [
@@ -517,8 +631,6 @@ MIXER_TERMS = [
         qml.PauliX(2),
         qml.PauliX(2) @ qml.PauliZ(0),
     ],
-    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
-    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
     [
         qml.PauliX(0),
         qml.PauliX(0) @ qml.PauliZ(2),
@@ -526,17 +638,35 @@ MIXER_TERMS = [
         qml.PauliX(2),
         qml.PauliX(2) @ qml.PauliZ(0),
     ],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
+    [qml.PauliX(0), qml.PauliX(1), qml.PauliX(2)],
 ]
 
-MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(4)]
+MIXER_HAMILTONIANS = [qml.Hamiltonian(MIXER_COEFFS[i], MIXER_TERMS[i]) for i in range(5)]
 
 MAXCLIQUE = list(zip(GRAPHS, CONSTRAINED, COST_HAMILTONIANS, MIXER_HAMILTONIANS))
 
 """GENERATES CASES TO TEST EDGE DRIVER COST HAMILTONIAN"""
-GRAPHS.pop()
+GRAPHS = GRAPHS[1:-2]
 GRAPHS.append(graph)
 GRAPHS.append(Graph([("b", 1), (1, 2.3)]))
-REWARDS = [["00"], ["00", "11"], ["00", "01", "10"], ["00", "11", "01", "10"], ["00", "01", "10"]]
+GRAPHS.append(graph_rx)
+
+b1_rx = rx.PyGraph()
+b1_rx.add_nodes_from(["b", 1, 2.3])
+b1_rx.add_edges_from([(0, 1, ""), (1, 2, "")])
+
+GRAPHS.append(b1_rx)
+
+REWARDS = [
+    ["00"],
+    ["00", "11"],
+    ["00", "11", "01", "10"],
+    ["00", "01", "10"],
+    ["00", "11", "01", "10"],
+    ["00", "01", "10"],
+]
 
 HAMILTONIANS = [
     qml.Hamiltonian(
@@ -558,15 +688,16 @@ HAMILTONIANS = [
             qml.PauliZ(1) @ qml.PauliZ(2),
         ],
     ),
+    qml.Hamiltonian([1, 1, 1], [qml.Identity(0), qml.Identity(1), qml.Identity(2)]),
     qml.Hamiltonian(
         [0.25, -0.25, -0.25, 0.25, -0.25, -0.25],
         [
-            qml.PauliZ(0) @ qml.PauliZ(1),
-            qml.PauliZ(0),
+            qml.PauliZ("b") @ qml.PauliZ(1),
+            qml.PauliZ("b"),
             qml.PauliZ(1),
-            qml.PauliZ(1) @ qml.PauliZ(2),
+            qml.PauliZ(1) @ qml.PauliZ(2.3),
             qml.PauliZ(1),
-            qml.PauliZ(2),
+            qml.PauliZ(2.3),
         ],
     ),
     qml.Hamiltonian([1, 1, 1], [qml.Identity(0), qml.Identity(1), qml.Identity(2)]),
@@ -1070,6 +1201,40 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_module_example_rx(self, tol):
+        """Test the example in the QAOA module docstring"""
+
+        # Defines the wires and the graph on which MaxCut is being performed
+        wires = range(3)
+
+        graph = rx.PyGraph()
+        graph.add_nodes_from([0, 1, 2])
+        graph.add_edges_from([(0, 1, ""), (1, 2, ""), (2, 0, "")])
+
+        # Defines the QAOA cost and mixer Hamiltonians
+        cost_h, mixer_h = qaoa.maxcut(graph)
+
+        # Defines a layer of the QAOA ansatz from the cost and mixer Hamiltonians
+        def qaoa_layer(gamma, alpha):
+            qaoa.cost_layer(gamma, cost_h)
+            qaoa.mixer_layer(alpha, mixer_h)
+
+        # Repeatedly applies layers of the QAOA ansatz
+        def circuit(params, **kwargs):
+            for w in wires:
+                qml.Hadamard(wires=w)
+
+            qml.layer(qaoa_layer, 2, params[0], params[1])
+
+        # Defines the device and the QAOA cost function
+        dev = qml.device("default.qubit", wires=len(wires))
+        cost_function = qml.ExpvalCost(circuit, cost_h, dev)
+
+        res = cost_function([[1, 1], [1, 1]])
+        expected = -1.8260274380964299
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
 
 class TestCycles:
     """Tests that ``cycle`` module functions are behaving correctly"""
@@ -1081,6 +1246,26 @@ class TestCycles:
 
         assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
 
+    def test_edges_to_wires_rx(self):
+        """Test that edges_to_wires returns the correct mapping"""
+        g = rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])
+        r = edges_to_wires(g)
+
+        assert r == {
+            (0, 1): 0,
+            (0, 2): 1,
+            (0, 3): 2,
+            (1, 0): 3,
+            (1, 2): 4,
+            (1, 3): 5,
+            (2, 0): 6,
+            (2, 1): 7,
+            (2, 3): 8,
+            (3, 0): 9,
+            (3, 1): 10,
+            (3, 2): 11,
+        }
+
     def test_wires_to_edges(self):
         """Test that wires_to_edges returns the correct mapping"""
         g = nx.lollipop_graph(4, 1)
@@ -1088,10 +1273,33 @@ class TestCycles:
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
 
-    def test_partial_cycle_mixer_complete(self):
+    def test_wires_to_edges_rx(self):
+        """Test that wires_to_edges returns the correct mapping"""
+        g = rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])
+        r = wires_to_edges(g)
+
+        assert r == {
+            0: (0, 1),
+            1: (0, 2),
+            2: (0, 3),
+            3: (1, 0),
+            4: (1, 2),
+            5: (1, 3),
+            6: (2, 0),
+            7: (2, 1),
+            8: (2, 3),
+            9: (3, 0),
+            10: (3, 1),
+            11: (3, 2),
+        }
+
+    @pytest.mark.parametrize(
+        "g",
+        [nx.complete_graph(4).to_directed(), rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])],
+    )
+    def test_partial_cycle_mixer_complete(self, g):
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
-        g = nx.complete_graph(4).to_directed()
         edge = (0, 1)
 
         h = _partial_cycle_mixer(g, edge)
@@ -1133,12 +1341,16 @@ class TestCycles:
         assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
         assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
 
-    def test_cycle_mixer(self):
+    @pytest.mark.parametrize(
+        "g",
+        [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2, 3])],
+    )
+    def test_cycle_mixer(self, g):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
+
         n_nodes = 3
-        g = nx.complete_graph(n_nodes).to_directed()
         m = wires_to_edges(g)
-        n_wires = len(g.edges)
+        n_wires = len(graph.edge_list() if isinstance(graph, rx.PyDiGraph) else graph.edges)
 
         # Find Hamiltonian and its matrix representation
         h = cycle_mixer(g)
@@ -1225,6 +1437,35 @@ class TestCycles:
 
         assert np.allclose(mat.toarray(), mat_expected)
 
+    def test_matrix_rx(self):
+        """Test that the matrix function works as expected on a fixed example"""
+        g = rx.generators.star_graph(4, [0, 1, 2, 3])
+        h = qml.qaoa.bit_flip_mixer(g, 0)
+
+        mat = matrix(h, 4)
+        mat_expected = np.array(
+            [
+                [0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+
+        assert np.allclose(mat.toarray(), mat_expected)
+
     def test_edges_to_wires_directed(self):
         """Test that edges_to_wires returns the correct mapping on a directed graph"""
         g = nx.lollipop_graph(4, 1).to_directed()
@@ -1269,13 +1510,21 @@ class TestCycles:
             13: (4, 3),
         }
 
-    def test_loss_hamiltonian_complete(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_loss_hamiltonian_complete(self, g):
         """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 3-node complete digraph"""
-        g = nx.complete_graph(3).to_directed()
-        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
-        for k, v in edge_weight_data.items():
-            g[k[0]][k[1]]["weight"] = v
+        if isinstance(g, rx.PyDiGraph):
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges())}
+            for k, v in complete_edge_weight_data.items():
+                g.update_edge(k[0], k[1], {"weight": v})
+        else:
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+            for k, v in edge_weight_data.items():
+                g[k[0]][k[1]]["weight"] = v
+
         h = loss_hamiltonian(g)
 
         expected_ops = [
@@ -1338,14 +1587,23 @@ class TestCycles:
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
         assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
 
-    def test_self_loop_raises_error(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_self_loop_raises_error(self, g):
         """Test graphs with self loop raises ValueError"""
-        g = nx.complete_graph(3).to_directed()
-        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
-        for k, v in edge_weight_data.items():
-            g[k[0]][k[1]]["weight"] = v
 
-        g.add_edge(1, 1)  # add self loop
+        if isinstance(g, rx.PyDiGraph):
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges())}
+            for k, v in complete_edge_weight_data.items():
+                g.update_edge(k[0], k[1], {"weight": v})
+            g.add_edge(1, 1, "")  # add self loop
+
+        else:
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+            for k, v in edge_weight_data.items():
+                g[k[0]][k[1]]["weight"] = v
+            g.add_edge(1, 1)  # add self loop
 
         with pytest.raises(ValueError, match="Graph contains self-loops"):
             loss_hamiltonian(g)
@@ -1353,7 +1611,6 @@ class TestCycles:
     def test_missing_edge_weight_data_raises_error(self):
         """Test graphs with no edge weight data raises `KeyError`"""
         g = nx.complete_graph(3).to_directed()
-
         with pytest.raises(KeyError, match="does not contain weight data"):
             loss_hamiltonian(g)
 
@@ -1410,11 +1667,12 @@ class TestCycles:
             ]
         )
 
-    def test_inner_out_flow_constraint_hamiltonian(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_inner_out_flow_constraint_hamiltonian(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node"""
-
-        g = nx.complete_graph(3).to_directed()
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
 
         expected_ops = [
@@ -1431,10 +1689,12 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
-    def test_inner_net_flow_constraint_hamiltonian(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_inner_net_flow_constraint_hamiltonian(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node"""
-        g = nx.complete_graph(3).to_directed()
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
 
         expected_ops = [
@@ -1453,11 +1713,13 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
-    def test_inner_out_flow_constraint_hamiltonian_non_complete(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_inner_out_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with
         the (0, 1) edge removed"""
-        g = nx.complete_graph(3).to_directed()
         g.remove_edge(0, 1)
         h = _inner_out_flow_constraint_hamiltonian(g, 0)
 
@@ -1469,10 +1731,12 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
-    def test_inner_net_flow_constraint_hamiltonian_non_complete(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_inner_net_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
-        g = nx.complete_graph(3).to_directed()
         g.remove_edge(1, 0)
         h = _inner_net_flow_constraint_hamiltonian(g, 0)
 
@@ -1492,14 +1756,16 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
-    def test_out_flow_constraint(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_out_flow_constraint(self, g):
         """Test the out-flow constraint Hamiltonian is minimised by states that correspond to
         subgraphs that only ever have 0 or 1 edge leaving each node
         """
-        g = nx.complete_graph(3).to_directed()
         h = out_flow_constraint(g)
         m = wires_to_edges(g)
-        wires = len(g.edges)
+        wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
@@ -1522,7 +1788,10 @@ class TestCycles:
             edges = tuple(m[w] for w in wires_)
 
             # find the number of edges leaving each node
-            num_edges_leaving_node = {node: 0 for node in g.nodes}
+            if isinstance(g, rx.PyDiGraph):
+                num_edges_leaving_node = {node: 0 for node in g.nodes()}
+            else:
+                num_edges_leaving_node = {node: 0 for node in g.nodes}
             for e in edges:
                 num_edges_leaving_node[e[0]] += 1
 
@@ -1533,20 +1802,24 @@ class TestCycles:
             elif max(num_edges_leaving_node.values()) <= 1:
                 assert energy == min(energies_bitstrings)[0]
 
-    def test_out_flow_constraint_undirected_raises_error(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])]
+    )
+    def test_out_flow_constraint_undirected_raises_error(self,g):
         """Test `out_flow_constraint` raises ValueError if input graph is not directed"""
-        g = nx.complete_graph(3)  # undirected graph
 
         with pytest.raises(ValueError):
             h = out_flow_constraint(g)
 
-    def test_net_flow_constraint(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_net_flow_constraint(self, g):
         """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
         collection of edges with zero flow"""
-        g = nx.complete_graph(3).to_directed()
         h = net_flow_constraint(g)
         m = wires_to_edges(g)
-        wires = len(g.edges)
+        wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # We use PL to find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
@@ -1571,8 +1844,12 @@ class TestCycles:
             edges = tuple(m[w] for w in wires_)
 
             # Calculates the number of edges entering and leaving a given node
-            in_flows = np.zeros(len(g.nodes))
-            out_flows = np.zeros(len(g.nodes))
+            if isinstance(g, rx.PyDiGraph):
+                in_flows = np.zeros(len(g.nodes()))
+                out_flows = np.zeros(len(g.nodes()))
+            else:
+                in_flows = np.zeros(len(g.nodes))
+                out_flows = np.zeros(len(g.nodes))
 
             for e in edges:
                 in_flows[e[0]] += 1
@@ -1587,21 +1864,26 @@ class TestCycles:
             else:
                 assert energy > min(energies_states)[0]
 
-    def test_net_flow_constraint_undirected_raises_error(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])]
+    )
+    def test_net_flow_constraint_undirected_raises_error(self, g):
         """Test `net_flow_constraint` raises ValueError if input graph is not directed"""
-        g = nx.complete_graph(3)  # undirected graph
 
         with pytest.raises(ValueError):
             h = net_flow_constraint(g)
 
-    def test_net_flow_and_out_flow_constraint(self):
+    @pytest.mark.parametrize(
+        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
+    )
+    def test_net_flow_and_out_flow_constraint(self, g):
         """Test the combined net-flow and out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
         that qualify as simple_cycles
         """
         g = nx.complete_graph(3).to_directed()
         h = net_flow_constraint(g) + out_flow_constraint(g)
         m = wires_to_edges(g)
-        wires = len(g.edges)
+        wires = len(g.edge_list() if isinstance(g, rx.PyDiGraph) else g.edges)
 
         # Find the energies corresponding to each possible bitstring
         dev = qml.device("default.qubit", wires=wires)
