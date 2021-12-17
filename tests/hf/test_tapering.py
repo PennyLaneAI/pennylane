@@ -435,7 +435,7 @@ def test_simplify(hamiltonian, result):
 
 
 @pytest.mark.parametrize(
-    ("generator", "pauli_x_ops", "result"),
+    ("generator", "paulix_ops", "result"),
     [
         (
             [
@@ -462,14 +462,14 @@ def test_simplify(hamiltonian, result):
         ),
     ],
 )
-def test_cliford(generator, pauli_x_ops, result):
+def test_cliford(generator, paulix_ops, result):
     r"""Test that clifford returns the correct operator."""
-    u = clifford(generator, pauli_x_ops)
+    u = clifford(generator, paulix_ops)
     assert u.compare(result)
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "generator", "pauli_x_ops", "paulix_sector", "ham_ref"),
+    ("symbols", "geometry", "generator", "paulix_ops", "paulix_sector", "ham_ref"),
     [
         (
             ["H", "H"],
@@ -488,11 +488,11 @@ def test_cliford(generator, pauli_x_ops, result):
         ),
     ],
 )
-def test_transform_hamiltonian(symbols, geometry, generator, pauli_x_ops, paulix_sector, ham_ref):
+def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.hf.Molecule(symbols, geometry)
     h = qml.hf.generate_hamiltonian(mol)()
-    ham_calc = transform_hamiltonian(h, generator, pauli_x_ops, paulix_sector)
+    ham_calc = transform_hamiltonian(h, generator, paulix_ops, paulix_sector)
 
     # sort Hamiltonian terms and then compare with reference
     sorted_terms = list(sorted(zip(ham_calc.terms[0], ham_calc.terms[1])))

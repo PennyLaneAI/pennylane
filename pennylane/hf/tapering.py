@@ -171,7 +171,7 @@ def get_generators(nullspace, num_qubits):
     ...                    [1, 0, 1, 0, 0, 1, 0, 0],
     ...                    [0, 0, 1, 0, 0, 0, 1, 0],
     ...                    [0, 0, 1, 1, 0, 0, 0, 1]])
-    >>> generate_taus(kernel, 4)
+    >>> get_generators(kernel, 4)
     [(1.0) [X1], (1.0) [Z0 X2 X3], (1.0) [X0 Z1 X2], (1.0) [Y2], (1.0) [X2 Y3]]
     """
     generators = []
@@ -206,13 +206,13 @@ def generate_paulis(generators, num_qubits):
     >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
     ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
     ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
-    >>> generate_paulis(generators, qubits)
+    >>> generate_paulis(generators, 4)
     [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
     """
     ops_generator = [g.ops[0] if isinstance(g.ops, list) else g.ops for g in generators]
     bmat = _binary_matrix(ops_generator, num_qubits)
 
-    pauli_x_ops = []
+    paulix_ops = []
     for row in range(bmat.shape[0]):
         bmatrow = bmat[row]
         bmatrest = np.delete(bmat, row, axis=0)
@@ -221,10 +221,10 @@ def generate_paulis(generators, num_qubits):
             if bmatrow[col] and np.array_equal(
                 bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
             ):
-                pauli_x_ops.append(qml.PauliX(col))
+                paulix_ops.append(qml.PauliX(col))
                 break
 
-    return pauli_x_ops
+    return paulix_ops
 
 
 def generate_symmetries(qubit_op, num_qubits):
@@ -256,10 +256,10 @@ def generate_symmetries(qubit_op, num_qubits):
     **Example**
 
     >>> symbols = ['H', 'H']
-    >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+    >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
     >>> mol = qml.hf.Molecule(symbols, coordinates)
-    >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
-    >>> generators, pauli_x = generate_symmetries(H, qubits)
+    >>> H, qubits = qml.hf.generate_hamiltonian(mol)(geometry), 4
+    >>> generators, pauli_x = qml.hf.tapering.generate_symmetries(H, qubits)
     >>> generators, pauli_x
     ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
     [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
@@ -280,9 +280,9 @@ def generate_symmetries(qubit_op, num_qubits):
     generators = get_generators(nullspace, num_qubits)
 
     # Get unitaries from the calculated nullspace
-    pauli_x_ops = generate_paulis(generators, num_qubits)
+    paulix_ops = generate_paulis(generators, num_qubits)
 
-    return generators, pauli_x_ops
+    return generators, paulix_ops
 
 
 def _observable_mult(obs_a, obs_b):
@@ -366,7 +366,7 @@ def _simplify(h, cutoff=1.0e-12):
     return qml.Hamiltonian(coeffs, ops)
 
 
-def clifford(generators, pauli_x_ops):
+def clifford(generators, paulix_ops):
     r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
 
     This function computes :math:`U = U_0U_1...U_k` for a set of :math:`k` generators and
@@ -374,7 +374,7 @@ def clifford(generators, pauli_x_ops):
 
     Args:
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
-        pauli_x_ops (list[Operation]): list of single-qubit Pauli-X operators
+        paulix_ops (list[Operation]): list of single-qubit Pauli-X operators
 
     Returns:
         Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
@@ -385,8 +385,8 @@ def clifford(generators, pauli_x_ops):
     >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
     >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
     >>> generators = [t1, t2, t3]
-    >>> pauli_x_ops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
-    >>> u = clifford(generators, pauli_x_ops)
+    >>> paulix_ops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
+    >>> u = clifford(generators, paulix_ops)
     >>> print(u)
       (0.3535533905932737) [Z1 Z2 X3]
     + (0.3535533905932737) [X1 X2 X3]
@@ -399,14 +399,14 @@ def clifford(generators, pauli_x_ops):
     """
     cliff = []
     for i, t in enumerate(generators):
-        cliff.append(1 / 2 ** 0.5 * (pauli_x_ops[i] + t))
+        cliff.append(1 / 2 ** 0.5 * (paulix_ops[i] + t))
 
     u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
 
     return u
 
 
-def transform_hamiltonian(h, generators, pauli_x_ops, paulix_sector):
+def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     r"""Transform a Hamiltonian with a Clifford operator and taper qubits.
 
     The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
@@ -417,7 +417,7 @@ def transform_hamiltonian(h, generators, pauli_x_ops, paulix_sector):
     Args:
         h (Hamiltonian): PennyLane Hamiltonian
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
-        pauli_x_ops (list[Operation]): list of single-qubit Pauli-X operators
+        paulix_ops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
 
     Returns:
@@ -429,22 +429,21 @@ def transform_hamiltonian(h, generators, pauli_x_ops, paulix_sector):
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
-    >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
-    >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
-    >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
-    >>> generator = [t1, t2, t3]
-    >>> pauli_x_ops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
+    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
     >>> paulix_sector = [1, -1, -1]
-    >>> transform_hamiltonian(H, generator, pauli_x_ops, paulix_sector)
-    <Hamiltonian: terms=4, wires=[0]>
+    >>> H_tapered = transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
+    >>> print(H_tapered)
+      ((-0.321034397355757+0j)) [I0]
+    + ((0.1809270275619003+0j)) [X0]
+    + ((0.7959678503869626+0j)) [Z0]
     """
-    u = clifford(generators, pauli_x_ops)
+    u = clifford(generators, paulix_ops)
     h = _observable_mult(_observable_mult(u, h), u)
 
     val = np.ones(len(h.terms[0])) * complex(1.0)
 
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
-    paulix_wires = [x.wires[0] for x in pauli_x_ops]
+    paulix_wires = [x.wires[0] for x in paulix_ops]
     for idx, w in enumerate(paulix_wires):
         for i in range(len(h.terms[0])):
             s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
