@@ -1136,7 +1136,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "Z", wires=0)
-        decomp_ops = op.decomposition()
+        decomp_ops = qml.PauliRot.compute_decomposition(theta, "Z", wires=0)
 
         assert np.allclose(op.eigvals, np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
         assert np.allclose(op.matrix, np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))

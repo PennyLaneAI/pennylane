@@ -119,6 +119,28 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
+        """Determine ``QubitCarry``'s decomposition for specified parameters, wires,
+        and hyperparameters. The decomposition defines an Operator as a product of
+        more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance. The instance method ``decomposition`` uses
+        this method and the instance's variables.
+
+        Args:
+            wires (Iterable[Any], Wires): Wires that the operator acts on.
+
+        Returns:
+            tuple[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        (Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4]))
+
+        """
         decomp_ops = (
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -211,6 +233,28 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
+        """Determine ``QubitSum``'s decomposition for specified parameters, wires,
+        and hyperparameters. The decomposition defines an Operator as a product of
+        more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance. The instance method ``decomposition`` uses
+        this method and the instance's variables.
+
+        Args:
+            wires (Iterable[Any], Wires): Wires that the operator acts on.
+
+        Returns:
+            tuple[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >> qml.QubitSum.compute_decomposition((0,1,2))
+        (CNOT(wires=[1, 2]), CNOT(wires=[0, 2]))
+
+        """
         decomp_ops = (
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
