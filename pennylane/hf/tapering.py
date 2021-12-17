@@ -21,6 +21,7 @@ import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 
+
 def _binary_matrix(terms, num_qubits):
     r"""Get a binary matrix representation of the Hamiltonian where each row corresponds to a
     Pauli term, which is represented by a concatenation of Z and X vectors.
