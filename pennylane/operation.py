@@ -563,22 +563,43 @@ class Operator(abc.ABC):
 
         .. math:: O = O_1 O_2 \dots O_n
 
+        Returns ``None`` is this Operator does not define its decomposition.
+
+        .. note::
+            By default, this method calls the static method ``compute_decomposition``.
+            Unless the ``compute_decomposition`` has a custom signature, this method should
+            not be overwritten.
+
         Returns:
-            tuple[Operator]: decomposition of the Operator into lower level operations
+            tuple[Operator]: The decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
+        (CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]))
+
         """
         return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         """Determine the Operator's decomposition for specified parameters, wires,
-        and hyperparameters. This decomposition is a tuple of more fundamental gates,
-        that when multiplied together, give the Operator:
+        and hyperparameters. The decomposition defines an Operator as a product of
+        more fundamental gates:
 
-        .. math:: O = O_1 O_2 \dots O_n
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        This is a static method and can provide the decomposition of a given operator
-        without creating a specific instance. The instance method ``decomposition`` uses
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance. The instance method ``decomposition`` uses
         this method and the instance's variables.
+
+        Returns ``None`` is this Operator does not define its decomposition.
+
+        .. note::
+            This method gets overwritten by subclasses and helps define the ``decomposition`` and
+            ``expand`` methods. By default, this method should always take the Operator's
+            parameters, wires, and hyperparameters as inputs, even if the decomposition is
+            independent of these values.
 
         Args:
             *params: Variable length argument list.  Should match the ``parameters`` attribute
@@ -590,6 +611,12 @@ class Operator(abc.ABC):
 
         Returns:
             tuple[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingXX.compute_decomposition(1.23, (0,1))
+        (CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]))
+
         """
         return None
 
