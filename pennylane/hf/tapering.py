@@ -14,7 +14,6 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
-from copy import deepcopy
 import numpy as np
 import pennylane as qml
 
@@ -47,7 +46,7 @@ def _binary_matrix(terms, num_qubits):
     binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
     for idx, term in enumerate(terms):
         ops, wires = term.name, term.wires
-        if len(term.wires) == 1:
+        if len(wires) == 1:
             ops = [ops]
         for op, wire in zip(ops, wires):
             if op in ["PauliX", "PauliY"]:
@@ -75,33 +74,47 @@ def _reduced_row_echelon(binary_matrix):
         ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
         >>> _reduced_row_echelon(binary_matrix)
          array([[1, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 1, 1, 1, 1, 1, 1],
+                [0, 0, 1, 0, 0, 1, 1, 0],
                 [0, 0, 0, 1, 1, 0, 0, 1]])
 
     """
 
-    rref_binary_matrix = deepcopy(binary_matrix)
-    shape = rref_binary_matrix.shape
+    rref_mat = binary_matrix.copy()
+    shape = rref_mat.shape
+    icol = 0
 
-    for irow, icol in zip(range(shape[0]), range(shape[1])):
+    for irow in range(shape[0]):
 
-        # find value and index of largest element in remainder of column icol
-        krow = irow + np.argmax(rref_binary_matrix[irow:, icol])
+        while icol < shape[1] and not rref_mat[irow][icol]:
 
-        # swap rows krow and irow
-        rref_binary_matrix[krow], rref_binary_matrix[irow] = deepcopy(
-            rref_binary_matrix[irow]
-        ), deepcopy(rref_binary_matrix[krow])
+            # get the nonzero indices in the remainder of column icol
+            non_zero_idx = rref_mat[irow:, icol].nonzero()[0]
 
-        # store remainder columns of the row irow
-        pvtcols = rref_binary_matrix[irow, icol:]
+            if not len(non_zero_idx):  # if remainder of column icol is all zero
+                icol += 1
+            else:
+                # find value and index of largest element in remainder of column icol
+                krow = irow + non_zero_idx[0]
 
-        # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
-        currcol = deepcopy(rref_binary_matrix[:, icol])
-        currcol[irow] = 0
-        rref_binary_matrix[:, icol:] ^= np.outer(currcol, pvtcols)
+                # swap rows krow and irow
+                rref_mat[irow, icol:], rref_mat[krow, icol:] = (
+                    rref_mat[krow, icol:].copy(),
+                    rref_mat[irow, icol:].copy(),
+                )
+        if icol < shape[1] and rref_mat[irow][icol]:
 
-    return rref_binary_matrix.astype(int)
+            # store remainder right hand side columns of the pivot row irow
+            rpvt_cols = rref_mat[irow, icol:].copy()
+
+            # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
+            currcol = rref_mat[:, icol].copy()
+            currcol[irow] = 0
+
+            # XOR the right hand side of the pivot row irow with all of the other rows
+            rref_mat[:, icol:] ^= np.outer(currcol, rpvt_cols)
+            icol += 1
+
+    return rref_mat.astype(int)
 
 
 def _kernel(binary_matrix):

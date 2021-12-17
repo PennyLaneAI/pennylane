@@ -213,16 +213,20 @@ def test_reduced_row_echelon(binary_matrix, result):
 def test_kernel(binary_matrix, result):
     r"""Test that _kernel returns the correct result."""
 
-    # get the kernel from the gaussian elimination using column echelon form.
-    shape = binary_matrix.shape
-    row_aug_mat = np.vstack((binary_matrix, np.identity(shape[1], dtype=int)))
-    col_ech_mat = (_reduced_row_echelon(row_aug_mat.T)).T
+    # get the kernel from the gaussian elimination.
+    pivots = (binary_matrix.T != 0).argmax(axis=0)
+    nonpivots = np.setdiff1d(range(len(binary_matrix[0])), pivots)
 
     kernel = []
-    for icol in range(shape[1]):
-        b_col, c_col = col_ech_mat[: shape[0], icol], col_ech_mat[shape[0] :, icol]
-        if (b_col == np.zeros(shape[0])).all() and not (c_col == np.zeros(shape[1])).all():
-            kernel.append(col_ech_mat[shape[0] :, icol].tolist())
+    for col in nonpivots:
+        col_vector = binary_matrix[:, col]
+        null_vector = np.zeros((binary_matrix.shape[1]), dtype=int)
+        null_vector[col] = 1
+        for i in pivots:
+            first_entry = np.where(binary_matrix[:, i] == 1)[0][0]
+            if col_vector[first_entry] == 1:
+                null_vector[i] = 1
+        kernel.append(null_vector.tolist())
 
     # get the nullspace from the _kernel function.
     nullspace = _kernel(binary_matrix)
