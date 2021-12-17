@@ -75,10 +75,7 @@ def edges_to_wires(graph) -> Dict[Tuple, int]:
             (gnodes.index(e[0]), gnodes.index(e[1])): i
             for i, e in enumerate(sorted(graph.edge_list()))
         }
-    else:
-        raise ValueError(
-            "Input graph must be a nx.Graph, rx.Py(Di)Graph, got {}".format(type(graph).__name__)
-        )
+    raise ValueError(f"Input graph must be a nx.Graph, rx.Py(Di)Graph, got {type(graph).__name__}")
 
 
 def wires_to_edges(graph) -> Dict[int, Tuple]:
@@ -130,10 +127,9 @@ def wires_to_edges(graph) -> Dict[int, Tuple]:
             i: (gnodes.index(e[0]), gnodes.index(e[1]))
             for i, e in enumerate(sorted(graph.edge_list()))
         }
-    else:
-        raise ValueError(
-            "Input graph must be a nx.Graph or rx.Py(Di)Graph, got {}".format(type(graph).__name__)
-        )
+    raise ValueError(
+        f"Input graph must be a nx.Graph or rx.Py(Di)Graph, got {type(graph).__name__}"
+    )
 
 
 def cycle_mixer(graph) -> Hamiltonian:
@@ -220,7 +216,7 @@ def cycle_mixer(graph) -> Hamiltonian:
     """
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.DiGraph or rx.PyDiGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     hamiltonian = Hamiltonian([], [])
@@ -251,7 +247,7 @@ def _partial_cycle_mixer(graph, edge: Tuple) -> Hamiltonian:
     """
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.DiGraph or rx.PyDiGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     coeffs = []
@@ -368,7 +364,7 @@ def loss_hamiltonian(graph) -> Hamiltonian:
     """
     if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.Py(Di)Graph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.Py(Di)Graph, got {type(graph).__name__}"
         )
 
     edges_to_qubits = edges_to_wires(graph)
@@ -475,7 +471,7 @@ def out_flow_constraint(graph) -> Hamiltonian:
     """
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.DiGraph or rx.PyDiGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     if isinstance(graph, (nx.DiGraph, rx.PyDiGraph)) and not hasattr(graph, "out_edges"):
@@ -531,7 +527,7 @@ def net_flow_constraint(graph) -> Hamiltonian:
 
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.DiGraph or rx.PyDiGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     hamiltonian = Hamiltonian([], [])
@@ -562,7 +558,7 @@ def _inner_out_flow_constraint_hamiltonian(graph, node) -> Hamiltonian:
     """
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.DiGraph or rx.PyDiGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     coeffs = []
@@ -625,7 +621,7 @@ def _inner_net_flow_constraint_hamiltonian(graph, node) -> Hamiltonian:
     """
     if not isinstance(graph, (nx.DiGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.DiGraph or rx.PyDiGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.DiGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     edges_to_qubits = edges_to_wires(graph)

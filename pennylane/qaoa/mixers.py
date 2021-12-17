@@ -115,9 +115,7 @@ def xy_mixer(graph):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(
-                type(graph).__name__
-            )
+            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
         )
 
     is_rx = isinstance(graph, rx.PyGraph)
@@ -196,9 +194,7 @@ def bit_flip_mixer(graph, b):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph object, got {}".format(
-                type(graph).__name__
-            )
+            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
         )
 
     if b not in [0, 1]:

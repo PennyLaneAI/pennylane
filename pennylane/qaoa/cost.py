@@ -175,7 +175,7 @@ def edge_driver(graph, reward):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
         )
 
     coeffs = []
@@ -295,7 +295,7 @@ def maxcut(graph):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
         )
 
     is_rx = isinstance(graph, rx.PyGraph)
@@ -372,7 +372,7 @@ def max_independent_set(graph, constrained=True):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
         )
 
     graph_nodes = graph.nodes()
@@ -452,7 +452,7 @@ def min_vertex_cover(graph, constrained=True):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
         )
 
     graph_nodes = graph.nodes()
@@ -534,7 +534,7 @@ def max_clique(graph, constrained=True):
 
     if not isinstance(graph, (nx.Graph, rx.PyGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
         )
 
     graph_nodes = graph.nodes()
@@ -693,7 +693,7 @@ def max_weight_cycle(graph, constrained=True):
     """
     if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
         raise ValueError(
-            "Input graph must be a nx.Graph or rx.PyGraph, got {}".format(type(graph).__name__)
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
         )
 
     mapping = qaoa.cycle.wires_to_edges(graph)
