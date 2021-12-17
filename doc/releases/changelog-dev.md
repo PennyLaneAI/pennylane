@@ -71,4 +71,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Juan Miguel Arrazola, Esther Cruz, Diego Guala, Ankit Khandelwal, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Antal Száva, David Wierichs, Shaoming Zhang
