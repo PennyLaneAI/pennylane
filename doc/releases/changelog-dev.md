@@ -6,9 +6,17 @@
 
 <h3>Improvements</h3>
 
+* Interferometer is now a class with `shape` method.
+  [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where PennyLane didn't require v0.20.0 of PennyLane-Lightning,
+  but raised an error with versions of Lightning earlier than v0.20.0 due to
+  the new batch execution pipeline.
+  [(#2033)](https://github.com/PennyLaneAI/pennylane/pull/2033)
 
 * Fixes a bug in `classical_jacobian` when used with Torch, where the
   Jacobian of the preprocessing was also computed for non-trainable
@@ -21,6 +29,10 @@
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
 <h3>Documentation</h3>
+
+* Extended the interfaces description page to explicitly mention device
+  compatibility.
+  [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
 
 <h3>Operator class refactor</h3>
 
@@ -71,5 +83,4 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Josh Izaac, Christina Lee, Maria Schuld, David Wierichs.
-
+Olivia Di Matteo, Josh Izaac, Ankit Khandelwal, Christina Lee, Maria Schuld, David Wierichs.
