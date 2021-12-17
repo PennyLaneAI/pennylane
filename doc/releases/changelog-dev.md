@@ -60,6 +60,9 @@
 
 <h3>Improvements</h3>
 
+* Insert transform now supports adding operation after or before certain specific gates.
+  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
+
 * Interferometer is now a class with `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
 
