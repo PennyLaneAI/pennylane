@@ -14,7 +14,7 @@
 r"""
 Contains the CVNeuralNetLayers template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access,arguments-differ
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
@@ -61,7 +61,7 @@ class CVNeuralNetLayers(Operation):
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable): wires that the template acts on
 
-    .. UsageDetails:
+    .. UsageDetails::
 
         **Parameter shapes**
 
@@ -102,6 +102,7 @@ class CVNeuralNetLayers(Operation):
     ):
 
         n_wires = len(wires)
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         # check that first dimension is the same
@@ -175,6 +176,9 @@ class CVNeuralNetLayers(Operation):
                 for i in range(len(self.wires)):
                     qml.Kerr(self.parameters[10][l, i], wires=self.wires[i])
 
+        if self.inverse:
+            tape.inv()
+
         return tape
 
     @staticmethod
@@ -188,6 +192,7 @@ class CVNeuralNetLayers(Operation):
         Returns:
             list[tuple[int]]: list of shapes
         """
+        # n_if -> theta and phi shape for Interferometer
         n_if = n_wires * (n_wires - 1) // 2
 
         shapes = (
@@ -198,3 +203,8 @@ class CVNeuralNetLayers(Operation):
         )
 
         return shapes
+
+    def adjoint(self):  # pylint: disable=arguments-differ
+        adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

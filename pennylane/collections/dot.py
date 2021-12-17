@@ -69,7 +69,7 @@ def _get_dot_func(interface, x=None):
 
         return np.dot, x
 
-    raise ValueError("Unknown interface {}".format(interface))
+    raise ValueError(f"Unknown interface {interface}")
 
 
 def dot(x, y):

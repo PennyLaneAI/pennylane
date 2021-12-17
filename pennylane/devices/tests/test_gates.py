@@ -37,6 +37,7 @@ np.random.seed(42)
 
 # gates for which device support is tested
 ops = {
+    "Identity": qml.Identity(wires=[0]),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(0, wires=[0, 1]),
@@ -420,6 +421,8 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
+        if not dev.supports_operation(op):
+            pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
 

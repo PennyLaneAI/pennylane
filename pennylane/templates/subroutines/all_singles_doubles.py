@@ -120,27 +120,21 @@ class AllSinglesDoubles(Operation):
 
         if len(wires) < 2:
             raise ValueError(
-                "The number of qubits (wires) can not be less than 2; got len(wires) = {}".format(
-                    len(wires)
-                )
+                f"The number of qubits (wires) can not be less than 2; got len(wires) = {len(wires)}"
             )
 
         if doubles is not None:
             for d_wires in doubles:
                 if len(d_wires) != 4:
                     raise ValueError(
-                        "Expected entries of 'doubles' to be of size 4; got {} of length {}".format(
-                            d_wires, len(d_wires)
-                        )
+                        f"Expected entries of 'doubles' to be of size 4; got {d_wires} of length {len(d_wires)}"
                     )
 
         if singles is not None:
             for s_wires in singles:
                 if len(s_wires) != 2:
                     raise ValueError(
-                        "Expected entries of 'singles' to be of size 2; got {} of length {}".format(
-                            s_wires, len(s_wires)
-                        )
+                        f"Expected entries of 'singles' to be of size 2; got {s_wires} of length {len(s_wires)}"
                     )
 
         weights_shape = qml.math.shape(weights)
@@ -194,8 +188,8 @@ class AllSinglesDoubles(Operation):
         if singles is None or not singles:
             if doubles is None or not doubles:
                 raise ValueError(
-                    "'singles' and 'doubles' lists can not be both empty;"
-                    " got singles = {}, doubles = {}".format(singles, doubles)
+                    f"'singles' and 'doubles' lists can not be both empty;"
+                    f" got singles = {singles}, doubles = {doubles}"
                 )
             if doubles is not None:
                 shape_ = (len(doubles),)

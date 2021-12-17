@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the circuit drawing functionality used to render QNodes
-as circuit diagrams.
+This module provides the circuit drawing functionality used to display circuits visually.
 
 .. currentmodule:: pennylane.circuit_drawer
 .. autosummary::
@@ -27,3 +26,4 @@ from .tape_mpl import tape_mpl
 from .mpldrawer import MPLDrawer
 from .drawable_layers import drawable_layers, drawable_grid
 from .utils import convert_wire_order
+from .style import available_styles, use_style

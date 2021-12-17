@@ -44,9 +44,7 @@ _OP_TO_CGEN = {
 }
 
 
-def expand_fn(
-    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
+def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
     if not allow_nonunitary and approx is None:  # pragma: no cover
@@ -55,16 +53,17 @@ def expand_fn(
 
 
 @functools.partial(batch_transform, expand_fn=expand_fn)
-def metric_tensor(
-    tape, approx=None, diag_approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None
-):
-    r"""Returns a function that computes the block-diagonal approximation of the metric tensor
-    of a given QNode or quantum tape.
+def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
+    r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     .. note::
 
         Only gates that have a single parameter and define a ``generator`` are supported.
         All other parametrized gates will be decomposed if possible.
+
+        The ``generator`` of all parametrized operations, with respect to which the
+        tensor is computed, are assumed to be Hermitian.
+        This is the case for unitary single-parameter operations.
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
@@ -79,9 +78,6 @@ def metric_tensor(
               reducing the classical overhead but not the quantum resources
               (compared to ``"block-diag"``).
 
-        diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
-            block-diagonal approximation of the metric tensor is computed.
-            This keyword argument is deprecated in favor of ``approx`` and will be removed soon.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
@@ -187,7 +183,7 @@ def metric_tensor(
     For example, we can compute the gradient of the Frobenius norm of the metric tensor
     with respect to the QNode ``weights`` :
 
-    >>> norm_fn = lambda x: qml.math.linalg(mt_fn(x), ord="fro")
+    >>> norm_fn = lambda x: qml.math.linalg.norm(mt_fn(x), ord="fro")
     >>> grad_fn = qml.grad(norm_fn)
     >>> grad_fn(weights)
     array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
@@ -249,14 +245,6 @@ def metric_tensor(
         are required in addition to the circuits for the block diagonal.
     """
     # pylint: disable=too-many-arguments
-    if diag_approx is not None:
-        warnings.warn(
-            "The keyword argument diag_approx is deprecated. Please use approx='diag' instead.",
-            UserWarning,
-        )
-        if diag_approx:
-            approx = "diag"
-
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
         diag_approx = approx == "diag"
@@ -269,6 +257,77 @@ def metric_tensor(
         f"Unknown value {approx} for keyword argument approx. "
         "Valid values are 'diag', 'block-diag' and None."
     )
+
+
+def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
+    """Execute the contraction of pre-computed classical Jacobian(s)
+    and the metric tensor of a tape in order to obtain the hybrid
+    metric tensor of a QNode.
+
+    Args:
+        mt (array): Metric tensor of a tape (2-dimensional)
+        cjac (array or tuple[array]): The classical Jacobian of a QNode
+        args (tuple): QNode arguments
+        interface (str): QNode interface
+
+    Returns:
+        array or tuple[array]: Hybrid metric tensor(s) of the QNode.
+        The number of metric tensors depends on the number of QNode arguments
+        for which the classical Jacobian was computed, their shape on the
+        shape of these QNode arguments.
+    """
+    if isinstance(cjac, tuple):
+        # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac
+        # as a tuple of contractions.
+        metric_tensors = tuple(
+            qml.math.tensordot(c, qml.math.tensordot(mt, c, axes=[[-1], [0]]), axes=[[0], [0]])
+            for c in cjac
+            if c is not None
+        )
+        if len(metric_tensors) == 1:
+            return metric_tensors[0]
+
+        return metric_tensors
+
+    is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+
+    if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
+        # Classical Jacobian is the identity. No classical processing
+        # is present inside the QNode.
+        return mt
+
+    # TODO: Remove the following behaviour once the stacking behaviour in `qml.jacobian`
+    # has been removed. The additional arguments `args` and `interface` can be removed
+    # accordingly.
+
+    # Get number of gate arguments that were considered trainable
+    num_gate_args = qml.math.shape(mt)[0]
+    # Get trainable args
+    # pylint: disable=protected-access
+    trainable_args_idx = qml.gradients.gradient_transform._jacobian_trainable_args(args, interface)
+    # Since all arguments have the same shape, obtain shape from the first trainable arg
+    qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
+    num_qnode_args = len(trainable_args_idx)
+
+    if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
+        # single QNode argument
+        cjac_axis = [0]
+    elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
+        # multiple QNode arguments with stacking
+        cjac_axis = [-2]
+    else:  # pragma: no cover
+        warnings.warn(
+            "Unexpected classical Jacobian encoutered, could not compute the hybrid "
+            "metric tensor of the QNode. You can still attempt to obtain the quantum "
+            "metric tensor with the `hybrid=False` parameter.",
+            UserWarning,
+        )
+        return ()
+
+    mt = qml.math.tensordot(mt, cjac, [[-1], cjac_axis])
+    mt = qml.math.tensordot(cjac, mt, [cjac_axis, [0]])
+
+    return mt
 
 
 @metric_tensor.custom_qnode_wrapper
@@ -323,32 +382,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
 
-        if isinstance(cjac, tuple):
-            if len(cjac) == 1:
-                cjac = cjac[0]
-            else:
-                # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac.
-                metric_tensors = []
-
-                for c in cjac:
-                    if c is not None:
-                        _mt = qml.math.tensordot(mt, c, axes=[[-1], [0]])
-                        _mt = qml.math.tensordot(c, _mt, axes=[[0], [0]])
-                        metric_tensors.append(_mt)
-
-                return tuple(metric_tensors)
-
-        is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
-
-        if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
-            # Classical Jacobian is the identity. No classical processing
-            # is present inside the QNode.
-            return mt
-
-        # Classical processing of a single argument is present. Return mt @ cjac.
-        mt = qml.math.tensordot(mt, cjac, [[-1], [0]])
-        mt = qml.math.tensordot(cjac, mt, [[0], [0]])
-        return mt
+        return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
 
     return wrapper
 
@@ -370,6 +404,10 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
             corresponding to one tape in the first return value
         list[list[float]]: Coefficients to scale the results for each observable, one inner list
             corresponding to one tape in the first return value
+
+    This method assumes the ``generator`` of all parametrized operations with respect to
+    which the tensor is computed to be Hermitian. This is the case for unitary single-parameter
+    operations.
     """
     # get the circuit graph
     graph = tape.graph
@@ -387,6 +425,8 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
         # for each operation in the layer, get the generator
         for op in curr_ops:
             gen, s = op.generator
+            if op.inverse:
+                s = -s
             w = op.wires
             coeffs_list[-1].append(s)
 
@@ -567,7 +607,6 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
     # and non-trainable parameter indices
     graph = tape.graph
     par_idx_to_trainable_idx = {idx: i for i, idx in enumerate(sorted(tape.trainable_params))}
-    layers = graph.iterate_parametrized_layers()
     layers = [
         LayerData(
             layer.pre_ops,
@@ -575,8 +614,10 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
             tuple(par_idx_to_trainable_idx[idx] for idx in layer[2]),
             layer.post_ops,
         )
-        for layer in layers
+        for layer in graph.iterate_parametrized_layers()
     ]
+    if len(layers) <= 1:
+        return diag_tapes, diag_proc_fn
 
     # Get default for aux_wire
     aux_wire = _get_aux_wire(aux_wire, tape, device_wires)

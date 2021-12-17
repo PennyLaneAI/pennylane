@@ -456,6 +456,29 @@ class TestGeneralOperations:
 
         plt.close()
 
+    @pytest.mark.parametrize("wires, n", [((0,), 0), ((0, 1, 2), 0), ((0, 2), 4)])
+    def test_notches(self, wires, n):
+        """Test notches are included when non-active wires exist."""
+
+        with QuantumTape() as tape:
+            qml.QFT(wires=wires)
+
+        _, ax = tape_mpl(tape, show_all_wires=True, wire_order=[0, 1, 2])
+        assert len(ax.patches) == (n + 1)
+        plt.close()
+
+    def test_active_wire_notches_False(self):
+        """Test active wire notches are disable with active_wire_notches=False."""
+
+        with QuantumTape() as tape:
+            qml.QFT(wires=(0, 3))
+
+        _, ax = tape_mpl(
+            tape, show_all_wires=True, wire_order=[0, 1, 2, 3], active_wire_notches=False
+        )
+
+        assert len(ax.patches) == 1
+
 
 measure_data = [
     ([qml.expval(qml.PauliX(0))], [0]),
@@ -562,7 +585,7 @@ class TestLayering:
             qml.IsingXX(1.234, wires=(0, 2))
             qml.PauliX(1)
 
-        _, ax = tape_mpl(tape, wire_order=[0, 1, 2])
+        _, ax = tape_mpl(tape, wire_order=[0, 1, 2], active_wire_notches=False)
 
         # layer=0, wire=0
         assert ax.patches[0].get_x() == -self.width / 2.0

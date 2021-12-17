@@ -20,6 +20,7 @@ This module contains optimizers for the standard :mod:`QNode` class, which uses 
 from .adagrad import AdagradOptimizer
 from .adam import AdamOptimizer
 from .gradient_descent import GradientDescentOptimizer
+from .lie_algebra import LieAlgebraOptimizer
 from .momentum import MomentumOptimizer
 from .nesterov_momentum import NesterovMomentumOptimizer
 from .rms_prop import RMSPropOptimizer
@@ -34,6 +35,7 @@ __all__ = [
     "AdagradOptimizer",
     "AdamOptimizer",
     "GradientDescentOptimizer",
+    "LieAlgebraOptimizer",
     "MomentumOptimizer",
     "NesterovMomentumOptimizer",
     "RMSPropOptimizer",
