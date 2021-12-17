@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* Functions for tapering qubits based on molecular symmetries is added.
+  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
+* [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+
+  With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
+  on a reduced number of qubits.
+
+  ```python
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
+  mol = qml.hf.Molecule(symbols, geometry)
+  H = qml.hf.generate_hamiltonian(mol)(geometry)
+  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+  paulix_sector = [1, -1, -1]
+  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
+  ```
+
+  ```pycon
+  >>> print(H_tapered)
+    ((-0.321034397355719+0j)) [I0]
+  + ((0.1809270275619743+0j)) [X0]
+  + ((0.7959678503870796+0j)) [Z0]
+  ```
+
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
