@@ -169,13 +169,15 @@ class CircuitGraph:
         # TODO: State preparations demolish the incoming state entirely, and therefore should have no incoming edges.
 
         # self._graph = nx.DiGraph()  #: nx.DiGraph: DAG representation of the quantum circuit
-        self._graph = rx.PyDiGraph()  #: rx.PyDiGraph: DAG representation of the quantum circuit
+        self._graph = rx.PyDiGraph(multigraph=False)  #: rx.PyDiGraph: DAG representation of the quantum circuit
         # Iterate over each (populated) wire in the grid
         for wire in self._grid.values():
             # Add the first operator on the wire to the graph
             # This operator does not depend on any others
-            self._graph.add_node(wire[0])
 
+            if wire[0] not in self._graph.nodes(): # rx.
+                self._graph.add_node(wire[0])
+            
             for i in range(1, len(wire)):
                 # For subsequent operators on the wire:
                 # if wire[i] not in self._graph:
@@ -360,7 +362,7 @@ class CircuitGraph:
         """
         # G = nx.DiGraph(self._graph.subgraph(ops))
         # return nx.dag.topological_sort(G)
-        G = self._graph.subgraph( list(self._graph.nodes().index(o) for o in ops)) # rx.
+        G = self._graph.subgraph(list(self._graph.nodes().index(o) for o in ops)) # rx.
         indexes = rx.topological_sort(G) # rx.
         return list(G[x] for x in indexes) # rx.
 
@@ -652,7 +654,7 @@ class CircuitGraph:
         if self._depth is None and self.operations:
             if self._operation_graph is None:
                 # self._operation_graph = self.graph.subgraph(self.operations)
-                self._operation_graph = self.graph.subgraph(list(self.graph.nodes().index(node) for node in self.operations)) # rx/
+                self._operation_graph = self._graph.subgraph(list(self._graph.nodes().index(node) for node in self.operations)) # rx/
 
                 # self._depth = nx.dag_longest_path_length(self._operation_graph) + 1
                 self._depth = rx.dag_longest_path_length(self._operation_graph) + 1 # rx.
