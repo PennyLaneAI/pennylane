@@ -462,7 +462,7 @@ def get_generator(op, return_matrix=False):
         s *= -1.0
 
     if return_matrix:
-        obs = obs.matrix
+        obs = obs.matrix()
 
         if not isinstance(obs, np.ndarray):
             obs = obs.toarray()

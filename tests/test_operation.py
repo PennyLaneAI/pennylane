@@ -1599,3 +1599,112 @@ class TestExpandMatrix:
         # the entry should propagate from position (0, 1) in the original tensor
         expected = tf.constant([[0.0, 1.0], [0.0, 0.0]])
         assert np.allclose(gradient, expected, atol=tol)
+
+    def test_expand_one(self, tol):
+        """Test that a 1 qubit gate correctly expands to 3 qubits."""
+        U = np.array(
+            [
+                [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+                [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+            ]
+        )
+        # test applied to wire 0
+        res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
+        expected = np.kron(np.kron(U, I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 4
+        res = qml.operation.expand_matrix(U, [4], [0, 4, 9])
+        expected = np.kron(np.kron(I, U), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 9
+        res = qml.operation.expand_matrix(U, [9], [0, 4, 9])
+        expected = np.kron(np.kron(I, I), U)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_two_consecutive_wires(self, tol):
+        """Test that a 2 qubit gate on consecutive wires correctly
+        expands to 4 qubits."""
+        U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
+
+        # test applied to wire 0+1
+        res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
+        expected = np.kron(np.kron(U2, I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 1+2
+        res = qml.operation.expand_matrix(U2, [1, 2], [0, 1, 2, 3])
+        expected = np.kron(np.kron(I, U2), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 2+3
+        res = qml.operation.expand_matrix(U2, [2, 3], [0, 1, 2, 3])
+        expected = np.kron(np.kron(I, I), U2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_two_reversed_wires(self, tol):
+        """Test that a 2 qubit gate on reversed consecutive wires correctly
+        expands to 4 qubits."""
+        # CNOT with target on wire 1
+        res = qml.operation.expand_matrix(CNOT, [1, 0], [0, 1, 2, 3])
+        rows = np.array([0, 2, 1, 3])
+        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_three_consecutive_wires(self, tol):
+        """Test that a 3 qubit gate on consecutive
+        wires correctly expands to 4 qubits."""
+        U_toffoli = np.diag([1 for i in range(8)])
+        U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+        # test applied to wire 0,1,2
+        res = qml.operation.expand_matrix(U_toffoli, [0, 1, 2], [0, 1, 2, 3])
+        expected = np.kron(U_toffoli, I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 1,2,3
+        res = qml.operation.expand_matrix(U_toffoli, [1, 2, 3], [0, 1, 2, 3])
+        expected = np.kron(I, U_toffoli)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
+        """Test that a 3 qubit gate on non-consecutive but ascending
+        wires correctly expands to 4 qubits."""
+        U_toffoli = np.diag([1 for i in range(8)])
+        U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+        # test applied to wire 0,2,3
+        res = qml.operation.expand_matrix(U_toffoli, [0, 2, 3], [0, 1, 2, 3])
+        expected = (
+            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 0,1,3
+        res = qml.operation.expand_matrix(U_toffoli, [0, 1, 3], [0, 1, 2, 3])
+        expected = (
+            np.kron(np.kron(I, I), qml.SWAP.compute_matrix()) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
+        """Test that a 3 qubit gate on non-consecutive non-ascending
+        wires correctly expands to 4 qubits"""
+        U_toffoli = np.diag([1 for i in range(8)])
+        U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+        # test applied to wire 3, 1, 2
+        res = qml.operation.expand_matrix(U_toffoli, [3, 1, 2], [0, 1, 2, 3])
+        # change the control qubit on the Toffoli gate
+        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
+        expected = np.kron(I, U_toffoli[:, rows][rows])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 3, 0, 2
+        res = qml.operation.expand_matrix(U_toffoli, [3, 0, 2], [0, 1, 2, 3])
+        # change the control qubit on the Toffoli gate
+        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
+        expected = (
+            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            @ np.kron(I, U_toffoli[:, rows][rows])
+            @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
