@@ -35,18 +35,14 @@ def _binary_matrix(terms, num_qubits):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
-        ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
-        ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
-        >>> _binary_matrix(terms, 4)
-         array([[1, 0, 0, 0, 0, 1, 0, 0],
-                [1, 0, 1, 0, 0, 0, 1, 0],
-                [0, 0, 0, 1, 1, 0, 0, 1]]))
-
+    >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
+    ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
+    ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
+    >>> _binary_matrix(terms, 4)
+    array([[1, 0, 0, 0, 0, 1, 0, 0],
+           [1, 0, 1, 0, 0, 0, 1, 0],
+           [0, 0, 0, 1, 1, 0, 0, 1]])
     """
-
     binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
     for idx, term in enumerate(terms):
         ops, wires = term.name, term.wires
@@ -71,18 +67,14 @@ def _reduced_row_echelon(binary_matrix):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-        ...                           [1, 0, 1, 0, 0, 0, 1, 0],
-        ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
-        >>> _reduced_row_echelon(binary_matrix)
-         array([[1, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 1, 0, 0, 1, 1, 0],
-                [0, 0, 0, 1, 1, 0, 0, 1]])
-
+    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
+    ...                           [1, 0, 1, 0, 0, 0, 1, 0],
+    ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
+    >>> _reduced_row_echelon(binary_matrix)
+    array([[1, 0, 0, 0, 0, 1, 0, 0],
+           [0, 0, 1, 0, 0, 1, 1, 0],
+           [0, 0, 0, 1, 1, 0, 0, 1]])
     """
-
     rref_mat = binary_matrix.copy()
     shape = rref_mat.shape
     icol = 0
@@ -132,20 +124,16 @@ def _kernel(binary_matrix):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-        ...                          [0, 0, 1, 1, 1, 1, 1, 1],
-        ...                          [0, 0, 0, 1, 1, 0, 0, 1]])
-        >>> _kernel(binary_matrix)
-         array([[0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 1, 0, 0, 0],
-                [1, 0, 1, 0, 0, 1, 0, 0],
-                [0, 0, 1, 0, 0, 0, 1, 0],
-                [0, 0, 1, 1, 0, 0, 0, 1]])
-
+    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
+    ...                          [0, 0, 1, 1, 1, 1, 1, 1],
+    ...                          [0, 0, 0, 1, 1, 0, 0, 1]])
+    >>> _kernel(binary_matrix)
+    array([[0, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 1, 1, 1, 0, 0, 0],
+           [1, 0, 1, 0, 0, 1, 0, 0],
+           [0, 0, 1, 0, 0, 0, 1, 0],
+           [0, 0, 1, 1, 0, 0, 0, 1]])
     """
-
     # Get the columns with and without pivots
     pivots = (binary_matrix.T != 0).argmax(axis=0)
     nonpivots = np.setdiff1d(range(len(binary_matrix[0])), pivots)
@@ -178,18 +166,14 @@ def get_generators(nullspace, num_qubits):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> kernel = np.array([[0, 1, 0, 0, 0, 0, 0, 0],
-        ...                    [0, 0, 1, 1, 1, 0, 0, 0],
-        ...                    [1, 0, 1, 0, 0, 1, 0, 0],
-        ...                    [0, 0, 1, 0, 0, 0, 1, 0],
-        ...                    [0, 0, 1, 1, 0, 0, 0, 1]])
-        >>> generate_taus(kernel, 4)
-         [(1.0) [X1], (1.0) [Z0 X2 X3], (1.0) [X0 Z1 X2], (1.0) [Y2], (1.0) [X2 Y3]]
-
+    >>> kernel = np.array([[0, 1, 0, 0, 0, 0, 0, 0],
+    ...                    [0, 0, 1, 1, 1, 0, 0, 0],
+    ...                    [1, 0, 1, 0, 0, 1, 0, 0],
+    ...                    [0, 0, 1, 0, 0, 0, 1, 0],
+    ...                    [0, 0, 1, 1, 0, 0, 0, 1]])
+    >>> generate_taus(kernel, 4)
+    [(1.0) [X1], (1.0) [Z0 X2 X3], (1.0) [X0 Z1 X2], (1.0) [Y2], (1.0) [X2 Y3]]
     """
-
     generators = []
     pauli_map = {"00": qml.Identity, "10": qml.PauliX, "11": qml.PauliY, "01": qml.PauliZ}
 
@@ -219,16 +203,12 @@ def generate_paulis(generators, num_qubits):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-        ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-        ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
-        >>> generate_paulis(generators, qubits)
-         [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
-
+    >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+    ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+    ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
+    >>> generate_paulis(generators, qubits)
+    [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
     """
-
     ops_generator = [g.ops[0] if isinstance(g.ops, list) else g.ops for g in generators]
     bmat = _binary_matrix(ops_generator, num_qubits)
 
@@ -273,19 +253,17 @@ def generate_symmetries(qubit_op, num_qubits):
             * list[Operation]: list of single-qubit Pauli-X operators which will be used
               to build the Clifford operators :math:`U`.
 
-    .. code-block:: python
+    **Example**
 
-        >>> symbols = ['H', 'H']
-        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-        >>> mol = qml.hf.Molecule(symbols, coordinates)
-        >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
-        >>> generators, pauli_x = generate_symmetries(H, qubits)
-        >>> generators, pauli_x
-         ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
-          [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
-
+    >>> symbols = ['H', 'H']
+    >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
+    >>> mol = qml.hf.Molecule(symbols, coordinates)
+    >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
+    >>> generators, pauli_x = generate_symmetries(H, qubits)
+    >>> generators, pauli_x
+    ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
+    [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
     """
-
     # Generate binary matrix for qubit_op
     binary_matrix = _binary_matrix(qubit_op.ops, num_qubits)
 
