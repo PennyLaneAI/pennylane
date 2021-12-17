@@ -6,6 +6,9 @@
 
 <h3>Improvements</h3>
 
+* Interferometer is now a class with `shape` method.
+  [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -35,4 +38,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Antal Száva, David Wierichs
+Olivia Di Matteo, Ankit Khandelwal, Antal Száva, David Wierichs
