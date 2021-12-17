@@ -63,6 +63,30 @@ class BasisState(Operation):
 
     @staticmethod
     def compute_decomposition(n, wires):
+        """Determine ``BasisState``'s decomposition for specified wire.
+        The decomposition defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance. The instance method ``decomposition`` uses
+        this method and the instance's variables.
+
+        Args:
+            n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
+                array of integers from the set :math:`\{0, 1\}`, i.e.,
+                if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
+            wires (Sequence[int] or int): the wire(s) the operation acts on
+
+        Returns:
+            tuple[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
+        (BasisStatePreparation([1, 0], wires=[0, 1]),)
+
+        """
         return (BasisStatePreparation(n, wires),)
 
     def adjoint(self):
@@ -109,6 +133,28 @@ class QubitStateVector(Operation):
 
     @staticmethod
     def compute_decomposition(state, wires):
+        """Determine ``QubitStateVector``'s decomposition for specified wire.
+        The decomposition defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance. The instance method ``decomposition`` uses
+        this method and the instance's variables.
+
+        Args:
+            state (array[complex]): a state vector of size 2**len(wires)
+            wires (Sequence[int] or int): the wire(s) the operation acts on
+
+        Returns:
+            tuple[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.QubitStateVector.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
+        (MottonenStatePreparation(tensor([1, 0, 0, 0], requires_grad=True), wires=[0, 1]),)
+
+        """
         return (MottonenStatePreparation(state, wires),)
 
     def adjoint(self):

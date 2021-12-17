@@ -104,7 +104,7 @@ class Hadamard(Observable, Operation):
 
         **Example:**
 
-        >> qml.Hadamard.compute_decomposition(0)
+        >>> qml.Hadamard.compute_decomposition(0)
         (PhaseShift(1.5707963267948966, wires=[0]),
         RX(1.5707963267948966, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0]))
@@ -200,7 +200,7 @@ class PauliX(Observable, Operation):
 
         **Example:**
 
-        >> qml.PauliX.compute_decomposition(0)
+        >>> qml.PauliX.compute_decomposition(0)
         (PhaseShift(1.5707963267948966, wires=[0]),
         RX(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0]))
@@ -305,7 +305,7 @@ class PauliY(Observable, Operation):
 
         **Example:**
 
-        >> qml.PauliY.compute_decomposition(0)
+        >>> qml.PauliY.compute_decomposition(0)
         (PhaseShift(1.5707963267948966, wires=[0]),
         RY(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0]))
@@ -399,7 +399,7 @@ class PauliZ(Observable, Operation):
 
         **Example:**
 
-        >> qml.PauliZ.compute_decomposition(0)
+        >>> qml.PauliZ.compute_decomposition(0)
         (PhaseShift(3.141592653589793, wires=[0]),)
 
         """
@@ -470,7 +470,7 @@ class S(Operation):
 
         **Example:**
 
-        >> qml.S.compute_decomposition(0)
+        >>> qml.S.compute_decomposition(0)
         (PhaseShift(1.5707963267948966, wires=[0]),)
 
         """
@@ -538,7 +538,7 @@ class T(Operation):
 
         **Example:**
 
-        >> qml.T.compute_decomposition(0)
+        >>> qml.T.compute_decomposition(0)
         (PhaseShift(0.7853981633974483, wires=[0]),)
 
         """
@@ -606,7 +606,7 @@ class SX(Operation):
 
         **Example:**
 
-        >> qml.SX.compute_decomposition(0)
+        >>> qml.SX.compute_decomposition(0)
         (RZ(1.5707963267948966, wires=[0]),
         RY(1.5707963267948966, wires=[0]),
         RZ(-3.141592653589793, wires=[0]),
@@ -787,7 +787,7 @@ class CY(Operation):
 
         **Example:**
 
-        >> qml.CY.compute_decomposition(0)
+        >>> qml.CY.compute_decomposition(0)
         (CRY(3.141592653589793, wires=[0, 1]), S(wires=[0]))
 
         """
@@ -852,7 +852,7 @@ class SWAP(Operation):
 
         **Example:**
 
-        >> qml.SWAP.compute_decomposition((0,1))
+        >>> qml.SWAP.compute_decomposition((0,1))
         (CNOT(wires=[0, 1]), CNOT(wires=[1, 0]), CNOT(wires=[0, 1]))
 
         """
@@ -924,7 +924,7 @@ class ISWAP(Operation):
 
         **Example:**
 
-        >> qml.ISWAP.compute_decomposition((0,1))
+        >>> qml.ISWAP.compute_decomposition((0,1))
         (S(wires=[0]),
         S(wires=[1]),
         Hadamard(wires=[0]),
@@ -1008,7 +1008,7 @@ class SISWAP(Operation):
 
         **Example:**
 
-        >> qml.SISWAP.compute_decomposition((0,1))
+        >>> qml.SISWAP.compute_decomposition((0,1))
         (SX(wires=[0]),
         RZ(1.5707963267948966, wires=[0]),
         CNOT(wires=[0, 1]),
@@ -1116,7 +1116,7 @@ class CSWAP(Operation):
 
         **Example:**
 
-        >> qml.CSWAP.compute_decomposition((0,1,2))
+        >>> qml.CSWAP.compute_decomposition((0,1,2))
         (Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1]))
 
         """
@@ -1206,7 +1206,7 @@ class Toffoli(Operation):
 
         **Example:**
 
-        >> qml.Toffoli.compute_decomposition((0,1,2))
+        >>> qml.Toffoli.compute_decomposition((0,1,2))
         (Hadamard(wires=[2]),
         CNOT(wires=[1, 2]),
         T.inv(wires=[2]),
@@ -1423,7 +1423,7 @@ class MultiControlledX(Operation):
 
         **Example:**
 
-        >> qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3],control_values="111", work_wires=qml.wires.Wires("aux"))
+        >>> qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3],control_values="111", work_wires=qml.wires.Wires("aux"))
         (Toffoli(wires=[2, 'aux', 3]),
         Toffoli(wires=[0, 1, 'aux']),
         Toffoli(wires=[2, 'aux', 3]),

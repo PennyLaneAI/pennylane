@@ -137,7 +137,7 @@ class QubitCarry(Operation):
 
         **Example:**
 
-        >> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
         (Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4]))
 
         """
@@ -251,7 +251,7 @@ class QubitSum(Operation):
 
         **Example:**
 
-        >> qml.QubitSum.compute_decomposition((0,1,2))
+        >>> qml.QubitSum.compute_decomposition((0,1,2))
         (CNOT(wires=[1, 2]), CNOT(wires=[0, 2]))
 
         """

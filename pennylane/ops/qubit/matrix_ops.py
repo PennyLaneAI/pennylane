@@ -115,7 +115,7 @@ class QubitUnitary(Operation):
 
         **Example:**
 
-        >> qml.QubitUnitary.compute_decomposition(np.eye(2), 0)
+        >>> qml.QubitUnitary.compute_decomposition(np.eye(2), 0)
         (RZ(tensor(0., requires_grad=True), wires=[0]),)
 
         """
@@ -341,9 +341,8 @@ class DiagonalQubitUnitary(Operation):
 
         **Example:**
 
-        >> qml.DiagonalQubitUnitary.compute_decomposition([1, 1], wires=0)
-        (QubitUnitary(array([[1, 0],
-                [0, 1]]), wires=[0]),)
+        >>> qml.DiagonalQubitUnitary.compute_decomposition([1, 1], wires=0)
+        (QubitUnitary(array([[1, 0], [0, 1]]), wires=[0]),)
 
         """
         return (QubitUnitary(qml.math.diag(D), wires=wires),)
