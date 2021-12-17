@@ -27,7 +27,7 @@ def _binary_matrix(terms, num_qubits):
     Pauli term, which is represented by a concatenation of Z and X vectors.
 
     Args:
-        terms (Iterable[pennylane.Observable]): operators defining the Hamiltonian
+        terms (Iterable[Observable]): operators defining the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
     Returns:
         array[int]: binary matrix representation of the Hamiltonian of shape
@@ -174,7 +174,7 @@ def get_generators(nullspace, num_qubits):
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        list[pennylane.Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
+        list[Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
 
     **Example**
 
@@ -211,10 +211,10 @@ def generate_paulis(generators, num_qubits):
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
     Return:
-        list[pennylane.Observable]: list of single-qubit Pauli-X operators which will be used to build the
+        list[Observable]: list of single-qubit Pauli-X operators which will be used to build the
         Clifford operators :math:`U`.
 
     **Example**
@@ -262,15 +262,15 @@ def generate_symmetries(qubit_op, num_qubits):
     using :func:`~.transform_hamiltonian`.
 
     Args:
-        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
+        qubit_op (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        tuple (list[pennylane.Hamiltonian], list[pennylane.operation.Observable]):
+        tuple (list[Hamiltonian], list[Observable]):
 
-            * list[pennylane.Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
+            * list[Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
               for the Hamiltonian.
-            * list[pennylane.operation.Operation]: list of single-qubit Pauli-X operators which will be used
+            * list[Operation]: list of single-qubit Pauli-X operators which will be used
               to build the Clifford operators :math:`U`.
 
     .. code-block:: python
@@ -353,7 +353,7 @@ def _simplify(h, cutoff=1.0e-12):
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
-        qml.Hamiltonian: Simplified PennyLane Hamiltonian
+        Hamiltonian: Simplified PennyLane Hamiltonian
 
     **Example**
 
@@ -388,27 +388,27 @@ def _simplify(h, cutoff=1.0e-12):
     return qml.Hamiltonian(coeffs, ops)
 
 
-def clifford(generator, pauli_x_ops):
-    r"""Compute a Clifford operator from a set of generators and Pauli operators.
+def clifford(generators, pauli_x_ops):
+    r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
 
     This function computes :math:`U = U_0U_1...U_k` for a set of :math:`k` generators and
     :math:`k` Pauli-X operators.
 
     Args:
-        generator (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
-        pauli_x_ops (list[pennylane.operation.Operation]): list of single-qubit Pauli-X operators
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        pauli_x_ops (list[Operation]): list of single-qubit Pauli-X operators
 
     Returns:
-        qml.Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
+        Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
 
     **Example**
 
     >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
     >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
     >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
-    >>> generator = [t1, t2, t3]
+    >>> generators = [t1, t2, t3]
     >>> pauli_x_ops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
-    >>> u = clifford(generator, pauli_x_ops)
+    >>> u = clifford(generators, pauli_x_ops)
     >>> print(u)
       (0.3535533905932737) [Z1 Z2 X3]
     + (0.3535533905932737) [X1 X2 X3]
@@ -420,7 +420,7 @@ def clifford(generator, pauli_x_ops):
     + (0.3535533905932737) [Z0 Z1 X2 X3]
     """
     cliff = []
-    for i, t in enumerate(generator):
+    for i, t in enumerate(generators):
         cliff.append(1 / 2 ** 0.5 * (pauli_x_ops[i] + t))
 
     u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
@@ -428,22 +428,22 @@ def clifford(generator, pauli_x_ops):
     return u
 
 
-def transform_hamiltonian(h, generator, pauli_x_ops, paulix_sector):
+def transform_hamiltonian(h, generators, pauli_x_ops, paulix_sector):
     r"""Transform a Hamiltonian with a Clifford operator and taper qubits.
 
     The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
     operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
-    with the eigenvalues of their corresponding Pauli/Identity operator. The list of these
-    eigenvalues used for each qubit is defined as the Pauli sector.
+    with the eigenvalues of their corresponding Pauli-X operator. The list of these
+    eigenvalues is defined as the Pauli sector.
 
     Args:
         h (Hamiltonian): PennyLane Hamiltonian
-        generator (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
-        pauli_x_ops (list[pennylane.operation.Operation]): list of single-qubit Pauli-X operators
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        pauli_x_ops (list[Operation]): list of single-qubit Pauli-X operators
         paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
 
     Returns:
-        qml.Hamiltonian:: the tapered Hamiltonian
+        Hamiltonian: the tapered Hamiltonian
 
     **Example**
 
@@ -460,7 +460,7 @@ def transform_hamiltonian(h, generator, pauli_x_ops, paulix_sector):
     >>> transform_hamiltonian(H, generator, pauli_x_ops, paulix_sector)
     <Hamiltonian: terms=4, wires=[0]>
     """
-    u = clifford(generator, pauli_x_ops)
+    u = clifford(generators, pauli_x_ops)
     h = _observable_mult(_observable_mult(u, h), u)
 
     val = np.ones(len(h.terms[0])) * complex(1.0)
