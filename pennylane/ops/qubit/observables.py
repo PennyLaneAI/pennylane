@@ -106,17 +106,37 @@ class Hermitian(Observable):
         """
         return self.eigendecomposition["eigval"]
 
+    @staticmethod
+    def compute_diagonalizing_gates(eigenvectors, wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            eigenvectors (array): eigenvectors of this operator, as extracted from op.eigendecomposition["eigvec"]
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> A = np.array([[-6, 2 + 1j], [2 - 1j, 0]])
+        >>> _, evecs = np.linalg.eigh(A)
+        >>> qml.Hermitian.compute_diagonalizing_gates(evecs, wires=[0])
+        [QubitUnitary(tensor([[-0.94915323-0.j,  0.2815786 +0.1407893j ],
+                              [ 0.31481445-0.j,  0.84894846+0.42447423j]], requires_grad=True), wires=[0])]
+
+        """
+        return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
+
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+        # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
+        return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
 class SparseHamiltonian(Observable):
@@ -145,6 +165,9 @@ class SparseHamiltonian(Observable):
     num_wires = AllWires
     grad_method = None
 
+    def __init__(self, H, wires=None, do_queue=True, id=None):
+        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 1
@@ -158,9 +181,6 @@ class SparseHamiltonian(Observable):
         if not isinstance(A, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
         return A
-
-    def diagonalizing_gates(self):
-        return []
 
 
 class Projector(Observable):
@@ -247,11 +267,28 @@ class Projector(Observable):
         w[idx] = 1
         return w
 
-    def diagonalizing_gates(self):
-        """Return the gate set that diagonalizes a circuit according to the
-        specified Projector observable.
+    @classmethod
+    def _matrix(cls, *params):
+        basis_state = params[0]
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
+
+    @staticmethod
+    def compute_diagonalizing_gates(basis_state, wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            basis_state (Iterable): basis state that the operator projects on
+            wires (Iterable): wires that the operator acts on
 
         Returns:
-            list: list containing the gates diagonalizing the projector observable
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Projector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
+        []
         """
         return []

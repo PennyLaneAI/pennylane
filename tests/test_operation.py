@@ -1116,7 +1116,8 @@ class TestOperationDerivative:
         parameters"""
 
         class RotWithGen(qml.Rot):
-            generator = [np.zeros((2, 2)), 1]
+            def generator(self):
+                return qml.Hermitian(np.zeros((2, 2)), wires=self.wires)
 
         op = RotWithGen(0.1, 0.2, 0.3, wires=0)
 

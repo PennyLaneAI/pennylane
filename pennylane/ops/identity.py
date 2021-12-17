@@ -57,7 +57,21 @@ class Identity(CVObservable, Operation):
     def _heisenberg_rep(p):
         return np.array([1, 0, 0])
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        """Diagonalizing gates of this operator.
+
+        Args:
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Identity.compute_diagonalizing_gates(wires=[0])
+        []
+        """
         return []
 
     @staticmethod

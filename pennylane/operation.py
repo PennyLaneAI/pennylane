@@ -593,21 +593,79 @@ class Operator(abc.ABC):
         """
         return None
 
-    # pylint:disable=no-self-use
-    def diagonalizing_gates(self):
-        r"""Defines a partial representation of this operator as
-        an eigendecompisition.
+    @staticmethod
+    def compute_diagonalizing_gates(*params, wires, **hyperparams):
+        r"""Defines a partial representation of this operator via
+        its eigendecomposition.
 
-        Multiplied together, the diagonalizing gates
-        form the unitary :math:`U` in `O = U \Sigma U^{\dagger}`, while
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues.
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        In other words, the diagonalizing gates rotate the state into the eigenbasis
+        of this operator.
 
-        Returns `None` if this operator does not define its diagonalizing gates.
+        This is the static version of ``diagonalizing_gates``, which can be called
+        without creating an instance of the class.
+
+        .. note::
+
+            This method gets overwritten by subclasses to define the representation of a particular operator.
+            By default, this method should always take the operator's parameters, wires and hyperparameters as
+            inputs (even if the diagonalizing gates are independent of these values).
+
+            Alternatively, a custom signature can be defined, in which case the ``diagonalizing_gates()``
+            method has to be overwritten to use the right signature.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            wires (Iterable): trainable parameters of this operator, as stored in ``op.wires``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            list[.Operator] or None: A list of operators.
+            list[.Operator]: A list of operators.
+
+        **Example**
+
+        >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
+        [Hadamard(wires=["q1"])]
         """
         return None
+
+    # pylint:disable=no-self-use
+    def diagonalizing_gates(self):
+        r"""Defines a partial representation of this operator via
+        its eigendecomposition.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        In other words, the diagonalizing gates rotate the state into the eigenbasis
+        of this operator.
+
+        Returns ``None`` if this operator does not define its diagonalizing gates.
+
+        .. note::
+
+            By default, this method calls the static method ``compute_diagonalizing_gates``,
+            which is used by subclasses to define the actual representation.
+            The call assumes that the static method has the signature ``(*params, wires, **hyperparams)``,
+            where ``params`` refers to ``op.parameters``, wires to ``op.wires`` and ``hyperparams``
+            to ``op.hyperparameters``, and ``op`` is an instance of this operator.
+
+            If a subclass overwrites ``compute_diagonalizing_gates`` to use a custom signature,
+            this method has to be likewise overwritten to respect that signature.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+
+        **Example**
+
+        >>> qml.PauliX(wires="q1").diagonalizing_gates()
+        [Hadamard(wires=["q1"])]
+        """
+        return self.compute_diagonalizing_gates(
+            *self.parameters, wires=self.wires, **self.hyperparameters
+        )
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -734,30 +792,27 @@ class Operation(Operator):
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
 
-    @property
     def generator(self):
-        r"""Generator of the operation.
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
 
-        A length-2 list ``[generator, scaling_factor]``, where
+        For example, for operator
 
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
+        .. math::
 
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
 
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
 
-        .. code-block:: python
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
 
-            generator = [PauliX, 0.7]
-
-        Default is ``[None, 1]``, indicating the operation has no generator.
+        The default value to return is ``None``, indicating that the operation has
+        no defined generator.
         """
-        return [None, 1]
+        return None
 
     @property
     def inverse(self):
@@ -1810,25 +1865,7 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = operation.generator
-
-    if generator is None:
-        raise ValueError(f"Operation {operation.name} does not have a generator")
-    if operation.num_params != 1:
-        # Note, this case should already be caught by the previous raise since we haven't worked out
-        # how to have an operator for multiple parameters. It is added here in case of a future
-        # change
-        raise ValueError(
-            f"Operation {operation.name} is not written in terms of a single parameter"
-        )
-
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
-
-    if operation.inverse:
-        prefactor *= -1
-        generator = qml.math.conj(qml.math.T(generator))
-
+    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
     return 1j * prefactor * generator @ operation.matrix
 
 
@@ -1841,7 +1878,7 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator[0] is not None
+    return hasattr(obj, "generator") and obj.generator() is not None
 
 
 @qml.BooleanFn
