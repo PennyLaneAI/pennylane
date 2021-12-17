@@ -13,7 +13,7 @@
   parameters (see below for details).
   
   Note that as it makes use of state cloning, it is inherently classical
-  and to be used on state vector simulators and without shots only.
+  and can only be used with statevector simulators and `shots=None`.
 
   It is particular useful for larger circuits for which backpropagation requires
   inconvenient or even unfeasible amounts of storage, but is slower.
