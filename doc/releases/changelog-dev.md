@@ -35,7 +35,8 @@
   1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
   2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
   3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
-
+  ```
+  
 * Functions for tapering qubits based on molecular symmetries is added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
 * [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
