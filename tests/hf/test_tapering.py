@@ -14,20 +14,20 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
-import pytest
 import pennylane as qml
+import pytest
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
     _binary_matrix,
-    _reduced_row_echelon,
     _kernel,
-    get_generators,
+    _observable_mult,
+    _reduced_row_echelon,
+    _simplify,
+    clifford,
     generate_paulis,
     generate_symmetries,
-    clifford,
-    _observable_mult,
-    _simplify,
-    transform_hamiltonian
+    get_generators,
+    transform_hamiltonian,
 )
 
 
@@ -435,14 +435,14 @@ def test_simplify(hamiltonian, result):
 
 
 @pytest.mark.parametrize(
-    ("generator", "paulix_wires", "result"),
+    ("generator", "pauli_x_ops", "result"),
     [
         (
             [
                 qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(0)]),
                 qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(1)]),
             ],
-            [0, 1],
+            [qml.PauliX(0), qml.PauliX(1)],
             qml.Hamiltonian(
                 np.array(
                     [
@@ -462,14 +462,14 @@ def test_simplify(hamiltonian, result):
         ),
     ],
 )
-def test_cliford(generator, paulix_wires, result):
+def test_cliford(generator, pauli_x_ops, result):
     r"""Test that clifford returns the correct operator."""
-    u = clifford(generator, paulix_wires)
+    u = clifford(generator, pauli_x_ops)
     assert u.compare(result)
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "generator", "paulix_wires", "paulix_sector", "ham_ref"),
+    ("symbols", "geometry", "generator", "pauli_x_ops", "paulix_sector", "ham_ref"),
     [
         (
             ["H", "H"],
@@ -479,7 +479,7 @@ def test_cliford(generator, paulix_wires, result):
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
             ],
-            [1, 2, 3],
+            [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
             [1, -1, -1],
             qml.Hamiltonian(
                 np.array([0.79596785, -0.3210344, 0.18092703]),
@@ -488,10 +488,10 @@ def test_cliford(generator, paulix_wires, result):
         ),
     ],
 )
-def test_transform_hamiltonian(symbols, geometry, generator, paulix_wires, paulix_sector, ham_ref):
+def test_transform_hamiltonian(symbols, geometry, generator, pauli_x_ops, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.hf.Molecule(symbols, geometry)
     h = qml.hf.generate_hamiltonian(mol)()
-    h_calc = transform_hamiltonian(h, generator, paulix_wires, paulix_sector)
+    h_calc = transform_hamiltonian(h, generator, pauli_x_ops, paulix_sector)
 
     assert np.allclose(sorted(h_calc.terms[0]), sorted(ham_ref.terms[0]))
