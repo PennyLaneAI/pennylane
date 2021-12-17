@@ -27,6 +27,8 @@ from pennylane.transforms import unitary_to_rot
 
 from gate_data import I, Z, S, T, H, X, CNOT
 
+from test_optimization.utils import check_matrix_equivalence
+
 single_qubit_decomps = [
     # First set of gates are diagonal and converted to RZ
     (I, qml.RZ, [0.0]),
@@ -437,6 +439,28 @@ test_two_qubit_unitaries = [
         ],
     ],
 ]
+
+
+@pytest.mark.parametrize("num_reps", [1, 2, 3, 4, 5])
+def test_unitary_to_rot_multiple_two_qubit(num_reps):
+    """Test that numerous two-qubit unitaries can be decomposed sequentially."""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    U = np.array(test_two_qubit_unitaries[1], dtype=np.complex128)
+
+    def my_circuit():
+        for rep in range(num_reps):
+            qml.QubitUnitary(U, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
+
+    original_qnode = qml.QNode(my_circuit, dev)
+    transformed_qnode = qml.QNode(unitary_to_rot(my_circuit), dev)
+
+    original_matrix = qml.transforms.get_unitary_matrix(original_qnode)()
+    transformed_matrix = qml.transforms.get_unitary_matrix(transformed_qnode)()
+
+    assert check_matrix_equivalence(original_matrix, transformed_matrix, atol=1e-7)
 
 
 class TestTwoQubitUnitaryDifferentiability:
