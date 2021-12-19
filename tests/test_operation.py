@@ -721,6 +721,12 @@ class TestTensor:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_matrix_wire_order_not_implemented(self):
+        """Test that an exception is raised if a wire_order is passed to the matrix method"""
+        O = qml.PauliX(0) @ qml.PauliY(1)
+        with pytest.raises(NotImplementedError):
+            O.matrix(wire_order=[1, 0])
+
     def test_multiplication_matrix(self, tol):
         """If using the ``@`` operator on two observables acting on the
         same wire, the tensor class should treat this as matrix multiplication."""
@@ -1712,3 +1718,35 @@ class TestExpandMatrix:
             @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_matrix_usage_in_operator_class(self, tol):
+        """Tests that the method is used correctly by defining a dummy operator and
+        checking the permutation/expansion."""
+
+        base_matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
+
+        permuted_matrix = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
+
+        expanded_matrix = np.array(
+            [
+                [1, 2, 0, 0, 3, 4, 0, 0],
+                [5, 6, 0, 0, 7, 8, 0, 0],
+                [0, 0, 1, 2, 0, 0, 3, 4],
+                [0, 0, 5, 6, 0, 0, 7, 8],
+                [9, 10, 0, 0, 11, 12, 0, 0],
+                [13, 14, 0, 0, 15, 16, 0, 0],
+                [0, 0, 9, 10, 0, 0, 11, 12],
+                [0, 0, 13, 14, 0, 0, 15, 16],
+            ]
+        )
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 2
+
+            def compute_matrix(*params, **hyperparams):
+                return base_matrix
+
+        op = DummyOp(wires=[0, 2])
+        assert np.allclose(op.matrix(), base_matrix, atol=tol)
+        assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
+        assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)

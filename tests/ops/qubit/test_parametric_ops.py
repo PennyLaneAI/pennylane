@@ -563,7 +563,6 @@ class TestMatrix:
 
 
 class TestGrad:
-
     device_methods = [
         ["default.qubit", "finite-diff"],
         ["default.qubit", "parameter-shift"],
@@ -1330,8 +1329,25 @@ class TestMultiRZ:
     def test_MultiRZ_matrix_parametric(self, theta, wires, expected_matrix, tol):
         """Test parametrically that the MultiRZ matrix is correct."""
 
-        res = qml.MultiRZ.compute_matrix(theta, len(wires))
+        res_static = qml.MultiRZ.compute_matrix(theta, len(wires))
+        res_dynamic = qml.MultiRZ(theta, wires=wires).matrix()
         expected = expected_matrix(theta)
+
+        assert np.allclose(res_static, expected, atol=tol, rtol=0)
+        assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
+
+    def test_MultiRZ_matrix_expand(self, tol):
+        """Test that the MultiRZ matrix respects the wire order."""
+
+        res = qml.MultiRZ(0.1, wires=[0, 1]).matrix(wire_order=[1, 0])
+        expected = np.array(
+            [
+                [0.99875026 - 0.04997917j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.99875026 + 0.04997917j, 0.0 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.99875026 + 0.04997917j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.99875026 - 0.04997917j],
+            ]
+        )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 

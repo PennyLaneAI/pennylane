@@ -104,3 +104,30 @@ class TestQFT:
             assert op[j].name == expected_op[j].name
             assert op[j].wires == expected_op[j].wires
             assert op[j].parameters == expected_op[j].parameters
+
+    def test_matrix(self, tol):
+        """Test that the matrix representation is correct."""
+
+        res_static = qml.QFT.compute_matrix(2)
+        res_dynamic = qml.QFT(wires=[0, 1]).matrix()
+        res_reordered = qml.QFT(wires=[0, 1]).matrix([1, 0])
+
+        expected = np.array(
+            [
+                [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
+                [0.5 + 0.0j, 0.0 + 0.5j, -0.5 + 0.0j, -0.0 - 0.5j],
+                [0.5 + 0.0j, -0.5 + 0.0j, 0.5 - 0.0j, -0.5 + 0.0j],
+                [0.5 + 0.0j, -0.0 - 0.5j, -0.5 + 0.0j, 0.0 + 0.5j],
+            ]
+        )
+
+        assert np.allclose(res_static, expected, atol=tol, rtol=0)
+        assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
+
+        expected_permuted = [
+            [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
+            [0.5 + 0.0j, 0.5 - 0.0j, -0.5 + 0.0j, -0.5 + 0.0j],
+            [0.5 + 0.0j, -0.5 + 0.0j, 0.0 + 0.5j, -0.0 - 0.5j],
+            [0.5 + 0.0j, -0.5 + 0.0j, -0.0 - 0.5j, 0.0 + 0.5j],
+        ]
+        assert np.allclose(res_reordered, expected_permuted, atol=tol, rtol=0)

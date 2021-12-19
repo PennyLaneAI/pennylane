@@ -404,11 +404,7 @@ class Operator(abc.ABC):
 
         .. note::
             This method gets overwritten by subclasses to define the matrix representation
-            of a particular operator. By default, it should always take the
-            operator's parameters and hyperparameters as inputs.
-
-            Alternatively, a custom signature can be defined, in which case the ``matrix()``
-            method has to be overwritten as well.
+            of a particular operator.
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -453,14 +449,8 @@ class Operator(abc.ABC):
         .. note::
             By default, this method calls the static method ``compute_matrix``,
             which is used by subclasses to define the actual matrix representation.
-            The call assumes that the static method has the signature
 
-            .. code-block:: python
-
-                self.compute_matrix(*self.params, **self.hyperparams)
-
-            If a subclass overwrites ``compute_matrix`` to use a custom signature,
-            this method has to be likewise overwritten.
+        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires

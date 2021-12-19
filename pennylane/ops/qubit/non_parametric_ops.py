@@ -1222,18 +1222,19 @@ class MultiControlledX(Operation):
         Args:
            control_wires (Iterable): wires to place controls on
            control_values (str): string of bits determining the controls
+           target_wire (Iterable): wire that the X gets applied to.
 
         Returns:
            tensor_like: matrix representation
 
         **Example**
 
-        >>> qml.MultiControlledX.compute_matrix(0, 2)
-        [[1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0]]
-        >>> qml.MultiControlledX.compute_matrix(1, 2)
+        >>> qml.MultiControlledX.compute_matrix([0], '1', [1])
+        [[1. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 1.]
+         [0. 0. 1. 0.]]
+        >>> qml.MultiControlledX.compute_matrix([1], '0', [0])
         [[0. 1. 0. 0.]
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]

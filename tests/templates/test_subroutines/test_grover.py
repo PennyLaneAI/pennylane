@@ -206,3 +206,20 @@ def test_findstate():
     probs = circ()
 
     assert np.argmax(probs) == len(probs) - 1
+
+
+def test_matrix(tol):
+    """Test that the matrix representation is correct."""
+
+    res_static = qml.GroverOperator.compute_matrix(2)
+    res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
+    res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
+
+    expected = np.array(
+        [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]
+    )
+
+    assert np.allclose(res_static, expected, atol=tol, rtol=0)
+    assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
+    # reordering should not affect this particular matrix
+    assert np.allclose(res_reordered, expected, atol=tol, rtol=0)
