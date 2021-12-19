@@ -1195,9 +1195,13 @@ class MultiControlledX(Operation):
         if not control_values:
             control_values = "1" * len(control_wires)
 
+        # we do not store this in the hyperparameters,
+        # because it influences the implementation of this op,
+        # not the transformation itself
+        self.work_wires = work_wires
+
         self._hyperparameters = {
             "target_wire": wires[0],
-            "work_wires": work_wires,
             "control_wires": control_wires,
             "control_values": control_values,
         }
@@ -1212,7 +1216,7 @@ class MultiControlledX(Operation):
 
     # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(control_wires, control_values, target_wire, work_wires):
+    def compute_matrix(control_wires, control_values, target_wire):
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
@@ -1264,7 +1268,7 @@ class MultiControlledX(Operation):
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
             control_values=self.control_values,
-            work_wires=self._work_wires,
+            work_wires=self.work_wires,
         )
 
     # pylint: disable=unused-argument
@@ -1272,10 +1276,9 @@ class MultiControlledX(Operation):
 
         control_wires = self.hyperparameters["control_wires"]
         control_values = self.hyperparameters["control_values"]
-        work_wires = self.hyperparameters["work_wires"]
         target_wire = self.hyperparameters["target_wire"]
 
-        if len(control_wires) > 2 and len(work_wires) == 0:
+        if len(control_wires) > 2 and len(self.work_wires) == 0:
             raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
         flips1 = [
@@ -1289,12 +1292,12 @@ class MultiControlledX(Operation):
         else:
             num_work_wires_needed = len(control_wires) - 2
 
-            if len(work_wires) >= num_work_wires_needed:
+            if len(self.work_wires) >= num_work_wires_needed:
                 decomp = self._decomposition_with_many_workers(
-                    control_wires, target_wire, work_wires
+                    control_wires, target_wire, self.work_wires
                 )
             else:
-                work_wire = work_wires[0]
+                work_wire = self.work_wires[0]
                 decomp = self._decomposition_with_one_worker(control_wires, target_wire, work_wire)
 
         flips2 = [
