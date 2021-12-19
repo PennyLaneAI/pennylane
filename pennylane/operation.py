@@ -406,18 +406,20 @@ class Operator(abc.ABC):
         return self._eigvals(*self.parameters)
 
     @staticmethod
-    def compute_terms(*params, wires, **hyperparams):
-        r"""Representation of this operation as a linear combination.
+    def compute_terms(*params, **hyperparams):
+        r"""Static method to define the representation of this operation as a linear combination.
 
-        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that
+       Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
 
         .. math:: O = \sum_i c_i O_i
 
-        results in this operator :math:`O`.
+        constructs this operator :math:`O`.
 
-        If no representation by terms is defined, ``None`` is returned.
+        A ``NotImplementedError`` is raised if no representation by terms is defined.
 
-        This is the static version of the representation.
+        .. note::
+            This method gets overwritten by subclasses to define the linear combination representation
+            of a particular operator.
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -428,7 +430,7 @@ class Operator(abc.ABC):
 
         **Example**
 
-        >>> qml.Hamiltonian().terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+        >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
         return None
@@ -436,21 +438,32 @@ class Operator(abc.ABC):
     def terms(self):
         r"""Representation of this operation as a linear combination.
 
-        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that
+        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
 
         .. math:: O = \sum_i c_i O_i
 
-        results in this operator :math:`O`.
+        constructs this operator :math:`O`.
 
-        If no representation by terms is defined, ``None`` is returned.
+        .. note::
+            By default, this method calls the static method ``compute_terms``,
+            which is used by subclasses to define the actual matrix representation.
+
+        A ``NotImplementedError`` is raised if no representation by terms is defined.
 
         Returns:
-            list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
+            list[tensor_like or float], list[.Operation]: list of coefficients :math:`c_i`
+                and list of operations :math:`O_i`
 
         **Example**
 
         >>> qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)]).terms()
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+
+        The coefficients are differentiable and can be stored as tensors:
+        >>> import tensorflow as tf
+        >>> op = qml.Hamiltonian(tf.Variable([1., 2.]), [qml.PauliX(0), qml.PauliZ(0)])
+        >>> op.terms()[0]
+        [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
         return self.compute_terms(*self.parameters, wires=self.wires, **self.hyperparameters)
 
