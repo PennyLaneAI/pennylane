@@ -137,11 +137,8 @@ class GroverOperator(Operation):
 
     def matrix(self, wire_order=None):
 
-        # note: compute_matrix has a custom signature, which is why we need to overwrite this method
+        # note: compute_matrix requires the number of wires, which is why we need to overwrite this method
         canonical_matrix = self.compute_matrix(len(self.wires))
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
 
         if wire_order is None or self.wires == qml.wires.Wires(wire_order):
             return canonical_matrix
