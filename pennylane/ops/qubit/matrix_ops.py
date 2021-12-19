@@ -198,37 +198,11 @@ class ControlledQubitUnitary(QubitUnitary):
                 "The control wires must be different from the wires specified to apply the unitary on."
             )
 
-        U = params[0]
-        target_dim = 2 ** len(wires)
-        if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-
-        # Saving for the circuit drawer
-        self._target_wires = wires
-        self._control_wires = control_wires
-        self.U = U
+        self._hyperparameters = {"u_wires": wires,
+                                 "control_wires": control_wires,
+                                 "control_values": control_values}
 
         total_wires = control_wires + wires
-
-        # If control values unspecified, we control on the all-ones string
-        if not control_values:
-            control_values = "1" * len(control_wires)
-
-        control_int = self._parse_control_values(control_wires, control_values)
-        self.control_values = control_values
-
-        # A multi-controlled operation is a block-diagonal matrix partitioned into
-        # blocks where the operation being applied sits in the block positioned at
-        # the integer value of the control string. For example, controlling a
-        # unitary U with 2 qubits will produce matrices with block structure
-        # (U, I, I, I) if the control is on bits '00', (I, U, I, I) if on bits '01',
-        # etc. The positioning of the block is controlled by padding the block diagonal
-        # to the left and right with the correct amount of identity blocks.
-
-        self._padding_left = control_int * len(U)
-        self._padding_right = 2 ** len(total_wires) - len(U) - self._padding_left
-        self._cu = None
-
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
 
     @property
@@ -236,14 +210,14 @@ class ControlledQubitUnitary(QubitUnitary):
         return 1
 
     @staticmethod
-    def compute_matrix(U, control_wires, wires, control_values=None):
+    def compute_matrix(U, control_wires, u_wires, control_values=None):
         """Canonical matrix representation of the ControlledQubitUnitary operator.
 
         Args:
             U (tensor_like): unitary matrix
             control_wires (Iterable): the control wire(s)
             wires (Iterable): the wire(s) the unitary acts on
-            control_values (str): a string of bits representing the state of the control
+            control_values (str or None): a string of bits representing the state of the control
                 qubits to control on (default is the all 1s state)
 
         Returns:
@@ -258,16 +232,36 @@ class ControlledQubitUnitary(QubitUnitary):
          [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]
          [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
         """
-        # this method reproduces the logic contained in the init function and the matrix() method
 
-        total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(wires)
+        # A multi-controlled operation is a block-diagonal matrix partitioned into
+        # blocks where the operation being applied sits in the block positioned at
+        # the integer value of the control string. For example, controlling a
+        # unitary U with 2 qubits will produce matrices with block structure
+        # (U, I, I, I) if the control is on bits '00', (I, U, I, I) if on bits '01',
+        # etc. The positioning of the block is controlled by padding the block diagonal
+        # to the left and right with the correct amount of identity blocks.
+
+        total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(u_wires)
+
         # if control values unspecified, we control on the all-ones string
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        control_int = int(control_values, 2)
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
+
+            # Make sure all values are either 0 or 1
+            if any(x not in ["0", "1"] for x in control_values):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
+
         padding_left = control_int * len(U)
         padding_right = 2 ** len(total_wires) - len(U) - padding_left
+
         interface = qml.math.get_interface(U)
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
         right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
@@ -289,14 +283,17 @@ class ControlledQubitUnitary(QubitUnitary):
          [ 0.        +0.j  0.        +0.j  1.        +0.j  0.        +0.j]
          [ 0.        +0.j -0.31594146+0.j  0.        +0.j  0.94877869+0.j]]
         """
-        if self._cu is None:
-            interface = qml.math.get_interface(self.U)
-            left_pad = qml.math.cast_like(qml.math.eye(self._padding_left, like=interface), 1j)
-            right_pad = qml.math.cast_like(qml.math.eye(self._padding_right, like=interface), 1j)
-            self._cu = qml.math.block_diag([left_pad, self.U, right_pad])
 
-        # we do not call compute_matrix here to avoid replicating logic already computed before
-        canonical_matrix = self._cu
+        U = self.parameters[0]
+        control_wires = self.hyperparameters["control_wires"]
+        control_values = self.hyperparameters["control_values"]
+        u_wires = self.hyperparameters["u_wires"]
+
+        target_dim = 2 ** len(u_wires)
+        if len(U) != target_dim:
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+
+        canonical_matrix = self.compute_matrix(U, control_wires, u_wires, control_values)
 
         if wire_order is None or self.wires == Wires(wire_order):
             return canonical_matrix
@@ -307,24 +304,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     @property
     def control_wires(self):
-        return self._control_wires
-
-    @staticmethod
-    def _parse_control_values(control_wires, control_values):
-        """Ensure any user-specified control strings have the right format."""
-        if isinstance(control_values, str):
-            if len(control_values) != len(control_wires):
-                raise ValueError("Length of control bit string must equal number of control wires.")
-
-            # Make sure all values are either 0 or 1
-            if any(x not in ["0", "1"] for x in control_values):
-                raise ValueError("String of control values can contain only '0' or '1'.")
-
-            control_int = int(control_values, 2)
-        else:
-            raise ValueError("Alternative control values must be passed as a binary string.")
-
-        return control_int
+        return self.hyperparameters["control_wires"]
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)

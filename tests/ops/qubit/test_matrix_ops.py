@@ -238,7 +238,7 @@ class TestControlledQubitUnitary:
         """Test if ControlledQubitUnitary raises a ValueError if a unitary of shape inconsistent
         with wires is provided"""
         with pytest.raises(ValueError, match=r"Input unitary must be of shape \(2, 2\)"):
-            qml.ControlledQubitUnitary(np.eye(4), control_wires=[0, 1], wires=2)
+            qml.ControlledQubitUnitary(np.eye(4), control_wires=[0, 1], wires=2).matrix()
 
     @pytest.mark.parametrize("target_wire", range(3))
     def test_toffoli(self, target_wire):
@@ -343,7 +343,7 @@ class TestControlledQubitUnitary:
         with pytest.raises(ValueError, match=expected_error_message):
             qml.ControlledQubitUnitary(
                 X, control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
+            ).matrix()
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
@@ -419,7 +419,7 @@ class TestControlledQubitUnitary:
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         U = np.array([[0.94877869, 0.31594146], [-0.31594146, 0.94877869]])
-        res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], wires=0)
+        res_static = qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], u_wires=[0])
         res_dynamic = qml.ControlledQubitUnitary(U, control_wires=[1], wires=0).matrix()
         expected = np.array(
             [
