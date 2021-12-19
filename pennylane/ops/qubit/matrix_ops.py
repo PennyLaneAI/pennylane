@@ -216,7 +216,7 @@ class ControlledQubitUnitary(QubitUnitary):
         Args:
             U (tensor_like): unitary matrix
             control_wires (Iterable): the control wire(s)
-            wires (Iterable): the wire(s) the unitary acts on
+            u_wires (Iterable): the wire(s) the unitary acts on
             control_values (str or None): a string of bits representing the state of the control
                 qubits to control on (default is the all 1s state)
 
@@ -226,7 +226,7 @@ class ControlledQubitUnitary(QubitUnitary):
         **Example**
 
         >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-        >>> qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], wires=[0], control_values="1")
+        >>> qml.ControlledQubitUnitary.compute_matrix(U, control_wires=[1], u_wires=[0], control_values="1")
         [[ 1.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j]
          [ 0.        +0.j  1.        +0.j  0.        +0.j  0.        +0.j]
          [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]

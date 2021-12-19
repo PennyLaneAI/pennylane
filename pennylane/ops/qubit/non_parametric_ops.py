@@ -1192,6 +1192,9 @@ class MultiControlledX(Operation):
         ):
             raise ValueError("The work wires must be different from the control and target wires")
 
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
         self._hyperparameters = {"target_wire": wires[0],
                                  "work_wires": work_wires,
                                  "control_wires": control_wires,
@@ -1206,7 +1209,7 @@ class MultiControlledX(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix(control_wires, control_values=None):
+    def compute_matrix(control_wires, control_values):
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
@@ -1229,9 +1232,6 @@ class MultiControlledX(Operation):
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
         """
-        if not control_values:
-            control_values = "1" * len(control_wires)
-
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
@@ -1292,7 +1292,7 @@ class MultiControlledX(Operation):
 
         flips1 = [
             qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(control_wires)
+            for i, val in enumerate(control_values)
             if val == "0"
         ]
 

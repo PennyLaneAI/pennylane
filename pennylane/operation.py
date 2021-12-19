@@ -437,7 +437,7 @@ class Operator(abc.ABC):
         >>> type(res)
         <class 'torch.Tensor'>
         """
-        return None
+        raise NotImplementedError
 
     def matrix(self, wire_order=None):
         r"""Matrix representation of this operator in the computational basis.
@@ -509,7 +509,7 @@ class Operator(abc.ABC):
         directly without instantiating the operators first.
 
         The default implementation relies on the presence of the
-        :attr:`_matrix` method.
+        :attr:`compute_matrix` method.
 
         To return the eigenvalues of *instantiated* operators,
         please use the :attr:`~.Operator.eigvals` property instead.
@@ -524,12 +524,9 @@ class Operator(abc.ABC):
         array([1, -1])
 
         Returns:
-            array: eigenvalue representation or None
+            array: eigenvalue representation
         """
-        mat = cls.compute_matrix(*params)
-        if mat is None:
-            return None
-        return np.linalg.eigvals(mat)
+        return np.linalg.eigvals(cls.compute_matrix(*params))
 
     @property
     def eigvals(self):

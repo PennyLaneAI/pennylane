@@ -81,8 +81,7 @@ The Operator class has undergone a major refactor with the following changes:
   ```
        
   If no canonical matrix is specified for a gate, `compute_matrix()` 
-  returns `None`, whereas previously `NotImplementedErrors` 
-  were raised.
+  raises a `NotImplementedErrors`.
   
   The new `matrix()` method is now used in the 
   `pennylane.transforms.get_qubit_unitary()` transform.
@@ -121,4 +120,3 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Olivia Di Matteo, Josh Izaac, Ankit Khandelwal, Christina Lee, Maria Schuld, David Wierichs.
-
