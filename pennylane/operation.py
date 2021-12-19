@@ -460,12 +460,13 @@ class Operator(abc.ABC):
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
 
         The coefficients are differentiable and can be stored as tensors:
+
         >>> import tensorflow as tf
         >>> op = qml.Hamiltonian(tf.Variable([1., 2.]), [qml.PauliX(0), qml.PauliZ(0)])
         >>> op.terms()[0]
         [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return self.compute_terms(*self.parameters, wires=self.wires, **self.hyperparameters)
+        return self.compute_terms(*self.parameters, **self.hyperparameters)
 
     @property
     @abc.abstractmethod

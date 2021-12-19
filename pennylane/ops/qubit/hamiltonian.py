@@ -185,28 +185,35 @@ class Hamiltonian(Observable):
                     "Could not create circuits. Some or all observables are not valid."
                 )
 
-        all_wires = qml.wires.Wires.all_wires([ob.wires for ob in observables], sort=True)
+        self._coeffs = coeffs
+        self._ops = list(observables)
+
+        # TODO: avoid having multiple ways to store ops and coeffs,
+        # ideally only use parameters for coeffs, and hyperparameters for ops
+        self.hyperparameters["ops"] = self._ops
+
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
         self.return_type = None
 
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = None
+
+        if simplify:
+            self.simplify()
         if grouping_type is not None:
             with qml.tape.stop_recording():
                 self._grouping_indices = _compute_grouping_indices(
-                    observables, grouping_type=grouping_type, method=method
+                    self.ops, grouping_type=grouping_type, method=method
                 )
 
-        coeffs_flat = [coeffs[i] for i in range(qml.math.shape(coeffs)[0])]
-
-        if simplify:
-            coeffs_flat, observables = self._simplify_terms(coeffs_flat, observables)
-
-        self._hyperparameters = {"ops": list(observables)}
+        coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
 
         # create the operator using each coefficient as a separate parameter;
-        super().__init__(*coeffs_flat, wires=all_wires, id=id, do_queue=do_queue)
+        # this causes H.data to be a list of tensor scalars,
+        # while H.coeffs is the original tensor
+        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -218,7 +225,7 @@ class Hamiltonian(Observable):
         Returns:
             Iterable[float]): coefficients in the Hamiltonian expression
         """
-        return self.parameters
+        return self._coeffs
 
     @property
     def ops(self):
@@ -227,11 +234,20 @@ class Hamiltonian(Observable):
         Returns:
             Iterable[Observable]): observables in the Hamiltonian expression
         """
-        return self.hyperparameters["ops"]
+        return self._ops
 
     @staticmethod
-    def compute_terms(*params, ops):
-        return params, ops
+    def compute_terms(*coeffs, ops):
+        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
+
+        Args:
+            coeffs (Iterable[tensor_like or float]): coefficients
+            ops (list[~.Operator]): operators
+
+        Returns:
+            Iterable[tensor_like or float], list[~.Operator]: coefficients and operations
+        """
+        return coeffs, ops
 
     @property
     def wires(self):
@@ -240,7 +256,7 @@ class Hamiltonian(Observable):
         Returns:
             (Wires): Combined wires present in all terms, sorted.
         """
-        return self.wires
+        return self._wires
 
     @property
     def name(self):
@@ -310,54 +326,51 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    @staticmethod
-    def simplify_terms(coeffs, ops):
-        """Reduce the number of terms by combining them if possible.
-
-        Args:
-            coeffs (tensor_like): coefficients
-            ops (list[.Operator]): operations
-
-        Returns:
-              tensor_like, list[.Operator]: new terms
-        """
-        new_coeffs = []
-        new_ops = []
-
-        for i in range(len(ops)):  # pylint: disable=consider-using-enumerate
-            op = ops[i]
-            c = coeffs[i]
-            op = op if isinstance(op, Tensor) else Tensor(op)
-
-            ind = None
-            for j, o in enumerate(new_ops):
-                if op.compare(o):
-                    ind = j
-                    break
-
-            if ind is not None:
-                new_coeffs[ind] += c
-                if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
-                    del new_coeffs[ind]
-                    del new_ops[ind]
-            else:
-                new_ops.append(op.prune())
-                new_coeffs.append(c)
-
-        return new_coeffs, new_ops
-
     def simplify(self):
-        r"""Creates a new Hamiltonian with simplified terms.
+        r"""Simplifies the Hamiltonian by combining like-terms.
 
         **Example**
 
         >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
         >>> H = qml.Hamiltonian([1, 1, -2], ops)
-        >>> res = H.simplify()
-        >>> type(res)
+        >>> H.simplify()
+        >>> print(H)
+          (-1) [X0]
+        + (1) [Y2]
+
+        .. warning::
+
+            Calling this method will reset ``grouping_indices`` to None, since
+            the observables it refers to are updated.
         """
-        new_coeffs, new_ops = self.simplify_terms(self.parameters, self.hyperparameters["ops"])
-        return qml.Hamiltonian(new_coeffs, new_ops)
+        data = []
+        ops = []
+
+        for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
+            op = self.ops[i]
+            c = self.coeffs[i]
+            op = op if isinstance(op, Tensor) else Tensor(op)
+
+            ind = None
+            for j, o in enumerate(ops):
+                if op.compare(o):
+                    ind = j
+                    break
+
+            if ind is not None:
+                data[ind] += c
+                if np.isclose(qml.math.toarray(data[ind]), np.array(0.0)):
+                    del data[ind]
+                    del ops[ind]
+            else:
+                ops.append(op.prune())
+                data.append(c)
+
+        self._coeffs = qml.math.stack(data) if data else []
+        self.data = data
+        self._ops = ops
+        # reset grouping, since the indices refer to the old observables and coefficients
+        self._grouping_indices = None
 
     def __str__(self):
         # Lambda function that formats the wires
@@ -575,7 +588,7 @@ class Hamiltonian(Observable):
 
     def queue(self, context=qml.QueuingContext):
         """Queues a qml.Hamiltonian instance"""
-        for o in self.hyperparameters["ops"]:
+        for o in self.ops:
             try:
                 context.update_info(o, owner=self)
             except QueuingError:

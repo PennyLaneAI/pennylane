@@ -196,8 +196,7 @@ The Operator class has undergone a major refactor with the following changes:
   - By default, calling `op.generator()` does not take into account `op.inverse()`.
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
-
-
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
