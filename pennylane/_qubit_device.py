@@ -767,6 +767,7 @@ class QubitDevice(Device):
                 raise ValueError(
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
+
             prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 

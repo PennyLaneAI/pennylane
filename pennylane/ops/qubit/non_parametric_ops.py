@@ -1210,8 +1210,9 @@ class MultiControlledX(Operation):
     def num_params(self):
         return 0
 
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(control_wires, control_values):
+    def compute_matrix(control_wires, control_values, target_wire, work_wires):
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
@@ -1219,7 +1220,7 @@ class MultiControlledX(Operation):
            control_values (str): string of bits determining the controls
 
         Returns:
-           tensor-like or None: matrix representation
+           tensor_like: matrix representation
 
         **Example**
 
@@ -1250,22 +1251,6 @@ class MultiControlledX(Operation):
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
         return cx
-
-    def matrix(self, wire_order=None):
-
-        canonical_matrix = self.compute_matrix(
-            self.hyperparameters["control_wires"], self.hyperparameters["control_values"]
-        )
-
-        if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
-        return qml.operation.expand_matrix(
-            canonical_matrix, wires=self.wires, wire_order=wire_order
-        )
 
     @property
     def control_wires(self):

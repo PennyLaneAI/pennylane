@@ -234,6 +234,9 @@ class ControlledQubitUnitary(QubitUnitary):
          [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]
          [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
         """
+        target_dim = 2 ** len(u_wires)
+        if len(U) != target_dim:
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
@@ -268,41 +271,6 @@ class ControlledQubitUnitary(QubitUnitary):
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
         right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
         return qml.math.block_diag([left_pad, U, right_pad])
-
-    def matrix(self, wire_order=None):
-        """Matrix representation of this operator.
-
-        Returns:
-            array: matrix representation
-
-        **Example**
-
-        >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
-        >>> op = qml.ControlledQubitUnitary(U, control_wires=[1], wires=[0], control_values="1")
-        >>> op.matrix(wire_order=[0, 1])
-        [[ 1.        +0.j  0.        +0.j  0.        +0.j  0.        +0.j]
-         [ 0.        +0.j  0.94877869+0.j  0.        +0.j  0.31594146+0.j]
-         [ 0.        +0.j  0.        +0.j  1.        +0.j  0.        +0.j]
-         [ 0.        +0.j -0.31594146+0.j  0.        +0.j  0.94877869+0.j]]
-        """
-
-        U = self.parameters[0]
-        control_wires = self.hyperparameters["control_wires"]
-        control_values = self.hyperparameters["control_values"]
-        u_wires = self.hyperparameters["u_wires"]
-
-        target_dim = 2 ** len(u_wires)
-        if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-
-        canonical_matrix = self.compute_matrix(U, control_wires, u_wires, control_values)
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
-        return qml.operation.expand_matrix(
-            canonical_matrix, wires=self.wires, wire_order=wire_order
-        )
 
     @property
     def control_wires(self):

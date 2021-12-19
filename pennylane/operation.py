@@ -415,7 +415,7 @@ class Operator(abc.ABC):
             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            tensor_like or None: matrix representation
+            tensor_like: matrix representation
 
         **Example**
 
@@ -466,7 +466,7 @@ class Operator(abc.ABC):
             wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
 
         Returns:
-            tensor_like or None: matrix representation
+            tensor_like: matrix representation
 
         **Example**
 
