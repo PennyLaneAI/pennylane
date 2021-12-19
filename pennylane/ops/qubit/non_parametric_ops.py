@@ -1195,10 +1195,12 @@ class MultiControlledX(Operation):
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        self._hyperparameters = {"target_wire": wires[0],
-                                 "work_wires": work_wires,
-                                 "control_wires": control_wires,
-                                 "control_values": control_values}
+        self._hyperparameters = {
+            "target_wire": wires[0],
+            "work_wires": work_wires,
+            "control_wires": control_wires,
+            "control_values": control_values,
+        }
 
         total_wires = control_wires + wires
 
@@ -1245,14 +1247,15 @@ class MultiControlledX(Operation):
             raise ValueError("Alternative control values must be passed as a binary string.")
 
         padding_left = control_int * 2
-        padding_right = 2 ** (len(control_wires)+1) - 2 - padding_left
+        padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
         cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
         return cx
 
     def matrix(self, wire_order=None):
 
-        canonical_matrix = self.compute_matrix(self.hyperparameters["control_wires"],
-                                               self.hyperparameters["control_values"])
+        canonical_matrix = self.compute_matrix(
+            self.hyperparameters["control_wires"], self.hyperparameters["control_values"]
+        )
 
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
@@ -1291,9 +1294,7 @@ class MultiControlledX(Operation):
             raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
         flips1 = [
-            qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(control_values)
-            if val == "0"
+            qml.PauliX(self.control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         if len(self.control_wires) == 1:
@@ -1309,14 +1310,10 @@ class MultiControlledX(Operation):
                 )
             else:
                 work_wire = work_wires[0]
-                decomp = self._decomposition_with_one_worker(
-                    control_wires, target_wire, work_wire
-                )
+                decomp = self._decomposition_with_one_worker(control_wires, target_wire, work_wire)
 
         flips2 = [
-            qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(control_values)
-            if val == "0"
+            qml.PauliX(self.control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         return flips1 + decomp + flips2

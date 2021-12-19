@@ -198,9 +198,11 @@ class ControlledQubitUnitary(QubitUnitary):
                 "The control wires must be different from the wires specified to apply the unitary on."
             )
 
-        self._hyperparameters = {"u_wires": wires,
-                                 "control_wires": control_wires,
-                                 "control_values": control_values}
+        self._hyperparameters = {
+            "u_wires": wires,
+            "control_wires": control_wires,
+            "control_values": control_values,
+        }
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
