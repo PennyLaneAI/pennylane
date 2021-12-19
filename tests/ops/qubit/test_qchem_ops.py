@@ -148,7 +148,7 @@ class TestSingleExcitation:
     def test_single_excitation_generator(self, phi):
         """Tests that the SingleExcitation operation calculates the correct generator"""
         op = qml.SingleExcitation(phi, wires=[0, 1])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
         res = expm(1j * a * g * phi)
         exp = SingleExcitation(phi)
         assert np.allclose(res, exp)
@@ -165,7 +165,7 @@ class TestSingleExcitation:
     def test_single_excitation_plus_generator(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct generator"""
         op = qml.SingleExcitationPlus(phi, wires=[0, 1])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
         res = expm(1j * a * g * phi)
         exp = SingleExcitationPlus(phi)
         assert np.allclose(res, exp)
@@ -182,7 +182,7 @@ class TestSingleExcitation:
     def test_single_excitation_minus_generator(self, phi):
         """Tests that the SingleExcitationMinus operation calculates the correct generator"""
         op = qml.SingleExcitationMinus(phi, wires=[0, 1])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
         res = expm(1j * a * g * phi)
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
@@ -313,7 +313,7 @@ class TestDoubleExcitation:
     def test_double_excitation_generator(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct generator"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = DoubleExcitation(phi)
@@ -379,7 +379,7 @@ class TestDoubleExcitation:
     def test_double_excitation_plus_generator(self, phi):
         """Tests that the DoubleExcitationPlus operation calculates the correct generator"""
         op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = DoubleExcitationPlus(phi)
@@ -398,7 +398,7 @@ class TestDoubleExcitation:
     def test_double_excitation_minus_generator(self, phi):
         """Tests that the DoubleExcitationMinus operation calculates the correct generator"""
         op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = DoubleExcitationMinus(phi)
@@ -579,7 +579,7 @@ class TestOrbitalRotation:
     def test_orbital_rotation_generator(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct generator"""
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = OrbitalRotation(phi)
