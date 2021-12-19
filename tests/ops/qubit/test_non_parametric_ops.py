@@ -557,7 +557,7 @@ class TestMultiControlledX:
         with pytest.raises(ValueError, match=expected_error_message):
             qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wires, control_values=control_values
-            )
+            ).matrix()
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",

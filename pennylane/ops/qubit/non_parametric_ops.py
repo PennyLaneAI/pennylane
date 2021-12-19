@@ -1192,32 +1192,26 @@ class MultiControlledX(Operation):
         ):
             raise ValueError("The work wires must be different from the control and target wires")
 
-        self._target_wire = wires[0]
-        self._work_wires = work_wires
-        self._control_wires = control_wires
+        self._hyperparameters = {"target_wire": wires[0],
+                                 "work_wires": work_wires,
+                                 "control_wires": control_wires,
+                                 "control_values": control_values}
 
-        wires = control_wires + wires
+        total_wires = control_wires + wires
 
-        if not control_values:
-            control_values = "1" * len(control_wires)
-
-        self.control_values = control_values
-        self.control_int = self._parse_control_values(self.control_wires, self.control_values)
-        self._cx = None
-
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(wires=total_wires, do_queue=do_queue)
 
     @property
     def num_params(self):
         return 0
 
     @staticmethod
-    def compute_matrix(control_int, n_wires):
+    def compute_matrix(control_wires, control_values=None):
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
-           control_int (int): index of wire that the X gate acts on
-           n_wires (int): total number of wires
+           control_wires (Iterable): wires to place controls on
+           control_values (str): string of bits determining the controls
 
         Returns:
            tensor-like or None: matrix representation
@@ -1235,18 +1229,30 @@ class MultiControlledX(Operation):
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
         """
+        if not control_values:
+            control_values = "1" * len(control_wires)
+
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
+
+            # Make sure all values are either 0 or 1
+            if any(x not in ["0", "1"] for x in control_values):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
+
         padding_left = control_int * 2
-        padding_right = 2 ** n_wires - 2 - padding_left
+        padding_right = 2 ** (len(control_wires)+1) - 2 - padding_left
         cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
         return cx
 
     def matrix(self, wire_order=None):
 
-        if self._cx is None:
-            # store matrix, so we do not have to do this each time
-            self._cx = self.compute_matrix(self.control_int, len(self.wires))
-
-        canonical_matrix = self._cx
+        canonical_matrix = self.compute_matrix(self.hyperparameters["control_wires"],
+                                               self.hyperparameters["control_values"])
 
         if self.inverse:
             canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
@@ -1260,27 +1266,10 @@ class MultiControlledX(Operation):
 
     @property
     def control_wires(self):
-        return self._control_wires
+        return self.hyperparameters["control_wires"]
 
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
-
-    @staticmethod
-    def _parse_control_values(control_wires, control_values):
-        """Ensure any user-specified control strings have the right format."""
-        if isinstance(control_values, str):
-            if len(control_values) != len(control_wires):
-                raise ValueError("Length of control bit string must equal number of control wires.")
-
-            # Make sure all values are either 0 or 1
-            if any(x not in ["0", "1"] for x in control_values):
-                raise ValueError("String of control values can contain only '0' or '1'.")
-
-            control_int = int(control_values, 2)
-        else:
-            raise ValueError("Alternative control values must be passed as a binary string.")
-
-        return control_int
 
     def adjoint(self):
         return MultiControlledX(
@@ -1293,35 +1282,40 @@ class MultiControlledX(Operation):
     # pylint: disable=unused-argument
     def decomposition(self, *args, **kwargs):
 
-        if len(self.control_wires) > 2 and len(self._work_wires) == 0:
+        control_wires = self.hyperparameters["control_wires"]
+        control_values = self.hyperparameters["control_values"]
+        work_wires = self.hyperparameters["work_wires"]
+        target_wire = self.hyperparameters["target_wire"]
+
+        if len(control_wires) > 2 and len(work_wires) == 0:
             raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
         flips1 = [
             qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(self.control_values)
+            for i, val in enumerate(control_wires)
             if val == "0"
         ]
 
         if len(self.control_wires) == 1:
-            decomp = [qml.CNOT(wires=[self.control_wires[0], self._target_wire])]
+            decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
         elif len(self.control_wires) == 2:
-            decomp = [qml.Toffoli(wires=[*self.control_wires, self._target_wire])]
+            decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
-            num_work_wires_needed = len(self.control_wires) - 2
+            num_work_wires_needed = len(control_wires) - 2
 
-            if len(self._work_wires) >= num_work_wires_needed:
+            if len(work_wires) >= num_work_wires_needed:
                 decomp = self._decomposition_with_many_workers(
-                    self.control_wires, self._target_wire, self._work_wires
+                    control_wires, target_wire, work_wires
                 )
             else:
-                work_wire = self._work_wires[0]
+                work_wire = work_wires[0]
                 decomp = self._decomposition_with_one_worker(
-                    self.control_wires, self._target_wire, work_wire
+                    control_wires, target_wire, work_wire
                 )
 
         flips2 = [
             qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(self.control_values)
+            for i, val in enumerate(control_values)
             if val == "0"
         ]
 
