@@ -409,29 +409,29 @@ class Operator(abc.ABC):
     def compute_terms(*params, **hyperparams):
         r"""Static method to define the representation of this operation as a linear combination.
 
-       Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
+        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
 
-        .. math:: O = \sum_i c_i O_i
+         .. math:: O = \sum_i c_i O_i
 
-        constructs this operator :math:`O`.
+         constructs this operator :math:`O`.
 
-        A ``NotImplementedError`` is raised if no representation by terms is defined.
+         A ``NotImplementedError`` is raised if no representation by terms is defined.
 
-        .. note::
-            This method gets overwritten by subclasses to define the linear combination representation
-            of a particular operator.
+         .. note::
+             This method gets overwritten by subclasses to define the linear combination representation
+             of a particular operator.
 
-        Args:
-            params (list): trainable parameters of this operator, as stored in ``op.parameters``
-            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+         Args:
+             params (list): trainable parameters of this operator, as stored in ``op.parameters``
+             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
-        Returns:
-            list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
+         Returns:
+             list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
 
-        **Example**
+         **Example**
 
-        >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
-        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+         >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
         return None
 
@@ -543,7 +543,6 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self._hyperparameters = {}
 
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")

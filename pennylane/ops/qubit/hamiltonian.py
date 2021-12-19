@@ -190,7 +190,7 @@ class Hamiltonian(Observable):
 
         # TODO: avoid having multiple ways to store ops and coeffs,
         # ideally only use parameters for coeffs, and hyperparameters for ops
-        self.hyperparameters["ops"] = self._ops
+        self._hyperparameters = {"ops": self._ops}
 
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
@@ -237,7 +237,7 @@ class Hamiltonian(Observable):
         return self._ops
 
     @staticmethod
-    def compute_terms(*coeffs, ops):
+    def compute_terms(*params, **hyperparams):
         r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
 
         Args:
@@ -247,7 +247,7 @@ class Hamiltonian(Observable):
         Returns:
             Iterable[tensor_like or float], list[~.Operator]: coefficients and operations
         """
-        return coeffs, ops
+        return params, hyperparams["ops"]
 
     @property
     def wires(self):
