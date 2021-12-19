@@ -1267,7 +1267,7 @@ class MultiControlledX(Operation):
         return MultiControlledX(
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
-            control_values=self.control_values,
+            control_values=self.hyperparameters["control_values"],
             work_wires=self.work_wires,
         )
 

@@ -508,7 +508,7 @@ class TestExpval:
 
             @property
             def eigvals(self):
-                return None
+                raise NotImplementedError
 
         obs = MyObs(wires=0)
 
@@ -570,7 +570,7 @@ class TestVar:
 
             @property
             def eigvals(self):
-                return None
+                raise NotImplementedError
 
         obs = MyObs(wires=0)
 

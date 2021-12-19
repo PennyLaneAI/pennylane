@@ -278,7 +278,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
-        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self._target_wires)
+        ControlledQubitUnitary(*self.parameters, control_wires=ctrl_wires, wires=self.hyperparameters["u_wires"])
 
 
 class DiagonalQubitUnitary(Operation):
