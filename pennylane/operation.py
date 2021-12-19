@@ -480,7 +480,6 @@ class Operator(abc.ABC):
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
-        self._hyperparameters = {}
 
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
@@ -599,11 +598,6 @@ class Operator(abc.ABC):
         .. note::
 
             This method gets overwritten by subclasses to define the representation of a particular operator.
-            By default, this method should always take the operator's parameters, wires and hyperparameters as
-            inputs (even if the diagonalizing gates are independent of these values).
-
-            Alternatively, a custom signature can be defined, in which case the ``diagonalizing_gates()``
-            method has to be overwritten to use the right signature.
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -618,7 +612,7 @@ class Operator(abc.ABC):
         >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
         [Hadamard(wires=["q1"])]
         """
-        return None
+        raise NotImplementedError
 
     # pylint:disable=no-self-use
     def diagonalizing_gates(self):
@@ -631,7 +625,7 @@ class Operator(abc.ABC):
         In other words, the diagonalizing gates rotate the state into the eigenbasis
         of this operator.
 
-        Returns ``None`` if this operator does not define its diagonalizing gates.
+        Raises a ``NotImplementedError`` if this operator does not define its diagonalizing gates.
 
         .. note::
 
