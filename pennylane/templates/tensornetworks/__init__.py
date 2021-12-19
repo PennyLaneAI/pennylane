@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains templates, which are pre-coded routines that can be used in a quantum node.
+Tensor-network templates can be used to create quantum circuit architectures where circuit blocks
+can be broadcast with the shape and connectivity of tensor networks.
 """
-
-from .broadcast import *
-from .layer import *
-from .layers import *
-from .embeddings import *
-from .subroutines import *
-from .state_preparations import *
-from .tensornetworks import *
+from .mps import MPS
