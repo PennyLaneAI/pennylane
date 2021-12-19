@@ -204,4 +204,3 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, Ankit Khandelwal, 
 Christina Lee, Maria Schuld, Antal Száva, David Wierichs, Shaoming Zhang
-
