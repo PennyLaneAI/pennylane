@@ -157,7 +157,6 @@ class TestHermitian:
         key = tuple(observable.flatten().tolist())
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
-        assert len(qml.Hermitian._eigs[key]) == 1
 
     @pytest.mark.parametrize("observable", EIGVALS_TEST_DATA_MULTI_WIRES)
     def test_hermitian_eigendecomposition_multiple_wires(self, observable, tol):
