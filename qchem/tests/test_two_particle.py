@@ -242,7 +242,7 @@ def test_table_two_particle(name, core, active, v_op_exp):
 
     v_op = qchem.two_particle(hf_data.two_body_integrals, core=core, active=active)
 
-    assert v_op.terms() == v_op_exp
+    assert v_op.terms == v_op_exp
 
 
 v_me_1D = np.array([1, 2, 3, 4])
