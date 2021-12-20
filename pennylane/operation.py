@@ -572,8 +572,6 @@ class Operator(abc.ABC):
 
         .. math:: O = O_1 O_2 \dots O_n
 
-        Returns ``None`` is this Operator does not define its decomposition.
-
         .. note::
             By default, this method calls the static method ``compute_decomposition``.
             Unless the ``compute_decomposition`` has a custom signature, this method should
@@ -612,7 +610,7 @@ class Operator(abc.ABC):
             *params: Variable length argument list.  Should match the ``parameters`` attribute
 
         Keyword Args:
-            wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
             **hyperparameters: Variable length keyword arguments.  Should match the
                 ``hyperparameters`` attribute.
 
