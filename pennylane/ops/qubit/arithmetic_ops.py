@@ -94,7 +94,7 @@ class QubitCarry(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the QubitCarry operator.
 
         Returns:
@@ -218,7 +218,7 @@ class QubitSum(Operation):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the QubitSum operator.
 
         Returns:

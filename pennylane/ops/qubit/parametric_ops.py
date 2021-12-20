@@ -64,7 +64,7 @@ class RX(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the RX operator.
 
         Args:
@@ -135,7 +135,7 @@ class RY(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the RY operator.
 
         Args:
@@ -201,7 +201,7 @@ class RZ(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the RZ operator.
 
         Args:
@@ -280,7 +280,7 @@ class PhaseShift(Operation):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the PhaseShift operator.
 
         Args:
@@ -368,7 +368,7 @@ class ControlledPhaseShift(Operation):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the ControlledPhaseShift operator.
 
         Args:
@@ -463,7 +463,7 @@ class Rot(Operation):
         return 3
 
     @staticmethod
-    def compute_matrix(phi, theta, omega):
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the Rot operator.
 
         Args:
@@ -556,12 +556,17 @@ class MultiRZ(Operation):
     num_wires = AnyWires
     grad_method = "A"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        wires = Wires(wires)
+        self._hyperparameters = {"n_wires": len(wires)}
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 1
 
     @staticmethod
-    def compute_matrix(theta, n_wires):
+    def compute_matrix(theta, n_wires):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the MultiRZ operator.
 
         Args:
@@ -587,22 +592,6 @@ class MultiRZ(Operation):
 
         eigvals = qml.math.exp(-1j * theta / 2 * eigs)
         return qml.math.diag(eigvals)
-
-    def matrix(self, wire_order=None):
-
-        # note: we need to overwrite this method because compute_matrix
-        # has an unusual signature that includes the number or wires
-        canonical_matrix = self.compute_matrix(self.parameters[0], len(self.wires))
-
-        if self.inverse:
-            return qml.math.conj(qml.math.T(canonical_matrix))
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
-        return qml.operation.expand_matrix(
-            canonical_matrix, wires=self.wires, wire_order=wire_order
-        )
 
     def generator(self):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
@@ -754,7 +743,7 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
     @staticmethod
-    def compute_matrix(theta, pauli_word):
+    def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the PauliRot operator.
 
         Args:
@@ -926,7 +915,7 @@ class CRX(Operation):
         return super().label(decimals=decimals, base_label=base_label or "RX")
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CRX operator.
 
         Args:
@@ -1040,7 +1029,7 @@ class CRY(Operation):
         return super().label(decimals=decimals, base_label=base_label or "RY")
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CRY operator.
 
         Args:
@@ -1148,7 +1137,7 @@ class CRZ(Operation):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
 
     @staticmethod
-    def compute_matrix(theta):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CRZ operator.
 
         Args:
@@ -1250,7 +1239,7 @@ class CRot(Operation):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
 
     @staticmethod
-    def compute_matrix(phi, theta, omega):
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CRot operator.
 
         Args:
@@ -1360,7 +1349,7 @@ class U1(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the U1 operator.
 
         Args:
@@ -1432,7 +1421,7 @@ class U2(Operation):
         return 2
 
     @staticmethod
-    def compute_matrix(phi, lam):
+    def compute_matrix(phi, lam):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the U2 operator.
 
         Args:
@@ -1521,7 +1510,7 @@ class U3(Operation):
         return 3
 
     @staticmethod
-    def compute_matrix(theta, phi, lam):
+    def compute_matrix(theta, phi, lam):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the U3 operator.
 
         Args:
@@ -1610,7 +1599,7 @@ class IsingXX(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the IsingXX operator.
 
         Args:
@@ -1695,7 +1684,7 @@ class IsingYY(Operation):
         ]
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the IsingYY operator.
 
         Args:
@@ -1769,7 +1758,7 @@ class IsingZZ(Operation):
         ]
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the IsingZZ operator.
 
         Args:

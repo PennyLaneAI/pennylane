@@ -50,7 +50,7 @@ class Identity(CVObservable, Operation):
         return cls.eigvals
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the Identity operator.
 
         Returns:

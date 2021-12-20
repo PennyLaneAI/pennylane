@@ -66,27 +66,19 @@ class QFT(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        wires = qml.wires.Wires(wires)
+        self._hyperparameters = {"n_wires": len(wires)}
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 0
 
-    def matrix(self, wire_order=None):
-        canonical_matrix = self.compute_matrix(len(self.wires))
-
-        if self.inverse:
-            canonical_matrix = canonical_matrix.conj()
-
-        if wire_order is None or self.wires == qml.wires.Wires(wire_order):
-            return canonical_matrix
-
-        return qml.operation.expand_matrix(
-            canonical_matrix, wires=self.wires, wire_order=wire_order
-        )
-
     @staticmethod
     @functools.lru_cache()
-    def compute_matrix(num_wires):
-        dimension = 2 ** num_wires
+    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
+        dimension = 2 ** n_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)

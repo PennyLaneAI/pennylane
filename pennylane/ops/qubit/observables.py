@@ -62,7 +62,7 @@ class Hermitian(Observable):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
     @staticmethod
-    def compute_matrix(A):
+    def compute_matrix(A):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the Hermitian operator.
 
         Args:
@@ -191,7 +191,7 @@ class SparseHamiltonian(Observable):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
     @staticmethod
-    def compute_matrix(H):
+    def compute_matrix(H):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SparseHamiltonian operator.
 
         Args:
@@ -292,7 +292,7 @@ class Projector(Observable):
         return f"|{basis_string}⟩⟨{basis_string}|"
 
     @staticmethod
-    def compute_matrix(basis_state):
+    def compute_matrix(basis_state):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the Projector operator.
 
         Args:

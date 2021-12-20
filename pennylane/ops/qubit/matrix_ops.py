@@ -86,7 +86,7 @@ class QubitUnitary(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(U):
+    def compute_matrix(U):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the QubitUnitary operator.
 
         Args:
@@ -212,7 +212,7 @@ class ControlledQubitUnitary(QubitUnitary):
         return 1
 
     @staticmethod
-    def compute_matrix(U, control_wires, u_wires, control_values=None):
+    def compute_matrix(U, control_wires, u_wires, control_values=None):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the ControlledQubitUnitary operator.
 
         Args:
@@ -305,7 +305,7 @@ class DiagonalQubitUnitary(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(D):
+    def compute_matrix(D):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the DiagonalQubitUnitary operator.
 
         Args:

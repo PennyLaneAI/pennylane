@@ -91,7 +91,7 @@ class SingleExcitation(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SingleExcitation operator.
 
         Args:
@@ -172,7 +172,7 @@ class SingleExcitationMinus(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SingleExcitationMinus operator.
 
         Args:
@@ -267,7 +267,7 @@ class SingleExcitationPlus(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SingleExcitationPlus operator.
 
         Args:
@@ -393,7 +393,7 @@ class DoubleExcitation(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the DoubleExcitation operator.
 
         Args:
@@ -497,7 +497,7 @@ class DoubleExcitationPlus(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the DoubleExcitationPlus operator.
 
         Args:
@@ -578,7 +578,7 @@ class DoubleExcitationMinus(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the DoubleExcitationMinus operator.
 
         Args:
@@ -682,7 +682,7 @@ class OrbitalRotation(Operation):
         return 1
 
     @staticmethod
-    def compute_matrix(phi):
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the OrbitalRotation operator.
 
         Args:

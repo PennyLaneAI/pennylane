@@ -53,7 +53,7 @@ class Hadamard(Observable, Operation):
         return base_label or "H"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the Hadamard operator.
 
         Returns:
@@ -138,7 +138,7 @@ class PauliX(Observable, Operation):
         return base_label or "X"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the PauliX operator.
 
         Returns:
@@ -224,7 +224,7 @@ class PauliY(Observable, Operation):
         return base_label or "Y"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the PauliY operator.
 
         Returns:
@@ -316,7 +316,7 @@ class PauliZ(Observable, Operation):
         return base_label or "Z"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the PauliZ operator.
 
         Returns:
@@ -393,7 +393,7 @@ class S(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the S operator.
 
         Returns:
@@ -450,7 +450,7 @@ class T(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the T operator.
 
         Returns:
@@ -507,7 +507,7 @@ class SX(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SX operator.
 
         Returns:
@@ -575,7 +575,7 @@ class CNOT(Operation):
         return base_label or "⊕"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CNOT operator.
 
         Returns:
@@ -635,7 +635,7 @@ class CZ(Operation):
         return base_label or "Z"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CZ operator.
 
         Returns:
@@ -695,7 +695,7 @@ class CY(Operation):
         return base_label or "Y"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CY operator.
 
         Returns:
@@ -758,7 +758,7 @@ class SWAP(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SWAP operator.
 
         Returns:
@@ -817,7 +817,7 @@ class ISWAP(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the ISWAP operator.
 
         Returns:
@@ -880,7 +880,7 @@ class SISWAP(Operation):
         return 0
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SISWAP operator.
 
         Returns:
@@ -968,7 +968,7 @@ class CSWAP(Operation):
         return base_label or "SWAP"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the CSWAP operator.
 
         Returns:
@@ -1053,7 +1053,7 @@ class Toffoli(Operation):
         return base_label or "⊕"
 
     @staticmethod
-    def compute_matrix():
+    def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the Toffoli operator.
 
         Returns:
@@ -1216,7 +1216,7 @@ class MultiControlledX(Operation):
 
     # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(control_wires, control_values, target_wire):
+    def compute_matrix(control_wires, control_values, target_wire):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
