@@ -35,9 +35,7 @@ def _get_generator(op):
         float: Prefactor of the generator
     """
 
-    generator, prefactor = op.generator
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
+    generator, prefactor = qml.utils.get_generator(op)
     if op.inverse:
         generator = generator.conj().T
         prefactor *= -1
