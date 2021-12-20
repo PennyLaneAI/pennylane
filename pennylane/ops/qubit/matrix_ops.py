@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, NoDecompositionError
 from pennylane.wires import Wires
 
 
@@ -91,47 +91,44 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(U, wires):
-        """Determine the ``QubitUnitary``'s decomposition for specified parameters, wires,
-        and hyperparameters. The decomposition defines an Operator as a product of
-        more fundamental gates:
+        """Compute the decomposition for specified matrix and wires. The decomposition defines an Operator 
+        as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.QubitUnitary.decomposition`.
 
         A decomposition is only defined for matrices that act on either one or two wires. For more
-        than two wires, this method returns ``None``.  See :func:`~.transforms.zyz_decomposition`
-        and :func:`~.transforms.two_qubit_decomposition` for more information on how the decompositions
-        are computed.
+        than two wires, this method raises a ``NoDecompositionError``.
+
+        See :func:`~.transforms.zyz_decomposition` and :func:`~.transforms.two_qubit_decomposition`
+        for more information on how the decompositions are computed.
 
         Args:
             U (array[complex]): square unitary matrix
             wires (Iterable[Any] or Wires): the wire(s) the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the Operator into lower level operations
 
         **Example:**
 
-        >>> qml.QubitUnitary.compute_decomposition(np.eye(2), 0)
-        (RZ(tensor(0., requires_grad=True), wires=[0]),)
+        >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
+        >>> qml.QubitUnitary.compute_decomposition(U, 0)
+        [Rot(tensor(3.14159265, requires_grad=True), tensor(1.57079633, requires_grad=True), tensor(0., requires_grad=True), wires=[0])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
         if qml.math.shape(U) == (2, 2):
-            wire = Wires(wires)[0]
-            decomp_ops = qml.transforms.decompositions.zyz_decomposition(U, wire)
-            return tuple(decomp_ops)
+            return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
         if qml.math.shape(U) == (4, 4):
-            wires = Wires(wires)
-            decomp_ops = qml.transforms.two_qubit_decomposition(U, wires)
-            return tuple(decomp_ops)
+            return qml.transforms.two_qubit_decomposition(U, Wires(wires))
 
-        return None
+        return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix)), wires=self.wires)
@@ -326,8 +323,8 @@ class DiagonalQubitUnitary(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance. 
+        See also :meth:`~.DiagonalQubitUnitary.decomposition`.
 
         ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, which has further
         decompositions for one and two qubit matrices.
@@ -337,15 +334,15 @@ class DiagonalQubitUnitary(Operation):
             wires (Iterable[Any] or Wires): the wire(s) the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.DiagonalQubitUnitary.compute_decomposition([1, 1], wires=0)
-        (QubitUnitary(array([[1, 0], [0, 1]]), wires=[0]),)
+        [QubitUnitary(array([[1, 0], [0, 1]]), wires=[0])]
 
         """
-        return (QubitUnitary(qml.math.diag(D), wires=wires),)
+        return [QubitUnitary(qml.math.diag(D), wires=wires)]
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)

@@ -40,9 +40,9 @@ The Operator class has undergone a major refactor with the following changes:
 
 * The static `compute_decomposition` method defines the decomposition
   of an operator into a product of simpler operators, and the instance method
-  `decomposition()` computes this for a given instance. When a decomposition is
-  not implemented for a given class, `compute_decomposition`, `decomposition`,
-  and `expand` return `None` instead of raising a `NotImplementedError`.
+  `decomposition()` computes this for a given instance. When a custom 
+  decomposition does not exist, the code now raises a custom `NoDecompositionError`
+  instead of `NotImplementedError`.
   [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
 
 * The `diagonalizing_gates()` representation has been moved to the highest-level

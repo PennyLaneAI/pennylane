@@ -573,9 +573,10 @@ class Operator(abc.ABC):
         .. math:: O = O_1 O_2 \dots O_n
 
         .. note::
-            By default, this method calls the static method ``compute_decomposition``.
-            Unless the ``compute_decomposition`` has a custom signature, this method should
-            not be overwritten.
+            By default, this method calls the static method
+            :meth:`~.operation.Operator.compute_decomposition`. Unless the
+            :meth:`~.operation.Operator.compute_decomposition` has a custom signature,
+            this method should not be overwritten.
 
         Returns:
             list[Operator]: The decomposition of the Operator into lower level operations
@@ -583,7 +584,7 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
-        (CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]))
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
         return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
@@ -597,7 +598,8 @@ class Operator(abc.ABC):
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of an
-        operator without a specific instance. 
+        operator without a specific instance.
+
         See also :meth:`~.operation.Operator.decomposition`.
 
         .. note::
@@ -620,7 +622,7 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.IsingXX.compute_decomposition(1.23, (0,1))
-        (CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]))
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
         raise NoDecompositionError
