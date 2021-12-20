@@ -477,7 +477,7 @@ def test_sector_energy(symbols, geometry, result):
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "generators", "pauli_x_ops", "result"),
+    ("symbols", "geometry", "generators", "paulix_ops", "result"),
     [
         (
             ["H", "H"],
@@ -494,16 +494,51 @@ def test_sector_energy(symbols, geometry, result):
 )
 @pytest.mark.parametrize(("brute_force", "num_electrons"), [(True, 0), (False, 2)])
 def test_find_optimal_sector(
-    symbols, geometry, generators, pauli_x_ops, brute_force, num_electrons, result
+    symbols, geometry, generators, paulix_ops, brute_force, num_electrons, result
 ):
     r"""Test that find_optimal_sector returns the correct result."""
     mol = qml.hf.Molecule(symbols, geometry)
     hamiltonian = qml.hf.generate_hamiltonian(mol)()
 
     perm, energy = find_optimal_sector(
-        hamiltonian, generators, pauli_x_ops, brute_force, num_electrons
+        hamiltonian, generators, paulix_ops, brute_force, num_electrons
     )
 
     for sec in zip(perm, result[0]):
         assert sec[0] == sec[1]
     assert np.isclose(energy, result[1])
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "generators", "paulix_ops"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ("brute_force", "num_electrons", "msg_match"),
+    [
+        (False, 0, f"Brute force search is disabled"),
+        (False, 5, f"Number of active orbitals cannot be smaller than number of active electrons"),
+    ],
+)
+def test_exceptions_find_optimal_sector(
+    symbols, geometry, generators, paulix_ops, brute_force, num_electrons, msg_match
+):
+    r"""Test that find_optimal_sector returns the correct result."""
+    mol = qml.hf.Molecule(symbols, geometry)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
+
+    with pytest.raises(ValueError, match=msg_match):
+        perm, energy = find_optimal_sector(
+            hamiltonian, generators, paulix_ops, brute_force, num_electrons
+        )

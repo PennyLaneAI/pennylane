@@ -487,7 +487,7 @@ def _sector_energy(sector):
     return energy
 
 
-def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num_electrons=0):
+def find_optimal_sector(qubit_op, generators, paulix_ops, brute_force=True, num_electrons=0):
     r"""Get the optimal sector which contains the ground state.
 
     To obtain the optimal sector one can brute force through all the permutation or by utilize the following
@@ -503,7 +503,7 @@ def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num
     Args:
         qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated for performing tapering
         generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
-        pauli_x_ops (list[pennylane.operation.Observable]):  list of single-qubit Pauli X operators
+        paulix_ops (list[pennylane.operation.Observable]):  list of single-qubit Pauli X operators
         brute_force (bool): determines whether to use brute-force strategy to pick the correct sector or not
         num_electrons (int): If `brute_force = True`, user must provide the number of active electrons in
                               the system for generating the Hartree-Fock bitstring
@@ -520,9 +520,9 @@ def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num
         >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
         >>> mol = qml.hf.Molecule(symbols, coordinates)
         >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
-        >>> generators, pauli_x_ops = generate_symmetries(H, qubits)
-        >>> find_optimal_sector(H, generators, pauli_x_ops, False, 2)
-          ((1, -1, -1), -1.1372701746609024)
+        >>> generators, paulix_ops = generate_symmetries(H, qubits)
+        >>> find_optimal_sector(H, generators, paulix_ops, False, 2)
+          ([1, -1, -1], -1.1372701746609024)
 
     """
 
@@ -530,10 +530,20 @@ def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num
 
         if num_electrons < 1:
             raise ValueError(
-                "Brute force search is disabled; the number of electrons must be provided."
+                f"Brute force search is disabled;"
+                f"the number of electrons must be provided and should be greater than zero;"
+                f"got 'electrons'={num_electrons}"
             )
 
-        hf_str = qml.qchem.hf_state(num_electrons, len(qubit_op.wires))
+        num_orbitals = len(qubit_op.wires)
+
+        if num_electrons > num_orbitals:
+            raise ValueError(
+                f"Number of active orbitals cannot be smaller than number of active electrons;"
+                f" got 'orbitals'={num_orbitals} < 'electrons'={num_electrons}."
+            )
+
+        hf_str = np.where(np.arange(num_orbitals) < num_electrons, 1, 0)
         perm = []
 
         for op in generators:
@@ -543,7 +553,7 @@ def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num
             coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
             perm.append(coeff)
 
-        sector = transform_hamiltonian(qubit_op, generators, pauli_x_ops, perm)
+        sector = transform_hamiltonian(qubit_op, generators, paulix_ops, perm)
         energy = _sector_energy(sector)
 
         return perm, energy
@@ -553,10 +563,10 @@ def find_optimal_sector(qubit_op, generators, pauli_x_ops, brute_force=True, num
     perms = list(it.product([1, -1], repeat=len(generators)))
 
     for perm in perms:
-        sector = transform_hamiltonian(qubit_op, generators, pauli_x_ops, perm)
+        sector = transform_hamiltonian(qubit_op, generators, paulix_ops, perm)
         energy = _sector_energy(sector)
         sectors.append(sector)
         energies.append(float(energy.real))
 
     index = energies.index(min(energies))
-    return perms[index], energies[index]
+    return list(perms[index]), energies[index]
