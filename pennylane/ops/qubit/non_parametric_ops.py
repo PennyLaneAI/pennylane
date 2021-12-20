@@ -294,6 +294,7 @@ class PauliZ(Observable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_diagonalizing_gates(wires):
         """Diagonalizing gates of this operator.
