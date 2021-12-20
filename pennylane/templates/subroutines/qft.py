@@ -94,6 +94,27 @@ class QFT(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator 
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.QFT.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
+
+        """
         num_wires = len(wires)
         shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
 
