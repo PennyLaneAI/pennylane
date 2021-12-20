@@ -103,33 +103,33 @@ class SingleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``SingleExcitation``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.SingleExcitation.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        (CNOT(wires=[0, 1]), CRY(1.23, wires=[1, 0]), CNOT(wires=[0, 1]))
+        [CNOT(wires=[0, 1]), CRY(1.23, wires=[1, 0]), CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -200,26 +200,26 @@ class SingleExcitationMinus(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``SingleExcitationMinus``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.SingleExcitationMinus.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
-        (PauliX(wires=[0]),
+        [PauliX(wires=[0]),
         PauliX(wires=[1]),
         ControlledPhaseShift(-0.615, wires=[1, 0]),
         PauliX(wires=[0]),
@@ -227,10 +227,10 @@ class SingleExcitationMinus(Operation):
         ControlledPhaseShift(-0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
-        CNOT(wires=[0, 1]))
+        CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
             qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
@@ -240,7 +240,7 @@ class SingleExcitationMinus(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -311,26 +311,26 @@ class SingleExcitationPlus(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``SingleExcitationPlus``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.SingleExcitationPlus.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        (PauliX(wires=[0]),
+        [PauliX(wires=[0]),
         PauliX(wires=[1]),
         ControlledPhaseShift(0.615, wires=[1, 0]),
         PauliX(wires=[0]),
@@ -338,10 +338,10 @@ class SingleExcitationPlus(Operation):
         ControlledPhaseShift(0.615, wires=[0, 1]),
         CNOT(wires=[0, 1]),
         CRY(1.23, wires=[1, 0]),
-        CNOT(wires=[0, 1]))
+        CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
             qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
@@ -351,7 +351,7 @@ class SingleExcitationPlus(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -446,29 +446,29 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``DoubleExcitation``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.DoubleExcitation.decomposition`.
 
         For the source of this decomposition, see page 17 of
         `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
-        (CNOT(wires=[2, 3]),
+        [CNOT(wires=[2, 3]),
         CNOT(wires=[0, 2]),
         Hadamard(wires=[3]),
         Hadamard(wires=[0]),
@@ -495,11 +495,11 @@ class DoubleExcitation(Operation):
         Hadamard(wires=[0]),
         Hadamard(wires=[3]),
         CNOT(wires=[0, 2]),
-        CNOT(wires=[2, 3]))
+        CNOT(wires=[2, 3])]
 
         """
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
-        decomp_ops = (
+        decomp_ops = [
             qml.CNOT(wires=[wires[2], wires[3]]),
             qml.CNOT(wires=[wires[0], wires[2]]),
             qml.Hadamard(wires=wires[3]),
@@ -528,7 +528,7 @@ class DoubleExcitation(Operation):
             qml.Hadamard(wires=wires[3]),
             qml.CNOT(wires=[wires[0], wires[2]]),
             qml.CNOT(wires=[wires[2], wires[3]]),
-        )
+        ]
 
         return decomp_ops
 
@@ -799,29 +799,29 @@ class OrbitalRotation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``OrbitalRotation``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.OrbitalRotation.decomposition`.
 
         For the source of this decomposition, see page 18 of
         `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.OrbitalRotation.compute_decomposition(1.23, wires=(0,1,2,3))
-        (Hadamard(wires=[3]),
+        [Hadamard(wires=[3]),
         Hadamard(wires=[2]),
         CNOT(wires=[3, 1]),
         CNOT(wires=[2, 0]),
@@ -832,11 +832,11 @@ class OrbitalRotation(Operation):
         CNOT(wires=[3, 1]),
         CNOT(wires=[2, 0]),
         Hadamard(wires=[3]),
-        Hadamard(wires=[2]))
+        Hadamard(wires=[2])]
 
         """
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
-        decomp_ops = (
+        decomp_ops = [
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
             qml.CNOT(wires=[wires[3], wires[1]]),
@@ -849,7 +849,7 @@ class OrbitalRotation(Operation):
             qml.CNOT(wires=[wires[2], wires[0]]),
             qml.Hadamard(wires=wires[3]),
             qml.Hadamard(wires=wires[2]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):

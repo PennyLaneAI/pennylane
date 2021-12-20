@@ -91,7 +91,7 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(U, wires):
-        r"""Compute the decomposition for specified matrix and wires. The decomposition defines an Operator 
+        r"""Compute the decomposition for specified matrix and wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -323,7 +323,7 @@ class DiagonalQubitUnitary(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. 
+        operator without creating a specific instance.
         See also :meth:`~.DiagonalQubitUnitary.decomposition`.
 
         ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, which has further

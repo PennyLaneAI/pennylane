@@ -196,8 +196,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 try:
                     obj = obj.expand()
                 except NoDecompositionError:
-                # Object does not define an expansion; treat this as
-                # a stopping condition.
+                    # Object does not define an expansion; treat this as
+                    # a stopping condition.
                     getattr(new_tape, queue).append(obj)
                     continue
 

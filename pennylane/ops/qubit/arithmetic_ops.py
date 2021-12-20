@@ -119,7 +119,7 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator 
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -233,7 +233,7 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator 
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.

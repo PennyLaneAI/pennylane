@@ -134,9 +134,12 @@ from .utils import pauli_eigs
 # Errors
 # =============================================================================
 
+
 class NoDecompositionError(Exception):
     """Raised when an Operator does not have a decomposition defined."""
+
     pass
+
 
 # =============================================================================
 # Wire types

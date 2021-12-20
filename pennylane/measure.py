@@ -22,7 +22,15 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, NoDecompositionError, Observable, Probability, Sample, State, Variance
+from pennylane.operation import (
+    Expectation,
+    NoDecompositionError,
+    Observable,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 from pennylane.wires import Wires
 
 
