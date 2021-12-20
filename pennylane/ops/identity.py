@@ -57,9 +57,8 @@ class Identity(CVObservable, Operation):
     def _heisenberg_rep(p):
         return np.array([1, 0, 0])
 
-    # pylint: disable=arguments-differ,unused-argument
     @staticmethod
-    def compute_diagonalizing_gates(wires):
+    def compute_diagonalizing_gates(wires):  # pylint: disable=arguments-differ,unused-argument
         """Diagonalizing gates of this operator.
 
         Args:

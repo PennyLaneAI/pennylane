@@ -582,9 +582,8 @@ class Operator(abc.ABC):
             return self.decomposition(wires=self.wires)
         return self.decomposition(*self.parameters, wires=self.wires)
 
-    # pylint: disable=unused-argument
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires, **hyperparams):
+    def compute_diagonalizing_gates(*params, wires, **hyperparams): # pylint: disable=unused-argument
         r"""Defines a partial representation of this operator via
         its eigendecomposition.
 
@@ -782,8 +781,7 @@ class Operation(Operator):
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
 
-    # pylint: disable=no-self-use
-    def generator(self):
+    def generator(self): # pylint: disable=no-self-use
         r"""list[.Operation] or None: Generator of an operation
         with a single trainable parameter.
 
