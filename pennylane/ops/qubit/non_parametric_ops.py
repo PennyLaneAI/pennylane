@@ -1216,7 +1216,9 @@ class MultiControlledX(Operation):
 
     # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(control_wires, control_values, target_wire):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        control_wires, control_values, target_wire
+    ):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
