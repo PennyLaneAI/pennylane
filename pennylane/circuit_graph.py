@@ -176,6 +176,8 @@ class CircuitGraph:
             # Add the first operator on the wire to the graph
             # This operator does not depend on any others
 
+            # Check if wire[0] in self._grid.values()
+            # is already added to the graph
             if wire[0] not in self._graph.nodes():
                 self._graph.add_node(wire[0])
 
@@ -604,8 +606,8 @@ class CircuitGraph:
         # NOTE Does not alter the graph edges in any way. variable_deps is not changed, _grid is not changed. Dangerous!
         if new.wires != old.wires:
             raise ValueError("The new Operator must act on the same wires as the old one.")
-        new.queue_idx = old.queue_idx
 
+        new.queue_idx = old.queue_idx
         self._graph[self._graph.nodes().index(old)] = new
 
         self._operations = self.operations_in_order
@@ -674,7 +676,7 @@ class CircuitGraph:
 
         return (
             len(
-                rx.dijkstra_shortest_paths(
+                rx._digraph_dijkstra_shortest_path(
                     self._graph, self._graph.nodes().index(a), self._graph.nodes().index(b)
                 )
             )

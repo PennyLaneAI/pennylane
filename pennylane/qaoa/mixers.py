@@ -16,6 +16,7 @@ Methods for constructing QAOA mixer Hamiltonians.
 """
 import itertools
 import functools
+from typing import Iterable, Union
 
 import networkx as nx
 import retworkx as rx
@@ -24,7 +25,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
-def x_mixer(wires):
+def x_mixer(wires: Union[Iterable, Wires]):
     r"""Creates a basic Pauli-X mixer Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -67,7 +68,7 @@ def x_mixer(wires):
     return H
 
 
-def xy_mixer(graph):
+def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
 
     This mixer Hamiltonian is defined as:
@@ -120,7 +121,11 @@ def xy_mixer(graph):
 
     is_rx = isinstance(graph, rx.PyGraph)
     edges = graph.edge_list() if is_rx else graph.edges
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
     get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+
     coeffs = 2 * [0.5 for e in edges]
 
     obs = []
@@ -131,7 +136,7 @@ def xy_mixer(graph):
     return qml.Hamiltonian(coeffs, obs)
 
 
-def bit_flip_mixer(graph, b):
+def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:
@@ -207,6 +212,9 @@ def bit_flip_mixer(graph, b):
 
     is_rx = isinstance(graph, rx.PyGraph)
     graph_nodes = graph.node_indexes() if is_rx else graph.nodes
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
     get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
 
     for i in graph_nodes:

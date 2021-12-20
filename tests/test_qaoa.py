@@ -930,7 +930,9 @@ class TestCostHamiltonians:
     def test_max_weight_cycle_errors(self):
         """Tests that the max weight cycle Hamiltonian throws the correct errors"""
 
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+        ):
             qaoa.max_weight_cycle([(0, 1), (1, 2)])
 
     def test_cost_graph_error(self):
@@ -1261,7 +1263,9 @@ class TestCycles:
     def test_edges_to_wires_error(self):
         """Test that edges_to_wires raises ValueError"""
         g = [1, 1, 1, 1]
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph, rx.Py\(Di\)Graph"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+        ):
             edges_to_wires(g)
 
     def test_edges_to_wires_rx(self):
@@ -1294,7 +1298,9 @@ class TestCycles:
     def test_wires_to_edges_error(self):
         """Test that wires_to_edges raises ValueError"""
         g = [1, 1, 1, 1]
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.Py\(Di\)Graph"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+        ):
             wires_to_edges(g)
 
     def test_wires_to_edges_rx(self):
@@ -1594,7 +1600,9 @@ class TestCycles:
 
     def test_loss_hamiltonian_error(self):
         """Test if the loss_hamiltonian function raises ValueError"""
-        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.Py\(Di\)Graph"):
+        with pytest.raises(
+            ValueError, match=r"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph"
+        ):
             loss_hamiltonian([(0, 1), (1, 2), (0, 2)])
 
     @pytest.mark.parametrize(

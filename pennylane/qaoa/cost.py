@@ -15,6 +15,7 @@ r"""
 Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
+from typing import Iterable, Union
 import networkx as nx
 import retworkx as rx
 
@@ -26,7 +27,7 @@ from pennylane import qaoa
 # Hamiltonian components
 
 
-def bit_driver(wires, b):
+def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
     r"""Returns the bit-driver cost Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -66,7 +67,7 @@ def bit_driver(wires, b):
     return qml.Hamiltonian(coeffs, ops)
 
 
-def edge_driver(graph, reward):
+def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
     r"""Returns the edge-driver cost Hamiltonian.
 
     Given some graph, :math:`G` with each node representing a wire, and a binary
@@ -184,6 +185,9 @@ def edge_driver(graph, reward):
     is_rx = isinstance(graph, rx.PyGraph)
     graph_nodes = graph.nodes()
     graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
     get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
     if len(reward) == 0 or len(reward) == 4:
@@ -235,7 +239,7 @@ def edge_driver(graph, reward):
 # Optimization problems
 
 
-def maxcut(graph):
+def maxcut(graph: Union[nx.Graph, rx.PyGraph]):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
     MaxCut problem, for a given graph.
 
@@ -301,6 +305,9 @@ def maxcut(graph):
     is_rx = isinstance(graph, rx.PyGraph)
     graph_nodes = graph.nodes()
     graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
     get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
     identity_h = qml.Hamiltonian(
@@ -313,7 +320,7 @@ def maxcut(graph):
     return (H, qaoa.x_mixer(graph_nodes))
 
 
-def max_independent_set(graph, constrained=True):
+def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     r"""For a given graph, returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Independent Set problem.
 
     Given some graph :math:`G`, an independent set is a set of vertices such that no pair of vertices in the set
@@ -391,7 +398,7 @@ def max_independent_set(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def min_vertex_cover(graph, constrained=True):
+def min_vertex_cover(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Minimum Vertex Cover problem,
     for a given graph.
 
@@ -471,7 +478,7 @@ def min_vertex_cover(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def max_clique(graph, constrained=True):
+def max_clique(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Clique problem,
     for a given graph.
 
@@ -556,7 +563,7 @@ def max_clique(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def max_weight_cycle(graph, constrained=True):
+def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrained: bool = True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
     maximum-weighted cycle problem, for a given graph.
 
@@ -572,7 +579,7 @@ def max_weight_cycle(graph, constrained=True):
     our subset of edges composes a `cycle <https://en.wikipedia.org/wiki/Cycle_(graph_theory)>`__.
 
     Args:
-        graph (nx.Graph or rx.Py(Di)Graph): the directed graph on which the Hamiltonians are defined
+        graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the directed graph on which the Hamiltonians are defined
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -693,7 +700,7 @@ def max_weight_cycle(graph, constrained=True):
     """
     if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
         raise ValueError(
-            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+            f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
         )
 
     mapping = qaoa.cycle.wires_to_edges(graph)
