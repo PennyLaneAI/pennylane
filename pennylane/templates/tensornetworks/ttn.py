@@ -43,13 +43,13 @@ def compute_indices(wires, n_block_wires):
 
     if n_block_wires > n_wires:
         raise ValueError(
-            f"n_block_wires must be smaller than or equal to the number of wires; ",
-            f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}",
+            f"n_block_wires must be smaller than or equal to the number of wires; "
+            f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
     if not np.log2(n_wires / n_block_wires).is_integer():
         warnings.warn(
-            f"The number of wires should be a 2^n times n_block_wires; got n_wires/n_block_wires = {n_wires/n_block_wires}"
+            f"The number of wires should be n_block_wires times 2n"
         )
 
     n_wires = 2 ** (int(np.log2(len(wires) / n_block_wires))) * n_block_wires
@@ -57,12 +57,25 @@ def compute_indices(wires, n_block_wires):
 
     layers = np.array(
         [
-            [i for i in range(x, x + n_block_wires // 2)]
-            + [
-                i
+            [
+                wires[i]
                 for i in range(
-                    x + 2 ** (j - 1) * n_block_wires // 2,
-                    x + 2 ** (j - 1) * n_block_wires // 2 + n_block_wires // 2,
+                    x + 2 ** (j - 1) * n_block_wires // 2 - n_block_wires // 2,
+                    x + n_block_wires // 2 + 2 ** (j - 1) * n_block_wires // 2 - n_block_wires // 2,
+                )
+            ]
+            + [
+                wires[i]
+                for i in range(
+                    x
+                    + 2 ** (j - 1) * n_block_wires // 2
+                    + 2 ** (j - 1) * n_block_wires // 2
+                    - n_block_wires // 2,
+                    x
+                    + 2 ** (j - 1) * n_block_wires // 2
+                    + n_block_wires // 2
+                    + 2 ** (j - 1) * n_block_wires // 2
+                    - n_block_wires // 2,
                 )
             ]
             for j in range(1, n_layers + 1)
@@ -185,7 +198,7 @@ class TTN(Operation):
         n_wires = len(wires)
         if not np.log2(n_wires / n_block_wires).is_integer():
             warnings.warn(
-                f"The number of wires should be a 2^n times n_block_wires; got n_wires/n_block_wires = {n_wires/n_block_wires}"
+                f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )
 
         if n_block_wires > n_wires:

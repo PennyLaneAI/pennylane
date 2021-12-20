@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the MPS template.
+Tests for the TTN template.
 """
-import math
 import pytest
 import numpy as np
 import pennylane as qml
@@ -38,7 +37,7 @@ class TestIndicesTTN:
         with pytest.raises(
             ValueError, match=f"n_block_wires must be an even integer; got {n_block_wires}"
         ):
-            compute_indices_MPS(range(n_wires), n_block_wires)
+            compute_indices(range(n_wires), n_block_wires)
 
     @pytest.mark.parametrize(
         ("n_wires", "n_block_wires"),
@@ -56,7 +55,7 @@ class TestIndicesTTN:
             match="n_block_wires must be smaller than or equal to the number of wires; "
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}",
         ):
-            compute_indices_MPS(range(n_wires), n_block_wires)
+            compute_indices(range(n_wires), n_block_wires)
 
     def test_exception_n_block_wires_small(self):
         """Verifies that an exception is raised when n_block_wires is less than 2."""
@@ -68,36 +67,34 @@ class TestIndicesTTN:
             match=f"number of wires in each block must be larger than or equal to 2; "
             f"got n_block_wires = {n_block_wires}",
         ):
-            compute_indices_MPS(range(n_wires), n_block_wires)
+            compute_indices(range(n_wires), n_block_wires)
 
     @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
+        ("wires", "n_block_wires"),
         [
-            (5, 4),
-            (9, 4),
-            (7, 6),
+            (range(5), 2)
         ],
     )
-    def test_warning_many_wires(self, n_wires, n_block_wires):
+    def test_warning_many_wires(self, wires, n_block_wires):
         """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
-
+        n_wires = len(wires)
         with pytest.warns(
-            Warning,
-            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "
-            f"got {n_wires}",
-        ):
-            compute_indices_MPS(range(n_wires), n_block_wires)
+            Warning
+        ) as wn:
+            compute_indices(range(n_wires), n_block_wires)
+        assert wn.value == f"The number of wires should be n_block_wires times 2n"
 
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, [[1, 2], [2, 3], [3, 4]]),
-            (["a", "b", "c", "d"], 2, [["a", "b"], ["b", "c"], ["c", "d"]]),
+            ([1, 2, 3, 4], 2, [[1,2],[3,4],[2,4]]),
+            (range(12), 6, [[0,1,2,3,4,5],[6,7,8,9,10,11],[3,4,5,9,10,11]]),
+            (["a", "b", "c", "d"], 2, [["a", "b"], ["c", "d"], ["b", "d"]]),
         ],
     )
     def test_indices_output(self, wires, n_block_wires, expected_indices):
         """Verifies the indices are correct for both integer and string wire labels."""
-        indices = compute_indices_MPS(wires, n_block_wires)
+        indices = compute_indices(wires, n_block_wires)
         for i in range(len(expected_indices)):
             assert all(indices[i] == expected_indices[i])
 
@@ -130,20 +127,20 @@ class TestTemplateInputs:
     def test_exception_wrong_input(self, block, n_params_block, wires, n_block_wires, msg_match):
         """Verifies that an exception is raised if the number of wires or n_block_wires is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
-            MPS(wires, n_block_wires, block, n_params_block)
+            TTN(wires, n_block_wires, block, n_params_block)
 
-    def test_warning_many_wires(self):
-        """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
+    # def test_warning_many_wires(self):
+    #     """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
 
-        n_block_wires = 4
-        wires = [1, 2, 3, 4, 5]
-        n_wires = len(wires)
-        n_params_block = 1
-        with pytest.warns(
-            Warning,
-            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; got {n_wires}",
-        ):
-            MPS(wires, n_block_wires, block=None, n_params_block=n_params_block)
+    #     n_block_wires = 4
+    #     wires = [1, 2, 3, 4, 5]
+    #     n_wires = len(wires)
+    #     n_params_block = 1
+    #     with pytest.warns(
+    #         Warning,
+    #         match=f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
+    #     ):
+    #         TTN(wires, n_block_wires, block=None, n_params_block=n_params_block)
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "block_weights", "msg_match"),
@@ -171,24 +168,23 @@ class TestTemplateInputs:
     ):
         """Verifies that an exception is raised if the weights shape is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
-            MPS(wires, n_block_wires, block, n_params_block, block_weights)
+            TTN(wires, n_block_wires, block, n_params_block, block_weights)
 
 
 class TestAttributes:
     """Tests additional methods and attributes"""
 
-    @pytest.mark.parametrize(
-        ("wires", "n_block_wires"),
-        [(range(7), 4), (range(13), 6)],
-    )
-    def test_get_n_blocks_warning(self, wires, n_block_wires):
-        """Test that get_n_blocks() warns the user when there are too many wires."""
-        with pytest.warns(
-            Warning,
-            match=f"The number of wires should be a multiple of {int(n_block_wires/2)}; "
-            f"got {len(wires)}",
-        ):
-            qml.MPS.get_n_blocks(wires, n_block_wires)
+    # @pytest.mark.parametrize(
+    #     ("wires", "n_block_wires"),
+    #     [(range(7), 4), (range(13), 6)],
+    # )
+    # def test_get_n_blocks_warning(self, wires, n_block_wires):
+    #     """Test that get_n_blocks() warns the user when there are too many wires."""
+    #     with pytest.warns(
+    #         Warning,
+    #         match=f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {len(wires)/n_block_wires}"
+    #     ):
+    #         qml.TTN.get_n_blocks(wires, n_block_wires)
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -204,7 +200,7 @@ class TestAttributes:
     def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
         """Test that the number of blocks attribute returns the correct number of blocks."""
 
-        assert qml.MPS.get_n_blocks(wires, n_block_wires) == expected_n_blocks
+        assert qml.TTN.get_n_blocks(wires, n_block_wires) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -219,7 +215,7 @@ class TestAttributes:
             match=f"n_block_wires must be smaller than or equal to the number of wires; "
             f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
-            qml.MPS.get_n_blocks(wires, n_block_wires)
+            qml.TTN.get_n_blocks(wires, n_block_wires)
 
 
 class TestTemplateOutputs:
@@ -227,12 +223,12 @@ class TestTemplateOutputs:
         qml.RZ(weights[0], wires=wires[0])
         qml.RZ(weights[1], wires=wires[1])
 
-    def circuit1_MPS(weights, wires):
+    def circuit1_TTN(weights, wires):
         qml.RZ(weights[0][0], wires=wires[0])
         qml.RZ(weights[0][1], wires=wires[1])
-        qml.RZ(weights[1][0], wires=wires[1])
-        qml.RZ(weights[1][1], wires=wires[2])
-        qml.RZ(weights[2][0], wires=wires[2])
+        qml.RZ(weights[1][0], wires=wires[2])
+        qml.RZ(weights[1][1], wires=wires[3])
+        qml.RZ(weights[2][0], wires=wires[1])
         qml.RZ(weights[2][1], wires=wires[3])
 
     def circuit2_block(weights, wires):
@@ -241,7 +237,7 @@ class TestTemplateOutputs:
         )
         qml.StronglyEntanglingLayers(SELWeights, wires)
 
-    def circuit2_MPS(weights, wires):
+    def circuit2_TTN(weights, wires):
         SELWeights1 = np.array(
             [
                 [
@@ -258,8 +254,17 @@ class TestTemplateOutputs:
                 ]
             ]
         )
+        SELWeights3 = np.array(
+            [
+                [
+                    [weights[2][0], weights[2][1], weights[2][2]],
+                    [weights[2][0], weights[2][1], weights[2][2]],
+                ]
+            ]
+        )
         qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
-        qml.StronglyEntanglingLayers(SELWeights2, wires=wires[1:3])
+        qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
+        qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1],wires[3]])
 
     @pytest.mark.parametrize(
         (
@@ -274,12 +279,12 @@ class TestTemplateOutputs:
             (
                 circuit1_block,
                 2,
-                [1, 2, 3, 4],
+                [0,1,2,3],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                circuit1_MPS,
+                circuit1_TTN,
             ),
-            (circuit2_block, 3, [1, 2, 3], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]], circuit2_MPS),
+            (circuit2_block, 3, [1, 2, 3, 4], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4],[0.5,0.2,0.3]], circuit2_TTN),
         ],
     )
     def test_output(
@@ -290,7 +295,7 @@ class TestTemplateOutputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.MPS(wires, n_block_wires, block, n_params_block, template_weights)
+            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
         template_result = circuit()
