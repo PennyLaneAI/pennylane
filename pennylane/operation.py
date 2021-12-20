@@ -253,7 +253,7 @@ class Operator(abc.ABC):
 
     The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_wires`
+    * :attr:`~.Operator.num_witest_sparse_hamiltonian_expvalres`
 
     Args:
         params (tuple[float, int, array]): operator parameters
