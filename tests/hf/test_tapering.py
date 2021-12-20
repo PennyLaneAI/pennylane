@@ -14,17 +14,20 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
-
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
     _binary_matrix,
-    _reduced_row_echelon,
     _kernel,
-    get_generators,
+    _observable_mult,
+    _reduced_row_echelon,
+    _simplify,
+    clifford,
     generate_paulis,
     generate_symmetries,
+    get_generators,
+    transform_hamiltonian,
     _sector_energy,
     find_optimal_sector,
 )
@@ -285,59 +288,11 @@ def test_generate_paulis(generators, num_qubits, result):
 
 
 @pytest.mark.parametrize(
-    ("hamiltonian", "num_qubits", "res_generators", "res_pauli_ops"),
+    ("symbols", "geometry", "num_qubits", "res_generators", "res_pauli_ops"),
     [
         (
-            qml.Hamiltonian(
-                np.array(
-                    [
-                        -0.09886397,
-                        0.17119775,
-                        0.17119775,
-                        -0.22278593,
-                        -0.22278593,
-                        0.16862219,
-                        0.0453222,
-                        -0.0453222,
-                        -0.0453222,
-                        0.0453222,
-                        0.12054482,
-                        0.16586702,
-                        0.16586702,
-                        0.12054482,
-                        0.17434844,
-                    ]
-                ),
-                [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-            ),
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             4,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
@@ -348,10 +303,13 @@ def test_generate_paulis(generators, num_qubits, result):
         ),
     ],
 )
-def test_generate_symmetries(hamiltonian, num_qubits, res_generators, res_pauli_ops):
+def test_generate_symmetries(symbols, geometry, num_qubits, res_generators, res_pauli_ops):
     r"""Test that generate_symmetries returns the correct result."""
 
+    mol = qml.hf.Molecule(symbols, geometry)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
     generators, pauli_ops = generate_symmetries(hamiltonian, num_qubits)
+
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
 
@@ -360,150 +318,192 @@ def test_generate_symmetries(hamiltonian, num_qubits, res_generators, res_pauli_
 
 
 @pytest.mark.parametrize(
+    ("obs_a", "obs_b", "result"),
+    [
+        (
+            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
+            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
+            qml.Hamiltonian(np.array([1.0]), [qml.Identity(0)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)]
+            ),
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+            ),
+            qml.Hamiltonian(
+                np.array([-0.25j, 0.25j, -0.25j, 0.25]),
+                [qml.PauliY(0), qml.PauliY(1), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+            ),
+        ),
+    ],
+)
+def test_observable_mult(obs_a, obs_b, result):
+    r"""Test that observable_mult returns the correct result."""
+    o = _observable_mult(obs_a, obs_b)
+    assert o.compare(result)
+
+
+@pytest.mark.parametrize(
     ("hamiltonian", "result"),
     [
         (
             qml.Hamiltonian(
-                np.array(
-                    [
-                        -0.09886397,
-                        0.17119775,
-                        0.17119775,
-                        -0.22278593,
-                        -0.22278593,
-                        0.16862219,
-                        0.0453222,
-                        -0.0453222,
-                        -0.0453222,
-                        0.0453222,
-                        0.12054482,
-                        0.16586702,
-                        0.16586702,
-                        0.12054482,
-                        0.17434844,
-                    ]
-                ),
-                [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
             ),
-            -1.137270174,
+            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
         ),
         (
             qml.Hamiltonian(
-                np.array([-0.32871703, 0.18128881, 0.78796736]),
-                [qml.Identity(wires=[0]), qml.PauliX(wires=[0]), qml.PauliZ(wires=[0])],
+                np.array([0.5, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
             ),
+            qml.Hamiltonian([], []),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.0, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.25, 0.25, 0.25, -0.25]),
+                [
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                ],
+            ),
+            qml.Hamiltonian(
+                np.array([0.25, 0.25]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+        ),
+    ],
+)
+def test_simplify(hamiltonian, result):
+    r"""Test that simplify returns the correct hamiltonian."""
+    h = _simplify(hamiltonian)
+    assert h.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("generator", "paulix_ops", "result"),
+    [
+        (
+            [
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(0)]),
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(1)]),
+            ],
+            [qml.PauliX(0), qml.PauliX(1)],
+            qml.Hamiltonian(
+                np.array(
+                    [
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                    ]
+                ),
+                [
+                    qml.PauliZ(0) @ qml.PauliZ(1),
+                    qml.PauliZ(0) @ qml.PauliX(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliX(1),
+                ],
+            ),
+        ),
+    ],
+)
+def test_cliford(generator, paulix_ops, result):
+    r"""Test that clifford returns the correct operator."""
+    u = clifford(generator, paulix_ops)
+    assert u.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "generator", "paulix_ops", "paulix_sector", "ham_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
+            [1, -1, -1],
+            qml.Hamiltonian(
+                np.array([-0.3210344, 0.18092703, 0.79596785]),
+                [qml.Identity(0), qml.PauliX(0), qml.PauliZ(0)],
+            ),
+        ),
+    ],
+)
+def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_sector, ham_ref):
+    r"""Test that transform_hamiltonian returns the correct hamiltonian."""
+    mol = qml.hf.Molecule(symbols, geometry)
+    h = qml.hf.generate_hamiltonian(mol)()
+    ham_calc = transform_hamiltonian(h, generator, paulix_ops, paulix_sector)
+
+    # sort Hamiltonian terms and then compare with reference
+    sorted_terms = list(sorted(zip(ham_calc.terms[0], ham_calc.terms[1])))
+    for i, term in enumerate(sorted_terms):
+        assert np.allclose(term[0], ham_ref.terms[0][i])
+        assert term[1].compare(ham_ref.terms[1][i])
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "result"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             -1.137270174,
         ),
     ],
 )
-def test_sector_energy(hamiltonian, result):
+def test_sector_energy(symbols, geometry, result):
     r"""Test that _sector_energy returns the correct result."""
-
+    mol = qml.hf.Molecule(symbols, geometry)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
     energy = _sector_energy(hamiltonian)
     assert np.isclose(energy, result)
 
 
 @pytest.mark.parametrize(
-    ("hamiltonian", "generators", "pauli_x_ops", "result"),
+    ("symbols", "geometry", "generators", "pauli_x_ops", "result"),
     [
         (
-            qml.Hamiltonian(
-                np.array(
-                    [
-                        -0.09886397,
-                        0.17119775,
-                        0.17119775,
-                        -0.22278593,
-                        -0.22278593,
-                        0.16862219,
-                        0.0453222,
-                        -0.0453222,
-                        -0.0453222,
-                        0.0453222,
-                        0.12054482,
-                        0.16586702,
-                        0.16586702,
-                        0.12054482,
-                        0.17434844,
-                    ]
-                ),
-                [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-            ),
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
             ],
             [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
-            ((1, -1, -1), -1.137270174),
+            ([1, -1, -1], -1.137270174),
         ),
     ],
 )
 @pytest.mark.parametrize(("brute_force", "num_electrons"), [(True, 0), (False, 2)])
 def test_find_optimal_sector(
-    hamiltonian, generators, pauli_x_ops, brute_force, num_electrons, result
+    symbols, geometry, generators, pauli_x_ops, brute_force, num_electrons, result
 ):
     r"""Test that find_optimal_sector returns the correct result."""
+    mol = qml.hf.Molecule(symbols, geometry)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
 
     perm, energy = find_optimal_sector(
         hamiltonian, generators, pauli_x_ops, brute_force, num_electrons
     )
 
-    assert perm == result[0]
+    for sec in zip(perm, result[0]):
+        assert sec[0] == sec[1]
     assert np.isclose(energy, result[1])
