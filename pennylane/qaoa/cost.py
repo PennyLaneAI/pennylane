@@ -82,7 +82,7 @@ def edge_driver(graph, reward):
     See usage details for more information.
 
     Args:
-         graph (nx.Graph or nx.PyGraph): The graph on which the Hamiltonian is defined
+         graph (nx.Graph or rx.PyGraph): The graph on which the Hamiltonian is defined
          reward (list[str]): The list of two-bit bitstrings that are assigned a lower energy by the Hamiltonian
 
     Returns:

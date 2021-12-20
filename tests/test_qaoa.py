@@ -52,22 +52,9 @@ graph_rx.add_nodes_from([0, 1, 2])
 graph_rx.add_edges_from([(0, 1, ""), (1, 2, "")])
 
 non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
-
 non_consecutive_graph_rx = rx.PyGraph()
 non_consecutive_graph_rx.add_nodes_from([0, 1, 2, 3, 4])
 non_consecutive_graph_rx.add_edges_from([(0, 4, ""), (0, 2, ""), (4, 3, ""), (2, 1, "")])
-digraph_complete = nx.complete_graph(3).to_directed()
-
-complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
-for k, v in complete_edge_weight_data.items():
-    digraph_complete[k[0]][k[1]]["weight"] = v
-
-digraph_complete_rx = rx.generators.directed_mesh_graph(3, [0, 1, 2])
-complete_edge_weight_data = {
-    edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete_rx.edge_list()))
-}
-for k, v in complete_edge_weight_data.items():
-    digraph_complete_rx.update_edge(k[0], k[1], {"weight": v})
 
 g1 = Graph([(0, 1), (1, 2)])
 
@@ -87,11 +74,26 @@ b_rx.add_edges_from([(0, 1, ""), (1, 2, ""), (0, 2, "")])
 
 
 def decompose_hamiltonian(hamiltonian):
-
     coeffs = list(qml.math.toarray(hamiltonian.coeffs))
     ops = [i.name for i in hamiltonian.ops]
     wires = [i.wires for i in hamiltonian.ops]
     return [coeffs, ops, wires]
+
+
+def lollipop_graph_rx(mesh_nodes: int, path_nodes: int, to_directed: bool = False):
+    if to_directed:
+        g = rx.generators.directed_mesh_graph(weights=[*range(mesh_nodes)])
+    else:
+        g = rx.generators.mesh_graph(weights=[*range(mesh_nodes)])
+    if path_nodes < 1:
+        return g
+
+    for i in range(path_nodes):
+        g.add_node(mesh_nodes + i)
+        g.add_edges_from([(mesh_nodes + i - 1, mesh_nodes + i, "")])
+        if to_directed:
+            g.add_edges_from([(mesh_nodes + i, mesh_nodes + i - 1, "")])
+    return g
 
 
 def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
@@ -716,6 +718,17 @@ HAMILTONIANS = [
 EDGE_DRIVER = zip(GRAPHS, REWARDS, HAMILTONIANS)
 
 """GENERATES THE CASES TO TEST THE MAXIMUM WEIGHTED CYCLE PROBLEM"""
+digraph_complete = nx.complete_graph(3).to_directed()
+complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
+for k, v in complete_edge_weight_data.items():
+    digraph_complete[k[0]][k[1]]["weight"] = v
+
+digraph_complete_rx = rx.generators.directed_mesh_graph(3, [0, 1, 2])
+complete_edge_weight_data = {
+    edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete_rx.edge_list()))
+}
+for k, v in complete_edge_weight_data.items():
+    digraph_complete_rx.update_edge(k[0], k[1], {"weight": v})
 
 DIGRAPHS = [digraph_complete] * 2
 
@@ -1238,9 +1251,9 @@ class TestIntegration:
 class TestCycles:
     """Tests that ``cycle`` module functions are behaving correctly"""
 
-    def test_edges_to_wires(self):
+    @pytest.mark.parametrize("g", [nx.lollipop_graph(4, 1), lollipop_graph_rx(4, 1)])
+    def test_edges_to_wires(self, g):
         """Test that edges_to_wires returns the correct mapping"""
-        g = nx.lollipop_graph(4, 1)
         r = edges_to_wires(g)
 
         assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
@@ -1271,9 +1284,9 @@ class TestCycles:
             (3, 2): 11,
         }
 
-    def test_wires_to_edges(self):
+    @pytest.mark.parametrize("g", [nx.lollipop_graph(4, 1), lollipop_graph_rx(4, 1)])
+    def test_wires_to_edges(self, g):
         """Test that wires_to_edges returns the correct mapping"""
-        g = nx.lollipop_graph(4, 1)
         r = wires_to_edges(g)
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
@@ -1442,9 +1455,9 @@ class TestCycles:
         with pytest.raises(ValueError, match="Input graph must be a nx.DiGraph or rx.PyDiGraph"):
             cycle_mixer(g)
 
-    def test_matrix(self):
+    @pytest.mark.parametrize("g", [nx.lollipop_graph(3, 1), lollipop_graph_rx(3, 1)])
+    def test_matrix(self, g):
         """Test that the matrix function works as expected on a fixed example"""
-        g = nx.lollipop_graph(3, 1)
         h = qml.qaoa.bit_flip_mixer(g, 0)
 
         mat = matrix(h, 4)
@@ -1500,9 +1513,11 @@ class TestCycles:
 
         assert np.allclose(mat.toarray(), mat_expected)
 
-    def test_edges_to_wires_directed(self):
+    @pytest.mark.parametrize(
+        "g", [nx.lollipop_graph(4, 1).to_directed(), lollipop_graph_rx(4, 1, to_directed=True)]
+    )
+    def test_edges_to_wires_directed(self, g):
         """Test that edges_to_wires returns the correct mapping on a directed graph"""
-        g = nx.lollipop_graph(4, 1).to_directed()
         r = edges_to_wires(g)
 
         assert r == {
@@ -1522,9 +1537,11 @@ class TestCycles:
             (4, 3): 13,
         }
 
-    def test_wires_to_edges_directed(self):
+    @pytest.mark.parametrize(
+        "g", [nx.lollipop_graph(4, 1).to_directed(), lollipop_graph_rx(4, 1, to_directed=True)]
+    )
+    def test_wires_to_edges_directed(self, g):
         """Test that wires_to_edges returns the correct mapping on a directed graph"""
-        g = nx.lollipop_graph(4, 1).to_directed()
         r = wires_to_edges(g)
 
         assert r == {
@@ -1580,13 +1597,20 @@ class TestCycles:
         with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.Py\(Di\)Graph"):
             loss_hamiltonian([(0, 1), (1, 2), (0, 2)])
 
-    def test_loss_hamiltonian_incomplete(self):
+    @pytest.mark.parametrize(
+        "g", [nx.lollipop_graph(4, 1).to_directed(), lollipop_graph_rx(4, 1, to_directed=True)]
+    )
+    def test_loss_hamiltonian_incomplete(self, g):
         """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 4-node incomplete digraph"""
-        g = nx.lollipop_graph(4, 1).to_directed()
-        edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
-        for k, v in edge_weight_data.items():
-            g[k[0]][k[1]]["weight"] = v
+        if isinstance(g, rx.PyDiGraph):
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
+            for k, v in edge_weight_data.items():
+                g.update_edge(k[0], k[1], {"weight": v})
+        else:
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
+            for k, v in edge_weight_data.items():
+                g[k[0]][k[1]]["weight"] = v
         h = loss_hamiltonian(g)
 
         expected_ops = [
@@ -1656,7 +1680,7 @@ class TestCycles:
     def test_missing_edge_weight_data_without_weights(self):
         """Test graphs with no edge weight data raises `KeyError`"""
         g = rx.generators.mesh_graph(3, [0, 1, 2])
-        with pytest.raises(TypeError, match="Edges do not contain weight data"):
+        with pytest.raises(TypeError, match="does not contain weight data"):
             loss_hamiltonian(g)
 
     def test_square_hamiltonian_terms(self):

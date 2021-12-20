@@ -386,8 +386,8 @@ def loss_hamiltonian(graph) -> Hamiltonian:
             weight = edge_data[2]["weight"]
         except KeyError as e:
             raise KeyError(f"Edge {edge} does not contain weight data") from e
-        except TypeError:
-            raise TypeError(f"Edges do not contain weight data")
+        except TypeError as e:
+            raise TypeError(f"Edge {edge} does not contain weight data") from e
 
         coeffs.append(np.log(weight))
         ops.append(qml.PauliZ(wires=edges_to_qubits[get_nvalues(edge)]))
