@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import Sample
+from pennylane.operation import NoDecompositionError, Sample
 
 from .unwrap import UnwrapTape
 
@@ -193,18 +193,13 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
             if isinstance(obj, (qml.operation.Operation, qml.measure.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
-                # try:
-                expanded_obj = obj.expand()
-                if expanded_obj is None:
-                    getattr(new_tape, queue).append(obj)
-                    continue
-                else:
-                    obj = expanded_obj
-                # except NotImplementedError:
+                try:
+                    obj = obj.expand()
+                except NoDecompositionError:
                 # Object does not define an expansion; treat this as
                 # a stopping condition.
-                #    getattr(new_tape, queue).append(obj)
-                #    continue
+                    getattr(new_tape, queue).append(obj)
+                    continue
 
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)

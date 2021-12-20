@@ -22,7 +22,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.operation import Expectation, NoDecompositionError, Observable, Probability, Sample, State, Variance
 from pennylane.wires import Wires
 
 
@@ -83,10 +83,10 @@ class MeasurementProcess:
         Returns:
             List[.Operation]: the operations that diagonalize the observables
         """
-        expansion = self.expand()
-        if expansion is None:
+        try:
+            return self.expand().operations
+        except NoDecompositionError:
             return []
-        return expansion.operations
 
     def __repr__(self):
         """Representation of this class."""
@@ -177,7 +177,7 @@ class MeasurementProcess:
         None
         """
         if self.obs is None:
-            return None
+            raise qml.operation.NoDecompositionError
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 

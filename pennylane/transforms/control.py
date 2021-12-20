@@ -18,7 +18,7 @@ from functools import wraps
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, get_active_tape
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import NoDecompositionError, Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
 
@@ -50,8 +50,9 @@ def expand_with_control(tape, control_wire):
                 # Attempt to decompose the operation and apply
                 # controls to each gate in the decomposition.
                 with new_tape.stop_recording():
-                    tmp_tape = op.expand()
-                    if tmp_tape is None:
+                    try:
+                        tmp_tape = op.expand()
+                    except NoDecompositionError:
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
                                 op.matrix, control_wires=control_wire, wires=op.wires

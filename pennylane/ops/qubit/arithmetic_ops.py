@@ -119,21 +119,21 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Determine ``QubitCarry``'s decomposition for specified parameters, wires,
+        """Compute the decomposition for specified parameters, wires,
         and hyperparameters. The decomposition defines an Operator as a product of
         more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.QubitCarry.decomposition`.
 
         Args:
             wires (Iterable[Any], Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the Operator into lower level operations
 
         **Example:**
 
@@ -141,11 +141,11 @@ class QubitCarry(Operation):
         (Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4]))
 
         """
-        decomp_ops = (
+        decomp_ops = [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.Toffoli(wires=[wires[0], wires[2], wires[3]]),
-        )
+        ]
         return decomp_ops
 
 

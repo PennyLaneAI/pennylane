@@ -76,7 +76,29 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_decomposition(wires=None):
-        return tuple()
+        """Compute the decomposition for the specified wire.
+        The decomposition defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance. 
+
+        See also :meth:`~.Identity.decomposition`.
+
+        Args:
+            wires (Any, Wires): A single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.Identity.compute_decomposition(wires=0)
+        []
+
+        """
+        return []
 
     @staticmethod
     def identity_op(*params):

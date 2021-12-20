@@ -23,7 +23,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 import pennylane.queuing
-from pennylane.operation import Tensor, operation_derivative, Operator
+from pennylane.operation import NoDecompositionError, Tensor, operation_derivative, Operator
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.wires import Wires
@@ -1064,10 +1064,12 @@ class TestDecomposition:
         class MyOp(Operator):
             num_wires = 1
 
-        assert MyOp.compute_decomposition() is None
+        with pytest.raises(NoDecompositionError):
+            MyOp.compute_decomposition()
 
-        op = MyOp(wires=2)
-        assert op.compute_decomposition() is None
+        op = MyOp(wires=1)
+        with pytest.raises(NoDecompositionError):
+            op.compute_decomposition()
 
     def test_decomposition_default(self):
         """Test None is default for decomposition."""
@@ -1076,7 +1078,8 @@ class TestDecomposition:
             num_wires = 1
 
         op = MyOp(wires=1)
-        assert op.decomposition() is None
+        with pytest.raises(NoDecompositionError):
+            op.decomposition()
 
 
 class TestChannel:

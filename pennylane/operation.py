@@ -129,6 +129,15 @@ from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
+
+# =============================================================================
+# Errors
+# =============================================================================
+
+class NoDecompositionError(Exception):
+    """Raised when an Operator does not have a decomposition defined."""
+    pass
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -571,7 +580,7 @@ class Operator(abc.ABC):
             not be overwritten.
 
         Returns:
-            tuple[Operator]: The decomposition of the Operator into lower level operations
+            list[Operator]: The decomposition of the Operator into lower level operations
 
         **Example:**
 
@@ -589,17 +598,15 @@ class Operator(abc.ABC):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
-
-        Returns ``None`` is this Operator does not define its decomposition.
+        ``compute_decomposition`` is a static method and can provide the decomposition of an
+        operator without a specific instance. 
+        See also :meth:`~.operation.Operator.decomposition`.
 
         .. note::
-            This method gets overwritten by subclasses and helps define the ``decomposition`` and
-            ``expand`` methods. By default, this method should always take the Operator's
-            parameters, wires, and hyperparameters as inputs, even if the decomposition is
-            independent of these values.
+            This method gets overwritten by subclasses, and the ``decomposition`` and
+            ``expand`` methods rely on its definition. By default, this method should always
+            take the Operator's parameters, wires, and hyperparameters as inputs, even if the
+            decomposition is independent of these values.
 
         Args:
             *params: Variable length argument list.  Should match the ``parameters`` attribute
@@ -607,10 +614,10 @@ class Operator(abc.ABC):
         Keyword Args:
             wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
             **hyperparameters: Variable length keyword arguments.  Should match the
-            ``hyperparameters`` attribute.
+                ``hyperparameters`` attribute.
 
         Returns:
-            tuple[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the Operator into lower level operations
 
         **Example:**
 
@@ -618,7 +625,7 @@ class Operator(abc.ABC):
         (CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]))
 
         """
-        return None
+        raise NoDecompositionError
 
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, **hyperparams):
@@ -877,10 +884,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            d = self.decomposition()
-
-        if d is None:
-            return None
+            self.decomposition()
 
         if not self.data:
             # original operation has no trainable parameters
