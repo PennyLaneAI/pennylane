@@ -266,29 +266,29 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``PhaseShift``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.PhaseShift.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
             wires (Any, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
-        (RZ(1.234, wires=[0]),)
+        [RZ(1.234, wires=[0])]
 
         """
-        return (RZ(phi, wires=wires),)
+        return [RZ(phi, wires=wires)]
 
     def adjoint(self):
         return PhaseShift(-self.data[0], wires=self.wires)
@@ -363,39 +363,40 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``ControlledPhaseShift``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+
+        See also :meth:`~.ControlledPhaseShift.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.ControlledPhaseShift.compute_decomposition(1.234, wires=(0,1))
-        (PhaseShift(0.617, wires=[0]),
+        [PhaseShift(0.617, wires=[0]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.617, wires=[1]),
         CNOT(wires=[0, 1]),
-        PhaseShift(0.617, wires=[1]))
+        PhaseShift(0.617, wires=[1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             qml.PhaseShift(phi / 2, wires=wires[0]),
             qml.CNOT(wires=wires),
             qml.PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             qml.PhaseShift(phi / 2, wires=wires[1]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -437,7 +438,7 @@ class Rot(Operation):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
     """
     num_wires = 1
     grad_method = "A"
@@ -481,35 +482,35 @@ class Rot(Operation):
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
-        """Determine ``PhaseShift``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.Rot.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
             theta (float): rotation angle :math:`\theta`
             omega (float): rotation angle :math:`\omega`
-            wires (Sequence[int] or int): the wire the operation acts on
+            wires (Any, Wires): the wire the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.Rot.compute_decomposition(1.2, 2.3, 3.4, wires=0)
-        (RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0]))
+        [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
             RZ(omega, wires=wires),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -604,33 +605,33 @@ class MultiRZ(Operation):
 
     @staticmethod
     def compute_decomposition(theta, wires):
-        """Determine ``MultiRZ``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.MultiRZ.decomposition`.
 
         Args:
             theta (float): rotation angle :math:`\theta`
-            wires (Sequence[int] or int): the wires the operation acts on
+            wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.MultiRZ.compute_decomposition(1.2, wires=(0,1))
-        (CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0]))
+        [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
 
         """
         ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
         ops.append(RZ(theta, wires=wires[0]))
         ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
 
-        return tuple(ops)
+        return ops
 
     def adjoint(self):
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -818,31 +819,31 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_decomposition(theta, pauli_word, wires):
-        """Determine ``PauliRot``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.PauliRot.decomposition`.
 
         Args:
             theta (float): rotation angle :math:`\theta`
             pauli_word (string): the Pauli word defining the rotation
-            wires (Sequence[int] or int): the wire the operation acts on
+            wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
-        (Hadamard(wires=[0]),
+        [Hadamard(wires=[0]),
         RX(1.5707963267948966, wires=[1]),
         MultiRZ(1.2, wires=[0, 1]),
         Hadamard(wires=[0]),
-        RX(-1.5707963267948966, wires=[1]))
+        RX(-1.5707963267948966, wires=[1])]
 
         """
         if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
@@ -850,7 +851,7 @@ class PauliRot(Operation):
 
         # Check for identity and do nothing
         if pauli_word == "I" * len(wires):
-            return tuple()
+            return []
 
         active_wires, active_gates = zip(
             *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
@@ -870,7 +871,7 @@ class PauliRot(Operation):
                 ops.append(Hadamard(wires=[wire]))
             elif gate == "Y":
                 ops.append(RX(-np.pi / 2, wires=[wire]))
-        return tuple(ops)
+        return ops
 
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
@@ -965,41 +966,41 @@ class CRX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``CRX``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.CRot.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Sequence[int]): the wire the operation acts on
+            wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.CRX.compute_decomposition(1.2, wires=(0,1))
-        (RZ(1.5707963267948966, wires=[1]),
+        [RZ(1.5707963267948966, wires=[1]),
         RY(0.6, wires=[1]),
         CNOT(wires=[0, 1]),
         RY(-0.6, wires=[1]),
         CNOT(wires=[0, 1]),
-        RZ(-1.5707963267948966, wires=[1]))
+        RZ(-1.5707963267948966, wires=[1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             RZ(np.pi / 2, wires=wires[1]),
             RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RZ(-np.pi / 2, wires=wires[1]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1084,37 +1085,37 @@ class CRY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``CRY``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.CRY.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.CRY.compute_decomposition(1.2, wires=(0,1))
-        (RY(0.6, wires=[1]),
+        [RY(0.6, wires=[1]),
         CNOT(wires=[0, 1]),
         RY(-0.6, wires=[1]),
-        CNOT(wires=[0, 1]))
+        CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1204,37 +1205,37 @@ class CRZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``CRZ``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.CRZ.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.CRZ.compute_decomposition(1.2, wires=(0,1))
-        (PhaseShift(0.6, wires=[1]),
+        [PhaseShift(0.6, wires=[1]),
         CNOT(wires=[0, 1]),
         PhaseShift(-0.6, wires=[1]),
-        CNOT(wires=[0, 1]))
+        CNOT(wires=[0, 1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             PhaseShift(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             PhaseShift(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1333,37 +1334,37 @@ class CRot(Operation):
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
-        """Determine ``CRot``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.CRot.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
             theta (float): rotation angle :math:`\theta`
             omega (float): rotation angle :math:`\omega`
-            wires (Sequence[int]): the wire the operation acts on
+            wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
-        (RZ(-1.1, wires=[1]),
+        [RZ(-1.1, wires=[1]),
         CNOT(wires=[0, 1]),
         RZ(-2.3, wires=[1]),
         RY(-1.15, wires=[1]),
         CNOT(wires=[0, 1]),
         RY(1.15, wires=[1]),
-        RZ(3.4, wires=[1]))
+        RZ(3.4, wires=[1])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             RZ((phi - omega) / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RZ(-(phi + omega) / 2, wires=wires[1]),
@@ -1371,7 +1372,7 @@ class CRot(Operation):
             qml.CNOT(wires=wires),
             RY(theta / 2, wires=wires[1]),
             RZ(omega, wires=wires[1]),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1430,29 +1431,29 @@ class U1(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``U1``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.U1.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Any, Wires): Wire that the operator acts on.
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.U1.compute_decomposition(1.234, wires=0)
-        (PhaseShift(1.234, wires=[0]),)
+        [PhaseShift(1.234, wires=[0])]
 
         """
-        return (PhaseShift(phi, wires=wires),)
+        return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self):
         return U1(-self.data[0], wires=self.wires)
@@ -1519,36 +1520,36 @@ class U2(Operation):
 
     @staticmethod
     def compute_decomposition(phi, lam, wires):
-        """Determine ``U2``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameters and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.U2.decomposition`.
 
         Args:
             phi (float): azimuthal angle :math:`\phi`
             lambda (float): quantum phase :math:`\lambda`
-            wires (Sequence[int] or int): the subsystem the gate acts on
+            wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.U2.compute_decomposition(1.23, 2.34, wires=0)
-        (Rot(2.34, 1.5707963267948966, -2.34, wires=[0]),
+        [Rot(2.34, 1.5707963267948966, -2.34, wires=[0]),
         PhaseShift(2.34, wires=[0]),
-        PhaseShift(1.23, wires=[0]))
+        PhaseShift(1.23, wires=[0])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             Rot(lam, np.pi / 2, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
             PhaseShift(phi, wires=wires),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1628,37 +1629,37 @@ class U3(Operation):
 
     @staticmethod
     def compute_decomposition(theta, phi, lam, wires):
-        """Determine ``PhaseShift``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameters and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.U3.decomposition`.
 
         Args:
             theta (float): polar angle :math:`\theta`
             phi (float): azimuthal angle :math:`\phi`
             lam (float): quantum phase :math:`\lambda`
-            wires (Sequence[int] or int): the subsystem the gate acts on
+            wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.U3.compute_decomposition(1.23, 2.34, 3.45, wires=0)
-        (Rot(3.45, 1.23, -3.45, wires=[0]),
+        [Rot(3.45, 1.23, -3.45, wires=[0]),
         PhaseShift(3.45, wires=[0]),
-        PhaseShift(2.34, wires=[0]))
+        PhaseShift(2.34, wires=[0])]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             Rot(lam, theta, -lam, wires=wires),
             PhaseShift(lam, wires=wires),
             PhaseShift(phi, wires=wires),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1718,33 +1719,33 @@ class IsingXX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``IsingXX``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.IsingXX.decomposition`.
 
         Args:
             phi (float): the phase angle
-            wires (int): the subsystem the gate acts on
+            wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.IsingXX.compute_decomposition(1.23, wires=(0,1))
-        (CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]]
 
         """
-        decomp_ops = (
+        decomp_ops = [
             qml.CNOT(wires=wires),
             RX(phi, wires=[wires[0]]),
             qml.CNOT(wires=wires),
-        )
+        ]
         return decomp_ops
 
     def adjoint(self):
@@ -1786,33 +1787,33 @@ class IsingYY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``IsingYY``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.IsingYY.decomposition`.
 
         Args:
             phi (float): the phase angle
-            wires (Any, Wires): the subsystem the gate acts on
+            wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.IsingYY.compute_decomposition(1.23, wires=(0,1))
-        (CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1]))
+        [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
 
         """
-        return (
+        return [
             qml.CY(wires=wires),
             qml.RY(phi, wires=[wires[0]]),
             qml.CY(wires=wires),
-        )
+        ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1868,33 +1869,33 @@ class IsingZZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        """Determine ``IsingZZ``'s decomposition for specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance. The instance method ``decomposition`` uses
-        this method and the instance's variables.
+        operator without creating a specific instance.
+        See also :meth:`~.IsingZZ.decomposition`.
 
         Args:
             phi (float): the phase angle
-            wires (int): the subsystem the gate acts on
+            wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
-            tuple[Operator]: decomposition into lower level operations
+            list[Operator]: decomposition into lower level operations
 
         **Example:**
 
         >>> qml.IsingZZ.compute_decomposition(1.23, wires=0)
-        (CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1]))
+        [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
 
         """
-        return (
+        return [
             qml.CNOT(wires=wires),
             qml.RZ(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
-        )
+        ]
 
     @classmethod
     def _matrix(cls, *params):

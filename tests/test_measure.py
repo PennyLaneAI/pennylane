@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the measure module"""
+from _pytest.nodes import Node
 import pytest
 import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
+from pennylane.operation import NoDecompositionError
 
 from pennylane.queuing import AnnotatedQueue
 from pennylane.measure import (
@@ -546,9 +548,8 @@ class TestExpansion:
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
-        m = MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1]))
-
-        assert m.expand() is None
+        with pytest.raises(NoDecompositionError):
+            MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1])).expand()
 
 
 class TestDiagonalizingGates:

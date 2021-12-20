@@ -91,7 +91,7 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(U, wires):
-        """Compute the decomposition for specified matrix and wires. The decomposition defines an Operator 
+        r"""Compute the decomposition for specified matrix and wires. The decomposition defines an Operator 
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -316,7 +316,7 @@ class DiagonalQubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(D, wires):
-        """Determine the ``DiagonalQubitUnitary``'s decomposition for specified parameters, wires,
+        r"""Determine the ``DiagonalQubitUnitary``'s decomposition for specified parameters, wires,
         and hyperparameters. The decomposition defines an Operator as a product of
         more fundamental gates:
 

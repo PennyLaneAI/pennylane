@@ -21,8 +21,8 @@ import numpy as np
 def test_decomposition():
     """Test the decomposition of the identity operation."""
 
-    assert Identity.compute_decomposition(wires=0) == tuple()
-    assert Identity(wires=0).decomposition() == tuple()
+    assert Identity.compute_decomposition(wires=0) == []
+    assert Identity(wires=0).decomposition() == []
 
 
 def test_identity_eigvals(tol):

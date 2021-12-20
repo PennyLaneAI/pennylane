@@ -568,7 +568,7 @@ class Operator(abc.ABC):
         return self._hyperparameters
 
     def decomposition(self):
-        """The decomposition of the Operator into a product of more fundamental gates.
+        r"""The decomposition of the Operator into a product of more fundamental gates.
 
         .. math:: O = O_1 O_2 \dots O_n
 
@@ -591,7 +591,7 @@ class Operator(abc.ABC):
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
-        """Determine the Operator's decomposition for specified parameters, wires,
+        r"""Determine the Operator's decomposition for specified parameters, wires,
         and hyperparameters. The decomposition defines an Operator as a product of
         more fundamental gates:
 
