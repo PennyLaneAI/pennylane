@@ -591,7 +591,7 @@ class TestVQE:
         """Test that the metric tensor can be calculated."""
 
         dev = qml.device("default.qubit", wires=3)
-        p = np.array([1.0, 1.0, 1.0])
+        p = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
         def ansatz(params, **kwargs):
             qml.RX(params[0], wires=0)
@@ -603,7 +603,7 @@ class TestVQE:
         qnodes = qml.ExpvalCost(ansatz, h, dev)
         mt = qml.metric_tensor(qnodes, approx=approx)(p)
         assert mt.shape == (3, 3)
-        assert isinstance(mt, np.ndarray)
+        assert isinstance(mt, pnp.ndarray)
 
     def test_multiple_devices(self, mocker):
         """Test that passing multiple devices to ExpvalCost works correctly"""
@@ -618,6 +618,7 @@ class TestVQE:
         qnodes = qml.ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
         np.random.seed(1967)
         w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=3, n_wires=2))
+        w = pnp.array(w, requires_grad=True)
 
         res = qnodes(w)
 
