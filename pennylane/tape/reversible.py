@@ -184,12 +184,11 @@ class ReversibleTape(JacobianTape):
         # create a new circuit which rewinds the pre-measurement state to just after `op`,
         # applies the generator of `op`, and then plays forward back to
         # pre-measurement step
-        wires = op.wires
         op_idx = self.operations.index(op)
         between_ops = self.operations[op_idx + 1 :]
 
         if op.name == "Rot":
-            decomp = list(op.decomposition())
+            decomp = op.decomposition()
             generator, multiplier = qml.utils.get_generator(decomp[p_idx])
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:
