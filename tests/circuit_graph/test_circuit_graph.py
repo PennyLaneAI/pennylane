@@ -192,6 +192,26 @@ class TestCircuitGraph:
         descendants = circuit.descendants([queue[6]])
         assert descendants == set([queue[8]])
 
+    def test_in_topological_order_example(self, ops, obs):
+        """
+        Test ``_in_topological_order`` method returns the expected result.
+        """
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+
+        to = circuit._in_topological_order(ops)
+
+        to_expected = [
+            qml.RZ(0.35, wires=[2]),
+            qml.Hadamard(wires=[2]),
+            qml.RY(0.35, wires=[1]),
+            qml.RX(0.43, wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PauliX(wires=[1]),
+            qml.CNOT(wires=[2, 0]),
+        ]
+
+        assert str(to) == str(to_expected)
+
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
 

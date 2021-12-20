@@ -56,15 +56,15 @@ non_consecutive_graph = Graph([(0, 4), (3, 4), (2, 1), (2, 0)])
 non_consecutive_graph_rx = rx.PyGraph()
 non_consecutive_graph_rx.add_nodes_from([0, 1, 2, 3, 4])
 non_consecutive_graph_rx.add_edges_from([(0, 4, ""), (0, 2, ""), (4, 3, ""), (2, 1, "")])
-
 digraph_complete = nx.complete_graph(3).to_directed()
+
 complete_edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(digraph_complete.edges)}
 for k, v in complete_edge_weight_data.items():
     digraph_complete[k[0]][k[1]]["weight"] = v
 
-digraph_complete_rx = rx.generators.directed_mesh_graph(3)
+digraph_complete_rx = rx.generators.directed_mesh_graph(3, [0, 1, 2])
 complete_edge_weight_data = {
-    edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete.edges()))
+    edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(digraph_complete_rx.edge_list()))
 }
 for k, v in complete_edge_weight_data.items():
     digraph_complete_rx.update_edge(k[0], k[1], {"weight": v})
@@ -1245,6 +1245,12 @@ class TestCycles:
 
         assert r == {(0, 1): 0, (0, 2): 1, (0, 3): 2, (1, 2): 3, (1, 3): 4, (2, 3): 5, (3, 4): 6}
 
+    def test_edges_to_wires_error(self):
+        """Test that edges_to_wires raises ValueError"""
+        g = [1, 1, 1, 1]
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph, rx.Py\(Di\)Graph"):
+            edges_to_wires(g)
+
     def test_edges_to_wires_rx(self):
         """Test that edges_to_wires returns the correct mapping"""
         g = rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])
@@ -1271,6 +1277,12 @@ class TestCycles:
         r = wires_to_edges(g)
 
         assert r == {0: (0, 1), 1: (0, 2), 2: (0, 3), 3: (1, 2), 4: (1, 3), 5: (2, 3), 6: (3, 4)}
+
+    def test_wires_to_edges_error(self):
+        """Test that wires_to_edges raises ValueError"""
+        g = [1, 1, 1, 1]
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.Py\(Di\)Graph"):
+            wires_to_edges(g)
 
     def test_wires_to_edges_rx(self):
         """Test that wires_to_edges returns the correct mapping"""
@@ -1319,10 +1331,13 @@ class TestCycles:
         assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
         assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
 
-    def test_partial_cycle_mixer_incomplete(self):
+    @pytest.mark.parametrize(
+        "g",
+        [nx.complete_graph(4).to_directed(), rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])],
+    )
+    def test_partial_cycle_mixer_incomplete(self, g):
         """Test if the _partial_cycle_mixer function returns the expected Hamiltonian for a fixed
         example"""
-        g = nx.complete_graph(4).to_directed()
         g.remove_edge(2, 1)  # remove an egde to make graph incomplete
         edge = (0, 1)
 
@@ -1340,9 +1355,19 @@ class TestCycles:
         assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
         assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
 
+    @pytest.mark.parametrize("g", [nx.complete_graph(4), rx.generators.mesh_graph(4, [0, 1, 2, 3])])
+    def test_partial_cycle_mixer_error(self, g):
+        """Test if the _partial_cycle_mixer raises ValueError"""
+        g.remove_edge(2, 1)  # remove an egde to make graph incomplete
+        edge = (0, 1)
+
+        # Find Hamiltonian and its matrix representation
+        with pytest.raises(ValueError, match="Input graph must be a nx.DiGraph or rx.PyDiGraph"):
+            _partial_cycle_mixer(g, edge)
+
     @pytest.mark.parametrize(
         "g",
-        [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2, 3])],
+        [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])],
     )
     def test_cycle_mixer(self, g):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
@@ -1406,6 +1431,16 @@ class TestCycles:
             column = h_matrix_e[:, indx]
             destination_indxs = set(np.argwhere(column != 0).flatten().tolist())
             assert destination_indxs.issubset(invalid_bitstrings_indx)
+
+    @pytest.mark.parametrize(
+        "g",
+        [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])],
+    )
+    def test_cycle_mixer_error(self, g):
+        """Test if the cycle_mixer raises ValueError"""
+        # Find Hamiltonian and its matrix representation
+        with pytest.raises(ValueError, match="Input graph must be a nx.DiGraph or rx.PyDiGraph"):
+            cycle_mixer(g)
 
     def test_matrix(self):
         """Test that the matrix function works as expected on a fixed example"""
@@ -1516,8 +1551,8 @@ class TestCycles:
         """Test if the loss_hamiltonian function returns the expected result on a
         manually-calculated example of a 3-node complete digraph"""
         if isinstance(g, rx.PyDiGraph):
-            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges())}
-            for k, v in complete_edge_weight_data.items():
+            edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(sorted(g.edge_list()))}
+            for k, v in edge_weight_data.items():
                 g.update_edge(k[0], k[1], {"weight": v})
         else:
             edge_weight_data = {edge: (i + 1) * 0.5 for i, edge in enumerate(g.edges)}
@@ -1539,6 +1574,11 @@ class TestCycles:
         assert np.allclose(expected_coeffs, h.coeffs)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
         assert all([type(op) is type(exp) for op, exp in zip(h.ops, expected_ops)])
+
+    def test_loss_hamiltonian_error(self):
+        """Test if the loss_hamiltonian function raises ValueError"""
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.Graph or rx.Py\(Di\)Graph"):
+            loss_hamiltonian([(0, 1), (1, 2), (0, 2)])
 
     def test_loss_hamiltonian_incomplete(self):
         """Test if the loss_hamiltonian function returns the expected result on a
@@ -1611,6 +1651,12 @@ class TestCycles:
         """Test graphs with no edge weight data raises `KeyError`"""
         g = nx.complete_graph(3).to_directed()
         with pytest.raises(KeyError, match="does not contain weight data"):
+            loss_hamiltonian(g)
+
+    def test_missing_edge_weight_data_without_weights(self):
+        """Test graphs with no edge weight data raises `KeyError`"""
+        g = rx.generators.mesh_graph(3, [0, 1, 2])
+        with pytest.raises(TypeError, match="Edges do not contain weight data"):
             loss_hamiltonian(g)
 
     def test_square_hamiltonian_terms(self):
@@ -1688,6 +1734,12 @@ class TestCycles:
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
 
+    @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
+    def test_inner_out_flow_constraint_hamiltonian_error(self, g):
+        """Test if the _inner_out_flow_constraint_hamiltonian function raises ValueError"""
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.DiGraph or rx.PyDiGraph"):
+            _inner_out_flow_constraint_hamiltonian(g, 0)
+
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
@@ -1711,6 +1763,12 @@ class TestCycles:
         for i, expected_op in enumerate(expected_ops):
             assert str(h.ops[i]) == str(expected_op)
         assert all([op.wires == exp.wires for op, exp in zip(h.ops, expected_ops)])
+
+    @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
+    def test_inner_net_flow_constraint_hamiltonian_error(self, g):
+        """Test if the _inner_net_flow_constraint_hamiltonian function returns raises ValueError"""
+        with pytest.raises(ValueError, match=r"Input graph must be a nx.DiGraph or rx.PyDiGraph"):
+            _inner_net_flow_constraint_hamiltonian(g, 0)
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
@@ -1804,9 +1862,8 @@ class TestCycles:
     @pytest.mark.parametrize("g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])])
     def test_out_flow_constraint_undirected_raises_error(self, g):
         """Test `out_flow_constraint` raises ValueError if input graph is not directed"""
-
         with pytest.raises(ValueError):
-            h = out_flow_constraint(g)
+            out_flow_constraint(g)
 
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
