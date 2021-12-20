@@ -122,7 +122,7 @@ class Hermitian(Observable):
         return self.eigendecomposition["eigval"]
 
     @staticmethod
-    def compute_diagonalizing_gates(eigenvectors, wires):
+    def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
         """Diagonalizing gates of this operator.
 
         Args:
@@ -335,7 +335,9 @@ class Projector(Observable):
         return m
 
     @staticmethod
-    def compute_diagonalizing_gates(basis_state, wires):
+    def compute_diagonalizing_gates(
+        basis_state, wires
+    ):  # pylint: disable=arguments-differ,unused-argument
         """Diagonalizing gates of this operator.
 
         Args:
