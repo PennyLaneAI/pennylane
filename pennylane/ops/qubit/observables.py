@@ -276,7 +276,9 @@ class Projector(Observable):
         return m
 
     @staticmethod
-    def compute_diagonalizing_gates(basis_state, wires):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(
+        basis_state, wires
+    ):  # pylint: disable=arguments-differ,unused-argument
         """Diagonalizing gates of this operator.
 
         Args:
