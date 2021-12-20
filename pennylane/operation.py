@@ -394,9 +394,8 @@ class Operator(abc.ABC):
         """int: returns an integer hash uniquely representing the operator"""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
-    # pylint:disable=unused-argument
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
         """Canonical matrix of this operator in the computational basis.
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -759,8 +758,7 @@ class Operator(abc.ABC):
         """
         return None
 
-    # pylint:disable=no-self-use
-    def diagonalizing_gates(self):
+    def diagonalizing_gates(self):  # pylint:disable=no-self-use
         r"""Defines a partial representation of this operator via
         its eigendecomposition.
 

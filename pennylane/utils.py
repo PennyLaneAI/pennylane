@@ -305,7 +305,13 @@ def pauli_eigs(n):
 
 
 def expand(matrix, original_wires, expanded_wires):
-    r"""Expand a an operator matrix to more wires.
+    r"""Expand an operator matrix to more wires.
+
+    .. note::
+
+        This function has essentially the same behaviour as :func:`.operation.expand_matrix`, but is not
+        fully differentiable.
+
 
     Args:
         matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
