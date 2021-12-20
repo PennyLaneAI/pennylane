@@ -1578,7 +1578,7 @@ class Barrier(Operation):
         ``Barrier`` decomposes into an empty list for all arguments.
 
         Args:
-            wires (Any, Wires): Wire that the operator acts on.
+            wires (Iterable, Wires): Wires that the operator acts on.
             only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
 
         Returns:
