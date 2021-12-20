@@ -146,7 +146,7 @@ class QuantumPhaseEstimation(Operation):
 
         return tape
 
-    def adjoint(self):
+    def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = QuantumPhaseEstimation(
             *self.parameters, target_wires=self.target_wires, estimation_wires=self.estimation_wires
         )
