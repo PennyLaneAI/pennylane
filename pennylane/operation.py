@@ -115,6 +115,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     the finite-difference method of gradient computation.
 """
 import abc
+from collections.abc import Sequence
 import copy
 import itertools
 import functools
@@ -221,6 +222,90 @@ def expand_matrix(base_matrix, wires, wire_order):
     mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
 
     return mat
+
+
+class OperatorData:
+    """Representation of potentially trainable operator data.
+
+    Args:
+        *parameters (tensor_like): numeric tensor-like objects (including
+            NumPy arrays, floats, lists, as well as TensorFlow/Torch/JAX tensors)
+            that may be used to represent trainable data of an operation.
+
+    **Example**
+
+    >>> p = OperatorData(torch.tensor([0.1, 0.5]), np.array(1.0), [0.6, 0.2])
+    <OperatorData: [tensor(0.1000), tensor(0.5000), tensor(1., requires_grad=True), 0.6, 0.2]>
+
+    The original parameters can be extracted via :attr:`.parameters`:
+
+    >>> p.parameters()
+    [tensor([0.1000, 0.5000]), tensor(1., requires_grad=True), [0.6, 0.2]]
+
+    Alternatively, we can extract the internal data representation used
+    by PennyLane, a list of scalars:
+
+    >>> p.data()
+    [tensor(0.1000), tensor(0.5000), tensor(1., requires_grad=True), 0.6, 0.2]
+
+    Modifying the class directly by indexing into the data will retain consistency:
+
+    >>> p[0] = torch.tensor(-0.65)
+    >>> p.parameters()
+    [tensor([-0.6500,  0.5000]), tensor(1., requires_grad=True), array([0.6, 0.2])]
+    """
+
+    def __init__(self, *parameters):
+        self.set_parameters(parameters)
+
+    def __repr__(self):
+        return f"<OperatorData: {self.data()}>"
+
+    def refresh_parameters(self):
+        self._parameters = [self.data()[s1:s2] for s1, s2 in zip(self._sizes[:-1], self._sizes[1:])]
+        self._parameters = [
+            qml.math.reshape(qml.math.stack(i), s) for s, i in zip(self._shapes, self._parameters)
+        ]
+
+    def data(self):
+        return self._data
+
+    def set_data(self, value):
+        """Set the data"""
+        self._data = value
+        self.refresh_parameters()
+
+    def __setitem__(self, idx, value):
+        self._data[idx] = value
+        self.refresh_parameters()
+
+    def __getitem__(self, idx, value):
+        return self._data[idx]
+
+    def parameters(self):
+        return self._parameters
+
+    def set_parameters(self, parameters):
+        """Set the parameters"""
+        self._parameters = list(parameters)
+
+        # get shapes of all arguments
+        self._shapes = [qml.math.shape(i) for i in parameters]
+
+        # get total size of each argument
+        self._sizes = np.cumsum([int(np.prod(i)) for i in self._shapes])
+        self._sizes = np.concatenate([[0], self._sizes])
+
+        # store flattened data
+        data = []
+
+        for i in parameters:
+            if qml.math.shape(i):
+                data.extend(qml.math.unstack(qml.math.flatten(i)))
+            else:
+                data.append(i)
+
+        self._data = data
 
 
 # =============================================================================
@@ -700,6 +785,16 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
 
+        self._num_params = len(params)
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            raise ValueError(
+                f"{self.name}: wrong number of parameters. "
+                f"{len(params)} parameters passed, {self.num_params} expected."
+            )
+
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -716,7 +811,7 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self.parameters = params  #: list[Any]: parameters of the operator
+        self.parameters = params
 
         if do_queue:
             self.queue()
@@ -729,56 +824,13 @@ class Operator(abc.ABC):
         return f"{self.name}(wires={self.wires.tolist()})"
 
     @property
-    def data(self):
-        """list[float]: list of trainable parameters"""
-        return self._data
-
-    @data.setter
-    def data(self, value):
-        """Set the data"""
-        self._data = value
-        self._parameters = [self.data[s1:s2] for s1, s2 in zip(self._sizes[:-1], self._sizes[1:])]
-        self._parameters = [qml.math.reshape(qml.math.stack(i), s) for s, i in zip(self._shapes, params)]
-
-    @property
     def parameters(self):
         """List[tensor_like]: List of tensor parameters. Always matches __init__."""
-        return self._parameters
+        return self.data.parameters()
 
     @parameters.setter
-    def parameters(self, args):
-        """Set the parameters"""
-
-        self._num_params = len(args)
-
-        # Check if the expected number of parameters coincides with the one received.
-        # This is always true for the default `Operator.num_params` property, but
-        # subclasses may overwrite it to define a fixed expected value.
-        if len(args) != self.num_params:
-            raise ValueError(
-                f"{self.name}: wrong number of parameters. "
-                f"{len(params)} parameters passed, {self.num_params} expected."
-            )
-
-        self._parameters = args
-
-        # get shapes of all arguments
-        self._shapes = [qml.math.shape(i) for i in args]
-
-        # get total size of each argument
-        self._sizes = np.cumsum([int(np.prod(i)) for i in self._shapes])
-        self._sizes = np.concatenate([[0], self._sizes])
-
-        # store flattened data
-        data = []
-
-        for i in args:
-            if qml.math.shape(i):
-                data.extend(qml.math.unstack(qml.math.flatten(i)))
-            else:
-                data.append(i)
-
-        self._data = data
+    def parameters(self, parameters):
+        self.data = OperatorData(*parameters)
 
     @property
     def num_params(self):

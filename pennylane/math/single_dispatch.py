@@ -37,6 +37,7 @@ def _i(name):
 from scipy.linalg import block_diag as _scipy_block_diag
 
 ar.register_function("numpy", "flatten", lambda x: x.flatten())
+ar.register_function("builtins", "flatten", lambda x: np.array(x).flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
