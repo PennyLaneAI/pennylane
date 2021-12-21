@@ -233,6 +233,11 @@ The Operator class has undergone a major refactor with the following changes:
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
 
+  * A `sparse_matrix` method and a `compute_sparse_matrix` static method were added 
+    to the `Operator` class. The sparse representation of `SparseHamiltonian`
+    is moved to this method, so that its `matrix` method now returns a dense matrix.
+    [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
