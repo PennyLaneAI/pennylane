@@ -233,6 +233,12 @@ The Operator class has undergone a major refactor with the following changes:
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
 
+* Decompositions are now defined in `compute_decomposition`, instead of `expand`. 
+  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+
+* The `expand` method is moved to the main `Operator` class.
+  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
