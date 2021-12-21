@@ -102,12 +102,12 @@ class TTN(Operation):
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.n_blocks(wires, n_block_wires)``.
+        The expected number of blocks can be obtained from ``qml.TTN.n_blocks(wires, n_block_wires)``.
         The length of ``template_weights`` argument should match the number of blocks.
 
     .. UsageDetails::
 
-        This example demonstrates the use of ``MPS`` for a simple block.
+        This example demonstrates the use of ``TTN`` for a simple block.
 
         .. code-block:: python
 
@@ -122,7 +122,7 @@ class TTN(Operation):
             n_wires = 4
             n_block_wires = 2
             n_params_block = 2
-            n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
+            n_blocks = qml.TTN.get_n_blocks(range(n_wires),n_block_wires)
             template_weights = [[0.1,-0.3]]*n_blocks
 
             dev= qml.device('default.qubit',wires=range(n_wires))
@@ -157,7 +157,7 @@ class TTN(Operation):
         n_wires = len(wires)
         shape = qml.math.shape(template_weights)[-4:]  # (n_params_block, n_blocks)
         self.n_params_block = n_params_block
-        self.n_blocks = int(n_wires / (n_block_wires / 2) - 1)
+        self.n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
         self.block = block
 
         if template_weights is None:
