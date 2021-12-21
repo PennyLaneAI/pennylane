@@ -66,22 +66,19 @@ class QFT(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        wires = qml.wires.Wires(wires)
+        self._hyperparameters = {"n_wires": len(wires)}
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 0
 
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        if self.inverse:
-            mat = mat.conj()
-        return mat
-
-    @classmethod
+    @staticmethod
     @functools.lru_cache()
-    def _matrix(cls, num_wires):
-        dimension = 2 ** num_wires
+    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
+        dimension = 2 ** n_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)

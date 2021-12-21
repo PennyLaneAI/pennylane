@@ -163,6 +163,42 @@ The Operator class has undergone a major refactor with the following changes:
 
 * A `hyperparameters` attribute was added to the operator class.
   [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
+  
+* The representation of an operator as a matrix has been overhauled. 
+  
+  The `matrix()` method now accepts a 
+  `wire_order` argument and calculates the correct numerical representation 
+  with respect to that ordering. 
+    
+  ```pycon
+  >>> op = qml.RX(0.5, wires="b")
+  >>> op.matrix()
+  [[0.96891242+0.j         0.        -0.24740396j]
+   [0.        -0.24740396j 0.96891242+0.j        ]]
+  >>> op.matrix(wire_order=["a", "b"])
+  [[0.9689+0.j  0.-0.2474j 0.+0.j         0.+0.j]
+   [0.-0.2474j  0.9689+0.j 0.+0.j         0.+0.j]
+   [0.+0.j          0.+0.j 0.9689+0.j 0.-0.2474j]
+   [0.+0.j          0.+0.j 0.-0.2474j 0.9689+0.j]]
+  ```
+    
+  The "canonical matrix", which is independent of wires,
+  is now defined in the static method `compute_matrix()` instead of `_matrix`.
+  By default, this method is assumed to take all parameters and non-trainable 
+  hyperparameters that define the operation. 
+    
+  ```pycon
+  >>> qml.RX.compute_matrix(0.5)
+  [[0.96891242+0.j         0.        -0.24740396j]
+   [0.        -0.24740396j 0.96891242+0.j        ]]
+  ```
+       
+  If no canonical matrix is specified for a gate, `compute_matrix()` 
+  raises a `NotImplementedError`.
+  
+  The new `matrix()` method is now used in the 
+  `pennylane.transforms.get_qubit_unitary()` transform.
+  [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
 * The `string_for_inverse` attribute is removed.
   [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
@@ -198,4 +234,3 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, Ankit Khandelwal, 
 Christina Lee, Maria Schuld, Antal Száva, David Wierichs, Shaoming Zhang
-

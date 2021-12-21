@@ -61,9 +61,24 @@ class Hermitian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    @classmethod
-    def _matrix(cls, *params):
-        A = qml.math.asarray(params[0])
+    @staticmethod
+    def compute_matrix(A):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Hermitian operator.
+
+        Args:
+            A (tensor_like): hermitian matrix
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> A = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> qml.Hermitian.compute_matrix(A)
+        [[ 6.+0.j  1.-2.j]
+         [ 1.+2.j -1.+0.j]]
+        """
+        A = qml.math.asarray(A)
 
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -85,7 +100,7 @@ class Hermitian(Observable):
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
-        Hmat = self.matrix
+        Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
@@ -175,12 +190,33 @@ class SparseHamiltonian(Observable):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    @classmethod
-    def _matrix(cls, *params):
-        A = params[0]
-        if not isinstance(A, coo_matrix):
+    @staticmethod
+    def compute_matrix(H):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SparseHamiltonian operator.
+
+        Args:
+            H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_matrix(H)
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo.coo_matrix'>
+        """
+        # ToDo[Maria/Josh]: return H.toarray() and add a separate `sparse_matrix` method
+        if not isinstance(H, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
-        return A
+        return H
 
 
 class Projector(Observable):
@@ -254,6 +290,29 @@ class Projector(Observable):
             return base_label
         basis_string = "".join(str(int(i)) for i in self.parameters[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
+
+    @staticmethod
+    def compute_matrix(basis_state):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Projector operator.
+
+        Args:
+            basis_state (Iterable): basis state to project on
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Projector.compute_matrix([0, 1])
+        [[0. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 0.]
+         [0. 0. 0. 0.]]
+        """
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
 
     @classmethod
     def _eigvals(cls, *params):

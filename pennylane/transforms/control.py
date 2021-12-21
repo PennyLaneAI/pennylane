@@ -59,7 +59,7 @@ def expand_with_control(tape, control_wire):
                         # matrix representation.
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
-                                op.matrix, control_wires=control_wire, wires=op.wires
+                                op.matrix(), control_wires=control_wire, wires=op.wires
                             )
 
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
