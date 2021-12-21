@@ -745,6 +745,18 @@ class TestHamiltonian:
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
 
+    def test_terms(self):
+        """Tests that the terms representation is returned correctly."""
+        coeffs = pnp.array([1.0, 2.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1)]
+        h = qml.Hamiltonian(coeffs, ops)
+        c, o = h.terms()
+        assert isinstance(c, tuple)
+        assert isinstance(o, list)
+        assert all(isinstance(item, np.ndarray) for item in c)
+        assert all(item.requires_grad for item in c)
+        assert all(isinstance(item, qml.operation.Operator) for item in o)
+
 
 class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""

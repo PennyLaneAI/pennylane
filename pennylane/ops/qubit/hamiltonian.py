@@ -237,7 +237,7 @@ class Hamiltonian(Observable):
         return self._ops
 
     @staticmethod
-    def compute_terms(*params, **hyperparams):
+    def compute_terms(*params, ops):
         r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
 
         Args:
@@ -247,7 +247,7 @@ class Hamiltonian(Observable):
         Returns:
             Iterable[tensor_like or float], list[~.Operator]: coefficients and operations
         """
-        return params, hyperparams["ops"]
+        return params, ops
 
     @property
     def wires(self):
