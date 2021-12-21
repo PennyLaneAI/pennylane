@@ -546,7 +546,8 @@ class Operator(abc.ABC):
     def compute_terms(*params, **hyperparams):
         r"""Static method to define the representation of this operation as a linear combination.
 
-        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
+        Each term in the linear combination is a pair of a scalar
+        value :math:`c_i` and an operator :math:`O_i`, so that the sum
 
          .. math:: O = \sum_i c_i O_i
 
@@ -559,8 +560,9 @@ class Operator(abc.ABC):
              of a particular operator.
 
          Args:
-             params (list): trainable parameters of this operator, as stored in ``op.parameters``
-             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+             params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
+             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in the
+                ``hyperparameters["ops"]`` attribute
 
          Returns:
              list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
@@ -573,9 +575,10 @@ class Operator(abc.ABC):
         return None
 
     def terms(self):
-        r"""Representation of this operation as a linear combination.
+        r"""Representation of this operator as a linear combination.
 
-        Each term is a pair of a scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
+        Each term in the linear combination is a pair of a
+        scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
 
         .. math:: O = \sum_i c_i O_i
 
@@ -583,9 +586,9 @@ class Operator(abc.ABC):
 
         .. note::
             By default, this method calls the static method ``compute_terms``,
-            which is used by subclasses to define the actual matrix representation.
+            which is used by subclasses to define the concrete representation.
 
-        A ``NotImplementedError`` is raised if no representation by terms is defined.
+        A ``NotImplementedError`` is raised if no representation through terms is defined.
 
         Returns:
             list[tensor_like or float], list[.Operation]: list of coefficients :math:`c_i`

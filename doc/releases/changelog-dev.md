@@ -203,10 +203,10 @@ The Operator class has undergone a major refactor with the following changes:
 * The `string_for_inverse` attribute is removed.
   [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
 
-* A `terms()` method and a `compute_terms` static method were added to `Operator`. 
+* A `terms()` method and a `compute_terms()` static method were added to `Operator`. 
   Currently, only the `Hamiltonian` class overwrites `compute_terms` to store 
-  coefficients and operators. The `Hamiltonian.terms` property is thereby superseded  
-  by `Hamiltonian.terms()`.
+  coefficients and operators. The `Hamiltonian.terms` property hence becomes 
+  a proper method called by `Hamiltonian.terms()`.
 
 * The generator property has been updated to an instance method,
   `Operation.generator()`. It now returns an instantiated operation,
@@ -232,7 +232,7 @@ The Operator class has undergone a major refactor with the following changes:
   - By default, calling `op.generator()` does not take into account `op.inverse()`.
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
-  
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
