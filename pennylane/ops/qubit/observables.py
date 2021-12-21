@@ -197,7 +197,7 @@ class SparseHamiltonian(Observable):
         """Canonical matrix representation of the SparseHamiltonian operator.
 
         This method returns a dense matrix. For a sparse matrix representation, see
-        `~.SparseHamiltonian.compute_sparse_matrix`.
+        :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
 
         Args:
             H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
@@ -224,7 +224,7 @@ class SparseHamiltonian(Observable):
         """Canonical matrix representation of the SparseHamiltonian operator, using a sparse matrix type.
 
         This method returns a sparse matrix. For a dense matrix representation, see
-        `~.SparseHamiltonian.compute_matrix`.
+        :meth:`~.SparseHamiltonian.compute_matrix`.
 
         Args:
             H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
