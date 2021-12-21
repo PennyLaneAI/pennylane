@@ -266,6 +266,18 @@ class OperatorData:
     def __repr__(self):
         return f"<OperatorData: {self.data()}>"
 
+    def copy(self):
+        new = OperatorData()
+        new._data = self._data.copy()
+        new._parameters = self._parameters.copy()
+        new._size = self._size
+        new._sizes = self._sizes.copy()
+        new._shapes = self._shapes.copy()
+        new._num_params = self._num_params
+        return new
+
+    __copy__ = copy
+
     def refresh_parameters(self):
         """Refresh the internal parameter values when :meth:`.data` is modified."""
         self._parameters = [self.data()[s1:s2] for s1, s2 in zip(self._sizes[:-1], self._sizes[1:])]
@@ -293,7 +305,8 @@ class OperatorData:
         """int: returns the size of the stored data."""
         return self._size
 
-    __len__ = size
+    def __len__(self):
+        return self.size
 
     @property
     def shapes(self):
@@ -323,7 +336,7 @@ class OperatorData:
         self._data[idx] = value
         self.refresh_parameters()
 
-    def __getitem__(self, idx, value):
+    def __getitem__(self, idx):
         return self._data[idx]
 
     def parameters(self):
@@ -352,10 +365,13 @@ class OperatorData:
         data = []
 
         for i in parameters:
-            if qml.math.shape(i):
-                data.extend(qml.math.unstack(qml.math.flatten(i)))
-            else:
-                data.append(i)
+            try:
+                if qml.math.shape(i):
+                    data.extend(qml.math.unstack(qml.math.flatten(i)))
+                else:
+                    data.append(i)
+            except (AttributeError, TypeError):
+                raise TypeError(f"Unsupported operation parameter {i}")
 
         self._data = data
         self._size = len(data)

@@ -208,12 +208,7 @@ class Hamiltonian(Observable):
                     self.ops, grouping_type=grouping_type, method=method
                 )
 
-        coeffs_flat = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
-
-        # create the operator using each coefficient as a separate parameter;
-        # this causes H.data to be a list of tensor scalars,
-        # while H.coeffs is the original tensor
-        super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
+        super().__init__(self.coeffs, wires=self._wires, id=id, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")

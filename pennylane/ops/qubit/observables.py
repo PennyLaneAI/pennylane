@@ -181,11 +181,12 @@ class SparseHamiltonian(Observable):
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
-        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
+        self.hyperparameters["H"] = H
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
-        return 1
+        return 0
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
