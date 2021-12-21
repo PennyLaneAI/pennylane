@@ -40,7 +40,7 @@ ar.register_function("numpy", "flatten", lambda x: x.flatten())
 ar.register_function("numpy", "coerce", lambda x: x)
 ar.register_function("numpy", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
-ar.register_function("builtins", "squeeze", lambda x: x[0] if len(x) == 1 else x)
+# ar.register_function("builtins", "squeeze", lambda x: x[0] if len(x) == 1 else x)
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
