@@ -394,6 +394,19 @@ class Operator(abc.ABC):
         """int: returns an integer hash uniquely representing the operator"""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
+    @property
+    def interface(self):
+        """str: The autodifferentiation framework that the operator
+        uses to represent its numerical data.
+
+        **Example**
+
+        >>> op = qml.RX(torch.tensor(0.3), wires=0)
+        >>> op.interface
+        'torch'
+        """
+        return qml.math._multi_dispatch(self.data)
+
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
         """Canonical matrix of this operator in the computational basis.
@@ -621,16 +634,6 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
 
-        self._num_params = len(params)
-        # Check if the expected number of parameters coincides with the one received.
-        # This is always true for the default `Operator.num_params` property, but
-        # subclasses may overwrite it to define a fixed expected value.
-        if len(params) != self.num_params:
-            raise ValueError(
-                f"{self.name}: wrong number of parameters. "
-                f"{len(params)} parameters passed, {self.num_params} expected."
-            )
-
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -647,7 +650,7 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self.data = list(params)  #: list[Any]: parameters of the operator
+        self.parameters = params  #: list[Any]: parameters of the operator
 
         if do_queue:
             self.queue()
@@ -658,6 +661,58 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
+
+    @property
+    def data(self):
+        """list[float]: list of trainable parameters"""
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        """Set the data"""
+        self._data = value
+        self._parameters = [self.data[s1:s2] for s1, s2 in zip(self._sizes[:-1], self._sizes[1:])]
+        self._parameters = [qml.math.reshape(qml.math.stack(i), s) for s, i in zip(self._shapes, params)]
+
+    @property
+    def parameters(self):
+        """List[tensor_like]: List of tensor parameters. Always matches __init__."""
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, args):
+        """Set the parameters"""
+
+        self._num_params = len(args)
+
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(args) != self.num_params:
+            raise ValueError(
+                f"{self.name}: wrong number of parameters. "
+                f"{len(params)} parameters passed, {self.num_params} expected."
+            )
+
+        self._parameters = args
+
+        # get shapes of all arguments
+        self._shapes = [qml.math.shape(i) for i in args]
+
+        # get total size of each argument
+        self._sizes = np.cumsum([int(np.prod(i)) for i in self._shapes])
+        self._sizes = np.concatenate([[0], self._sizes])
+
+        # store flattened data
+        data = []
+
+        for i in args:
+            if qml.math.shape(i):
+                data.extend(qml.math.unstack(qml.math.flatten(i)))
+            else:
+                data.append(i)
+
+        self._data = data
 
     @property
     def num_params(self):
@@ -681,11 +736,6 @@ class Operator(abc.ABC):
             Wires: wires
         """
         return self._wires
-
-    @property
-    def parameters(self):
-        """Current parameter values."""
-        return self.data.copy()
 
     @property
     def hyperparameters(self):
