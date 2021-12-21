@@ -181,6 +181,8 @@ class SparseHamiltonian(Observable):
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
+        if not isinstance(H, coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -242,7 +244,7 @@ class SparseHamiltonian(Observable):
         (1, 0)	(1+2j)
         (1, 1)	(-1+0j)
         >>> type(res)
-        <class 'scipy.sparse.coo.coo_matrix'>
+        <class 'scipy.sparse.coo_matrix'>
         """
         return H
 

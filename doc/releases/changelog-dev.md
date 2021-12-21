@@ -236,7 +236,7 @@ The Operator class has undergone a major refactor with the following changes:
   * A `sparse_matrix` method and a `compute_sparse_matrix` static method were added 
     to the `Operator` class. The sparse representation of `SparseHamiltonian`
     is moved to this method, so that its `matrix` method now returns a dense matrix.
-    [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+    [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
 
 <h3>Contributors</h3>
 

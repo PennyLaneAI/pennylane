@@ -64,29 +64,24 @@ class TestSparse:
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_typeerror(self, sparse_hamiltonian):
-        """Test that the matrix property of the SparseHamiltonian class raises a TypeError on incorrect inputs."""
-        num_wires = len(sparse_hamiltonian[0])
-        sparse_hamiltonian = csr_matrix(sparse_hamiltonian)
-
-        dev = qml.device("default.qubit", wires=num_wires)
-
-        @qml.qnode(dev, diff_method="parameter-shift")
-        def circuit(sparse_hamiltonian, num_wires):
-            obs = qml.SparseHamiltonian(sparse_hamiltonian, range(num_wires))
-            return qml.expval(obs)
+        """Test that the SparseHamiltonian class raises a TypeError on incorrect inputs."""
+        mat = np.array([[1, 0], [-1.5, 0]])
+        sparse_hamiltonian = csr_matrix(mat)
 
         with pytest.raises(TypeError, match="Observable must be a scipy sparse coo_matrix"):
-            circuit(sparse_hamiltonian, num_wires)
+            qml.SparseHamiltonian(sparse_hamiltonian)
 
     @pytest.mark.parametrize("sparse_hamiltonian", SPARSE_HAMILTONIAN_TEST_DATA)
     def test_sparse_matrix(self, sparse_hamiltonian, tol):
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian_coo = coo_matrix(sparse_hamiltonian)
-        res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_coo, range(num_wires)).matrix()
-        res_static = qml.SparseHamiltonian.compute_matrix(sparse_hamiltonian_coo)
-        assert isinstance(res_dynamic, scipy.sparse.coo.coo_matrix)
-        assert isinstance(res_static, scipy.sparse.coo.coo_matrix)
+        res_dynamic = qml.SparseHamiltonian(
+            sparse_hamiltonian_coo, range(num_wires)
+        ).sparse_matrix()
+        res_static = qml.SparseHamiltonian.compute_sparse_matrix(sparse_hamiltonian_coo)
+        assert isinstance(res_dynamic, coo_matrix)
+        assert isinstance(res_static, coo_matrix)
         assert np.allclose(res_dynamic.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
         assert np.allclose(res_static.toarray(), sparse_hamiltonian, atol=tol, rtol=0)
 
