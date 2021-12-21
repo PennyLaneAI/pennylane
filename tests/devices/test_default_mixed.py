@@ -475,7 +475,10 @@ class TestApplyChannel:
 class TestApplyDiagonal:
     """Unit tests for the method `_apply_diagonal_unitary()`"""
 
-    x_apply_diag_init = [[1, PauliZ(0), basis_state(0, 1)], [2, CZ(wires=[0, 1]), basis_state(0, 2)]]
+    x_apply_diag_init = [
+        [1, PauliZ(0), basis_state(0, 1)],
+        [2, CZ(wires=[0, 1]), basis_state(0, 2)],
+    ]
 
     @pytest.mark.parametrize("x", x_apply_diag_init)
     def test_diag_init(self, x, tol):
@@ -492,7 +495,10 @@ class TestApplyDiagonal:
 
         assert np.allclose(dev._state, target_state, atol=tol, rtol=0)
 
-    x_apply_diag_mixed = [[1, PauliZ(0), max_mixed_state(1)], [2, CZ(wires=[0, 1]), max_mixed_state(2)]]
+    x_apply_diag_mixed = [
+        [1, PauliZ(0), max_mixed_state(1)],
+        [2, CZ(wires=[0, 1]), max_mixed_state(2)],
+    ]
 
     @pytest.mark.parametrize("x", x_apply_diag_mixed)
     def test_diag_mixed(self, x, tol):
