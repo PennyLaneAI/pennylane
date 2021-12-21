@@ -517,8 +517,8 @@ def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_r
 
     qubit_hamiltonian = qchem.decompose(hf_file, mapping=mapping, core=core, active=active)
 
-    coeffs = np.array(list(qubit_hamiltonian.terms().values()))
-    pauli_strings = list(qubit_hamiltonian.terms().keys())
+    coeffs = np.array(list(qubit_hamiltonian.terms.values()))
+    pauli_strings = list(qubit_hamiltonian.terms.keys())
 
     assert np.allclose(coeffs, coeffs_ref, **tol)
     assert pauli_strings == pauli_strings_ref

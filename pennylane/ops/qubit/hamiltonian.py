@@ -332,7 +332,7 @@ class Hamiltonian(Observable):
         **Example**
 
         >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
-        >>> H = qml.Hamiltonian([1, 1, -2], ops)
+        >>> H = qml.Hamiltonian([1, 1, -2], new_ops)
         >>> H.simplify()
         >>> print(H)
           (-1) [X0]
@@ -343,8 +343,12 @@ class Hamiltonian(Observable):
             Calling this method will reset ``grouping_indices`` to None, since
             the observables it refers to are updated.
         """
-        data = []
-        ops = []
+
+        # Todo: make simplify return a new operation, so
+        # it does not mutate this one
+
+        new_coeffs = []
+        new_ops = []
 
         for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
             op = self.ops[i]
@@ -352,23 +356,29 @@ class Hamiltonian(Observable):
             op = op if isinstance(op, Tensor) else Tensor(op)
 
             ind = None
-            for j, o in enumerate(ops):
+            for j, o in enumerate(new_ops):
                 if op.compare(o):
                     ind = j
                     break
 
             if ind is not None:
-                data[ind] += c
-                if np.isclose(qml.math.toarray(data[ind]), np.array(0.0)):
-                    del data[ind]
-                    del ops[ind]
+                new_coeffs[ind] += c
+                if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
+                    del new_coeffs[ind]
+                    del new_ops[ind]
             else:
-                ops.append(op.prune())
-                data.append(c)
+                new_ops.append(op.prune())
+                new_coeffs.append(c)
 
-        self._coeffs = qml.math.stack(data) if data else []
-        self.data = data
-        self._ops = ops
+        # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
+        # self.terms(). To be improved soon.
+        self.data = new_coeffs
+        # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
+        # To be improved soon.
+        self.hyperparameters["ops"] = new_ops
+
+        self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
+        self._ops = new_ops
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
 
