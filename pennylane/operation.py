@@ -399,7 +399,7 @@ class Operator(abc.ABC):
         """Canonical matrix of this operator in the computational basis.
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the glabal wire order.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. note::
             This method gets overwritten by subclasses to define the matrix representation
