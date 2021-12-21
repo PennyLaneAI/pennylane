@@ -237,10 +237,12 @@ class OperatorData:
     >>> p = OperatorData(torch.tensor([0.1, 0.5]), np.array(1.0), [0.6, 0.2])
     <OperatorData: [tensor(0.1000), tensor(0.5000), tensor(1., requires_grad=True), 0.6, 0.2]>
 
-    The original parameters can be extracted via :attr:`.parameters`:
+    The original parameters can be extracted via :meth:`.parameters`:
 
     >>> p.parameters()
     [tensor([0.1000, 0.5000]), tensor(1., requires_grad=True), [0.6, 0.2]]
+    >>> p.interface
+    'torch'
 
     Alternatively, we can extract the internal data representation used
     by PennyLane, a list of scalars:
@@ -253,6 +255,9 @@ class OperatorData:
     >>> p[0] = torch.tensor(-0.65)
     >>> p.parameters()
     [tensor([-0.6500,  0.5000]), tensor(1., requires_grad=True), array([0.6, 0.2])]
+
+    In addition, the data and/or parameters can be directly replaced with new data
+    or new parameters via :meth:`.set_parameters` and :meth:`.set_data`.
     """
 
     def __init__(self, *parameters):
@@ -262,16 +267,53 @@ class OperatorData:
         return f"<OperatorData: {self.data()}>"
 
     def refresh_parameters(self):
+        """Refresh the internal parameter values when :meth:`.data` is modified."""
         self._parameters = [self.data()[s1:s2] for s1, s2 in zip(self._sizes[:-1], self._sizes[1:])]
         self._parameters = [
             qml.math.reshape(qml.math.stack(i), s) for s, i in zip(self._shapes, self._parameters)
         ]
 
     def data(self):
+        """list[tensor_like]: the internal data representation represented
+        as a flat list of scalar tensors."""
         return self._data
 
+    @property
+    def interface(self):
+        """str: The autodifferentiation framework used to represent the numerical data."""
+        return qml.math._multi_dispatch(self.data())
+
+    @property
+    def num_params(self):
+        """int: returns the number of parameters represented"""
+        return self._num_params
+
+    @property
+    def size(self):
+        """int: returns the size of the stored data."""
+        return self._size
+
+    @property
+    def shapes(self):
+        """list[tuple[int]]: returns the shape of each parameter."""
+        return self._shapes
+
     def set_data(self, value):
-        """Set the data"""
+        """Update the internal list of trainable data.
+
+        Args:
+            value (Sequence[tensor_like]): sequence of scalar tensors
+
+        Raises:
+            ValueError: if the provided data ``value`` is not a sequence of scalar tensors,
+                or if the length of ``value`` does not match :attr:`.size`.
+        """
+        if not isinstance(value, Sequence):
+            raise ValueError("Provided data values must be a sequence of scalar tensors.")
+
+        if len(value) != self.size:
+            raise ValueError(f"Provided data values must have length {len(self.size)}.")
+
         self._data = value
         self.refresh_parameters()
 
@@ -283,11 +325,19 @@ class OperatorData:
         return self._data[idx]
 
     def parameters(self):
+        """list[tensor_like]: list of parameters"""
         return self._parameters
 
     def set_parameters(self, parameters):
-        """Set the parameters"""
+        """Set the parameters of the operator.
+
+        Args:
+            parameters (Sequence[tensor_like]): numeric tensor-like objects (including
+                NumPy arrays, floats, lists, as well as TensorFlow/Torch/JAX tensors)
+                that may be used to represent trainable data of an operation.
+        """
         self._parameters = list(parameters)
+        self._num_params = len(parameters)
 
         # get shapes of all arguments
         self._shapes = [qml.math.shape(i) for i in parameters]
@@ -306,6 +356,7 @@ class OperatorData:
                 data.append(i)
 
         self._data = data
+        self._size = len(data)
 
 
 # =============================================================================
@@ -490,7 +541,7 @@ class Operator(abc.ABC):
         >>> op.interface
         'torch'
         """
-        return qml.math._multi_dispatch(self.data)
+        return self.data.interface
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
