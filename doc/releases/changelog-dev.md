@@ -235,8 +235,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 * The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
   was renamed to `wire_order` to be consistent with other matrix representations.
-  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
-
+  [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
 
 <h3>Contributors</h3>
 
