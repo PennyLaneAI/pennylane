@@ -90,15 +90,29 @@ class SingleExcitation(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SingleExcitation operator.
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitation.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.9689, -0.2474,  0.0000],
+                [ 0.0000,  0.2474,  0.9689,  0.0000],
+                [ 0.0000,  0.0000,  0.0000,  1.0000]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
 
         mat = qml.math.diag([1, c, c, 1])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
@@ -179,23 +193,37 @@ class SingleExcitationMinus(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SingleExcitationMinus operator.
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        Args:
+          phi (tensor_like or float): rotation angle
 
-        interface = qml.math.get_interface(theta)
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitationMinus.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689-0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(-1j * theta / 2)
+        e = qml.math.exp(-1j * phi / 2)
         mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
@@ -290,23 +318,37 @@ class SingleExcitationPlus(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SingleExcitationPlus operator.
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        Args:
+          phi (tensor_like or float): rotation angle
 
-        interface = qml.math.get_interface(theta)
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitationPlus.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689+0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689+0.2474j]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(1j * theta / 2)
+        e = qml.math.exp(1j * phi / 2)
         mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
@@ -432,12 +474,18 @@ class DoubleExcitation(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the DoubleExcitation operator.
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
 
         mat = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 12), -s)
@@ -582,21 +630,28 @@ class DoubleExcitationPlus(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the DoubleExcitationPlus operator.
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        Args:
+          phi (tensor_like or float): rotation angle
 
-        interface = qml.math.get_interface(theta)
+        Returns:
+          tensor_like: canonical matrix
+
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(1j * theta / 2)
+        e = qml.math.exp(1j * phi / 2)
 
         mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 3), c)
@@ -656,21 +711,28 @@ class DoubleExcitationMinus(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the DoubleExcitationMinus operator.
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+        Args:
+          phi (tensor_like or float): rotation angle
 
-        interface = qml.math.get_interface(theta)
+        Returns:
+          tensor_like: canonical matrix
+
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(-1j * theta / 2)
+        e = qml.math.exp(-1j * phi / 2)
         mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 3), c)
         mat = qml.math.scatter_element_add(mat, (3, 12), -s)
@@ -753,13 +815,21 @@ class OrbitalRotation(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the OrbitalRotation operator.
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+        """
+
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
 
-        phi = params[0]
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 

@@ -219,7 +219,7 @@ class DefaultMixed(QubitDevice):
         if isinstance(operation, Channel):
             return operation.kraus_matrices
 
-        return [operation.matrix]
+        return [operation.matrix()]
 
     def _apply_channel(self, kraus, wires):
         r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the

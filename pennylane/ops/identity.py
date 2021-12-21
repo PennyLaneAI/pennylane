@@ -49,8 +49,19 @@ class Identity(CVObservable, Operation):
     def _eigvals(cls, *params):
         return cls.eigvals
 
-    @classmethod
-    def _matrix(cls, *params):
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Identity operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Identity.compute_matrix()
+        [[1. 0.]
+         [0. 1.]]
+        """
         return np.eye(2)
 
     @staticmethod
@@ -103,4 +114,4 @@ class Identity(CVObservable, Operation):
     @staticmethod
     def identity_op(*params):
         """Returns the matrix representation of the identity operator."""
-        return Identity._matrix(*params)
+        return Identity.compute_matrix(*params)

@@ -97,7 +97,7 @@ class ReversibleTape(JacobianTape):
         """
         # pylint: disable=protected-access
 
-        mat = np.reshape(obs.matrix, [2] * len(obs.wires) * 2)
+        mat = np.reshape(obs.matrix(), [2] * len(obs.wires) * 2)
         vec1 = np.reshape(vec1, [2] * len(dev_wires))
         vec2 = np.reshape(vec2, [2] * len(dev_wires))
 
