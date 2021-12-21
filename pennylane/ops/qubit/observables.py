@@ -200,7 +200,7 @@ class SparseHamiltonian(Observable):
         `~.SparseHamiltonian.compute_sparse_matrix`.
 
         Args:
-            H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
+            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
 
         Returns:
             array: dense matrix
@@ -227,10 +227,10 @@ class SparseHamiltonian(Observable):
         `~.SparseHamiltonian.compute_matrix`.
 
         Args:
-            H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
+            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
 
         Returns:
-            scipy.sparse.coo.coo_matrix: sparse matrix
+            scipy.sparse.coo_matrix: sparse matrix
 
         **Example**
 
