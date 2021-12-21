@@ -36,7 +36,7 @@ def test_spin_z(orbitals, mapping, terms_exp, monkeypatch):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
 
-    The parametrized inputs are `.terms` attribute of the `QubitOperator. The equality
+    The parametrized inputs are `.terms()` attribute of the `QubitOperator. The equality
     checking is implemented in the `qchem` module itself as it could be something
     useful to the users as well.
     """
