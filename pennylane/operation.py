@@ -482,7 +482,10 @@ class Operator(abc.ABC):
 
     @classmethod
     def compute_eigvals(cls, *params, **hyperparams):
-        """Eigenvalues of the operator.
+        """Canonical eigenvalues of the operator in the computational basis.
+
+        The canonical eigenvalues refer to the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         This class method allows eigenvalues to be computed
         directly without instantiating the operator first.
