@@ -36,7 +36,6 @@ class Identity(CVObservable, Operation):
     grad_method = None
 
     ev_order = 1
-    eigvals = np.array([1, 1])
 
     @property
     def num_params(self):
@@ -46,8 +45,18 @@ class Identity(CVObservable, Operation):
         return base_label or "I"
 
     @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+        """Eigenvalues of the Identity operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Identity.compute_eigvals()
+        [ 1 1]
+        """
+        return np.array([1, 1])
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ

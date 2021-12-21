@@ -109,7 +109,6 @@ class Hermitian(Observable):
 
         return Hermitian._eigs[Hkey]
 
-    @property
     def eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
@@ -315,24 +314,24 @@ class Projector(Observable):
         return m
 
     @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the specific projector operator.
+    def compute_eigvals(cls, basis_state):  # pylint: disable=unused-argument,arguments-differ
+        """Eigenvalues of the Projector operator.
+
+        Args:
+            basis_state (Iterable): basis state to project on
 
         Returns:
-            array: eigenvalues of the projector observable in the computational basis
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Projector.compute_eigvals([0, 1])
+        [0. 1. 0. 0.]
         """
-        w = np.zeros(2 ** len(params[0]))
-        idx = int("".join(str(i) for i in params[0]), 2)
+        w = np.zeros(2 ** len(basis_state))
+        idx = int("".join(str(i) for i in basis_state), 2)
         w[idx] = 1
         return w
-
-    @classmethod
-    def _matrix(cls, *params):
-        basis_state = params[0]
-        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
-        idx = int("".join(str(i) for i in basis_state), 2)
-        m[idx, idx] = 1
-        return m
 
     @staticmethod
     def compute_diagonalizing_gates(
