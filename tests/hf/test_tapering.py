@@ -14,17 +14,20 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
-
-import pytest
 import pennylane as qml
+import pytest
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
     _binary_matrix,
-    _reduced_row_echelon,
     _kernel,
-    get_generators,
+    _observable_mult,
+    _reduced_row_echelon,
+    _simplify,
+    clifford,
     generate_paulis,
     generate_symmetries,
+    get_generators,
+    transform_hamiltonian,
 )
 
 
@@ -355,3 +358,144 @@ def test_generate_symmetries(hamiltonian, num_qubits, res_generators, res_pauli_
 
     for p1, p2 in zip(pauli_ops, res_pauli_ops):
         assert p1.compare(p2)
+
+
+@pytest.mark.parametrize(
+    ("obs_a", "obs_b", "result"),
+    [
+        (
+            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
+            qml.Hamiltonian(np.array([-1.0]), [qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2)]),
+            qml.Hamiltonian(np.array([1.0]), [qml.Identity(0)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)]
+            ),
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+            ),
+            qml.Hamiltonian(
+                np.array([-0.25j, 0.25j, -0.25j, 0.25]),
+                [qml.PauliY(0), qml.PauliY(1), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+            ),
+        ),
+    ],
+)
+def test_observable_mult(obs_a, obs_b, result):
+    r"""Test that observable_mult returns the correct result."""
+    o = _observable_mult(obs_a, obs_b)
+    assert o.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("hamiltonian", "result"),
+    [
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
+            ),
+            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+            ),
+            qml.Hamiltonian([], []),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.0, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.25, 0.25, 0.25, -0.25]),
+                [
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                ],
+            ),
+            qml.Hamiltonian(
+                np.array([0.25, 0.25]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+        ),
+    ],
+)
+def test_simplify(hamiltonian, result):
+    r"""Test that simplify returns the correct hamiltonian."""
+    h = _simplify(hamiltonian)
+    assert h.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("generator", "paulix_ops", "result"),
+    [
+        (
+            [
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(0)]),
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliZ(1)]),
+            ],
+            [qml.PauliX(0), qml.PauliX(1)],
+            qml.Hamiltonian(
+                np.array(
+                    [
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                        (1 / np.sqrt(2)) ** 2,
+                    ]
+                ),
+                [
+                    qml.PauliZ(0) @ qml.PauliZ(1),
+                    qml.PauliZ(0) @ qml.PauliX(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliX(1),
+                ],
+            ),
+        ),
+    ],
+)
+def test_cliford(generator, paulix_ops, result):
+    r"""Test that clifford returns the correct operator."""
+    u = clifford(generator, paulix_ops)
+    assert u.compare(result)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "generator", "paulix_ops", "paulix_sector", "ham_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]], requires_grad=False),
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)],
+            [1, -1, -1],
+            qml.Hamiltonian(
+                np.array([-0.3210344, 0.18092703, 0.79596785]),
+                [qml.Identity(0), qml.PauliX(0), qml.PauliZ(0)],
+            ),
+        ),
+    ],
+)
+def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_sector, ham_ref):
+    r"""Test that transform_hamiltonian returns the correct hamiltonian."""
+    mol = qml.hf.Molecule(symbols, geometry)
+    h = qml.hf.generate_hamiltonian(mol)()
+    ham_calc = transform_hamiltonian(h, generator, paulix_ops, paulix_sector)
+
+    # sort Hamiltonian terms and then compare with reference
+    sorted_terms = list(sorted(zip(ham_calc.terms[0], ham_calc.terms[1])))
+    for i, term in enumerate(sorted_terms):
+        assert np.allclose(term[0], ham_ref.terms[0][i])
+        assert term[1].compare(ham_ref.terms[1][i])
