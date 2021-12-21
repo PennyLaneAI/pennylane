@@ -4,6 +4,63 @@
 
 <h3>New features since last release</h3>
 
+* A tensor network template has been added. Quantum circuits with the shape of a matrix product state tensor network can now be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
+
+  An example circuit that uses the `MPS` template is:
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  def block(weights, wires):
+      qml.CNOT(wires=[wires[0],wires[1]])
+      qml.RY(weights[0], wires=wires[0])
+      qml.RY(weights[1], wires=wires[1])
+
+  n_wires = 4
+  n_block_wires = 2
+  n_params_block = 2
+  template_weights = [[0.1,-0.3],[0.4,0.2],[-0.15,0.5]]
+
+  dev= qml.device('default.qubit',wires=range(n_wires))
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.MPS(range(n_wires),n_block_wires,block, n_params_block, weights)
+      return qml.expval(qml.PauliZ(wires=n_wires-1))
+  ```
+
+  The resulting circuit is:
+  ```pycon
+  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+  0: ──╭C──RY(0.1)───────────────────────────────┤
+  1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
+  2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
+  3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
+  ```
+  
+* Functions for tapering qubits based on molecular symmetries is added.
+  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
+* [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+
+  With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
+  on a reduced number of qubits.
+
+  ```python
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
+  mol = qml.hf.Molecule(symbols, geometry)
+  H = qml.hf.generate_hamiltonian(mol)(geometry)
+  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+  paulix_sector = [1, -1, -1]
+  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
+  ```
+
+  ```pycon
+  >>> print(H_tapered)
+    ((-0.321034397355719+0j)) [I0]
+  + ((0.1809270275619743+0j)) [X0]
+  + ((0.7959678503870796+0j)) [Z0]
+  ```
+
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
@@ -57,8 +114,10 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
-
 <h3>Improvements</h3>
+
+* Insert transform now supports adding operation after or before certain specific gates.
+  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
 * Interferometer is now a class with `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
@@ -97,4 +156,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs
+Juan Miguel Arrazola, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+
