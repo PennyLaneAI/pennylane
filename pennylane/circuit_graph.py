@@ -682,8 +682,13 @@ class CircuitGraph:
 
         return (
             len(
-                rx._digraph_dijkstra_shortest_path(
-                    self._graph, self._graph.nodes().index(a), self._graph.nodes().index(b)
+                rx.digraph_dijkstra_shortest_paths(
+                    self._graph,
+                    self._graph.nodes().index(a),
+                    self._graph.nodes().index(b),
+                    weight_fn=None,
+                    default_weight=1.0,
+                    as_undirected=False,
                 )
             )
             != 0
