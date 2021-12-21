@@ -128,14 +128,14 @@ class TTN(Operation):
             dev= qml.device('default.qubit',wires=range(n_wires))
             @qml.qnode(dev)
             def circuit(template_weights):
-                qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+                qml.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
         >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-        0: ──╭C──RY(0.1)───────────────────────────────┤
-        1: ──╰X──RY(-0.3)──╭C──RY(0.1)─────────────────┤
-        2: ────────────────╰X──RY(-0.3)──╭C──RY(0.1)───┤
-        3: ──────────────────────────────╰X──RY(-0.3)──┤ ⟨Z⟩
+        0: ──╭C──RY(0.1)─────────────────┤
+        1: ──╰X──RY(-0.3)──╭C──RY(0.1)───┤
+        2: ──╭C──RY(0.1)───│─────────────┤
+        3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
     """
 
     num_params = 1
