@@ -293,6 +293,8 @@ class OperatorData:
         """int: returns the size of the stored data."""
         return self._size
 
+    __len__ = size
+
     @property
     def shapes(self):
         """list[tuple[int]]: returns the shape of each parameter."""
