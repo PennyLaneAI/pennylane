@@ -233,6 +233,11 @@ The Operator class has undergone a major refactor with the following changes:
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
 
+* The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
+  was renamed to `wire_order` to be consistent with other matrix representations.
+  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
