@@ -187,6 +187,11 @@ class Hamiltonian(Observable):
 
         self._coeffs = coeffs
         self._ops = list(observables)
+
+        # TODO: avoid having multiple ways to store ops and coeffs,
+        # ideally only use parameters for coeffs, and hyperparameters for ops
+        self._hyperparameters = {"ops": self._ops}
+
         self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
 
         self.return_type = None
@@ -231,14 +236,18 @@ class Hamiltonian(Observable):
         """
         return self._ops
 
-    @property
-    def terms(self):
+    @staticmethod
+    def compute_terms(*params, ops):
         r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
 
+        Args:
+            coeffs (Iterable[tensor_like or float]): coefficients
+            ops (list[~.Operator]): operators
+
         Returns:
-            (tuple, tuple): tuples of coefficients and operations, each of length N
+            tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
         """
-        return self.coeffs, self.ops
+        return params, ops
 
     @property
     def wires(self):
@@ -334,8 +343,12 @@ class Hamiltonian(Observable):
             Calling this method will reset ``grouping_indices`` to None, since
             the observables it refers to are updated.
         """
-        data = []
-        ops = []
+
+        # Todo: make simplify return a new operation, so
+        # it does not mutate this one
+
+        new_coeffs = []
+        new_ops = []
 
         for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
             op = self.ops[i]
@@ -343,23 +356,29 @@ class Hamiltonian(Observable):
             op = op if isinstance(op, Tensor) else Tensor(op)
 
             ind = None
-            for j, o in enumerate(ops):
+            for j, o in enumerate(new_ops):
                 if op.compare(o):
                     ind = j
                     break
 
             if ind is not None:
-                data[ind] += c
-                if np.isclose(qml.math.toarray(data[ind]), np.array(0.0)):
-                    del data[ind]
-                    del ops[ind]
+                new_coeffs[ind] += c
+                if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
+                    del new_coeffs[ind]
+                    del new_ops[ind]
             else:
-                ops.append(op.prune())
-                data.append(c)
+                new_ops.append(op.prune())
+                new_coeffs.append(c)
 
-        self._coeffs = qml.math.stack(data) if data else []
-        self.data = data
-        self._ops = ops
+        # hotfix: We `self.data`, since `self.parameters` returns a copy of the data and is now returned in
+        # self.terms(). To be improved soon.
+        self.data = new_coeffs
+        # hotfix: We overwrite the hyperparameter entry, which is now returned in self.terms().
+        # To be improved soon.
+        self.hyperparameters["ops"] = new_ops
+
+        self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
+        self._ops = new_ops
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
 

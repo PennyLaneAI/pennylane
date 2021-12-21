@@ -555,6 +555,72 @@ class Operator(abc.ABC):
         """
         return self._eigvals(*self.parameters)
 
+    @staticmethod
+    def compute_terms(*params, **hyperparams):
+        r"""Static method to define the representation of this operation as a linear combination.
+
+        Each term in the linear combination is a pair of a scalar
+        value :math:`c_i` and an operator :math:`O_i`, so that the sum
+
+        .. math:: O = \sum_i c_i O_i
+
+        constructs this operator :math:`O`.
+
+        A ``NotImplementedError`` is raised if no representation by terms is defined.
+
+        .. note::
+            This method gets overwritten by subclasses to define the linear combination representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in the
+                ``hyperparameters`` attribute
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
+
+        **Example**
+
+        >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+        """
+        return NotImplementedError
+
+    def terms(self):
+        r"""Representation of this operator as a linear combination.
+
+        Each term in the linear combination is a pair of a
+        scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
+
+        .. math:: O = \sum_i c_i O_i
+
+        constructs this operator :math:`O`.
+
+        .. note::
+            By default, this method calls the static method ``compute_terms``,
+            which is used by subclasses to define the concrete representation.
+
+        A ``NotImplementedError`` is raised if no representation through terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+                and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)]).terms()
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+
+        The coefficients are differentiable and can be stored as tensors:
+
+        >>> import tensorflow as tf
+        >>> op = qml.Hamiltonian(tf.Variable([1., 2.]), [qml.PauliX(0), qml.PauliZ(0)])
+        >>> op.terms()[0]
+        [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
+        """
+        return self.compute_terms(*self.parameters, **self.hyperparameters)
+
     @property
     @abc.abstractmethod
     def num_wires(self):
