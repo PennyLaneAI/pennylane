@@ -591,8 +591,8 @@ class Operator(abc.ABC):
         A ``NotImplementedError`` is raised if no representation through terms is defined.
 
         Returns:
-            list[tensor_like or float], list[.Operation]: list of coefficients :math:`c_i`
-                and list of operations :math:`O_i`
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
 
         **Example**
 
