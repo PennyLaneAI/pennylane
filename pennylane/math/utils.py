@@ -400,14 +400,14 @@ def requires_grad(tensor, interface=None):
     raise ValueError(f"Argument {tensor} is an unknown object")
 
 
-def squeeze(tensor):
-    """Wrapper function for autoray.numpy.squeeze."""
-
-    try:
-        result = np.squeeze(tensor)
-
-    except TracerArrayConversionError:  # when using jit, the squeeze method tries to cast
-        if (type(tensor) is list) and (len(tensor) == 1):
-            result = tensor[0]  # r as a numpy array, so here we manually 'squeeze' it
-
-    return result
+# def squeeze(tensor):
+#     """Wrapper function for autoray.numpy.squeeze."""
+#
+#     try:
+#         result = np.squeeze(tensor)
+#
+#     except TracerArrayConversionError:  # when using jit, the squeeze method tries to cast
+#         if (type(tensor) is list) and (len(tensor) == 1):
+#             result = tensor[0]  # r as a numpy array, so here we manually 'squeeze' it
+#
+#     return result
