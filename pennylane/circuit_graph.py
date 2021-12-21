@@ -177,7 +177,9 @@ class CircuitGraph:
             # This operator does not depend on any others
 
             # Check if wire[0] in self._grid.values()
-            # is already added to the graph
+            # is already added to the graph; this
+            # condition avoids adding new nodes with
+            # the same value but different indexes
             if wire[0] not in self._graph.nodes():
                 self._graph.add_node(wire[0])
 
@@ -189,6 +191,8 @@ class CircuitGraph:
                     self._graph.add_node(wire[i])
 
                 # Create an edge between this and the previous operator
+                # There isn't any default value for the edge-data in
+                # rx.PyDiGraph.add_edge(); this is set to an empty string
                 self._graph.add_edge(
                     self._graph.nodes().index(wire[i - 1]), self._graph.nodes().index(wire[i]), ""
                 )
@@ -336,6 +340,7 @@ class CircuitGraph:
         anc = set(
             self._graph.get_node_data(n)
             for n in set().union(
+                # rx.ancestors() returns node indexes instead of node-values
                 *(rx.ancestors(self._graph, self._graph.nodes().index(o)) for o in ops)
             )
         )
@@ -353,6 +358,7 @@ class CircuitGraph:
         des = set(
             self._graph.get_node_data(n)
             for n in set().union(
+                # rx.descendants() returns node indexes instead of node-values
                 *(rx.descendants(self._graph, self._graph.nodes().index(o)) for o in ops)
             )
         )
