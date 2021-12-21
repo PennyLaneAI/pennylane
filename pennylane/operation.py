@@ -604,7 +604,7 @@ class Operator(abc.ABC):
         return self._eigvals(*self.parameters)
 
     @staticmethod
-    def compute_terms(*params, **hyperparams):
+    def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
         r"""Static method to define the representation of this operation as a linear combination.
 
         Each term in the linear combination is a pair of a scalar
@@ -817,6 +817,7 @@ class Operator(abc.ABC):
     @property
     def hyperparameters(self):
         """dict: Dictionary of non-trainable variables that define this operation."""
+        # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
         self._hyperparameters = {}
