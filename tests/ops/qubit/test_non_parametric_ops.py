@@ -419,7 +419,6 @@ class TestDecompositions:
 
 
 class TestEigenval:
-
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
@@ -440,6 +439,7 @@ class TestEigenval:
         evals = qml.SX(wires=0).eigvals()
         expected = np.linalg.eigvals(qml.SX(wires=0).matrix())
         assert np.allclose(evals, expected)
+
 
 class TestBarrier:
     """Tests that the Barrier gate is correct"""
