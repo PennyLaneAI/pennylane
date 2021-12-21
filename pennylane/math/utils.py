@@ -17,7 +17,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 import autoray as ar
 from autoray import numpy as np
 import numpy as _np
-from jax.errors import TracerArrayConversionError
 
 from . import single_dispatch  # pylint:disable=unused-import
 
@@ -398,16 +397,3 @@ def requires_grad(tensor, interface=None):
         return isinstance(tensor, jax.core.Tracer)
 
     raise ValueError(f"Argument {tensor} is an unknown object")
-
-
-# def squeeze(tensor):
-#     """Wrapper function for autoray.numpy.squeeze."""
-#
-#     try:
-#         result = np.squeeze(tensor)
-#
-#     except TracerArrayConversionError:  # when using jit, the squeeze method tries to cast
-#         if (type(tensor) is list) and (len(tensor) == 1):
-#             result = tensor[0]  # r as a numpy array, so here we manually 'squeeze' it
-#
-#     return result

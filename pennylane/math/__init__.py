@@ -60,7 +60,6 @@ from .utils import (
     convert_like,
     get_interface,
     requires_grad,
-    # squeeze,
 )
 
 from .is_independent import is_independent
