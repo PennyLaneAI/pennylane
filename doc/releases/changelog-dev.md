@@ -122,7 +122,12 @@
 * Interferometer is now a class with `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
 
-* Replace NetworkX by RetworkX in CircuitGraph and add RetworkX support to QAOA.
+* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
+  uses RetworkX for its internal representation. This results in significant speedup
+  for algorithms that rely on a directed acyclic graph representation.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+  
+* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
 <h3>Breaking changes</h3>
