@@ -71,24 +71,22 @@ class TestIndicesTTN:
 
     @pytest.mark.parametrize(
         ("wires", "n_block_wires"),
-        [
-            (range(5), 2)
-        ],
+        [(range(5), 2), (range(12), 4), (range(16), 6)],
     )
     def test_warning_many_wires(self, wires, n_block_wires):
         """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
         n_wires = len(wires)
         with pytest.warns(
-            Warning
-        ) as wn:
+            Warning,
+            match=f"The number of wires should be n_block_wires times 2\\^n; got n_wires/n_block_wires = {n_wires/n_block_wires}",
+        ):
             compute_indices(range(n_wires), n_block_wires)
-        assert wn.value == f"The number of wires should be n_block_wires times 2n"
 
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, [[1,2],[3,4],[2,4]]),
-            (range(12), 6, [[0,1,2,3,4,5],[6,7,8,9,10,11],[3,4,5,9,10,11]]),
+            ([1, 2, 3, 4], 2, [[1, 2], [3, 4], [2, 4]]),
+            (range(12), 6, [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11], [3, 4, 5, 9, 10, 11]]),
             (["a", "b", "c", "d"], 2, [["a", "b"], ["c", "d"], ["b", "d"]]),
         ],
     )
@@ -129,18 +127,19 @@ class TestTemplateInputs:
         with pytest.raises(ValueError, match=msg_match):
             TTN(wires, n_block_wires, block, n_params_block)
 
-    # def test_warning_many_wires(self):
-    #     """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
+    def test_warning_many_wires(self):
+        """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
 
-    #     n_block_wires = 4
-    #     wires = [1, 2, 3, 4, 5]
-    #     n_wires = len(wires)
-    #     n_params_block = 1
-    #     with pytest.warns(
-    #         Warning,
-    #         match=f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
-    #     ):
-    #         TTN(wires, n_block_wires, block=None, n_params_block=n_params_block)
+        n_block_wires = 4
+        wires = [1, 2, 3, 4, 5]
+        n_wires = len(wires)
+        n_params_block = 1
+        with pytest.warns(
+            Warning,
+            match=f"The number of wires should be n_block_wires times 2\\^n; "
+            f"got n_wires/n_block_wires = {n_wires/n_block_wires}",
+        ):
+            TTN(wires, n_block_wires, block=None, n_params_block=n_params_block)
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "block_weights", "msg_match"),
@@ -174,17 +173,18 @@ class TestTemplateInputs:
 class TestAttributes:
     """Tests additional methods and attributes"""
 
-    # @pytest.mark.parametrize(
-    #     ("wires", "n_block_wires"),
-    #     [(range(7), 4), (range(13), 6)],
-    # )
-    # def test_get_n_blocks_warning(self, wires, n_block_wires):
-    #     """Test that get_n_blocks() warns the user when there are too many wires."""
-    #     with pytest.warns(
-    #         Warning,
-    #         match=f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {len(wires)/n_block_wires}"
-    #     ):
-    #         qml.TTN.get_n_blocks(wires, n_block_wires)
+    @pytest.mark.parametrize(
+        ("wires", "n_block_wires"),
+        [(range(7), 4), (range(13), 6)],
+    )
+    def test_get_n_blocks_warning(self, wires, n_block_wires):
+        """Test that get_n_blocks() warns the user when there are too many wires."""
+        with pytest.warns(
+            Warning,
+            match=f"The number of wires should be n_block_wires times 2\\^n; "
+            f"got n_wires/n_block_wires = {len(wires)/n_block_wires}",
+        ):
+            qml.TTN.get_n_blocks(wires, n_block_wires)
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -264,7 +264,7 @@ class TestTemplateOutputs:
         )
         qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
         qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
-        qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1],wires[3]])
+        qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1], wires[3]])
 
     @pytest.mark.parametrize(
         (
@@ -279,12 +279,19 @@ class TestTemplateOutputs:
             (
                 circuit1_block,
                 2,
-                [0,1,2,3],
+                [0, 1, 2, 3],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
                 circuit1_TTN,
             ),
-            (circuit2_block, 3, [1, 2, 3, 4], 2, [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4],[0.5,0.2,0.3]], circuit2_TTN),
+            (
+                circuit2_block,
+                3,
+                [1, 2, 3, 4],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]],
+                circuit2_TTN,
+            ),
         ],
     )
     def test_output(

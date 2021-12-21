@@ -49,7 +49,7 @@ def compute_indices(wires, n_block_wires):
 
     if not np.log2(n_wires / n_block_wires).is_integer():
         warnings.warn(
-            f"The number of wires should be n_block_wires times 2n"
+            f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
 
     n_wires = 2 ** (int(np.log2(len(wires) / n_block_wires))) * n_block_wires
