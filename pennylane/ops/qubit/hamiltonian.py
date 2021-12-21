@@ -245,7 +245,7 @@ class Hamiltonian(Observable):
             ops (list[~.Operator]): operators
 
         Returns:
-            Iterable[tensor_like or float], list[~.Operator]: coefficients and operations
+            tuple[Iterable[tensor_like or float], list[~.Operator]]: coefficients and operations
         """
         return params, ops
 
@@ -332,7 +332,7 @@ class Hamiltonian(Observable):
         **Example**
 
         >>> ops = [qml.PauliY(2), qml.PauliX(0) @ qml.Identity(1), qml.PauliX(0)]
-        >>> H = qml.Hamiltonian([1, 1, -2], new_ops)
+        >>> H = qml.Hamiltonian([1, 1, -2], ops)
         >>> H.simplify()
         >>> print(H)
           (-1) [X0]

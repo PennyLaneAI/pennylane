@@ -562,17 +562,17 @@ class Operator(abc.ABC):
         Args:
             params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in the
-                ``hyperparameters["ops"]`` attribute
+                ``hyperparameters`` attribute
 
         Returns:
-            list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
 
         **Example**
 
         >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
-        return None
+        return NotImplementedError
 
     def terms(self):
         r"""Representation of this operator as a linear combination.
@@ -591,7 +591,7 @@ class Operator(abc.ABC):
         A ``NotImplementedError`` is raised if no representation through terms is defined.
 
         Returns:
-            list[tensor_like or float], list[.Operation]: list of coefficients :math:`c_i`
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
                 and list of operations :math:`O_i`
 
         **Example**
