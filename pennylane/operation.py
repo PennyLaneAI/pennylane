@@ -549,28 +549,28 @@ class Operator(abc.ABC):
         Each term in the linear combination is a pair of a scalar
         value :math:`c_i` and an operator :math:`O_i`, so that the sum
 
-         .. math:: O = \sum_i c_i O_i
+        .. math:: O = \sum_i c_i O_i
 
-         constructs this operator :math:`O`.
+        constructs this operator :math:`O`.
 
-         A ``NotImplementedError`` is raised if no representation by terms is defined.
+        A ``NotImplementedError`` is raised if no representation by terms is defined.
 
-         .. note::
-             This method gets overwritten by subclasses to define the linear combination representation
-             of a particular operator.
+        .. note::
+            This method gets overwritten by subclasses to define the linear combination representation
+            of a particular operator.
 
-         Args:
-             params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
-             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in the
+        Args:
+            params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in the
                 ``hyperparameters["ops"]`` attribute
 
-         Returns:
-             list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
+        Returns:
+            list[tensor_like or float], list[.Operation]: list of coefficients and list of operations
 
-         **Example**
+        **Example**
 
-         >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
-         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+        >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
         return None
 
