@@ -356,7 +356,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
+            assert circuit.qtape.trainable_params == [4]
 
         res = qml.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)

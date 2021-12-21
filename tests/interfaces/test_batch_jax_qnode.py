@@ -254,7 +254,7 @@ class TestQNode:
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
+            assert circuit.qtape.trainable_params == [4]
 
     def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
         """Test that operation and nested tape expansion

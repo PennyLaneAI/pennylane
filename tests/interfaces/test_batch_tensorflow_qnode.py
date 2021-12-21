@@ -356,7 +356,7 @@ class TestQNode:
             res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
+            assert circuit.qtape.trainable_params == [4]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 

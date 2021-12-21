@@ -79,7 +79,7 @@ class QubitUnitary(Operation):
                     UserWarning,
                 )
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(U, wires=wires, do_queue=do_queue)
 
     @property
     def num_params(self):

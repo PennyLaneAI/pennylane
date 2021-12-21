@@ -539,7 +539,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.expval(qml.PauliZ(0))
 
             res = execute([tape], dev, **execute_kwargs)[0]
-            assert tape.trainable_params == [1]
+            assert tape.trainable_params == [4]
 
         assert np.allclose(res, -tf.cos(a), atol=tol, rtol=0)
 
