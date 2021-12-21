@@ -79,7 +79,7 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
 
         for wire in range(n_wires):
             loc = np.argwhere(op_wires == wire).flatten()
-            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix
+            mat = np.eye(2) if len(loc) == 0 else op_list[loc[0]].matrix()
             mat = csc_matrix(mat)
             op_matrices.append(mat)
 

@@ -44,7 +44,6 @@ class Hadamard(Observable, Operation):
     """
     num_wires = 1
     eigvals = pauli_eigs(1)
-    matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @property
     def num_params(self):
@@ -53,9 +52,20 @@ class Hadamard(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Hadamard operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Hadamard.compute_matrix()
+        [[ 0.70710678  0.70710678]
+         [ 0.70710678 -0.70710678]]
+        """
+        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -119,7 +129,6 @@ class PauliX(Observable, Operation):
     num_wires = 1
     basis = "X"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[0, 1], [1, 0]])
 
     @property
     def num_params(self):
@@ -128,9 +137,20 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliX operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliX.compute_matrix()
+        [[0 1]
+         [1 0]]
+        """
+        return np.array([[0, 1], [1, 0]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -195,7 +215,6 @@ class PauliY(Observable, Operation):
     num_wires = 1
     basis = "Y"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[0, -1j], [1j, 0]])
 
     @property
     def num_params(self):
@@ -204,9 +223,20 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliY operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliY.compute_matrix()
+        [[ 0.+0.j -0.-1.j]
+         [ 0.+1.j  0.+0.j]]
+        """
+        return np.array([[0, -1j], [1j, 0]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -277,7 +307,6 @@ class PauliZ(Observable, Operation):
     num_wires = 1
     basis = "Z"
     eigvals = pauli_eigs(1)
-    matrix = np.array([[1, 0], [0, -1]])
 
     @property
     def num_params(self):
@@ -286,9 +315,20 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliZ operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliZ.compute_matrix()
+        [[ 1  0]
+         [ 0 -1]]
+        """
+        return np.array([[1, 0], [0, -1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -347,15 +387,25 @@ class S(Operation):
     num_wires = 1
     basis = "Z"
     op_eigvals = np.array([1, 1j])
-    op_matrix = np.array([[1, 0], [0, 1j]])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the S operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.S.compute_matrix()
+        [[1.+0.j 0.+0.j]
+         [0.+0.j 0.+1.j]]
+        """
+        return np.array([[1, 0], [0, 1j]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -393,16 +443,26 @@ class T(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
     op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the T operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.T.compute_matrix()
+        [[1.+0.j         0.        +0.j        ]
+         [0.+0.j         0.70710678+0.70710678j]]
+        """
+        return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -440,16 +500,26 @@ class SX(Operation):
     """
     num_wires = 1
     basis = "X"
-    op_matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
     op_eigvals = np.array([1, 1j])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SX operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SX.compute_matrix()
+        [[0.5+0.5j 0.5-0.5j]
+         [0.5-0.5j 0.5+0.5j]]
+        """
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -496,7 +566,6 @@ class CNOT(Operation):
     """
     num_wires = 2
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @property
     def num_params(self):
@@ -505,9 +574,22 @@ class CNOT(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return CNOT.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CNOT operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CNOT.compute_matrix()
+        [[1 0 0 0]
+         [0 1 0 0]
+         [0 0 0 1]
+         [0 0 1 0]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     def adjoint(self):
         return CNOT(wires=self.wires)
@@ -544,7 +626,6 @@ class CZ(Operation):
     num_wires = 2
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @property
     def num_params(self):
@@ -553,9 +634,22 @@ class CZ(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CZ operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CZ.compute_matrix()
+        [[ 1  0  0  0]
+         [ 0  1  0  0]
+         [ 0  0  1  0]
+         [ 0  0  0 -1]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -592,14 +686,6 @@ class CY(Operation):
     """
     num_wires = 2
     basis = "Y"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -608,9 +694,29 @@ class CY(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CY operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CY.compute_matrix()
+        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
+         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, -1j],
+                [0, 0, 1j, 0],
+            ]
+        )
 
     @staticmethod
     def decomposition(wires):
@@ -646,15 +752,27 @@ class SWAP(Operation):
     """
     num_wires = 2
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SWAP operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SWAP.compute_matrix()
+        [[1 0 0 0]
+         [0 0 1 0]
+         [0 1 0 0]
+         [0 0 0 1]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
     def decomposition(wires):
@@ -692,16 +810,28 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
     op_eigvals = np.array([1j, -1j, 1, 1])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the ISWAP operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.ISWAP.compute_matrix()
+        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+1.j 0.+0.j]
+         [0.+0.j 0.+1.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+0.j 1.+0.j]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @classmethod
     def _eigvals(cls, *params):
@@ -743,23 +873,35 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
-            [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
-            [0, 0, 0, 1],
-        ]
-    )
     op_eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SISWAP operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SISWAP.compute_matrix()
+        [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
+         [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
+         [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
+         [0.+0.j          0.+0.j          0.+0.j  1.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+                [0, 0, 0, 1],
+            ]
+        )
 
     @classmethod
     def _eigvals(cls, *params):
@@ -817,18 +959,6 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-    matrix = np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -837,9 +967,37 @@ class CSWAP(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CSWAP operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CSWAP.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
 
     @staticmethod
     def decomposition(wires):
@@ -886,18 +1044,6 @@ class Toffoli(Operation):
     """
     num_wires = 3
     basis = "X"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -906,9 +1052,37 @@ class Toffoli(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Toffoli operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Toffoli.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 1 0]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+            ]
+        )
 
     @staticmethod
     def decomposition(wires):
@@ -1018,46 +1192,56 @@ class MultiControlledX(Operation):
         ):
             raise ValueError("The work wires must be different from the control and target wires")
 
-        self._target_wire = wires[0]
-        self._work_wires = work_wires
-        self._control_wires = control_wires
-
-        wires = control_wires + wires
-
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        control_int = self._parse_control_values(control_wires, control_values)
-        self.control_values = control_values
+        # we do not store this in the hyperparameters,
+        # because it influences the implementation of this op,
+        # not the transformation itself
+        self.work_wires = work_wires
 
-        self._padding_left = control_int * 2
-        self._padding_right = 2 ** len(wires) - 2 - self._padding_left
-        self._CX = None
+        self._hyperparameters = {
+            "target_wire": wires[0],
+            "control_wires": control_wires,
+            "control_values": control_values,
+        }
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        total_wires = control_wires + wires
+
+        super().__init__(wires=total_wires, do_queue=do_queue)
 
     @property
     def num_params(self):
         return 0
 
-    def _matrix(self, *params):
-        if self._CX is None:
-            self._CX = block_diag(
-                np.eye(self._padding_left), PauliX.matrix, np.eye(self._padding_right)
-            )
-
-        return self._CX
-
-    @property
-    def control_wires(self):
-        return self._control_wires
-
-    def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
-
+    # pylint: disable=unused-argument
     @staticmethod
-    def _parse_control_values(control_wires, control_values):
-        """Ensure any user-specified control strings have the right format."""
+    def compute_matrix(
+        control_wires, control_values, target_wire
+    ):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the MultiControlledX operator.
+
+        Args:
+           control_wires (Iterable): wires to place controls on
+           control_values (str): string of bits determining the controls
+           target_wire (Iterable): wire that the X gets applied to.
+
+        Returns:
+           tensor_like: matrix representation
+
+        **Example**
+
+        >>> qml.MultiControlledX.compute_matrix([0], '1', [1])
+        [[1. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 1.]
+         [0. 0. 1. 0.]]
+        >>> qml.MultiControlledX.compute_matrix([1], '0', [0])
+        [[0. 1. 0. 0.]
+         [1. 0. 0. 0.]
+         [0. 0. 1. 0.]
+         [0. 0. 0. 1.]]
+        """
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
@@ -1070,49 +1254,57 @@ class MultiControlledX(Operation):
         else:
             raise ValueError("Alternative control values must be passed as a binary string.")
 
-        return control_int
+        padding_left = control_int * 2
+        padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
+        cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
+        return cx
+
+    @property
+    def control_wires(self):
+        return self.hyperparameters["control_wires"]
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     def adjoint(self):
         return MultiControlledX(
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
-            control_values=self.control_values,
-            work_wires=self._work_wires,
+            control_values=self.hyperparameters["control_values"],
+            work_wires=self.work_wires,
         )
 
     # pylint: disable=unused-argument
     def decomposition(self, *args, **kwargs):
 
-        if len(self.control_wires) > 2 and len(self._work_wires) == 0:
+        control_wires = self.hyperparameters["control_wires"]
+        control_values = self.hyperparameters["control_values"]
+        target_wire = self.hyperparameters["target_wire"]
+
+        if len(control_wires) > 2 and len(self.work_wires) == 0:
             raise ValueError(f"At least one work wire is required to decompose operation: {self}")
 
         flips1 = [
-            qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(self.control_values)
-            if val == "0"
+            qml.PauliX(self.control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         if len(self.control_wires) == 1:
-            decomp = [qml.CNOT(wires=[self.control_wires[0], self._target_wire])]
+            decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
         elif len(self.control_wires) == 2:
-            decomp = [qml.Toffoli(wires=[*self.control_wires, self._target_wire])]
+            decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
-            num_work_wires_needed = len(self.control_wires) - 2
+            num_work_wires_needed = len(control_wires) - 2
 
-            if len(self._work_wires) >= num_work_wires_needed:
+            if len(self.work_wires) >= num_work_wires_needed:
                 decomp = self._decomposition_with_many_workers(
-                    self.control_wires, self._target_wire, self._work_wires
+                    control_wires, target_wire, self.work_wires
                 )
             else:
-                work_wire = self._work_wires[0]
-                decomp = self._decomposition_with_one_worker(
-                    self.control_wires, self._target_wire, work_wire
-                )
+                work_wire = self.work_wires[0]
+                decomp = self._decomposition_with_one_worker(control_wires, target_wire, work_wire)
 
         flips2 = [
-            qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(self.control_values)
-            if val == "0"
+            qml.PauliX(self.control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         return flips1 + decomp + flips2
