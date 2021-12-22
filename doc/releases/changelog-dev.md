@@ -136,7 +136,7 @@
 
 * Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
   positions corresponding to vanishing state vector amplitudes is wrong.
-  [(#20xx)](https://github.com/PennyLaneAI/pennylane/pull/20xx)
+  [(#2057)](https://github.com/PennyLaneAI/pennylane/pull/2057)
 
 * Fixes a bug where PennyLane didn't require v0.20.0 of PennyLane-Lightning,
   but raised an error with versions of Lightning earlier than v0.20.0 due to
