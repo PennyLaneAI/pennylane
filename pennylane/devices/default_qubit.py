@@ -516,7 +516,7 @@ class DefaultQubit(QubitDevice):
                 if observable.name == "Hamiltonian":
                     Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
-                    Hmat = observable.matrix
+                    Hmat = observable.matrix()
 
                 state = qml.math.toarray(self.state)
                 res = coo_matrix.dot(
@@ -543,9 +543,9 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.eigvals
+            return unitary.eigvals()
 
-        return unitary.matrix
+        return unitary.matrix()
 
     @classmethod
     def capabilities(cls):

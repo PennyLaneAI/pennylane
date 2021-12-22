@@ -114,7 +114,6 @@ class MeasurementProcess:
             return self.obs.wires
         return self._wires
 
-    @property
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
@@ -129,7 +128,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.eigvals
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -137,7 +136,7 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.eigvals
+                return self.obs.eigvals()
             except NotImplementedError:
                 pass
 
@@ -171,7 +170,7 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].eigvals)
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
@@ -183,7 +182,7 @@ class MeasurementProcess:
 
         with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -440,9 +439,9 @@ def probs(wires=None, op=None):
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not hasattr(op, "diagonalizing_gates"):
+    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
-            f"{op} has not diagonalizing_gates attribute: cannot be used to rotate the probability"
+            f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
 
     if wires is not None:

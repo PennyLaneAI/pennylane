@@ -18,6 +18,8 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import functools
 import math
+from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -53,16 +55,30 @@ class RX(Operation):
     num_wires = 1
     basis = "X"
     grad_method = "A"
-    generator = [PauliX, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliX(wires=self.wires)
 
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the RX operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RX.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000-0.2474j],
+                [0.0000-0.2474j, 0.9689+0.0000j]])
+        """
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -110,15 +126,30 @@ class RY(Operation):
     num_wires = 1
     basis = "Y"
     grad_method = "A"
-    generator = [PauliY, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliY(wires=self.wires)
 
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the RY operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RY.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689, -0.2474],
+                [ 0.2474,  0.9689]])
+        """
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -161,16 +192,30 @@ class RZ(Operation):
     num_wires = 1
     basis = "Z"
     grad_method = "A"
-    generator = [PauliZ, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliZ(wires=self.wires)
 
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the RZ operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RZ.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j]])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -178,9 +223,21 @@ class RZ(Operation):
 
         return qml.math.diag([p, qml.math.conj(p)])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the RZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -223,7 +280,9 @@ class PhaseShift(Operation):
     num_wires = 1
     basis = "Z"
     grad_method = "A"
-    generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1]), wires=self.wires)
 
     @property
     def num_params(self):
@@ -232,10 +291,22 @@ class PhaseShift(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -243,10 +314,21 @@ class PhaseShift(Operation):
 
         return qml.math.diag([1, exp_part])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 0.8776+0.4794j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -297,7 +379,9 @@ class ControlledPhaseShift(Operation):
     num_wires = 2
     basis = "Z"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1, 1]), wires=self.wires)
 
     @property
     def num_params(self):
@@ -306,10 +390,24 @@ class ControlledPhaseShift(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the ControlledPhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
+            tensor([[1.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -317,10 +415,21 @@ class ControlledPhaseShift(Operation):
 
         return qml.math.diag([1, 1, 1, exp_part])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the ControlledPhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -387,15 +496,29 @@ class Rot(Operation):
     def num_params(self):
         return 3
 
-    @classmethod
-    def _matrix(cls, *params):
-        # There are three input parameters to be dealt with
-        phi, theta, omega = params
+    @staticmethod
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Rot operator.
 
+        Args:
+            phi (tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0993+0.0100j,  0.9752+0.1977j]])
+
+        """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch([phi, theta, omega])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -461,68 +584,76 @@ class MultiRZ(Operation):
         will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
 
     Args:
-        theta (float): rotation angle :math:`\theta`
+        theta (tensor_like or float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_wires = AnyWires
     grad_method = "A"
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        wires = Wires(wires)
+        self._hyperparameters = {"n_wires": len(wires)}
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, theta, n):
-        """Matrix representation of a MultiRZ gate.
+    @staticmethod
+    def compute_matrix(theta, n_wires):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the MultiRZ operator.
 
         Args:
-            theta (float): Rotation angle.
-            n (int): Number of wires the rotation acts on. This has
-                to be given explicitly in the static method as the
-                wires object is not available.
+            theta (tensor_like or float): rotation angle
+            n_wires (int): number of wires the rotation acts on
 
         Returns:
-            array[complex]: The matrix representation
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.MultiRZ.compute_matrix(torch.tensor(0.1), 2)
+        tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
         """
-        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
-        multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
+        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
 
-        return multi_Z_rot_matrix
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            eigs = qml.math.cast_like(eigs, 1j)
 
-    _generator = None
+        eigvals = qml.math.exp(-1j * theta / 2 * eigs)
+        return qml.math.diag(eigvals)
 
-    @property
     def generator(self):
-        if self._generator is None:
-            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
-        return self._generator
+        return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
-    @property
-    def matrix(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
-        if self.inverse:
-            # The matrix is diagonal, so there is no need to transpose
-            return qml.math.conj(self._matrix(*self.parameters, len(self.wires)))
+    @staticmethod
+    def compute_eigvals(theta, n_wires):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the MultiRZ operator.
 
-        return self._matrix(*self.parameters, len(self.wires))
+        Args:
+            theta (tensor_like or float): rotation angle
+            n_wires (int): number of wires the rotation acts on
 
-    @classmethod
-    def _eigvals(cls, theta, n):
-        eigs = qml.math.convert_like(pauli_eigs(n), theta)
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
+        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
+                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
         return qml.math.exp(-1j * theta / 2 * eigs)
-
-    @property
-    def eigvals(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
-        if self.inverse:
-            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
-
-        return self._eigvals(*self.parameters, len(self.wires))
 
     @staticmethod
     def decomposition(theta, wires):
@@ -583,14 +714,13 @@ class PauliRot(Operation):
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": Hadamard._matrix(),
-        "Y": RX._matrix(np.pi / 2),
+        "X": Hadamard.compute_matrix(),
+        "Y": RX.compute_matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
     def __init__(self, theta, pauli_word, wires=None, do_queue=True):
         super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
-
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
@@ -653,17 +783,28 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
-    @classmethod
-    def _matrix(cls, *params):
-        pauli_word = params[1]
+    @staticmethod
+    def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliRot operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+            pauli_word (str): string representation of Pauli word
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliRot.compute_matrix(0.5, 'X')
+        [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
+         [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+        """
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
                 " Allowed characters are I, X, Y and Z"
             )
-
-        theta = params[0]
 
         interface = qml.math.get_interface(theta)
 
@@ -689,7 +830,7 @@ class PauliRot(Operation):
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(non_identity_gates))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
@@ -706,49 +847,22 @@ class PauliRot(Operation):
             list(range(len(pauli_word))),
         )
 
-    _generator = None
-
-    @property
     def generator(self):
-        if self._generator is None:
-            pauli_word = self.parameters[1]
+        pauli_word = self.parameters[1]
+        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
 
-            # Simplest case is if the Pauli is the identity matrix
-            if pauli_word == "I" * len(pauli_word):
-                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
-                return self._generator
+    @staticmethod
+    def compute_eigvals(theta, pauli_word):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliRot operator.
 
-            # We first generate the matrix excluding the identity parts and expand it afterwards.
-            # To this end, we have to store on which wires the non-identity parts act
-            non_identity_wires, non_identity_gates = zip(
-                *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
-            )
+        Returns:
+            tensor_like: eigenvalues
 
-            # get MultiRZ's generator
-            multi_Z_rot_generator = qml.math.diag(pauli_eigs(len(non_identity_gates)))
+        **Example**
 
-            # now we conjugate with Hadamard and RX to create the Pauli string
-            conjugation_matrix = functools.reduce(
-                qml.math.kron,
-                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
-            )
-
-            self._generator = [
-                expand(
-                    qml.math.dot(
-                        qml.math.conj(qml.math.T(conjugation_matrix)),
-                        qml.math.dot(multi_Z_rot_generator, conjugation_matrix),
-                    ),
-                    non_identity_wires,
-                    list(range(len(pauli_word))),
-                ),
-                -1 / 2,
-            ]
-
-        return self._generator
-
-    @classmethod
-    def _eigvals(cls, theta, pauli_word):
+        >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -756,7 +870,7 @@ class PauliRot(Operation):
         if pauli_word == "I" * len(pauli_word):
             return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
 
-        return MultiRZ._eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
     @staticmethod
     def decomposition(theta, pauli_word, wires):
@@ -841,10 +955,8 @@ class CRX(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
 
     @property
     def num_params(self):
@@ -853,9 +965,24 @@ class CRX(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRX operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRX.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0+0.0j, 0.0+0.0j,    0.0+0.0j,    0.0+0.0j],
+                [0.0+0.0j, 1.0+0.0j,    0.0+0.0j,    0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j, 0.9689+0.0j, 0.0-0.2474j],
+                [0.0+0.0j, 0.0+0.0j, 0.0-0.2474j, 0.9689+0.0j]])
+        """
         interface = qml.math.get_interface(theta)
 
         c = qml.math.cos(theta / 2)
@@ -942,10 +1069,8 @@ class CRY(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
 
     @property
     def num_params(self):
@@ -954,9 +1079,24 @@ class CRY(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRY operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRY.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  1.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.0000,  0.9689, -0.2474],
+                [ 0.0000,  0.0000,  0.2474,  0.9689]], dtype=torch.float64)
+        """
         interface = qml.math.get_interface(theta)
 
         c = qml.math.cos(theta / 2)
@@ -1037,10 +1177,8 @@ class CRZ(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
 
     @property
     def num_params(self):
@@ -1049,10 +1187,24 @@ class CRZ(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRZ operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRZ.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0+0.0j, 0.0+0.0j,       0.0+0.0j,       0.0+0.0j],
+                [0.0+0.0j, 1.0+0.0j,       0.0+0.0j,       0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j, 0.9689-0.2474j,       0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j,       0.0+0.0j, 0.9689+0.2474j]])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -1060,9 +1212,22 @@ class CRZ(Operation):
 
         return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params[0]]))[0]
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=arguments-differ
+        """Eigenvalues of the CRZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        theta = qml.math.flatten(qml.math.stack([theta]))[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -1137,14 +1302,30 @@ class CRot(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi, theta, omega = params
+    @staticmethod
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRot operator.
 
+        Args:
+            phi(tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+         >>> qml.CRot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+         tensor([[ 1.0+0.0j,  0.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+                [ 0.0+0.0j,  1.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+                [ 0.0+0.0j,  0.0+0.0j,  0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
+        """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch([phi, theta, omega])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1223,16 +1404,30 @@ class U1(Operation):
     """
     num_wires = 1
     grad_method = "A"
-    generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1]), wires=self.wires)
 
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the U1 operator.
 
+        Args:
+            phi (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.U1.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -1289,11 +1484,24 @@ class U2(Operation):
     def num_params(self):
         return 2
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi, lam = params
+    @staticmethod
+    def compute_matrix(phi, lam):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the U2 operator.
 
-        interface = qml.math._multi_dispatch(params)
+        Args:
+            phi (tensor_like or float): azimuthal angle
+            lam (tensor_like or float): quantum phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.U2.compute_matrix(torch.tensor(0.1), torch.tensor(0.2))
+        tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
+                [ 0.7036+0.0706j,  0.6755+0.2090j]])
+        """
+        interface = qml.math._multi_dispatch([phi, lam])
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
@@ -1365,14 +1573,29 @@ class U3(Operation):
     def num_params(self):
         return 3
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta, phi, lam = params
+    @staticmethod
+    def compute_matrix(theta, phi, lam):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the U3 operator.
 
+        Args:
+            theta (tensor_like or float): polar angle
+            phi (tensor_like or float): azimuthal angle
+            lambda (tensor_like or float): quantum phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.U3.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 0.9988+0.0000j, -0.0477-0.0148j],
+                [ 0.0490+0.0099j,  0.8765+0.4788j]])
+
+        """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch([theta, phi, lam])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1432,19 +1655,32 @@ class IsingXX(Operation):
     num_wires = 2
     grad_method = "A"
 
-    generator = [
-        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the IsingXX operator.
 
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingXX.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j],
+                [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
+                [0.0000-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]],
+               dtype=torch.complex128)
+        """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
         Y = qml.math.convert_like(np.eye(4)[::-1].copy(), phi)
@@ -1495,10 +1731,9 @@ class IsingYY(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
-        -1 / 2,
-    ]
+
+    def generator(self):
+        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
 
     @property
     def num_params(self):
@@ -1512,10 +1747,24 @@ class IsingYY(Operation):
             qml.CY(wires=wires),
         ]
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the IsingYY operator.
 
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingYY.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.2474j],
+                [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]])
+        """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
         Y = qml.math.convert_like(np.diag([1, -1, -1, 1])[::-1].copy(), phi)
@@ -1556,10 +1805,9 @@ class IsingZZ(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
-        -1 / 2,
-    ]
+
+    def generator(self):
+        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
 
     @property
     def num_params(self):
@@ -1573,10 +1821,24 @@ class IsingZZ(Operation):
             qml.CNOT(wires=wires),
         ]
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the IsingZZ operator.
 
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingZZ.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
