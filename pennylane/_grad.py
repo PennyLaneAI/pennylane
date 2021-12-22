@@ -156,12 +156,76 @@ def jacobian(func, argnum=None):
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
         argnum (int or Sequence[int]): Which argument to take the gradient
-            with respect to. If a sequence is given, the Jacobian matrix
-            corresponding to all input elements and all output elements is returned.
+            with respect to. If a sequence is given, the Jacobian corresponding
+            to all marked inputs and all output elements is returned.
 
     Returns:
         function: the function that returns the Jacobian of the input
         function with respect to the arguments in argnum
+
+    For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
+    passed to the function. The returned function takes the same arguments as the original
+    function and outputs a ``tuple``. The ``i`` th entry of the ``tuple`` has shape
+    ``(*output shape, *shape of args[argnum[i]])``.
+    If the inferred value of ``argnum`` is a single-element list or if a single integer
+    is provided as ``argnum``, the tuple is unpacked and its only entry is returned instead.
+
+    **Example**
+
+    Consider the QNode 
+
+    .. code-block::
+    
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x[0], wires=0)
+            qml.RY(y[0, 3], wires=1)
+            qml.RX(x[1], wires=2)
+            return [qml.expval(qml.PauliZ(w)) for w in [0, 1, 2]]
+
+        x = np.array([0.1, 0.5], requires_grad=True)
+        y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
+
+    If we do not provide ``argnum``, ``qml.jacobian`` will correctly identify both,
+    ``x`` and ``y``, as trainable function arguments:
+
+    >>> jac = qml.jacobian(circuit)(x, y)
+    >>> print(type(jac), len(jac))
+    <class 'tuple'> 2
+    >>> qml.math.shape(jac[0])
+    (3, 2)
+    >>> qml.math.shape(jac[1])
+    (3, 2, 4)
+
+    As we can see, there are two entries in the output, one Jacobian for each
+    QNode argument. The shape ``(3, 2)`` of the first Jacobian is the combination
+    of the QNode output shape (``(3,)``) and the shape of ``x`` (``(2,)``).
+    Similarily, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(3, 2, 4)``.
+
+    Instead we may choose the output to contain only one of the two
+    entries by providing an iterable as ``argnum``:
+
+    >>> jac = qml.jacobian(circuit, argnum=[1])(x, y)
+    >>> print(type(jac), len(jac))
+    <class 'tuple'> 1
+    >>> qml.math.shape(jac)
+    (1, 3, 2, 4)
+
+    Here we included the size of the tuple in the shape analysis, corresponding to the
+    first dimension of size ``1``.
+    Finally, we may want to receive the single entry above directly, not as a tuple
+    with a single entry. This is done by providing a single integer as ``argnum``
+
+    >>> jac = qml.jacobian(circuit, argnum=1)(x, y)
+    >>> print(type(jac), len(jac))
+    <class 'numpy.ndarray'> 3
+    >>> qml.math.shape(jac)
+    (3, 2, 4)
+
+    As expected, the tuple was unpacked and we directly received the Jacobian of the
+    QNode with respect to ``y``.
     """
     # pylint: disable=no-value-for-parameter
 
@@ -173,9 +237,9 @@ def jacobian(func, argnum=None):
         for idx, arg in enumerate(args):
 
             trainable = getattr(arg, "requires_grad", None)
-            array_box = isinstance(arg, ArrayBox)
+            is_array_box = isinstance(arg, ArrayBox)
 
-            if trainable is None and not array_box:
+            if trainable is None and not is_array_box:
 
                 warnings.warn(
                     "Starting with PennyLane v0.21.0, when using Autograd, inputs "
@@ -194,28 +258,24 @@ def jacobian(func, argnum=None):
         return argnum
 
     def _jacobian_function(*args, **kwargs):
-        """Inspect the arguments for differentiability, and
-        compute the autograd gradient function with required argnums
-        dynamically.
+        """Compute the autograd Jacobian.
 
         This wrapper function is returned to the user instead of autograd.jacobian,
         so that we can take into account cases where the user computes the
         jacobian function once, but then calls it with arguments that change
         in differentiability.
         """
-        unpack = False
-        if argnum is not None:
-            # for backwards compatibility with existing code
-            # that manually specifies argnum
-            if isinstance(argnum, int):
-                _argnum = [argnum]
-                unpack = True
-            else:
-                _argnum = argnum
-        else:
+        if argnum is None:
+            # Infer which arguments to consider trainable
             _argnum = _get_argnum(args)
-            if len(_argnum) == 1:
-                unpack = True
+            # Infer whether to unpack from the infered argnum
+            unpack = len(_argnum) == 1
+        else:
+            # for backwards compatibility with existing code
+            # that manually specifies argnum: Allow for a single
+            # integer as argnum, but unpack the Jacobian tuple in that case
+            unpack = isinstance(argnum, int)
+            _argnum = [argnum] if unpack else argnum
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 
