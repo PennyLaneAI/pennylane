@@ -24,8 +24,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
-from pennylane import numpy as np
-
 make_vjp = unary_to_nary(_make_vjp)
 
 
@@ -167,7 +165,7 @@ def jacobian(func, argnum=None):
     """
     # pylint: disable=no-value-for-parameter
 
-    def _get_argnum(*args, **kwargs):
+    def _get_argnum(args):
         """Inspect the arguments for differentiability and return the
         corresponding indices."""
         argnum = []
@@ -215,7 +213,7 @@ def jacobian(func, argnum=None):
             else:
                 _argnum = argnum
         else:
-            _argnum = _get_argnum(*args, **kwargs)
+            _argnum = _get_argnum(args)
             if len(_argnum) == 1:
                 unpack = True
 

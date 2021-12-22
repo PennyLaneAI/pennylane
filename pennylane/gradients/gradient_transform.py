@@ -14,8 +14,6 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
-import warnings
-
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
