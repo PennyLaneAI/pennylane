@@ -181,7 +181,7 @@ can be broadcast with the shape and connectivity of tensor networks.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.MPS.html
-    :description: MPS
+    :description: Matrix Product State
     :figure: ../_static/templates/tensornetworks/MPS_template.png
 
 .. customgalleryitem::
