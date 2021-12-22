@@ -1839,13 +1839,12 @@ class CV:
 
     # pylint: disable=no-member
 
-    def heisenberg_expand(self, U, wires):
+    def heisenberg_expand(self, U, wire_order):
         """Expand the given local Heisenberg-picture array into a full-system one.
 
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
-            wires (Wires): wires on the device the array ``U`` should be expanded
-                to apply to
+            wire_order (Wires): global wire order defining which subspace the operator acts on
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
@@ -1863,20 +1862,20 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError(f"{self.name}: Heisenberg matrix is the wrong size {U_dim}.")
 
-        if len(wires) == 0 or len(self.wires) == len(wires):
+        if len(wire_order) == 0 or len(self.wires) == len(wire_order):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
-        if not wires.contains_wires(self.wires):
+        if not wire_order.contains_wires(self.wires):
             raise ValueError(
-                f"{self.name}: Some observable wires {self.wires} do not exist on this device with wires {wires}"
+                f"{self.name}: Some observable wires {self.wires} do not exist on this device with wires {wire_order}"
             )
 
         # get the indices that the operation's wires have on the device
-        wire_indices = wires.indices(self.wires)
+        wire_indices = wire_order.indices(self.wires)
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
-        dim = 1 + len(wires) * 2
+        dim = 1 + len(wire_order) * 2
 
         def loc(w):
             "Returns the slice denoting the location of (x_w, p_w) in the basis."
@@ -2004,7 +2003,7 @@ class CVOperation(CV, Operation):
 
         return pd
 
-    def heisenberg_tr(self, wires, inverse=False):
+    def heisenberg_tr(self, wire_order, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried
         out by the gate at current parameter values.
 
@@ -2022,7 +2021,7 @@ class CVOperation(CV, Operation):
         for non-Gaussian (and non-CV) gates.
 
         Args:
-            wires (Wires): wires on the device that the observable gets applied to
+            wire_order (Wires): global wire order defining which subspace the operator acts on
             inverse  (bool): if True, return the inverse transformation instead
 
         Raises:
@@ -2046,7 +2045,7 @@ class CVOperation(CV, Operation):
                 f"{self.name} is not a Gaussian operation, or is missing the _heisenberg_rep method."
             )
 
-        return self.heisenberg_expand(U, wires)
+        return self.heisenberg_expand(U, wire_order)
 
 
 class CVObservable(CV, Observable):
@@ -2069,7 +2068,7 @@ class CVObservable(CV, Observable):
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
-    def heisenberg_obs(self, wires):
+    def heisenberg_obs(self, wire_order):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
@@ -2082,13 +2081,13 @@ class CVObservable(CV, Observable):
           such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
 
         Args:
-            wires (Wires): wires on the device that the observable gets applied to
+            wire_order (Wires): global wire order defining which subspace the operator acts on
         Returns:
             array[float]: :math:`q`
         """
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        return self.heisenberg_expand(U, wires)
+        return self.heisenberg_expand(U, wire_order)
 
 
 def operation_derivative(operation) -> np.ndarray:
