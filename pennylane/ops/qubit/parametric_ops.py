@@ -224,7 +224,7 @@ class RZ(Operation):
         return qml.math.diag([p, qml.math.conj(p)])
 
     @classmethod
-    def compute_eigvals(cls, theta):  # pylint: disable=arguments-differ
+    def compute_eigvals(cls, theta):  # pylint: disable=unused-argument,arguments-differ
         """Canonical eigenvalues of the RZ operator.
 
         Args:
@@ -315,7 +315,7 @@ class PhaseShift(Operation):
         return qml.math.diag([1, exp_part])
 
     @classmethod
-    def compute_eigvals(cls, phi):  # pylint: disable=arguments-differ
+    def compute_eigvals(cls, phi):  # pylint: disable=unused-argument,arguments-differ
         """Canonical eigenvalues of the PhaseShift operator.
 
         Args:
@@ -416,7 +416,7 @@ class ControlledPhaseShift(Operation):
         return qml.math.diag([1, 1, 1, exp_part])
 
     @classmethod
-    def compute_eigvals(cls, phi):  # pylint: disable=arguments-differ
+    def compute_eigvals(cls, phi):  # pylint: disable=unused-argument,arguments-differ
         """Canonical eigenvalues of the ControlledPhaseShift operator.
 
         Args:
@@ -631,7 +631,7 @@ class MultiRZ(Operation):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
     @classmethod
-    def compute_eigvals(cls, theta, n_wires):  # pylint: disable=arguments-differ
+    def compute_eigvals(cls, theta, n_wires):  # pylint: disable=unused-argument,arguments-differ
         """Eigenvalues of the MultiRZ operator.
 
         Args:
@@ -1213,7 +1213,7 @@ class CRZ(Operation):
         return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @classmethod
-    def compute_eigvals(cls, theta):  # pylint: disable=arguments-differ
+    def compute_eigvals(cls, theta):  # pylint: disable=unused-argument,arguments-differ
         """Eigenvalues of the CRZ operator.
 
         Args:

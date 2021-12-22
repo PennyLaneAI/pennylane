@@ -491,8 +491,8 @@ class Operator(abc.ABC):
         directly without instantiating the operator first.
 
         The default implementation relies on the presence of the
-        :attr:`~.Operator.compute_matrix` method. To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals()` method instead.
+        :meth:`~.Operator.compute_matrix` method. To return the eigenvalues of *instantiated* operators,
+        please use the :meth:`~.Operator.eigvals()` method instead.
 
         If :attr:`diagonalizing_gates` are specified, the order of the
         eigenvalues matches the order of
@@ -1189,7 +1189,7 @@ class Channel(Operation, abc.ABC):
         [0.        , 0.        ]])]
 
         To return the Kraus matrices of an *instantiated* channel,
-        please use the :attr:`~.Operator.kraus_matrices` property instead.
+        please use the :meth:`~.Operator.kraus_matrices` property instead.
 
         Returns:
             list(array): list of Kraus matrices
