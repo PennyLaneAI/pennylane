@@ -144,18 +144,19 @@
   [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
 
   Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
-  QNode arguments, which succeeds whenever the arguments have the same shape.
+  QNode arguments, which succeeded whenever the arguments have the same shape.
   In this case, the stacked Jacobian would also be transposed, leading to the 
-  output shape `(reverse QNode args shape, number of gate args, number of QNode args)`
+  output shape
+  `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
   If no stacking and transposing occurs, the output shape instead is a `tuple`
   where each entry corresponds to one QNode argument and has the shape
-  `(number of gate args, QNode arg shape)`.
-  This change alters the behaviour in the former case and removes the attempt
+  `(*output_shape, *QNode_arg_shape)`.
+  This breaking change alters the behaviour in the first case and removes the attempt
   to stack and transpose, so that the output always has the shape of the second
   type.
   Exception: Like before, the Jacobian tuple is unpacked into a single Jacobian
-  if there only is one QNode argument with respect to with the differentiation
-  takes place.
+  if `argnum=None` and there is only one QNode argument with respect to which
+  the differentiation takes place, or if an integer is provided as `argnum`.
 
 <h3>Bug fixes</h3>
 
