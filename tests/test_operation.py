@@ -719,13 +719,13 @@ class TestTensor:
         expected = reduce(np.kron, [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), H])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
-        
+
     def test_matrix_wire_order_not_implemented(self):
         """Test that an exception is raised if a wire_order is passed to the matrix method"""
         O = qml.PauliX(0) @ qml.PauliY(1)
         with pytest.raises(NotImplementedError, match="wire_order"):
             O.matrix(wire_order=[1, 0])
-            
+
     def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
         """Test that the tensor product matrix method returns
         the correct result if the observables are added unsorted

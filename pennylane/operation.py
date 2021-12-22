@@ -1669,7 +1669,7 @@ class Tensor(Observable):
 
         if wire_order is not None:
             raise NotImplementedError("The wire_order argument is currently not implemented.")
-        
+
         # Check for partially (but not fully) overlapping wires in the observables
         self.check_wires_partial_overlap()
 
