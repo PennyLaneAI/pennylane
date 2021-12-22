@@ -114,11 +114,11 @@ class TestAutogradQuantumTape:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(cost)(a, b, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
-        assert res[0].shape==(2,)
-        assert res[1].shape==(2,)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (2,)
+        assert res[1].shape == (2,)
 
-        expected = ([-np.sin(a),np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
@@ -177,7 +177,7 @@ class TestAutogradQuantumTape:
 
         jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
         jac = jac_fn(a, b)
-        assert isinstance(jac, tuple) and len(jac)==2
+        assert isinstance(jac, tuple) and len(jac) == 2
 
         expected = (
             [-2 * np.sin(2 * a), 2 * np.sin(2 * a) * np.sin(b)],
@@ -203,7 +203,7 @@ class TestAutogradQuantumTape:
 
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
 
@@ -343,7 +343,7 @@ class TestAutogradQuantumTape:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2, 2)
         assert res[1].shape == (2, 2)
         expected = (
@@ -484,7 +484,7 @@ class TestAutogradPassthru:
         dev = qml.device("default.qubit.autograd", wires=2)
         res = qml.jacobian(cost)(a, b, device=dev)
         spy.assert_not_called()
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2,)
         assert res[1].shape == (2,)
 
@@ -517,7 +517,7 @@ class TestAutogradPassthru:
 
         dev = qml.device("default.qubit.autograd", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
         spy.assert_not_called()
@@ -666,7 +666,7 @@ class TestAutogradPassthru:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2, 2)
         assert res[1].shape == (2, 2)
 
@@ -721,7 +721,7 @@ class TestAutogradPassthru:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
         expected = (

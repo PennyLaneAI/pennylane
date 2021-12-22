@@ -1853,7 +1853,7 @@ class TestBlockDiagDiffability:
 
     expected = lambda self, x, y: (
         [
-            [-np.sin(x * y) * y , 0, 0],
+            [-np.sin(x * y) * y, 0, 0],
             [0, 1.0, 0],
             [0, 2 * x, -1 / y],
         ],
@@ -1861,7 +1861,7 @@ class TestBlockDiagDiffability:
             [-np.sin(x * y) * x, 0, 0],
             [0, 0.0, 1.2],
             [0, -1 / 3, x / y ** 2],
-        ]
+        ],
     )
 
     def test_autograd(self):

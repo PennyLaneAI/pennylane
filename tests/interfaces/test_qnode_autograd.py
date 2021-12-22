@@ -194,7 +194,7 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(a, b)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
@@ -221,7 +221,7 @@ class TestQNode:
 
         jac_fn = qml.jacobian(circuit)
         res = jac_fn(a, b)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
@@ -236,7 +236,7 @@ class TestQNode:
         b = np.array(0.832, requires_grad=True)
 
         res = jac_fn(a, b)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
@@ -343,7 +343,7 @@ class TestQNode:
             tape_params = np.array(circuit.qtape.get_parameters())
             assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
 
     def test_no_trainable_parameters(self, dev_name, diff_method, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -467,7 +467,7 @@ class TestQNode:
             return qml.probs(wires=[1])
 
         res = qml.jacobian(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
             [-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
@@ -505,7 +505,7 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
             [
@@ -546,7 +546,7 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
             [-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
@@ -580,10 +580,10 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
 
         expected = (
-            [np.sin(2*x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
+            [np.sin(2 * x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
             [0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
         )
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
@@ -987,7 +987,7 @@ class TestQNode:
 
         jac_fn = qml.jacobian(circuit)
         g = jac_fn(a, b)
-        assert isinstance(g, tuple) and len(g)==2
+        assert isinstance(g, tuple) and len(g) == 2
 
         expected_g = (
             [-0.5 * np.sin(a) * np.cos(b), 0.5 * np.sin(a) * np.cos(b)],
@@ -1001,8 +1001,8 @@ class TestQNode:
         jac_fn_b = lambda *args: jac_fn(*args)[1]
         hess_a = qml.jacobian(jac_fn_a)(a, b)
         hess_b = qml.jacobian(jac_fn_b)(a, b)
-        assert isinstance(hess_a, tuple) and len(hess_a)==2
-        assert isinstance(hess_b, tuple) and len(hess_b)==2
+        assert isinstance(hess_a, tuple) and len(hess_a) == 2
+        assert isinstance(hess_b, tuple) and len(hess_b) == 2
 
         if diff_method == "backprop":
             spy.assert_not_called()

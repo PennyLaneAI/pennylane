@@ -152,7 +152,7 @@ class TestGradientTransformIntegration:
 
         expected = qml.jacobian(circuit)(x, y)
         res = qml.gradients.param_shift(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     @pytest.mark.skip("Squeezing makes it impossible to compute this jacobian.")

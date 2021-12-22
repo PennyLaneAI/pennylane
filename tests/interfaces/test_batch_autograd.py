@@ -434,7 +434,7 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(cost)(a, b, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2,)
         assert res[1].shape == (2,)
 
@@ -512,7 +512,7 @@ class TestAutogradExecuteIntegration:
             [-2 * np.sin(2 * a), 2 * np.sin(2 * a) * np.sin(b)],
             [0, -np.cos(2 * a) * np.cos(b)],
         )
-        assert isinstance(jac, tuple) and len(jac)==2
+        assert isinstance(jac, tuple) and len(jac) == 2
         assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
 
     def test_classical_processing(self, execute_kwargs, tol):
@@ -533,9 +533,9 @@ class TestAutogradExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
         # Only two arguments are trainable
-        assert isinstance(res, tuple) and len(res)==2
-        assert res[0].shape==(1,)
-        assert res[1].shape==(1,)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (1,)
+        assert res[1].shape == (1,)
 
     def test_no_trainable_parameters(self, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -669,11 +669,10 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (2, 2)
         assert res[1].shape == (2, 2)
 
-        
         expected = (
             np.array(
                 [
@@ -720,17 +719,13 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert isinstance(res, tuple) and len(res)==2
+        assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == (3,)
         assert res[1].shape == (3,)
 
         expected = (
-            np.array(
-                [-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]
-            ),
-            np.array(
-                [0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]
-            ),
+            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
@@ -985,12 +980,14 @@ class TestOverridingShots:
 
         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
         assert dev.shots is None
-        assert isinstance(res, tuple) and len(res)==2
-        assert res[0].shape==(3,)
-        assert res[1].shape==(3,)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert all(np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected))
+        assert all(
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+        )
 
 
 execute_kwargs = [

@@ -71,7 +71,7 @@ class TestMetricTensor:
 
         params = np.array([0.1, 0.2], requires_grad=True)
         result = qml.metric_tensor(circuit, approx="block-diag")(*params)
-        assert isinstance(result, tuple) and len(result)==2
+        assert isinstance(result, tuple) and len(result) == 2
         assert qml.math.shape(result[0]) == ()
         assert qml.math.shape(result[1]) == ()
 
