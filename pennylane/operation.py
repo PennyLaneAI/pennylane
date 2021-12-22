@@ -224,6 +224,17 @@ def expand_matrix(base_matrix, wires, wire_order):
 
 
 # =============================================================================
+# Errors
+# =============================================================================
+
+
+class NoDecompositionError(Exception):
+    """Raised when an Operator does not have a decomposition defined."""
+
+    pass
+  
+  
+# =============================================================================
 # Wire types
 # =============================================================================
 
@@ -762,28 +773,65 @@ class Operator(abc.ABC):
         self._hyperparameters = {}
         return self._hyperparameters
 
+    def decomposition(self):
+        r"""The decomposition of the Operator into a product of more fundamental gates.
+
+        .. math:: O = O_1 O_2 \dots O_n
+
+        .. note::
+            By default, this method calls the static method
+            :meth:`~.operation.Operator.compute_decomposition`. Unless the
+            :meth:`~.operation.Operator.compute_decomposition` has a custom signature,
+            this method should not be overwritten.
+
+        Returns:
+            list[Operator]: The decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
+
+        """
+        return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
+
     @staticmethod
-    def decomposition(*params, wires):
-        """Defines a decomposition of this operator into products of other operators.
+    def compute_decomposition(*params, wires=None, **hyperparameters):
+        r"""Determine the Operator's decomposition for specified parameters, wires,
+        and hyperparameters. The decomposition defines an Operator as a product of
+        more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of an
+        operator without a specific instance.
+
+        See also :meth:`~.operation.Operator.decomposition`.
+
+        .. note::
+            This method gets overwritten by subclasses, and the ``decomposition`` and
+            ``expand`` methods rely on its definition. By default, this method should always
+            take the Operator's parameters, wires, and hyperparameters as inputs, even if the
+            decomposition is independent of these values.
 
         Args:
-            params (tuple[float, int, array]): operator parameters
-            wires (Union(Sequence[int], Wires)): wires the operator acts on
+            *params: Variable length argument list.  Should match the ``parameters`` attribute
+
+        Keyword Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+            **hyperparameters: Variable length keyword arguments.  Should match the
+                ``hyperparameters`` attribute.
 
         Returns:
-            list[Operation]
-        """
-        raise NotImplementedError
+            list[Operator]: decomposition of the Operator into lower level operations
 
-    def decompose(self):
-        """Decomposes this operator into products of other operators.
+        **Example:**
 
-        Returns:
-            list[Operation]
+        >>> qml.IsingXX.compute_decomposition(1.23, (0,1))
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
+
         """
-        if self.num_params == 0:
-            return self.decomposition(wires=self.wires)
-        return self.decomposition(*self.parameters, wires=self.wires)
+        raise NoDecompositionError
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -1043,7 +1091,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decompose()
+            self.decomposition()
 
         if not self.data:
             # original operation has no trainable parameters

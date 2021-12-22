@@ -44,32 +44,34 @@ class TestDecomposition:
         and the target is wire 0 in the decomposition. (Not applicable for
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
-        decomp = qml.SingleExcitationPlus(phi, wires=[0, 1]).decompose()
+        decomp1 = qml.SingleExcitationPlus(phi, wires=[0, 1]).decomposition()
+        decomp2 = qml.SingleExcitationPlus.compute_decomposition(phi, wires=[0, 1])
 
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                if i.wires.tolist() == [0]:
+                    mats.append(np.kron(i.matrix(), np.eye(2)))
+                elif i.wires.tolist() == [1]:
+                    mats.append(np.kron(np.eye(2), i.matrix))
+                elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                    new_mat = np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                            [0, 0, 1, 0],
+                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                        ]
+                    )
 
-                mats.append(new_mat)
-            else:
-                mats.append(i.matrix())
+                    mats.append(new_mat)
+                else:
+                    mats.append(i.matrix())
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = SingleExcitationPlus(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = SingleExcitationPlus(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_single_excitation_minus_decomp(self, phi):
@@ -79,32 +81,34 @@ class TestDecomposition:
         and the target is wire 0 in the decomposition. (Not applicable for
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
-        decomp = qml.SingleExcitationMinus(phi, wires=[0, 1]).decompose()
+        decomp1 = qml.SingleExcitationMinus(phi, wires=[0, 1]).decomposition()
+        decomp2 = qml.SingleExcitationMinus.compute_decomposition(phi, wires=[0, 1])
 
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                if i.wires.tolist() == [0]:
+                    mats.append(np.kron(i.matrix(), np.eye(2)))
+                elif i.wires.tolist() == [1]:
+                    mats.append(np.kron(np.eye(2), i.matrix))
+                elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                    new_mat = np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                            [0, 0, 1, 0],
+                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                        ]
+                    )
 
-                mats.append(new_mat)
-            else:
-                mats.append(i.matrix())
+                    mats.append(new_mat)
+                else:
+                    mats.append(i.matrix())
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = SingleExcitationMinus(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = SingleExcitationMinus(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
 
 class TestSingleExcitation:
@@ -124,27 +128,29 @@ class TestSingleExcitation:
 
         Need to consider the matrix of CRY separately, as the control is wire 1
         and the target is wire 0 in the decomposition."""
-        decomp = qml.SingleExcitation(phi, wires=[0, 1]).decompose()
+        decomp1 = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
+        decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
-                mats.append(new_mat)
-            else:
-                mats.append(i.matrix())
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                    new_mat = np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                            [0, 0, 1, 0],
+                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                        ]
+                    )
+                    mats.append(new_mat)
+                else:
+                    mats.append(i.matrix())
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = SingleExcitation(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = SingleExcitation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_generator(self, phi):
@@ -308,14 +314,15 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_decomp(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct decomposition"""
-        op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        decomp = op.decomposition()
+        decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
-        mats = [m.matrix() for m in decomp]
-        decomposed_matrix = mats[0] @ mats[1]
-        exp = DoubleExcitation(phi)
+        for decomp in [decomp1, decomp2]:
+            mats = [m.matrix() for m in decomp]
+            decomposed_matrix = mats[0] @ mats[1]
+            exp = DoubleExcitation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_generator(self, phi):
@@ -336,7 +343,8 @@ class TestDoubleExcitation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decompose()
+        decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 
@@ -359,21 +367,22 @@ class TestDoubleExcitation:
             individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
             return reduce(np.kron, individual_mats)
 
-        mats = []
-        for i in reversed(decomp):
-            # Single-qubit gate
-            if len(i.wires.tolist()) == 1:
-                mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
-                mats.append(mat)
-            # Two-qubit gate
-            else:
-                mat = cnot_four_qubits(i.wires.tolist())
-                mats.append(mat)
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                # Single-qubit gate
+                if len(i.wires.tolist()) == 1:
+                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
+                    mats.append(mat)
+                # Two-qubit gate
+                else:
+                    mat = cnot_four_qubits(i.wires.tolist())
+                    mats.append(mat)
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = DoubleExcitation(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = DoubleExcitation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_plus_matrix(self, phi):
@@ -607,7 +616,8 @@ class TestOrbitalRotation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decompose()
+        decomp1 = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 
@@ -630,21 +640,22 @@ class TestOrbitalRotation:
             individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
             return reduce(np.kron, individual_mats)
 
-        mats = []
-        for i in reversed(decomp):
-            # Single-qubit gate
-            if len(i.wires.tolist()) == 1:
-                mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
-                mats.append(mat)
-            # Two-qubit gate
-            else:
-                mat = cnot_four_qubits(i.wires.tolist())
-                mats.append(mat)
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                # Single-qubit gate
+                if len(i.wires.tolist()) == 1:
+                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
+                    mats.append(mat)
+                # Two-qubit gate
+                else:
+                    mat = cnot_four_qubits(i.wires.tolist())
+                    mats.append(mat)
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = OrbitalRotation(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = OrbitalRotation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     def test_adjoint(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""

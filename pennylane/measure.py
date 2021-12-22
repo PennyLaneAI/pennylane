@@ -22,7 +22,15 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.operation import (
+    Expectation,
+    NoDecompositionError,
+    Observable,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 from pennylane.wires import Wires
 
 
@@ -85,7 +93,7 @@ class MeasurementProcess:
         """
         try:
             return self.expand().operations
-        except NotImplementedError:
+        except NoDecompositionError:
             return []
 
     def __repr__(self):
@@ -177,7 +185,7 @@ class MeasurementProcess:
         None
         """
         if self.obs is None:
-            raise NotImplementedError("Cannot expand a measurement process with no observable.")
+            raise NoDecompositionError
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 
