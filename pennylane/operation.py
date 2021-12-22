@@ -1184,7 +1184,7 @@ class Channel(Operation, abc.ABC):
                 as stored in the ``hyperparameters`` attribute
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -1199,7 +1199,7 @@ class Channel(Operation, abc.ABC):
         in the computational basis.
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         ** Example**
 

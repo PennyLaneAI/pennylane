@@ -64,6 +64,7 @@ class AmplitudeDamping(Channel):
 
         Args:
             gamma (float): amplitude damping probability
+
         Returns:
             list(array): list of Kraus matrices
 
@@ -139,8 +140,9 @@ class GeneralizedAmplitudeDamping(Channel):
         Args:
             gamma (float): amplitude damping probability
             p (float): excitation probability
+
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -207,8 +209,9 @@ class PhaseDamping(Channel):
 
         Args:
             gamma (float): phase damping probability
+
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -276,13 +279,13 @@ class DepolarizingChannel(Channel):
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
-        r"""Kraus matrices representing the DepolarizingChannel channel.
+        r"""Kraus matrices representing the depolarizing channel.
 
         Args:
             p (float): each Pauli gate is applied with probability :math:`\frac{p}{3}`
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -347,7 +350,7 @@ class BitFlip(Channel):
             p (float): probability that a bit flip error occurs
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -428,7 +431,7 @@ class ResetError(Channel):
             p_1 (float): probability that a reset to 1 error occurs
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -537,12 +540,13 @@ class PauliError(Channel):
             p (float): probability of the operator being applied
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
         >>> qml.PauliError.compute_kraus_matrices("X", 0.5)
-        XXX
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]), 
+         array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
         nq = len(operators)
 
@@ -608,7 +612,7 @@ class PhaseFlip(Channel):
             p (float): the probability that a phase flip error occurs
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -682,7 +686,7 @@ class QubitChannel(Channel):
             K_list (list[array[complex]]): list of Kraus matrices
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
@@ -789,7 +793,7 @@ class ThermalRelaxationError(Channel):
             tg (float): the gate time for relaxation error
 
         Returns:
-            list(array): list of Kraus matrices
+            list (array): list of Kraus matrices
 
         **Example**
 
