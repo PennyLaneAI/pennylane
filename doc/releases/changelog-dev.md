@@ -56,7 +56,7 @@
   dev= qml.device('default.qubit',wires=range(n_wires))
   @qml.qnode(dev)
   def circuit(template_weights):
-      qml.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+      qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
       return qml.expval(qml.PauliZ(wires=n_wires-1))
   ```
   The resulting circuit is:
