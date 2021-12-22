@@ -318,9 +318,9 @@ class DiagonalQubitUnitary(Operation):
 
         **Example**
 
-        >>> qml.DiagonalQubitUnitary.compute_matrix(np.array([1, -1]))
-        [[ 1  0]
-         [ 0 -1]]
+        >>> qml.DiagonalQubitUnitary.compute_matrix(torch.tensor([1, -1]))
+        tensor([[ 1,  0],
+                [ 0, -1]])
         """
         D = qml.math.asarray(D)
 
@@ -329,9 +329,22 @@ class DiagonalQubitUnitary(Operation):
 
         return qml.math.diag(D)
 
-    @classmethod
-    def _eigvals(cls, *params):
-        D = qml.math.asarray(params[0])
+    @staticmethod
+    def compute_eigvals(D):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the DiagonalQubitUnitary operator.
+
+        Args:
+            D (tensor_like): diagonal of the matrix
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.DiagonalQubitUnitary.compute_eigvals(torch.tensor([1, -1]))
+        tensor([ 1, -1])
+        """
+        D = qml.math.asarray(D)
 
         if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")

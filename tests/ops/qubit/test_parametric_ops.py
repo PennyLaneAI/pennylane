@@ -558,7 +558,7 @@ class TestMatrix:
         exp = ControlledPhaseShift(phi)
         assert np.allclose(res, exp)
 
-        res = op.eigvals
+        res = op.eigvals()
         assert np.allclose(res, np.diag(exp))
 
 
@@ -1071,7 +1071,9 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "Z", wires=0)
         decomp_ops = op.decompose()
 
-        assert np.allclose(op.eigvals, np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
+        assert np.allclose(
+            op.eigvals(), np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)])
+        )
         assert np.allclose(op.matrix(), np.diag([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)]))
 
         assert len(decomp_ops) == 1
@@ -1088,7 +1090,7 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "II", wires=[0, 1])
         decomp_ops = op.decompose()
 
-        assert np.allclose(op.eigvals, np.exp(-1j * theta / 2) * np.ones(4))
+        assert np.allclose(op.eigvals(), np.exp(-1j * theta / 2) * np.ones(4))
         assert np.allclose(op.matrix() / op.matrix()[0, 0], np.eye(4))
 
         assert len(decomp_ops) == 0

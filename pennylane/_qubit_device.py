@@ -762,7 +762,7 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
             except NotImplementedError as e:
                 raise ValueError(
                     f"Cannot compute analytic expectations of {observable.name}."
@@ -788,7 +788,7 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
             except NotImplementedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise ValueError(f"Cannot compute analytic variance of {observable.name}.") from e
@@ -830,7 +830,7 @@ class QubitDevice(Device):
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             try:
-                samples = observable.eigvals[indices]
+                samples = observable.eigvals()[indices]
             except NotImplementedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise ValueError(f"Cannot compute samples of {observable.name}.") from e

@@ -543,7 +543,7 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.eigvals
+            return unitary.eigvals()
 
         return unitary.matrix()
 
