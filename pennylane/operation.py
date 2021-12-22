@@ -481,6 +481,85 @@ class Operator(abc.ABC):
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+        """Canonical matrix of this operator in the computational basis, using a sparse
+        matrix type.
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. note::
+            This method gets overwritten by subclasses to define the sparse matrix representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        raise NotImplementedError
+
+    def sparse_matrix(self, wire_order=None):
+        r"""Matrix representation of this operator in the computational basis, using
+        a sparse matrix type.
+
+        If ``wire_order`` is provided, the
+        numerical representation considers the position of the
+        operator's wires in the global wire order.
+        Otherwise, the wire order defaults to ``self.wires``.
+
+        .. note::
+            By default, this method calls the static method ``compute_sparse_matrix``,
+            which is used by subclasses to define the actual numerical representation.
+
+        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
+
+        .. note::
+            The wire_order argument is not yet implemented.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian(H, wires=[0]).sparse_matrix()
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        if wire_order is not None:
+            raise NotImplementedError("The wire_order argument is not yet implemented")
+        canonical_sparse_matrix = self.compute_sparse_matrix(
+            *self.parameters, **self.hyperparameters
+        )
+        return canonical_sparse_matrix
+
     def compute_eigvals(*params, **hyperparams):
         """Eigenvalues of the operator in the computational basis.
 
