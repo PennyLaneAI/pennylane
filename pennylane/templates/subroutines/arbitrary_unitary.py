@@ -108,16 +108,34 @@ class ArbitraryUnitary(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
+        r"""Compute a decomposition of the ArbitraryUnitary operator.
 
-        weights = self.parameters[0]
+        The decomposition defines an Operator as a product of more fundamental gates:
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(self.wires))):
-                PauliRot(weights[i], pauli_word, wires=self.wires)
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
 
-        return tape
+        See also :meth:`~.ArbitraryUnitary.decomposition`.
+
+        Args:
+            weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
+                    where :math:`n` is the number of wires the template acts upon.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+
+        Returns:
+            list[~.Operator]: decomposition of the Operator into lower-level operations
+        """
+        op_list = []
+
+        for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
+            op_list.append(PauliRot(weights[i], pauli_word, wires=wires))
+
+        return op_list
 
     @staticmethod
     def shape(n_wires):

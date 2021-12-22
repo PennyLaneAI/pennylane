@@ -106,36 +106,59 @@ class GroverOperator(Operation):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self._hyperparameters = {"n_wires": len(wires)}
-
-        self.work_wires = work_wires
+        self._hyperparameters = {
+            "n_wires": len(wires),
+            "work_wires": work_wires
+                                 }
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 0
 
-    def expand(self):
-        ctrl_str = "0" * (len(self.wires) - 1)
+    @staticmethod
+    def compute_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
+        r"""Compute a decomposition of the GroverOperator operator.
 
-        with qml.tape.QuantumTape() as tape:
-            for wire in self.wires[:-1]:
-                Hadamard(wire)
+        The decomposition defines an Operator as a product of more fundamental gates:
 
-            PauliZ(self.wires[-1])
-            MultiControlledX(
-                control_values=ctrl_str,
-                control_wires=self.wires[:-1],
-                wires=self.wires[-1],
-                work_wires=self.work_wires,
-            )
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            PauliZ(self.wires[-1])
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
 
-            for wire in self.wires[:-1]:
-                Hadamard(wire)
+        See also :meth:`~.GroverOperator.decomposition`.
 
-        return tape
+        Args:
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist
+                in the decomposition of :class:`~.MultiControlledX`.
+            n_wires (int): number of (non-work) wires used
+
+        Returns:
+            list[~.Operator]: decomposition of the Operator into lower-level operations
+        """
+        ctrl_str = "0" * (len(wires) - 1)
+
+        op_list = []
+
+        for wire in wires[:-1]:
+            op_list.append(Hadamard(wire))
+
+        op_list.append(PauliZ(wires[-1]))
+        op_list.append(MultiControlledX(
+            control_values=ctrl_str,
+            control_wires=wires[:-1],
+            wires=wires[-1],
+            work_wires=work_wires,
+        ))
+
+        op_list.append(PauliZ(wires[-1]))
+
+        for wire in wires[:-1]:
+            op_list.append(Hadamard(wire))
+
+        return op_list
 
     @staticmethod
     @functools.lru_cache()

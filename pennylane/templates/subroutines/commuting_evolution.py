@@ -124,19 +124,43 @@ class CommutingEvolution(Operation):
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
-        self.hamiltonian = hamiltonian
-        self.num_params = len(hamiltonian.data) + 1
-        self.frequencies = frequencies
-        self.shifts = shifts
+        self._hyperparameters = {
+            "hamiltonian": hamiltonian,
+            "frequencies": frequencies,
+            "shifts": shifts
+        }
 
         super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
 
-    def expand(self):
-        # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
-        time = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(time, coeffs, wires, hamiltonian, frequencies, shifts):  # pylint: disable=arguments-differ
+        r"""Compute a decomposition of the CommutingEvolution operator.
 
-        return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).expand()
+        The decomposition defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+
+        See also :meth:`~.CommutingEvolution.decomposition`.
+
+        Args:
+            time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
+            coeffs (list[tensor_like]): coefficients of the Hamiltonian
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
+            frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
+                the spectrum of the Hamiltonian.
+            shifts (tuple[int or float]): The parameter shifts to use in obtaining the
+                generalized parameter shift rules. If unspecified, equidistant shifts are used.
+
+        Returns:
+            list[~.Operator]: decomposition of the Operator into lower-level operations
+        """
+        # uses standard PauliRot decomposition through ApproxTimeEvolution.
+        hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
+        return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).decomposition()
 
     def adjoint(self):  # pylint: disable=arguments-differ
 
