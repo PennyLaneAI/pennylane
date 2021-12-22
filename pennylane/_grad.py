@@ -172,10 +172,10 @@ def jacobian(func, argnum=None):
 
     **Example**
 
-    Consider the QNode 
+    Consider the QNode
 
     .. code-block::
-    
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)

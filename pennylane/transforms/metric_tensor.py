@@ -271,7 +271,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac):
     Returns:
         array or tuple[array]: Hybrid metric tensor(s) of the QNode.
         The number of metric tensors depends on the number of QNode arguments
-        for which the classical Jacobian was computed, the tensor shape(s) 
+        for which the classical Jacobian was computed, the tensor shape(s)
         depend on the shape of these QNode arguments.
     """
     if isinstance(cjac, tuple):
