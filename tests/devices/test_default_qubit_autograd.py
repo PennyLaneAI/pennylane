@@ -286,7 +286,7 @@ class TestPassthruIntegration:
         is correct."""
         dev = qml.device("default.qubit.autograd", wires=1)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(x):
             qml.RY(shift, wires=0)
             qml.RY(x, wires=0)

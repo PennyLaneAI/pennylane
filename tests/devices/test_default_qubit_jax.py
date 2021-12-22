@@ -549,7 +549,7 @@ class TestPassthruIntegration:
         is correct."""
         dev = qml.device("default.qubit.jax", wires=1)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(x):
             qml.RY(shift, wires=0)
             qml.RY(x, wires=0)

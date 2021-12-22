@@ -1332,7 +1332,7 @@ class TestPassthruIntegration:
         shift = tf.constant(shift)
         x = tf.Variable(x)
 
-        @qml.qnode(dev, interface="tf")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
             qml.RY(shift, wires=0)
             qml.RY(x, wires=0)

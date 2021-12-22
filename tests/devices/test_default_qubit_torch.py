@@ -1433,7 +1433,7 @@ class TestPassthruIntegration:
 
         x = torch.tensor(x, requires_grad=True)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
             qml.RY(shift, wires=0)
             qml.RY(x, wires=0)
