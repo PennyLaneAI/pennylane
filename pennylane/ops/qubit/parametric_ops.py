@@ -225,7 +225,7 @@ class RZ(Operation):
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=,arguments-differ
-        """Canonical eigenvalues of the RZ operator.
+        """Eigenvalues of the RZ operator.
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -316,7 +316,7 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=,arguments-differ
-        """Canonical eigenvalues of the PhaseShift operator.
+        """Eigenvalues of the PhaseShift operator.
 
         Args:
             phi (tensor_like or float): phase shift
@@ -417,7 +417,7 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=,arguments-differ
-        """Canonical eigenvalues of the ControlledPhaseShift operator.
+        """Eigenvalues of the ControlledPhaseShift operator.
 
         Args:
             phi (tensor_like or float): phase shift
