@@ -131,7 +131,7 @@ class SqueezingEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(pars, wires):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of this operator.
+        r"""Compute a decomposition of the SqueezingEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 

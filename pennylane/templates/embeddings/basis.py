@@ -95,11 +95,11 @@ class BasisEmbedding(Operation):
 
     @property
     def num_params(self):
-        return 1
+        return 0
 
     @staticmethod
     def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of this operator.
+        r"""Compute a decomposition of the BasisEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 

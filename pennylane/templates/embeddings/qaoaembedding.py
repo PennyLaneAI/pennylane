@@ -207,7 +207,7 @@ class QAOAEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(features, weights, wires, local_field):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of this operator.
+        r"""Compute a decomposition of the QAOAEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 

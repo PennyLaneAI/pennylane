@@ -138,7 +138,7 @@ class AmplitudeEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of this operator.
+        r"""Compute a decomposition of the AmplitudeEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 

@@ -193,7 +193,7 @@ class IQPEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(features, wires, n_repeats, pattern):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of this operator.
+        r"""Compute a decomposition of the IQPEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 
@@ -202,7 +202,7 @@ class IQPEmbedding(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.XXX.decomposition`.
+        See also :meth:`~.IQPEmbedding.decomposition`.
 
         Args:
             features (tensor_like): tensor of features to encode

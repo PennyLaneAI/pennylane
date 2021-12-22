@@ -98,7 +98,7 @@ class AngleEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(features, wires, rotation):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of this operator.
+        r"""Compute a decomposition of the AngleEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 

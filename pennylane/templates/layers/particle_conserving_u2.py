@@ -180,23 +180,60 @@ class ParticleConservingU2(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
+        r"""Compute a decomposition of the ParticleConservingU2 operator.
 
-        nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
-        nm_wires += [self.wires[l : l + 2] for l in range(1, len(self.wires) - 1, 2)]
+        The decomposition defines an Operator as a product of more fundamental gates:
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            qml.BasisEmbedding(self.init_state, wires=self.wires)
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
 
-            for l in range(self.n_layers):
+        See also :meth:`~.ParticleConservingU2.decomposition`.
 
-                for j, _ in enumerate(self.wires):
-                    qml.RZ(self.parameters[0][l, j], wires=self.wires[j])
+        Args:
+            weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
+                layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
+                ``(N-1)`` gates per layer.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
+                used to initialize the wires.
 
-                for i, wires_ in enumerate(nm_wires):
-                    u2_ex_gate(self.parameters[0][l, len(self.wires) + i], wires=wires_)
-        return tape
+        Returns:
+            list[~.Operator]: decomposition of the Operator into lower-level operations
+
+        **Example**
+
+        >>> torch.tensor([[0.3, 1., 0.2]])
+        >>> qml.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        [BasisEmbedding(wires=['a', 'b']),
+         RZ(tensor(0.3000), wires=['a']),
+         RZ(tensor(1.), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         CRX(tensor(0.4000), wires=['b', 'a']),
+         CNOT(wires=['a', 'b'])]
+        """
+        nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
+        n_layers = qml.math.shape(weights)[0]
+        op_list = []
+
+        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
+
+        for l in range(n_layers):
+
+            for j, _ in enumerate(wires):
+                op_list.append(qml.RZ(weights[l, j], wires=wires[j]))
+
+            for i, wires_ in enumerate(nm_wires):
+                phi = weights[l, len(wires) + i]
+                op_list.append(qml.CNOT(wires=wires_))
+                op_list.append(qml.CRX(2 * phi, wires=wires_[::-1]))
+                op_list.append(qml.CNOT(wires=wires_))
+
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):
