@@ -14,16 +14,22 @@
 """
 This module contains the functions needed for tapering qubits using symmetries.
 """
-import numpy as np
+# pylint: disable=unnecessary-lambda
+
+import functools
+import numpy
+import autograd.numpy as anp
 import pennylane as qml
+from pennylane import numpy as np
+from pennylane.hf.hamiltonian import _generate_qubit_operator
 
 
-def _binary_matrix(terms, num_qubits):
+def _binary_matrix(terms, num_qubits, wire_map=None):
     r"""Get a binary matrix representation of the Hamiltonian where each row corresponds to a
     Pauli term, which is represented by a concatenation of Z and X vectors.
 
     Args:
-        terms (Iterable[pennylane.Observable]): operators defining the Hamiltonian
+        terms (Iterable[Observable]): operators defining the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
     Returns:
         array[int]: binary matrix representation of the Hamiltonian of shape
@@ -31,17 +37,17 @@ def _binary_matrix(terms, num_qubits):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
-        ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
-        ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
-        >>> _binary_matrix(terms, 4)
-         array([[1, 0, 0, 0, 0, 1, 0, 0],
-                [1, 0, 1, 0, 0, 0, 1, 0],
-                [0, 0, 0, 1, 1, 0, 0, 1]]))
-
+    >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
+    ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
+    ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
+    >>> _binary_matrix(terms, 4)
+    array([[1, 0, 0, 0, 0, 1, 0, 0],
+           [1, 0, 1, 0, 0, 0, 1, 0],
+           [0, 0, 0, 1, 1, 0, 0, 1]])
     """
+    if wire_map is None:
+        all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
+        wire_map = {i: c for c, i in enumerate(all_wires)}
 
     binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
     for idx, term in enumerate(terms):
@@ -50,9 +56,9 @@ def _binary_matrix(terms, num_qubits):
             ops = [ops]
         for op, wire in zip(ops, wires):
             if op in ["PauliX", "PauliY"]:
-                binary_matrix[idx][wire + num_qubits] = 1
+                binary_matrix[idx][wire_map[wire] + num_qubits] = 1
             if op in ["PauliZ", "PauliY"]:
-                binary_matrix[idx][wire] = 1
+                binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix
 
@@ -67,18 +73,14 @@ def _reduced_row_echelon(binary_matrix):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-        ...                           [1, 0, 1, 0, 0, 0, 1, 0],
-        ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
-        >>> _reduced_row_echelon(binary_matrix)
-         array([[1, 0, 0, 0, 0, 1, 0, 0],
-                [0, 0, 1, 0, 0, 1, 1, 0],
-                [0, 0, 0, 1, 1, 0, 0, 1]])
-
+    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
+    ...                           [1, 0, 1, 0, 0, 0, 1, 0],
+    ...                           [0, 0, 0, 1, 1, 0, 0, 1]])
+    >>> _reduced_row_echelon(binary_matrix)
+    array([[1, 0, 0, 0, 0, 1, 0, 0],
+           [0, 0, 1, 0, 0, 1, 1, 0],
+           [0, 0, 0, 1, 1, 0, 0, 1]])
     """
-
     rref_mat = binary_matrix.copy()
     shape = rref_mat.shape
     icol = 0
@@ -128,20 +130,16 @@ def _kernel(binary_matrix):
 
     **Example**
 
-    .. code-block:: python
-
-        >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
-        ...                          [0, 0, 1, 1, 1, 1, 1, 1],
-        ...                          [0, 0, 0, 1, 1, 0, 0, 1]])
-        >>> _kernel(binary_matrix)
-         array([[0, 1, 0, 0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 1, 0, 0, 0],
-                [1, 0, 1, 0, 0, 1, 0, 0],
-                [0, 0, 1, 0, 0, 0, 1, 0],
-                [0, 0, 1, 1, 0, 0, 0, 1]])
-
+    >>> binary_matrix = np.array([[1, 0, 0, 0, 0, 1, 0, 0],
+    ...                          [0, 0, 1, 1, 1, 1, 1, 1],
+    ...                          [0, 0, 0, 1, 1, 0, 0, 1]])
+    >>> _kernel(binary_matrix)
+    array([[0, 1, 0, 0, 0, 0, 0, 0],
+           [0, 0, 1, 1, 1, 0, 0, 0],
+           [1, 0, 1, 0, 0, 1, 0, 0],
+           [0, 0, 1, 0, 0, 0, 1, 0],
+           [0, 0, 1, 1, 0, 0, 0, 1]])
     """
-
     # Get the columns with and without pivots
     pivots = (binary_matrix.T != 0).argmax(axis=0)
     nonpivots = np.setdiff1d(range(len(binary_matrix[0])), pivots)
@@ -170,22 +168,18 @@ def get_generators(nullspace, num_qubits):
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        list[pennylane.Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
+        list[Hamiltonian]: list of generators of symmetries, taus, for the Hamiltonian
 
     **Example**
 
-    .. code-block:: python
-
-        >>> kernel = np.array([[0, 1, 0, 0, 0, 0, 0, 0],
-        ...                    [0, 0, 1, 1, 1, 0, 0, 0],
-        ...                    [1, 0, 1, 0, 0, 1, 0, 0],
-        ...                    [0, 0, 1, 0, 0, 0, 1, 0],
-        ...                    [0, 0, 1, 1, 0, 0, 0, 1]])
-        >>> generate_taus(kernel, 4)
-         [(1.0) [X1], (1.0) [Z0 X2 X3], (1.0) [X0 Z1 X2], (1.0) [Y2], (1.0) [X2 Y3]]
-
+    >>> kernel = np.array([[0, 1, 0, 0, 0, 0, 0, 0],
+    ...                    [0, 0, 1, 1, 1, 0, 0, 0],
+    ...                    [1, 0, 1, 0, 0, 1, 0, 0],
+    ...                    [0, 0, 1, 0, 0, 0, 1, 0],
+    ...                    [0, 0, 1, 1, 0, 0, 0, 1]])
+    >>> get_generators(kernel, 4)
+    [(1.0) [X1], (1.0) [Z0 X2 X3], (1.0) [X0 Z1 X2], (1.0) [Y2], (1.0) [X2 Y3]]
     """
-
     generators = []
     pauli_map = {"00": qml.Identity, "10": qml.PauliX, "11": qml.PauliY, "01": qml.PauliZ}
 
@@ -207,28 +201,24 @@ def generate_paulis(generators, num_qubits):
     These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
     Return:
-        list[pennylane.Observable]: list of single-qubit Pauli-X operators which will be used to build the
+        list[Observable]: list of single-qubit Pauli-X operators which will be used to build the
         Clifford operators :math:`U`.
 
     **Example**
 
-    .. code-block:: python
-
-        >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
-        ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
-        ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
-        >>> generate_paulis(generators, qubits)
-         [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
-
+    >>> generators = [qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+    ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+    ...               qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)])]
+    >>> generate_paulis(generators, 4)
+    [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])]
     """
-
     ops_generator = [g.ops[0] if isinstance(g.ops, list) else g.ops for g in generators]
     bmat = _binary_matrix(ops_generator, num_qubits)
 
-    pauli_x_ops = []
+    paulix_ops = []
     for row in range(bmat.shape[0]):
         bmatrow = bmat[row]
         bmatrest = np.delete(bmat, row, axis=0)
@@ -237,10 +227,10 @@ def generate_paulis(generators, num_qubits):
             if bmatrow[col] and np.array_equal(
                 bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
             ):
-                pauli_x_ops.append(qml.PauliX(col))
+                paulix_ops.append(qml.PauliX(col))
                 break
 
-    return pauli_x_ops
+    return paulix_ops
 
 
 def generate_symmetries(qubit_op, num_qubits):
@@ -258,30 +248,28 @@ def generate_symmetries(qubit_op, num_qubits):
     using :func:`~.transform_hamiltonian`.
 
     Args:
-        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
+        qubit_op (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        tuple (list[pennylane.Hamiltonian], list[pennylane.operation.Observable]):
+        tuple (list[Hamiltonian], list[Observable]):
 
-            * list[pennylane.Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
+            * list[Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
               for the Hamiltonian.
-            * list[pennylane.operation.Operation]: list of single-qubit Pauli-X operators which will be used
+            * list[Operation]: list of single-qubit Pauli-X operators which will be used
               to build the Clifford operators :math:`U`.
 
-    .. code-block:: python
+    **Example**
 
-        >>> symbols = ['H', 'H']
-        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414])
-        >>> mol = qml.hf.Molecule(symbols, coordinates)
-        >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
-        >>> generators, pauli_x = generate_symmetries(H, qubits)
-        >>> generators, pauli_x
-         ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
-          [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
-
+    >>> symbols = ['H', 'H']
+    >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> H, qubits = qml.hf.generate_hamiltonian(mol)(geometry), 4
+    >>> generators, paulix_ops = qml.hf.tapering.generate_symmetries(H, qubits)
+    >>> generators, paulix_ops
+    ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
+    [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
     """
-
     # Generate binary matrix for qubit_op
     binary_matrix = _binary_matrix(qubit_op.ops, num_qubits)
 
@@ -298,12 +286,259 @@ def generate_symmetries(qubit_op, num_qubits):
     generators = get_generators(nullspace, num_qubits)
 
     # Get unitaries from the calculated nullspace
-    pauli_x_ops = generate_paulis(generators, num_qubits)
+    paulix_ops = generate_paulis(generators, num_qubits)
 
-    return generators, pauli_x_ops
+    return generators, paulix_ops
 
 
-def taper_hartree_fock(num_electrons, num_wires, generators, pauli_x_ops, paulix_sector):
+def _observable_mult(obs_a, obs_b):
+    r"""Multiply two PennyLane observables together.
+
+    Each observable should be a linear combination of Pauli words, e.g.,
+    :math:`\sum_{k=0}^{N} c_k P_k`, and represented as a PennyLane Hamiltonian.
+
+    Args:
+        obs_a (Hamiltonian): first observable
+        obs_b (Hamiltonian): second observable
+
+    Returns:
+        qml.Hamiltonian: Observable expressed as a PennyLane Hamiltonian
+
+    **Example**
+
+    >>> c = np.array([0.5, 0.5])
+    >>> obs_a = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)])
+    >>> obs_b = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
+    >>> print(_observable_mult(obs_a, obs_b))
+      (-0.25j) [Z1]
+    + (-0.25j) [Y0]
+    + ( 0.25j) [Y1]
+    + ((0.25+0j)) [Y0 X1]
+    """
+    o = []
+    c = []
+    for i in range(len(obs_a.terms[0])):
+        for j in range(len(obs_b.terms[0])):
+            op, phase = qml.grouping.pauli_mult_with_phase(obs_a.terms[1][i], obs_b.terms[1][j])
+            o.append(op)
+            c.append(phase * obs_a.terms[0][i] * obs_b.terms[0][j])
+
+    return _simplify(qml.Hamiltonian(qml.math.stack(c), o))
+
+
+def _simplify(h, cutoff=1.0e-12):
+    r"""Add together identical terms in the Hamiltonian.
+
+    The Hamiltonian terms with identical Pauli words are added together and eliminated if the
+    overall coefficient is zero.
+
+    Args:
+        h (Hamiltonian): PennyLane Hamiltonian
+        cutoff (float): cutoff value for discarding the negligible terms
+
+    Returns:
+        Hamiltonian: Simplified PennyLane Hamiltonian
+
+    **Example**
+
+    >>> c = np.array([0.5, 0.5])
+    >>> h = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)])
+    >>> print(_simplify(h))
+    (1.0) [X0 Y1]
+    """
+    s = []
+    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
+
+    for term in h.terms[1]:
+        term = qml.operation.Tensor(term).prune()
+        s.append(qml.grouping.pauli_word_to_string(term, wire_map=wiremap))
+
+    o = list(set(s))
+    c = [0.0] * len(o)
+    for i, item in enumerate(s):
+        c[o.index(item)] += h.terms[0][i]
+    c = qml.math.stack(c)
+
+    coeffs = []
+    ops = []
+    nonzero_ind = np.argwhere(abs(c) > cutoff).flatten()
+    for i in nonzero_ind:
+        coeffs.append(c[i])
+        ops.append(qml.grouping.string_to_pauli_word(o[i], wire_map=wiremap))
+    try:
+        coeffs = qml.math.stack(coeffs)
+    except ValueError:
+        pass
+
+    return qml.Hamiltonian(coeffs, ops)
+
+
+def clifford(generators, paulix_ops):
+    r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
+
+    This function computes :math:`U = U_0U_1...U_k` for a set of :math:`k` generators and
+    :math:`k` Pauli-X operators.
+
+    Args:
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        paulix_ops (list[Operation]): list of single-qubit Pauli-X operators
+
+    Returns:
+        Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
+
+    **Example**
+
+    >>> t1 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZZII')])
+    >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
+    >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
+    >>> generators = [t1, t2, t3]
+    >>> paulix_ops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
+    >>> u = clifford(generators, paulix_ops)
+    >>> print(u)
+      (0.3535533905932737) [Z1 Z2 X3]
+    + (0.3535533905932737) [X1 X2 X3]
+    + (0.3535533905932737) [Z1 X2 Z3]
+    + (0.3535533905932737) [X1 Z2 Z3]
+    + (0.3535533905932737) [Z0 X1 X2 Z3]
+    + (0.3535533905932737) [Z0 Z1 Z2 Z3]
+    + (0.3535533905932737) [Z0 X1 Z2 X3]
+    + (0.3535533905932737) [Z0 Z1 X2 X3]
+    """
+    cliff = []
+    for i, t in enumerate(generators):
+        cliff.append(1 / 2 ** 0.5 * (paulix_ops[i] + t))
+
+    u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
+
+    return u
+
+
+def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
+    r"""Transform a Hamiltonian with a Clifford operator and taper qubits.
+
+    The Hamiltonian is transformed as :math:`H' = U^{\dagger} H U` where :math:`U` is a Clifford
+    operator. The transformed Hamiltonian acts trivially on some qubits which are then replaced
+    with the eigenvalues of their corresponding Pauli-X operator. The list of these
+    eigenvalues is defined as the Pauli sector.
+
+    Args:
+        h (Hamiltonian): PennyLane Hamiltonian
+        generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
+        paulix_ops (list[Operation]): list of single-qubit Pauli-X operators
+        paulix_sector (llist[int]): eigenvalues of the Pauli-X operators
+
+    Returns:
+        Hamiltonian: the tapered Hamiltonian
+
+    **Example**
+
+    >>> symbols = ["H", "H"]
+    >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
+    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> paulix_sector = [1, -1, -1]
+    >>> H_tapered = transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
+    >>> print(H_tapered)
+      ((-0.321034397355757+0j)) [I0]
+    + ((0.1809270275619003+0j)) [X0]
+    + ((0.7959678503869626+0j)) [Z0]
+    """
+    u = clifford(generators, paulix_ops)
+    h = _observable_mult(_observable_mult(u, h), u)
+
+    val = np.ones(len(h.terms[0])) * complex(1.0)
+
+    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
+    paulix_wires = [x.wires[0] for x in paulix_ops]
+    for idx, w in enumerate(paulix_wires):
+        for i in range(len(h.terms[0])):
+            s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+            if s[w] == "X":
+                val[i] *= paulix_sector[idx]
+
+    o = []
+    wires_tap = [i for i in h.wires if i not in paulix_wires]
+    wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
+
+    for i in range(len(h.terms[0])):
+        s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+        wires = [x for x in h.wires if x not in paulix_wires]
+        o.append(
+            qml.grouping.string_to_pauli_word(
+                "".join([s[wiremap[i]] for i in wires]), wire_map=wiremap_tap
+            )
+        )
+
+    c = anp.multiply(val, h.terms[0])
+    c = qml.math.stack(c)
+
+    return _simplify(qml.Hamiltonian(c, o))
+
+
+def optimal_sector(qubit_op, generators, active_electrons):
+    r"""Get the optimal sector which contains the ground state.
+
+    To obtain the optimal sector, we need to choose the right eigenvalue for the symmetries :math:`\vec{\tau}`. We can do
+    so by using the following relation between the Pauli-Z qubit operator and the occupation number under a Jordan-Wigner
+    transform.
+
+    .. math::
+
+        \sigma_{i}^{z} = I - 2a_{i}^{\dagger}a_{i}
+
+    According to this relation, an occupied and unoccupied fermionic mode corresponds to the -1 and +1 eigenvalue of
+    the Pauli-Z operator, respectively. Therefore, to get the optimal sector, for each symmetery :math:`\tau`, we first
+    define a symmetry sector by the wires it acts upon and then calculate the number of occupied orbitals (:math:`N_{OC}`)
+    present in it. If :math:`N_{OC}` is even (odd), then the correct sector for the given symmetry is
+    the one with a +1 (-1) eigenvalue.
+
+    Args:
+        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
+        generators (list[pennylane.Hamiltonian]): list of symmetry generators for the Hamiltonian
+        active_electrons (int): The number of active electrons in the system for generating the Hartree-Fock bitstring
+
+    Returns:
+        list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
+
+    .. code-block:: python
+
+        >>> symbols = ['H', 'H']
+        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+        >>> mol = qml.hf.Molecule(symbols, coordinates)
+        >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
+        >>> generators, paulix_ops = generate_symmetries(H, qubits)
+        >>> optimal_sector(H, generators, 2)
+          [1, -1, -1]
+
+    """
+
+    if active_electrons < 1:
+        raise ValueError(
+            f"The number of active electrons must be greater than zero;"
+            f"got 'electrons'={active_electrons}"
+        )
+
+    num_orbitals = len(qubit_op.wires)
+
+    if active_electrons > num_orbitals:
+        raise ValueError(
+            f"Number of active orbitals cannot be smaller than number of active electrons;"
+            f" got 'orbitals'={num_orbitals} < 'electrons'={active_electrons}."
+        )
+
+    hf_str = np.where(np.arange(num_orbitals) < active_electrons, 1, 0)
+
+    perm = []
+    for tau in generators:
+        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
+        coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
+        perm.append(coeff)
+
+    return perm
+
+
+def taper_hartree_fock(num_electrons, num_wires, generators, paulix_ops, paulix_sector):
     r"""Taper Hartree Fock according to the generated set of symmetries.
 
     The Hartree-Fock state for a molecule is transformed to a qubit observable under Jordan-Wigner
@@ -341,10 +576,10 @@ def taper_hartree_fock(num_electrons, num_wires, generators, pauli_x_ops, paulix
     hf = qml.qchem.hf_state(num_electrons, num_wires)
 
     # convert the hf state to corresponding HF observable under JW transform
-    ferm_op_terms = []
+    fermop_terms = []
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_str = qml.hf.hamiltonian._generate_qubit_operator([idx])
+            op_coeffs, op_str = _generate_qubit_operator([idx])
             op_terms = []
             for term in op_str:
                 op_term = pauli_map[term[0][1]](term[0][0])
@@ -354,23 +589,22 @@ def taper_hartree_fock(num_electrons, num_wires, generators, pauli_x_ops, paulix
             op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
         else:
             op_term = qml.Hamiltonian([1], [qml.Identity(idx)])
-        ferm_op_terms.append(op_term)
+        fermop_terms.append(op_term)
 
-    ferm_op = ferm_op_terms[0]
-    for term in ferm_op_terms[1:]:
+    ferm_op = fermop_terms[0]
+    for term in fermop_terms[1:]:
         ferm_op = _observable_mult(ferm_op, term)
     ferm_op = qml.Hamiltonian(
-        np.array([0.5 ** (len(ferm_op_terms))] * len(ferm_op.ops)), ferm_op.ops
+        np.array([0.5 ** (len(fermop_terms))] * len(ferm_op.ops)), ferm_op.ops
     )
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
-    pauli_wires = [p.wires[0] for p in pauli_x_ops]
-    ferm_op_taper = transform_hamiltonian(ferm_op, generators, pauli_wires, paulix_sector)
-    ferm_op_mat = _binary_matrix(ferm_op_taper.ops, len(ferm_op_taper.wires))
+    fermop_taper = transform_hamiltonian(ferm_op, generators, paulix_ops, paulix_sector)
+    fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
 
     # iterate over the terms in tapered HF observable and build the tapered HF state
     tapered_hartree_fock = []
-    for col in ferm_op_mat.T[ferm_op_mat.shape[1] // 2 :]:
+    for col in fermop_mat.T[fermop_mat.shape[1] // 2 :]:
         if 1 in col:
             tapered_hartree_fock.append(1)
         else:

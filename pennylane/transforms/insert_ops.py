@@ -24,13 +24,39 @@ from pennylane.tape import QuantumTape
 from pennylane.tape.tape import STATE_PREP_OPS
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
+# pylint: disable=too-many-branches
+
+
+def _check_position(position):
+    """Checks the position argument to determine if an operation or list of operations was provided."""
+    not_op = False
+    req_ops = False
+    if isinstance(position, list):
+        req_ops = position.copy()
+        for operation in req_ops:
+            try:
+                if operation.__base__ != Operation:
+                    not_op = True
+            except AttributeError:
+                not_op = True
+    elif not isinstance(position, list):
+        try:
+            if position.__base__ == Operation:
+                req_ops = [position]
+            else:
+                not_op = True
+        except AttributeError:
+            not_op = True
+    return not_op, req_ops
+
 
 @qfunc_transform
 def insert(
     circuit: Union[callable, QuantumTape, Device],
     op: Union[callable, Type[Operation]],
     op_args: Union[tuple, float],
-    position: str = "all",
+    position: Union[str, list, Type[Operation]] = "all",
+    before: bool = False,
 ) -> Union[callable, QuantumTape]:
     """Insert an operation into specified points in an input circuit.
 
@@ -50,10 +76,13 @@ def insert(
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
             float
-        position (str): Specification of where to add the operation. Should be one of: ``"all"`` to
-            add the operation after all gates (except state preparations); ``"start"`` to add the
-            operation to all wires at the start of the circuit (but after state preparations);
-            ``"end"`` to add the operation to all wires at the end of the circuit.
+        position (str or PennyLane operation or list of operations): Specification of where to add the operation.
+            Should be one of: ``"all"`` to add the operation after all gates (except state preparations);
+            ``"start"`` to add the operation to all wires at the start of the circuit (but after state preparations);
+            ``"end"`` to add the operation to all wires at the end of the circuit;
+            list of operations to add the operation before or after depending on ``before``.
+        before (bool): Whether to add the operation before the given operation(s) in ``position``.
+            Default is ``False`` and the operation is inserted after.
 
     Returns:
         callable or QuantumTape or Device: the updated version of the input circuit or an updated
@@ -62,7 +91,7 @@ def insert(
     Raises:
         ValueError: if a single operation acting on multiple wires is passed to ``op``
         ValueError: if the requested ``position`` argument is not ``'start'``, ``'end'`` or
-            ``'all'``
+            ``'all'`` OR PennyLane Operation
 
     **Example:**
 
@@ -189,8 +218,12 @@ def insert(
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
 
-    if position not in ("start", "end", "all"):
-        raise ValueError("Position must be either 'start', 'end', or 'all' (default)")
+    not_op, req_ops = _check_position(position)
+
+    if position not in ("start", "end", "all") and not_op:
+        raise ValueError(
+            "Position must be either 'start', 'end', or 'all' (default) OR a PennyLane operation or list of operations."
+        )
 
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
@@ -205,10 +238,21 @@ def insert(
             op(*op_args, wires=w)
 
     for circuit_op in circuit.operations[num_preps:]:
-        apply(circuit_op)
+        if not before:
+            apply(circuit_op)
+
         if position == "all":
             for w in circuit_op.wires:
                 op(*op_args, wires=w)
+
+        if req_ops:
+            for operation in req_ops:
+                if operation == type(circuit_op):
+                    for w in circuit_op.wires:
+                        op(*op_args, wires=w)
+
+        if before:
+            apply(circuit_op)
 
     if position == "end":
         for w in circuit.wires:

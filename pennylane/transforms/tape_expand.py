@@ -96,14 +96,14 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
         else:
             stop_at &= device.stopping_condition
 
-    def expand_fn(tape, _depth=depth, **kwargs):
+    def expand_fn(tape, depth=depth, **kwargs):
 
         with qml.tape.stop_recording():
 
             if stop_at is None:
-                tape = tape.expand(depth=_depth)
+                tape = tape.expand(depth=depth)
             elif not all(stop_at(op) for op in tape.operations):
-                tape = tape.expand(depth=_depth, stop_at=stop_at)
+                tape = tape.expand(depth=depth, stop_at=stop_at)
             else:
                 return tape
 
@@ -138,6 +138,29 @@ expand_multipar = create_expand_fn(
     depth=10,
     stop_at=not_tape | is_measurement | has_nopar | has_gen,
     docstring=_expand_multipar_doc,
+)
+
+_expand_trainable_multipar_doc = """Expand out a tape so that all its trainable
+operations have a single parameter.
+
+This is achieved by decomposing all trainable operations that do not have
+a generator, up to maximum depth ``depth``.
+For a sufficient ``depth``, it should always be possible to obtain a tape containing
+only single-parameter operations.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+expand_trainable_multipar = create_expand_fn(
+    depth=10,
+    stop_at=not_tape | is_measurement | has_nopar | (~is_trainable) | has_gen,
+    docstring=_expand_trainable_multipar_doc,
 )
 
 
