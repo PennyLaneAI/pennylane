@@ -190,17 +190,16 @@ class GateFabric(Operation):
         if len(shape) != 3:
             raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
-        if shape[1] != int((len(wires)/2)-1):
+        len_wire_pattern = int((len(wires)/2)-1)
+        if shape[1] != len_wire_pattern:
             raise ValueError(
-                f"Weights tensor must have second dimension of length {len(wire_pattern)}; got {shape[1]}"
+                f"Weights tensor must have second dimension of length {len_wire_pattern}; got {shape[1]}"
             )
 
         if shape[2] != 2:
             raise ValueError(
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
-
-        self.n_layers = shape[0]
 
         self._hyperparameters = {
             "init_state": qml.math.toarray(init_state),

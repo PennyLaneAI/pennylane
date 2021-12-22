@@ -169,10 +169,9 @@ class ParticleConservingU2(Operation):
                 f"Weights tensor must have a second dimension of length {2 * len(wires) - 1}; got {shape[1]}"
             )
 
-        self.n_layers = shape[0]
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
+        self._hyperparameters = {
+            "init_state": qml.math.toarray(init_state)
+        }
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 

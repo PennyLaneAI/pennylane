@@ -195,10 +195,9 @@ class ParticleConservingU1(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        self.n_layers = shape[0]
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
+        self._hyperparameters = {
+            "init_state": qml.math.toarray(init_state)
+        }
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 

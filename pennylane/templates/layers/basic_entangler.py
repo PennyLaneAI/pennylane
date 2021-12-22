@@ -130,8 +130,6 @@ class BasicEntanglerLayers(Operation):
         interface = qml.math.get_interface(weights)
         weights = qml.math.asarray(weights, like=interface)
 
-        self.rotation = rotation or qml.RX
-
         shape = qml.math.shape(weights)
         if not (len(shape) == 3 or len(shape) == 2):  # 3 is when batching, 2 is no batching
             raise ValueError(
@@ -145,6 +143,9 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must have last dimension of length {len(wires)}; got {shape[-1]}"
             )
 
+        self._hyperparameters = {
+            "rotation": rotation or qml.RX
+        }
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     @property
