@@ -225,7 +225,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             return new_args[0], forward
         # The following is essentially not implemented yet, as only
         # a single metric tensor can be processed.
-        return new_args, forward # pragma: no cover
+        return new_args, forward  # pragma: no cover
 
     # pylint: disable=arguments-differ
     def step(
