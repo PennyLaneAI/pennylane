@@ -92,7 +92,9 @@ class TestGeneralizedAmplitudeDamping:
     def test_gamma_p_zero(self, tol):
         """Test p=0, gamma=0 gives correct Kraus matrices"""
         op = channel.GeneralizedAmplitudeDamping
-        assert np.allclose(op(0, 0, wires=0).kraus_matrices()[0], np.zeros((2, 2)), atol=tol, rtol=0)
+        assert np.allclose(
+            op(0, 0, wires=0).kraus_matrices()[0], np.zeros((2, 2)), atol=tol, rtol=0
+        )
         assert np.allclose(op(0, 0, wires=0).kraus_matrices()[2], np.eye(2), atol=tol, rtol=0)
 
     def test_gamma_p_arbitrary(self, tol):

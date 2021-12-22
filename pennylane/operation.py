@@ -1163,7 +1163,7 @@ class Channel(Operation, abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def compute_kraus_matrices(*params, **hyperparams):  #  pylint:disable=unused-argument
+    def compute_kraus_matrices(*params, **hyperparams):  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
