@@ -29,7 +29,7 @@ def compute_indices(wires, n_block_wires):
         n_block_wires (int): number of wires per block
 
     Returns:
-        layers (array): array of wire indices or wire labels for each block
+        layers (array): array of wire labels for each block
     """
 
     n_wires = len(wires)
@@ -56,8 +56,7 @@ def compute_indices(wires, n_block_wires):
     n_wires = 2 ** (int(np.log2(len(wires) / n_block_wires))) * n_block_wires
     n_layers = int(np.log2(n_wires // n_block_wires)) + 1
 
-    layers = np.array(
-        [
+    layers =[
             [
                 wires[i]
                 for i in range(
@@ -82,7 +81,6 @@ def compute_indices(wires, n_block_wires):
             for j in range(1, n_layers + 1)
             for x in range(0, n_wires - n_block_wires // 2, 2 ** (j - 1) * n_block_wires)
         ]
-    )
 
     return layers
 
@@ -139,10 +137,13 @@ class TTN(Operation):
         3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
+    @property
+    def num_params(self):
+        return 1
+        
     def __init__(
         self,
         wires,
@@ -183,7 +184,7 @@ class TTN(Operation):
 
         with qml.tape.QuantumTape() as tape:
             for idx, w in enumerate(self.ind_gates):
-                self.block(weights=self.template_weights[idx][:], wires=w.tolist())
+                self.block(weights=self.template_weights[idx][:], wires=w)
 
         return tape
 
