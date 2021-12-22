@@ -106,6 +106,8 @@ class GroverOperator(Operation):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
+        self._hyperparameters = {"n_wires": len(wires)}
+
         self.work_wires = work_wires
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
@@ -135,22 +137,16 @@ class GroverOperator(Operation):
 
         return tape
 
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        return mat
-
-    @classmethod
-    def _matrix(cls, *params):
-        num_wires = params[0]
+    @staticmethod
+    @functools.lru_cache()
+    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
         s1 = np.array([1, 1]) / np.sqrt(2)
 
         # uniform superposition state |s>
-        s = functools.reduce(np.kron, list(itertools.repeat(s1, num_wires)))
+        s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
 
         # Grover diffusion operator
-        G = 2 * np.outer(s, s) - np.identity(2 ** num_wires)
+        G = 2 * np.outer(s, s) - np.identity(2 ** n_wires)
         return G
