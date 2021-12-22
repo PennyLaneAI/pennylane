@@ -469,50 +469,29 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     return _simplify(qml.Hamiltonian(c, o))
 
 
-def _sector_energy(sector):
-    """Computes energy of the given tapered Hamiltonian.
-
-    Args:
-        sector (pennylane.Hamiltonian): tapered Hamiltonian whose energy has to be calculated
-
-    Returns:
-        energy (float): energy of the tapered hamiltonian
-    """
-
-    if len(sector.wires) < 2:
-        energy = min(sp.linalg.eigvals(qml.utils.sparse_hamiltonian(sector).toarray()))
-    else:
-        energy = sp.sparse.linalg.eigs(qml.utils.sparse_hamiltonian(sector), k=2)[0].min()
-
-    return energy
-
-
-def find_optimal_sector(qubit_op, generators, paulix_ops, brute_force=True, num_electrons=0):
+def optimal_sector(qubit_op, generators, active_electrons):
     r"""Get the optimal sector which contains the ground state.
 
-    To obtain the optimal sector one can brute force through all the permutation or by utilize the following
-    relation between the Pauli-Z qubit operator and the occupation number under Jordan-Wigner transform.
+    To obtain the optimal sector, we can use the following relation between the Pauli-Z qubit operator and the
+    occupation number under a Jordan-Wigner transform.
 
     .. math::
 
-        \sigma_z^{i} = a_{i}^{\dagger}a_{i} - 1
+        \sigma_{i}^{z} = I - 2a_{i}^{\dagger}a_{i}
 
-    This relation allows us to figure out whether the orbital is occupied or unoccupied in a given symmetry sector,
-    to build the correct eigensector.
+    According to this, an occupied and unoccupied fermionic mode corresponds to the -1 and +1 eigenvalue of Pauli-Z
+    operator, respectively. We get the optimal sector by choosing the right eigenvalue for all all symmetries. To do
+    so, for each symmetery :math:`tau`, we define a symmetry sector by the wires it acts upon and calculate the number
+    of occupied orbitals (:math:`N_{OC}`) in it. If :math:`N_{OC}` is even (odd), then the correct sector for the the
+    given symmetery is the one +1 (-1) eigenvalue.
 
     Args:
-        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated for performing tapering
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
-        paulix_ops (list[pennylane.operation.Observable]):  list of single-qubit Pauli X operators
-        brute_force (bool): determines whether to use brute-force strategy to pick the correct sector or not
-        num_electrons (int): If `brute_force = True`, user must provide the number of active electrons in
-                              the system for generating the Hartree-Fock bitstring
+        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
+        generators (list[pennylane.Hamiltonian]): list of symmetry generators for the Hamiltonian
+        active_electrons (int): The number of active electrons in the system for generating the Hartree-Fock bitstring
 
     Returns:
-        tuple (list[int], float):
-
-            * list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
-            * float: energy of the computed optimal sector
+        list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
 
     .. code-block:: python
 
@@ -521,52 +500,31 @@ def find_optimal_sector(qubit_op, generators, paulix_ops, brute_force=True, num_
         >>> mol = qml.hf.Molecule(symbols, coordinates)
         >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
         >>> generators, paulix_ops = generate_symmetries(H, qubits)
-        >>> find_optimal_sector(H, generators, paulix_ops, False, 2)
-          ([1, -1, -1], -1.1372701746609024)
+        >>> optimal_sector(H, generators, 2)
+          [1, -1, -1]
 
     """
 
-    if not brute_force:
+    if active_electrons < 1:
+        raise ValueError(
+            f"The number of active electrons must be greater than zero;"
+            f"got 'electrons'={active_electrons}"
+        )
 
-        if num_electrons < 1:
-            raise ValueError(
-                f"Brute force search is disabled;"
-                f"the number of electrons must be provided and should be greater than zero;"
-                f"got 'electrons'={num_electrons}"
-            )
+    num_orbitals = len(qubit_op.wires)
 
-        num_orbitals = len(qubit_op.wires)
+    if active_electrons > num_orbitals:
+        raise ValueError(
+            f"Number of active orbitals cannot be smaller than number of active electrons;"
+            f" got 'orbitals'={num_orbitals} < 'electrons'={active_electrons}."
+        )
 
-        if num_electrons > num_orbitals:
-            raise ValueError(
-                f"Number of active orbitals cannot be smaller than number of active electrons;"
-                f" got 'orbitals'={num_orbitals} < 'electrons'={num_electrons}."
-            )
+    hf_str = np.where(np.arange(num_orbitals) < active_electrons, 1, 0)
 
-        hf_str = np.where(np.arange(num_orbitals) < num_electrons, 1, 0)
-        perm = []
+    perm = []
+    for tau in generators:
+        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
+        coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
+        perm.append(coeff)
 
-        for op in generators:
-            symmstr = np.zeros(len(qubit_op.wires), dtype=int)
-            for wire in op.wires:
-                symmstr[wire] = 1
-            coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
-            perm.append(coeff)
-
-        sector = transform_hamiltonian(qubit_op, generators, paulix_ops, perm)
-        energy = _sector_energy(sector)
-
-        return perm, energy
-
-    sectors = []
-    energies = []
-    perms = list(it.product([1, -1], repeat=len(generators)))
-
-    for perm in perms:
-        sector = transform_hamiltonian(qubit_op, generators, paulix_ops, perm)
-        energy = _sector_energy(sector)
-        sectors.append(sector)
-        energies.append(float(energy.real))
-
-    index = energies.index(min(energies))
-    return list(perms[index]), energies[index]
+    return perm
