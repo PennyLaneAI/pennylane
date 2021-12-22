@@ -1770,7 +1770,9 @@ class Tensor(Observable):
         if mat_size != wire_size:
             warnings.warn(
                 f"The size of the returned matrix ({mat_size}) will not be compatible "
-                f"with the subspace of the wires of the Tensor ({wire_size})."
+                f"with the subspace of the wires of the Tensor ({wire_size}). "
+                "This likely is due to wires being used in multiple tensor product "
+                "factors of the Tensor."
             )
 
         # Return the Hermitian matrix representing the observable
