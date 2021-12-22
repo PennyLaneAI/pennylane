@@ -789,7 +789,8 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        real_state = self._real(self._flatten(self._state))
-        imag_state = self._imag(self._flatten(self._state))
+        self._flatten(self._state)
+        real_state = self._real(flat_state)
+        imag_state = self._imag(flat_state)
         prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
         return prob
