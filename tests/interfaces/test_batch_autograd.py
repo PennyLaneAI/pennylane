@@ -439,7 +439,6 @@ class TestAutogradExecuteIntegration:
         assert res[1].shape == (2,)
 
         expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-        print(expected, res)
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_tape_no_parameters(self, execute_kwargs, tol):

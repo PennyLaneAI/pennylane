@@ -108,27 +108,6 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
-    @staticmethod
-    def _jacobian_trainable_args(args, interface):
-        """Return the indices of QNode arguments for which a Jacobian was
-        computed by `qml.transforms.classical_jacobian` with argnum=None.
-        """
-        trainable_args = []
-
-        if interface == "autograd":
-            for idx, arg in enumerate(args):
-                # TODO: make default False once this change is done in qml.jacobian
-                if getattr(arg, "requires_grad", True):
-                    trainable_args.append(idx)
-
-        elif interface == "jax":
-            trainable_args = [0]
-
-        # Torch and Tensorflow interfaces are not considered since `classical_jacobian`
-        # always returns a tuple for them, thus not invoking this function.
-
-        return trainable_args
-
     def default_qnode_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
@@ -148,7 +127,6 @@ class gradient_transform(qml.batch_transform):
 
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
-            print(qjac, cjac)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
