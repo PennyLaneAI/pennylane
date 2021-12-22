@@ -1504,9 +1504,10 @@ class MultiControlledX(Operation):
         if not control_values:
             control_values = "1" * len(control_wires)
 
+        self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
-    
+
         total_wires = control_wires + wires
 
         super().__init__(wires=total_wires, do_queue=do_queue)
@@ -1518,38 +1519,35 @@ class MultiControlledX(Operation):
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        wires, control_values=None, work_wires=None
+        control_wires, control_values=None, **kwargs
     ):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
-           wires (Iterable, Wires): Wires that the operator acts on. Should contain both control wires
-                and target wire. Target wire is the last wire in the Iterable.
-           work_wires (Wires): optional work wires used to decompose
-                the operation into a series of Toffoli gates.
-           control_values (str): string of bits determining the controls
+            control_wires (Iterable): wires to place controls on
+            control_values (str): string of bits determining the controls
 
         Returns:
            tensor_like: matrix representation
 
         **Example**
 
-        >>> qml.MultiControlledX.compute_matrix([0], '1', [1])
+        >>> qml.MultiControlledX.compute_matrix([0], '1')
         [[1. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 1.]
          [0. 0. 1. 0.]]
-        >>> qml.MultiControlledX.compute_matrix([1], '0', [0])
+        >>> qml.MultiControlledX.compute_matrix([1], '0')
         [[0. 1. 0. 0.]
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
+
         """
-        control_wires = wires[:~0]
-        
+
         if control_values is None:
             control_values = "1" * len(control_wires)
- 
+
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
@@ -1583,11 +1581,7 @@ class MultiControlledX(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(
-        wires=None,
-        work_wires=None,
-        control_values=None,
-    ):
+    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
         """Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
@@ -1637,7 +1631,6 @@ class MultiControlledX(Operation):
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2
-
 
             if len(work_wires) >= num_work_wires_needed:
                 decomp = MultiControlledX._decomposition_with_many_workers(

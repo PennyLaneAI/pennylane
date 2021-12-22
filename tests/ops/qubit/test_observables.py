@@ -470,7 +470,7 @@ class TestProjector:
         res_static = qml.Projector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
-        
+
 
 label_data = [
     (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
