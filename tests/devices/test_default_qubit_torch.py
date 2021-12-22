@@ -1425,7 +1425,7 @@ class TestPassthruIntegration:
         assert torch.allclose(a.grad, -0.5 * torch.sin(a) * (torch.cos(b) + 1), atol=tol, rtol=0)
         assert torch.allclose(b.grad, 0.5 * torch.sin(b) * (1 - torch.cos(a)))
 
-    @pytest.mark.parametrize("x, shift", [(0., 0.), (0.5, -0.5)])
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, torch_device, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""

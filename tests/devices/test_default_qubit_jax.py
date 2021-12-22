@@ -543,7 +543,7 @@ class TestPassthruIntegration:
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("x, shift", [(0., 0.), (0.5, -0.5)])
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
