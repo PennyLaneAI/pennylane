@@ -1792,7 +1792,7 @@ class Tensor(Observable):
 
         .. note::
 
-            Fully overlapping wires, i.e. observables with
+            Fully overlapping wires, i.e., observables with
             same (sets of) wires are not reported, as the ``matrix`` method is
             well-defined and implemented for this scenario.
         """
