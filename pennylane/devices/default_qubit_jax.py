@@ -148,6 +148,7 @@ class DefaultQubitJax(DefaultQubit):
         )
     )
     _conj = staticmethod(jnp.conj)
+    _real = staticmethod(jnp.real)
     _imag = staticmethod(jnp.imag)
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)

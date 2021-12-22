@@ -15,8 +15,10 @@ r"""
 Methods for generating QAOA cost Hamiltonians corresponding to
 different optimization problems.
 """
-
+from typing import Iterable, Union
 import networkx as nx
+import retworkx as rx
+
 import pennylane as qml
 from pennylane import qaoa
 
@@ -25,7 +27,7 @@ from pennylane import qaoa
 # Hamiltonian components
 
 
-def bit_driver(wires, b):
+def bit_driver(wires: Union[Iterable, qaoa.Wires], b: int):
     r"""Returns the bit-driver cost Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -65,7 +67,7 @@ def bit_driver(wires, b):
     return qml.Hamiltonian(coeffs, ops)
 
 
-def edge_driver(graph, reward):
+def edge_driver(graph: Union[nx.Graph, rx.PyGraph], reward: list):
     r"""Returns the edge-driver cost Hamiltonian.
 
     Given some graph, :math:`G` with each node representing a wire, and a binary
@@ -81,7 +83,7 @@ def edge_driver(graph, reward):
     See usage details for more information.
 
     Args:
-         graph (nx.Graph): The graph on which the Hamiltonian is defined
+         graph (nx.Graph or rx.PyGraph): The graph on which the Hamiltonian is defined
          reward (list[str]): The list of two-bit bitstrings that are assigned a lower energy by the Hamiltonian
 
     Returns:
@@ -91,6 +93,19 @@ def edge_driver(graph, reward):
 
     >>> import networkx as nx
     >>> graph = nx.Graph([(0, 1), (1, 2)])
+    >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
+    >>> print(hamiltonian)
+      (0.25) [Z0]
+    + (0.25) [Z1]
+    + (0.25) [Z1]
+    + (0.25) [Z2]
+    + (0.25) [Z0 Z1]
+    + (0.25) [Z1 Z2]
+
+    >>> import retworkx as rx
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
     >>> hamiltonian = qaoa.edge_driver(graph, ["11", "10", "01"])
     >>> print(hamiltonian)
       (0.25) [Z0]
@@ -159,15 +174,25 @@ def edge_driver(graph, reward):
             "'reward' cannot contain either '10' or '01', must contain neither or both."
         )
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+        )
 
     coeffs = []
     ops = []
 
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.nodes()
+    graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
+    get_nvalue = lambda i: graph_nodes[i] if is_rx else i
+
     if len(reward) == 0 or len(reward) == 4:
-        coeffs = [1 for _ in graph.nodes]
-        ops = [qml.Identity(v) for v in graph.nodes]
+        coeffs = [1 for _ in graph_nodes]
+        ops = [qml.Identity(v) for v in graph_nodes]
 
     else:
 
@@ -181,22 +206,30 @@ def edge_driver(graph, reward):
         reward = reward[0]
 
         if reward == "00":
-            for e in graph.edges:
+            for e in graph_edges:
                 coeffs.extend([0.25 * sign, 0.25 * sign, 0.25 * sign])
                 ops.extend(
-                    [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
+                    [
+                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
+                        qml.PauliZ(get_nvalue(e[0])),
+                        qml.PauliZ(get_nvalue(e[1])),
+                    ]
                 )
 
         if reward == "10":
-            for e in graph.edges:
+            for e in graph_edges:
                 coeffs.append(-0.5 * sign)
-                ops.append(qml.PauliZ(e[0]) @ qml.PauliZ(e[1]))
+                ops.append(qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])))
 
         if reward == "11":
-            for e in graph.edges:
+            for e in graph_edges:
                 coeffs.extend([0.25 * sign, -0.25 * sign, -0.25 * sign])
                 ops.extend(
-                    [qml.PauliZ(e[0]) @ qml.PauliZ(e[1]), qml.PauliZ(e[0]), qml.PauliZ(e[1])]
+                    [
+                        qml.PauliZ(get_nvalue(e[0])) @ qml.PauliZ(get_nvalue(e[1])),
+                        qml.PauliZ(get_nvalue(e[0])),
+                        qml.PauliZ(get_nvalue(e[1])),
+                    ]
                 )
 
     return qml.Hamiltonian(coeffs, ops)
@@ -206,7 +239,7 @@ def edge_driver(graph, reward):
 # Optimization problems
 
 
-def maxcut(graph):
+def maxcut(graph: Union[nx.Graph, rx.PyGraph]):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
     MaxCut problem, for a given graph.
 
@@ -230,7 +263,7 @@ def maxcut(graph):
             Even superposition over all basis states
 
     Args:
-        graph (nx.Graph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
+        graph (nx.Graph or rx.PyGraph): a graph defining the pairs of wires on which each term of the Hamiltonian acts
 
     Returns:
         (.Hamiltonian, .Hamiltonian): The cost and mixer Hamiltonians
@@ -248,28 +281,53 @@ def maxcut(graph):
       (1) [X0]
     + (1) [X1]
     + (1) [X2]
+
+    >>> import retworkx as rx
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
+    >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
+    >>> print(cost_h)
+      (-1.0) [I0]
+    + (0.5) [Z0 Z1]
+    + (0.5) [Z1 Z2]
+    >>> print(mixer_h)
+      (1) [X0]
+    + (1) [X1]
+    + (1) [X2]
     """
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+        )
+
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.nodes()
+    graph_edges = sorted(graph.edge_list()) if is_rx else graph.edges
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
+    get_nvalue = lambda i: graph_nodes[i] if is_rx else i
 
     identity_h = qml.Hamiltonian(
-        [-0.5 for e in graph.edges], [qml.Identity(e[0]) @ qml.Identity(e[1]) for e in graph.edges]
+        [-0.5 for e in graph_edges],
+        [qml.Identity(get_nvalue(e[0])) @ qml.Identity(get_nvalue(e[1])) for e in graph_edges],
     )
     H = edge_driver(graph, ["10", "01"]) + identity_h
     # store the valuable information that all observables are in one commuting group
     H.grouping_indices = [list(range(len(H.ops)))]
-    return (H, qaoa.x_mixer(graph.nodes))
+    return (H, qaoa.x_mixer(graph_nodes))
 
 
-def max_independent_set(graph, constrained=True):
+def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     r"""For a given graph, returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Independent Set problem.
 
     Given some graph :math:`G`, an independent set is a set of vertices such that no pair of vertices in the set
     share a common edge. The Maximum Independent Set problem, is the problem of finding the largest such set.
 
     Args:
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+        graph (nx.Graph or rx.PyGraph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -319,16 +377,20 @@ def max_independent_set(graph, constrained=True):
 
     """
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+        )
+
+    graph_nodes = graph.nodes()
 
     if constrained:
-        cost_h = bit_driver(graph.nodes, 1)
+        cost_h = bit_driver(graph_nodes, 1)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
         return (cost_h, qaoa.bit_flip_mixer(graph, 0))
 
-    cost_h = 3 * edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
-    mixer_h = qaoa.x_mixer(graph.nodes)
+    cost_h = 3 * edge_driver(graph, ["10", "01", "00"]) + bit_driver(graph_nodes, 1)
+    mixer_h = qaoa.x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
     cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -336,7 +398,7 @@ def max_independent_set(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def min_vertex_cover(graph, constrained=True):
+def min_vertex_cover(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Minimum Vertex Cover problem,
     for a given graph.
 
@@ -345,7 +407,7 @@ def min_vertex_cover(graph, constrained=True):
     every edge in the graph has one of the vertices as an endpoint.
 
     Args:
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+        graph (nx.Graph or rx.PyGraph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -395,16 +457,20 @@ def min_vertex_cover(graph, constrained=True):
 
     """
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+        )
+
+    graph_nodes = graph.nodes()
 
     if constrained:
-        cost_h = bit_driver(graph.nodes, 0)
+        cost_h = bit_driver(graph_nodes, 0)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
         return (cost_h, qaoa.bit_flip_mixer(graph, 1))
 
-    cost_h = 3 * edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph.nodes, 0)
-    mixer_h = qaoa.x_mixer(graph.nodes)
+    cost_h = 3 * edge_driver(graph, ["11", "10", "01"]) + bit_driver(graph_nodes, 0)
+    mixer_h = qaoa.x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
     cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -412,7 +478,7 @@ def min_vertex_cover(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def max_clique(graph, constrained=True):
+def max_clique(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the Maximum Clique problem,
     for a given graph.
 
@@ -420,7 +486,7 @@ def max_clique(graph, constrained=True):
     graph --- the largest subgraph such that all vertices are connected by an edge.
 
     Args:
-        graph (nx.Graph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
+        graph (nx.Graph or rx.PyGraph): a graph whose edges define the pairs of vertices on which each term of the Hamiltonian acts
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -473,16 +539,23 @@ def max_clique(graph, constrained=True):
 
     """
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph, got {type(graph).__name__}"
+        )
+
+    graph_nodes = graph.nodes()
+    graph_complement = (
+        rx.complement(graph) if isinstance(graph, rx.PyGraph) else nx.complement(graph)
+    )
 
     if constrained:
-        cost_h = bit_driver(graph.nodes, 1)
+        cost_h = bit_driver(graph_nodes, 1)
         cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
-        return (cost_h, qaoa.bit_flip_mixer(nx.complement(graph), 0))
+        return (cost_h, qaoa.bit_flip_mixer(graph_complement, 0))
 
-    cost_h = 3 * edge_driver(nx.complement(graph), ["10", "01", "00"]) + bit_driver(graph.nodes, 1)
-    mixer_h = qaoa.x_mixer(graph.nodes)
+    cost_h = 3 * edge_driver(graph_complement, ["10", "01", "00"]) + bit_driver(graph_nodes, 1)
+    mixer_h = qaoa.x_mixer(graph_nodes)
 
     # store the valuable information that all observables are in one commuting group
     cost_h.grouping_indices = [list(range(len(cost_h.ops)))]
@@ -490,7 +563,7 @@ def max_clique(graph, constrained=True):
     return (cost_h, mixer_h)
 
 
-def max_weight_cycle(graph, constrained=True):
+def max_weight_cycle(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph], constrained: bool = True):
     r"""Returns the QAOA cost Hamiltonian and the recommended mixer corresponding to the
     maximum-weighted cycle problem, for a given graph.
 
@@ -506,7 +579,7 @@ def max_weight_cycle(graph, constrained=True):
     our subset of edges composes a `cycle <https://en.wikipedia.org/wiki/Cycle_(graph_theory)>`__.
 
     Args:
-        graph (nx.Graph): the directed graph on which the Hamiltonians are defined
+        graph (nx.Graph or rx.PyGraph or rx.PyDiGraph): the directed graph on which the Hamiltonians are defined
         constrained (bool): specifies the variant of QAOA that is performed (constrained or unconstrained)
 
     Returns:
@@ -625,8 +698,10 @@ def max_weight_cycle(graph, constrained=True):
         can be prepared using :class:`~.BasisState` or simple :class:`~.PauliX` rotations on the
         ``0`` and ``3`` wires.
     """
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph, rx.PyDiGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph or rx.PyDiGraph, got {type(graph).__name__}"
+        )
 
     mapping = qaoa.cycle.wires_to_edges(graph)
 
