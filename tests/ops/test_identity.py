@@ -19,7 +19,7 @@ import numpy as np
 
 def test_identity_eigvals(tol):
     """Test identity eigenvalues are correct"""
-    res = qml.Identity.compute_eigvals()
+    res = Identity.compute_eigvals()
     expected = np.array([1, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -38,8 +38,8 @@ def test_label_method():
 
 def test_matrix_representation(tol):
     """Test the matrix representation"""
-    res_static = qml.Identity.compute_matrix()
-    res_dynamic = qml.Identity(wires=0).matrix()
+    res_static = Identity.compute_matrix()
+    res_dynamic = Identity(wires=0).matrix()
     expected = np.array([[1.0, 0.0], [0.0, 1.0]])
     assert np.allclose(res_static, expected, atol=tol)
     assert np.allclose(res_dynamic, expected, atol=tol)

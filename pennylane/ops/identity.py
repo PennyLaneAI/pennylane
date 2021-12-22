@@ -96,7 +96,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_decomposition(wires=None):
-        """Compute the decomposition for the specified wire.
+        r"""Compute the decomposition for the specified wire.
         The decomposition defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
