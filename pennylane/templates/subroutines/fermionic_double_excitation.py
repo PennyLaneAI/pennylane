@@ -32,7 +32,7 @@ b = 3 * np.pi / 2
 four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
-def _layer1(weight, s, r, q, p, set_cnot_wires):
+def _layer1(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the first layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -49,33 +49,37 @@ def _layer1(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    Hadamard(wires=r)
-    RX(-np.pi / 2, wires=q)
-    Hadamard(wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(RX(-np.pi / 2, wires=q))
+    op_list.append(Hadamard(wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(weight / 8, wires=p)
+    op_list.append(RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    Hadamard(wires=r)
-    RX(np.pi / 2, wires=q)
-    Hadamard(wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(RX(np.pi / 2, wires=q))
+    op_list.append(Hadamard(wires=p))
+    return op_list
 
 
-def _layer2(weight, s, r, q, p, set_cnot_wires):
+def _layer2(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the second layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -92,33 +96,37 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi / 2, wires=s)
-    Hadamard(wires=r)
-    RX(-np.pi / 2, wires=q)
-    RX(-np.pi / 2, wires=p)
+    op_list.append(RX(-np.pi / 2, wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(RX(-np.pi / 2, wires=q))
+    op_list.append(RX(-np.pi / 2, wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(weight / 8, wires=p)
+    op_list.append(RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi / 2, wires=s)
-    Hadamard(wires=r)
-    RX(np.pi / 2, wires=q)
-    RX(np.pi / 2, wires=p)
+    op_list.append(RX(np.pi / 2, wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(RX(np.pi / 2, wires=q))
+    op_list.append(RX(np.pi / 2, wires=p))
+    return op_list
 
 
-def _layer3(weight, s, r, q, p, set_cnot_wires):
+def _layer3(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the third layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -135,33 +143,37 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    RX(-np.pi / 2, wires=r)
-    RX(-np.pi / 2, wires=q)
-    RX(-np.pi / 2, wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(RX(-np.pi / 2, wires=r))
+    op_list.append(RX(-np.pi / 2, wires=q))
+    op_list.append(RX(-np.pi / 2, wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(weight / 8, wires=p)
+    op_list.append(RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    RX(np.pi / 2, wires=r)
-    RX(np.pi / 2, wires=q)
-    RX(np.pi / 2, wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(RX(np.pi / 2, wires=r))
+    op_list.append(RX(np.pi / 2, wires=q))
+    op_list.append(RX(np.pi / 2, wires=p))
+    return op_list
 
 
-def _layer4(weight, s, r, q, p, set_cnot_wires):
+def _layer4(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the fourth layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -178,33 +190,37 @@ def _layer4(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    Hadamard(wires=r)
-    Hadamard(wires=q)
-    RX(-np.pi / 2, wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(RX(-np.pi / 2, wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(weight / 8, wires=p)
+    op_list.append(RZ(weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    Hadamard(wires=r)
-    Hadamard(wires=q)
-    RX(np.pi / 2, wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(RX(np.pi / 2, wires=p))
+    return op_list
 
 
-def _layer5(weight, s, r, q, p, set_cnot_wires):
+def _layer5(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the fifth layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -221,33 +237,37 @@ def _layer5(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi / 2, wires=s)
-    Hadamard(wires=r)
-    Hadamard(wires=q)
-    Hadamard(wires=p)
+    op_list.append(RX(-np.pi / 2, wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(Hadamard(wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(-weight / 8, wires=p)
+    op_list.append(RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi / 2, wires=s)
-    Hadamard(wires=r)
-    Hadamard(wires=q)
-    Hadamard(wires=p)
+    op_list.append(RX(np.pi / 2, wires=s))
+    op_list.append(Hadamard(wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(Hadamard(wires=p))
+    return op_list
 
 
-def _layer6(weight, s, r, q, p, set_cnot_wires):
+def _layer6(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the sixth layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -264,33 +284,37 @@ def _layer6(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    RX(-np.pi / 2, wires=r)
-    Hadamard(wires=q)
-    Hadamard(wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(RX(-np.pi / 2, wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(Hadamard(wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(-weight / 8, wires=p)
+    op_list.append(RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    Hadamard(wires=s)
-    RX(np.pi / 2, wires=r)
-    Hadamard(wires=q)
-    Hadamard(wires=p)
+    op_list.append(Hadamard(wires=s))
+    op_list.append(RX(np.pi / 2, wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(Hadamard(wires=p))
+    return op_list
 
 
-def _layer7(weight, s, r, q, p, set_cnot_wires):
+def _layer7(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the seventh layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -307,33 +331,37 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-    """
+        op_list (list[~.Operator]): decomposition list to append to
 
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
+    """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi / 2, wires=s)
-    RX(-np.pi / 2, wires=r)
-    RX(-np.pi / 2, wires=q)
-    Hadamard(wires=p)
+    op_list.append(RX(-np.pi / 2, wires=s))
+    op_list.append(RX(-np.pi / 2, wires=r))
+    op_list.append(RX(-np.pi / 2, wires=q))
+    op_list.append(Hadamard(wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(-weight / 8, wires=p)
+    op_list.append(RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi / 2, wires=s)
-    RX(np.pi / 2, wires=r)
-    RX(np.pi / 2, wires=q)
-    Hadamard(wires=p)
+    op_list.append(RX(np.pi / 2, wires=s))
+    op_list.append(RX(np.pi / 2, wires=r))
+    op_list.append(RX(np.pi / 2, wires=q))
+    op_list.append(Hadamard(wires=p))
+    return op_list
 
 
-def _layer8(weight, s, r, q, p, set_cnot_wires):
+def _layer8(weight, s, r, q, p, set_cnot_wires, op_list):
     r"""Implement the eighth layer of the circuit to exponentiate the double-excitation
     operator entering the UCCSD ansatz.
 
@@ -350,30 +378,35 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
+        op_list (list[~.Operator]): decomposition list to append to
+
+    Returns:
+        list[~.Operator]: decomposition filled with operators by this function
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    RX(-np.pi / 2, wires=s)
-    RX(-np.pi / 2, wires=r)
-    Hadamard(wires=q)
-    RX(-np.pi / 2, wires=p)
+    op_list.append(RX(-np.pi / 2, wires=s))
+    op_list.append(RX(-np.pi / 2, wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(RX(-np.pi / 2, wires=p))
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # Z rotation acting on wire 'p'
-    RZ(-weight / 8, wires=p)
+    op_list.append(RZ(-weight / 8, wires=p))
 
     # Applying CNOTs in reverse order
     for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+        op_list.append(CNOT(wires=cnot_wires))
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
-    RX(np.pi / 2, wires=s)
-    RX(np.pi / 2, wires=r)
-    Hadamard(wires=q)
-    RX(np.pi / 2, wires=p)
+    op_list.append(RX(np.pi / 2, wires=s))
+    op_list.append(RX(np.pi / 2, wires=r))
+    op_list.append(Hadamard(wires=q))
+    op_list.append(RX(np.pi / 2, wires=p))
+    return op_list
 
 
 class FermionicDoubleExcitation(Operation):
@@ -504,39 +537,65 @@ class FermionicDoubleExcitation(Operation):
         if shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-        self.wires1 = list(wires1)
-        self.wires2 = list(wires2)
-        wires = wires1 + wires2
+        wires1 = list(wires1)
+        wires2 = list(wires2)
 
+        self._hyperparameters = {
+            "wires1": wires1,
+            "wires2": wires2,
+        }
+
+        wires = wires1 + wires2
         super().__init__(weight, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(weight, wires, wires1, wires2):  # pylint: disable=arguments-differ,unused-argument
+        r"""Compute a decomposition of the FermionicDoubleExcitation operator.
 
-        weight = self.parameters[0]
-        s = self.wires1[0]
-        r = self.wires1[-1]
-        q = self.wires2[0]
-        p = self.wires2[-1]
+        The decomposition defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+
+        See also :meth:`~.FermionicDoubleExcitation.decomposition`.
+
+        Args:
+            weight (float or tensor_like): angle :math:`\theta` entering the Z rotation
+            wires (Any or Iterable[Any]): full set of wires that the operator acts on
+            wires1 (Iterable): Wires of the qubits representing the subset of occupied orbitals
+                in the interval ``[s, r]``.
+            wires2 (Iterable): Wires of the qubits representing the subset of unoccupied
+                orbitals in the interval ``[q, p]``.
+
+        Returns:
+            list[~.Operator]: decomposition of the Operator into lower-level operations
+        """
+        s = wires1[0]
+        r = wires1[-1]
+        q = wires2[0]
+        p = wires2[-1]
 
         # Sequence of the wires entering the CNOTs
-        cnots_occ = [self.wires1[l : l + 2] for l in range(len(self.wires1) - 1)]
-        cnots_unocc = [self.wires2[l : l + 2] for l in range(len(self.wires2) - 1)]
+        cnots_occ = [wires1[l : l + 2] for l in range(len(wires1) - 1)]
+        cnots_unocc = [wires2[l : l + 2] for l in range(len(wires2) - 1)]
 
         set_cnot_wires = cnots_occ + [[r, q]] + cnots_unocc
 
-        with qml.tape.QuantumTape() as tape:
+        op_list = []
 
-            _layer1(weight, s, r, q, p, set_cnot_wires)
-            _layer2(weight, s, r, q, p, set_cnot_wires)
-            _layer3(weight, s, r, q, p, set_cnot_wires)
-            _layer4(weight, s, r, q, p, set_cnot_wires)
-            _layer5(weight, s, r, q, p, set_cnot_wires)
-            _layer6(weight, s, r, q, p, set_cnot_wires)
-            _layer7(weight, s, r, q, p, set_cnot_wires)
-            _layer8(weight, s, r, q, p, set_cnot_wires)
+        op_list = _layer1(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer2(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer3(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer4(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer5(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer6(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer7(weight, s, r, q, p, set_cnot_wires, op_list)
+        op_list = _layer8(weight, s, r, q, p, set_cnot_wires, op_list)
 
-        return tape
+        return op_list
