@@ -31,6 +31,9 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
     Args:
         terms (Iterable[Observable]): operators defining the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
+        wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
+            unique integer labels as their values
+
     Returns:
         array[int]: binary matrix representation of the Hamiltonian of shape
         :math:`len(terms) \times 2*num_qubits`
@@ -552,7 +555,7 @@ def taper_hartree_fock(num_electrons, num_wires, generators, paulix_ops, paulix_
         Hartree-Fock bitstring
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
         generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
-        pauli_x_ops (list[pennylane.Observable]):  list of single-qubit Pauli X operators
+        paulix_ops (list[pennylane.Observable]):  list of single-qubit Pauli X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
 
     Returns:
@@ -573,7 +576,7 @@ def taper_hartree_fock(num_electrons, num_wires, generators, paulix_ops, paulix_
     pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
 
     # build the untapered hartree fock state
-    hf = qml.qchem.hf_state(num_electrons, num_wires)
+    hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
     # convert the hf state to corresponding HF observable under JW transform
     fermop_terms = []
