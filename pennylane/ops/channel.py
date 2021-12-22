@@ -545,7 +545,7 @@ class PauliError(Channel):
         **Example**
 
         >>> qml.PauliError.compute_kraus_matrices("X", 0.5)
-        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]), 
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
         nq = len(operators)
