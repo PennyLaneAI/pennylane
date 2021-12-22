@@ -1325,8 +1325,8 @@ class TestChannel:
             num_wires = 1
             grad_method = "F"
 
-            def _kraus_matrices(self, *params):
-                p = params[0]
+            @staticmethod
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
