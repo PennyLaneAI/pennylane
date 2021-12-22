@@ -122,6 +122,14 @@
 * Interferometer is now a class with `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
 
+* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
+  uses RetworkX for its internal representation. This results in significant speedup
+  for algorithms that rely on a directed acyclic graph representation.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+  
+* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -241,5 +249,5 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, Ankit Khandelwal, 
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, Ankit Khandelwal, 
 Christina Lee, Maria Schuld, Antal Száva, David Wierichs, Shaoming Zhang
