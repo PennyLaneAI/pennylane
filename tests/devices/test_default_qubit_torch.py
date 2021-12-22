@@ -1425,6 +1425,26 @@ class TestPassthruIntegration:
         assert torch.allclose(a.grad, -0.5 * torch.sin(a) * (torch.cos(b) + 1), atol=tol, rtol=0)
         assert torch.allclose(b.grad, 0.5 * torch.sin(b) * (1 - torch.cos(a)))
 
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, torch_device, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+
+        x = torch.tensor(x, requires_grad=True)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        grad = torch.autograd.functional.jacobian(circuit, x)
+        hess = torch.autograd.functional.hessian(circuit, x)
+
+        assert qml.math.isclose(grad, torch.tensor(0.0))
+        assert qml.math.isclose(hess, torch.tensor(-1.0))
+
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_torch_interface_gradient(self, torch_device, operation, diff_method, tol):
