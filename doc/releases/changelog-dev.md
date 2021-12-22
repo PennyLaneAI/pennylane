@@ -247,7 +247,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 * The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to 
   `compute_kraus_matrices`, which is now a static method.
-  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
 <h3>Contributors</h3>
 
