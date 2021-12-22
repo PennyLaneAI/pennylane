@@ -727,7 +727,7 @@ class TestTensor:
             O.matrix(wire_order=[1, 0])
 
     def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
-        """Tests that a warning is raised if the wires the factors in 
+        """Tests that a warning is raised if the wires the factors in
         the tensor product act on have partial overlaps."""
         H = np.diag([1, 2, 3, 4])
         O1 = qml.PauliX(0) @ qml.Hermitian(H, [0, 1])
