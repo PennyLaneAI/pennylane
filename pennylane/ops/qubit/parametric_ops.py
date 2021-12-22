@@ -223,9 +223,21 @@ class RZ(Operation):
 
         return qml.math.diag([p, qml.math.conj(p)])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the RZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -302,10 +314,21 @@ class PhaseShift(Operation):
 
         return qml.math.diag([1, exp_part])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 0.8776+0.4794j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -392,10 +415,21 @@ class ControlledPhaseShift(Operation):
 
         return qml.math.diag([1, 1, 1, exp_part])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the ControlledPhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -550,7 +584,7 @@ class MultiRZ(Operation):
         will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
 
     Args:
-        theta (float): rotation angle :math:`\theta`
+        theta (tensor_like or float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_wires = AnyWires
@@ -570,8 +604,8 @@ class MultiRZ(Operation):
         """Canonical matrix representation of the MultiRZ operator.
 
         Args:
-            theta (tensor_like or float): Rotation angle.
-            n_wires (int): Number of wires the rotation acts on.
+            theta (tensor_like or float): rotation angle
+            n_wires (int): number of wires the rotation acts on
 
         Returns:
             tensor_like: canonical matrix
@@ -596,23 +630,30 @@ class MultiRZ(Operation):
     def generator(self):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
-    @classmethod
-    def _eigvals(cls, theta, n):
-        eigs = qml.math.convert_like(pauli_eigs(n), theta)
+    @staticmethod
+    def compute_eigvals(theta, n_wires):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the MultiRZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+            n_wires (int): number of wires the rotation acts on
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
+        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
+                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
         return qml.math.exp(-1j * theta / 2 * eigs)
-
-    @property
-    def eigvals(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
-        if self.inverse:
-            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
-
-        return self._eigvals(*self.parameters, len(self.wires))
 
     @staticmethod
     def decomposition(theta, wires):
@@ -810,8 +851,18 @@ class PauliRot(Operation):
         pauli_word = self.parameters[1]
         return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
 
-    @classmethod
-    def _eigvals(cls, theta, pauli_word):
+    @staticmethod
+    def compute_eigvals(theta, pauli_word):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliRot operator.
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -819,7 +870,7 @@ class PauliRot(Operation):
         if pauli_word == "I" * len(pauli_word):
             return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
 
-        return MultiRZ._eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
     @staticmethod
     def decomposition(theta, pauli_word, wires):
@@ -1161,9 +1212,22 @@ class CRZ(Operation):
 
         return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params[0]]))[0]
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=arguments-differ
+        """Eigenvalues of the CRZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        theta = qml.math.flatten(qml.math.stack([theta]))[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
