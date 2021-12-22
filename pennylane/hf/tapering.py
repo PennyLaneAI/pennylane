@@ -16,9 +16,7 @@ This module contains the functions needed for tapering qubits using symmetries.
 """
 # pylint: disable=unnecessary-lambda
 
-import itertools as it
 import functools
-import scipy as sp
 import numpy
 import autograd.numpy as anp
 import pennylane as qml
