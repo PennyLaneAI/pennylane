@@ -223,7 +223,9 @@ class QNGOptimizer(GradientDescentOptimizer):
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0], forward
-        return new_args, forward
+        # The following is essentially not implemented yet, as only
+        # a single metric tensor can be processed.
+        return new_args, forward # pragma: no cover
 
     # pylint: disable=arguments-differ
     def step(
