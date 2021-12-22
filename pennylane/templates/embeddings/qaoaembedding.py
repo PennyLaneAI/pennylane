@@ -230,11 +230,15 @@ class QAOAEmbedding(Operation):
         **Example**
 
         >>> features = torch.tensor([1., 2.])
-        >>> weights = ...
-        >>> qml.QAOAEmbedding.compute_decomposition(XXX)
-        XXX
+        >>> weights = torch.tensor([[0.1, -0.3, 1.3], [0.9, -0.2, -2.1]])
+        >>> qml.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qml.RY)
+        [RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
+        MultiRZ(tensor(0.1000), wires=['a', 'b']), RY(tensor(-0.3000), wires=['a']), RY(tensor(1.3000), wires=['b']),
+        RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
+        MultiRZ(tensor(0.9000), wires=['a', 'b']), RY(tensor(-0.2000), wires=['a']), RY(tensor(-2.1000), wires=['b']),
+        RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b'])]
         """
-
+        wires = qml.wires.Wires(wires)
         # first dimension of the weights tensor determines
         # the number of layers
         repeat = qml.math.shape(weights)[0]
@@ -250,20 +254,20 @@ class QAOAEmbedding(Operation):
 
             # ---- apply weight Hamiltonian
             if len(wires) == 1:
-                op_list.append(local_field(weights[0], wires=wires))
+                op_list.append(local_field(weights[l][0], wires=wires))
 
             elif len(wires) == 2:
                 # deviation for 2 wires: we do not connect last to first qubit
                 # with the entangling gates
-                op_list.append(qml.MultiRZ(weights[0], wires=wires.subset([0, 1])))
-                op_list.append(local_field(weights[1], wires=wires[0:1]))
-                op_list.append(local_field(weights[2], wires=wires[1:2]))
+                op_list.append(qml.MultiRZ(weights[l][0], wires=wires.subset([0, 1])))
+                op_list.append(local_field(weights[l][1], wires=wires[0:1]))
+                op_list.append(local_field(weights[l][2], wires=wires[1:2]))
 
             else:
                 for i in range(len(wires)):
-                    op_list.append(qml.MultiRZ(weights[i], wires=wires.subset([i, i + 1], periodic_boundary=True)))
+                    op_list.append(qml.MultiRZ(weights[l][i], wires=wires.subset([i, i + 1], periodic_boundary=True)))
                 for i in range(len(wires)):
-                    op_list.append(local_field(weights[len(wires) + i], wires=wires[i]))
+                    op_list.append(local_field(weights[l][len(wires) + i], wires=wires[i]))
 
         # repeat the feature encoding once more at the end
         for i in range(n_features):

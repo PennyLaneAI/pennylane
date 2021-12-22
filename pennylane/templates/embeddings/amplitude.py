@@ -160,9 +160,9 @@ class AmplitudeEmbedding(Operation):
 
         >>> features = torch.tensor([1., 0., 0., 0.])
         >>> qml.AmplitudeEmbedding.compute_decomposition(features, wires=["a", "b"])
-        XXX
+        [QubitStateVector(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
         """
-        return QubitStateVector(features, wires=wires)
+        return [QubitStateVector(features, wires=wires)]
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):

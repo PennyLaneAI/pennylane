@@ -120,8 +120,9 @@ class AngleEmbedding(Operation):
         **Example**
 
         >>> features = torch.tensor([1., 2.])
-        >>> qml.AngleEmbedding.compute_decomposition(features, wires=["a", "b"])
-        XXX
+        >>> qml.AngleEmbedding.compute_decomposition(features, wires=["a", "b"], rotation=qml.RX)
+        [RX(tensor(1.), wires=['a']),
+         RX(tensor(2.), wires=['b'])]
         """
         batched = len(qml.math.shape(features)) > 1
         features = features.T if batched else features

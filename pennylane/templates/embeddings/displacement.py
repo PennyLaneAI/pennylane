@@ -152,7 +152,8 @@ class DisplacementEmbedding(Operation):
 
         >>> pars = torch.tensor([[1., 0.], [2., 0.]])
         >>> qml.DisplacementEmbedding.compute_decomposition(pars, wires=[0, 1])
-        XXX
+        [Displacement(tensor(1.), tensor(0.), wires=[0]),
+         Displacement(tensor(2.), tensor(0.), wires=[1])]
         """
         return [qml.Displacement(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))]
 

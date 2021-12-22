@@ -152,8 +152,9 @@ class SqueezingEmbedding(Operation):
         **Example**
 
         >>> pars = torch.tensor([[1., 0.], [2., 0.]])
-        >>> qml.SqueezingEmbedding.compute_decomposition(pars, wires)
-        XXX
+        >>> qml.SqueezingEmbedding.compute_decomposition(pars, wires=["a", "b"])
+        [Squeezing(tensor(1.), tensor(0.), wires=['a']),
+        Squeezing(tensor(2.), tensor(0.), wires=['b'])]
         """
-        return [qml.Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))]
+        return [qml.Squeezing(pars[i, 0], pars[i, 1], wires=wires[i: i + 1]) for i in range(len(wires))]
 

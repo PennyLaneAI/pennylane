@@ -119,9 +119,10 @@ class BasisEmbedding(Operation):
 
         **Example**
 
-        >>> features = torch.tensor([1, 0])
-        >>> qml.BasisEmbedding.compute_decomposition(features, wires=["a", "b"])
-        XXX
+        >>> features = torch.tensor([1, 0, 1])
+        >>> qml.BasisEmbedding.compute_decomposition(features, wires=["a", "b", "c"])
+        [PauliX(wires=['a']),
+         PauliX(wires=['c'])]
         """
         ops_list = []
         for wire, bit in zip(wires, basis_state):
