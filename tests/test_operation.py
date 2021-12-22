@@ -1333,7 +1333,7 @@ class TestChannel:
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
         op = DummyOp(0.1, wires=0)
-        assert np.all(op.kraus_matrices[0] == expected)
+        assert np.all(op.kraus_matrices()[0] == expected)
 
 
 class TestOperationDerivative:

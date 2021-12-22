@@ -415,7 +415,7 @@ class PauliError(Channel):
     **Example:**
 
     >>> pe = PauliError("X", 0.5, wires=0)
-    >>> km = pe.kraus_matrices
+    >>> km = pe.kraus_matrices()
     >>> km[0]
     array([[0.70710678, 0.        ],
            [0.        , 0.70710678]])
