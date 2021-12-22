@@ -329,8 +329,8 @@ class DiagonalQubitUnitary(Operation):
 
         return qml.math.diag(D)
 
-    @classmethod
-    def compute_eigvals(cls, D):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals(D):  # pylint: disable=,arguments-differ
         """Eigenvalues of the DiagonalQubitUnitary operator.
 
         Args:

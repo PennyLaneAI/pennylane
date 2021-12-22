@@ -44,8 +44,8 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "I"
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the Identity operator.
 
         Returns:

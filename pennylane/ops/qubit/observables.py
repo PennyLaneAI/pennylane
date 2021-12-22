@@ -313,8 +313,8 @@ class Projector(Observable):
         m[idx, idx] = 1
         return m
 
-    @classmethod
-    def compute_eigvals(cls, basis_state):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals(basis_state):  # pylint: disable=,arguments-differ
         """Eigenvalues of the Projector operator.
 
         Args:

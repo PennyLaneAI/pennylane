@@ -480,18 +480,16 @@ class Operator(abc.ABC):
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-    @classmethod
-    def compute_eigvals(cls, *params, **hyperparams):
-        """Canonical eigenvalues of the operator in the computational basis.
+    @staticmethod
+    def compute_eigvals(*params, **hyperparams):
+        """Eigenvalues of the operator in the computational basis.
 
-        The canonical eigenvalues refer to the textbook matrix representation that does not consider wires.
+        The eigenvalues refer to the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        This class method allows eigenvalues to be computed
+        This static method allows eigenvalues to be computed
         directly without instantiating the operator first.
-
-        The default implementation relies on the presence of the
-        :meth:`~.Operator.compute_matrix` method. To return the eigenvalues of *instantiated* operators,
+        To return the eigenvalues of *instantiated* operators,
         please use the :meth:`~.Operator.eigvals()` method instead.
 
         If :attr:`diagonalizing_gates` are specified, the order of the
@@ -520,7 +518,7 @@ class Operator(abc.ABC):
         >>> qml.PauliX.compute_eigvals()
         array([1, -1])
         """
-        return np.linalg.eigvals(cls.compute_matrix(*params, **hyperparams))
+        return NotImplementedError
 
     def eigvals(self):
         r"""Eigenvalues of the operator.
@@ -533,7 +531,9 @@ class Operator(abc.ABC):
 
         .. note::
             By default, this method calls the static method ``compute_eigvals``,
-            which is used by subclasses to define the actual eigenvalues.
+            which is used by subclasses to define the actual eigenvalues. If no
+            eigenvalues are defined, it is attempted to compute them from the matrix
+            representation.
 
         Returns:
             array: eigenvalues
@@ -548,7 +548,13 @@ class Operator(abc.ABC):
         >>> qml.PauliX.eigvals()
         array([1, -1])
         """
-        return self.compute_eigvals(*self.parameters, **self.hyperparameters)
+
+        try:
+            return self.compute_eigvals(*self.parameters, **self.hyperparameters)
+        except NotImplementedError:
+            # By default, compute the eigenvalues from the matrix representation.
+            # This will raise a NotImplementedError if the matrix is undefined.
+            return np.linalg.eigvals(self.compute_matrix(*self.parameters, **self.hyperparameters))
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument

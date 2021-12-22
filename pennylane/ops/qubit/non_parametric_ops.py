@@ -66,8 +66,8 @@ class Hadamard(Observable, Operation):
         """
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the Hadamard operator.
 
         Returns:
@@ -160,8 +160,8 @@ class PauliX(Observable, Operation):
         """
         return np.array([[0, 1], [1, 0]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the PauliX operator.
 
         Returns:
@@ -255,8 +255,8 @@ class PauliY(Observable, Operation):
         """
         return np.array([[0, -1j], [1j, 0]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the PauliY operator.
 
         Returns:
@@ -356,8 +356,8 @@ class PauliZ(Observable, Operation):
         """
         return np.array([[1, 0], [0, -1]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the PauliZ operator.
 
         Returns:
@@ -442,8 +442,8 @@ class S(Operation):
         """
         return np.array([[1, 0], [0, 1j]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the S operator.
 
         Returns:
@@ -508,8 +508,8 @@ class T(Operation):
         """
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the T operator.
 
         Returns:
@@ -574,8 +574,8 @@ class SX(Operation):
         """
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the SX operator.
 
         Returns:
@@ -713,8 +713,8 @@ class CZ(Operation):
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the CZ operator.
 
         Returns:
@@ -904,8 +904,8 @@ class ISWAP(Operation):
         """
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the ISWAP operator.
 
         Returns:
@@ -984,8 +984,8 @@ class SISWAP(Operation):
             ]
         )
 
-    @classmethod
-    def compute_eigvals(cls):  # pylint: disable=unused-argument,arguments-differ
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
         """Eigenvalues of the SISWAP operator.
 
         Returns:
