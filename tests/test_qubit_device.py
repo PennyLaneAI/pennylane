@@ -474,7 +474,7 @@ class TestExpval:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.expval(obs)
 
-        assert res == (obs.eigvals @ probs).real
+        assert res == (obs.eigvals() @ probs).real
 
     def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is False
@@ -506,7 +506,6 @@ class TestExpval:
         class MyObs(qml.operation.Observable):
             num_wires = 1
 
-            @property
             def eigvals(self):
                 raise NotImplementedError
 
@@ -537,7 +536,7 @@ class TestVar:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.var(obs)
 
-        assert res == (obs.eigvals ** 2) @ probs - (obs.eigvals @ probs).real ** 2
+        assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
 
     def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is False
@@ -568,7 +567,6 @@ class TestVar:
         class MyObs(qml.operation.Observable):
             num_wires = 1
 
-            @property
             def eigvals(self):
                 raise NotImplementedError
 
