@@ -16,12 +16,16 @@ Methods for constructing QAOA mixer Hamiltonians.
 """
 import itertools
 import functools
+from typing import Iterable, Union
+
 import networkx as nx
+import retworkx as rx
+
 import pennylane as qml
 from pennylane.wires import Wires
 
 
-def x_mixer(wires):
+def x_mixer(wires: Union[Iterable, Wires]):
     r"""Creates a basic Pauli-X mixer Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -64,7 +68,7 @@ def x_mixer(wires):
     return H
 
 
-def xy_mixer(graph):
+def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
 
     This mixer Hamiltonian is defined as:
@@ -79,7 +83,7 @@ def xy_mixer(graph):
     Eleanor G. Rieffel, Davide Venturelli, and Rupak Biswas [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
-        graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
+        graph (nx.Graph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
 
     Returns:
         Hamiltonian: Mixer Hamiltonian
@@ -97,23 +101,42 @@ def xy_mixer(graph):
     + (0.5) [Y0 Y1]
     + (0.5) [X1 X2]
     + (0.5) [Y1 Y2]
+
+    >>> import retworkx as rx
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
+    >>> mixer_h = xy_mixer(graph)
+    >>> print(mixer_h)
+      (0.5) [X0 X1]
+    + (0.5) [Y0 Y1]
+    + (0.5) [X1 X2]
+    + (0.5) [Y1 Y2]
     """
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph object, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
+        )
 
-    edges = graph.edges
+    is_rx = isinstance(graph, rx.PyGraph)
+    edges = graph.edge_list() if is_rx else graph.edges
+
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
+    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+
     coeffs = 2 * [0.5 for e in edges]
 
     obs = []
     for node1, node2 in edges:
-        obs.append(qml.PauliX(node1) @ qml.PauliX(node2))
-        obs.append(qml.PauliY(node1) @ qml.PauliY(node2))
+        obs.append(qml.PauliX(get_nvalue(node1)) @ qml.PauliX(get_nvalue(node2)))
+        obs.append(qml.PauliY(get_nvalue(node1)) @ qml.PauliY(get_nvalue(node2)))
 
     return qml.Hamiltonian(coeffs, obs)
 
 
-def bit_flip_mixer(graph, b):
+def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:
@@ -131,7 +154,7 @@ def bit_flip_mixer(graph, b):
     This mixer was introduced in [`arXiv:1709.03489 <https://arxiv.org/abs/1709.03489>`__].
 
     Args:
-         graph (nx.Graph): A graph defining the collections of wires on which the Hamiltonian acts.
+         graph (nx.Graph or rx.PyGraph): A graph defining the collections of wires on which the Hamiltonian acts.
          b (int): Either :math:`0` or :math:`1`. When :math:`b=0`, a bit flip is performed on
              vertex :math:`v` only when all neighbouring nodes are in state :math:`|0\rangle`.
              Alternatively, for :math:`b=1`, a bit flip is performed only when all the neighbours of
@@ -157,10 +180,27 @@ def bit_flip_mixer(graph, b):
     + (0.5) [X0 Z1]
     + (0.5) [X2 Z1]
     + (0.25) [X1 Z0 Z2]
+
+    >>> import retworkx as rx
+    >>> graph = rx.PyGraph()
+    >>> graph.add_nodes_from([0, 1, 2])
+    >>> graph.add_edges_from([(0, 1, ""), (1, 2, "")])
+    >>> mixer_h = qaoa.bit_flip_mixer(graph, 0)
+    >>> print(mixer_h)
+      (0.25) [X1]
+    + (0.5) [X0]
+    + (0.5) [X2]
+    + (0.25) [X1 Z0]
+    + (0.25) [X1 Z2]
+    + (0.5) [X0 Z1]
+    + (0.5) [X2 Z1]
+    + (0.25) [X1 Z2 Z0]
     """
 
-    if not isinstance(graph, nx.Graph):
-        raise ValueError(f"Input graph must be a nx.Graph object, got {type(graph).__name__}")
+    if not isinstance(graph, (nx.Graph, rx.PyGraph)):
+        raise ValueError(
+            f"Input graph must be a nx.Graph or rx.PyGraph object, got {type(graph).__name__}"
+        )
 
     if b not in [0, 1]:
         raise ValueError(f"'b' must be either 0 or 1, got {b}")
@@ -170,12 +210,21 @@ def bit_flip_mixer(graph, b):
     coeffs = []
     terms = []
 
-    for i in graph.nodes:
+    is_rx = isinstance(graph, rx.PyGraph)
+    graph_nodes = graph.node_indexes() if is_rx else graph.nodes
 
-        neighbours = list(graph.neighbors(i))
+    # In RX each node is assigned to an integer index starting from 0;
+    # thus, we use the following lambda function to get node-values.
+    get_nvalue = lambda i: graph.nodes()[i] if is_rx else i
+
+    for i in graph_nodes:
+
+        neighbours = sorted(graph.neighbors(i)) if is_rx else list(graph.neighbors(i))
         degree = len(neighbours)
 
-        n_terms = [[qml.PauliX(i)]] + [[qml.Identity(n), qml.PauliZ(n)] for n in neighbours]
+        n_terms = [[qml.PauliX(get_nvalue(i))]] + [
+            [qml.Identity(get_nvalue(n)), qml.PauliZ(get_nvalue(n))] for n in neighbours
+        ]
         n_coeffs = [[1, sign] for n in neighbours]
 
         final_terms = [qml.operation.Tensor(*list(m)).prune() for m in itertools.product(*n_terms)]
