@@ -276,10 +276,11 @@ class DepolarizingChannel(Channel):
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
-        """Kraus matrices representing the DepolarizingChannel channel.
+        r"""Kraus matrices representing the DepolarizingChannel channel.
 
         Args:
             p (float): each Pauli gate is applied with probability :math:`\frac{p}{3}`
+
         Returns:
             list(array): list of Kraus matrices
 
@@ -343,7 +344,8 @@ class BitFlip(Channel):
         """Kraus matrices representing the BitFlip channel.
 
         Args:
-            p (float): The probability that a bit flip error occurs.
+            p (float): probability that a bit flip error occurs
+
         Returns:
             list(array): list of Kraus matrices
 
@@ -422,8 +424,8 @@ class ResetError(Channel):
         """Kraus matrices representing the ResetError channel.
 
         Args:
-            p_0 (float): the probability that a reset to 0 error occurs
-            p_1 (float): the probability that a reset to 1 error occurs
+            p_0 (float): probability that a reset to 0 error occurs
+            p_1 (float): probability that a reset to 1 error occurs
 
         Returns:
             list(array): list of Kraus matrices
@@ -531,8 +533,8 @@ class PauliError(Channel):
         """Kraus matrices representing the PauliError channel.
 
         Args:
-            operators (str): The Pauli operators acting on the specified (groups of) wires
-            p (float): The probability of the operator being applied
+            operators (str): the Pauli operators acting on the specified (groups of) wires
+            p (float): probability of the operator being applied
 
         Returns:
             list(array): list of Kraus matrices
@@ -783,7 +785,7 @@ class ThermalRelaxationError(Channel):
         Args:
             pe (float): exited state population. Must be between ``0`` and ``1``
             t1 (float): the :math:`T_1` relaxation constant
-            t2 (float): the :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`
+            t2 (float): The :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`
             tg (float): the gate time for relaxation error
 
         Returns:
