@@ -1706,6 +1706,9 @@ class MultiControlledX(Operation):
         target_wire = wires[~0]
         control_wires = wires[:~0]
 
+        if control_values is None:
+            control_values = "1" * len(control_wires)
+
         if len(control_wires) > 2 and len(work_wires) == 0:
             raise ValueError(
                 f"At least one work wire is required to decompose operation: MultiControlledX"
