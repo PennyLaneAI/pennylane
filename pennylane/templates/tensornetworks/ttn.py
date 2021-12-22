@@ -27,6 +27,7 @@ def compute_indices(wires, n_block_wires):
     Args:
         wires (Iterable): wires that the template acts on
         n_block_wires (int): number of wires per block
+
     Returns:
         layers (array): array of wire indices or wire labels for each block
     """
