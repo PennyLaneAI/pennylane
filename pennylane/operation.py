@@ -1750,7 +1750,7 @@ class Tensor(Observable):
             raise NotImplementedError("The wire_order argument is currently not implemented.")
 
         # Check for partially (but not fully) overlapping wires in the observables
-        self.check_wires_partial_overlap()
+        partial_overlap = self.check_wires_partial_overlap()
 
         # group the observables based on what wires they act on
         U_list = []
@@ -1768,12 +1768,19 @@ class Tensor(Observable):
         mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
         wire_size = 2 ** len(self.wires)
         if mat_size != wire_size:
-            warnings.warn(
-                f"The size of the returned matrix ({mat_size}) will not be compatible "
-                f"with the subspace of the wires of the Tensor ({wire_size}). "
-                "This likely is due to wires being used in multiple tensor product "
-                "factors of the Tensor."
-            )
+            if partial_overlap:
+                warnings.warn(
+                    "The matrix for Tensors of Tensors/Observables with partially "
+                    "overlapping wires might yield unexpected results. In particular "
+                    "the matrix size might be too large."
+                )
+            else:
+                warnings.warn(
+                    f"The size of the returned matrix ({mat_size}) will not be compatible "
+                    f"with the subspace of the wires of the Tensor ({wire_size}). "
+                    "This likely is due to wires being used in multiple tensor product "
+                    "factors of the Tensor."
+                )
 
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
@@ -1792,11 +1799,8 @@ class Tensor(Observable):
         for o1, o2 in itertools.combinations(self.obs, r=2):
             shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
             if shared and (shared != o1.wires or shared != o2.wires):
-                warnings.warn(
-                    "The matrix for Tensors of Tensors/Observables with partially "
-                    "overlapping wires might yield unexpected results. In particular "
-                    "the matrix size might deviate."
-                )
+                return 1
+        return 0
 
     def sparse_matrix(self, wires=None):
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.

@@ -735,14 +735,14 @@ class TestTensor:
 
         for O in (O1, O2):
             with pytest.warns(UserWarning, match="partially overlapping"):
-                O.matrix
+                O.matrix()
 
     def test_tensor_matrix_too_large_warning(self, tol):
         """Tests that a warning is raised if wires occur in multiple of the
         factors in the tensor product, leading to a wrongly-sized matrix."""
         O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
         with pytest.warns(UserWarning, match="The size of the returned matrix"):
-            O.matrix
+            O.matrix()
 
     @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
     def test_multiplication_matrix(self, tol, classes):
