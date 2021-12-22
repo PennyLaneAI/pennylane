@@ -664,7 +664,7 @@ class MultiRZ(Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         wires = Wires(wires)
-        self._hyperparameters = {"n_wires": len(wires)}
+        self.hyperparameters["n_wires"] = len(wires)
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -728,7 +728,7 @@ class MultiRZ(Operation):
         return qml.math.exp(-1j * theta / 2 * eigs)
 
     @staticmethod
-    def compute_decomposition(theta, wires):
+    def compute_decomposition(theta, wires, **kwargs):
         r"""Compute the decomposition for the specified parameter and wires. The decomposition
         defines an Operator as a product of more fundamental gates:
 
