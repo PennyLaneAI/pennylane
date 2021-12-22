@@ -44,3 +44,10 @@ from .matrices import (
     molecular_density_matrix,
 )
 from .molecule import Molecule
+from .tapering import (
+    clifford,
+    generate_paulis,
+    generate_symmetries,
+    get_generators,
+    transform_hamiltonian,
+)

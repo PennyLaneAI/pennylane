@@ -33,6 +33,7 @@ new :class:`~pennylane.ops.qubit.attributes.Attribute` objects.
 
     ~ops.qubit.attributes.Attribute
     ~ops.qubit.attributes.composable_rotations
+    ~ops.qubit.attributes.diagonal_in_z_basis
     ~ops.qubit.attributes.has_unitary_generator
     ~ops.qubit.attributes.self_inverses
     ~ops.qubit.attributes.symmetric_over_all_wires
