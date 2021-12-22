@@ -109,7 +109,6 @@ class Hermitian(Observable):
 
         return Hermitian._eigs[Hkey]
 
-    @property
     def eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
@@ -181,6 +180,8 @@ class SparseHamiltonian(Observable):
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
+        if not isinstance(H, coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -194,11 +195,14 @@ class SparseHamiltonian(Observable):
     def compute_matrix(H):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SparseHamiltonian operator.
 
+        This method returns a dense matrix. For a sparse matrix representation, see
+        :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
+
         Args:
-            H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
+            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
 
         Returns:
-            scipy.sparse.coo.coo_matrix: matrix representation
+            array: dense matrix
 
         **Example**
 
@@ -206,16 +210,41 @@ class SparseHamiltonian(Observable):
         >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
         >>> H = coo_matrix(H)
         >>> res = qml.SparseHamiltonian.compute_matrix(H)
+        >>> res
+        [[ 6.+0.j  1.-2.j]
+         [ 1.+2.j -1.+0.j]]
+        >>> type(res)
+        <class 'numpy.ndarray'>
+        """
+        return H.toarray()
+
+    @staticmethod
+    def compute_sparse_matrix(H):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SparseHamiltonian operator, using a sparse matrix type.
+
+        This method returns a sparse matrix. For a dense matrix representation, see
+        :meth:`~.SparseHamiltonian.compute_matrix`.
+
+        Args:
+            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
+
+        Returns:
+            scipy.sparse.coo_matrix: sparse matrix
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res
         (0, 0)	(6+0j)
         (0, 1)	(1-2j)
         (1, 0)	(1+2j)
         (1, 1)	(-1+0j)
         >>> type(res)
-        <class 'scipy.sparse.coo.coo_matrix'>
+        <class 'scipy.sparse.coo_matrix'>
         """
-        # ToDo[Maria/Josh]: return H.toarray() and add a separate `sparse_matrix` method
-        if not isinstance(H, coo_matrix):
-            raise TypeError("Observable must be a scipy sparse coo_matrix.")
         return H
 
 
@@ -314,25 +343,25 @@ class Projector(Observable):
         m[idx, idx] = 1
         return m
 
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the specific projector operator.
+    @staticmethod
+    def compute_eigvals(basis_state):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the Projector operator.
+
+        Args:
+            basis_state (Iterable): basis state to project on
 
         Returns:
-            array: eigenvalues of the projector observable in the computational basis
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Projector.compute_eigvals([0, 1])
+        [0. 1. 0. 0.]
         """
-        w = np.zeros(2 ** len(params[0]))
-        idx = int("".join(str(i) for i in params[0]), 2)
+        w = np.zeros(2 ** len(basis_state))
+        idx = int("".join(str(i) for i in basis_state), 2)
         w[idx] = 1
         return w
-
-    @classmethod
-    def _matrix(cls, *params):
-        basis_state = params[0]
-        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
-        idx = int("".join(str(i) for i in basis_state), 2)
-        m[idx, idx] = 1
-        return m
 
     @staticmethod
     def compute_diagonalizing_gates(

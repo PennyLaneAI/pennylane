@@ -43,7 +43,6 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    eigvals = pauli_eigs(1)
 
     @property
     def num_params(self):
@@ -67,9 +66,19 @@ class Hadamard(Observable, Operation):
         """
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the Hadamard operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Hadamard.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
@@ -151,7 +160,6 @@ class PauliX(Observable, Operation):
     """
     num_wires = 1
     basis = "X"
-    eigvals = pauli_eigs(1)
 
     @property
     def num_params(self):
@@ -175,9 +183,19 @@ class PauliX(Observable, Operation):
         """
         return np.array([[0, 1], [1, 0]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliX operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliX.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
@@ -260,7 +278,6 @@ class PauliY(Observable, Operation):
     """
     num_wires = 1
     basis = "Y"
-    eigvals = pauli_eigs(1)
 
     @property
     def num_params(self):
@@ -284,9 +301,19 @@ class PauliY(Observable, Operation):
         """
         return np.array([[0, -1j], [1j, 0]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliY operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliY.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
@@ -375,7 +402,6 @@ class PauliZ(Observable, Operation):
     """
     num_wires = 1
     basis = "Z"
-    eigvals = pauli_eigs(1)
 
     @property
     def num_params(self):
@@ -399,9 +425,19 @@ class PauliZ(Observable, Operation):
         """
         return np.array([[1, 0], [0, -1]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliZ operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliZ.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
 
     @staticmethod
     def compute_diagonalizing_gates(wires):  # pylint: disable=unused-argument
@@ -475,7 +511,6 @@ class S(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_eigvals = np.array([1, 1j])
 
     @property
     def num_params(self):
@@ -496,9 +531,19 @@ class S(Operation):
         """
         return np.array([[1, 0], [0, 1j]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the S operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.S.compute_eigvals()
+        [1.+0.j 0.+1.j]
+        """
+        return np.array([1, 1j])
 
     @staticmethod
     def compute_decomposition(wires):
@@ -552,7 +597,6 @@ class T(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @property
     def num_params(self):
@@ -573,9 +617,19 @@ class T(Operation):
         """
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the T operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.T.compute_eigvals()
+        [1.+0.j 0.70710678+0.70710678j]
+        """
+        return np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @staticmethod
     def compute_decomposition(wires):
@@ -629,7 +683,6 @@ class SX(Operation):
     """
     num_wires = 1
     basis = "X"
-    op_eigvals = np.array([1, 1j])
 
     @property
     def num_params(self):
@@ -650,9 +703,19 @@ class SX(Operation):
         """
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the SX operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.SX.compute_eigvals()
+        [1.+0.j 0.+1.j]
+        """
+        return np.array([1, 1j])
 
     @staticmethod
     def compute_decomposition(wires):
@@ -778,7 +841,6 @@ class CZ(Operation):
     """
     num_wires = 2
     basis = "Z"
-    eigvals = np.array([1, 1, 1, -1])
 
     @property
     def num_params(self):
@@ -804,9 +866,19 @@ class CZ(Operation):
         """
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the CZ operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.CZ.compute_eigvals()
+        [1, 1, 1, -1]
+        """
+        return np.array([1, 1, 1, -1])
 
     def adjoint(self):
         return CZ(wires=self.wires)
@@ -1005,7 +1077,6 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_eigvals = np.array([1j, -1j, 1, 1])
 
     @property
     def num_params(self):
@@ -1028,9 +1099,19 @@ class ISWAP(Operation):
         """
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the ISWAP operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.ISWAP.compute_eigvals()
+        [1j, -1j, 1, 1]
+        """
+        return np.array([1j, -1j, 1, 1])
 
     @staticmethod
     def compute_decomposition(wires):
@@ -1124,9 +1205,19 @@ class SISWAP(Operation):
             ]
         )
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the SISWAP operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.SISWAP.compute_eigvals()
+        [0.70710678+0.70710678j 0.70710678-0.70710678j 1.+0.j 1.+0.j]
+        """
+        return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @staticmethod
     def compute_decomposition(wires):

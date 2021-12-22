@@ -177,11 +177,11 @@ class TestTFMatrix:
     def test_pauli_rot_tf_(self, param, pauli, wires):
         op = qml.PauliRot(param, pauli, wires=wires)
         expected_mat = op.matrix()
-        expected_eigvals = op.eigvals
+        expected_eigvals = op.eigvals()
 
         tf_op = qml.PauliRot(tf.Variable(param), pauli, wires=wires)
         obtained_mat = tf_op.matrix()
-        obtained_eigvals = tf_op.eigvals
+        obtained_eigvals = tf_op.eigvals()
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.get_interface(obtained_eigvals) == "tensorflow"

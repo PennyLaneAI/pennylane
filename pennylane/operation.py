@@ -491,67 +491,160 @@ class Operator(abc.ABC):
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the operator.
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+        """Canonical matrix of this operator in the computational basis, using a sparse
+        matrix type.
 
-        This is a *class method* that should be defined for all
-        new operations and observables that returns the eigenvalues
-        of the operator.
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. note::
+            This method gets overwritten by subclasses to define the sparse matrix representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        raise NotImplementedError
+
+    def sparse_matrix(self, wire_order=None):
+        r"""Matrix representation of this operator in the computational basis, using
+        a sparse matrix type.
+
+        If ``wire_order`` is provided, the
+        numerical representation considers the position of the
+        operator's wires in the global wire order.
+        Otherwise, the wire order defaults to ``self.wires``.
+
+        .. note::
+            By default, this method calls the static method ``compute_sparse_matrix``,
+            which is used by subclasses to define the actual numerical representation.
+
+        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
+
+        .. note::
+            The wire_order argument is not yet implemented.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian(H, wires=[0]).sparse_matrix()
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        if wire_order is not None:
+            raise NotImplementedError("The wire_order argument is not yet implemented")
+        canonical_sparse_matrix = self.compute_sparse_matrix(
+            *self.parameters, **self.hyperparameters
+        )
+        return canonical_sparse_matrix
+
+    def compute_eigvals(*params, **hyperparams):
+        """Eigenvalues of the operator in the computational basis.
+
+        The eigenvalues refer to the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        This static method allows eigenvalues to be computed
+        directly without instantiating the operator first.
+        To return the eigenvalues of *instantiated* operators,
+        please use the :meth:`~.Operator.eigvals()` method instead.
 
         If :attr:`diagonalizing_gates` are specified, the order of the
-        eigenvalues needs to match the order of
+        eigenvalues matches the order of
         the computational basis vectors when the observable is
         diagonalized using these ops. Otherwise, no particular order is
         guaranteed.
 
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
+        .. note::
+            This method gets overwritten by subclasses to define the eigenvalues
+            of a particular operator.
 
-        The default implementation relies on the presence of the
-        :attr:`compute_matrix` method.
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
+        Returns:
+            array: eigenvalues
 
         **Example:**
 
-        >>> qml.RZ._eigvals(0.5)
+        >>> qml.RZ.compute_eigvals(0.5)
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
-        >>> qml.PauliX._eigvals()
+        >>> qml.PauliX.compute_eigvals()
         array([1, -1])
-
-        Returns:
-            array: eigenvalue representation
         """
-        return np.linalg.eigvals(cls.compute_matrix(*params))
+        raise NotImplementedError
 
-    @property
     def eigvals(self):
-        r"""Eigenvalues of an instantiated operator.
+        r"""Eigenvalues of the operator.
 
         If :attr:`diagonalizing_gates` are specified, the order of the
         eigenvalues needs to match the order of
         the computational basis vectors when the observable is
         diagonalized using these ops. Otherwise, no particular order is
         guaranteed.
+
+        .. note::
+            By default, this method calls the static method ``compute_eigvals``,
+            which is used by subclasses to define the actual eigenvalues. If no
+            eigenvalues are defined, it is attempted to compute them from the matrix
+            representation.
+
+        Returns:
+            array: eigenvalues
 
         **Example:**
 
         >>> U = qml.RZ(0.5, wires=1)
-        >>> U.eigvals
+        >>> U.eigvals()
         array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
         >>> qml.PauliX(wires=0).diagonalizing_gates()
         [Hadamard(wires=[0])]
         >>> qml.PauliX.eigvals()
         array([1, -1])
-
-        Returns:
-            array: eigvals representation
         """
-        return self._eigvals(*self.parameters)
+
+        try:
+            return self.compute_eigvals(*self.parameters, **self.hyperparameters)
+        except NotImplementedError:
+            # By default, compute the eigenvalues from the matrix representation.
+            # This will raise a NotImplementedError if the matrix is undefined.
+            return np.linalg.eigvals(self.matrix())
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
@@ -1133,9 +1226,8 @@ class Operation(Operator):
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-    @property
     def eigvals(self):
-        op_eigvals = self._eigvals(*self.parameters)
+        op_eigvals = self.compute_eigvals(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
             return qml.math.conj(op_eigvals)
@@ -1230,7 +1322,7 @@ class Channel(Operation, abc.ABC):
         [0.        , 0.        ]])]
 
         To return the Kraus matrices of an *instantiated* channel,
-        please use the :attr:`~.Operator.kraus_matrices` property instead.
+        please use the :meth:`~.Operator.kraus_matrices` property instead.
 
         Returns:
             list(array): list of Kraus matrices
@@ -1603,7 +1695,6 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    @property
     def eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
@@ -1642,7 +1733,7 @@ class Tensor(Observable):
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals)
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
 
