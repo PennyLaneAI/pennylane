@@ -224,7 +224,7 @@ class kUpCCGSD(Operation):
             len(s_wires) + len(d_wires),
         ):
             raise ValueError(
-                f"Weights tensor must be of shape {(k, len(self.s_wires) + len(self.d_wires),)}; got {shape}."
+                f"Weights tensor must be of shape {(k, len(s_wires) + len(d_wires),)}; got {shape}."
             )
 
         init_state = qml.math.toarray(init_state)

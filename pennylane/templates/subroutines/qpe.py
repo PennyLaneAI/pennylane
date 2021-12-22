@@ -120,7 +120,7 @@ class QuantumPhaseEstimation(Operation):
         self._hyperparameters = {
             "unitary": unitary,
             "target_wires": target_wires,
-            "estimation_wires": estimation_wires
+            "estimation_wires": estimation_wires,
         }
 
         super().__init__(wires=wires, do_queue=do_queue, id=id)
@@ -130,8 +130,8 @@ class QuantumPhaseEstimation(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, unitary, target_wires, estimation_wires):  # pylint: disable=arguments-differ, unused-argument
-        r"""Compute a decomposition of the XXX operator.
+    def compute_decomposition(wires, unitary, target_wires, estimation_wires):  # pylint: disable=arguments-differ,unused-argument
+        r"""Compute a decomposition of the QuantumPhaseEstimation operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
 
@@ -140,7 +140,7 @@ class QuantumPhaseEstimation(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.XXX.decomposition`.
+        See also :meth:`~.QuantumPhaseEstimation.decomposition`.
 
         Args:
             wires (Any or Iterable[Any]): wires that the operator acts on
@@ -173,7 +173,7 @@ class QuantumPhaseEstimation(Operation):
 
     def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = QuantumPhaseEstimation(
-            *self.parameters, target_wires=self.target_wires, estimation_wires=self.estimation_wires
+            self.hyperparameters["unitary"], target_wires=self.hyperparameters["target_wires"], estimation_wires=self.hyperparameters["estimation_wires"]
         )
         adjoint_op.inverse = not self.inverse
         return adjoint_op

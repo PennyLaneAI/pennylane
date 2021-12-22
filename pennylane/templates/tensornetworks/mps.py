@@ -130,7 +130,7 @@ class MPS(Operation):
         do_queue=True,
         id=None,
     ):
-
+        ind_gates = compute_indices_MPS(wires, n_block_wires)
         n_wires = len(wires)
         n_blocks = int(n_wires / (n_block_wires / 2) - 1)
 
@@ -149,7 +149,7 @@ class MPS(Operation):
                 )
 
         self._hyperparameters = {
-            "ind_gates": compute_indices_MPS(wires, n_block_wires),
+            "ind_gates": ind_gates,
             "block": block
         }
         super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)

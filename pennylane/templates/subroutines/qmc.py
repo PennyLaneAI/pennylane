@@ -347,7 +347,7 @@ class QuantumMonteCarlo(Operation):
         estimation_wires = list(estimation_wires)
         wires = target_wires + estimation_wires
 
-        if num_target_wires != len(self.target_wires):
+        if num_target_wires != len(target_wires):
             raise ValueError(
                 f"The probability distribution of dimension {dim_p} requires"
                 f" {num_target_wires} target wires"

@@ -130,10 +130,10 @@ class CommutingEvolution(Operation):
             "shifts": shifts
         }
 
-        super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
+        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(time, coeffs, wires, hamiltonian, frequencies, shifts):  # pylint: disable=arguments-differ
+    def compute_decomposition(time, *coeffs, wires, hamiltonian, frequencies, shifts):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the CommutingEvolution operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -164,9 +164,9 @@ class CommutingEvolution(Operation):
 
     def adjoint(self):  # pylint: disable=arguments-differ
 
-        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
+        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
         time = self.parameters[0]
-        frequencies = self.frequencies
-        shifts = self.shifts
+        frequencies = self.hyperparameters["frequencies"]
+        shifts = self.hyperparameters["shifts"]
 
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)

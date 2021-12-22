@@ -90,7 +90,7 @@ class QFT(Operation):
         return mat / np.sqrt(dimension)
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires, n_wires):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute the decomposition for specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
@@ -102,6 +102,7 @@ class QFT(Operation):
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
+            n_wires (int): number of wires or ``len(wires)``
 
         Returns:
             list[Operator]: decomposition of the Operator into lower level operations
