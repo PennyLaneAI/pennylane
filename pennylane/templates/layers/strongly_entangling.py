@@ -153,19 +153,14 @@ class StronglyEntanglingLayers(Operation):
                 ranges = [0] * shape[0]
         else:
             if len(ranges) != shape[0]:
-                raise ValueError(
-                    f"Range sequence must be of length {shape[0]}; got {len(ranges)}"
-                )
+                raise ValueError(f"Range sequence must be of length {shape[0]}; got {len(ranges)}")
             for r in ranges:
                 if r % len(wires) == 0:
                     raise ValueError(
                         f"Ranges must not be zero nor divisible by the number of wires; got {r}"
                     )
 
-        self._hyperparameters= {
-            "ranges": ranges,
-            "imprimitive": imprimitive or qml.CNOT
-        }
+        self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or qml.CNOT}
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -174,7 +169,9 @@ class StronglyEntanglingLayers(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weights, wires, ranges, imprimitive):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        weights, wires, ranges, imprimitive
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the StronglyEntanglingLayers operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -211,12 +208,14 @@ class StronglyEntanglingLayers(Operation):
         for l in range(n_layers):
 
             for i in range(len(wires)):
-                op_list.append(qml.Rot(
-                    weights[..., l, i, 0],
-                    weights[..., l, i, 1],
-                    weights[..., l, i, 2],
-                    wires=wires[i],
-                ))
+                op_list.append(
+                    qml.Rot(
+                        weights[..., l, i, 0],
+                        weights[..., l, i, 1],
+                        weights[..., l, i, 2],
+                        wires=wires[i],
+                    )
+                )
 
             if len(wires) > 1:
                 for i in range(len(wires)):

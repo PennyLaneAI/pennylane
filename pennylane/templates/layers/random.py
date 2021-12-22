@@ -197,7 +197,7 @@ class RandomLayers(Operation):
             "ratio_imprimitive": ratio_imprim,
             "imprimitive": imprimitive or qml.CNOT,
             "rotations": rotations or [qml.RX, qml.RY, qml.RZ],
-            "seed": seed
+            "seed": seed,
         }
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
@@ -207,7 +207,9 @@ class RandomLayers(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weights, wires, ratio_imprimitive, imprimitive, rotations, seed):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        weights, wires, ratio_imprimitive, imprimitive, rotations, seed
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the RandomLayers operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

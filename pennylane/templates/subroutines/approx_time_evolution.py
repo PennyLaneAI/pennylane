@@ -111,16 +111,15 @@ class ApproxTimeEvolution(Operation):
         wire_list = [term.wires for term in hamiltonian.ops]
         wires = qml.wires.Wires.all_wires(wire_list)
 
-        self._hyperparameters = {
-            "hamiltonian": hamiltonian,
-            "n": n
-        }
+        self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(*coeffs, time, wires, hamiltonian, n):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        *coeffs, time, wires, hamiltonian, n
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the ApproxTimeEvolution operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

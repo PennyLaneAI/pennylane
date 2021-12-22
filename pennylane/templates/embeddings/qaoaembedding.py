@@ -196,9 +196,7 @@ class QAOAEmbedding(Operation):
                     f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
                 )
 
-        self._hyperparameters = {
-            "local_field": local_field
-        }
+        self._hyperparameters = {"local_field": local_field}
         super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -206,7 +204,9 @@ class QAOAEmbedding(Operation):
         return 2
 
     @staticmethod
-    def compute_decomposition(features, weights, wires, local_field):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        features, weights, wires, local_field
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the QAOAEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -265,7 +265,11 @@ class QAOAEmbedding(Operation):
 
             else:
                 for i in range(len(wires)):
-                    op_list.append(qml.MultiRZ(weights[l][i], wires=wires.subset([i, i + 1], periodic_boundary=True)))
+                    op_list.append(
+                        qml.MultiRZ(
+                            weights[l][i], wires=wires.subset([i, i + 1], periodic_boundary=True)
+                        )
+                    )
                 for i in range(len(wires)):
                     op_list.append(local_field(weights[l][len(wires) + i], wires=wires[i]))
 

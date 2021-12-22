@@ -553,7 +553,9 @@ class FermionicDoubleExcitation(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weight, wires, wires1, wires2):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        weight, wires, wires1, wires2
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the FermionicDoubleExcitation operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

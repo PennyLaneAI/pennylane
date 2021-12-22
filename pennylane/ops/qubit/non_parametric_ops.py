@@ -1506,7 +1506,7 @@ class MultiControlledX(Operation):
 
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
-    
+
         total_wires = control_wires + wires
 
         super().__init__(wires=total_wires, do_queue=do_queue)
@@ -1546,10 +1546,10 @@ class MultiControlledX(Operation):
          [0. 0. 0. 1.]]
         """
         control_wires = wires[:~0]
-        
+
         if control_values is None:
             control_values = "1" * len(control_wires)
- 
+
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
@@ -1637,7 +1637,6 @@ class MultiControlledX(Operation):
             decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
         else:
             num_work_wires_needed = len(control_wires) - 2
-
 
             if len(work_wires) >= num_work_wires_needed:
                 decomp = MultiControlledX._decomposition_with_many_workers(

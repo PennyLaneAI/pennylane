@@ -127,13 +127,17 @@ class CommutingEvolution(Operation):
         self._hyperparameters = {
             "hamiltonian": hamiltonian,
             "frequencies": frequencies,
-            "shifts": shifts
+            "shifts": shifts,
         }
 
-        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, do_queue=do_queue, id=id)
+        super().__init__(
+            time, *hamiltonian.parameters, wires=hamiltonian.wires, do_queue=do_queue, id=id
+        )
 
     @staticmethod
-    def compute_decomposition(time, *coeffs, wires, hamiltonian, frequencies, shifts):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        time, *coeffs, wires, hamiltonian, frequencies, shifts
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the CommutingEvolution operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

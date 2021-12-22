@@ -353,10 +353,7 @@ class QuantumMonteCarlo(Operation):
                 f" {num_target_wires} target wires"
             )
 
-        self._hyperparameters = {
-            "estimation_wires": estimation_wires,
-            "target_wires": target_wires
-        }
+        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires}
 
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
@@ -368,7 +365,9 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        A, R, Q, wires, estimation_wires, target_wires
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the QuantumMonteCarlo operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -398,6 +397,7 @@ class QuantumMonteCarlo(Operation):
             QubitUnitary(R, wires=target_wires),
             qml.templates.QuantumPhaseEstimation(
                 Q, target_wires=target_wires, estimation_wires=estimation_wires
-            )]
+            ),
+        ]
 
         return op_list

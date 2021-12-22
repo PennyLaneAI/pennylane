@@ -64,9 +64,7 @@ class BasisStatePreparation(Operation):
         if not all(bit in [0, 1] for bit in basis_state):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
-        self._hyperparameters = {
-            "basis_state": list(qml.math.toarray(basis_state))
-        }
+        self._hyperparameters = {"basis_state": list(qml.math.toarray(basis_state))}
 
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 

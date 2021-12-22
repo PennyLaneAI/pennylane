@@ -188,12 +188,12 @@ class Interferometer(CVOperation):
             "mesh": mesh,
             "beamsplitter": beamsplitter,
         }
-        super().__init__(
-            theta, phi, varphi, wires=wires, do_queue=do_queue, id=id
-        )
+        super().__init__(theta, phi, varphi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(theta, phi, varphi, wires, mesh, beamsplitter):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        theta, phi, varphi, wires, mesh, beamsplitter
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the Interferometer operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -238,11 +238,11 @@ class Interferometer(CVOperation):
                                 op_list.append(Rotation(phi[n], wires=Wires(w1)))
                                 op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
                             elif beamsplitter == "pennylane":
-                                op_list.append(Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2])))
-                            else:
-                                raise ValueError(
-                                    f"did not recognize beamsplitter {beamsplitter}"
+                                op_list.append(
+                                    Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
                                 )
+                            else:
+                                raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
                             n += 1
 
             elif mesh == "triangular":
@@ -252,9 +252,13 @@ class Interferometer(CVOperation):
                     for k in range(abs(l + 1 - (M - 1)), M - 1, 2):
                         if beamsplitter == "clements":
                             op_list.append(Rotation(phi[n], wires=wires[k]))
-                            op_list.append(Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1])))
+                            op_list.append(
+                                Beamsplitter(theta[n], 0, wires=wires.subset([k, k + 1]))
+                            )
                         elif beamsplitter == "pennylane":
-                            op_list.append(Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1])))
+                            op_list.append(
+                                Beamsplitter(theta[n], phi[n], wires=wires.subset([k, k + 1]))
+                            )
                         else:
                             raise ValueError(f"did not recognize beamsplitter {beamsplitter} ")
                         n += 1

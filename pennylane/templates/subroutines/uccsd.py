@@ -167,11 +167,7 @@ class UCCSD(Operation):
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
-        self._hyperparameters = {
-            "init_state": init_state,
-            "s_wires": s_wires,
-            "d_wires": d_wires
-        }
+        self._hyperparameters = {"init_state": init_state, "s_wires": s_wires, "d_wires": d_wires}
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -180,7 +176,9 @@ class UCCSD(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weights, wires, s_wires, d_wires, init_state):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        weights, wires, s_wires, d_wires, init_state
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the UCCSD operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -213,9 +211,11 @@ class UCCSD(Operation):
         op_list.append(BasisState(init_state_flipped, wires=wires))
 
         for i, (w1, w2) in enumerate(d_wires):
-            op_list.append(qml.FermionicDoubleExcitation(weights[len(s_wires) + i], wires1=w1, wires2=w2))
+            op_list.append(
+                qml.FermionicDoubleExcitation(weights[len(s_wires) + i], wires1=w1, wires2=w2)
+            )
 
         for j, s_wires_ in enumerate(s_wires):
-                op_list.append(qml.FermionicSingleExcitation(weights[j], wires=s_wires_))
+            op_list.append(qml.FermionicSingleExcitation(weights[j], wires=s_wires_))
 
         return op_list

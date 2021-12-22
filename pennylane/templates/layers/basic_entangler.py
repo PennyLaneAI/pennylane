@@ -143,9 +143,7 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must have last dimension of length {len(wires)}; got {shape[-1]}"
             )
 
-        self._hyperparameters = {
-            "rotation": rotation or qml.RX
-        }
+        self._hyperparameters = {"rotation": rotation or qml.RX}
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     @property

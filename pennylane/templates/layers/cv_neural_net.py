@@ -144,8 +144,9 @@ class CVNeuralNetLayers(Operation):
         return 11
 
     @staticmethod
-    def compute_decomposition(theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a,
-                              phi_a, k, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the CVNeuralNetLayers operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -203,29 +204,29 @@ class CVNeuralNetLayers(Operation):
         n_layers = qml.math.shape(theta_1)[0]
         for l in range(n_layers):
 
-            op_list.append(qml.Interferometer(
-                theta=theta_1[l],
-                phi=phi_1[l],
-                varphi=varphi_1[l],
-                wires=wires,
-            ))
+            op_list.append(
+                qml.Interferometer(
+                    theta=theta_1[l],
+                    phi=phi_1[l],
+                    varphi=varphi_1[l],
+                    wires=wires,
+                )
+            )
 
             for i in range(len(wires)):
-                op_list.append(qml.Squeezing(
-                    r[l, i], phi_r[l, i], wires=wires[i]
-                ))
+                op_list.append(qml.Squeezing(r[l, i], phi_r[l, i], wires=wires[i]))
 
-            op_list.append(qml.Interferometer(
-                theta=theta_2[l],
-                phi=phi_2[l],
-                varphi=varphi_2[l],
-                wires=wires,
-            ))
+            op_list.append(
+                qml.Interferometer(
+                    theta=theta_2[l],
+                    phi=phi_2[l],
+                    varphi=varphi_2[l],
+                    wires=wires,
+                )
+            )
 
             for i in range(len(wires)):
-                op_list.append(qml.Displacement(
-                    a[l, i], phi_a[l, i], wires=wires[i]
-                ))
+                op_list.append(qml.Displacement(a[l, i], phi_a[l, i], wires=wires[i]))
 
             for i in range(len(wires)):
                 op_list.append(qml.Kerr(k[l, i], wires=wires[i]))

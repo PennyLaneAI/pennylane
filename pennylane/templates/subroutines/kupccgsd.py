@@ -235,7 +235,7 @@ class kUpCCGSD(Operation):
             "init_state": init_state,
             "s_wires": s_wires,
             "d_wires": d_wires,
-            "k": k
+            "k": k,
         }
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -244,7 +244,9 @@ class kUpCCGSD(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        weights, wires, s_wires, d_wires, k, init_state
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the kUpCCGSD operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -275,9 +277,11 @@ class kUpCCGSD(Operation):
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):
-                op_list.append(qml.FermionicDoubleExcitation(
-                    weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
-                ))
+                op_list.append(
+                    qml.FermionicDoubleExcitation(
+                        weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
+                    )
+                )
 
             for j, s_wires_ in enumerate(s_wires):
                 op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))

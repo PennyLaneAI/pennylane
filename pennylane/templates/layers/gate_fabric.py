@@ -190,7 +190,7 @@ class GateFabric(Operation):
         if len(shape) != 3:
             raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
-        len_wire_pattern = int((len(wires)/2)-1)
+        len_wire_pattern = int((len(wires) / 2) - 1)
         if shape[1] != len_wire_pattern:
             raise ValueError(
                 f"Weights tensor must have second dimension of length {len_wire_pattern}; got {shape[1]}"
@@ -213,7 +213,9 @@ class GateFabric(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weights, wires, init_state, include_pi):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        weights, wires, init_state, include_pi
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the GateFabric operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -249,11 +251,11 @@ class GateFabric(Operation):
         op_list = []
         n_layers = qml.math.shape(weights)[0]
         wire_pattern = [
-            wires[i: i + 4] for i in range(0, len(wires), 4) if len(wires[i: i + 4]) == 4
+            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
         if len(wires) > 4:
             wire_pattern += [
-                wires[i: i + 4] for i in range(2, len(wires), 4) if len(wires[i: i + 4]) == 4
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
 
         op_list.append(qml.BasisEmbedding(init_state, wires=wires))

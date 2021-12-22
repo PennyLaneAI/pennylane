@@ -130,7 +130,9 @@ class QuantumPhaseEstimation(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, unitary, target_wires, estimation_wires):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        wires, unitary, target_wires, estimation_wires
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the QuantumPhaseEstimation operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -163,9 +165,9 @@ class QuantumPhaseEstimation(Operation):
 
         for wire in estimation_wires:
             op_list.append(Hadamard(wire))
-            op_list.append(ControlledQubitUnitary(
-                unitary_powers.pop(), control_wires=wire, wires=target_wires
-            ))
+            op_list.append(
+                ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
+            )
 
         op_list.append(qml.templates.QFT(wires=estimation_wires).inv())
 
@@ -173,7 +175,9 @@ class QuantumPhaseEstimation(Operation):
 
     def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = QuantumPhaseEstimation(
-            self.hyperparameters["unitary"], target_wires=self.hyperparameters["target_wires"], estimation_wires=self.hyperparameters["estimation_wires"]
+            self.hyperparameters["unitary"],
+            target_wires=self.hyperparameters["target_wires"],
+            estimation_wires=self.hyperparameters["estimation_wires"],
         )
         adjoint_op.inverse = not self.inverse
         return adjoint_op

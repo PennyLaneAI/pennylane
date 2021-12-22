@@ -148,10 +148,7 @@ class MPS(Operation):
                     f"Weights tensor must have last dimension of length {n_params_block}; got {shape[-1]}"
                 )
 
-        self._hyperparameters = {
-            "ind_gates": ind_gates,
-            "block": block
-        }
+        self._hyperparameters = {"ind_gates": ind_gates, "block": block}
         super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod

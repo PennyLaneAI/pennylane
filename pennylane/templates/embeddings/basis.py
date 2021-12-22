@@ -87,9 +87,7 @@ class BasisEmbedding(Operation):
         if not set(features).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
-        self._hyperparameters = {
-            "basis_state": features
-        }
+        self._hyperparameters = {"basis_state": features}
 
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 

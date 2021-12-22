@@ -106,10 +106,7 @@ class GroverOperator(Operation):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self._hyperparameters = {
-            "n_wires": len(wires),
-            "work_wires": work_wires
-                                 }
+        self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -146,12 +143,14 @@ class GroverOperator(Operation):
             op_list.append(Hadamard(wire))
 
         op_list.append(PauliZ(wires[-1]))
-        op_list.append(MultiControlledX(
-            control_values=ctrl_str,
-            control_wires=wires[:-1],
-            wires=wires[-1],
-            work_wires=work_wires,
-        ))
+        op_list.append(
+            MultiControlledX(
+                control_values=ctrl_str,
+                control_wires=wires[:-1],
+                wires=wires[-1],
+                work_wires=work_wires,
+            )
+        )
 
         op_list.append(PauliZ(wires[-1]))
 

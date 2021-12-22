@@ -158,9 +158,7 @@ class Permute(Operation):
             if label not in wires:
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
-        self._hyperparameters = {
-            "permutation": permutation
-        }
+        self._hyperparameters = {"permutation": permutation}
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property

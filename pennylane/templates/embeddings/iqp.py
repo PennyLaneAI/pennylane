@@ -180,10 +180,7 @@ class IQPEmbedding(Operation):
             # default is an all-to-all pattern
             pattern = combinations(wires, 2)
 
-        self._hyperparameters = {
-            "pattern": pattern,
-            "n_repeats": n_repeats
-        }
+        self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
@@ -192,7 +189,9 @@ class IQPEmbedding(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(features, wires, n_repeats, pattern):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        features, wires, n_repeats, pattern
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the IQPEmbedding operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

@@ -158,7 +158,9 @@ class AllSinglesDoubles(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(weights, wires, hf_state, singles, doubles):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        weights, wires, hf_state, singles, doubles
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the AllSinglesDoubles operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

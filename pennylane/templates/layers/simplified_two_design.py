@@ -130,7 +130,9 @@ class SimplifiedTwoDesign(Operation):
         return 2
 
     @staticmethod
-    def compute_decomposition(initial_layer_weights, weights, wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        initial_layer_weights, weights, wires
+    ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the SimplifiedTwoDesign operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -184,12 +186,8 @@ class SimplifiedTwoDesign(Operation):
             odd_wires = [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
             for i, wire_pair in enumerate(odd_wires):
                 op_list.append(qml.CZ(wires=wire_pair))
-                op_list.append(qml.RY(
-                    weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0]
-                ))
-                op_list.append(qml.RY(
-                    weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1]
-                ))
+                op_list.append(qml.RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0]))
+                op_list.append(qml.RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1]))
 
         return op_list
 

@@ -85,9 +85,7 @@ class AngleEmbedding(Operation):
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
-        self._hyperparameters = {
-            "rotation": ROT[rotation]
-        }
+        self._hyperparameters = {"rotation": ROT[rotation]}
 
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
