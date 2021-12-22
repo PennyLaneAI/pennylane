@@ -518,7 +518,7 @@ class Operator(abc.ABC):
         >>> qml.PauliX.compute_eigvals()
         array([1, -1])
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def eigvals(self):
         r"""Eigenvalues of the operator.
@@ -554,7 +554,7 @@ class Operator(abc.ABC):
         except NotImplementedError:
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
-            return np.linalg.eigvals(self.compute_matrix(*self.parameters, **self.hyperparameters))
+            return np.linalg.eigvals(self.matrix())
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument

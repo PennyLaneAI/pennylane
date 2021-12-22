@@ -1212,8 +1212,8 @@ class CRZ(Operation):
 
         return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
 
-    @classmethod
-    def compute_eigvals(cls, theta):  # pylint: disable=,arguments-differ
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=arguments-differ
         """Eigenvalues of the CRZ operator.
 
         Args:

@@ -476,8 +476,7 @@ class TestProperties:
 
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
-        the eigvals property on the associated measurement process
-        to be None"""
+        the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
         m = MeasurementProcess(Expectation, obs=obs)
         assert m.eigvals() is None
