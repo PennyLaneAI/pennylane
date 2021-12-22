@@ -470,18 +470,19 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
 def optimal_sector(qubit_op, generators, active_electrons):
     r"""Get the optimal sector which contains the ground state.
 
-    To obtain the optimal sector, we can use the following relation between the Pauli-Z qubit operator and the
-    occupation number under a Jordan-Wigner transform.
+    To obtain the optimal sector, we need to choose the right eigenvalue for the symmetries :math:`\vec{\tau}`. We can do
+    so by using the following relation between the Pauli-Z qubit operator and the occupation number under a Jordan-Wigner
+    transform.
 
     .. math::
 
         \sigma_{i}^{z} = I - 2a_{i}^{\dagger}a_{i}
 
-    According to this, an occupied and unoccupied fermionic mode corresponds to the -1 and +1 eigenvalue of Pauli-Z
-    operator, respectively. We get the optimal sector by choosing the right eigenvalue for all all symmetries. To do
-    so, for each symmetery :math:`tau`, we define a symmetry sector by the wires it acts upon and calculate the number
-    of occupied orbitals (:math:`N_{OC}`) in it. If :math:`N_{OC}` is even (odd), then the correct sector for the the
-    given symmetery is the one +1 (-1) eigenvalue.
+    According to this relation, an occupied and unoccupied fermionic mode corresponds to the -1 and +1 eigenvalue of
+    the Pauli-Z operator, respectively. Therefore, to get the optimal sector, for each symmetery :math:`\tau`, we first
+    define a symmetry sector by the wires it acts upon and then calculate the number of occupied orbitals (:math:`N_{OC}`)
+    present in it. If :math:`N_{OC}` is even (odd), then the correct sector for the given symmetry is
+    the one with a +1 (-1) eigenvalue.
 
     Args:
         qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
