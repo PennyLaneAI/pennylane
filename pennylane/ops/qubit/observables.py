@@ -180,6 +180,8 @@ class SparseHamiltonian(Observable):
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
+        if not isinstance(H, coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -193,11 +195,14 @@ class SparseHamiltonian(Observable):
     def compute_matrix(H):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SparseHamiltonian operator.
 
+        This method returns a dense matrix. For a sparse matrix representation, see
+        :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
+
         Args:
-            H (scipy.sparse.coo.coo_matrix): sparse matrix used to create this operator
+            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
 
         Returns:
-            scipy.sparse.coo.coo_matrix: matrix representation
+            array: dense matrix
 
         **Example**
 
@@ -205,16 +210,41 @@ class SparseHamiltonian(Observable):
         >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
         >>> H = coo_matrix(H)
         >>> res = qml.SparseHamiltonian.compute_matrix(H)
+        >>> res
+        [[ 6.+0.j  1.-2.j]
+         [ 1.+2.j -1.+0.j]]
+        >>> type(res)
+        <class 'numpy.ndarray'>
+        """
+        return H.toarray()
+
+    @staticmethod
+    def compute_sparse_matrix(H):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SparseHamiltonian operator, using a sparse matrix type.
+
+        This method returns a sparse matrix. For a dense matrix representation, see
+        :meth:`~.SparseHamiltonian.compute_matrix`.
+
+        Args:
+            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
+
+        Returns:
+            scipy.sparse.coo_matrix: sparse matrix
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res
         (0, 0)	(6+0j)
         (0, 1)	(1-2j)
         (1, 0)	(1+2j)
         (1, 1)	(-1+0j)
         >>> type(res)
-        <class 'scipy.sparse.coo.coo_matrix'>
+        <class 'scipy.sparse.coo_matrix'>
         """
-        # ToDo[Maria/Josh]: return H.toarray() and add a separate `sparse_matrix` method
-        if not isinstance(H, coo_matrix):
-            raise TypeError("Observable must be a scipy sparse coo_matrix.")
         return H
 
 
