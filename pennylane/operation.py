@@ -886,6 +886,9 @@ class Operator(abc.ABC):
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
+        print(self.parameters)
+        print(self.wires)
+        print(self.hyperparameters)
         return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
 
     @staticmethod
