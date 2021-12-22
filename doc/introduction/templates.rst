@@ -186,7 +186,7 @@ can be broadcast with the shape and connectivity of tensor networks.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.TTN.html
-    :description: TTN
+    :description: Tree Tensor Network
     :figure: ../_static/templates/tensornetworks/TTN_template.png
 
 .. raw:: html
