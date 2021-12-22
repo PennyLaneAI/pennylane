@@ -152,21 +152,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     if qnode.interface == "autograd":
 
-        def _jacobian(*args, **kwargs):
-            if argnum is None:
-                jac = qml.jacobian(classical_preprocessing)(*args, **kwargs)
-            elif np.isscalar(argnum):
-                jac = qml.jacobian(classical_preprocessing, argnum=argnum)(*args, **kwargs)
-            else:
-                jac = tuple(
-                    (
-                        qml.jacobian(classical_preprocessing, argnum=i)(*args, **kwargs)
-                        for i in argnum
-                    )
-                )
-            return jac
-
-        return _jacobian
+        return qml.jacobian(classical_preprocessing, argnum=argnum)
 
     if qnode.interface == "torch":
         import torch

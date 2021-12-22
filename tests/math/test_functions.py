@@ -1851,11 +1851,16 @@ def test_block_diag(tensors):
 
 class TestBlockDiagDiffability:
 
-    expected = lambda self, x, y: np.array(
+    expected = lambda self, x, y: (
         [
-            [[-np.sin(x * y) * y, -np.sin(x * y) * x], [0, 0], [0, 0]],
-            [[0, 0], [1.0, 0.0], [0, 1.2]],
-            [[0, 0], [2 * x, -1 / 3], [-1 / y, x / y ** 2]],
+            [-np.sin(x * y) * y , 0, 0],
+            [0, 1.0, 0],
+            [0, 2 * x, -1 / y],
+        ],
+        [
+            [-np.sin(x * y) * x, 0, 0],
+            [0, 0.0, 1.2],
+            [0, -1 / 3, x / y ** 2],
         ]
     )
 
@@ -1870,8 +1875,8 @@ class TestBlockDiagDiffability:
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
         # Transposes in the following because autograd behaves strangely
-        assert fn.allclose(res[:, :, 0].T, exp[:, :, 0])
-        assert fn.allclose(res[:, :, 1].T, exp[:, :, 1])
+        assert fn.allclose(res[0], exp[0])
+        assert fn.allclose(res[1], exp[1])
 
     def test_jax(self):
         """Tests for differentiating the block diagonal function with JAX."""
@@ -1884,8 +1889,8 @@ class TestBlockDiagDiffability:
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
-        assert fn.allclose(exp[:, :, 0], res[0])
-        assert fn.allclose(exp[:, :, 1], res[1])
+        assert fn.allclose(exp[0], res[0])
+        assert fn.allclose(exp[1], res[1])
 
     def test_tf(self):
         """Tests for differentiating the block diagonal function with Tensorflow."""

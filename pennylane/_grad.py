@@ -167,26 +167,9 @@ def jacobian(func, argnum=None):
     """
     # pylint: disable=no-value-for-parameter
 
-    if argnum is not None:
-        # for backwards compatibility with existing code
-        # that manually specifies argnum
-        if isinstance(argnum, int):
-            return _jacobian(func, argnum)
-
-        return lambda *args, **kwargs: np.stack(
-            [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
-        ).T
-
-    def _jacobian_function(*args, **kwargs):
-        """Inspect the arguments for differentiability, and
-        compute the autograd gradient function with required argnums
-        dynamically.
-
-        This wrapper function is returned to the user instead of autograd.jacobian,
-        so that we can take into account cases where the user computes the
-        jacobian function once, but then calls it with arguments that change
-        in differentiability.
-        """
+    def _get_argnum(*args, **kwargs):
+        """Inspect the arguments for differentiability and return the
+        corresponding indices."""
         argnum = []
 
         for idx, arg in enumerate(args):
@@ -210,20 +193,35 @@ def jacobian(func, argnum=None):
             if trainable:
                 argnum.append(idx)
 
-        if not argnum:
-            return tuple()
+        return argnum
 
-        if len(argnum) == 1:
-            return _jacobian(func, argnum[0])(*args, **kwargs)
+    def _jacobian_function(*args, **kwargs):
+        """Inspect the arguments for differentiability, and
+        compute the autograd gradient function with required argnums
+        dynamically.
 
-        jacobians = [_jacobian(func, arg)(*args, **kwargs) for arg in argnum]
+        This wrapper function is returned to the user instead of autograd.jacobian,
+        so that we can take into account cases where the user computes the
+        jacobian function once, but then calls it with arguments that change
+        in differentiability.
+        """
+        unpack = False
+        if argnum is not None:
+            # for backwards compatibility with existing code
+            # that manually specifies argnum
+            if isinstance(argnum, int):
+                _argnum = [argnum]
+                unpack = True
+            else:
+                _argnum = argnum
+        else:
+            _argnum = _get_argnum(*args, **kwargs)
+            if len(_argnum) == 1:
+                unpack = True
 
-        try:
-            return np.stack(jacobians).T
-        except ValueError:
-            # The Jacobian of each argument is a different shape and cannot
-            # be stacked; simply return the tuple of argument Jacobians.
-            return tuple(jacobians)
+        jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+
+        return jac[0] if unpack else jac
 
     return _jacobian_function
 
