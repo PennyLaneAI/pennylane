@@ -233,7 +233,7 @@ def _custom_decomp_context(custom_decomps):
                 return fn(*self.parameters, self.wires)
 
         try:
-            # Explicitly set the new .decompose method
+            # Explicitly set the new .decomposition method
             obj.decomposition = new_decomp_method
             yield
 
