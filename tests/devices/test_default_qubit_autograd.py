@@ -466,3 +466,5 @@ class TestOps:
 
         assert np.all(res == state)
         spy.assert_called()
+
+

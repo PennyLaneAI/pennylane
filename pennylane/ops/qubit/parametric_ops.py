@@ -224,7 +224,7 @@ class RZ(Operation):
         return qml.math.diag([p, qml.math.conj(p)])
 
     @staticmethod
-    def compute_eigvals(theta):  # pylint: disable=,arguments-differ
+    def compute_eigvals(theta):  # pylint: disable=arguments-differ
         """Eigenvalues of the RZ operator.
 
         Args:
@@ -315,7 +315,7 @@ class PhaseShift(Operation):
         return qml.math.diag([1, exp_part])
 
     @staticmethod
-    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
         """Eigenvalues of the PhaseShift operator.
 
         Args:
@@ -437,7 +437,7 @@ class ControlledPhaseShift(Operation):
         return qml.math.diag([1, 1, 1, exp_part])
 
     @staticmethod
-    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
         """Eigenvalues of the ControlledPhaseShift operator.
 
         Args:
@@ -664,7 +664,7 @@ class MultiRZ(Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         wires = Wires(wires)
-        self._hyperparameters = {"n_wires": len(wires)}
+        self.hyperparameters["n_wires"] = len(wires)
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -703,7 +703,7 @@ class MultiRZ(Operation):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
     @staticmethod
-    def compute_eigvals(theta, n_wires):  # pylint: disable=,arguments-differ
+    def compute_eigvals(theta, n_wires):  # pylint: disable=arguments-differ
         """Eigenvalues of the MultiRZ operator.
 
         Args:
@@ -728,7 +728,7 @@ class MultiRZ(Operation):
         return qml.math.exp(-1j * theta / 2 * eigs)
 
     @staticmethod
-    def compute_decomposition(theta, wires):
+    def compute_decomposition(theta, wires, **kwargs):   # pylint: disable=arguments-differ
         r"""Compute the decomposition for the specified parameter and wires. The decomposition
         defines an Operator as a product of more fundamental gates:
 
@@ -942,7 +942,7 @@ class PauliRot(Operation):
         return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
 
     @staticmethod
-    def compute_eigvals(theta, pauli_word):  # pylint: disable=,arguments-differ
+    def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliRot operator.
 
         Returns:

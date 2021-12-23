@@ -353,7 +353,7 @@ class DiagonalQubitUnitary(Operation):
         return qml.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(D):  # pylint: disable=,arguments-differ
+    def compute_eigvals(D):  # pylint: disable=arguments-differ
         """Eigenvalues of the DiagonalQubitUnitary operator.
 
         Args:

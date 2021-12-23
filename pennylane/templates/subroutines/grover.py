@@ -107,6 +107,7 @@ class GroverOperator(Operation):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
         self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
+
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property

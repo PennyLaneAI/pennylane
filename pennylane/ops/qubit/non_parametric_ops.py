@@ -67,7 +67,7 @@ class Hadamard(Observable, Operation):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the Hadamard operator.
 
         Returns:
@@ -184,7 +184,7 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliX operator.
 
         Returns:
@@ -302,7 +302,7 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliY operator.
 
         Returns:
@@ -426,7 +426,7 @@ class PauliZ(Observable, Operation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliZ operator.
 
         Returns:
@@ -532,7 +532,7 @@ class S(Operation):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the S operator.
 
         Returns:
@@ -618,7 +618,7 @@ class T(Operation):
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the T operator.
 
         Returns:
@@ -704,7 +704,7 @@ class SX(Operation):
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the SX operator.
 
         Returns:
@@ -867,7 +867,7 @@ class CZ(Operation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the CZ operator.
 
         Returns:
@@ -1100,7 +1100,7 @@ class ISWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the ISWAP operator.
 
         Returns:
@@ -1206,7 +1206,7 @@ class SISWAP(Operation):
         )
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the SISWAP operator.
 
         Returns:
@@ -1625,16 +1625,17 @@ class MultiControlledX(Operation):
 
         **Example**
 
-        >>> qml.MultiControlledX.compute_matrix([0], '1', [1])
+        >>> qml.MultiControlledX.compute_matrix([0], '1')
         [[1. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 1.]
          [0. 0. 1. 0.]]
-        >>> qml.MultiControlledX.compute_matrix([1], '0', [0])
+        >>> qml.MultiControlledX.compute_matrix([1], '0')
         [[0. 1. 0. 0.]
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
+
         """
         if control_values is None:
             control_values = "1" * n_control_wires
@@ -1668,7 +1669,7 @@ class MultiControlledX(Operation):
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
             control_values=self.hyperparameters["control_values"],
-            work_wires=self.work_wires,
+            work_wires=self.hyperparameters["work_wires"],
         )
 
     @staticmethod
@@ -1709,6 +1710,9 @@ class MultiControlledX(Operation):
 
         target_wire = wires[~0]
         control_wires = wires[:~0]
+
+        if control_values is None:
+            control_values = "1" * len(control_wires)
 
         if len(control_wires) > 2 and len(work_wires) == 0:
             raise ValueError(

@@ -53,7 +53,7 @@ class TestDecomposition:
                 if i.wires.tolist() == [0]:
                     mats.append(np.kron(i.matrix(), np.eye(2)))
                 elif i.wires.tolist() == [1]:
-                    mats.append(np.kron(np.eye(2), i.matrix))
+                    mats.append(np.kron(np.eye(2), i.matrix()))
                 elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
                     new_mat = np.array(
                         [
@@ -90,7 +90,11 @@ class TestDecomposition:
                 if i.wires.tolist() == [0]:
                     mats.append(np.kron(i.matrix(), np.eye(2)))
                 elif i.wires.tolist() == [1]:
+<<<<<<< HEAD
                     mats.append(np.kron(np.eye(2), i.matrix))
+=======
+                    mats.append(np.kron(np.eye(2), i.matrix()))
+>>>>>>> op-refactor
                 elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
                     new_mat = np.array(
                         [

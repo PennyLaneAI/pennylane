@@ -45,7 +45,7 @@ class Identity(CVObservable, Operation):
         return base_label or "I"
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the Identity operator.
 
         Returns:
@@ -96,7 +96,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_decomposition(wires=None):
-        """Compute the decomposition for the specified wire.
+        r"""Compute the decomposition for the specified wire.
         The decomposition defines an Operator as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.

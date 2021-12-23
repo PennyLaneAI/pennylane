@@ -626,6 +626,16 @@ class TestMultiControlledX:
 
         assert np.allclose(mpmct_state, pauli_x_state)
 
+    def test_decomposition_no_control_values(self):
+        """Test decomposition has default control values of all ones."""
+        decomp1 = qml.MultiControlledX.compute_decomposition((0, 1, 2))
+        decomp2 = qml.MultiControlledX.compute_decomposition((0, 1, 2), control_values="111")
+
+        assert len(decomp1) == len(decomp2)
+
+        for op1, op2 in zip(decomp1, decomp2):
+            assert op1.__class__ == op2.__class__
+
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
     def test_decomposition_with_many_workers(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
@@ -809,6 +819,13 @@ class TestMultiControlledX:
 
         assert np.allclose(f(), rnd_state)
         spy.assert_called()
+
+    def test_compute_matrix_no_control_values(self):
+        """Test compute_matrix assumes all control on "1" if no
+        `control_values` provided"""
+        mat1 = qml.MultiControlledX.compute_matrix([0, 1])
+        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
+        assert np.allclose(mat1, mat2)
 
 
 label_data = [
