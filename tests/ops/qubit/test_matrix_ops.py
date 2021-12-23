@@ -170,18 +170,21 @@ class TestQubitUnitary:
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
-        decomp = qml.QubitUnitary.decomposition(U, wires=0)
+        decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
+        decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
-        assert len(decomp) == 1
+        assert len(decomp) == 1 == len(decomp2)
         assert isinstance(decomp[0], expected_gate)
         assert np.allclose(decomp[0].parameters, expected_params)
+        assert isinstance(decomp2[0], expected_gate)
+        assert np.allclose(decomp2[0].parameters, expected_params)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
         U = qml.Toffoli(wires=[0, 1, 2]).matrix()
 
-        with pytest.raises(NotImplementedError, match="only supported for single- and two-qubit"):
-            qml.QubitUnitary.decomposition(U, wires=[0, 1, 2])
+        with pytest.raises(qml.operation.NoDecompositionError):
+            qml.QubitUnitary.compute_decomposition(U, wires=[0, 1, 2])
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
@@ -202,11 +205,13 @@ class TestDiagonalQubitUnitary:
         """Test that DiagonalQubitUnitary falls back to QubitUnitary."""
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
 
-        decomp = qml.DiagonalQubitUnitary.decomposition(D, [0, 1, 2])
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
 
-        assert decomp[0].name == "QubitUnitary"
-        assert decomp[0].wires == Wires([0, 1, 2])
+        assert decomp[0].name == "QubitUnitary" == decomp2[0].name
+        assert decomp[0].wires == Wires([0, 1, 2]) == decomp2[0].wires
         assert np.allclose(decomp[0].data[0], np.diag(D))
+        assert np.allclose(decomp2[0].data[0], np.diag(D))
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""

@@ -83,7 +83,7 @@ class TestDecompositions:
     def test_x_decomposition(self, tol):
         """Tests that the decomposition of the PauliX is correct"""
         op = qml.PauliX(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -106,7 +106,7 @@ class TestDecompositions:
     def test_y_decomposition(self, tol):
         """Tests that the decomposition of the PauliY is correct"""
         op = qml.PauliY(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -129,7 +129,7 @@ class TestDecompositions:
     def test_z_decomposition(self, tol):
         """Tests that the decomposition of the PauliZ is correct"""
         op = qml.PauliZ(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -144,7 +144,7 @@ class TestDecompositions:
     def test_s_decomposition(self, tol):
         """Tests that the decomposition of the S gate is correct"""
         op = qml.S(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -159,7 +159,7 @@ class TestDecompositions:
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the T gate is correct"""
         op = qml.T(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -174,7 +174,7 @@ class TestDecompositions:
     def test_sx_decomposition(self, tol):
         """Tests that the decomposition of the SX gate is correct"""
         op = qml.SX(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 4
 
@@ -196,7 +196,7 @@ class TestDecompositions:
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the Hadamard gate is correct"""
         op = qml.Hadamard(wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -219,7 +219,7 @@ class TestDecompositions:
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
         op = qml.CY(wires=[0, 1])
-        res = op.decompose()
+        res = op.decomposition()
 
         mats = []
         for i in reversed(res):
@@ -234,7 +234,7 @@ class TestDecompositions:
     def test_ISWAP_decomposition(self, tol):
         """Tests that the decomposition of the ISWAP gate is correct"""
         op = qml.ISWAP(wires=[0, 1])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 6
 
@@ -271,7 +271,7 @@ class TestDecompositions:
     def test_SISWAP_decomposition(self, siswap_op, tol):
         """Tests that the decomposition of the SISWAP gate and its SQISW alias gate is correct"""
         op = siswap_op(wires=[0, 1])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 12
 
@@ -319,7 +319,7 @@ class TestDecompositions:
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
         op = qml.Toffoli(wires=[0, 1, 2])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 15
 
@@ -359,7 +359,7 @@ class TestDecompositions:
     def test_CSWAP_decomposition(self, tol):
         """Tests that the decomposition of the CSWAP gate is correct"""
         op = qml.CSWAP(wires=[0, 1, 2])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -404,7 +404,7 @@ class TestDecompositions:
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qml.SWAP(wires=[0, 1])
-        decomp = opr.decompose()
+        decomp = opr.decomposition()
 
         mat = []
         for op in reversed(decomp):
@@ -626,6 +626,16 @@ class TestMultiControlledX:
 
         assert np.allclose(mpmct_state, pauli_x_state)
 
+    def test_decomposition_no_control_values(self):
+        """Test decomposition has default control values of all ones."""
+        decomp1 = qml.MultiControlledX.compute_decomposition((0, 1, 2))
+        decomp2 = qml.MultiControlledX.compute_decomposition((0, 1, 2), control_values="111")
+
+        assert len(decomp1) == len(decomp2)
+
+        for op1, op2 in zip(decomp1, decomp2):
+            assert op1.__class__ == op2.__class__
+
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
     def test_decomposition_with_many_workers(self, n_ctrl_wires):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
@@ -692,11 +702,9 @@ class TestMultiControlledX:
         target_wire = 4
         op = qml.MultiControlledX(control_wires=control_wires, wires=target_wire)
 
-        match = (
-            f"At least one work wire is required to decompose operation: {re.escape(op.__repr__())}"
-        )
+        match = f"At least one work wire is required to decompose operation: MultiControlledX"
         with pytest.raises(ValueError, match=match):
-            op.decompose()
+            op.decomposition()
 
     def test_not_unique_wires(self):
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
@@ -811,6 +819,13 @@ class TestMultiControlledX:
 
         assert np.allclose(f(), rnd_state)
         spy.assert_called()
+
+    def test_compute_matrix_no_control_values(self):
+        """Test compute_matrix assumes all control on "1" if no
+        `control_values` provided"""
+        mat1 = qml.MultiControlledX.compute_matrix([0, 1])
+        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
+        assert np.allclose(mat1, mat2)
 
 
 label_data = [
