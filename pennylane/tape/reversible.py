@@ -97,7 +97,7 @@ class ReversibleTape(JacobianTape):
         """
         # pylint: disable=protected-access
 
-        mat = np.reshape(obs.matrix, [2] * len(obs.wires) * 2)
+        mat = np.reshape(obs.matrix(), [2] * len(obs.wires) * 2)
         vec1 = np.reshape(vec1, [2] * len(dev_wires))
         vec2 = np.reshape(vec2, [2] * len(dev_wires))
 
@@ -188,7 +188,7 @@ class ReversibleTape(JacobianTape):
         between_ops = self.operations[op_idx + 1 :]
 
         if op.name == "Rot":
-            decomp = op.decompose()
+            decomp = op.decomposition()
             generator, multiplier = qml.utils.get_generator(decomp[p_idx])
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:

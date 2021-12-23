@@ -336,8 +336,8 @@ def test_types_consistency():
     # Build PL operator using 'convert_observable'
     pl = qchem.convert_observable(of)
 
-    ops = pl.terms[1]
-    ops_ref = pl_ref.terms[1]
+    ops = pl.terms()[1]
+    ops_ref = pl_ref.terms()[1]
 
     for i, op in enumerate(ops):
         assert op.name == ops_ref[i].name
@@ -442,7 +442,7 @@ def test_integration_observable_to_vqe_cost(
     vqe_observable = qchem.convert_observable(qOp, custom_wires)
 
     num_qubits = len(vqe_observable.wires)
-    assert vqe_observable.terms.__repr__()  # just to satisfy codecov
+    assert vqe_observable.terms().__repr__()  # just to satisfy codecov
 
     if custom_wires is None:
         wires = num_qubits

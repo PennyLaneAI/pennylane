@@ -22,7 +22,15 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.operation import (
+    Expectation,
+    NoDecompositionError,
+    Observable,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 from pennylane.wires import Wires
 
 
@@ -85,7 +93,7 @@ class MeasurementProcess:
         """
         try:
             return self.expand().operations
-        except NotImplementedError:
+        except NoDecompositionError:
             return []
 
     def __repr__(self):
@@ -114,7 +122,6 @@ class MeasurementProcess:
             return self.obs.wires
         return self._wires
 
-    @property
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
@@ -129,7 +136,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.eigvals
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -137,7 +144,7 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.eigvals
+                return self.obs.eigvals()
             except NotImplementedError:
                 pass
 
@@ -171,19 +178,19 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].eigvals)
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
         """
         if self.obs is None:
-            raise NotImplementedError("Cannot expand a measurement process with no observable.")
+            raise NoDecompositionError
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 
         with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 

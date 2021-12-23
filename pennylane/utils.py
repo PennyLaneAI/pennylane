@@ -85,7 +85,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     coeffs = []
 
     for term in itertools.product(paulis, repeat=n):
-        matrices = [i._matrix() for i in term]
+        matrices = [i.compute_matrix() for i in term]
         coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
         coeff = np.real_if_close(coeff).item()
 
@@ -161,7 +161,7 @@ def sparse_hamiltonian(H, wires=None):
                     f"Can only sparsify Hamiltonians whose constituent observables consist of "
                     f"(tensor products of) single-qubit operators; got {op}."
                 )
-            obs.append(scipy.sparse.coo_matrix(o.matrix))
+            obs.append(scipy.sparse.coo_matrix(o.matrix()))
 
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
@@ -305,7 +305,13 @@ def pauli_eigs(n):
 
 
 def expand(matrix, original_wires, expanded_wires):
-    r"""Expand a an operator matrix to more wires.
+    r"""Expand an operator matrix to more wires.
+
+    .. note::
+
+        This function has essentially the same behaviour as :func:`.operation.expand_matrix`, but is not
+        fully differentiable.
+
 
     Args:
         matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
@@ -430,10 +436,7 @@ def get_generator(op, return_matrix=False):
     This utility function should be removed once the aforementioned classes
     no longer differ in behaviour.
     """
-    gen = getattr(op, "generator", lambda: None)()
-
-    if gen is None:
-        raise ValueError(f"Operation {op.name} does not have a generator")
+    gen = op.generator()
 
     if op.num_params != 1:
         raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
@@ -462,7 +465,7 @@ def get_generator(op, return_matrix=False):
         s *= -1.0
 
     if return_matrix:
-        obs = obs.matrix
+        obs = obs.matrix()
 
         if not isinstance(obs, np.ndarray):
             obs = obs.toarray()
