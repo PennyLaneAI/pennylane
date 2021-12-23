@@ -19,7 +19,7 @@ import numpy as np
 
 def test_identity_eigvals(tol):
     """Test identity eigenvalues are correct"""
-    res = qml.Identity._eigvals()
+    res = qml.Identity.compute_eigvals()
     expected = np.array([1, 1])
     assert np.allclose(res, expected, atol=tol, rtol=0)
 

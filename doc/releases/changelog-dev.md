@@ -134,6 +134,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
+  positions corresponding to vanishing state vector amplitudes is wrong.
+  [(#2057)](https://github.com/PennyLaneAI/pennylane/pull/2057)
+
 * Fixes a bug where PennyLane didn't require v0.20.0 of PennyLane-Lightning,
   but raised an error with versions of Lightning earlier than v0.20.0 due to
   the new batch execution pipeline.
@@ -254,9 +258,18 @@ The Operator class has undergone a major refactor with the following changes:
 * The `expand` method was moved to the main `Operator` class.
   [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
 
+* A `sparse_matrix` method and a `compute_sparse_matrix` static method were added 
+    to the `Operator` class. The sparse representation of `SparseHamiltonian`
+    is moved to this method, so that its `matrix` method now returns a dense matrix.
+    [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
+
 * The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
   was renamed to `wire_order` to be consistent with other matrix representations.
   [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
+
+* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to 
+  `compute_kraus_matrices`, which is now a static method.
+  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
 <h3>Contributors</h3>
 

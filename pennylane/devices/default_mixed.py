@@ -214,10 +214,10 @@ class DefaultMixed(QubitDevice):
             unitary, returns a 1D array representing the matrix diagonal.
         """
         if operation in diagonal_in_z_basis:
-            return operation.eigvals
+            return operation.eigvals()
 
         if isinstance(operation, Channel):
-            return operation.kraus_matrices
+            return operation.kraus_matrices()
 
         return [operation.matrix()]
 
