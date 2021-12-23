@@ -148,7 +148,7 @@ class TestExpandMultipar:
 
         class _CRX(qml.CRX):
             def generator(self):
-                return None
+                raise qml.operations.GeneratorUndefinedError()
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(1.5, wires=0)
