@@ -1699,7 +1699,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.eigvals
+        s1 = obs.eigvals()
         p = dev.probability(wires=dev.map_wires(obs.wires))
 
         # s1 should only contain 1 and -1
@@ -1739,7 +1739,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.eigvals
+        s1 = obs.eigvals()
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
@@ -1787,7 +1787,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.eigvals
+        s1 = obs.eigvals()
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain the eigenvalues of

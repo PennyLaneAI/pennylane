@@ -245,9 +245,18 @@ The Operator class has undergone a major refactor with the following changes:
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
 
+* A `sparse_matrix` method and a `compute_sparse_matrix` static method were added 
+    to the `Operator` class. The sparse representation of `SparseHamiltonian`
+    is moved to this method, so that its `matrix` method now returns a dense matrix.
+    [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
+
 * The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
   was renamed to `wire_order` to be consistent with other matrix representations.
   [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
+
+* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to 
+  `compute_kraus_matrices`, which is now a static method.
+  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
 <h3>Contributors</h3>
 
