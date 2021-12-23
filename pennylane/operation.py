@@ -335,6 +335,21 @@ def classproperty(func):
 
 
 # =============================================================================
+# Error classes
+# =============================================================================
+
+
+class OperatorPropertyUndefined(Exception):
+    """Generic exception to be used for undefined
+    Operator properties or methods."""
+
+
+class GeneratorUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have a generator"""
+
+
+# =============================================================================
 # Base Operator class
 # =============================================================================
 
@@ -1002,6 +1017,28 @@ class Operator(abc.ABC):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
+    def generator(self):  # pylint: disable=no-self-use
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
+
+        The default value to return is ``None``, indicating that the operation has
+        no defined generator.
+        """
+        raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
+
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
@@ -1126,28 +1163,6 @@ class Operation(Operator):
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
         param_shift = default_param_shift if recipe is None else recipe
         return param_shift
-
-    def generator(self):  # pylint: disable=no-self-use
-        r"""list[.Operation] or None: Generator of an operation
-        with a single trainable parameter.
-
-        For example, for operator
-
-        .. math::
-
-            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
-
-        >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
-
-        The generator may also be provided in the form of a dense or sparse Hamiltonian
-        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
-
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
-        """
-        return None
 
     @property
     def inverse(self):
@@ -2218,7 +2233,12 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator() is not None
+    try:
+        obj.generator()
+    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
+        return False
+
+    return True
 
 
 @qml.BooleanFn
