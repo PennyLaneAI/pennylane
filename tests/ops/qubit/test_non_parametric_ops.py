@@ -823,8 +823,8 @@ class TestMultiControlledX:
     def test_compute_matrix_no_control_values(self):
         """Test compute_matrix assumes all control on "1" if no
         `control_values` provided"""
-        mat1 = qml.MultiControlledX.compute_matrix([0, 1])
-        mat2 = qml.MultiControlledX.compute_matrix([0, 1], control_values="11")
+        mat1 = qml.MultiControlledX.compute_matrix(2)
+        mat2 = qml.MultiControlledX.compute_matrix(2, control_values="11")
         assert np.allclose(mat1, mat2)
 
 

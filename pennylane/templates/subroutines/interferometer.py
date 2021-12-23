@@ -293,8 +293,8 @@ class Interferometer(CVOperation):
             theta=self.parameters[0],
             phi=self.parameters[1],
             varphi=self.parameters[2],
-            mesh=self.parameters[3],
-            beamsplitter=self.parameters[4],
+            mesh=self.hyperparameters["mesh"],
+            beamsplitter=self.hyperparameters["beamsplitter"],
             wires=self.wires,
         )
         adjoint_op.inverse = not self.inverse

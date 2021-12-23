@@ -118,20 +118,19 @@ class QuantumPhaseEstimation(Operation):
             )
 
         self._hyperparameters = {
-            "unitary": unitary,
             "target_wires": target_wires,
             "estimation_wires": estimation_wires,
         }
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
-        return 0
+        return 1
 
     @staticmethod
     def compute_decomposition(
-        wires, unitary, target_wires, estimation_wires
+        unitary, wires, target_wires, estimation_wires
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the QuantumPhaseEstimation operator.
 
@@ -145,8 +144,8 @@ class QuantumPhaseEstimation(Operation):
         See also :meth:`~.QuantumPhaseEstimation.decomposition`.
 
         Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
             unitary (array): the phase estimation unitary, specified as a matrix
+            wires (Any or Iterable[Any]): wires that the operator acts on
             target_wires (Any or Iterable[Any]): the target wires to apply the unitary
             estimation_wires (Any or Iterable[Any]): the wires to be used for phase
                 estimation
@@ -175,7 +174,7 @@ class QuantumPhaseEstimation(Operation):
 
     def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = QuantumPhaseEstimation(
-            self.hyperparameters["unitary"],
+            self.parameters[0],
             target_wires=self.hyperparameters["target_wires"],
             estimation_wires=self.hyperparameters["estimation_wires"],
         )

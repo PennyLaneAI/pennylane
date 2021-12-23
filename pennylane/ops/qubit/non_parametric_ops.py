@@ -1609,15 +1609,12 @@ class MultiControlledX(Operation):
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        n_control_wires, control_values=None, work_wires=None
+        n_control_wires, control_values=None, **kwargs
     ):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
-           n_control_wires (int): Number of control wires.
-                and target wire. Target wire is the last wire in the Iterable.
-           work_wires (Wires): optional work wires used to decompose
-                the operation into a series of Toffoli gates.
+           n_control_wires (int): number of control wires
            control_values (str): string of bits determining the controls
 
         Returns:
@@ -1666,18 +1663,14 @@ class MultiControlledX(Operation):
 
     def adjoint(self):
         return MultiControlledX(
-            control_wires=self.wires[:-1],
+            n_control_wires=len(self.wires[:-1]),
             wires=self.wires[-1],
             control_values=self.hyperparameters["control_values"],
             work_wires=self.hyperparameters["work_wires"],
         )
 
     @staticmethod
-    def compute_decomposition(
-        wires=None,
-        work_wires=None,
-        control_values=None,
-    ):
+    def compute_decomposition(wires, work_wires=None, control_values=None, **kwargs):
         """Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
@@ -1688,8 +1681,7 @@ class MultiControlledX(Operation):
         See also :meth:`~.MultiControlledX.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on. Should contain both control wires
-                and target wire. Target wire is the last wire in the Iterable.
+            wires (Iterable[Any] or Wires): wires that the operation acts on
             work_wires (Wires): optional work wires used to decompose
                 the operation into a series of Toffoli gates.
             control_values (str): a string of bits representing the state of the control
