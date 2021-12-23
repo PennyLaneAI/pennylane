@@ -92,6 +92,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _transpose = staticmethod(np.transpose)
     _tensordot = staticmethod(np.tensordot)
     _conj = staticmethod(np.conj)
+    _real = staticmethod(np.real)
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)

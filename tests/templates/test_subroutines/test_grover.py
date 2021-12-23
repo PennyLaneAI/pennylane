@@ -33,7 +33,7 @@ def test_work_wires():
 
     ops = op.expand().operations
 
-    assert ops[2].work_wires == work_wire
+    assert ops[2].hyperparameters["work_wires"] == work_wire
 
 
 @pytest.mark.parametrize("bad_wires", [0, (0,), tuple()])

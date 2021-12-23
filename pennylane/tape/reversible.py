@@ -188,7 +188,7 @@ class ReversibleTape(JacobianTape):
         between_ops = self.operations[op_idx + 1 :]
 
         if op.name == "Rot":
-            decomp = op.decompose()
+            decomp = op.decomposition()
             generator, multiplier = qml.utils.get_generator(decomp[p_idx])
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:

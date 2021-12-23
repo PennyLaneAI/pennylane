@@ -140,6 +140,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
+  positions corresponding to vanishing state vector amplitudes is wrong.
+  [(#2057)](https://github.com/PennyLaneAI/pennylane/pull/2057)
+
 * Fixes a bug where PennyLane didn't require v0.20.0 of PennyLane-Lightning,
   but raised an error with versions of Lightning earlier than v0.20.0 due to
   the new batch execution pipeline.
@@ -164,6 +168,13 @@
 <h3>Operator class refactor</h3>
 
 The Operator class has undergone a major refactor with the following changes:
+
+* The static `compute_decomposition` method defines the decomposition
+  of an operator into a product of simpler operators, and the instance method
+  `decomposition()` computes this for a given instance. When a custom 
+  decomposition does not exist, the code now raises a custom `NoDecompositionError`
+  instead of `NotImplementedError`.
+  [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
 
 * The `diagonalizing_gates()` representation has been moved to the highest-level
   `Operator` class and is therefore available to all subclasses. A condition
@@ -223,9 +234,10 @@ The Operator class has undergone a major refactor with the following changes:
   a proper method called by `Hamiltonian.terms()`.
 
 * The generator property has been updated to an instance method,
-  `Operation.generator()`. It now returns an instantiated operation,
+  `Operator.generator()`. It now returns an instantiated operation,
   representing the generator of the instantiated operator.
   [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
+  [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
 
   Various operators have been updated to specify the generator as either
   an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
@@ -256,6 +268,9 @@ The Operator class has undergone a major refactor with the following changes:
   was renamed to `wire_order` to be consistent with other matrix representations.
   [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
 
+* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to 
+  `compute_kraus_matrices`, which is now a static method.
+  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
 <h3>Contributors</h3>
 
