@@ -328,7 +328,12 @@ def classproperty(func):
 # =============================================================================
 
 
-class GeneratorUndefinedError(Exception):
+class OperatorPropertyUndefined(Exception):
+    """Generic exception to be used for undefined
+    Operator properties or methods."""
+
+
+class GeneratorUndefinedError(OperatorPropertyUndefined):
     """Exception used to indicate that an operator
     does not have a generator"""
 
@@ -2181,7 +2186,7 @@ def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
     try:
         obj.generator()
-    except (AttributeError, GeneratorUndefinedError):
+    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
     return True
