@@ -1772,7 +1772,7 @@ class Tensor(Observable):
                 warnings.warn(
                     "The matrix for Tensors of Tensors/Observables with partially "
                     "overlapping wires might yield unexpected results. In particular "
-                    "the matrix size might be too large."
+                    "the matrix size might be larger than intended."
                 )
             else:
                 warnings.warn(
