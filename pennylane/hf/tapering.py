@@ -470,7 +470,7 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
 def optimal_sector(qubit_op, generators, active_electrons):
     r"""Get the optimal sector which contains the ground state.
 
-    To obtain the optimal sector, we need to choose the right eigenvalue for the symmetry generators :math:`\bm{\tau}`.
+    To obtain the optimal sector, we need to choose the right eigenvalues for the symmetry generators :math:`\bm{\tau}`.
     We can do so by using the following relation between the Pauli-Z qubit operator and the occupation number under a
     Jordan-Wigner transform.
 
@@ -478,11 +478,11 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
         \sigma_{i}^{z} = I - 2a_{i}^{\dagger}a_{i}
 
-    According to this relation, an occupied and unoccupied fermionic mode corresponds to the -1 and +1 eigenvalue of
-    the Pauli-Z operator, respectively. Since all :math:`\bm{\tau}` consist only of :math:`I` and Pauli-Z operators,
-    the correct eigenvalue for each :math:`\tau` operator can be simply obtained by applying it on the reference
-    Hartree Fock (HF) state, and looking at the overlap between the wires on which Pauli-Z operators act and the
-    wires that correspond to occupied orbitals in HF state.
+    According to this relation, the occupied and unoccupied fermionic modes correspond to the -1 and +1 eigenvalues of
+    the Pauli-Z operator, respectively. Since all of the generators :math:`\bm{\tau}` consist only of :math:`I` and
+    Pauli-Z operators, the correct eigenvalue for each :math:`\tau` operator can be simply obtained by applying it on
+    the reference Hartree-Fock (HF) state, and looking at the overlap between the wires on which the Pauli-Z operators
+    act and the wires that correspond to occupied orbitals in the HF state.
 
     Args:
         qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
@@ -492,16 +492,15 @@ def optimal_sector(qubit_op, generators, active_electrons):
     Returns:
         list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
 
-    .. code-block:: python
+    **Example**
 
-        >>> symbols = ['H', 'H']
-        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-        >>> mol = qml.hf.Molecule(symbols, coordinates)
-        >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
-        >>> generators, paulix_ops = generate_symmetries(H, qubits)
-        >>> optimal_sector(H, generators, 2)
-          [1, -1, -1]
-
+    >>> symbols = ['H', 'H']
+    >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
+    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> qml.hf.optimal_sector(H, generators, 2)
+        [1, -1, -1]
     """
 
     if active_electrons < 1:
@@ -522,7 +521,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     perm = []
     for tau in generators:
-        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
+        symmstr = np.array([1 if wire in tau.ops[0].wires else 0 for wire in qubit_op.wires])
         coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 
