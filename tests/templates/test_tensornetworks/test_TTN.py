@@ -19,6 +19,61 @@ import numpy as np
 import pennylane as qml
 from pennylane.templates.tensornetworks.ttn import *
 
+def circuit0_block(wires):
+    qml.PauliX(wires=wires[1])
+    qml.PauliZ(wires=wires[0])
+
+def circuit1_block(weights1, weights2, wires):
+    qml.RX(weights1, wires=wires[0])
+    qml.RX(weights2[0], wires=wires[1])
+    qml.RY(weights2[1],wires=wires[1])
+
+def circuit2_block(weights, wires):
+    qml.RZ(weights[0], wires=wires[0])
+    qml.RZ(weights[1], wires=wires[1])
+
+def circuit2_TTN(weights, wires):
+    qml.RZ(weights[0][0], wires=wires[0])
+    qml.RZ(weights[0][1], wires=wires[1])
+    qml.RZ(weights[1][0], wires=wires[2])
+    qml.RZ(weights[1][1], wires=wires[3])
+    qml.RZ(weights[2][0], wires=wires[1])
+    qml.RZ(weights[2][1], wires=wires[3])
+
+def circuit3_block(weights, wires):
+    SELWeights = np.array(
+        [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
+    )
+    qml.StronglyEntanglingLayers(SELWeights, wires)
+
+def circuit3_TTN(weights, wires):
+    SELWeights1 = np.array(
+        [
+            [
+                [weights[0][0], weights[0][1], weights[0][2]],
+                [weights[0][0], weights[0][1], weights[0][2]],
+            ]
+        ]
+    )
+    SELWeights2 = np.array(
+        [
+            [
+                [weights[1][0], weights[1][1], weights[1][2]],
+                [weights[1][0], weights[1][1], weights[1][2]],
+            ]
+        ]
+    )
+    SELWeights3 = np.array(
+        [
+            [
+                [weights[2][0], weights[2][1], weights[2][2]],
+                [weights[2][0], weights[2][1], weights[2][2]],
+            ]
+        ]
+    )
+    qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
+    qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
+    qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1], wires[3]])
 
 class TestIndicesTTN:
     """Test function that computes TTN indices"""
@@ -168,7 +223,50 @@ class TestTemplateInputs:
         """Verifies that an exception is raised if the weights shape is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
             TTN(wires, n_block_wires, block, n_params_block, block_weights)
+    
+    @pytest.mark.parametrize(
+        ("block", "n_params_block", "wires", "n_block_wires", "template_weights"),
+        [
+            (
+                circuit0_block,
+                0,
+                [1, 2, 3, 4],
+                2,
+                None
+            ),
+            (
+                circuit1_block,
+                2,
+                [1, 2, 3, 4],
+                2,
+                [[0.1,[0.1,0.2]], [0.2,[0.2,0.3]], [0.2,[0.3,0.1]]]
+            ),
+            (
+                circuit2_block,
+                2,
+                [0, 1, 2, 3],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]]
+            ),
+            (
+                circuit3_block,
+                3,
+                [1, 2, 3, 4],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]]
+            )
+        ],
+    )
+    def test_block_params(self,block, n_params_block,wires,n_block_wires,template_weights):
+        """Verify that the template works with arbitrary block parameters"""
+        dev = qml.device("default.qubit", wires=wires)
 
+        @qml.qnode(dev)
+        def circuit():
+            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliZ(wires=wires[-1]))
+
+        circuit()
 
 class TestAttributes:
     """Tests additional methods and attributes"""
@@ -216,55 +314,40 @@ class TestAttributes:
             f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
             qml.TTN.get_n_blocks(wires, n_block_wires)
+class TestDifferentiability:
+    """Test that the template is differentiable."""
+    @pytest.mark.parametrize(
+    ("block", "n_params_block", "wires", "n_block_wires", "template_weights"),
+    [
+        (
+            circuit1_block,
+            2,
+            [1, 2, 3, 4],
+            2,
+            [[0.1,[0.1,0.2]], [0.2,[0.2,0.3]], [0.2,[0.3,0.1]]]
+        ),
+        (
+            circuit2_block,
+            2,
+            [0, 1, 2, 3],
+            2,
+            [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]]
+        )
+    ],
+    )
+    def test_template_differentiable(self,block, n_params_block,wires,n_block_wires,template_weights):
+        """Test that the template is differentiable for different inputs."""
+        dev = qml.device("default.qubit", wires=wires)
 
+        @qml.qnode(dev)
+        def circuit(template_weights):
+            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliZ(wires=wires[-1]))
+
+        qml.grad(circuit)(template_weights)
 
 class TestTemplateOutputs:
-    def circuit1_block(weights, wires):
-        qml.RZ(weights[0], wires=wires[0])
-        qml.RZ(weights[1], wires=wires[1])
 
-    def circuit1_TTN(weights, wires):
-        qml.RZ(weights[0][0], wires=wires[0])
-        qml.RZ(weights[0][1], wires=wires[1])
-        qml.RZ(weights[1][0], wires=wires[2])
-        qml.RZ(weights[1][1], wires=wires[3])
-        qml.RZ(weights[2][0], wires=wires[1])
-        qml.RZ(weights[2][1], wires=wires[3])
-
-    def circuit2_block(weights, wires):
-        SELWeights = np.array(
-            [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
-        )
-        qml.StronglyEntanglingLayers(SELWeights, wires)
-
-    def circuit2_TTN(weights, wires):
-        SELWeights1 = np.array(
-            [
-                [
-                    [weights[0][0], weights[0][1], weights[0][2]],
-                    [weights[0][0], weights[0][1], weights[0][2]],
-                ]
-            ]
-        )
-        SELWeights2 = np.array(
-            [
-                [
-                    [weights[1][0], weights[1][1], weights[1][2]],
-                    [weights[1][0], weights[1][1], weights[1][2]],
-                ]
-            ]
-        )
-        SELWeights3 = np.array(
-            [
-                [
-                    [weights[2][0], weights[2][1], weights[2][2]],
-                    [weights[2][0], weights[2][1], weights[2][2]],
-                ]
-            ]
-        )
-        qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
-        qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
-        qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1], wires[3]])
 
     @pytest.mark.parametrize(
         (
@@ -277,20 +360,20 @@ class TestTemplateOutputs:
         ),
         [
             (
-                circuit1_block,
+                circuit2_block,
                 2,
                 [0, 1, 2, 3],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                circuit1_TTN,
+                circuit2_TTN,
             ),
             (
-                circuit2_block,
+                circuit3_block,
                 3,
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]],
-                circuit2_TTN,
+                circuit3_TTN,
             ),
         ],
     )

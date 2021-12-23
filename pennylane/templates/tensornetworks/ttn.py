@@ -157,16 +157,15 @@ class TTN(Operation):
 
         self.ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
-        shape = qml.math.shape(template_weights)[-4:]  # (n_params_block, n_blocks)
+        shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
         self.n_params_block = n_params_block
         self.n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
         self.block = block
 
-        if template_weights is None:
+        if shape == ():
             self.template_weights = np.random.rand(n_params_block, int(self.n_blocks))
 
         else:
-
             if shape[0] != self.n_blocks:
                 raise ValueError(
                     f"Weights tensor must have first dimension of length {self.n_blocks}; got {shape[0]}"
@@ -183,8 +182,15 @@ class TTN(Operation):
     def expand(self):
 
         with qml.tape.QuantumTape() as tape:
-            for idx, w in enumerate(self.ind_gates):
-                self.block(weights=self.template_weights[idx][:], wires=w)
+            if self.block.__code__.co_argcount>2:
+                for idx, w in enumerate(self.ind_gates):
+                    self.block(*self.template_weights[idx], wires=w)
+            elif self.block.__code__.co_argcount == 2:
+                for idx, w in enumerate(self.ind_gates):
+                    self.block(self.template_weights[idx], wires=w)
+            else:
+                for idx, w in enumerate(self.ind_gates):
+                    self.block(wires=w)
 
         return tape
 
