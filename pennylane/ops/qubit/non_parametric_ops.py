@@ -1663,14 +1663,13 @@ class MultiControlledX(Operation):
 
     def adjoint(self):
         return MultiControlledX(
-            n_control_wires=len(self.wires[:-1]),
+            control_wires=self.wires[:-1],
             wires=self.wires[-1],
             control_values=self.hyperparameters["control_values"],
-            work_wires=self.hyperparameters["work_wires"],
         )
 
     @staticmethod
-    def compute_decomposition(wires, work_wires=None, control_values=None, **kwargs):
+    def compute_decomposition(wires, work_wires, control_values=None, **kwargs):
         """Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 

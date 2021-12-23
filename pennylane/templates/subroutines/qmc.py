@@ -380,7 +380,6 @@ class QuantumMonteCarlo(Operation):
         See also :meth:`~.QuantumMonteCarlo.decomposition`.
 
         Args:
-        XXX
             A (array): unitary matrix corresponding to an input probability distribution
             R (array): unitary that encodes the function applied to the ancilla qubit register
             Q (array): matrix that encodes the expectation value according to the probability unitary

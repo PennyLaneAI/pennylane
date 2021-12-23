@@ -29,7 +29,7 @@ from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
 from pennylane.wires import Wires
 
 
-def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
+def r_unitary(gate, alpha, control_wires, target_wire):
     r"""Applies a uniformly-controlled rotation to the target qubit.
 
     A uniformly-controlled rotation is a sequence of multi-controlled
@@ -60,7 +60,7 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
             gate(theta[..., 0], wires=[target_wire])
         return
 
-    code = qml.templates.state_preparations.mottonen._gray_code(gray_code_rank)
+    code = qml.templates.state_preparations.mottonen.gray_code(gray_code_rank)
     num_selections = len(code)
 
     control_indices = [
