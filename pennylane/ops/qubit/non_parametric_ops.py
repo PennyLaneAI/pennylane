@@ -1482,7 +1482,6 @@ class MultiControlledX(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        *params,
         control_wires=None,
         wires=None,
         control_values=None,
@@ -1506,6 +1505,7 @@ class MultiControlledX(Operation):
 
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
+        self.hyperparameters["n_control_wires"] = len(control_wires)
 
         total_wires = control_wires + wires
 
@@ -1518,12 +1518,12 @@ class MultiControlledX(Operation):
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        wires, control_values=None, work_wires=None
+        n_control_wires, control_values=None, work_wires=None
     ):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
-           wires (Iterable, Wires): Wires that the operator acts on. Should contain both control wires
+           n_control_wires (int): Number of control wires.
                 and target wire. Target wire is the last wire in the Iterable.
            work_wires (Wires): optional work wires used to decompose
                 the operation into a series of Toffoli gates.
@@ -1545,13 +1545,11 @@ class MultiControlledX(Operation):
          [0. 0. 1. 0.]
          [0. 0. 0. 1.]]
         """
-        control_wires = wires[:~0]
-
         if control_values is None:
-            control_values = "1" * len(control_wires)
+            control_values = "1" * n_control_wires
 
         if isinstance(control_values, str):
-            if len(control_values) != len(control_wires):
+            if len(control_values) != n_control_wires:
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
@@ -1563,7 +1561,7 @@ class MultiControlledX(Operation):
             raise ValueError("Alternative control values must be passed as a binary string.")
 
         padding_left = control_int * 2
-        padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
+        padding_right = 2 ** (n_control_wires + 1) - 2 - padding_left
         cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
         return cx
 

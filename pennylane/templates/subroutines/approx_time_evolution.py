@@ -118,7 +118,7 @@ class ApproxTimeEvolution(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *coeffs, time, wires, hamiltonian, n
+        *coeffs_and_time, wires, hamiltonian, n
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the ApproxTimeEvolution operator.
 
@@ -132,8 +132,8 @@ class ApproxTimeEvolution(Operation):
         See also :meth:`~.ApproxTimeEvolution.decomposition`.
 
         Args:
-            coeffs (list[tensor_like]): Coefficients of the hamiltonian.
-            time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
+            coeffs_and_time (list[tensor_like or float]): list of coefficients of the Hamiltonian, appended by the time
+                variable
             wires (Any or Iterable[Any]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The Hamiltonian defining the
                time-evolution operator. The Hamiltonian must be explicitly written
@@ -149,7 +149,8 @@ class ApproxTimeEvolution(Operation):
         theta = []
         pauli_words = []
         wires = []
-
+        coeffs = coeffs_and_time[:-1]
+        time = coeffs_and_time[-1]
         for i, term in enumerate(hamiltonian.ops):
 
             word = ""

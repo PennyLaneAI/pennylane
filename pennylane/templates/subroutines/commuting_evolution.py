@@ -102,9 +102,7 @@ class CommutingEvolution(Operation):
         0.6536436208636115
     """
 
-    num_params = 3
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
@@ -136,7 +134,7 @@ class CommutingEvolution(Operation):
 
     @staticmethod
     def compute_decomposition(
-        time, *coeffs, wires, hamiltonian, frequencies, shifts
+        *time_and_coeffs, wires, hamiltonian, frequencies, shifts
     ):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the CommutingEvolution operator.
 
@@ -150,8 +148,8 @@ class CommutingEvolution(Operation):
         See also :meth:`~.CommutingEvolution.decomposition`.
 
         Args:
-            time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
-            coeffs (list[tensor_like]): coefficients of the Hamiltonian
+            time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
+                variable
             wires (Any or Iterable[Any]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
             frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
@@ -163,8 +161,8 @@ class CommutingEvolution(Operation):
             list[~.Operator]: decomposition of the Operator into lower-level operations
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
-        return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).decomposition()
+        hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)
+        return qml.templates.ApproxTimeEvolution(hamiltonian, time_and_coeffs[1], 1).decomposition()
 
     def adjoint(self):  # pylint: disable=arguments-differ
 
