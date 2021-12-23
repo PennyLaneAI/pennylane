@@ -551,8 +551,7 @@ def taper_hartree_fock(num_electrons, num_wires, generators, paulix_ops, paulix_
     on by a Pauli-X or Pauli-Y operator in :math:`|1\rangle` state.
 
     Args:
-        num_electrons (int): number of active electrons in the system for generating the
-        Hartree-Fock bitstring
+        num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
         generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         paulix_ops (list[pennylane.Observable]):  list of single-qubit Pauli X operators
