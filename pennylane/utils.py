@@ -436,10 +436,7 @@ def get_generator(op, return_matrix=False):
     This utility function should be removed once the aforementioned classes
     no longer differ in behaviour.
     """
-    gen = getattr(op, "generator", lambda: None)()
-
-    if gen is None:
-        raise ValueError(f"Operation {op.name} does not have a generator")
+    gen = op.generator()
 
     if op.num_params != 1:
         raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
