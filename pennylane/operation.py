@@ -792,7 +792,9 @@ class Operator(abc.ABC):
         >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
         """
-        return self.compute_decomposition(*self.parameters, wires=self.wires, **self.hyperparameters)
+        return self.compute_decomposition(
+            *self.parameters, wires=self.wires, **self.hyperparameters
+        )
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
