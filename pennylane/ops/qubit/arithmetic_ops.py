@@ -142,7 +142,29 @@ class QubitCarry(Operation):
         )
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+
+        See also :meth:`~.QubitCarry.decomposition`.
+
+        Args:
+            wires (Iterable[Any], Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
+
+        """
         decomp_ops = [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -250,7 +272,28 @@ class QubitSum(Operation):
         )
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.QubitSum.decomposition`.
+
+        Args:
+            wires (Iterable[Any], Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.QubitSum.compute_decomposition((0,1,2))
+        [CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
+
+        """
         decomp_ops = [
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.CNOT(wires=[wires[0], wires[2]]),

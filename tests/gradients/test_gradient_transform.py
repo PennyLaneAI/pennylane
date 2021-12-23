@@ -97,7 +97,7 @@ class TestGradientTransformIntegration:
             grad_method = None
 
             @staticmethod
-            def decomposition(x, wires):
+            def compute_decomposition(x, wires):
                 return [qml.RX(x, wires=wires)]
 
         @qml.qnode(dev)
