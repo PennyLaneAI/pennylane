@@ -1253,51 +1253,54 @@ class Channel(Operation, abc.ABC):
     """
     # pylint: disable=abstract-method
 
-    @classmethod
+    @staticmethod
     @abc.abstractmethod
-    def _kraus_matrices(cls, *params):
+    def compute_kraus_matrices(*params, **hyperparams):  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
-        This is a class method that should be defined for all
-        new channels. It returns the Kraus matrices representing
-        the channel in the computational basis.
-
-        This private method allows matrices to be computed
+        This is a static method that should be defined for all
+        new channels, and which allows matrices to be computed
         directly without instantiating the channel first.
+
+        To return the Kraus matrices of an *instantiated* channel,
+        please use the :meth:`~.Operator.kraus_matrices()` method instead.
+
+        .. note::
+            This method gets overwritten by subclasses to define the kraus matrix representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of this operator,
+                as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list (array): list of Kraus matrices
 
         **Example**
 
-        >>> qml.AmplitudeDamping._kraus_matrices(0.1)
-        >>> [array([[1.       , 0.       ],
-        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
-        [0.        , 0.        ]])]
-
-        To return the Kraus matrices of an *instantiated* channel,
-        please use the :meth:`~.Operator.kraus_matrices` property instead.
-
-        Returns:
-            list(array): list of Kraus matrices
+        >>> qml.AmplitudeDamping.compute_kraus_matrices(0.1)
+        [array([[1., 0.], [0., 0.9486833]]),
+         array([[0., 0.31622777], [0., 0.]])]
         """
         raise NotImplementedError
 
-    @property
     def kraus_matrices(self):
         r"""Kraus matrices of an instantiated channel
         in the computational basis.
 
+        Returns:
+            list (array): list of Kraus matrices
+
         ** Example**
 
         >>> U = qml.AmplitudeDamping(0.1, wires=1)
-        >>> U.kraus_matrices
-        >>> [array([[1.       , 0.       ],
-        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
-        [0.        , 0.        ]])]
-
-        Returns:
-            list(array): list of Kraus matrices
+        >>> U.kraus_matrices()
+        [array([[1., 0.], [0., 0.9486833]]),
+         array([[0., 0.31622777], [0., 0.]])]
         """
-        return self._kraus_matrices(*self.parameters)
+        return self.compute_kraus_matrices(*self.parameters, **self.hyperparameters)
 
 
 # =============================================================================

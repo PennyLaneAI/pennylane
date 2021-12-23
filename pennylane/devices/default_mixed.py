@@ -217,7 +217,7 @@ class DefaultMixed(QubitDevice):
             return operation.eigvals()
 
         if isinstance(operation, Channel):
-            return operation.kraus_matrices
+            return operation.kraus_matrices()
 
         return [operation.matrix()]
 
