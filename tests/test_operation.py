@@ -1099,15 +1099,15 @@ class TestChannel:
             num_wires = 1
             grad_method = "F"
 
-            def _kraus_matrices(self, *params):
-                p = params[0]
+            @staticmethod
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
         op = DummyOp(0.1, wires=0)
-        assert np.all(op.kraus_matrices[0] == expected)
+        assert np.all(op.kraus_matrices()[0] == expected)
 
 
 class TestOperationDerivative:

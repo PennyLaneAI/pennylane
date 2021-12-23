@@ -257,6 +257,9 @@ The Operator class has undergone a major refactor with the following changes:
   was renamed to `wire_order` to be consistent with other matrix representations.
   [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
 
+* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to 
+  `compute_kraus_matrices`, which is now a static method.
+  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
 <h3>Contributors</h3>
 
