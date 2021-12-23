@@ -1340,10 +1340,10 @@ class TestOperationDerivative:
     """Tests for operation_derivative function"""
 
     def test_no_generator_raise(self):
-        """Tests if the function raises a ValueError if the input operation has no generator"""
+        """Tests if the function raises an exception if the input operation has no generator"""
         op = qml.Rot(0.1, 0.2, 0.3, wires=0)
 
-        with pytest.raises(ValueError, match="Operation Rot does not have a generator"):
+        with pytest.raises(qml.operation.GeneratorUndefinedError, match="Operation Rot does not have a generator"):
             operation_derivative(op)
 
     def test_multiparam_raise(self):
