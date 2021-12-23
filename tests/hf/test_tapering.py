@@ -483,8 +483,8 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
             ],
-            3,
-            [1, -1],
+            2,
+            [-1, -1],
         ),
     ],
 )
