@@ -1323,6 +1323,33 @@ class TestPassthruIntegration:
         res = tape.gradient(res, [a_tf, b_tf])
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        shift = tf.constant(shift)
+        x = tf.Variable(x)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape(persistent=True) as t1:
+                value = circuit(x)
+            grad = t1.gradient(value, x)
+            jac = t1.jacobian(value, x)
+        hess_grad = t2.gradient(grad, x)
+        hess_jac = t2.jacobian(jac, x)
+
+        assert qml.math.isclose(grad, 0.0)
+        assert qml.math.isclose(hess_grad, -1.0)
+        assert qml.math.isclose(hess_jac, -1.0)
+
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_tf_interface_gradient(self, operation, diff_method, tol):
