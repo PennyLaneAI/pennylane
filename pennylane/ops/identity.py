@@ -64,3 +64,6 @@ class Identity(CVObservable, Operation):
     def identity_op(*params):
         """Returns the matrix representation of the identity operator."""
         return Identity._matrix(*params)
+
+    def adjoint(self):
+        return Identity(wires=self.wires)
