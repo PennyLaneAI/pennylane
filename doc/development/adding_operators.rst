@@ -11,11 +11,12 @@ in the ``pennylane/template`` folder, while all other operations are found in ``
 
 The base classes to construct new operators are found in ``pennylane/operations.py``.
 
-Basic idea
-##########
+Abstraction
+###########
 
 Operators in quantum mechanics are maps that act on vector spaces. The highest-level operator class
-serves as the main abstraction of such objects. Its basic components are the following:
+(the ``Operator`` class which we will introduce in the next section) serves as the main abstraction of such objects.
+Its basic components are the following:
 
 #. The name of the operator, which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
    or could be a name specific to PennyLane.
@@ -63,11 +64,11 @@ serves as the main abstraction of such objects. Its basic components are the fol
 
    * Representation as a linear combination of operators
 
-    .. code-block:: python
+     .. code-block:: python
 
-        >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
-        >>> op.terms()
-        ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
+         >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+         >>> op.terms()
+         ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
    * Representation by the eigenvalue decomposition
 
@@ -108,21 +109,23 @@ specific subclasses.
 
 .. code-block:: python
 
+    # ``Observable`` defines addition and scalar multiplication
     >>> op = qml.PauliX(0) + 0.1*qml.PauliZ(0)
     >>> op.name
     Hamiltonian
 
+    # ``Operation`` defindes the hermitian conjugate
     >>> qml.RX(1., wires=0).adjoint()
     RX(-1.0, wires=[0])
 
 Operator base class
 ###################
 
-The operator base class provides default functionality to store name, wires, parameters, hyperparameters
-and representations. In addition, it defines a few methods that connect Operators to other building blocks
+The ``Operator`` base class provides default functionality to store name, wires, parameters, hyperparameters
+and representations. In addition, it defines a few methods that connect operators to other building blocks
 in PennyLane, such as expansion used by tapes or queueing functionality.
 
-Roughly speaking, the architecture of the base class is this:
+Roughly speaking, the architecture of the ``Operatoe`` base class is this:
 
 .. code-block:: python
 
@@ -131,7 +134,7 @@ Roughly speaking, the architecture of the base class is this:
         def __init__(self, *params, wires=None):
             # the default name is inferred from the class
             self._name = self.__class__.__name__
-            # turn wires into a Wires object and store
+            # turn wires into a PennyLane Wires object and store
             self._wires = Wires(wires)
             # store the parameters in an internal representation
             self.data = list(params)
@@ -169,9 +172,28 @@ Roughly speaking, the architecture of the base class is this:
     # other representations
     ...
 
+The representations, for which we see the ``decomposition`` as one example above, are accessible by
+instance methods such as ``decomposition()``. These instance methods call a static method that uses the prefix
+``compute_``, and in which the actual representation is computed. Sometimes, such a computation simply returns a
+fixed object, but at other times a time-consuming calculation is performed. The idea of static methods is that
+they can in principle be cached, which can speed up computations drastically.
+
+Special operators
+#################
+
 Apart from the main ``Operator`` class, operators with special properties (such as those with a Kraus matrix
-representation) are implemented as general subclasses ``Operation``, ``Observable``, ``Channel`` or ``CVOperation``.
-However, unlike many other frameworks, PennyLane does not
+representation) are implemented as general subclasses ``Operation``, ``Observable``, ``Channel``,
+``CVOperation`` and ``CVOperation``. However, unlike many other frameworks, PennyLane does not use class
+inheritance to define properties of operators. The reason is that we want to avoid changing the inheritance structure
+every time an application needs to query a new property, such as whether or not an operator is diagonal or sparse.
+
+Instead, properties are recorded in "attributes", which are
+bookkeeping lists of those operators that fulfill the property (such as whether it is its own self-inverse,
+or whether it can be decomposed into Pauli rotations). These attributes can be queried by devices and compilation
+pipelines. Adding operations to an attributes allows PennyLane to potentially use special tricks that speed
+up computation. The onus leis on the contributors of new operators to add them to the right attributes.
+
+The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
 
 Creating new Operators
 #######################
