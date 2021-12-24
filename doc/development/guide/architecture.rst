@@ -28,7 +28,8 @@ QNodes run **quantum circuits** on **devices**.
 These devices may be simulators built into PennyLane, or external devices
 provided by plugins. The user specifies a quantum circuit by defining a "quantum function",
 which is a Python function that contains quantum operations and measurements
-represented by the ``Operator`` and ``MeasurementProcess`` classes, respectively.
+represented by the :class:`~.Operator` and :class:`~.MeasurementProcess` classes,
+respectively.
 
 
 .. image:: pl_overview.png
@@ -102,7 +103,7 @@ symbolic or numerical representations, such as:
     (0, 1)   1
     (1, 0) - 1
 
-If a representation is not defined, a custom error (such as `DecompositionUndefinedError`)
+If a representation is not defined, a custom error (such as a ``DecompositionUndefinedError``)
 is raised.
 
 Devices use the information provided by the properties and representations
@@ -111,9 +112,9 @@ to implement the operator.
 MeasurementProcess
 ******************
 
-While the ``Operator`` class describes a physical system and its dynamics,
-the ``MeasurementProcess`` class describes how we extract information from the quantum system.
-The object returned by a quantum function, such as `expval(my_observable)` creates an instance of this class.
+While the :class:`~.Operator` class describes a physical system and its dynamics,
+the :class:`~.MeasurementProcess` class describes how we extract information from the quantum system.
+The object returned by a quantum function, such as :func:`~.expval` creates an instance of this class.
 
 The class takes a return type upon initialization, which specifies the kind of measurement performed.
 PennyLane supports the following return types: Expectation, Variance, Probability, State, Sample.
@@ -124,7 +125,7 @@ QuantumTape
 Quantum operators and measurement processes can be used to build a quantum circuit.
 The user defines the circuit by constructing a quantum function.
 
-... code-block:: python
+.. code-block:: python
 
     def qfunc(params):
         qml.RX(params[0], wires='b')
@@ -134,15 +135,15 @@ The user defines the circuit by constructing a quantum function.
 
 Internally, a quantum function is translated to a quantum tape, which is
 the central representation of a quantum circuit. The tape is a context manager that stores lists
-of ``Operator`` and ``MeasurementProcesses`` instances.
+of :class:`~.Operator` and :class:`~.MeasurementProcesses` instances.
 Creating operations inside a tape context adds them to these lists.
 
 For example, if we call the quantum function in a tape context, the
-gates are stored in the tape's `operation` property, while the
-measurement processes such as :func:`~.pennylane.expval` are responsible for adding observables
-to the tape's `measurement` property.
+gates are stored in the tape's ``operation`` property, while the
+measurement processes such as :func:`~.expval` are responsible for adding observables
+to the tape's ``measurement`` property.
 
-... code-block:: python
+.. code-block:: python
 
     >>> with qml.tape.QuantumTape() as tape:
     ...	    qfunc(params)
