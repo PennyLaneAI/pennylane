@@ -275,6 +275,8 @@ The new gate can be used in devices, which access the decomposition to implement
 
 .. code-block:: python
 
+    from pennylane import numpy as pnp
+
     dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
 
     @qml.qnode(dev)
@@ -282,8 +284,17 @@ The new gate can be used in devices, which access the decomposition to implement
         FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
         return qml.expval(qml.PauliZ("q1"))
 
-    >>> circuit(3.14)
+    >>> a = pnp.array(3.14)
+    >>> circuit(a)
     -0.9999987318946099
+
+We can even compute gradients of circuits that use the new gate.
+
+.. code-block:: python
+
+    >>> qml.grad(circuit)(a)
+    -0.0015926529164868282
+
 
 Adding your new operator to PennyLane
 #####################################
