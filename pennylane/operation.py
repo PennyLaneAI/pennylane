@@ -1209,6 +1209,7 @@ class Operation(Operator):
         if self.inverse:
             tape.inv()
 
+        print("here", tape.operations)
         return tape
 
     def inv(self):

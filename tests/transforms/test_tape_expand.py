@@ -363,9 +363,9 @@ def custom_rot(phi, theta, omega, wires):
 
 
 # Decompose a template into another template
-def custom_basic_entangler_layers(weights, wires):
+def custom_basic_entangler_layers(weights, wires, **kwargs):
     return [
-        qml.AngleEmbedding(weights, wires=wires),
+        qml.AngleEmbedding(weights[0], wires=wires),
         qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
     ]
 
@@ -624,12 +624,12 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         # BasicEntanglerLayers custom decomposition involves AngleEmbedding. If
-        # expansion depth is 1, the AngleEmbedding will still be decomposed into
+        # expansion depth is 2, the AngleEmbedding will still be decomposed into
         # RX (since it's not a supported operation on the device), but the RX will
         # not be further decomposed even though the custom decomposition is specified.
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
         decomp_dev = qml.device(
-            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=1
+            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=2
         )
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()

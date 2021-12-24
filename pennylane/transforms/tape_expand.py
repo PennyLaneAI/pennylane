@@ -225,20 +225,19 @@ def _custom_decomp_context(custom_decomps):
 
         original_decomp_method = obj.decomposition
 
-        # This is the method that will override the operations .decompose method
-        def new_decomp_method(self):
-            with NonQueuingTape():
-                if self.num_params == 0:
-                    return fn(self.wires)
-                return fn(*self.parameters, self.wires)
+        def new_decomp_method(*parameters, wires, **hyperparameters):
+            with NonQueuingTape() as t:
+                fn(*parameters, wires, **hyperparameters)
+
+            return t.operations
 
         try:
             # Explicitly set the new .decompose method
-            obj.decomposition = new_decomp_method
+            obj.compute_decomposition = staticmethod(new_decomp_method)
             yield
 
         finally:
-            obj.decomposition = original_decomp_method
+            obj.compute_decomposition = original_decomp_method
 
     # Loop through the decomposition dictionary and create all the contexts
     try:
