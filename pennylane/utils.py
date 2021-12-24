@@ -467,6 +467,9 @@ def get_generator(op, return_matrix=False):
     if return_matrix:
         obs = obs.matrix()
 
+        if not isinstance(obs, np.ndarray):
+            obs = obs.toarray()
+            
         if op.inverse:
             obs = qml.math.conj(qml.math.T(obs))
 
