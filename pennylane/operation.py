@@ -1202,6 +1202,8 @@ class Operation(Operator):
         with tape:
             self.decomposition()
 
+        print("inside expand:", tape.operations)
+
         if not self.data:
             # original operation has no trainable parameters
             tape.trainable_params = {}
@@ -1209,7 +1211,6 @@ class Operation(Operator):
         if self.inverse:
             tape.inv()
 
-        print("here", tape.operations)
         return tape
 
     def inv(self):
