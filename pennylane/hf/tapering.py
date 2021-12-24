@@ -545,7 +545,7 @@ def transform_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons,
     r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
     The Hartree-Fock  (HF) state for a molecule is transformed to a qubit observable under Jordan-Wigner (JW)
-    transorm. To do this, first each occupied mode in the original HF state is assigned with a fermionic creation
+    transform. To do this, first each occupied mode in the original HF state is assigned with a fermionic creation
     operator and each unoccupied mode is replaced with an identity operator, and then JW transform is applied to
     map the resulting fermionic operator to qubit basis.
 
