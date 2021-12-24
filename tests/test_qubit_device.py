@@ -511,7 +511,9 @@ class TestExpval:
 
         obs = MyObs(wires=0)
 
-        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"):
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"
+        ):
             dev.expval(obs)
 
 
@@ -572,7 +574,9 @@ class TestVar:
 
         obs = MyObs(wires=0)
 
-        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"):
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
             dev.var(obs)
 
 
