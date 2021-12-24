@@ -32,7 +32,7 @@ represented by the :class:`~.Operator` and :class:`~.MeasurementProcess` classes
 respectively.
 
 
-.. image:: pl_overview.jpg
+.. image:: pl_overview.png
     :width: 800px
     :align: center
 
@@ -268,7 +268,7 @@ There are some devices where the execution of the quantum circuit is also tracke
 autodifferentiation framework. This is possible if the device is a simulator that is
 coded entiely in the framework's language (such as a TensorFlow quantum simulator).
 
-.. image:: pl_backprop-device.png
+.. image:: pl_backprop_device.png
     :width: 300px
 
 Most devices, however, are blackboxes with regards to the autodifferentiation framework.
