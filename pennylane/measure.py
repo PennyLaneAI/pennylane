@@ -183,7 +183,7 @@ class MeasurementProcess:
         None
         """
         if self.obs is None:
-            raise DecompositionUndefinedError
+            raise qml.operation.DecompositionUndefinedError
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 

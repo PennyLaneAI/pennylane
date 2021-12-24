@@ -1124,6 +1124,11 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.AdjointUndefinedError):
             gate.adjoint()
 
+    def test_generator_undefined(self):
+        """Tests that custom error is raised in the default generator representation."""
+        with pytest.raises(qml.operation.GeneratorUndefinedError):
+            gate.generator()
+
 
 class TestChannel:
     """Unit tests for the Channel class"""

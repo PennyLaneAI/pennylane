@@ -261,6 +261,11 @@ class AdjointUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's adjoint version is undefined."""
 
 
+class GeneratorUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have a generator"""
+
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -359,26 +364,6 @@ def classproperty(func):
         func = classmethod(func)
 
     return ClassPropertyDescriptor(func)
-
-
-# =============================================================================
-# Error classes
-# =============================================================================
-
-
-class OperatorPropertyUndefined(Exception):
-    """Generic exception to be used for undefined
-    Operator properties or methods."""
-
-
-class GeneratorUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have a generator"""
-
-
-# =============================================================================
-# Base Operator class
-# =============================================================================
 
 
 def _process_data(op):
