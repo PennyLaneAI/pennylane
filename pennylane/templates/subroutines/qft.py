@@ -68,7 +68,7 @@ class QFT(Operation):
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         wires = qml.wires.Wires(wires)
-        self._hyperparameters = {"n_wires": len(wires)}
+        self.hyperparameters["n_wires"] = len(wires)
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     @property
@@ -90,9 +90,29 @@ class QFT(Operation):
         return mat / np.sqrt(dimension)
 
     @staticmethod
-    def decomposition(wires):
-        num_wires = len(wires)
-        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+    def compute_decomposition(wires, n_wires=None):
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.QFT.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
+
+        """
+        shifts = [2 * np.pi * 2 ** -i for i in range(2, n_wires + 1)]
 
         decomp_ops = []
         for i, wire in enumerate(wires):
@@ -102,8 +122,8 @@ class QFT(Operation):
                 op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
-        first_half_wires = wires[: num_wires // 2]
-        last_half_wires = wires[-(num_wires // 2) :]
+        first_half_wires = wires[: n_wires // 2]
+        last_half_wires = wires[-(n_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
             swap = qml.SWAP(wires=[wire1, wire2])

@@ -101,7 +101,7 @@ class TestDecompositions:
         """Tests that the decomposition of the Phase gate is correct"""
         phi = 0.3
         op = qml.PhaseShift(phi, wires=0)
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 1
 
@@ -115,11 +115,81 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
+    def test_Rot_decomposition(self):
+        """Test the decomposition of Rot."""
+        phi = 0.432
+        theta = 0.654
+        omega = -5.43
+
+        ops1 = qml.Rot.compute_decomposition(phi, theta, omega, wires=0)
+        ops2 = qml.Rot(phi, theta, omega, wires=0).decomposition()
+
+        assert len(ops1) == len(ops2) == 3
+
+        classes = [qml.RZ, qml.RY, qml.RZ]
+        params = [[phi], [theta], [omega]]
+
+        for ops in [ops1, ops2]:
+            for c, p, op in zip(classes, params, ops):
+                assert isinstance(op, c)
+                assert op.parameters == p
+
+    def test_CRX_decomposition(self):
+        """Test the decomposition for CRX."""
+        phi = 0.432
+
+        ops1 = qml.CRX.compute_decomposition(phi, wires=[0, 1])
+        ops2 = qml.CRX(phi, wires=(0, 1)).decomposition()
+
+        classes = [qml.RZ, qml.RY, qml.CNOT, qml.RY, qml.CNOT, qml.RZ]
+        params = [[np.pi / 2], [phi / 2], [], [-phi / 2], [], [-np.pi / 2]]
+        wires = [Wires(1), Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1)), Wires(1)]
+
+        for ops in [ops1, ops2]:
+            for op, c, p, w in zip(ops, classes, params, wires):
+                assert isinstance(op, c)
+                assert op.parameters == p
+                assert op.wires == w
+
+    def test_CRY_decomposition(self):
+        """Test the decomposition for CRY."""
+        phi = 0.432
+
+        ops1 = qml.CRY.compute_decomposition(phi, wires=[0, 1])
+        ops2 = qml.CRY(phi, wires=(0, 1)).decomposition()
+
+        classes = [qml.RY, qml.CNOT, qml.RY, qml.CNOT]
+        params = [[phi / 2], [], [-phi / 2], []]
+        wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
+
+        for ops in [ops1, ops2]:
+            for op, c, p, w in zip(ops, classes, params, wires):
+                assert isinstance(op, c)
+                assert op.parameters == p
+                assert op.wires == w
+
+    def test_CRZ_decomposition(self):
+        """Test the decomposition for CRZ."""
+        phi = 0.432
+
+        ops1 = qml.CRZ.compute_decomposition(phi, wires=[0, 1])
+        ops2 = qml.CRZ(phi, wires=(0, 1)).decomposition()
+
+        classes = [qml.PhaseShift, qml.CNOT, qml.PhaseShift, qml.CNOT]
+        params = [[phi / 2], [], [-phi / 2], []]
+        wires = [Wires(1), Wires((0, 1)), Wires(1), Wires((0, 1))]
+
+        for ops in [ops1, ops2]:
+            for op, c, p, w in zip(ops, classes, params, wires):
+                assert isinstance(op, c)
+                assert op.parameters == p
+                assert op.wires == w
+
     @pytest.mark.parametrize("phi, theta, omega", [[0.5, 0.6, 0.7], [0.1, -0.4, 0.7], [-10, 5, -1]])
     def test_CRot_decomposition(self, tol, phi, theta, omega, monkeypatch):
         """Tests that the decomposition of the CRot gate is correct"""
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
-        res = op.decompose()
+        res = op.decomposition()
 
         mats = []
         for i in reversed(res):
@@ -132,11 +202,54 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    def test_U1_decomposition(self):
+        """Test the decomposition for U1."""
+        phi = 0.432
+        res = qml.U1(phi, wires=0).decomposition()
+        res2 = qml.U1.compute_decomposition(phi, wires=0)
+
+        assert len(res) == len(res2) == 1
+        assert res[0].name == res2[0].name == "PhaseShift"
+        assert res[0].parameters == res2[0].parameters == [phi]
+
+    def test_U2_decomposition(self):
+        """Test the decomposition for U2."""
+        phi = 0.432
+        lam = 0.654
+
+        ops1 = qml.U2.compute_decomposition(phi, lam, wires=0)
+        ops2 = qml.U2(phi, lam, wires=0).decomposition()
+
+        classes = [qml.Rot, qml.PhaseShift, qml.PhaseShift]
+        params = [[lam, np.pi / 2, -lam], [lam], [phi]]
+
+        for ops in [ops1, ops2]:
+            for op, c, p in zip(ops, classes, params):
+                assert isinstance(op, c)
+                assert op.parameters == p
+
+    def test_U3_decomposition(self):
+        """Test the decomposition for U3."""
+        theta = 0.654
+        phi = 0.432
+        lam = 0.654
+
+        ops1 = qml.U3.compute_decomposition(theta, phi, lam, wires=0)
+        ops2 = qml.U3(theta, phi, lam, wires=0).decomposition()
+
+        classes = [qml.Rot, qml.PhaseShift, qml.PhaseShift]
+        params = [[lam, theta, -lam], [lam], [phi]]
+
+        for ops in [ops1, ops2]:
+            for op, c, p in zip(ops, classes, params):
+                assert isinstance(op, c)
+                assert op.parameters == p
+
     def test_isingxx_decomposition(self, tol):
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
         op = qml.IsingXX(param, wires=[3, 2])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -164,7 +277,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingYY gate is correct"""
         param = 0.1234
         op = qml.IsingYY(param, wires=[3, 2])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -192,7 +305,7 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingZZ gate is correct"""
         param = 0.1234
         op = qml.IsingZZ(param, wires=[3, 2])
-        res = op.decompose()
+        res = op.decomposition()
 
         assert len(res) == 3
 
@@ -222,7 +335,7 @@ class TestDecompositions:
         """Tests that the ControlledPhaseShift and CPhase operation
         calculates the correct decomposition"""
         op = cphase_op(phi, wires=[0, 2])
-        decomp = op.decompose()
+        decomp = op.decomposition()
 
         mats = []
         for i in reversed(decomp):
@@ -1069,7 +1182,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "Z", wires=0)
-        decomp_ops = op.decompose()
+        decomp_ops = qml.PauliRot.compute_decomposition(theta, "Z", wires=0)
 
         assert np.allclose(
             op.eigvals(), np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)])
@@ -1088,19 +1201,10 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decompose()
+        decomp_ops = op.decomposition()
 
         assert np.allclose(op.eigvals(), np.exp(-1j * theta / 2) * np.ones(4))
         assert np.allclose(op.matrix() / op.matrix()[0, 0], np.eye(4))
-
-        assert len(decomp_ops) == 0
-
-    def test_PauliRot_decomposition_Identity(self):
-        """Test that decomposing the all-identity Pauli has no effect."""
-
-        theta = 0.4
-        op = qml.PauliRot(theta, "II", wires=[0, 1])
-        decomp_ops = op.decompose()
 
         assert len(decomp_ops) == 0
 
@@ -1109,7 +1213,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "ZZ", wires=[0, 1])
-        decomp_ops = op.decompose()
+        decomp_ops = op.decomposition()
 
         assert len(decomp_ops) == 1
 
@@ -1123,7 +1227,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "XY", wires=[0, 1])
-        decomp_ops = op.decompose()
+        decomp_ops = op.decomposition()
 
         assert len(decomp_ops) == 5
 
@@ -1152,7 +1256,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
-        decomp_ops = op.decompose()
+        decomp_ops = op.decomposition()
 
         assert len(decomp_ops) == 5
 
@@ -1197,7 +1301,7 @@ class TestPauliRot:
         )
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_decomposition_integration(self, angle, tol):
+    def test_decomposition_integration(self, angle):
         """Test that the decompositon of PauliRot yields the same results."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1210,13 +1314,11 @@ class TestPauliRot:
 
         @qml.qnode(dev)
         def decomp_circuit(theta):
-            qml.PauliRot.decomposition(theta, "XX", wires=[0, 1])
+            qml.PauliRot.compute_decomposition(theta, "XX", wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(qml.grad(circuit)(angle)) == pytest.approx(
-            np.squeeze(qml.grad(decomp_circuit)(angle)), abs=tol
-        )
+        assert np.allclose(circuit(angle), decomp_circuit(angle))
+        assert np.allclose(qml.grad(circuit)(angle), qml.grad(decomp_circuit)(angle))
 
     def test_matrix_incorrect_pauli_word_error(self):
         """Test that _matrix throws an error if a wrong Pauli word is supplied."""
@@ -1358,7 +1460,7 @@ class TestMultiRZ:
 
         theta = 0.4
         op = qml.MultiRZ(theta, wires=[0, 1])
-        decomp_ops = op.decompose()
+        decomp_ops = op.decomposition()
 
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == Wires([1, 0])
@@ -1376,7 +1478,7 @@ class TestMultiRZ:
 
         theta = 0.4
         op = qml.MultiRZ(theta, wires=[0, 2, 3])
-        decomp_ops = op.decompose()
+        decomp_ops = op.decomposition()
 
         assert decomp_ops[0].name == "CNOT"
         assert decomp_ops[0].wires == Wires([3, 2])
@@ -1416,9 +1518,9 @@ class TestMultiRZ:
         )
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_decomposition_integration(self, angle, tol):
+    def test_decomposition_integration(self, angle):
         """Test that the decompositon of MultiRZ yields the same results."""
-
+        angle = qml.numpy.array(angle)
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -1431,14 +1533,12 @@ class TestMultiRZ:
         @qml.qnode(dev)
         def decomp_circuit(theta):
             qml.Hadamard(0)
-            qml.MultiRZ.decomposition(theta, wires=[0, 1])
+            qml.MultiRZ.compute_decomposition(theta, wires=[0, 1])
 
             return qml.expval(qml.PauliX(0))
 
-        assert circuit(angle) == pytest.approx(decomp_circuit(angle), abs=tol)
-        assert np.squeeze(qml.jacobian(circuit)(angle)) == pytest.approx(
-            np.squeeze(qml.jacobian(decomp_circuit)(angle)), abs=tol
-        )
+        assert np.allclose(circuit(angle), decomp_circuit(angle))
+        assert np.allclose(qml.jacobian(circuit)(angle), qml.jacobian(decomp_circuit)(angle))
 
     @pytest.mark.parametrize("qubits", range(3, 6))
     def test_multirz_generator(self, qubits, mocker):

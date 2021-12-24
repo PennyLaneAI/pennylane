@@ -24,7 +24,7 @@ from numpy.linalg import multi_dot
 
 import pennylane as qml
 import pennylane.queuing
-from pennylane.operation import Tensor, operation_derivative
+from pennylane.operation import NoDecompositionError, Tensor, operation_derivative, Operator
 
 from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
 from pennylane.wires import Wires
@@ -1064,254 +1064,28 @@ class TestTensorObservableOperations:
 class TestDecomposition:
     """Test for operation decomposition"""
 
-    def test_decomposition_with_int_wire(self):
-        """Test that the decomposition of a non-parametrized Operation works
-        when we simply pass an integer as a wire without further specification."""
-        decomp_1 = qml.PauliRot.decomposition(0.1, "X", 1)
-        decomp_2 = qml.PauliRot.decomposition(0.1, "X", [1])
-        expected_decomp = qml.PauliRot.decomposition(0.1, "X", wires=1)
+    def test_compute_decomposition_default(self):
+        """Tests None is default for compute_decomposition."""
 
-        for obtained_1, obtained_2, expected in zip(decomp_1, decomp_2, expected_decomp):
-            assert obtained_1.name == expected.name
-            assert np.allclose(obtained_1.parameters, expected.parameters)
-            assert obtained_2.name == expected.name
-            assert np.allclose(obtained_2.parameters, expected.parameters)
+        class MyOp(Operator):
+            num_wires = 1
 
-    def test_U1_decomposition(self):
-        """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
-        phi = 0.432
-        res = qml.U1(phi, wires=0).decompose()
+        with pytest.raises(NoDecompositionError):
+            MyOp.compute_decomposition()
 
-        assert len(res) == 1
-        assert res[0].name == "PhaseShift"
-        assert res[0].parameters == [phi]
+        op = MyOp(wires=1)
+        with pytest.raises(NoDecompositionError):
+            op.compute_decomposition()
 
-    def test_rotation_decomposition(self):
-        """Test the decomposition of the abritrary single
-        qubit rotation"""
-        phi = 0.432
-        theta = 0.654
-        omega = -5.43
+    def test_decomposition_default(self):
+        """Test None is default for decomposition."""
 
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.Rot.decomposition(phi, theta, omega, wires=0)
+        class MyOp(Operator):
+            num_wires = 1
 
-        assert len(rec.queue) == 3
-
-        assert rec.queue[0].name == "RZ"
-        assert rec.queue[0].parameters == [phi]
-
-        assert rec.queue[1].name == "RY"
-        assert rec.queue[1].parameters == [theta]
-
-        assert rec.queue[2].name == "RZ"
-        assert rec.queue[2].parameters == [omega]
-
-    def test_crx_decomposition(self):
-        """Test the decomposition of the controlled X
-        qubit rotation"""
-        phi = 0.432
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.CRX.decomposition(phi, wires=[0, 1])
-
-        assert len(rec.queue) == 6
-
-        assert rec.queue[0].name == "RZ"
-        assert rec.queue[0].parameters == [np.pi / 2]
-        assert rec.queue[0].wires == Wires([1])
-
-        assert rec.queue[1].name == "RY"
-        assert rec.queue[1].parameters == [phi / 2]
-        assert rec.queue[1].wires == Wires([1])
-
-        assert rec.queue[2].name == "CNOT"
-        assert rec.queue[2].parameters == []
-        assert rec.queue[2].wires == Wires([0, 1])
-
-        assert rec.queue[3].name == "RY"
-        assert rec.queue[3].parameters == [-phi / 2]
-        assert rec.queue[3].wires == Wires([1])
-
-        assert rec.queue[4].name == "CNOT"
-        assert rec.queue[4].parameters == []
-        assert rec.queue[4].wires == Wires([0, 1])
-
-        assert rec.queue[5].name == "RZ"
-        assert rec.queue[5].parameters == [-np.pi / 2]
-        assert rec.queue[5].wires == Wires([1])
-
-    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
-    def test_crx_decomposition_correctness(self, phi, tol):
-        """Test that the decomposition of the controlled X
-        qubit rotation is correct"""
-
-        expected = CRotx(phi)
-
-        obtained = (
-            np.kron(I, Rotz(-np.pi / 2))
-            @ CNOT
-            @ np.kron(I, Roty(-phi / 2))
-            @ CNOT
-            @ np.kron(I, Roty(phi / 2))
-            @ np.kron(I, Rotz(np.pi / 2))
-        )
-        assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
-    def test_cry_decomposition(self):
-        """Test the decomposition of the controlled Y
-        qubit rotation"""
-        phi = 0.432
-
-        operation_wires = [0, 1]
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.CRY.decomposition(phi, wires=operation_wires)
-
-        assert len(rec.queue) == 4
-
-        assert rec.queue[0].name == "RY"
-        assert rec.queue[0].parameters == [phi / 2]
-        assert rec.queue[0].wires == Wires([1])
-
-        assert rec.queue[1].name == "CNOT"
-        assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == Wires(operation_wires)
-
-        assert rec.queue[2].name == "RY"
-        assert rec.queue[2].parameters == [-phi / 2]
-        assert rec.queue[2].wires == Wires([1])
-
-        assert rec.queue[3].name == "CNOT"
-        assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == Wires(operation_wires)
-
-    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
-    def test_cry_decomposition_correctness(self, phi, tol):
-        """Test that the decomposition of the controlled Y
-        qubit rotation is correct"""
-
-        def U3(theta, phi, lam):
-            return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
-
-        expected = CRoty(phi)
-        obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
-        assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
-    def test_crz_decomposition(self):
-        """Test the decomposition of the controlled Z
-        qubit rotation"""
-        phi = 0.432
-
-        operation_wires = [0, 1]
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.CRZ.decomposition(phi, wires=operation_wires)
-
-        assert len(rec.queue) == 4
-
-        assert rec.queue[0].name == "PhaseShift"
-        assert rec.queue[0].parameters == [phi / 2]
-        assert rec.queue[0].wires == Wires([1])
-
-        assert rec.queue[1].name == "CNOT"
-        assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == Wires(operation_wires)
-
-        assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [-phi / 2]
-        assert rec.queue[2].wires == Wires([1])
-
-        assert rec.queue[3].name == "CNOT"
-        assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == Wires(operation_wires)
-
-    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
-    def test_crz_decomposition_correctness(self, phi, tol):
-        """Test that the decomposition of the controlled Z
-        qubit rotation is correct"""
-
-        expected = CRotz(phi)
-
-        obtained = CNOT @ np.kron(I, Rphi(-phi / 2)) @ CNOT @ np.kron(I, Rphi(phi / 2))
-        assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
-    def test_U2_decomposition(self):
-        """Test the U2 decomposition is correct"""
-        phi = 0.432
-        lam = 0.654
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.U2.decomposition(phi, lam, wires=0)
-
-        assert len(rec.queue) == 3
-
-        assert rec.queue[0].name == "Rot"
-        assert rec.queue[0].parameters == [lam, np.pi / 2, -lam]
-
-        assert rec.queue[1].name == "PhaseShift"
-        assert rec.queue[1].parameters == [lam]
-
-        assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [phi]
-
-    def test_U3_decomposition(self):
-        """Test the U3 decomposition is correct"""
-        theta = 0.654
-        phi = 0.432
-        lam = 0.654
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.U3.decomposition(theta, phi, lam, wires=0)
-
-        assert len(rec.queue) == 3
-
-        assert rec.queue[0].name == "Rot"
-        assert rec.queue[0].parameters == [lam, theta, -lam]
-
-        assert rec.queue[1].name == "PhaseShift"
-        assert rec.queue[1].parameters == [lam]
-
-        assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [phi]
-
-    def test_basis_state_decomposition(self, monkeypatch):
-        """Test the decomposition of BasisState calls the
-        BasisStatePreparation template"""
-        n = np.array([1, 0, 1, 1])
-        wires = [0, 1, 2, 3]
-        call_args = []
-
-        # We have to patch BasisStatePreparation where it is loaded
-        monkeypatch.setattr(
-            qml.ops.qubit.state_preparation,
-            "BasisStatePreparation",
-            lambda *args: call_args.append(args),
-        )
-        qml.BasisState(n, wires=wires).decompose()
-
-        assert len(call_args) == 1
-        assert np.array_equal(call_args[0][0], n)
-        assert np.array_equal(call_args[0][1], wires)
-
-    def test_qubit_state_vector_decomposition(self, monkeypatch):
-        """Test the decomposition of QubitStateVector calls the
-        MottonenStatePreparation template"""
-        state = np.array([1 / 2, 1j / np.sqrt(2), 0, -1 / 2])
-        wires = [0, 1]
-        call_args = []
-
-        # We have to patch MottonenStatePreparation where it is loaded
-        monkeypatch.setattr(
-            qml.ops.qubit.state_preparation,
-            "MottonenStatePreparation",
-            lambda *args: call_args.append(args),
-        )
-        qml.QubitStateVector(state, wires=wires).decompose()
-
-        assert len(call_args) == 1
-        assert np.array_equal(call_args[0][0], state)
-        assert np.array_equal(call_args[0][1], wires)
+        op = MyOp(wires=1)
+        with pytest.raises(NoDecompositionError):
+            op.decomposition()
 
 
 class TestChannel:
@@ -1340,10 +1114,12 @@ class TestOperationDerivative:
     """Tests for operation_derivative function"""
 
     def test_no_generator_raise(self):
-        """Tests if the function raises a ValueError if the input operation has no generator"""
+        """Tests if the function raises an exception if the input operation has no generator"""
         op = qml.Rot(0.1, 0.2, 0.3, wires=0)
 
-        with pytest.raises(ValueError, match="Operation Rot does not have a generator"):
+        with pytest.raises(
+            qml.operation.GeneratorUndefinedError, match="Operation Rot does not have a generator"
+        ):
             operation_derivative(op)
 
     def test_multiparam_raise(self):
