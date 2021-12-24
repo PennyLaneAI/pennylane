@@ -43,73 +43,146 @@ Let's go through these components one-by-one.
 Operator
 ********
 
-Quantum operators are represented by the :class:`~.Operator` class which
-contains one or more representations of the operator and the wires they act on.
-Devices interpret this information to implement the operator.
+Quantum operators are represented by the :class:`~.Operator` class.
 
-For example, the PauliX operator ``qml.PauliX(wires=0)``
-provides its representation as a matrix, ...
+Operators are uniquely defined by their name, their (trainable) parameters,
+their (non-trainable) hyperparameters, and the wires they act on.
 
-[TODO: Examples PauliX, RX and Hamiltonian, used to describe both, ops and obs].
+These four properties are accessible for all operators:
 
-[TODO: Explain templates]
+.. code-block:: python
 
-[TODO: overview graphic of operator representations]
+    >>> from jax import numpy as jnp
+    >>> op = qml.PauliRot(jnp.array(0.2), "XY", wires=["a", "b"])
+    >>> op.name
+    PauliRot
+    >>> op.parameters
+    [DeviceArray(0.2, dtype=float32, weak_type=True)]
+    >>> op.hyperparameters
+    {'pauli_word': 'XY'}
+    >>> op.wires
+    <Wires = ['a', 'b']>
+
+Furthermore, operators can optionally define the transformation they implement via
+symbolic or numerical representations, such as:
+
+.. code-block:: python
+
+    >>> # representation as a product of operators
+    >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+    >>> op.decomposition()
+    [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+
+    >>> # representation as a linear combination of operators
+    >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+    >>> op.terms()
+    ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
+
+    >>> # representation by the eigenvalue decomposition
+    >>> op = qml.PauliX(0)
+    >>> op.diagonalizing_gates()
+    [Hadamard(wires=[0])]
+    >>> op.eigvals()
+    [ 1 -1]
+
+    >>> # representation as a matrix
+    >>> op = qml.PauliRot(0.2, "X", wires=["b"])
+    >>> op.matrix()
+    [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
+     [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
+
+    >>> # representation as a sparse matrix
+    >>> from scipy.sparse.coo import coo_matrix
+    >>> row = np.array([0, 1])
+    >>> col = np.array([1, 0])
+    >>> data = np.array([1, -1])
+    >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
+    >>> op = qml.SparseHamiltonian(mat, wires=["a"])
+    >>> op.sparse_matrix()
+    (0, 1)   1
+    (1, 0) - 1
+
+If a representation is not defined, a custom error (such as `DecompositionUndefinedError`)
+is raised.
+
+Devices use the information provided by the properties and representations
+to implement the operator.
 
 MeasurementProcess
 ******************
 
 While the ``Operator`` class describes a physical system and its dynamics,
 the ``MeasurementProcess`` class describes how we extract information from the quantum system.
+The object returned by a quantum function, such as `expval(my_observable)` creates an instance of this class.
 
-[TODO: Add more once we know it]
+The class takes a return type upon initialization, which specifies the kind of measurement performed.
+PennyLane supports the following return types: Expectation, Variance, Probability, State, Sample.
 
 QuantumTape
 ***********
 
 Quantum operators and measurement processes can be used to build a quantum circuit.
-The user does this by defining a quantum function.
+The user defines the circuit by constructing a quantum function.
 
-CODE EXAMPLE.
+... code-block:: python
+
+    def qfunc(params):
+        qml.RX(params[0], wires='b')
+        qml.CNOT(wires=['a', 'b'])
+        qml.RY(params[1], wires='a')
+        return qml.expval(qml.PauliZ(wires='b'))
 
 Internally, a quantum function is translated to a quantum tape, which is
-the representation of a quantum circuit. The tape inherits from :class:`~.pennylane.QueuingContext`,
-and creating operations inside a tape context adds them to the queue
-by having :meth:`.Operator.__init__` call the :meth:`.Operator.queue` method.
-Measurement processes such as :func:`~.pennylane.expval` are responsible for queuing observables.
+the central representation of a quantum circuit. The tape is a context manager that stores lists
+of ``Operator`` and ``MeasurementProcesses`` instances.
+Creating operations inside a tape context adds them to these lists.
 
-EXAMPLE
+For example, if we call the quantum function in a tape context, the
+gates are stored in the tape's `operation` property, while the
+measurement processes such as :func:`~.pennylane.expval` are responsible for adding observables
+to the tape's `measurement` property.
 
-The relevant parts of the queue can then be accessed via ``tape.operations``,
-``tape.observables`` and ``tape.measurements``.
+... code-block:: python
+
+    >>> with qml.tape.QuantumTape() as tape:
+    ...	    qfunc(params)
+
+    >>> tape.operations
+    [RX(DeviceArray(0.5, dtype=float32), wires=['b']),
+     CNOT(wires=['a', 'b']),
+     RY(DeviceArray(0.2, dtype=float32), wires=['a'])]
+
+    >>> tape.measurements
+    [expval(PauliZ(wires=['b']))]
+
+These two "queues" are used by devices to retrieve a circuit.
 
 .. note::
 
     Tapes can represent parts of quantum circuits and do not necessarily need to define a measurement.
-    They can also be nested. [TODO: explain more]
-
-[TODO: explain tape expansion]
+    They can also be nested.
 
 Devices
 *******
 
 In PennyLane, the abstraction of a quantum computation device is encompassed
 within the :class:`~.Device` class. The main job of devices is to
-interpret and execute tapes. The most important method is
+interpret and execute tapes. The most important method is ``batch_execute``,
+which executes a list of tapes, such as the one created above:
 
 .. code-block:: python
-
-    device.batch_execute([tape1, tape2,...])
-
+    >>> device = qml.device("default.qubit", wires=['a', 'b'], shots=None)
+    >>> device.batch_execute([tape])
+    [array([0.87758256])]
 
 There are also device subclasses available, containing shared logic for
 particular types of devices.  For example, qubit-based devices can inherit from
 the :class:`~.QubitDevice` class, easing development.
 
-To register a new device with PennyLane, they must register an `entry point
-<https://packaging.python.org/specifications/entry-points/>`__ under the `pennylane.plugins`
+To register a new device with PennyLane, a device subclass has to be created and registered
+as an `entry point <https://packaging.python.org/specifications/entry-points/>`__ under the `pennylane.plugins`
 namespace using Setuptools. Once registered, the device can be instantiated using the :func:`~.device`
-loader function.
+loader function, using the device's name.
 
 A Python package that registers one or more PennyLane devices is known as a *plugin*. For more details
 on plugins and devices, see :doc:`/development/plugins`.
@@ -117,10 +190,30 @@ on plugins and devices, see :doc:`/development/plugins`.
 QNodes
 ******
 
-This is where it all comes together: A **QNode** (represented by a subclass of
-:class:`~.BaseQNode`) is an encapsulation of a function
+This is where it all comes together: A **QNode** is an encapsulation of a function
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device. It is created by a quantum function and a device.
+
+... code-block:: python
+
+    >>> import jax
+    >>> from jax import numpy as jnp
+    >>> params = jnp.array([0.5, 0.2])
+
+    >>> qnode = qml.QNode(qfunc, device, interface='jax')
+    >>> qnode(params)
+    0.8776
+
+    >>> jax.grad(qnode)
+    [-0.4794  0.]
+
+    # transforms create new functions from qnodes
+    >>> qnode_drawer = qml.transforms.draw(qnode)
+    >>> qnode_drawer(params)
+    a: ───────────╭C──RY(0.2)──┤
+    b: ──RX(0.5)──╰X───────────┤ ⟨Z⟩
+
+
 Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
 :func:`~pennylane.QNode` constructor function automates the process of creating a QNode from a provided
 quantum function and device.
@@ -181,8 +274,3 @@ tensors need to be converted to formats that the device understands - which is i
 a representation as Numpy arrays. Likewise, the results of the execution have to be translated
 back to differentiable tensors. These two conversions happen at what PennyLane calls the
 "interface", and you can specify this interface in the QNode with the ``interface`` keyword argument.
-
-Gradients
-*********
-
-[TODO: Be a bit more precise here]
