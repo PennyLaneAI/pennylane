@@ -367,7 +367,7 @@ class RepresentationResolver:
             representation = name
 
         elif base_name == "PauliRot":
-            rot_data = op.data[1][op.wires.index(wire)]
+            rot_data = op.hyperparameters["pauli_word"][op.wires.index(wire)]
             representation = f"R{rot_data}({self.single_parameter_representation(op.data[0])})"
 
         elif base_name == "QubitUnitary":

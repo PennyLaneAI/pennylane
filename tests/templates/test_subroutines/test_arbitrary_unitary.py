@@ -112,7 +112,7 @@ class TestDecomposition:
 
         for i, op in enumerate(queue):
             assert op.data[0] == weights[i]
-            assert op.data[1] == pauli_words[i]
+            assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_correct_gates_two_wires(self):
         """Test that the correct gates are applied on two wires."""
@@ -145,7 +145,7 @@ class TestDecomposition:
 
         for i, op in enumerate(queue):
             assert op.data[0] == weights[i]
-            assert op.data[1] == pauli_words[i]
+            assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""

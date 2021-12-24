@@ -32,8 +32,9 @@ represented by the :class:`~.Operator` and :class:`~.MeasurementProcess` classes
 respectively.
 
 
-.. image:: pl_overview.png
+.. image:: pl_overview.jpg
     :width: 800px
+    :align: center
 
 The power of a QNode lies in the fact that it can be run in a "forward" fashion to
 execute the quantum circuit, or in a "backward" fashion in which it provides

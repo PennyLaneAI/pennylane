@@ -71,12 +71,12 @@ class TestDecomposition:
         assert queue[0].name == "PauliRot"
 
         assert queue[0].data[0] == weights[0]
-        assert queue[0].data[1] == "X"
+        assert queue[0].hyperparameters["pauli_word"] == "X"
         assert queue[0].wires.labels == (0,)
 
         assert queue[1].name == "PauliRot"
         assert queue[1].data[0] == weights[1]
-        assert queue[1].data[1] == "Y"
+        assert queue[1].hyperparameters["pauli_word"] == "Y"
         assert queue[1].wires.labels == (0,)
 
     def test_correct_gates_two_wires(self):
@@ -89,32 +89,32 @@ class TestDecomposition:
         assert queue[0].name == "PauliRot"
 
         assert queue[0].data[0] == weights[0]
-        assert queue[0].data[1] == "XI"
+        assert queue[0].hyperparameters["pauli_word"] == "XI"
         assert queue[0].wires.labels == (0, 1)
 
         assert queue[1].name == "PauliRot"
         assert queue[1].data[0] == weights[1]
-        assert queue[1].data[1] == "YI"
+        assert queue[1].hyperparameters["pauli_word"] == "YI"
         assert queue[1].wires.labels == (0, 1)
 
         assert queue[2].name == "PauliRot"
         assert queue[2].data[0] == weights[2]
-        assert queue[2].data[1] == "IX"
+        assert queue[2].hyperparameters["pauli_word"] == "IX"
         assert queue[2].wires.labels == (0, 1)
 
         assert queue[3].name == "PauliRot"
         assert queue[3].data[0] == weights[3]
-        assert queue[3].data[1] == "IY"
+        assert queue[3].hyperparameters["pauli_word"] == "IY"
         assert queue[3].wires.labels == (0, 1)
 
         assert queue[4].name == "PauliRot"
         assert queue[4].data[0] == weights[4]
-        assert queue[4].data[1] == "XX"
+        assert queue[4].hyperparameters["pauli_word"] == "XX"
         assert queue[4].wires.labels == (0, 1)
 
         assert queue[5].name == "PauliRot"
         assert queue[5].data[0] == weights[5]
-        assert queue[5].data[1] == "XY"
+        assert queue[5].hyperparameters["pauli_word"] == "XY"
         assert queue[5].wires.labels == (0, 1)
 
     def test_GHZ_generation(self, qubit_device_3_wires, tol):
