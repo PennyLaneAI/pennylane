@@ -824,9 +824,7 @@ class PauliRot(Operation):
                 f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
-        self._hyperparameters = {
-            "pauli_word": pauli_word
-        }
+        self._hyperparameters = {"pauli_word": pauli_word}
         super().__init__(theta, wires=wires, do_queue=do_queue)
 
     @property
