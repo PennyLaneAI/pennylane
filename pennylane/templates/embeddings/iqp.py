@@ -238,4 +238,5 @@ class IQPEmbedding(Operation):
                 # apply product of two features as entangler
                 op_list.append(qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
 
+        print("here", op_list)
         return op_list
