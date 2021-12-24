@@ -541,14 +541,15 @@ def optimal_sector(qubit_op, generators, active_electrons):
     return perm
 
 
-def transfrom_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
+def transform_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
     r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
-    The Hartree-Fock state for a molecule is transformed to a qubit observable under Jordan-Wigner transorm.
-    To do this, first each occupied mode in the original HF state is assigned with a fermionic creation operator
-    and each unoccupied mode is replaced with an identity operator and then JW is applied to map to qubit basis.
+    The Hartree-Fock  (HF) state for a molecule is transformed to a qubit observable under Jordan-Wigner (JW)
+    transorm. To do this, first each occupied mode in the original HF state is assigned with a fermionic creation
+    operator and each unoccupied mode is replaced with an identity operator, and then JW transform is applied to
+    map the resulting fermionic operator to qubit basis.
 
-    This observable is tapered using the same Cliffords :math:`U` that are obtained from the :math:`\mathcal{Z}_2`
+    This observable is tapered using the same Cliffords :math:`U` that are obtained from the :math:`\mathbb{Z}_2`
     symmetries observed in the molecular Hamiltonian. A new, tapered Hartree-Fock state is built from the tapered
     observable by putting all the qubits (wires) which are acted on by a Pauli-X or Pauli-Y operator in the
     :math:`|1\rangle` state, while leaving the rest of them in the :math:`|0\rangle` state.
@@ -561,7 +562,7 @@ def transfrom_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons,
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
 
     Returns:
-        array(int): tapered hartree-fock state :math:`|\psi\rangle_{HF}`
+        array(int): tapered hartree-fock state
 
     **Example**
 
@@ -571,7 +572,7 @@ def transfrom_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons,
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
     >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
     >>> paulix_sector = qml.hf.optimal_sector(H, generators, 2)
-    >>> qml.hf.transfrom_hartree_fock(generators, pauli_x_ops, paulix_sector, 2, 4)
+    >>> qml.hf.transform_hartree_fock(generators, pauli_x_ops, paulix_sector, 2, 4)
         [1]
     """
 

@@ -51,5 +51,5 @@ from .tapering import (
     get_generators,
     optimal_sector,
     transform_hamiltonian,
-    transfrom_hartree_fock,
+    transform_hartree_fock,
 )

@@ -29,7 +29,7 @@ from pennylane.hf.tapering import (
     get_generators,
     optimal_sector,
     transform_hamiltonian,
-    transfrom_hartree_fock,
+    transform_hartree_fock,
 )
 
 
@@ -595,12 +595,12 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
         ),
     ],
 )
-def test_transfrom_hartree_fock(
+def test_transform_hartree_fock(
     generators, paulix_ops, paulix_sector, num_electrons, num_wires, result
 ):
-    r"""Test that transfrom_hartree_fock returns the correct result."""
+    r"""Test that transform_hartree_fock returns the correct result."""
 
-    tapered_hf_state = transfrom_hartree_fock(
+    tapered_hf_state = transform_hartree_fock(
         generators,
         paulix_ops,
         paulix_sector,
