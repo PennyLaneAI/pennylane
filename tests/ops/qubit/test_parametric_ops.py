@@ -1182,7 +1182,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "Z", wires=0)
-        decomp_ops = qml.PauliRot.compute_decomposition(theta, wires=0, pauli_word="Z")
+        decomp_ops = qml.PauliRot.compute_decomposition(theta, "Z", wires=0)
 
         assert np.allclose(
             op.eigvals(), np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)])
@@ -1314,7 +1314,7 @@ class TestPauliRot:
 
         @qml.qnode(dev)
         def decomp_circuit(theta):
-            qml.PauliRot.compute_decomposition(theta, wires=[0, 1], pauli_word="XX")
+            qml.PauliRot.compute_decomposition(theta, "XX", wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         assert np.allclose(circuit(angle), decomp_circuit(angle))

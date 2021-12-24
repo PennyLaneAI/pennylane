@@ -810,7 +810,7 @@ class PauliRot(Operation):
     }
 
     def __init__(self, theta, pauli_word, wires=None, do_queue=True):
-
+        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
@@ -824,12 +824,9 @@ class PauliRot(Operation):
                 f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
-        self._hyperparameters = {"pauli_word": pauli_word}
-        super().__init__(theta, wires=wires, do_queue=do_queue)
-
     @property
     def num_params(self):
-        return 1
+        return 2
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -853,7 +850,7 @@ class PauliRot(Operation):
         'PauliRot\n(0.10)'
 
         """
-        op_label = base_label or ("R(" + self.hyperparameters["pauli_word"] + ")")
+        op_label = base_label or ("R(" + self.parameters[1] + ")")
 
         if self.inverse:
             op_label += "⁻¹"
@@ -941,7 +938,8 @@ class PauliRot(Operation):
         )
 
     def generator(self):
-        return -0.5 * qml.grouping.string_to_pauli_word(self.hyperparameters["pauli_word"])
+        pauli_word = self.parameters[1]
+        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=,arguments-differ
@@ -965,7 +963,7 @@ class PauliRot(Operation):
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
     @staticmethod
-    def compute_decomposition(theta, wires, pauli_word):
+    def compute_decomposition(theta, pauli_word, wires):
         r"""Compute the decomposition for the specified parameter and wires. The decomposition
         defines an Operator as a product of more fundamental gates:
 
@@ -977,8 +975,8 @@ class PauliRot(Operation):
 
         Args:
             theta (float): rotation angle :math:`\theta`
-            wires (Iterable, Wires): the wires the operation acts on
             pauli_word (string): the Pauli word defining the rotation
+            wires (Iterable, Wires): the wires the operation acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1021,7 +1019,7 @@ class PauliRot(Operation):
         return ops
 
     def adjoint(self):
-        return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
+        return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
 
 # Four term gradient recipe for controlled rotations

@@ -55,15 +55,17 @@ These four properties are accessible for all operators:
 .. code-block:: python
 
     >>> from jax import numpy as jnp
-    >>> op = qml.PauliRot(jnp.array(0.2), "XY", wires=["a", "b"])
+    >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
     >>> op.name
-    PauliRot
+    Rot
     >>> op.parameters
-    [DeviceArray(0.2, dtype=float32, weak_type=True)]
+    [DeviceArray(0.1, dtype=float32, weak_type=True),
+     DeviceArray(0.2, dtype=float32, weak_type=True),
+     DeviceArray(0.3, dtype=float32, weak_type=True)]
     >>> op.hyperparameters
-    {'pauli_word': 'XY'}
+    {}
     >>> op.wires
-    <Wires = ['a', 'b']>
+    <Wires = ['a']>
 
 Furthermore, operators can optionally define the transformation they implement via
 symbolic or numerical representations, such as:
