@@ -270,6 +270,11 @@ The Operator class has undergone a major refactor with the following changes:
   to reflect the past and planned changes of the operator refactor.
   [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
 
+* Custom errors subclassing ``OperatorPropertyUndefined`` are raised if a representation 
+  has not been defined. This replaces the ``NotImplementedError`` and allows finer control
+  for developers.
+  [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):

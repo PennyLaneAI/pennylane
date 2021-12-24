@@ -183,7 +183,7 @@ class TestQubitUnitary:
         """Test that QubitUnitary is not decomposed for more than two qubits."""
         U = qml.Toffoli(wires=[0, 1, 2]).matrix()
 
-        with pytest.raises(qml.operation.NoDecompositionError):
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.QubitUnitary.compute_decomposition(U, wires=[0, 1, 2])
 
     def test_matrix_representation(self, tol):
