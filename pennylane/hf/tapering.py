@@ -563,7 +563,7 @@ def transfrom_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons,
     Returns:
         array(int): tapered hartree-fock state :math:`|\psi\rangle_{HF}`
 
-    .. code-block:: python
+    **Example**
 
     >>> symbols = ['H', 'H']
     >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
