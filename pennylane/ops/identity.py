@@ -65,5 +65,5 @@ class Identity(CVObservable, Operation):
         """Returns the matrix representation of the identity operator."""
         return Identity._matrix(*params)
 
-    def adjoint(self):
+    def adjoint(self): #pylint:disable=arguments-differ
         return Identity(wires=self.wires)
