@@ -1009,9 +1009,11 @@ class QuantumTape(AnnotatedQueue):
         for observable in self.observables:
             # some observables do not have diagonalizing gates,
             # in which case we just don't append any
-            diag = observable.diagonalizing_gates()
-            if diag is not None:
+            try:
+                diag = observable.diagonalizing_gates()
                 rotation_gates.extend(observable.diagonalizing_gates())
+            except qml.operation.DiagGatesUndefinedError:
+                pass
 
         return rotation_gates
 

@@ -366,6 +366,11 @@ def classproperty(func):
     return ClassPropertyDescriptor(func)
 
 
+# =============================================================================
+# Base Operator class
+# =============================================================================
+
+
 def _process_data(op):
 
     # Use qml.math.real to take the real part. We may get complex inputs for
