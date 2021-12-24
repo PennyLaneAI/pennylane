@@ -2293,9 +2293,15 @@ def is_trainable(obj):
 @qml.BooleanFn
 def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing
-    gates are defined."""
+    gates are defined.
+
+    This helper function is useful if the property is to be checked in
+    a queuing context, but the resulting gates must not be queued.
+    """
 
     with qml.tape.stop_recording():
-        dgates = obj.diagonalizing_gates()
-
-    return dgates is not None
+        try:
+            obj.diagonalizing_gates()
+        except DiagGatesUndefinedError:
+            return False
+        return True
