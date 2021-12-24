@@ -24,7 +24,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import (
     Expectation,
-    NoDecompositionError,
     Observable,
     Probability,
     Sample,
@@ -93,7 +92,7 @@ class MeasurementProcess:
         """
         try:
             return self.expand().operations
-        except NoDecompositionError:
+        except qml.operation.DecompositionUndefinedError:
             return []
 
     def __repr__(self):
@@ -145,7 +144,7 @@ class MeasurementProcess:
         if self.obs is not None:
             try:
                 return self.obs.eigvals()
-            except NotImplementedError:
+            except qml.operation.EigvalsUndefinedError:
                 pass
 
         return self._eigvals
@@ -184,7 +183,7 @@ class MeasurementProcess:
         None
         """
         if self.obs is None:
-            raise NoDecompositionError
+            raise DecompositionUndefinedError
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 

@@ -14,6 +14,7 @@
 """Code for the adjoint transform."""
 
 from functools import wraps
+import pennylane as qml
 from pennylane.tape import QuantumTape, stop_recording
 
 
@@ -123,7 +124,7 @@ def adjoint(fn):
             try:
                 new_op = op.adjoint()
                 adjoint_ops.append(new_op)
-            except NotImplementedError:
+            except qml.operation.AdjointUndefinedError:
                 # Expand the operation and adjoint the result.
                 new_ops = adjoint(op.expand)()
 
