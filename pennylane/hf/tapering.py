@@ -555,8 +555,8 @@ def transform_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons,
     :math:`|1\rangle` state, while leaving the rest of them in the :math:`|0\rangle` state.
 
     Args:
-        generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
-        paulix_ops (list[pennylane.Observable]):  list of single-qubit Pauli X operators
+        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        paulix_ops (list[Operation]):  list of single-qubit Pauli X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
         num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
