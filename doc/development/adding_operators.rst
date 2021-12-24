@@ -184,13 +184,41 @@ Special operators
 Apart from the main ``Operator`` class, operators with special properties (such as those with a Kraus matrix
 representation) are implemented as general subclasses ``Operation``, ``Observable``, ``Channel``,
 ``CVOperation`` and ``CVOperation``. However, unlike many other frameworks, PennyLane does not use class
-inheritance to define properties of operators. The reason is that we want to avoid changing the inheritance structure
-every time an application needs to query a new property, such as whether or not an operator is diagonal or sparse.
+inheritance to define properties of operators such as whether it is its own self-inverse, if it is diagonal,
+or whether it can be decomposed into Pauli rotations. The reason is that we want to avoid changing the inheritance structure
+every time an application needs to query a new property.
 
-Instead, properties are recorded in "attributes", which are
-bookkeeping lists of those operators that fulfill the property (such as whether it is its own self-inverse,
-or whether it can be decomposed into Pauli rotations). These attributes can be queried by devices and compilation
-pipelines. Adding operations to an attributes allows PennyLane to potentially use special tricks that speed
+Instead, properties are recorded in "attributes", which are bookkeeping classes listing those operators
+that fulfill a specific property.
+
+For example, we can create a new Attribute, `pauli_ops`, like so:
+
+```pycon
+>>> from pennylane.ops.qubits.attributes import Attribute
+>>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
+```
+
+We can check either a string or an Operation for inclusion in this set:
+
+```pycon
+>>> qml.PauliX(0) in pauli_ops
+True
+>>> "Hadamard" in pauli_ops
+False
+```
+
+We can also dynamically add operators to the sets at runtime. This is useful
+for adding custom operations to the attributes such as `composable_rotations`
+and ``self_inverses`` that are used in compilation transforms. For example,
+suppose you have created a new Operation, `MyGate`, which you know to be its
+own inverse. Adding it to the set, like so
+
+```pycon
+>>> from pennylane.ops.qubits.attributes import self_inverses
+>>> self_inverses.add("MyGate")
+```
+
+These attributes can be queried by devices and compilation pipelines to use special tricks that speed
 up computation. The onus leis on the contributors of new operators to add them to the right attributes.
 
 The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
@@ -198,18 +226,19 @@ The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attr
 Creating new Operators
 #######################
 
-The main job of adding a new Operator is to create a subclasses that overwrites as many of these default properties
+The main job of adding a new Operator is to create a subclasse that overwrites as many of these default properties
 as possible. First decide which general class you want to subclass - if your operator is used as a unitary gate,
 you may want to inherit from ``Operation`` which provides functionality to control a gate, while an observable
 may best inherit from ``Observable``.
 
 The following is an example for a custom gate that rotates a qubit and possibly flips another qubit.
 The custom operator defines a decomposition, which the devices will use (since it is unlikely that a device
-knows a native implementation for ``FlipAndRotate``), as well as an adjoint method.
+knows a native implementation for ``FlipAndRotate``), as well as an adjoint operator.
 
-You will see a few bits and pieces that weren't explained above, such as the class attribute ``num_wires``,
-``grad_method``, or the keyword argument ``do_queue``, which are currently undergoing a refactor - more
-to follow soon.
+.. note::
+    You will see a few bits and pieces that weren't explained above, such as the class attribute ``num_wires``,
+    ``grad_method``, or the keyword argument ``do_queue``, which are currently undergoing a refactor - more
+    to follow soon.
 
 .. code-block:: python
 
@@ -228,7 +257,9 @@ to follow soon.
 
         Usage examples to be added here.
         """
-        num_wires = qml.operation.AnyWires  # if wire_rot and wire_flip are the same we have 1 wire, else 2
+        # if wire_rot and wire_flip are the same we have 1 wire, else 2,
+        # which is why we cannot define a fixed number of wires, and use the AnyWires Enumeration instead
+        num_wires = qml.operation.AnyWires
         grad_method = "A"  # supports parameter-shift differentiation
 
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
@@ -247,7 +278,9 @@ to follow soon.
                 "do_flip": do_flip
             }
 
-            # can turn into Wires objects here, or use other Iterables
+            # We can turn into Wires objects here to use addition
+            # Alternatively, we can work with the raw input and rely on ``super``
+            # to turn the wires into a Wires object.
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
 
             super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
@@ -260,15 +293,15 @@ to follow soon.
 
         @staticmethod
         def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
-            """Overwriting the static ``compute_`` methods defines a representation,
-            for example here a representation as a sequence of a flip and a rotation gate.
+            """Overwriting this method defines the decomposition of the new gate.
 
-            The ``compute_`` methods expect the signature ``(*parameters, wires, **hyperparameters)``
-            or (for numerical representations) ``(*parameters, **hyperparameters)``. Defining the
-            parameters and hyperparameters by name makes the representation easier to read.
+            This method has to have the general signature ``(*parameters, wires, **hyperparameters)``.
+            In our case, tha parameters consist of the angle, and the hyperparameters of do_flip.
+            Using concrete argument names makes it easier to interpret the decomposition.
 
-            If a representation does not make use of all hyperparameters, a signature of the form
-            ``(param1, wires, hyperparam1, **kwargs)`` can be used.
+            .. note::
+                If the gate defined other hyperparameters that we do not use in this method, a signature of the form
+            ``(angle, wires, do_flip, **kwargs)`` could be used.
             """
             op_list = []
             if do_flip:
@@ -292,7 +325,7 @@ The new gate can now be created as follows:
     >>> op.adjoint()
     FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-The new gate can be used in devices, which access the decomposition to implement it:
+The new gate can be used in devices, which access the decomposition to interpret it:
 
 .. code-block:: python
 
@@ -321,10 +354,13 @@ Adding your new operator to PennyLane
 #####################################
 
 Once the new operator is coded up, it is added to the appropriate folder in ``pennylane/ops/``. The
-tests are added to a file of a similar name and location in ``tests/ops/``. Make sure that all hyperparameters
-are tested, and that the parameters can be passed as tensors from all supported autodifferentiation frameworks.
+tests are added to a file of a similar name and location in ``tests/ops/``. If your operator defines an
+ansatz, add it to the appropriate subfolder in ``pennylane/templates``.
 
 The new operation may have to be imported in the module's ``__init__.py`` file in order to be imported correctly.
+
+Make sure that all hyperparameters and errors are tested, and that the parameters can be passed as
+tensors from all supported autodifferentiation frameworks.
 
 Don't forget to also add the new operator to documentation in the ``docs/introduction/operations.rst`` file, or to
 the template gallery if it is an ansatz. The latter is done by adding a ``customgalleryitem``
@@ -342,22 +378,17 @@ to the correct section in ``doc/introduction/templates.rst``:
   This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
   this image has the same dimensions and style as other template icons in the folder.
 
-Overall, it is recommended to consider the following:
+Here are a few more tipps:
 
 * *Choose the name carefully.* Good names tell the user what a template is used for,
-  or what architecture it implements. The class name (i.e., ``MyNewTemplate``) is written in camel case.
+  or what architecture it implements. Ask yourself if a gate of a similar name could
+  be added soon in a different context.
 
-* *Explicit decompositions.* Try to implement the decomposition in the ``decomposition()`` function
-  without the use of convenient methods like the :func:`~.broadcast` function - this avoids
-  unnecessary overhead.
+* *Write good docstrings.* Explain what your operator does in a clear docstring with ample examples.
 
-* *Write an extensive docstring that explains how to use the template.* Include a sketch of the template (add the
-  file to the ``doc/_static/templates/<templ_type>/`` directory). You should also display a small usage example
-  at the beginning of the docstring. If you want to explain the behaviour in more detail, add a section starting
-  with the ``.. UsageDetails::`` directive at the end of the docstring.
-  Use the docstring of one of the existing templates for inspiration, such as
-  :func:`AmplitudeEmbedding <pennylane.templates.embeddings.AmplitudeEmbedding>`.
+* *Efficient representations.* Try implement representations as efficiently as possible, since they may
+  be constructed several times.
 
-* *Input checks.* While checking the inputs of the template for consistency introduces an overhead and should be
-  kept to a minimum, it is still advised to do some basic sanity checks, for example making sure that the shape of the
-  parameters is correct.
+* *Input checks.* Checking the inputs of the operation introduces an overhead and clashes with tools like
+  just-in-time compilation. Find a balance of adding meaningful sanity checks (such as for the shape of tensors),
+  but keeping them to a minimum.
