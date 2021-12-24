@@ -172,6 +172,7 @@ interpret and execute tapes. The most important method is ``batch_execute``,
 which executes a list of tapes, such as the one created above:
 
 .. code-block:: python
+
     >>> device = qml.device("default.qubit", wires=['a', 'b'], shots=None)
     >>> device.batch_execute([tape])
     [array([0.87758256])]
@@ -195,7 +196,7 @@ This is where it all comes together: A **QNode** is an encapsulation of a functi
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device. It is created by a quantum function and a device.
 
-... code-block:: python
+.. code-block:: python
 
     >>> import jax
     >>> from jax import numpy as jnp
