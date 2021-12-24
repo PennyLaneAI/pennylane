@@ -23,10 +23,9 @@ from pennylane import numpy as pnp
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane.queuing
-from pennylane.operation import NoDecompositionError, Tensor, operation_derivative, Operator
+from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
-from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
+from gate_data import I, X, CNOT
 from pennylane.wires import Wires
 
 
@@ -1061,31 +1060,74 @@ class TestTensorObservableOperations:
             tensor - A
 
 
-class TestDecomposition:
-    """Test for operation decomposition"""
+# Dummy class inheriting from Operator
+class MyOp(Operator):
+    num_wires = 1
 
-    def test_compute_decomposition_default(self):
-        """Tests None is default for compute_decomposition."""
 
-        class MyOp(Operator):
-            num_wires = 1
+# Dummy class inheriting from Operation
+class MyGate(Operation):
+    num_wires = 1
 
-        with pytest.raises(NoDecompositionError):
-            MyOp.compute_decomposition()
 
-        op = MyOp(wires=1)
-        with pytest.raises(NoDecompositionError):
-            op.compute_decomposition()
+op = MyOp(wires=1)
+gate = MyGate(wires=1)
 
-    def test_decomposition_default(self):
-        """Test None is default for decomposition."""
 
-        class MyOp(Operator):
-            num_wires = 1
+class TestDefaultRepresentations:
+    """Tests that the default representations raise custom errors"""
 
-        op = MyOp(wires=1)
-        with pytest.raises(NoDecompositionError):
+    def test_decomposition_undefined(self):
+        """Tests that custom error is raised in the default decomposition representation."""
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            MyOp.compute_decomposition(wires=[1])
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
+
+    def test_matrix_undefined(self):
+        """Tests that custom error is raised in the default matrix representation."""
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            MyOp.compute_matrix()
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
+    def test_terms_undefined(self):
+        """Tests that custom error is raised in the default terms representation."""
+        with pytest.raises(qml.operation.TermsUndefinedError):
+            MyOp.compute_terms(wires=[1])
+        with pytest.raises(qml.operation.TermsUndefinedError):
+            op.terms()
+
+    def test_sparse_matrix_undefined(self):
+        """Tests that custom error is raised in the default sparse matrix representation."""
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            MyOp.compute_sparse_matrix()
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            op.sparse_matrix()
+
+    def test_eigvals_undefined(self):
+        """Tests that custom error is raised in the default eigenvalue representation."""
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            MyOp.compute_eigvals()
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            op.eigvals()
+
+    def test_diaggates_undefined(self):
+        """Tests that custom error is raised in the default diagonalizing gates representation."""
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            MyOp.compute_diagonalizing_gates(wires=[1])
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            op.diagonalizing_gates()
+
+    def test_adjoint_undefined(self):
+        """Tests that custom error is raised in the default adjoint representation."""
+        with pytest.raises(qml.operation.AdjointUndefinedError):
+            gate.adjoint()
+
+    def test_generator_undefined(self):
+        """Tests that custom error is raised in the default generator representation."""
+        with pytest.raises(qml.operation.GeneratorUndefinedError):
+            gate.generator()
 
 
 class TestChannel:
