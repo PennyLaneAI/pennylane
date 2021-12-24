@@ -247,7 +247,7 @@ def generate_symmetries(qubit_op, num_qubits):
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        tuple (list[Hamiltonian], list[Observable]):
+        tuple (list[Hamiltonian], list[Operation]):
 
             * list[Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
               for the Hamiltonian.
@@ -485,8 +485,8 @@ def optimal_sector(qubit_op, generators, active_electrons):
     act and the wires that correspond to occupied orbitals in the HF state.
 
     Args:
-        qubit_op (pennylane.Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
-        generators (list[pennylane.Hamiltonian]): list of symmetry generators for the Hamiltonian
+        qubit_op (Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
+        generators (list[Hamiltonian]): list of symmetry generators for the Hamiltonian
         active_electrons (int): The number of active electrons in the system for generating the Hartree-Fock bitstring
 
     Returns:
