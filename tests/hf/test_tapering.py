@@ -28,8 +28,8 @@ from pennylane.hf.tapering import (
     generate_symmetries,
     get_generators,
     optimal_sector,
-    taper_hartree_fock,
     transform_hamiltonian,
+    transfrom_hartree_fock,
 )
 
 
@@ -530,11 +530,9 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
 
 
 @pytest.mark.parametrize(
-    ("num_electrons", "num_wires", "generators", "paulix_ops", "paulix_sector", "result"),
+    ("generators", "paulix_ops", "paulix_sector", "num_electrons", "num_wires", "result"),
     [
         (
-            2,
-            4,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
@@ -542,22 +540,22 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
             ],
             [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
             (1, -1, -1),
-            [1],
+            2,
+            4,
+            np.array([1]),
         ),
         (
-            3,
-            6,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
             ],
-            [qml.PauliX(wires=[0]), qml.PauliX(wires=[1])],
-            (1, -1),
-            [1, 0, 0, 0],
+            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            (-1, -1),
+            2,
+            6,
+            np.array([1, 1, 0, 0]),
         ),
         (
-            4,
-            12,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(6) @ qml.PauliZ(7)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(8) @ qml.PauliZ(9)]),
@@ -591,17 +589,23 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
                 qml.PauliX(wires=[1]),
             ],
             (1, 1, 1, 1),
-            [1, 1, 0, 0, 0, 0, 0, 0],
+            4,
+            12,
+            np.array([1, 1, 0, 0, 0, 0, 0, 0]),
         ),
     ],
 )
-def test_taper_hartree_fock(
-    num_electrons, num_wires, generators, paulix_ops, paulix_sector, result
+def test_transfrom_hartree_fock(
+    generators, paulix_ops, paulix_sector, num_electrons, num_wires, result
 ):
-    r"""Test that taper_hartree_fock returns the correct result."""
+    r"""Test that transfrom_hartree_fock returns the correct result."""
 
-    tapered_hf_state = taper_hartree_fock(
-        num_electrons, num_wires, generators, paulix_ops, paulix_sector
+    tapered_hf_state = transfrom_hartree_fock(
+        generators,
+        paulix_ops,
+        paulix_sector,
+        num_electrons,
+        num_wires,
     )
     print(tapered_hf_state, result)
     assert np.all(tapered_hf_state == result)

@@ -50,6 +50,6 @@ from .tapering import (
     generate_symmetries,
     get_generators,
     optimal_sector,
-    taper_hartree_fock,
     transform_hamiltonian,
+    transfrom_hartree_fock,
 )

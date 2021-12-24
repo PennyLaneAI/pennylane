@@ -541,35 +541,38 @@ def optimal_sector(qubit_op, generators, active_electrons):
     return perm
 
 
-def taper_hartree_fock(num_electrons, num_wires, generators, paulix_ops, paulix_sector):
-    r"""Taper Hartree Fock according to the generated set of symmetries.
+def transfrom_hartree_fock(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
+    r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
-    The Hartree-Fock state for a molecule is transformed to a qubit observable under Jordan-Wigner
-    transform. This observable is tapered using the same Cliffords :math:`U` that are obtained
-    from the :math:`\mathcal{Z}_2` symmetries observed in the molecular Hamiltonian. A new, tapered
-    Hartree-Fock state is built from the tapered observable by putting all the qubits which are acted
-    on by a Pauli-X or Pauli-Y operator in :math:`|1\rangle` state.
+    The Hartree-Fock state for a molecule is transformed to a qubit observable under Jordan-Wigner transorm.
+    To do this, first each occupied mode in the original HF state is assigned with a fermionic creation operator
+    and each unoccupied mode is replaced with an identity operator and then JW is applied to map to qubit basis.
+
+    This observable is tapered using the same Cliffords :math:`U` that are obtained from the :math:`\mathcal{Z}_2`
+    symmetries observed in the molecular Hamiltonian. A new, tapered Hartree-Fock state is built from the tapered
+    observable by putting all the qubits (wires) which are acted on by a Pauli-X or Pauli-Y operator in the
+    :math:`|1\rangle` state, while leaving the rest of them in the :math:`|0\rangle` state.
 
     Args:
-        num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
-        num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
         generators (list[pennylane.Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         paulix_ops (list[pennylane.Observable]):  list of single-qubit Pauli X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
+        num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
+        num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
 
     Returns:
         array(int): tapered hartree-fock state :math:`|\psi\rangle_{HF}`
 
     .. code-block:: python
 
-        >>> symbols = ['H', 'H']
-        >>> coordinates = np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-        >>> mol = qml.hf.Molecule(symbols, coordinates)
-        >>> H, qubits = qml.hf.generate_hamiltonian(mol)(), 4
-        >>> generators, pauli_x_ops = generate_symmetries(H, qubits)
-        >>> paulix_sector, energy = find_optimal_sector(H, generators, pauli_x_ops, False, 2)
-        >>> taper_hartree_fock(2, 4, generators, pauli_x_ops, paulix_sector)
-           [1]
+    >>> symbols = ['H', 'H']
+    >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
+    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> paulix_sector = qml.hf.optimal_sector(H, generators, 2)
+    >>> qml.hf.transfrom_hartree_fock(generators, pauli_x_ops, paulix_sector, 2, 4)
+        [1]
     """
 
     pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
@@ -593,9 +596,7 @@ def taper_hartree_fock(num_electrons, num_wires, generators, paulix_ops, paulix_
             op_term = qml.Hamiltonian([1], [qml.Identity(idx)])
         fermop_terms.append(op_term)
 
-    ferm_op = fermop_terms[0]
-    for term in fermop_terms[1:]:
-        ferm_op = _observable_mult(ferm_op, term)
+    ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
     ferm_op = qml.Hamiltonian(
         np.array([0.5 ** (len(fermop_terms))] * len(ferm_op.ops)), ferm_op.ops
     )
