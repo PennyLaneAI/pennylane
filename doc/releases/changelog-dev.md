@@ -228,9 +228,10 @@ The Operator class has undergone a major refactor with the following changes:
   a proper method called by `Hamiltonian.terms()`.
 
 * The generator property has been updated to an instance method,
-  `Operation.generator()`. It now returns an instantiated operation,
+  `Operator.generator()`. It now returns an instantiated operation,
   representing the generator of the instantiated operator.
   [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
+  [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
 
   Various operators have been updated to specify the generator as either
   an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
