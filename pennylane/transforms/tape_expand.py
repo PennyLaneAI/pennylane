@@ -225,15 +225,9 @@ def _custom_decomp_context(custom_decomps):
 
         original_decomp_method = obj.decomposition
 
-        def new_decomp_method(*parameters, wires, **hyperparameters):
-            with NonQueuingTape() as t:
-                fn(*parameters, wires, **hyperparameters)
-
-            return t.operations
-
         try:
             # Explicitly set the new .decompose method
-            obj.compute_decomposition = staticmethod(new_decomp_method)
+            obj.compute_decomposition = staticmethod(fn)
             yield
 
         finally:
