@@ -7,62 +7,61 @@ The following steps will help you to add your favourite operator to PennyLane.
 
 Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator - one whose
 map is defined as a combination of other operators. For historical reasons, you find circuit ansaetze
-in the ``pennylane.template`` folder, while all other operations are found in ``pennylane.ops``.
+in the ``pennylane/template`` folder, while all other operations are found in ``pennylane/ops``.
 
-The base classes to construct new operators are found in ``pennylane.operations.py``.
+The base classes to construct new operators are found in ``pennylane/operations.py``.
 
 Basic idea
 ##########
 
-The highest-level operator class already defines everything that is needed for an abstraction of
-quantum mechanical operators, which are basically maps on vector spaces:
+Operators in quantum mechanics are maps that act on vector spaces. The highest-level operator class
+serves as the main abstraction of such objects. Its basic components are the following:
 
-#. The name of the operator, which defines the subclass uniquely, and which often refers to a canonical interpretation
-  - such as a "Hadamard" gate.
+#. The name of the operator, which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
+   or could be a name specific to PennyLane.
 
-  .. code-block:: python
+   .. code-block:: python
 
-      >>> from jax import numpy as jnp
-      >>> op = qml.PauliRot(jnp.array(0.2), "XY", wires=["a", "b"])
-      >>> op.name
-      PauliRot
+       >>> from jax import numpy as jnp
+       >>> op = qml.PauliRot(jnp.array(0.2), "XY", wires=["a", "b"])
+       >>> op.name
+       PauliRot
 
 #. The subsystems that the operator addresses, which mathematically speaking defines the subspace that it acts on.
 
-  .. code-block:: python
+   .. code-block:: python
 
-      >>> op.wires
-      <Wires = ['a', 'b']>
+       >>> op.wires
+       <Wires = ['a', 'b']>
 
 #. Trainable parameters that the map depends on, such as a rotation angle,
-  which can be fed to the operator as tensor-like objects.
+   which can be fed to the operator as tensor-like objects.
 
-  .. code-block:: python
+   .. code-block:: python
 
       >>> op.parameters
       [DeviceArray(0.2, dtype=float32, weak_type=True)]
 
 #. Non-trainable hyperparameters that influence the action of the operator, such as the Pauli word that
-  a Pauli rotation rotates around.
+   a Pauli rotation rotates around.
 
-  .. code-block:: python
+   .. code-block:: python
 
-    >>> op.hyperparameters
-    {'pauli_word': 'XY'}
+       >>> op.hyperparameters
+       {'pauli_word': 'XY'}
 
 #. Possible symbolic or numerical representations of the operator, which can be used by PennyLane's
-  devices to interpret the map. Examples are:
+   devices to interpret the map. Examples are:
 
-  * Representation as a product of operators
+   * Representation as a product of operators
 
-    .. code-block:: python
+     .. code-block:: python
 
-        >>> #
-        >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
-        >>> op.decomposition()
-        [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+         >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+         >>> op.decomposition()
+         [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
-  * Representation as a linear combination of operators
+   * Representation as a linear combination of operators
 
     .. code-block:: python
 
@@ -70,38 +69,38 @@ quantum mechanical operators, which are basically maps on vector spaces:
         >>> op.terms()
         ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-  * Representation by the eigenvalue decomposition
+   * Representation by the eigenvalue decomposition
 
-    .. code-block:: python
+     .. code-block:: python
 
-        >>> op = qml.PauliX(0)
-        >>> op.diagonalizing_gates()
-        [Hadamard(wires=[0])]
-        >>> op.eigvals()
-        [ 1 -1]
+         >>> op = qml.PauliX(0)
+         >>> op.diagonalizing_gates()
+         [Hadamard(wires=[0])]
+         >>> op.eigvals()
+         [ 1 -1]
 
-  * Representation as a matrix
+   * Representation as a matrix
 
-    .. code-block:: python
+     .. code-block:: python
 
-        >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-        >>> op.matrix()
-        [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
-         [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
+         >>> op = qml.PauliRot(0.2, "X", wires=["b"])
+         >>> op.matrix()
+         [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
+          [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
 
-  * Representation as a sparse matrix
+   * Representation as a sparse matrix
 
-    .. code-block:: python
+     .. code-block:: python
 
-        >>> from scipy.sparse.coo import coo_matrix
-        >>> row = np.array([0, 1])
-        >>> col = np.array([1, 0])
-        >>> data = np.array([1, -1])
-        >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
-        >>> op = qml.SparseHamiltonian(mat, wires=["a"])
-        >>> op.sparse_matrix()
-        (0, 1)   1
-        (1, 0) - 1
+         >>> from scipy.sparse.coo import coo_matrix
+         >>> row = np.array([0, 1])
+         >>> col = np.array([1, 0])
+         >>> data = np.array([1, -1])
+         >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
+         >>> op = qml.SparseHamiltonian(mat, wires=["a"])
+         >>> op.sparse_matrix()
+         (0, 1)   1
+         (1, 0) - 1
 
 New operators can be created by applying arithmetic functions to operators, such as addition, scalar multiplication,
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for

@@ -266,6 +266,10 @@ The Operator class has undergone a major refactor with the following changes:
   `compute_kraus_matrices`, which is now a static method.
   [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
+* The developer guide on adding templates and the architecture overwiew were rewritten 
+  to reflect the past and planned changes of the operator refactor.
+  [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
