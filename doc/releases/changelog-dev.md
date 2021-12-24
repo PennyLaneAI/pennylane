@@ -130,6 +130,9 @@
 * The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
+* Identity now supports `adjoint` method.
+  [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
