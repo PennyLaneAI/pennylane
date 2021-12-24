@@ -114,6 +114,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
 """
+# pylint:disable=access-member-before-definition
 import abc
 import copy
 import itertools
@@ -334,7 +335,7 @@ State = ObservableReturnTypes.State
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -1178,7 +1179,7 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
@@ -1841,7 +1842,7 @@ class Tensor(Observable):
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
-    def sparse_matrix(self, wires=None):
+    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
