@@ -534,7 +534,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     perm = []
     for tau in generators:
-        symmstr = np.array([1 if wire in tau.wires else 0 for wire in qubit_op.wires])
+        symmstr = np.array([1 if wire in tau.ops[0].wires else 0 for wire in qubit_op.wires])
         coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
         perm.append(coeff)
 

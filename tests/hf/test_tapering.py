@@ -14,6 +14,8 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
+import functools
+import scipy
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -607,3 +609,64 @@ def test_transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_
     )
     print(tapered_hf_state, result)
     assert np.all(tapered_hf_state == result)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+    ],
+)
+def test_hf_energy(symbols, geometry, charge):
+    r"""Test that HF energy obtained from the tapered Hamiltonian and tapered Hartree Fock state is consistent."""
+    mol = qml.hf.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)(geometry)
+    hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
+    generators, paulix_ops = generate_symmetries(hamiltonian, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+
+    hamiltonian_tapered = transform_hamiltonian(hamiltonian, generators, paulix_ops, paulix_sector)
+    hf_state_tapered = transform_hf(
+        generators, paulix_ops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
+    )
+
+    # calculate the HF energy <\psi_{HF}| H |\psi_{HF}> for tapered and untapered Hamiltonian
+    o = np.array([1, 0])
+    l = np.array([0, 1])
+    state = functools.reduce(lambda i, j: np.kron(i, j), [l if s else o for s in hf_state])
+    state_tapered = functools.reduce(
+        lambda i, j: np.kron(i, j), [l if s else o for s in hf_state_tapered]
+    )
+
+    energy = (
+        scipy.sparse.coo_matrix(state)
+        @ qml.utils.sparse_hamiltonian(hamiltonian)
+        @ scipy.sparse.coo_matrix(state).T
+    ).toarray()
+    energy_tapered = (
+        scipy.sparse.coo_matrix(state_tapered)
+        @ qml.utils.sparse_hamiltonian(hamiltonian_tapered)
+        @ scipy.sparse.coo_matrix(state_tapered).T
+    ).toarray()
+
+    assert np.isclose(energy, energy_tapered)
