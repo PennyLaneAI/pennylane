@@ -1,11 +1,11 @@
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,9 @@
 API."""
 import inspect
 from collections.abc import Iterable
-from typing import Optional
+from typing import Optional, Union, Sequence, Text
+
+from pennylane.transforms.batch_input import batch_inputs
 
 try:
     import tensorflow as tf
@@ -31,6 +33,7 @@ except ImportError:
     CORRECT_TF_VERSION = False
 
 
+@tf.keras.utils.register_keras_serializable(package = 'pennylane')
 class KerasLayer(Layer):
     """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
     Converts a :func:`~.QNode` to a Keras
@@ -52,6 +55,10 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
+        argnum (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
+            the circuit. This allows batch execution by creating executable circuits for each
+             input example with the same trainable weights. Default None.
+             See `pennylane.transforms.batch_input` for more details.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
@@ -195,8 +202,10 @@ class KerasLayer(Layer):
     .. _Layer: https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer
     """
 
+
     def __init__(
-        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
+            self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None,
+            argnum: Union[Sequence[int], int] = None, **kwargs
     ):
         if not CORRECT_TF_VERSION:
             raise ImportError(
@@ -206,20 +215,24 @@ class KerasLayer(Layer):
                 "https://www.tensorflow.org/install for detailed instructions."
             )
 
-        self.weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
-            for weight, size in weight_shapes.items()
-        }
+        self.weight_shapes = {weight: (
+            tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ()) for
+            weight, size in weight_shapes.items()}
 
         self._signature_validation(qnode, weight_shapes)
-        self.qnode = qnode
+
+        self.argnum = argnum
+        if argnum is None:
+            self.qnode = qnode
+        else:
+            self.qnode = batch_inputs(qnode, argnum = argnum)
 
         dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
 
         try:
             # TODO: remove once the beta QNode is default
             if self.qnode.diff_method != "backprop" or self.qnode.diff_method_change:
-                self.qnode.to_tf(dtype=dtype)
+                self.qnode.to_tf(dtype = dtype)
         except AttributeError:
             self.qnode.interface = "tf"
 
@@ -235,7 +248,8 @@ class KerasLayer(Layer):
 
         self.qnode_weights = {}
 
-        super().__init__(dynamic=True, **kwargs)
+        super(KerasLayer, self).__init__(dynamic = True, **kwargs)
+
 
     def _signature_validation(self, qnode, weight_shapes):
         sig = inspect.signature(qnode.func).parameters
@@ -258,7 +272,10 @@ class KerasLayer(Layer):
 
         if inspect.Parameter.VAR_KEYWORD not in param_kinds:
             if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
-                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+                raise ValueError(
+                    "Must specify a shape for every non-input parameter in the QNode"
+                )
+
 
     def build(self, input_shape):
         """Initializes the QNode weights.
@@ -268,9 +285,10 @@ class KerasLayer(Layer):
         """
         for weight, size in self.weight_shapes.items():
             spec = self.weight_specs.get(weight, {})
-            self.qnode_weights[weight] = self.add_weight(name=weight, shape=size, **spec)
+            self.qnode_weights[weight] = self.add_weight(name = weight, shape = size, **spec)
 
         super().build(input_shape)
+
 
     def call(self, inputs):
         """Evaluates the QNode on input data using the initialized weights.
@@ -281,7 +299,7 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if len(tf.shape(inputs)) > 1:
+        if len(tf.shape(inputs)) > 1 and self.argnum is None:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
@@ -291,6 +309,7 @@ class KerasLayer(Layer):
             return tf.stack(reconstructor)
 
         return self._evaluate_qnode(inputs)
+
 
     def _evaluate_qnode(self, x):
         """Evaluates a QNode for a single input datapoint.
@@ -304,6 +323,7 @@ class KerasLayer(Layer):
         kwargs = {**{self.input_arg: x}, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
         return self.qnode(**kwargs)
 
+
     def compute_output_shape(self, input_shape):
         """Computes the output shape after passing data of shape ``input_shape`` through the
         QNode.
@@ -316,13 +336,16 @@ class KerasLayer(Layer):
         """
         return tf.TensorShape([input_shape[0]]).concatenate(self.output_dim)
 
+
     def __str__(self):
         detail = "<Quantum Keras Layer: func={}>"
         return detail.format(self.qnode.func.__name__)
 
+
     __repr__ = __str__
 
     _input_arg = "inputs"
+
 
     @property
     def input_arg(self):
@@ -330,3 +353,20 @@ class KerasLayer(Layer):
         `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__. Set to
         ``"inputs"``."""
         return self._input_arg
+
+
+    @staticmethod
+    def set_input_argument(input_name: Text = "inputs"):
+        KerasLayer._input_arg = input_name
+
+
+    def get_config(self):
+        config = super().get_config()
+
+        config.update(
+            {
+                "output_dim": self.output_dim, "weight_specs": self.weight_specs,
+                "weight_shapes": self.weight_shapes, "argnum": self.argnum
+            }
+        )
+        return config
