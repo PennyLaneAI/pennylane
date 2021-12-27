@@ -1,14 +1,18 @@
-from typing import Union, Sequence
+"""
+    Batch transformation for multiple (non-trainable) input examples following issue #2037
+"""
+from typing import Union, Sequence, Callable, Tuple
 
 import pennylane as qml
 from pennylane import numpy as np
-from .batch_transform import batch_transform
+from pennylane.transforms.batch_transform import batch_transform
 
 
 @batch_transform
-def batch_inputs(
-        tape: qml.tape.JacobianTape, argnum: Union[Sequence[int], int] = 0,
-) -> Sequence[Sequence[qml.tape.JacobianTape], Callable]:
+def batch_input(
+        tape: Union[qml.tape.JacobianTape, qml.QNode],
+        argnum: Union[Sequence[int], int] = None,
+) -> Tuple[Sequence[qml.tape.JacobianTape], Callable]:
     """
     In a classical ML application one needs to batch the non-trainable inputs of the network.
     This function executes the same analogue for a quantum circuit where separate circuit
@@ -42,11 +46,10 @@ def batch_inputs(
 
     Parameters
     ----------
-    tape : qml.tape.JacobianTape
-        Record of the inputs to be executed
-    argnum : Union[Sequence[int], int]
-        One or more argument numbers indicating the location of the batched inputs. As
-        default first argument is assumed to be the only batched input.
+    tape (qml.tape.JacobianTape or qml.QNode): Record of the inputs to be executed
+    argnum (Sequence[int] or int) : One or more argument numbers indicating the
+        location of the batched inputs. As default first argument is assumed to be the only
+        batched input.
 
     Returns
     -------
@@ -54,20 +57,22 @@ def batch_inputs(
         list of tapes arranged according to unbatched inputs and a callable function
         to batch the results.
     """
-    argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
-
     parameters = tape.get_parameters(trainable_only = False)
 
-    non_trainable, trainable = [], []
-    for idx in range(len(parameters)):
-        if idx in argnum:
-            non_trainable.append(parameters[idx])
-        else:
-            trainable.append(parameters[idx])
+    if argnum is None:
+        return parameters, lambda x: x
 
-    assert len(
-        np.unique([qml.math.shape(x)[0] for x in non_trainable])
-    ) == 1, "Batch dimension for all non-trainable inputs must be the same."
+    argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
+
+    non_trainable, trainable = [], []
+    for idx, param in enumerate(parameters):
+        if idx in argnum:
+            non_trainable.append(param)
+        else:
+            trainable.append(param)
+
+    assert len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) == 1, \
+        "Batch dimension for all non-trainable inputs must be the same."
 
     outputs = []
     for inputs in zip(*non_trainable):
