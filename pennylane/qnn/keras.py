@@ -54,7 +54,7 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
-        argnum (Optional[Union[Sequence[int], int]]): Argument location of the non-trainable inputs for
+        argnum (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
             the circuit. This allows batch execution by creating executable circuits for each
              input example with the same trainable weights. Default None.
              See `pennylane.transforms.batch_input` for more details.
@@ -204,7 +204,7 @@ class KerasLayer(Layer):
 
     def __init__(
             self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None,
-            argnum: Optional[Union[Sequence[int], int]] = None, **kwargs
+            argnum: Union[Sequence[int], int] = None, **kwargs
     ):
         if not CORRECT_TF_VERSION:
             raise ImportError(
