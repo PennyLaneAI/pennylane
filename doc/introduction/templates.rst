@@ -171,6 +171,23 @@ like VQE to perform quantum chemistry simulations.
 
         <div style='clear:both'></div>
 
+.. _intro_ref_temp_tn:
+
+Tensor networks
+-------------------------
+
+Tensor-network templates create quantum circuit architectures where circuit blocks
+can be broadcast with the shape and connectivity of tensor networks.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.MPS.html
+    :description: MPS
+    :figure: ../_static/templates/tensornetworks/MPS_template.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
 .. _intro_ref_temp_qchem:
 
 Other subroutines
@@ -229,7 +246,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/qft.svg
 
 .. customgalleryitem::
-    :link: :link: ../code/api/pennylane.CommutingEvolution.html
+    :link: ../code/api/pennylane.CommutingEvolution.html
     :description: CommutingEvolution
     :figure: ../_static/templates/subroutines/commuting_evolution.png
 

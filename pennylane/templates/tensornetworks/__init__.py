@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
-Version number (major.minor.patch[-label])
+Tensor-network templates can be used to create quantum circuit architectures where circuit blocks
+can be broadcast with the shape and connectivity of tensor networks.
 """
-
-__version__ = "0.20.0-dev"
+from .mps import MPS
