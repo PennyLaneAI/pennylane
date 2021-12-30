@@ -318,8 +318,8 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.RY._matrix(0.5)
-        array([[ 0.96891242+0.j, -0.24740396+0.j],
-               [ 0.24740396+0.j,  0.96891242+0.j]])
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
 
         Returns:
             array: matrix representation
@@ -335,8 +335,8 @@ class Operator(abc.ABC):
 
         >>> U = qml.RY(0.5, wires=1)
         >>> U.matrix
-        array([[ 0.96891242+0.j, -0.24740396+0.j],
-               [ 0.24740396+0.j,  0.96891242+0.j]])
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
 
         Returns:
             array: matrix representation
@@ -364,7 +364,7 @@ class Operator(abc.ABC):
         **Example:**
 
         >>> qml.RZ._eigvals(0.5)
-        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
 
         Returns:
             array: eigenvalue representation
@@ -382,7 +382,7 @@ class Operator(abc.ABC):
 
         >>> U = qml.RZ(0.5, wires=1)
         >>> U.eigvals
-        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
 
         Returns:
             array: eigvals representation
@@ -877,8 +877,8 @@ class Channel(Operation, abc.ABC):
         **Example**
 
         >>> qml.AmplitudeDamping._kraus_matrices(0.1)
-        [array([[1.       , 0.       ],
-                [0.       , 0.9486833]]), array([[0.        , 0.31622777],
+        >>> [array([[1.       , 0.       ],
+        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
         [0.        , 0.        ]])]
 
         To return the Kraus matrices of an *instantiated* channel,
@@ -898,7 +898,7 @@ class Channel(Operation, abc.ABC):
 
         >>> U = qml.AmplitudeDamping(0.1, wires=1)
         >>> U.kraus_matrices
-        [array([[1.       , 0.       ],
+        >>> [array([[1.       , 0.       ],
         [0.       , 0.9486833]]), array([[0.        , 0.31622777],
         [0.        , 0.        ]])]
 
@@ -957,7 +957,7 @@ class Observable(Operator):
         **Example:**
 
         >>> qml.PauliZ._eigvals()
-        array([1, -1])
+        >>> array([1, -1])
 
         Returns:
             array: eigenvalue representation
@@ -977,7 +977,7 @@ class Observable(Operator):
 
         >>> U = qml.PauliZ(wires=1)
         >>> U.eigvals
-        array([1, -1])
+        >>> array([1, -1])
 
         Returns:
             array: eigvals representation

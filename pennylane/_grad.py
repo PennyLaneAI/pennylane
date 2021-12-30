@@ -177,6 +177,61 @@ def jacobian(func, argnum=None):
 
     .. code-block::
 
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(weights):
+            qml.RX(weights[0, 0, 0], wires=0)
+            qml.RY(weights[0, 0, 1], wires=1)
+            qml.RZ(weights[1, 0, 2], wires=0)
+            return tuple(qml.expval(qml.PauliZ(w)) for w in dev.wires)
+
+        weights = np.array(
+            [[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True
+        )
+
+    It has a single array-valued QNode argument with shape ``(2, 1, 3)`` and outputs
+    a tuple of two expectation values. Therefore, the Jacobian of this QNode
+    will be a single array with shape ``(2, 2, 1, 3)``:
+
+    >>> qml.jacobian(circuit)(weights).shape
+    (2, 2, 1, 3)
+
+    On the other hand, consider the following QNode for the same circuit
+    structure:
+
+    .. code-block::
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.RZ(z, wires=0)
+            return tuple(qml.expval(qml.PauliZ(w)) for w in dev.wires)
+
+        x = np.array(0.2, requires_grad=True)
+        y = np.array(0.9, requires_grad=True)
+        z = np.array(-1.4, requires_grad=True)
+
+    It has three scalar QNode arguments and outputs a tuple of two expectation
+    values. Consequently, its Jacobian will be a three-tuple of arrays with the
+    shape ``(2,)``:
+
+    >>> jac = qml.jacobian(circuit)(x, y, z)
+    >>> type(jac)
+    tuple
+    >>> for sub_jac in jac:
+    ...     print(sub_jac.shape)
+    (2,)
+    (2,)
+    (2,)
+
+    For a more advanced setting of QNode arguments, consider the QNode
+
+    .. code-block::
+
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -273,9 +328,7 @@ def jacobian(func, argnum=None):
             # Infer whether to unpack from the infered argnum
             unpack = len(_argnum) == 1
         else:
-            # for backwards compatibility with existing code
-            # that manually specifies argnum: Allow for a single
-            # integer as argnum, but unpack the Jacobian tuple in that case
+            # For a single integer as argnum, unpack the Jacobian tuple
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
 
