@@ -114,6 +114,7 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
 """
+# pylint:disable=access-member-before-definition
 import abc
 import copy
 import itertools
@@ -229,10 +230,42 @@ def expand_matrix(base_matrix, wires, wire_order):
 # =============================================================================
 
 
-class NoDecompositionError(Exception):
-    """Raised when an Operator does not have a decomposition defined."""
+class OperatorPropertyUndefined(Exception):
+    """Generic exception to be used for undefined
+    Operator properties or methods."""
 
-    pass
+
+class DecompositionUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's representation as a decomposition is undefined."""
+
+
+class TermsUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's representation as a linear combination is undefined."""
+
+
+class MatrixUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's matrix representation is undefined."""
+
+
+class SparseMatrixUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's sparse matrix representation is undefined."""
+
+
+class EigvalsUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's eigenvalues are undefined."""
+
+
+class DiagGatesUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's diagonalizing gates are undefined."""
+
+
+class AdjointUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's adjoint version is undefined."""
+
+
+class GeneratorUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have a generator"""
 
 
 # =============================================================================
@@ -303,7 +336,7 @@ State = ObservableReturnTypes.State
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -333,21 +366,6 @@ def classproperty(func):
         func = classmethod(func)
 
     return ClassPropertyDescriptor(func)
-
-
-# =============================================================================
-# Error classes
-# =============================================================================
-
-
-class OperatorPropertyUndefined(Exception):
-    """Generic exception to be used for undefined
-    Operator properties or methods."""
-
-
-class GeneratorUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have a generator"""
 
 
 # =============================================================================
@@ -459,7 +477,7 @@ class Operator(abc.ABC):
         >>> type(res)
         <class 'torch.Tensor'>
         """
-        raise NotImplementedError
+        raise MatrixUndefinedError
 
     def matrix(self, wire_order=None):
         r"""Matrix representation of this operator in the computational basis.
@@ -540,7 +558,7 @@ class Operator(abc.ABC):
         >>> type(res)
         <class 'scipy.sparse.coo_matrix'>
         """
-        raise NotImplementedError
+        raise SparseMatrixUndefinedError
 
     def sparse_matrix(self, wire_order=None):
         r"""Matrix representation of this operator in the computational basis, using
@@ -587,6 +605,7 @@ class Operator(abc.ABC):
         )
         return canonical_sparse_matrix
 
+    @staticmethod
     def compute_eigvals(*params, **hyperparams):
         """Eigenvalues of the operator in the computational basis.
 
@@ -624,7 +643,7 @@ class Operator(abc.ABC):
         >>> qml.PauliX.compute_eigvals()
         array([1, -1])
         """
-        raise NotImplementedError
+        raise EigvalsUndefinedError
 
     def eigvals(self):
         r"""Eigenvalues of the operator.
@@ -657,10 +676,13 @@ class Operator(abc.ABC):
 
         try:
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
-        except NotImplementedError:
+        except EigvalsUndefinedError:
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
-            return np.linalg.eigvals(self.matrix())
+            try:
+                return np.linalg.eigvals(self.matrix())
+            except MatrixUndefinedError as e:
+                raise EigvalsUndefinedError from e
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
@@ -692,7 +714,7 @@ class Operator(abc.ABC):
         >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
         [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
-        return NotImplementedError
+        raise TermsUndefinedError
 
     def terms(self):
         r"""Representation of this operator as a linear combination.
@@ -940,7 +962,7 @@ class Operator(abc.ABC):
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
 
         """
-        raise NoDecompositionError
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -961,11 +983,6 @@ class Operator(abc.ABC):
         .. note::
 
             This method gets overwritten by subclasses to define the representation of a particular operator.
-            By default, this method should always take the operator's parameters, wires and hyperparameters as
-            inputs (even if the diagonalizing gates are independent of these values).
-
-            Alternatively, a custom signature can be defined, in which case the ``diagonalizing_gates()``
-            method has to be overwritten to use the right signature.
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -980,7 +997,7 @@ class Operator(abc.ABC):
         >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
         [Hadamard(wires=["q1"])]
         """
-        return None
+        raise DiagGatesUndefinedError
 
     def diagonalizing_gates(self):  # pylint:disable=no-self-use
         r"""Defines a partial representation of this operator via
@@ -998,12 +1015,6 @@ class Operator(abc.ABC):
 
             By default, this method calls the static method ``compute_diagonalizing_gates``,
             which is used by subclasses to define the actual representation.
-            The call assumes that the static method has the signature ``(*params, wires, **hyperparams)``,
-            where ``params`` refers to ``op.parameters``, wires to ``op.wires`` and ``hyperparams``
-            to ``op.hyperparameters``, and ``op`` is an instance of this operator.
-
-            If a subclass overwrites ``compute_diagonalizing_gates`` to use a custom signature,
-            this method has to be likewise overwritten to respect that signature.
 
         Returns:
             list[.Operator] or None: a list of operators
@@ -1169,7 +1180,7 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
@@ -1182,7 +1193,7 @@ class Operation(Operator):
         Returns:
             The adjointed operation.
         """
-        raise NotImplementedError
+        raise AdjointUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):
@@ -1868,7 +1879,7 @@ class Tensor(Observable):
                 return 1
         return 0
 
-    def sparse_matrix(self, wires=None):
+    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
@@ -2320,9 +2331,15 @@ def is_trainable(obj):
 @qml.BooleanFn
 def defines_diagonalizing_gates(obj):
     """Returns ``True`` if an operator defines the diagonalizing
-    gates are defined."""
+    gates are defined.
+
+    This helper function is useful if the property is to be checked in
+    a queuing context, but the resulting gates must not be queued.
+    """
 
     with qml.tape.stop_recording():
-        dgates = obj.diagonalizing_gates()
-
-    return dgates is not None
+        try:
+            obj.diagonalizing_gates()
+        except DiagGatesUndefinedError:
+            return False
+        return True

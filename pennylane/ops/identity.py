@@ -95,7 +95,7 @@ class Identity(CVObservable, Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(wires=None):
+    def compute_decomposition(wires=None):  # pylint:disable=arguments-differ,unused-argument
         r"""Compute the decomposition for the specified wire.
         The decomposition defines an Operator as a product of more fundamental gates:
 
