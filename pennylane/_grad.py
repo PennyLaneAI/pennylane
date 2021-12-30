@@ -167,6 +167,7 @@ def jacobian(func, argnum=None):
     passed to the function. The returned function takes the same arguments as the original
     function and outputs a ``tuple``. The ``i`` th entry of the ``tuple`` has shape
     ``(*output shape, *shape of args[argnum[i]])``.
+
     If the inferred value of ``argnum`` is a single-element list or if a single integer
     is provided as ``argnum``, the tuple is unpacked and its only entry is returned instead.
 
@@ -215,6 +216,7 @@ def jacobian(func, argnum=None):
 
     Here we included the size of the tuple in the shape analysis, corresponding to the
     first dimension of size ``1``.
+
     Finally, we may want to receive the single entry above directly, not as a tuple
     with a single entry. This is done by providing a single integer as ``argnum``
 

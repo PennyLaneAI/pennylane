@@ -144,7 +144,6 @@ class gradient_transform(qml.batch_transform):
                 # is present inside the QNode.
                 return qjac
 
-            print(qml.math.shape(qjac), qml.math.shape(cjac))
             return qml.math.squeeze(qml.math.tensordot(qjac, cjac, [[-1], [0]]))
 
         return jacobian_wrapper
