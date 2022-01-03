@@ -1,6 +1,6 @@
 .. _contributing_operators:
 
-Adding operators
+Custom operators
 ================
 
 The following steps will help you to create custom operators, and to
@@ -23,6 +23,8 @@ Operators in quantum mechanics are maps that act on vector spaces. The highest-l
 
    >>> from jax import numpy as jnp
    >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+   >>> isinstance(op, qml.operation.Operator)
+   True
 
 The basic components of operators are the following:
 
@@ -129,29 +131,21 @@ specific subclasses.
       >>> op
         + (1.0) [X0]
 
-* Operations define a hermitian conjugate
+* Operations define a hermitian conjugate:
 
   .. code-block:: pycon
 
       >>> qml.RX(1., wires=0).adjoint()
       RX(-1.0, wires=[0])
 
-Creating new operator subclasses
-################################
+Creating custom operators
+#########################
 
-A custom operator can be created by making a subclass that overwrites as many of these default properties
-as possible. Note that you may want to extend subclasses of ``Operator`` --- if your operator is used as a unitary gate,
-you may want to inherit from ``Operation`` which provides functionality to control a gate, while an observable
-may best inherit from ``Observable``.
+A custom operator can be created by inheriting from :class:`~.Operator` or one of its subclasses.
 
 The following is an example for a custom gate that rotates a qubit and possibly flips another qubit.
 The custom operator defines a decomposition, which the devices will use (since it is unlikely that a device
 knows a native implementation for ``FlipAndRotate``). It also defines an adjoint operator.
-
-.. note::
-    You will see a few bits and pieces that are not explained in detail here, such as the class attribute ``num_wires``,
-    ``grad_method``, or the keyword argument ``do_queue``, which are currently undergoing a refactor. More information
-    will follow soon.
 
 .. code-block:: python
 
@@ -161,8 +155,8 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
     class FlipAndRotate(qml.operation.Operation):
         """One-sentence description of the operator.
 
-        More explanation about the operator. How is it defined, what are typical usage contexts?
-        What are the meaning of the inputs?
+        More explanation. How is the operator defined, what are typical usage contexts?
+        What is the meaning of the different inputs? What options does a user have?
 
         Args:
             Inputs are described here
@@ -175,6 +169,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         # define how many wires to expect; here we cannot define a fixed number of wires,
         # and use the AnyWires Enumeration instead
         num_wires = qml.operation.AnyWires
+
         # this attribute tells PennyLane what differentiation method to use; here
         # we request parameter-shift (or "automatic") differentiation
         grad_method = "A"
@@ -186,11 +181,13 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # checking the inputs --------------
 
             if do_flip and wire_flip is None:
-                raise ValueError("Need to specify a wire to flip")
+                raise ValueError("Expected a wire to flip; got None.")
 
-            # note: we use the framework-agnostic math library for inputs that could be tensors
-            if len(qml.math.shape(angle)) > 1:
-                raise ValueError("Expected a scalar angle.")
+            # note: we use the framework-agnostic math library since
+            # trainable inputs could be tensors if different types
+            shape = qml.math.shape(angle)
+            if len(shape) > 1:
+                raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
 
             #------------------------------------
 
@@ -204,8 +201,11 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # relying on the Wire class arithmetic
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
 
-            # the parent class expects trainable parameters to be fed as positional
-            # arguments, and all wires acted on fed as a keyword argument
+            # The parent class expects trainable parameters to be fed as positional
+            # arguments, and all wires acted on fed as a keyword argument.
+            # The id allows users to give their instance a custom name.
+            # The do_queue keyword argument specifies whether or not
+            # the operator is queued in a tape context or not.
             super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
 
         @property
@@ -218,7 +218,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
             # Overwriting this method defines the decomposition of the new gate, as it is
             # called by Operator.decomposition().
-            # The call uses the signature (*parameters, wires, **hyperparameters).
+            # The general signature of this function is (*parameters, wires, **hyperparameters).
             op_list = []
             if do_flip:
                 op_list.append(qml.PauliX(wires=wires[1]))
@@ -266,17 +266,19 @@ We can even compute gradients of circuits that use the new gate.
 Defining special properties of an operator
 ##########################################
 
-Apart from the main ``Operator`` class, operators with special properties (such as those with a Kraus matrix
-representation) are implemented as general subclasses ``Operation``, ``Observable``, ``Channel``,
-``CVOperation`` and ``CVOperation``. However, unlike many other frameworks, PennyLane does not use class
-inheritance to define properties of operators such as whether it is its own self-inverse, if it is diagonal,
-or whether it can be decomposed into Pauli rotations. The reason is that we want to avoid changing the inheritance structure
+Apart from the main ``Operator`` class, operators with special methods or representations
+are implemented as subclasses ``Operation``, ``Observable``, ``Channel``,
+``CVOperation`` and ``CVOperation``.
+
+However, unlike many other frameworks, PennyLane does not use class
+inheritance to define properties of operators, such as whether it is its own self-inverse, if it is diagonal,
+or whether it can be decomposed into Pauli rotations. This avoids changing the inheritance structure
 every time an application needs to query a new property.
 
-Instead, properties are recorded in "attributes", which are bookkeeping classes listing those operators
-that fulfill a specific property.
+Instead, PennyLane uses "attributes", which are bookkeeping classes that list operators
+which fulfill a specific property.
 
-For example, we can create a new Attribute, ``pauli_ops``, like so:
+For example, we can create a new attribute, ``pauli_ops``, like so:
 
 >>> from pennylane.ops.qubits.attributes import Attribute
 >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
@@ -300,7 +302,9 @@ own inverse. Adding it to the set, like so
 These attributes can be queried by devices and compilation pipelines to use special tricks that speed
 up computation. The onus is on the contributors of new operators to add them to the right attributes.
 
-The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
+.. note::
+
+    The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
 
 Adding your new operator to PennyLane
 #####################################
