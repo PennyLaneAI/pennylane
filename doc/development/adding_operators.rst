@@ -1,13 +1,15 @@
 .. _contributing_operators:
 
-Adding custom operators
-=======================
+Adding operators
+================
 
-The following steps will help you to add your favourite operator to PennyLane.
+The following steps will help you to create custom operators, and to
+potentially add them to PennyLane.
 
 Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator - one whose
-map is defined as a combination of other operators. For historical reasons, you find circuit ansaetze
-in the ``pennylane/template`` folder, while all other operations are found in ``pennylane/ops``.
+action is defined by specifying a representation as a combination of other operators.
+For historical reasons, you find circuit ansaetze in the ``pennylane/template`` folder,
+while all other operations are found in ``pennylane/ops``.
 
 The base classes to construct new operators are found in ``pennylane/operations.py``.
 
@@ -15,16 +17,20 @@ Abstraction
 ###########
 
 Operators in quantum mechanics are maps that act on vector spaces. The highest-level operator class
-(the ``Operator`` class which we will introduce in the next section) serves as the main abstraction of such objects.
-Its basic components are the following:
+(the :class:`~.Operator` class which we will introduce in the next section) serves as the main abstraction of such objects.
+
+.. code-block:: python
+
+   >>> from jax import numpy as jnp
+   >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+
+The basic components of operators are the following:
 
 #. **The name of the operator**, which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
    or could be a name specific to PennyLane.
 
    .. code-block:: python
 
-       >>> from jax import numpy as jnp
-       >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
        >>> op.name
        Rot
 
@@ -36,7 +42,8 @@ Its basic components are the following:
        <Wires = ['a']>
 
 #. **Trainable parameters** that the map depends on, such as a rotation angle,
-   which can be fed to the operator as tensor-like objects.
+   which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
+   specify the three rotation angles of ``op``, the parameters are jax ``DeviceArrays``.
 
    .. code-block:: python
 
@@ -55,7 +62,7 @@ Its basic components are the following:
 #. Possible **symbolic or numerical representations** of the operator, which can be used by PennyLane's
    devices to interpret the map. Examples are:
 
-   * Representation as a **product of operators**
+   * Representation as a **product of operators**:
 
      .. code-block:: python
 
@@ -63,7 +70,7 @@ Its basic components are the following:
          >>> op.decomposition()
          [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
-   * Representation as a **linear combination of operators**
+   * Representation as a **linear combination of operators**:
 
      .. code-block:: python
 
@@ -71,7 +78,8 @@ Its basic components are the following:
          >>> op.terms()
          ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-   * Representation by the **eigenvalue decomposition**
+   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix)
+     and diagonalizing gates (for the unitaries):
 
      .. code-block:: python
 
@@ -81,16 +89,19 @@ Its basic components are the following:
          >>> op.eigvals()
          [ 1 -1]
 
-   * Representation as a **matrix**
+   * Representation as a **matrix**, as specified by a global wire order that tells us where the
+     wires are found on a register:
 
      .. code-block:: python
 
          >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-         >>> op.matrix()
-         [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
-          [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
+         >>> op.matrix(wire_order=["a", "b"])
+         [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
+          [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
+          [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
+          [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-   * Representation as a **sparse matrix**
+   * Representation as a **sparse matrix**:
 
      .. code-block:: python
 
@@ -100,7 +111,7 @@ Its basic components are the following:
          >>> data = np.array([1, -1])
          >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
          >>> op = qml.SparseHamiltonian(mat, wires=["a"])
-         >>> op.sparse_matrix()
+         >>> op.sparse_matrix(wire_order=["a"])
          (0, 1)   1
          (1, 0) - 1
 
@@ -108,79 +119,149 @@ New operators can be created by applying arithmetic functions to operators, such
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
 specific subclasses.
 
-.. code-block:: pycon
+* Observables support addition and scalar multiplication:
 
-    >>> # ``Observable`` defines addition and scalar multiplication
-    >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
-    >>> op.name
-    Hamiltonian
-    >>> op
-      (0.1) [Z0]
-    + (1.0) [X0]
+  .. code-block:: pycon
 
-    >>> # ``Operation`` defindes the hermitian conjugate
-    >>> qml.RX(1., wires=0).adjoint()
-    RX(-1.0, wires=[0])
+      >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
+      >>> op.name
+      Hamiltonian
+      >>> op
+        + (1.0) [X0]
 
-Operator base class
-###################
+* Operations define a hermitian conjugate
 
-The ``Operator`` base class provides default functionality to store name, wires, parameters, hyperparameters
-and representations. In addition, it defines a few methods that connect operators to other building blocks
-in PennyLane, such as expansion used by tapes or queueing functionality.
+  .. code-block:: pycon
 
-Roughly speaking, the architecture of the ``Operator`` base class is this:
+      >>> qml.RX(1., wires=0).adjoint()
+      RX(-1.0, wires=[0])
+
+Creating new operator subclasses
+################################
+
+A custom operator can be created by making a subclass that overwrites as many of these default properties
+as possible. Note that you may want to extend subclasses of ``Operator`` --- if your operator is used as a unitary gate,
+you may want to inherit from ``Operation`` which provides functionality to control a gate, while an observable
+may best inherit from ``Observable``.
+
+The following is an example for a custom gate that rotates a qubit and possibly flips another qubit.
+The custom operator defines a decomposition, which the devices will use (since it is unlikely that a device
+knows a native implementation for ``FlipAndRotate``). It also defines an adjoint operator.
+
+.. note::
+    You will see a few bits and pieces that are not explained in detail here, such as the class attribute ``num_wires``,
+    ``grad_method``, or the keyword argument ``do_queue``, which are currently undergoing a refactor. More information
+    will follow soon.
 
 .. code-block:: python
 
-    class Operator(abc.ABC):
+    import pennylane as qml
 
-        def __init__(self, *params, wires=None):
-            # the default name is inferred from the class
-            self._name = self.__class__.__name__
-            # turn wires into a PennyLane Wires object and store
-            self._wires = Wires(wires)
-            # store the parameters in an internal representation
-            self.data = list(params)
+
+    class FlipAndRotate(qml.operation.Operation):
+        """One-sentence description of the operator.
+
+        More explanation about the operator. How is it defined, what are typical usage contexts?
+        What are the meaning of the inputs?
+
+        Args:
+            Inputs are described here
+
+        **Example**
+
+        Various usage examples explain how the operator is employed in practice.
+        """
+
+        # define how many wires to expect; here we cannot define a fixed number of wires,
+        # and use the AnyWires Enumeration instead
+        num_wires = qml.operation.AnyWires
+        # this attribute tells PennyLane what differentiation method to use; here
+        # we request parameter-shift (or "automatic") differentiation
+        grad_method = "A"
+
+        def __init__(self, angle, wire_rot,
+                           wire_flip=None, do_flip=False,
+                           do_queue=True, id=None):
+
+            # checking the inputs --------------
+
+            if do_flip and wire_flip is None:
+                raise ValueError("Need to specify a wire to flip")
+
+            # note: we use the framework-agnostic math library for inputs that could be tensors
+            if len(qml.math.shape(angle)) > 1:
+                raise ValueError("Expected a scalar angle.")
+
+            #------------------------------------
+
+            # do_flip is not trainable but influences the action of the operator,
+            # which is why we define it to be a hyperparameter
+            self._hyperparameters = {
+                "do_flip": do_flip
+            }
+
+            # we extract all wires that the operator acts on,
+            # relying on the Wire class arithmetic
+            all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
+
+            # the parent class expects trainable parameters to be fed as positional
+            # arguments, and all wires acted on fed as a keyword argument
+            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
 
         @property
-        def name(self):
-            return self._name
+        def num_params(self):
+            # if it is known before creation, define the number of parameters to expect here,
+            # which makes sure an error is raised if the wrong number was passed
+            return 1
 
-        @property
-        def wires(self):
-            return self._wires
+        @staticmethod
+        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+            # Overwriting this method defines the decomposition of the new gate, as it is
+            # called by Operator.decomposition().
+            # The call uses the signature (*parameters, wires, **hyperparameters).
+            op_list = []
+            if do_flip:
+                op_list.append(qml.PauliX(wires=wires[1]))
+            op_list.append(qml.RX(angle, wires=wires[0]))
+            return op_list
 
-        @property
-        def parameters(self):
-            return self.data.copy()
+        def adjoint(self):
+            # the adjoint operator of this gate simply negates the angle
+            return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
 
-        @property
-        def hyperparameters(self):
-            # check for hyperparameters added by a child class
-            if hasattr(self, "_hyperparameters"):
-                return self._hyperparameters
-            # else create and return empty hyperparameters as default
-            self._hyperparameters = {}
-            return self._hyperparameters
+The new gate can now be created as follows:
 
-    # decomposition representation (instance method)
-    def decomposition(self):
-        return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
+.. code-block:: python
 
-    # decomposition representation (static method)
-    @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters):
-        raise DecompositionUndefinedError
+    >>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
+    >>> op
+    FlipAndRotate(0.1, wires=['q3', 'q1'])
+    >>> op.decomposition()
+    [PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
+    >>> op.adjoint()
+    FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-    # other representations
-    ...
+The new gate can be used in devices, which access the decomposition to interpret it:
 
-The representations, for which we see the ``decomposition`` as one example above, are accessible by
-instance methods such as ``decomposition()``. These instance methods call a static method that uses the prefix
-``compute_``, and in which the actual representation is computed. Sometimes, such a computation simply returns a
-fixed object, but at other times a time-consuming calculation is performed. The idea of static methods is that
-they can be cached across all instances of the same operator class, which can speed up computations drastically.
+.. code-block:: python
+
+    from pennylane import numpy as np
+
+    dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
+
+    @qml.qnode(dev)
+    def circuit(angle):
+        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
+        return qml.expval(qml.PauliZ("q1"))
+
+>>> a = np.array(3.14)
+>>> circuit(a)
+-0.9999987318946099
+
+We can even compute gradients of circuits that use the new gate.
+
+>>> qml.grad(circuit)(a)
+-0.0015926529164868282
 
 Defining special properties of an operator
 ##########################################
@@ -221,131 +302,6 @@ up computation. The onus is on the contributors of new operators to add them to 
 
 The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
 
-Creating new Operators
-######################
-
-The first job of adding a new Operator is to create a subclasse that overwrites as many of these default properties
-as possible. First decide which general class you want to subclass --- if your operator is used as a unitary gate,
-you may want to inherit from ``Operation`` which provides functionality to control a gate, while an observable
-may best inherit from ``Observable``.
-
-The following is an example for a custom gate that rotates a qubit and possibly flips another qubit.
-The custom operator defines a decomposition, which the devices will use (since it is unlikely that a device
-knows a native implementation for ``FlipAndRotate``), as well as an adjoint operator.
-
-.. note::
-    You will see a few bits and pieces that weren't explained above, such as the class attribute ``num_wires``,
-    ``grad_method``, or the keyword argument ``do_queue``, which are currently undergoing a refactor - more
-    to follow soon.
-
-.. code-block:: python
-
-    import pennylane as qml
-
-
-    class FlipAndRotate(qml.operation.Operation):
-        """One-sentence description of the operator.
-
-        More explanation about the operator.
-
-        Args:
-            Inputs are described here
-
-        **Example**
-
-        Usage examples to be added here.
-        """
-        # if wire_rot and wire_flip are the same we have 1 wire, else 2,
-        # which is why we cannot define a fixed number of wires, and use the AnyWires Enumeration instead
-        num_wires = qml.operation.AnyWires
-        grad_method = "A"  # supports parameter-shift differentiation
-
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
-
-            # checking the inputs --------------
-            if do_flip and wire_flip is None:
-                raise ValueError("Need to specify a wire to flip")
-
-            # note: we use the framework-agnostic math library for inputs that could be tensors
-            if len(qml.math.shape(angle)) > 1:
-                raise ValueError("Expected a scalar angle.")
-            #------------------------------------
-
-            # do_flip is not trainable but influences the map,
-            # which is why we define it to be a hyperparameter
-            self._hyperparameters = {
-                "do_flip": do_flip
-            }
-
-            # We can turn into Wires objects here to use addition
-            # Alternatively, we can work with the raw input and rely on ``super``
-            # to turn the wires into a Wires object.
-            all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
-
-            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
-
-        @property
-        def num_params(self):
-            # if it is a fixed value, define the number of parameters to expect here,
-            # which makes sure an error is raised if the wrong number was passed
-            return 1
-
-        @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
-            """Overwriting this method defines the decomposition of the new gate.
-
-            This method has to have the general signature (*parameters, wires, **hyperparameters).
-            In our case, tha parameters consist of the angle, and the hyperparameters of do_flip.
-            Using concrete argument names makes it easier to interpret the decomposition.
-
-            .. note::
-                If the gate defined other hyperparameters that we do not use in this method, a signature of the form
-                (angle, wires, do_flip, **kwargs) could be used.
-            """
-            op_list = []
-            if do_flip:
-                op_list.append(qml.PauliX(wires=wires[1]))
-            op_list.append(qml.RX(angle, wires=wires[0]))
-            return op_list
-
-        def adjoint(self):
-            # the adjoint of this gate simply negates the angle
-            return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
-
-The new gate can now be created as follows:
-
-.. code-block:: python
-
-    >>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
-    >>> op
-    FlipAndRotate(0.1, wires=['q3', 'q1'])
-    >>> op.decomposition()
-    [PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
-    >>> op.adjoint()
-    FlipAndRotate(-0.1, wires=['q3', 'q1'])
-
-The new gate can be used in devices, which access the decomposition to interpret it:
-
-.. code-block:: python
-
-    from pennylane import numpy as np
-
-    dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
-
-    @qml.qnode(dev)
-    def circuit(angle):
-        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-        return qml.expval(qml.PauliZ("q1"))
-
->>> a = np.array(3.14)
->>> circuit(a)
--0.9999987318946099
-
-We can even compute gradients of circuits that use the new gate.
-
->>> qml.grad(circuit)(a)
--0.0015926529164868282
-
 Adding your new operator to PennyLane
 #####################################
 
@@ -374,15 +330,15 @@ to the correct section in ``doc/introduction/templates.rst``:
   This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
   this image has the same dimensions and style as other template icons in the folder.
 
-Here are a few more tipps:
+Here are a few more tipps for adding operators:
 
-* *Choose the name carefully.* Good names tell the user what a template is used for,
+* *Choose the name carefully.* Good names tell the user what the operator is used for,
   or what architecture it implements. Ask yourself if a gate of a similar name could
   be added soon in a different context.
 
 * *Write good docstrings.* Explain what your operator does in a clear docstring with ample examples.
 
-* *Efficient representations.* Try implement representations as efficiently as possible, since they may
+* *Efficient representations.* Try to implement representations as efficiently as possible, since they may
   be constructed several times.
 
 * *Input checks.* Checking the inputs of the operation introduces an overhead and clashes with tools like
