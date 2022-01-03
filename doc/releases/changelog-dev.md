@@ -116,6 +116,12 @@
 
 <h3>Improvements</h3>
 
+* The method `matrix` of `qml.operations.Tensor` now raises a warning
+  whenever the Tensor's observables have partially overlapping 
+  wires or its output dimension differs from `2**N` where `N` is the number
+  of wires of the Tensor.
+  [(#2010)](https://github.com/XanaduAI/pennylane/pull/2010)
+
 * Insert transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
