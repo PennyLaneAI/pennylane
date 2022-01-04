@@ -134,7 +134,7 @@ specific subclasses.
         (0.1) [Z0]
       + (1.0) [X0]
 
-* Operators inheriting from :class:`~.Operation` define a hermitian conjugate:
+* Operators may define a hermitian conjugate:
 
   .. code-block:: pycon
 
@@ -263,10 +263,25 @@ The new gate can be used in devices, which access the decomposition to interpret
 >>> circuit(a)
 -0.9999987318946099
 
-We can even compute gradients of circuits that use the new gate.
+If all gates used in the decomposition have gradient recipes defined,
+we can even compute gradients of circuits that use the new gate without any extra effort.
 
 >>> qml.grad(circuit)(a)
 -0.0015926529164868282
+
+.. note::
+
+    The example of ``FlipAndRotate`` is simple enough that one could simply write a function
+
+    .. code-block:: python
+
+        def FlipAndRotate(angle, wire_rot, wire_flip=None, do_flip=False):
+            if do_flip:
+                qml.PauliX(wires=wire_flip)
+            qml.RX(angle, wires=wire_rot)
+
+    and call it in the quantum function. However classes allow much more functionality, and are useful
+    for more advanced use cases.
 
 Defining special properties of an operator
 ##########################################
