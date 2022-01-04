@@ -16,8 +16,10 @@ The base classes to construct new operators are found in ``pennylane/operations.
 Abstraction
 ###########
 
-Operators in quantum mechanics are maps that act on vector spaces. The highest-level operator class
-(the :class:`~.Operator` class which we will introduce in the next section) serves as the main abstraction of such objects.
+Operators in quantum mechanics are maps that act on vector spaces, and in differentiable quantum computing, these
+maps can depend on a set of trainable parameters. The :class:`~.Operator` class
+serves as the main abstraction of such objects, and all operators (such as gates, channels, observables)
+inherit from it.
 
 .. code-block:: python
 
