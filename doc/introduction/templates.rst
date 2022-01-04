@@ -181,8 +181,13 @@ can be broadcast with the shape and connectivity of tensor networks.
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.MPS.html
-    :description: MPS
+    :description: Matrix Product State
     :figure: ../_static/templates/tensornetworks/MPS_template.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.TTN.html
+    :description: Tree Tensor Network
+    :figure: ../_static/templates/tensornetworks/TTN_template.png
 
 .. raw:: html
 
