@@ -1,7 +1,7 @@
 .. _contributing_operators:
 
-Custom operators
-================
+Creating new operators
+======================
 
 The following steps will help you to create custom operators, and to
 potentially add them to PennyLane.
@@ -123,7 +123,7 @@ New operators can be created by applying arithmetic functions to operators, such
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
 specific subclasses.
 
-* Observables support addition and scalar multiplication:
+* Operators inheriting from :class:`~.Observable` support addition and scalar multiplication:
 
   .. code-block:: pycon
 
@@ -131,9 +131,10 @@ specific subclasses.
       >>> op.name
       Hamiltonian
       >>> op
-        + (1.0) [X0]
+        (0.1) [Z0]
+      + (1.0) [X0]
 
-* Operations define a hermitian conjugate:
+* Operators inheriting from :class:`~.Operation` define a hermitian conjugate:
 
   .. code-block:: pycon
 
@@ -145,8 +146,8 @@ Creating custom operators
 
 A custom operator can be created by inheriting from :class:`~.Operator` or one of its subclasses.
 
-The following is an example for a custom gate that rotates a qubit and possibly flips another qubit.
-The custom operator defines a decomposition, which the devices will use (since it is unlikely that a device
+The following is an example for a custom gate that possibly flips a qubit and then rotates another qubit.
+The custom operator defines a decomposition, which the devices can use (since it is unlikely that a device
 knows a native implementation for ``FlipAndRotate``). It also defines an adjoint operator.
 
 .. code-block:: python
@@ -157,7 +158,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
     class FlipAndRotate(qml.operation.Operation):
         """One-sentence description of the operator.
 
-        More explanation. How is the operator defined, what are typical usage contexts?
+        Add more explanation. How is the operator defined, what are typical usage contexts?
         What is the meaning of the different inputs? What options does a user have?
 
         Args:
@@ -165,19 +166,21 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
         **Example**
 
-        Various usage examples explain how the operator is employed in practice.
+        Various code examples that explain how the operator is employed in practice.
+        It is recommended to add the examples as clearly marked tests to ensure their
+        maintenance.
         """
 
-        # define how many wires to expect; here we cannot define a fixed number of wires,
-        # and use the AnyWires Enumeration instead
+        # Define how many wires the operator acts on in total.
+        # In our case this may be one or two, which is why we
+        # use the AnyWires Enumeration to indicate a variable number.
         num_wires = qml.operation.AnyWires
 
-        # this attribute tells PennyLane what differentiation method to use; here
-        # we request parameter-shift (or "automatic") differentiation
+        # This attribute tells PennyLane what differentiation method to use. Here
+        # we request parameter-shift (or "automatic") differentiation.
         grad_method = "A"
 
-        def __init__(self, angle, wire_rot,
-                           wire_flip=None, do_flip=False,
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
                            do_queue=True, id=None):
 
             # checking the inputs --------------
@@ -186,7 +189,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
                 raise ValueError("Expected a wire to flip; got None.")
 
             # note: we use the framework-agnostic math library since
-            # trainable inputs could be tensors if different types
+            # trainable inputs could be tensors of different types
             shape = qml.math.shape(angle)
             if len(shape) > 1:
                 raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
@@ -203,11 +206,11 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # relying on the Wire class arithmetic
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
 
-            # The parent class expects trainable parameters to be fed as positional
+            # The parent class expects all trainable parameters to be fed as positional
             # arguments, and all wires acted on fed as a keyword argument.
-            # The id allows users to give their instance a custom name.
+            # The id keyword argument allows users to give their instance a custom name.
             # The do_queue keyword argument specifies whether or not
-            # the operator is queued in a tape context or not.
+            # the operator is queued when created in a tape context.
             super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
 
         @property
@@ -293,9 +296,9 @@ True
 False
 
 We can also dynamically add operators to the sets at runtime. This is useful
-for adding custom operations to the attributes such as `composable_rotations`
+for adding custom operations to the attributes such as ``composable_rotations``
 and ``self_inverses`` that are used in compilation transforms. For example,
-suppose you have created a new Operation, `MyGate`, which you know to be its
+suppose you have created a new operation ``MyGate``, which you know to be its
 own inverse. Adding it to the set, like so
 
 >>> from pennylane.ops.qubits.attributes import self_inverses
