@@ -22,58 +22,46 @@ maps can depend on a set of trainable parameters. The :class:`~.Operator` class
 serves as the main abstraction of such objects, and all operators (such as gates, channels, observables)
 inherit from it.
 
-.. code-block:: python
-
-   >>> from jax import numpy as jnp
-   >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
-   >>> isinstance(op, qml.operation.Operator)
-   True
+>>> from jax import numpy as jnp
+>>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+>>> isinstance(op, qml.operation.Operator)
+True
 
 The basic components of operators are the following:
 
 #. **The name of the operator**, which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
    or could be a name specific to PennyLane.
 
-   .. code-block:: python
-
-       >>> op.name
-       Rot
+   >>> op.name
+   Rot
 
 #. **The subsystems that the operator addresses**, which mathematically speaking defines the subspace that it acts on.
 
-   .. code-block:: python
-
-       >>> op.wires
-       <Wires = ['a']>
+   >>> op.wires
+   <Wires = ['a']>
 
 #. **Trainable parameters** that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
    specify the three rotation angles of ``op``, the parameters are jax ``DeviceArrays``.
 
-   .. code-block:: python
-
-      >>> op.parameters
-      [DeviceArray(0.1, dtype=float32, weak_type=True),
-       DeviceArray(0.2, dtype=float32, weak_type=True),
-       DeviceArray(0.3, dtype=float32, weak_type=True)]
+   >>> op.parameters
+   [DeviceArray(0.1, dtype=float32, weak_type=True),
+    DeviceArray(0.2, dtype=float32, weak_type=True),
+    DeviceArray(0.3, dtype=float32, weak_type=True)]
 
 #. **Non-trainable hyperparameters** that influence the action of the operator. Not every operator has hyperparameters.
 
-   .. code-block:: python
-
-       >>> op.hyperparameters
-       {}
+   >>> op.hyperparameters
+   {}
 
 #. Possible **symbolic or numerical representations** of the operator, which can be used by PennyLane's
    devices to interpret the map. Examples are:
 
-   * Representation as a **product of operators**:
+   * Representation as a **linear combination of operators**:
 
-     .. code-block:: python
-
-         >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
-         >>> op.decomposition()
-         [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+   >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+   >>> op.decomposition()
+   [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
    * Representation as a **linear combination of operators**:
 
