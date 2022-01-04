@@ -160,10 +160,8 @@ class hessian_transform(qml.batch_transform):
                 for c in cjac:
                     if c is not None:
                         num_arg_dims = len(qml.math.shape(c)) - 1  # number of dimensions in the QNode output
-                        hess = qml.math.tensordot(qhess, c, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape A)
-                        hess = qml.math.tensordot(hess, c, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape A, qnode arg shape B)
-                        for i in range(num_arg_dims):
-                            hess = qml.math.swapaxes(hess, -1 - i, -1 - num_arg_dims - i)  # -> (qnode output shape, qnode arg shape B, qnode arg shape A)
+                        hess = qml.math.tensordot(qhess, c, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape)
+                        hess = qml.math.tensordot(hess, c, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape, qnode arg shape)
                         hessians.append(hess)
 
                 return tuple(hessians)
@@ -198,10 +196,8 @@ class hessian_transform(qml.batch_transform):
             if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
                 # single QNode argument
                 num_arg_dims = len(qml.math.shape(cjac)) - 1  # number of dimensions in the QNode output
-                hess = qml.math.tensordot(qhess, cjac, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape A)
-                hess = qml.math.tensordot(hess, cjac, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape A, qnode arg shape B)
-                for i in range(num_arg_dims):
-                    hess = qml.math.swapaxes(hess, -1 - i, -1 - num_arg_dims - i)  # -> (qnode output shape, qnode arg shape B, qnode arg shape A)
+                hess = qml.math.tensordot(qhess, cjac, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape)
+                hess = qml.math.tensordot(hess, cjac, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape, qnode arg shape)
             elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
                 # multiple QNode arguments with stacking
                 num_out_dims = len(qml.math.shape(cjac)) - 2  # number of dimensions in the QNode output
