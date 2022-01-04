@@ -22,16 +22,14 @@ maps can depend on a set of trainable parameters. The :class:`~.Operator` class
 serves as the main abstraction of such objects, and all operators (such as gates, channels, observables)
 inherit from it.
 
-.. code-block:: python
-
-   >>> from jax import numpy as jnp
-   >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
-   >>> isinstance(op, qml.operation.Operator)
-   True
+>>> from jax import numpy as jnp
+>>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+>>> isinstance(op, qml.operation.Operator)
+True
 
 The basic components of operators are the following:
 
-#. **The name of the operator**, which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
+#. **The name of the operator** (:attr:`.Operator.name`), which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
    or could be a name specific to PennyLane.
 
    .. code-block:: python
@@ -39,14 +37,14 @@ The basic components of operators are the following:
        >>> op.name
        Rot
 
-#. **The subsystems that the operator addresses**, which mathematically speaking defines the subspace that it acts on.
+#. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
 
    .. code-block:: python
 
        >>> op.wires
        <Wires = ['a']>
 
-#. **Trainable parameters** that the map depends on, such as a rotation angle,
+#. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
    specify the three rotation angles of ``op``, the parameters are jax ``DeviceArrays``.
 
@@ -67,7 +65,7 @@ The basic components of operators are the following:
 #. Possible **symbolic or numerical representations** of the operator, which can be used by PennyLane's
    devices to interpret the map. Examples are:
 
-   * Representation as a **product of operators**:
+   * Representation as a **product of operators** (:meth:`.Operator.decomposition`):
 
      .. code-block:: python
 
@@ -75,7 +73,7 @@ The basic components of operators are the following:
          >>> op.decomposition()
          [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
-   * Representation as a **linear combination of operators**:
+   * Representation as a **linear combination of operators** (:meth:`.Operator.terms`):
 
      .. code-block:: python
 
@@ -83,8 +81,8 @@ The basic components of operators are the following:
          >>> op.terms()
          ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix)
-     and diagonalizing gates (for the unitaries):
+   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
+     and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
      .. code-block:: python
 
@@ -94,7 +92,7 @@ The basic components of operators are the following:
          >>> op.eigvals()
          [ 1 -1]
 
-   * Representation as a **matrix**, as specified by a global wire order that tells us where the
+   * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
      .. code-block:: python
@@ -106,7 +104,7 @@ The basic components of operators are the following:
           [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
           [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-   * Representation as a **sparse matrix**:
+   * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
      .. code-block:: python
 
@@ -247,7 +245,16 @@ The new gate can now be created as follows:
     >>> op.adjoint()
     FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-The new gate can be used in devices, which access the decomposition to interpret it:
+The new gate can be used with PennyLane devices. PennyLane checks with the device
+whether it supports operations using the operation name.
+
+- If the device registers support for an operation with the same name,
+  PennyLane leaves the gate implementation up to the device. The device
+  might have a hardcoded implementation, _or_ it may refer to one of the
+  numerical representations of the operator (such as `operator.matrix`).
+  
+- If the device does not register support for an operation with the same
+  name, PennyLane will automatically decompose the gate using `operator.decomposition`.
 
 .. code-block:: python
 
