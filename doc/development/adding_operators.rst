@@ -11,7 +11,8 @@ action is defined by specifying a representation as a combination of other opera
 For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
 while all other operations are found in ``pennylane/ops/``.
 
-The base classes to construct new operators are found in ``pennylane/operations.py``.
+The base classes to construct new operators, :class:`~.Operator` and
+corresponding subclasses, are found in ``pennylane/operations.py``.
 
 Abstraction
 ###########
