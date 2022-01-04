@@ -339,7 +339,7 @@ to the correct section in ``doc/introduction/templates.rst``:
   This loads the image of the template added to ``doc/_static/templates/test_<templ_type>/``. Make sure that
   this image has the same dimensions and style as other template icons in the folder.
 
-Here are a few more tipps for adding operators:
+Here are a few more tips for adding operators:
 
 * *Choose the name carefully.* Good names tell the user what the operator is used for,
   or what architecture it implements. Ask yourself if a gate of a similar name could

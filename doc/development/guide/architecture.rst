@@ -74,7 +74,7 @@ The four defining properties are accessible for all :class:`~.Operator` instance
 
 Operators can optionally define the transformation they implement via
 symbolic or numerical representations. Here are two examples, and you find more
-details in the documentation on :doc:`adding operations <development/adding_operators>`:
+details in the documentation on :doc:`adding operations </development/adding_operators>`:
 
 * Representation as a product of operators
 
@@ -105,7 +105,7 @@ The measurement functions such as :func:`~.expval` create an instance of this cl
 
 An instance of the :class:`~.measure.MeasurementProcess` class specifies a return type which
 defines the kind of measurement performed, such as expectation, variance, probability, state, or sample.
-For more information, check out the documentation on :doc:`measurements <introduction/measurements>`
+For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
 
 
 QuantumTape
@@ -264,7 +264,8 @@ coded entiely in the framework's language (such as a TensorFlow quantum simulato
 |
 
 .. image:: pl_backprop_device.png
-    :width: 100px
+    :align: center
+    :width: 200px
 
 |
 
