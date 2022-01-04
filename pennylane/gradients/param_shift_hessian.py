@@ -23,18 +23,18 @@ from .parameter_shift import _gradient_analysis
 from .hessian_transform import hessian_transform
 
 
-def _process_gradient_recipe(gradient_recipe, tol=1e-10):
-    """Utility function to process gradient recipes."""
+def _process_hessian_recipe(hessian_recipe, tol=1e-10):
+    """Utility function to process Hessian recipes."""
 
-    gradient_recipe = np.array(gradient_recipe).T
+    hessian_recipe = np.array(hessian_recipe).T
     # remove all small coefficients, shifts, and multipliers
-    gradient_recipe[np.abs(gradient_recipe) < tol] = 0
+    hessian_recipe[np.abs(hessian_recipe) < tol] = 0
     # remove columns where the coefficients are 0
-    gradient_recipe = gradient_recipe[:, :, ~(gradient_recipe[0, 0] == 0)]
+    hessian_recipe = hessian_recipe[:, :, ~(hessian_recipe[0, 0] == 0)]
     # sort columns according to abs(shift2) then abs(shift1)
-    gradient_recipe = gradient_recipe[:, :, np.lexsort(np.abs(gradient_recipe)[:, -1])]
+    hessian_recipe = hessian_recipe[:, :, np.lexsort(np.abs(hessian_recipe)[:, -1])]
 
-    return gradient_recipe[0, 0], gradient_recipe[0, 1], gradient_recipe[:, 2].T
+    return hessian_recipe[0, 0], hessian_recipe[0, 1], hessian_recipe[:, 2].T
 
 
 def generate_multishifted_tapes(tape, idx, shifts):
@@ -75,11 +75,11 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
     Args:
         tape (.QuantumTape): input quantum tape
-        diff_methods (list[string]): The gradient method to use for each trainable parameter.
+        diff_methods (list[string]): The differentiation method to use for each trainable parameter.
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
-            a 0 gradient (that is the parameter does not affect the tape's output).
+            a 0 derivative (that is the parameter does not affect the tape's output).
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the gradient recipe contains an unshifted term, this value is used,
+            and the Hessian recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
 
     Returns:
@@ -177,7 +177,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
         return qml.math.squeeze(hessian)
 
-    return gradient_tapes, processing_fn
+    return hessian_tapes, processing_fn
 
 
 @hessian_transform
@@ -188,7 +188,7 @@ def param_shift_hessian(tape, f0=None):
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the gradient recipe contains an unshifted term, this value is used,
+            and the Hessian recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
 
     Returns:
@@ -206,7 +206,7 @@ def param_shift_hessian(tape, f0=None):
           to a post-processing function to be applied to the evaluated tapes.
     """
 
-    # perform gradient method validation
+    # Perform input validation before generating tapes.
     if any(m.return_type is qml.operation.State for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return the state is not supported."
