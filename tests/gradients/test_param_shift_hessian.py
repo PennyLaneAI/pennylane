@@ -509,7 +509,7 @@ class TestParameterShiftHessian:
 
         with pytest.raises(
             ValueError,
-            match="Computing the gradient of circuits that return variances is currently not supported.",
+            match="Computing the Hessian of circuits that return variances is currently not supported.",
         ):
             qml.gradients.param_shift_hessian(circuit)(x)
 
@@ -529,7 +529,7 @@ class TestParameterShiftHessian:
 
         with pytest.raises(
             ValueError,
-            match="Computing the gradient of circuits that return the state is not supported.",
+            match="Computing the Hessian of circuits that return the state is not supported.",
         ):
             qml.gradients.param_shift_hessian(circuit)(x)
 

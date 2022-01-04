@@ -81,7 +81,7 @@ class hessian_transform(qml.batch_transform):
     Alternatively, Hessian transforms can be applied directly to QNodes, in which case
     the execution is implicit:
 
-    >>> fn = my_custom_gradient(qnode, *gradient_kwargs)
+    >>> fn = my_custom_hessian(qnode, *hessian_kwargs)
     >>> fn(weights)  # transformed function takes the same arguments as the QNode
     1.2629730888100839
 

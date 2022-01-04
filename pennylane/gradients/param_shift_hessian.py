@@ -59,8 +59,8 @@ def generate_multishifted_tapes(tape, idx, shifts):
         new_params = params.copy()
         shifted_tape = tape.copy(copy_operations=True)
 
-        for i, s in enumerate(shift):
-            new_params[idx[i]] = new_params[idx[i]] + qml.math.convert_like(s, new_params[idx[i]])
+        for id_, s in zip(idx, shift):
+            new_params[id_] = new_params[id_] + qml.math.convert_like(s, new_params[id_])
 
         shifted_tape.set_parameters(new_params)
         tapes.append(shifted_tape)
@@ -71,13 +71,13 @@ def generate_multishifted_tapes(tape, idx, shifts):
 def compute_hessian_tapes(tape, diff_methods, f0=None):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
-    post-processing function to combine the results of evaluating the gradient tapes.
+    post-processing function to combine the results of evaluating the Hessian tapes.
 
     Args:
         tape (.QuantumTape): input quantum tape
         diff_methods (list[string]): The gradient method to use for each trainable parameter.
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
-            a 0 gradient (that is the parameter does not affect the tapes output).
+            a 0 gradient (that is the parameter does not affect the tape's output).
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,
             saving a quantum evaluation.
@@ -89,8 +89,8 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
     """
     h_dim = tape.num_params
 
-    gradient_tapes = []
-    gradient_coeffs = []
+    hessian_tapes = []
+    hessian_coeffs = []
     unshifted_coeffs = {}
     shapes = []
 
@@ -112,29 +112,29 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
     for i in range(h_dim):
         for j in range(h_dim):
             # optimization: only generate tapes for upper triangular matrix (j >= i)
-            # optimization: skip partial derivates that are zero
+            # optimization: skip partial derivatives that are zero
             if j < i or diff_methods[i] == "0" or diff_methods[j] == "0":
-                gradient_coeffs.append([])
+                hessian_coeffs.append([])
                 shapes.append(((i, j), 0))
                 continue
 
             recipe = diag_recipe if i == j else off_diag_recipe
-            coeffs, _, shifts = _process_gradient_recipe(recipe)
+            coeffs, _, shifts = _process_hessian_recipe(recipe)
 
             # optimization: only compute the unshifted tape once
             if all(np.array(shifts[0]) == 0):
                 if not unshifted_coeffs and f0 is None:
-                    gradient_tapes.insert(0, tape)
+                    hessian_tapes.insert(0, tape)
 
                 unshifted_coeffs[(i, j)] = coeffs[0]
                 coeffs, shifts = coeffs[1:], shifts[1:]
 
-            # generate the gradient tapes
-            gradient_coeffs.append(coeffs)
-            g_tapes = generate_multishifted_tapes(tape, (i, j), shifts)
+            # generate the Hessian tapes
+            hessian_coeffs.append(coeffs)
+            h_tapes = generate_multishifted_tapes(tape, (i, j), shifts)
 
-            gradient_tapes.extend(g_tapes)
-            shapes.append(((i, j), len(g_tapes)))
+            hessian_tapes.extend(h_tapes)
+            shapes.append(((i, j), len(h_tapes)))
 
     def processing_fn(results):
         # The first results dimension is the number of terms/tapes in the parameter-shift
@@ -162,7 +162,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             else:
                 res = qml.math.stack(res)
                 g = qml.math.tensordot(
-                    res, qml.math.convert_like(gradient_coeffs[k], res), [[0], [0]]
+                    res, qml.math.convert_like(hessian_coeffs[k], res), [[0], [0]]
                 )
                 if (i, j) in unshifted_coeffs:
                     g += unshifted_coeffs[(i, j)] * r0
@@ -197,7 +197,7 @@ def param_shift_hessian(tape, f0=None):
         - If the input is a QNode, a tensor representing the output of the hybrid Hessian matrix
           of size ``(QNode output dimensions, QNode input dimensions, QNode input dimensions)``
           is returned. When the keyword ``hybrid=False`` is specified, the purely quantum Hessian
-          matrix is returned instead, with the dimesions
+          matrix is returned instead, with the dimensions
           ``(QNode output dimensions, number of gate arguments, number of gate arguments)``.
           The difference between the two accounts for the mapping of QNode arguments
           to the actual gate arguments, which can include classical computations.
@@ -209,13 +209,13 @@ def param_shift_hessian(tape, f0=None):
     # perform gradient method validation
     if any(m.return_type is qml.operation.State for m in tape.measurements):
         raise ValueError(
-            "Computing the gradient of circuits that return the state is not supported."
+            "Computing the Hessian of circuits that return the state is not supported."
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
     if any(m.return_type is qml.operation.Variance for m in tape.measurements):
         raise ValueError(
-            "Computing the gradient of circuits that return variances is currently not supported."
+            "Computing the Hessian of circuits that return variances is currently not supported."
         )
 
     if not tape.trainable_params:
