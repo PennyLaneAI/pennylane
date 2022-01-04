@@ -8,8 +8,8 @@ potentially add them to PennyLane.
 
 Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator - one whose
 action is defined by specifying a representation as a combination of other operators.
-For historical reasons, you find circuit ansaetze in the ``pennylane/template`` folder,
-while all other operations are found in ``pennylane/ops``.
+For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
+while all other operations are found in ``pennylane/ops/``.
 
 The base classes to construct new operators are found in ``pennylane/operations.py``.
 
@@ -276,7 +276,8 @@ are implemented as subclasses ``Operation``, ``Observable``, ``Channel``,
 ``CVOperation`` and ``CVOperation``.
 
 However, unlike many other frameworks, PennyLane does not use class
-inheritance to define properties of operators, such as whether it is its own self-inverse, if it is diagonal,
+inheritance to define fine-grained properties of operators,
+such as whether it is its own self-inverse, if it is diagonal,
 or whether it can be decomposed into Pauli rotations. This avoids changing the inheritance structure
 every time an application needs to query a new property.
 
@@ -304,8 +305,8 @@ own inverse. Adding it to the set, like so
 >>> from pennylane.ops.qubits.attributes import self_inverses
 >>> self_inverses.add("MyGate")
 
-These attributes can be queried by devices and compilation pipelines to use special tricks that speed
-up computation. The onus is on the contributors of new operators to add them to the right attributes.
+Attributes can also be queried by devices to use special tricks that allow more efficient
+implementations. The onus is on the contributors of new operators to add them to the right attributes.
 
 .. note::
 
@@ -316,7 +317,7 @@ Adding your new operator to PennyLane
 
 Once the new operator is coded up, it is added to the appropriate folder in ``pennylane/ops/``. The
 tests are added to a file of a similar name and location in ``tests/ops/``. If your operator defines an
-ansatz, add it to the appropriate subfolder in ``pennylane/templates``.
+ansatz, add it to the appropriate subfolder in ``pennylane/templates/``.
 
 The new operation may have to be imported in the module's ``__init__.py`` file in order to be imported correctly.
 

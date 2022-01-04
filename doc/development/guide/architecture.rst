@@ -33,9 +33,9 @@ instructions required to run a quantum circuit.
 
 |
 
-.. image:: pl_overview.png
-    :width: 800px
+.. figure:: pl_overview.png
     :align: center
+    :width: 750px
 
 |
 
@@ -103,10 +103,29 @@ While the :class:`~.Operator` class describes a physical system and its dynamics
 the :class:`~.measure.MeasurementProcess` class describes how we extract information from the quantum system.
 The measurement functions such as :func:`~.expval` create an instance of this class.
 
-An instance of the :class:`~.measure.MeasurementProcess` class specifies a return type which
-defines the kind of measurement performed, such as expectation, variance, probability, state, or sample.
-For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
+.. code-block:: python
 
+    >>> m = qml.expval(qml.PauliZ("a"))
+    >>> type(m)
+    <class 'pennylane.measure.MeasurementProcess'>
+
+An instance of the :class:`~.measure.MeasurementProcess` class specifies the measured observables,
+which are themselves operators.
+
+.. code-block:: python
+
+    >>> m.obs
+    PauliZ(wires=['a'])
+
+Furthermore, it specifies a "return type" which defines the kind of measurement performed,
+such as expectation, variance, probability, state, or sample.
+
+.. code-block:: python
+
+    >>> m.return_type
+    ObservableReturnTypes.Expectation
+
+For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
 
 QuantumTape
 ***********
@@ -231,8 +250,9 @@ with respect to the trainable parameters.
 
 |
 
-.. image:: pl_workflow.png
-    :width: 800px
+.. figure:: pl_workflow.png
+    :align: center
+    :width: 750px
 
 |
 
@@ -263,9 +283,9 @@ coded entiely in the framework's language (such as a TensorFlow quantum simulato
 
 |
 
-.. image:: pl_backprop_device.png
+.. figure:: pl_backprop_device.png
     :align: center
-    :width: 200px
+    :width: 150px
 
 |
 
