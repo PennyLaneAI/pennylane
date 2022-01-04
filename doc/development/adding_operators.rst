@@ -1,7 +1,7 @@
 .. _contributing_operators:
 
-Creating new operators
-======================
+Adding new operators
+====================
 
 The following steps will help you to create custom operators, and to
 potentially add them to PennyLane.
@@ -29,18 +29,18 @@ True
 
 The basic components of operators are the following:
 
-#. **The name of the operator**, which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
+#. **The name of the operator** (:attr:`.Operator.name`), which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
    or could be a name specific to PennyLane.
 
    >>> op.name
    Rot
 
-#. **The subsystems that the operator addresses**, which mathematically speaking defines the subspace that it acts on.
+#. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
 
    >>> op.wires
    <Wires = ['a']>
 
-#. **Trainable parameters** that the map depends on, such as a rotation angle,
+#. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
    specify the three rotation angles of ``op``, the parameters are jax ``DeviceArrays``.
 
@@ -57,56 +57,48 @@ The basic components of operators are the following:
 #. Possible **symbolic or numerical representations** of the operator, which can be used by PennyLane's
    devices to interpret the map. Examples are:
 
-   * Representation as a **linear combination of operators**:
+   * Representation as a **product of operators** (:meth:`.Operator.decomposition`):
 
-   >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
-   >>> op.decomposition()
-   [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+     >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+     >>> op.decomposition()
+     [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
-   * Representation as a **linear combination of operators**:
+   * Representation as a **linear combination of operators** (:meth:`.Operator.terms`):
 
-     .. code-block:: python
+     >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+     >>> op.terms()
+     ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-         >>> op = qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
-         >>> op.terms()
-         ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
+   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
+     and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
-   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix)
-     and diagonalizing gates (for the unitaries):
+     >>> op = qml.PauliX(0)
+     >>> op.diagonalizing_gates()
+     [Hadamard(wires=[0])]
+     >>> op.eigvals()
+     [ 1 -1]
 
-     .. code-block:: python
-
-         >>> op = qml.PauliX(0)
-         >>> op.diagonalizing_gates()
-         [Hadamard(wires=[0])]
-         >>> op.eigvals()
-         [ 1 -1]
-
-   * Representation as a **matrix**, as specified by a global wire order that tells us where the
+   * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
-     .. code-block:: python
+     >>> op = qml.PauliRot(0.2, "X", wires=["b"])
+     >>> op.matrix(wire_order=["a", "b"])
+     [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
+      [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
+      [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
+      [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-         >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-         >>> op.matrix(wire_order=["a", "b"])
-         [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
-          [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
-          [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
-          [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
+   * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
-   * Representation as a **sparse matrix**:
-
-     .. code-block:: python
-
-         >>> from scipy.sparse.coo import coo_matrix
-         >>> row = np.array([0, 1])
-         >>> col = np.array([1, 0])
-         >>> data = np.array([1, -1])
-         >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
-         >>> op = qml.SparseHamiltonian(mat, wires=["a"])
-         >>> op.sparse_matrix(wire_order=["a"])
-         (0, 1)   1
-         (1, 0) - 1
+     >>> from scipy.sparse.coo import coo_matrix
+     >>> row = np.array([0, 1])
+     >>> col = np.array([1, 0])
+     >>> data = np.array([1, -1])
+     >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
+     >>> op = qml.SparseHamiltonian(mat, wires=["a"])
+     >>> op.sparse_matrix(wire_order=["a"])
+     (0, 1)   1
+     (1, 0) - 1
 
 New operators can be created by applying arithmetic functions to operators, such as addition, scalar multiplication,
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
@@ -114,21 +106,17 @@ specific subclasses.
 
 * Operators inheriting from :class:`~.Observable` support addition and scalar multiplication:
 
-  .. code-block:: pycon
-
-      >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
-      >>> op.name
-      Hamiltonian
-      >>> op
-        (0.1) [Z0]
-      + (1.0) [X0]
+  >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
+  >>> op.name
+  Hamiltonian
+  >>> op
+    (0.1) [Z0]
+  + (1.0) [X0]
 
 * Operators may define a hermitian conjugate:
 
-  .. code-block:: pycon
-
-      >>> qml.RX(1., wires=0).adjoint()
-      RX(-1.0, wires=[0])
+  >>> qml.RX(1., wires=0).adjoint()
+  RX(-1.0, wires=[0])
 
 Creating custom operators
 #########################
@@ -225,17 +213,24 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 The new gate can now be created as follows:
 
-.. code-block:: python
+>>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
+>>> op
+FlipAndRotate(0.1, wires=['q3', 'q1'])
+>>> op.decomposition()
+[PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
+>>> op.adjoint()
+FlipAndRotate(-0.1, wires=['q3', 'q1'])
 
-    >>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
-    >>> op
-    FlipAndRotate(0.1, wires=['q3', 'q1'])
-    >>> op.decomposition()
-    [PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
-    >>> op.adjoint()
-    FlipAndRotate(-0.1, wires=['q3', 'q1'])
+The new gate can be used with PennyLane devices. PennyLane checks with the device
+whether it supports operations using the operation name.
 
-The new gate can be used in devices, which access the decomposition to interpret it:
+- If the device registers support for an operation with the same name,
+  PennyLane leaves the gate implementation up to the device. The device
+  might have a hardcoded implementation, _or_ it may refer to one of the
+  numerical representations of the operator (such as `operator.matrix`).
+  
+- If the device does not register support for an operation with the same
+  name, PennyLane will automatically decompose the gate using `operator.decomposition`.
 
 .. code-block:: python
 
@@ -260,7 +255,7 @@ we can even compute gradients of circuits that use the new gate without any extr
 
 .. note::
 
-    The example of ``FlipAndRotate`` is simple enough that one could simply write a function
+    The example of ``FlipAndRotate`` is simple enough that one could write a function
 
     .. code-block:: python
 
@@ -269,8 +264,9 @@ we can even compute gradients of circuits that use the new gate without any extr
                 qml.PauliX(wires=wire_flip)
             qml.RX(angle, wires=wire_rot)
 
-    and call it in the quantum function. However classes allow much more functionality, and are useful
-    for more advanced use cases.
+    and call it in the quantum function *as if it was a gate*.
+    However, classes allow much more functionality, such as defining the adjoint gate above,
+    defining the shape expected for the trainable parameter(s), or specifying gradient rules.
 
 Defining special properties of an operator
 ##########################################
