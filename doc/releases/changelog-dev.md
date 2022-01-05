@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A tensor network template has been added. Quantum circuits with the shape of a matrix product state tensor network can now be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
+* A tensor network templates module has been added. Quantum circuits with the shape of a matrix product state tensor network can now be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
   An example circuit that uses the `MPS` template is:
   ```python
@@ -36,7 +36,38 @@
   2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
   3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
   ```
-  
+* Added a template for tree tensor networks (TTN). [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
+  An example circuit that uses the `TTN` template is:
+  ```python
+  import pennylane as qml
+  import numpy as np
+
+  def block(weights, wires):
+      qml.CNOT(wires=[wires[0],wires[1]])
+      qml.RY(weights[0], wires=wires[0])
+      qml.RY(weights[1], wires=wires[1])
+
+  n_wires = 4
+  n_block_wires = 2
+  n_params_block = 2
+  n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
+  template_weights = [[0.1,-0.3]]*n_blocks
+
+  dev= qml.device('default.qubit',wires=range(n_wires))
+  @qml.qnode(dev)
+  def circuit(template_weights):
+      qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+      return qml.expval(qml.PauliZ(wires=n_wires-1))
+  ```
+  The resulting circuit is:
+  ```pycon
+  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+  0: ──╭C──RY(0.1)─────────────────┤
+  1: ──╰X──RY(-0.3)──╭C──RY(0.1)───┤
+  2: ──╭C──RY(0.1)───│─────────────┤
+  3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
+  ```
+
 * Functions for tapering qubits based on molecular symmetries is added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
 * [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
