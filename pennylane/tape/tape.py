@@ -1202,7 +1202,7 @@ class QuantumTape(AnnotatedQueue):
                 # If the operation takes parameters, construct a string
                 # with parameter values.
                 if precision is not None:
-                    params = "(" + ",".join([f'{p:.{precision}}' for p in op.parameters]) + ")"
+                    params = "(" + ",".join([f"{p:.{precision}}" for p in op.parameters]) + ")"
                 else:
                     # use default precision
                     params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
