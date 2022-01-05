@@ -159,7 +159,7 @@ class hessian_transform(qml.batch_transform):
 
                 for c in cjac:
                     if c is not None:
-                        num_arg_dims = len(qml.math.shape(c)) - 1  # number of dimensions in the QNode output
+                        num_arg_dims = len(qml.math.shape(c)) - 1  # number of dimensions in the QNode argument
                         hess = qml.math.tensordot(qhess, c, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape)
                         hess = qml.math.tensordot(hess, c, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape, qnode arg shape)
                         hessians.append(hess)
@@ -189,22 +189,21 @@ class hessian_transform(qml.batch_transform):
             num_gate_args = qml.math.shape(qhess)[-1]
             # Consider only QNode arguments regarded as trainable by the interfaces.
             trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
+            num_qnode_args = len(trainable_args_idx)
             # Since all arguments have the same shape, obtain shape from the first trainable arg
             qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
-            num_qnode_args = len(trainable_args_idx)
+            num_arg_dims = len(qnode_arg_shape)
 
             if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
                 # single QNode argument
-                num_arg_dims = len(qml.math.shape(cjac)) - 1  # number of dimensions in the QNode output
                 hess = qml.math.tensordot(qhess, cjac, [[-1], [0]])  # -> (qnode output shape, # gate args, qnode arg shape)
                 hess = qml.math.tensordot(hess, cjac, [[-1 - num_arg_dims], [0]])  # -> (qnode output shape, qnode arg shape, qnode arg shape)
             elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
                 # multiple QNode arguments with stacking
-                num_out_dims = len(qml.math.shape(cjac)) - 2  # number of dimensions in the QNode output
-                hess = qml.math.tensordot(cjac, qhess, [[-2], [-2]])  # -> (reverse qnode output shape A, # qnode args A, qnode output shape, # gate args)
-                cjac = qml.math.moveaxis(qml.math.transpose(cjac), 0, -1)  # (# gate args, qnode arg shape B, # qnode args B)
-                hess = qml.math.tensordot(hess, cjac, [[-1], [0]])  # -> (reverse qnode output shape A, # qnode args A, qnode output shape, qnode arg shape B, # qnode args B)
-                hess = qml.math.swapaxes(hess, num_out_dims, -1)  # -> (reverse qnode output shape A, # qnode args B, qnode output shape, qnode arg shape B, # qnode args A)
+                hess = qml.math.tensordot(cjac, qhess, [[-2], [-2]])  # -> (reverse qnode arg shape A, # qnode args A, qnode output shape, # gate args)
+                cjac = qml.math.moveaxis(qml.math.transpose(cjac), 0, -1)  # cjac -> (# gate args, qnode arg shape B, # qnode args B)
+                hess = qml.math.tensordot(hess, cjac, [[-1], [0]])  # -> (reverse qnode arg shape A, # qnode args A, qnode output shape, qnode arg shape B, # qnode args B)
+                hess = qml.math.swapaxes(hess, num_arg_dims, -1)  # -> (reverse qnode arg shape A, # qnode args B, qnode output shape, qnode arg shape B, # qnode args A)
             else:  # pragma: no cover
                 hess = ()
                 warnings.warn(
