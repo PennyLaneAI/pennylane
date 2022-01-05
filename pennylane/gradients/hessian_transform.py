@@ -189,6 +189,14 @@ class hessian_transform(qml.batch_transform):
             num_gate_args = qml.math.shape(qhess)[-1]
             # Consider only QNode arguments regarded as trainable by the interfaces.
             trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
+            if not trainable_args_idx:  # pragma: no cover
+                warnings.warn(
+                    "Trainable indices were not detected for the classical Jacobian, cannot "
+                    "compute the hybrid Hessian of the QNode. You can still attempt to obtain "
+                    "the quantum Hessian with the `hybrid=False` parameter.",
+                    UserWarning,
+                )
+                return ()
             num_qnode_args = len(trainable_args_idx)
             # Since all arguments have the same shape, obtain shape from the first trainable arg
             qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
