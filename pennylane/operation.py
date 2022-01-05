@@ -114,10 +114,12 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
 """
+# pylint:disable=access-member-before-definition
 import abc
 import copy
 import itertools
 import functools
+import warnings
 from enum import Enum, IntEnum
 from scipy.sparse import kron, eye, coo_matrix
 
@@ -334,7 +336,7 @@ State = ObservableReturnTypes.State
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -1178,7 +1180,7 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
@@ -1662,7 +1664,7 @@ class Tensor(Observable):
         Returns:
             list[Any]: flattened list containing all dependent parameters
         """
-        return [p for sublist in [o.data for o in self.obs] for p in sublist]
+        return sum((o.data for o in self.obs), [])
 
     @property
     def num_params(self):
@@ -1824,6 +1826,9 @@ class Tensor(Observable):
         if wire_order is not None:
             raise NotImplementedError("The wire_order argument is currently not implemented.")
 
+        # Check for partially (but not fully) overlapping wires in the observables
+        partial_overlap = self.check_wires_partial_overlap()
+
         # group the observables based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
@@ -1837,11 +1842,44 @@ class Tensor(Observable):
             # append diagonalizing unitary for specific wire to U_list
             U_list.append(mats[0])
 
+        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
+        wire_size = 2 ** len(self.wires)
+        if mat_size != wire_size:
+            if partial_overlap:
+                warnings.warn(
+                    "The matrix for Tensors of Tensors/Observables with partially "
+                    "overlapping wires might yield unexpected results. In particular "
+                    "the matrix size might be larger than intended."
+                )
+            else:
+                warnings.warn(
+                    f"The size of the returned matrix ({mat_size}) will not be compatible "
+                    f"with the subspace of the wires of the Tensor ({wire_size}). "
+                    "This likely is due to wires being used in multiple tensor product "
+                    "factors of the Tensor."
+                )
+
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
-    def sparse_matrix(self, wires=None):
+    def check_wires_partial_overlap(self):
+        r"""Tests whether any two observables in the Tensor have partially
+        overlapping wires and raise a warning if they do.
+
+        .. note::
+
+            Fully overlapping wires, i.e., observables with
+            same (sets of) wires are not reported, as the ``matrix`` method is
+            well-defined and implemented for this scenario.
+        """
+        for o1, o2 in itertools.combinations(self.obs, r=2):
+            shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
+            if shared and (shared != o1.wires or shared != o2.wires):
+                return 1
+        return 0
+
+    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
