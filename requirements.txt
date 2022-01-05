@@ -4,6 +4,7 @@ cvxpy==1.1
 cvxopt==1.2
 cachetools==4.2.2
 networkx==2.6
+retworkx==0.10.2
 tensornetwork==0.3
 autograd==1.3
 toml==0.10

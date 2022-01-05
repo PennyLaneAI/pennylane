@@ -146,21 +146,21 @@ class TestCircuitGraph:
 
         circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
         graph = circuit.graph
-        assert len(graph) == 9
+        assert len(graph.node_indexes()) == 9
         assert len(graph.edges()) == 9
 
         queue = ops + obs
 
         # all ops should be nodes in the graph
         for k in queue:
-            assert k in graph.nodes
+            assert k in graph.nodes()
 
         # all nodes in the graph should be ops
-        for k in graph.nodes:
+        # for k in graph.nodes:
+        for k in graph.nodes():
             assert k is queue[k.queue_idx]
-
-        # Finally, checking the adjacency of the returned DAG:
-        assert set(graph.edges()) == set(
+        a = set((graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list())
+        b = set(
             (queue[a], queue[b])
             for a, b in [
                 (0, 3),
@@ -174,6 +174,7 @@ class TestCircuitGraph:
                 (6, 8),
             ]
         )
+        assert a == b
 
     def test_ancestors_and_descendants_example(self, ops, obs):
         """
@@ -191,6 +192,26 @@ class TestCircuitGraph:
         descendants = circuit.descendants([queue[6]])
         assert descendants == set([queue[8]])
 
+    def test_in_topological_order_example(self, ops, obs):
+        """
+        Test ``_in_topological_order`` method returns the expected result.
+        """
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+
+        to = circuit._in_topological_order(ops)
+
+        to_expected = [
+            qml.RZ(0.35, wires=[2]),
+            qml.Hadamard(wires=[2]),
+            qml.RY(0.35, wires=[1]),
+            qml.RX(0.43, wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PauliX(wires=[1]),
+            qml.CNOT(wires=[2, 0]),
+        ]
+
+        assert str(to) == str(to_expected)
+
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
 
@@ -201,11 +222,11 @@ class TestCircuitGraph:
 
     def test_observables(self, circuit, obs):
         """Test that the `observables` property returns the list of observables in the circuit."""
-        assert circuit.observables == obs
+        assert str(circuit.observables) == str(obs)
 
     def test_operations(self, circuit, ops):
         """Test that the `operations` property returns the list of operations in the circuit."""
-        assert circuit.operations == ops
+        assert str(circuit.operations) == str(ops)
 
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
