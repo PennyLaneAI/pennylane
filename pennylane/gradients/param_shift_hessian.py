@@ -79,8 +79,8 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
             a 0 derivative (that is the parameter does not affect the tape's output).
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the Hessian recipe contains an unshifted term, this value is used,
-            saving a quantum evaluation.
+            and the Hessian tapes include the original input tape, the 'f0' value is used
+            instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
         tuple[list[QuantumTape], function]: A tuple containing a list of generated tapes, in
@@ -198,8 +198,8 @@ def param_shift_hessian(tape, f0=None):
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the Hessian recipe contains an unshifted term, this value is used,
-            saving a quantum evaluation.
+            and the Hessian tapes include the original input tape, the 'f0' value is used
+            instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
