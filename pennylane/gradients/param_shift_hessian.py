@@ -110,10 +110,15 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
     # for now assume all operations support the 2-term parameter shift rule
     for i in range(h_dim):
-        for j in range(h_dim):
-            # optimization: only generate tapes for upper triangular matrix (j >= i)
+
+        # Fill in the coefficients and shapes for the entries in the lower triangular part
+        hessian_coeffs.extend([[]] * i)
+        shapes.extend(((i, j), 0) for j in range(i))
+
+        # optimization: only generate tapes for upper triangular matrix (j >= i)
+        for j in range(i, h_dim):
             # optimization: skip partial derivatives that are zero
-            if j < i or diff_methods[i] == "0" or diff_methods[j] == "0":
+            if diff_methods[i] == "0" or diff_methods[j] == "0":
                 hessian_coeffs.append([])
                 shapes.append(((i, j), 0))
                 continue
