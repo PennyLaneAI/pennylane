@@ -15,7 +15,7 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-import functools
+from functools import reduce
 
 import pytest
 import numpy as np
@@ -23,10 +23,9 @@ from pennylane import numpy as pnp
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane.queuing
-from pennylane.operation import NoDecompositionError, Tensor, operation_derivative, Operator
+from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
-from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
+from gate_data import I, X, CNOT
 from pennylane.wires import Wires
 
 
@@ -700,7 +699,7 @@ class TestTensor:
         # since the test is assuming consecutive wires for each observable
         # in the tensor product, it is sufficient to Kronecker product
         # the entire list.
-        U = functools.reduce(np.kron, U_list)
+        U = reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
         expected = np.diag(O.eigvals())
@@ -716,24 +715,43 @@ class TestTensor:
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
         res = O.matrix()
-        expected = np.kron(qml.PauliY.compute_matrix(), H)
-        expected = np.kron(qml.PauliX.compute_matrix(), expected)
+        expected = reduce(np.kron, [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), H])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_matrix_wire_order_not_implemented(self):
         """Test that an exception is raised if a wire_order is passed to the matrix method"""
         O = qml.PauliX(0) @ qml.PauliY(1)
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(NotImplementedError, match="wire_order"):
             O.matrix(wire_order=[1, 0])
 
-    def test_multiplication_matrix(self, tol):
+    def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
+        """Tests that a warning is raised if the wires the factors in
+        the tensor product act on have partial overlaps."""
+        H = np.diag([1, 2, 3, 4])
+        O1 = qml.PauliX(0) @ qml.Hermitian(H, [0, 1])
+        O2 = qml.Hermitian(H, [0, 1]) @ qml.PauliY(1)
+
+        for O in (O1, O2):
+            with pytest.warns(UserWarning, match="partially overlapping"):
+                O.matrix()
+
+    def test_tensor_matrix_too_large_warning(self, tol):
+        """Tests that a warning is raised if wires occur in multiple of the
+        factors in the tensor product, leading to a wrongly-sized matrix."""
+        O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
+        with pytest.warns(UserWarning, match="The size of the returned matrix"):
+            O.matrix()
+
+    @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
+    def test_multiplication_matrix(self, tol, classes):
         """If using the ``@`` operator on two observables acting on the
         same wire, the tensor class should treat this as matrix multiplication."""
-        O = qml.PauliX(0) @ qml.PauliX(0)
+        c1, c2 = classes
+        O = c1(0) @ c2(0)
 
         res = O.matrix()
-        expected = qml.PauliX.compute_matrix() @ qml.PauliX.compute_matrix()
+        expected = c1.compute_matrix() @ c2.compute_matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1061,31 +1079,76 @@ class TestTensorObservableOperations:
             tensor - A
 
 
-class TestDecomposition:
-    """Test for operation decomposition"""
+# Dummy class inheriting from Operator
+class MyOp(Operator):
+    num_wires = 1
 
-    def test_compute_decomposition_default(self):
-        """Tests None is default for compute_decomposition."""
 
-        class MyOp(Operator):
-            num_wires = 1
+# Dummy class inheriting from Operation
+class MyGate(Operation):
+    num_wires = 1
 
-        with pytest.raises(NoDecompositionError):
-            MyOp.compute_decomposition()
 
-        op = MyOp(wires=1)
-        with pytest.raises(NoDecompositionError):
-            op.compute_decomposition()
+op = MyOp(wires=1)
+gate = MyGate(wires=1)
 
-    def test_decomposition_default(self):
-        """Test None is default for decomposition."""
 
-        class MyOp(Operator):
-            num_wires = 1
+class TestDefaultRepresentations:
+    """Tests that the default representations raise custom errors"""
 
-        op = MyOp(wires=1)
-        with pytest.raises(NoDecompositionError):
+    def test_decomposition_undefined(self):
+        """Tests that custom error is raised in the default decomposition representation."""
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            MyOp.compute_decomposition(wires=[1])
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
             op.decomposition()
+
+    def test_matrix_undefined(self):
+        """Tests that custom error is raised in the default matrix representation."""
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            MyOp.compute_matrix()
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.matrix()
+
+    def test_terms_undefined(self):
+        """Tests that custom error is raised in the default terms representation."""
+        with pytest.raises(qml.operation.TermsUndefinedError):
+            MyOp.compute_terms(wires=[1])
+        with pytest.raises(qml.operation.TermsUndefinedError):
+            op.terms()
+
+    def test_sparse_matrix_undefined(self):
+        """Tests that custom error is raised in the default sparse matrix representation."""
+        with pytest.raises(NotImplementedError):
+            MyOp(wires="a").sparse_matrix(wire_order=["a", "b"])
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            MyOp.compute_sparse_matrix()
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            op.sparse_matrix()
+
+    def test_eigvals_undefined(self):
+        """Tests that custom error is raised in the default eigenvalue representation."""
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            MyOp.compute_eigvals()
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            op.eigvals()
+
+    def test_diaggates_undefined(self):
+        """Tests that custom error is raised in the default diagonalizing gates representation."""
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            MyOp.compute_diagonalizing_gates(wires=[1])
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            op.diagonalizing_gates()
+
+    def test_adjoint_undefined(self):
+        """Tests that custom error is raised in the default adjoint representation."""
+        with pytest.raises(qml.operation.AdjointUndefinedError):
+            gate.adjoint()
+
+    def test_generator_undefined(self):
+        """Tests that custom error is raised in the default generator representation."""
+        with pytest.raises(qml.operation.GeneratorUndefinedError):
+            gate.generator()
 
 
 class TestChannel:

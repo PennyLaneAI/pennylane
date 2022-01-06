@@ -728,7 +728,7 @@ class MultiRZ(Operation):
         return qml.math.exp(-1j * theta / 2 * eigs)
 
     @staticmethod
-    def compute_decomposition(theta, wires, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(theta, wires, **kwargs):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute the decomposition for the specified parameter and wires. The decomposition
         defines an Operator as a product of more fundamental gates:
 

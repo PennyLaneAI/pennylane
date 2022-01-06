@@ -22,7 +22,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.queuing
 import pennylane.utils as pu
 import scipy.sparse
 

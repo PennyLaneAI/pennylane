@@ -18,7 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.operation import NoDecompositionError
+from pennylane.operation import DecompositionUndefinedError
 
 from pennylane.queuing import AnnotatedQueue
 from pennylane.measure import (
@@ -547,7 +547,7 @@ class TestExpansion:
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
-        with pytest.raises(NoDecompositionError):
+        with pytest.raises(DecompositionUndefinedError):
             MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1])).expand()
 
 
