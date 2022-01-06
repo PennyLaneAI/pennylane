@@ -15,7 +15,7 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-import functools
+from functools import reduce
 
 import pytest
 import numpy as np
@@ -699,7 +699,7 @@ class TestTensor:
         # since the test is assuming consecutive wires for each observable
         # in the tensor product, it is sufficient to Kronecker product
         # the entire list.
-        U = functools.reduce(np.kron, U_list)
+        U = reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
         expected = np.diag(O.eigvals())
@@ -715,24 +715,43 @@ class TestTensor:
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
         res = O.matrix()
-        expected = np.kron(qml.PauliY.compute_matrix(), H)
-        expected = np.kron(qml.PauliX.compute_matrix(), expected)
+        expected = reduce(np.kron, [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), H])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_matrix_wire_order_not_implemented(self):
         """Test that an exception is raised if a wire_order is passed to the matrix method"""
         O = qml.PauliX(0) @ qml.PauliY(1)
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(NotImplementedError, match="wire_order"):
             O.matrix(wire_order=[1, 0])
 
-    def test_multiplication_matrix(self, tol):
+    def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
+        """Tests that a warning is raised if the wires the factors in
+        the tensor product act on have partial overlaps."""
+        H = np.diag([1, 2, 3, 4])
+        O1 = qml.PauliX(0) @ qml.Hermitian(H, [0, 1])
+        O2 = qml.Hermitian(H, [0, 1]) @ qml.PauliY(1)
+
+        for O in (O1, O2):
+            with pytest.warns(UserWarning, match="partially overlapping"):
+                O.matrix()
+
+    def test_tensor_matrix_too_large_warning(self, tol):
+        """Tests that a warning is raised if wires occur in multiple of the
+        factors in the tensor product, leading to a wrongly-sized matrix."""
+        O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
+        with pytest.warns(UserWarning, match="The size of the returned matrix"):
+            O.matrix()
+
+    @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
+    def test_multiplication_matrix(self, tol, classes):
         """If using the ``@`` operator on two observables acting on the
         same wire, the tensor class should treat this as matrix multiplication."""
-        O = qml.PauliX(0) @ qml.PauliX(0)
+        c1, c2 = classes
+        O = c1(0) @ c2(0)
 
         res = O.matrix()
-        expected = qml.PauliX.compute_matrix() @ qml.PauliX.compute_matrix()
+        expected = c1.compute_matrix() @ c2.compute_matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1100,6 +1119,8 @@ class TestDefaultRepresentations:
 
     def test_sparse_matrix_undefined(self):
         """Tests that custom error is raised in the default sparse matrix representation."""
+        with pytest.raises(NotImplementedError):
+            MyOp(wires="a").sparse_matrix(wire_order=["a", "b"])
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             MyOp.compute_sparse_matrix()
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):

@@ -106,7 +106,7 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -221,7 +221,7 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for specified wire. The decomposition defines an Operator
+        r"""Compute the decomposition for specified wire. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -345,7 +345,7 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for specified wire. The decomposition defines an Operator
+        r"""Compute the decomposition for specified wire. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -458,7 +458,7 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wire. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -547,7 +547,7 @@ class S(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wire. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -633,7 +633,7 @@ class T(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wire. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -719,7 +719,7 @@ class SX(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wire. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -945,7 +945,7 @@ class CY(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
 
@@ -1022,7 +1022,7 @@ class SWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1115,7 +1115,7 @@ class ISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1221,7 +1221,7 @@ class SISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1345,7 +1345,7 @@ class CSWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1451,7 +1451,7 @@ class Toffoli(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1670,8 +1670,8 @@ class MultiControlledX(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires, work_wires=None, control_values=None, **kwargs):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1708,7 +1708,7 @@ class MultiControlledX(Operation):
 
         if len(control_wires) > 2 and len(work_wires) == 0:
             raise ValueError(
-                f"At least one work wire is required to decompose operation: MultiControlledX"
+                "At least one work wire is required to decompose operation: MultiControlledX"
             )
 
         flips1 = [
@@ -1841,8 +1841,8 @@ class Barrier(Operation):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(wires, only_visual=False):
-        """Compute the decomposition for the specified wires. The decomposition defines an Operator
+    def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
         as a product of more fundamental gates:
 
         .. math:: O = O_1 O_2 \dots O_n.
