@@ -147,6 +147,10 @@
 
 <h3>Improvements</h3>
 
+* A precision argument has been added to the tape's ``to_openqasm`` function 
+  to control the precision of parameters.
+  [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
+
 * Insert transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
