@@ -1255,7 +1255,7 @@ class Operation(Operator):
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     def eigvals(self):
-        op_eigvals = self.compute_eigvals(*self.parameters, **self.hyperparameters)
+        op_eigvals = super().eigvals()
 
         if self.inverse:
             return qml.math.conj(op_eigvals)
