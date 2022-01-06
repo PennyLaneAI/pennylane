@@ -476,6 +476,17 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_
             [1, -1, -1],
         ),
         (
+            ["He", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]], requires_grad=False),
+            1,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
+            ],
+            1,
+            [-1, 1],
+        ),
+        (
             ["H", "H", "H"],
             np.array(
                 [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
@@ -486,8 +497,8 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
                 qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
             ],
-            3,
-            [1, -1],
+            2,
+            [-1, -1],
         ),
     ],
 )
