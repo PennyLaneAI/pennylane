@@ -24,10 +24,14 @@ part of a larger hybrid quantum-classical computation.
 
 QNodes run **quantum circuits** on **devices**.
 The devices may be simulators built into PennyLane, or external devices
-provided by plugins. The quantum circuit is specified by defining a **quantum function**,
+provided by plugins.
+
+The quantum circuit is specified by defining a **quantum function**,
 which is a Python function that contains quantum operations and measurements
 represented by the :class:`~.Operator` and :class:`~.MeasurementProcess` classes,
-respectively. Internally, the quantum function is used to construct one or more
+respectively.
+
+Internally, the quantum function is used to construct one or more
 **quantum tapes**. A quantum tape is a context manager that records a queue of
 instructions required to run a quantum circuit.
 
@@ -43,7 +47,8 @@ The power of a QNode lies in the fact that it can be run in a "forward" fashion 
 execute the quantum circuit, or in a "backward" fashion in which it provides
 gradients (or, more precisely, *jacobian-vector products*).
 
-Let's go through these components one-by-one, this time from the "inside out".
+Let's go through these components one-by-one, this time from the "inside out" of the
+schematic drawing above.
 
 Operator
 ********
@@ -56,21 +61,19 @@ trainable parameters can be tensors of any supported autodifferentiation framewo
 
 The four defining properties are accessible for all :class:`~.Operator` instances:
 
-.. code-block:: python
+>>> from jax import numpy as jnp
+>>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
 
-    >>> from jax import numpy as jnp
-    >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
-
-    >>> op.name
-    Rot
-    >>> op.parameters
-    [DeviceArray(0.1, dtype=float32, weak_type=True),
-     DeviceArray(0.2, dtype=float32, weak_type=True),
-     DeviceArray(0.3, dtype=float32, weak_type=True)]
-    >>> op.hyperparameters
-    {}
-    >>> op.wires
-    <Wires = ['a']>
+>>> op.name
+Rot
+>>> op.parameters
+[DeviceArray(0.1, dtype=float32, weak_type=True),
+ DeviceArray(0.2, dtype=float32, weak_type=True),
+ DeviceArray(0.3, dtype=float32, weak_type=True)]
+>>> op.hyperparameters
+{}
+>>> op.wires
+<Wires = ['a']>
 
 Operators can optionally define the transformation they implement via
 symbolic or numerical representations. Here are two examples, and you find more
@@ -78,20 +81,16 @@ details in the documentation on :doc:`adding operations </development/adding_ope
 
 * Representation as a product of operators
 
-  .. code-block:: python
-
-      >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
-      >>> op.decomposition()
-      [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+  >>> op = qml.Rot(0.1, 0.2, 0.3, wires=["a"])
+  >>> op.decomposition()
+  [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
 * Representation as a matrix
 
-  .. code-block:: python
-
-      >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-      >>> op.matrix()
-      [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
-       [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
+  >>> op = qml.PauliRot(0.2, "X", wires=["b"])
+  >>> op.matrix()
+  [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
+   [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
 
 Devices query operators for their properties and representations to
 gain information on how to implement the operator.
@@ -100,30 +99,24 @@ MeasurementProcess
 ******************
 
 While the :class:`~.Operator` class describes a physical system and its dynamics,
-the :class:`~.measure.MeasurementProcess` class describes how we extract information from the quantum system.
+the :class:`pennylane.measure.MeasurementProcess` class describes how we extract information from the quantum system.
 The measurement functions such as :func:`~.expval` create an instance of this class.
 
-.. code-block:: python
+>>> m = qml.expval(qml.PauliZ("a"))
+>>> type(m)
+<class 'pennylane.measure.MeasurementProcess'>
 
-    >>> m = qml.expval(qml.PauliZ("a"))
-    >>> type(m)
-    <class 'pennylane.measure.MeasurementProcess'>
-
-An instance of the :class:`~.measure.MeasurementProcess` class specifies the measured observables,
+An instance of the :class:`~.MeasurementProcess` class specifies the measured observables,
 which are themselves operators.
 
-.. code-block:: python
-
-    >>> m.obs
-    PauliZ(wires=['a'])
+>>> m.obs
+PauliZ(wires=['a'])
 
 Furthermore, it specifies a "return type" which defines the kind of measurement performed,
 such as expectation, variance, probability, state, or sample.
 
-.. code-block:: python
-
-    >>> m.return_type
-    ObservableReturnTypes.Expectation
+>>> m.return_type
+ObservableReturnTypes.Expectation
 
 For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
 
@@ -133,13 +126,11 @@ QuantumTape
 Quantum operators and measurement processes can be used to build a quantum circuit.
 The user defines the circuit by constructing a quantum function, such as:
 
-.. code-block:: python
-
-    def qfunc(params):
-        qml.RX(params[0], wires='b')
-        qml.CNOT(wires=['a', 'b'])
-        qml.RY(params[1], wires='a')
-        return qml.expval(qml.PauliZ(wires='b'))
+def qfunc(params):
+    qml.RX(params[0], wires='b')
+    qml.CNOT(wires=['a', 'b'])
+    qml.RY(params[1], wires='a')
+    return qml.expval(qml.PauliZ(wires='b'))
 
 Internally, a quantum function is translated to a quantum tape, which is
 the central representation of a quantum circuit. The tape is a context manager that stores lists
@@ -150,18 +141,16 @@ gates are stored in the tape's ``operation`` property, while the
 measurement functions such as :func:`~.expval` are responsible for adding measurement processes
 to the tape's ``measurement`` property.
 
-.. code-block:: python
+>>> with qml.tape.QuantumTape() as tape:
+...	    qfunc(params)
 
-    >>> with qml.tape.QuantumTape() as tape:
-    ...	    qfunc(params)
+>>> tape.operations
+[RX(DeviceArray(0.5, dtype=float32), wires=['b']),
+ CNOT(wires=['a', 'b']),
+ RY(DeviceArray(0.2, dtype=float32), wires=['a'])]
 
-    >>> tape.operations
-    [RX(DeviceArray(0.5, dtype=float32), wires=['b']),
-     CNOT(wires=['a', 'b']),
-     RY(DeviceArray(0.2, dtype=float32), wires=['a'])]
-
-    >>> tape.measurements
-    [expval(PauliZ(wires=['b']))]
+>>> tape.measurements
+[expval(PauliZ(wires=['b']))]
 
 These two "queues" are used by devices to get information on the circuit they
 have to run.
@@ -179,11 +168,9 @@ within the :class:`~.Device` class. The main job of devices is to
 interpret and execute tapes. The most important method is ``batch_execute``,
 which executes a list of tapes, such as a list of the single tape created above:
 
-.. code-block:: python
-
-    >>> device = qml.device("default.qubit", wires=['a', 'b'], shots=None)
-    >>> device.batch_execute([tape])
-    [array([0.87758256])]
+>>> device = qml.device("default.qubit", wires=['a', 'b'], shots=None)
+>>> device.batch_execute([tape])
+[array([0.87758256])]
 
 There are also device subclasses available, containing shared logic for
 particular types of devices.  For example, qubit-based devices can inherit from
@@ -204,36 +191,33 @@ This is where it all comes together: A **QNode** is an encapsulation of a functi
 :math:`f(x;\theta)=R^m\rightarrow R^n` that is executed using quantum
 information processing on a quantum device. It is created by a quantum function and a device.
 
-.. code-block:: python
+>>> import jax
+>>> from jax import numpy as jnp
+>>> params = jnp.array([0.5, 0.2])
 
-    >>> import jax
-    >>> from jax import numpy as jnp
-    >>> params = jnp.array([0.5, 0.2])
+>>> qnode = qml.QNode(qfunc, device, interface='jax')
+>>> qnode(params)
+0.8776
 
-    >>> qnode = qml.QNode(qfunc, device, interface='jax')
-    >>> qnode(params)
-    0.8776
+>>> qnode_drawer = qml.transforms.draw(qnode)
+>>> qnode_drawer(params)
+a: ───────────╭C──RY(0.2)──┤
+b: ──RX(0.5)──╰X───────────┤ ⟨Z⟩
 
-    >>> jax.grad(qnode)
-    [-0.4794  0.]
+.. note::
 
-    # transforms create new functions from qnodes
-    >>> qnode_drawer = qml.transforms.draw(qnode)
-    >>> qnode_drawer(params)
-    a: ───────────╭C──RY(0.2)──┤
-    b: ──RX(0.5)──╰X───────────┤ ⟨Z⟩
-
-
-Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
-:func:`~pennylane.QNode` constructor function automates the process of creating a QNode from a provided
-quantum function and device.
+    Users don't typically instantiate QNodes directly---instead, the :func:`~pennylane.qnode` decorator or
+    :func:`~pennylane.QNode` constructor function automates the process of creating a QNode from a provided
+    quantum function and device.
 
 Internally, the QNode translates the quantum function into one or more quantum tapes
 and classical processing routines that, taken together, execute the quantum computation.
 
 The crucial property of a QNode is that it is differentiable by classical autodifferentiation
-frameworks such as autograd, jax, TensorFlow and PyTorch. The next section will look at
-differentiation workflows in more detail.
+frameworks such as autograd, jax, TensorFlow and PyTorch.
+
+>>> jax.grad(qnode)
+[-0.4794  0.]
 
 Workflow
 ########

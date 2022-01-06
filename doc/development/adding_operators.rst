@@ -49,7 +49,8 @@ The basic components of operators are the following:
     DeviceArray(0.2, dtype=float32, weak_type=True),
     DeviceArray(0.3, dtype=float32, weak_type=True)]
 
-#. **Non-trainable hyperparameters** that influence the action of the operator. Not every operator has hyperparameters.
+#. **Non-trainable hyperparameters** (:attr:`.Operator.hyperparameters`) that influence the action of the operator.
+   Not every operator has hyperparameters.
 
    >>> op.hyperparameters
    {}
