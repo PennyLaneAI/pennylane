@@ -543,6 +543,22 @@ class TestPassthruIntegration:
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(jax.grad(circuit)(x), 0.0)
+        assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
+
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_jax_interface_gradient(self, operation, diff_method, tol):

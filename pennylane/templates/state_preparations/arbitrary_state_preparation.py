@@ -74,7 +74,7 @@ class ArbitraryStatePreparation(Operation):
 
 
     Args:
-        weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^(n+1) - 2`
+        weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^{n+1} - 2`
             where :math:`n` is the number of wires the template acts upon.
         wires (Iterable): wires that the template acts on
     """

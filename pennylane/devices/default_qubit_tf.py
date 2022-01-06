@@ -140,6 +140,7 @@ class DefaultQubitTF(DefaultQubit):
     _transpose = staticmethod(tf.transpose)
     _tensordot = staticmethod(tf.tensordot)
     _conj = staticmethod(tf.math.conj)
+    _real = staticmethod(tf.math.real)
     _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
