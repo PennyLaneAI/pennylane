@@ -70,7 +70,8 @@
 
 * Functions for tapering qubits based on molecular symmetries is added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
-* [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+  [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+  [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
   With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
   on a reduced number of qubits.
@@ -81,7 +82,7 @@
   mol = qml.hf.Molecule(symbols, geometry)
   H = qml.hf.generate_hamiltonian(mol)(geometry)
   generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  paulix_sector = [1, -1, -1]
+  paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
   H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
   ```
 
