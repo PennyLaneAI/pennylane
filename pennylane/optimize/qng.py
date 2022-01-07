@@ -228,11 +228,11 @@ class QNGOptimizer(GradientDescentOptimizer):
         # is needed to accomodate for this.
         #
         # For multiple QNode arguments, `qml.jacobian` and `qml.metric_tensor`
-        # return a tuple of arrays. Each of the gradient arrays has to be processed 
+        # return a tuple of arrays. Each of the gradient arrays has to be processed
         # together with the corresponding array in the metric tensor tuple.
         # This requires modifications of the `GradientDescentOptimizer` base class
         # as none of the optimizers accomodate for this use case.
-        return new_args, forward  # pragma: no cover
+        return new_args, forward
 
     # pylint: disable=arguments-differ
     def step(
