@@ -430,7 +430,9 @@ class TestTapeConstruction:
         assert qn.gradient_kwargs["approx_order"] == 2
 
         jac = qn.gradient_fn(qn)(0.45, 0.1)
-        assert jac.shape == (2, 2, 2)
+        assert isinstance(jac, tuple) and len(jac) == 2
+        assert jac[0].shape == (2, 2)
+        assert jac[1].shape == (2, 2)
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement

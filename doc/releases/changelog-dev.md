@@ -148,45 +148,6 @@
 
 <h3>Improvements</h3>
 
-* The `adjoint` transform now raises and error whenever the object it is applied to
-  is not callable.
-  [(#2060)](https://github.com/PennyLaneAI/pennylane/pull/2060)
-
-  An example is a list of operations to which one might apply `qml.adjoint`:
-
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit_wrong(params):
-      # Note the difference:                  v                         v
-      qml.adjoint(qml.templates.AngleEmbedding(params, wires=dev.wires))
-      return qml.state()
-
-  @qml.qnode(dev)
-  def circuit_correct(params):
-      # Note the difference:                  v                         v
-      qml.adjoint(qml.templates.AngleEmbedding)(params, wires=dev.wires)
-      return qml.state()
-
-  params = list(range(1, 3))
-  ```
-  
-  The produced state is
-
-  ```pycon
-  >>> circuit_wrong(params)
-  [ 0.47415988+0.j          0.        -0.73846026j  0.        -0.25903472j
-   -0.40342268+0.j        ]
-  ```
-
-  but if we apply the `adjoint` correctly, we get
-
-  ```pycon
-  >>> circuit_correct(params)
-  [ 0.47415988+0.j          0.         0.73846026j  0.         0.25903472j
-   -0.40342268+0.j        ]
-  ```
-  
 * A precision argument has been added to the tape's ``to_openqasm`` function 
   to control the precision of parameters.
   [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
@@ -206,6 +167,35 @@
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
 <h3>Breaking changes</h3>
+
+* `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+  now follow a different convention regarding their output shape when being used
+  with the Autograd interface
+  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
+
+  See the previous entry for details. This breaking change immediately follows from
+  the change in `qml.jacobian` whenever `hybrid=True` is used in the above methods.
+
+* `qml.jacobian` now follows a different convention regarding its output shape.
+  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
+
+  Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
+  QNode arguments, which succeeded whenever the arguments have the same shape.
+  In this case, the stacked Jacobian would also be transposed, leading to the 
+  output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
+
+  If no stacking and transposing occurs, the output shape instead is a `tuple`
+  where each entry corresponds to one QNode argument and has the shape
+  `(*output_shape, *QNode_arg_shape)`.
+
+  This breaking change alters the behaviour in the first case and removes the attempt
+  to stack and transpose, so that the output always has the shape of the second
+  type.
+
+  Note that the behaviour is unchanged --- the Jacobian tuple is unpacked into
+  a single Jacobian --- if `argnum=None` and there is only one QNode argument
+  with respect to which the differentiation takes place, or if an integer
+  is provided as `argnum`.
 
 <h3>Bug fixes</h3>
 
