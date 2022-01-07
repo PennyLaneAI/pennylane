@@ -1811,12 +1811,12 @@ class U2(Operation):
         return 2
 
     @staticmethod
-    def compute_matrix(phi, lam):  # pylint: disable=arguments-differ
+    def compute_matrix(phi, delta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the U2 operator.
 
         Args:
             phi (tensor_like or float): azimuthal angle
-            lam (tensor_like or float): quantum phase
+            delta (tensor_like or float): quantum phase
 
         Returns:
             tensor_like: canonical matrix
@@ -1827,7 +1827,7 @@ class U2(Operation):
         tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
                 [ 0.7036+0.0706j,  0.6755+0.2090j]])
         """
-        interface = qml.math._multi_dispatch([phi, lam])
+        interface = qml.math._multi_dispatch([phi, delta])
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
