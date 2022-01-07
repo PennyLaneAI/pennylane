@@ -53,13 +53,6 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
   forward pass by iteratively applying the inverse (adjoint) gate. This method is similar to
   ``"backprop"``, but has significantly lower memory usage and a similar runtime.
 
-* ``"reversible"``: Use a form of backpropagation that takes advantage of the unitary or reversible
-  nature of quantum computation.
-
-  This method is similar to the ``adjoint`` method, but has a slightly larger time overhead and a similar
-  memory overhead. Compared to the parameter-shift rule, the reversible method can be faster or slower,
-  depending on the density and location of parametrized gates in a circuit.
-
 Hardware-compatible differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

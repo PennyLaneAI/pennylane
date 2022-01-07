@@ -70,7 +70,8 @@
 
 * Functions for tapering qubits based on molecular symmetries is added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
-* [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+  [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+  [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
   With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
   on a reduced number of qubits.
@@ -81,7 +82,7 @@
   mol = qml.hf.Molecule(symbols, geometry)
   H = qml.hf.generate_hamiltonian(mol)(geometry)
   generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  paulix_sector = [1, -1, -1]
+  paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
   H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
   ```
 
@@ -147,6 +148,49 @@
 
 <h3>Improvements</h3>
 
+* The `adjoint` transform now raises and error whenever the object it is applied to
+  is not callable.
+  [(#2060)](https://github.com/PennyLaneAI/pennylane/pull/2060)
+
+  An example is a list of operations to which one might apply `qml.adjoint`:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_wrong(params):
+      # Note the difference:                  v                         v
+      qml.adjoint(qml.templates.AngleEmbedding(params, wires=dev.wires))
+      return qml.state()
+
+  @qml.qnode(dev)
+  def circuit_correct(params):
+      # Note the difference:                  v                         v
+      qml.adjoint(qml.templates.AngleEmbedding)(params, wires=dev.wires)
+      return qml.state()
+
+  params = list(range(1, 3))
+  ```
+  
+  The produced state is
+
+  ```pycon
+  >>> circuit_wrong(params)
+  [ 0.47415988+0.j          0.        -0.73846026j  0.        -0.25903472j
+   -0.40342268+0.j        ]
+  ```
+
+  but if we apply the `adjoint` correctly, we get
+
+  ```pycon
+  >>> circuit_correct(params)
+  [ 0.47415988+0.j          0.         0.73846026j  0.         0.25903472j
+   -0.40342268+0.j        ]
+  ```
+  
+* A precision argument has been added to the tape's ``to_openqasm`` function 
+  to control the precision of parameters.
+  [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
+
 * Insert transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
@@ -164,6 +208,10 @@
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
+
+* The available `diff_method` options for QNodes has been corrected in both the
+  error messages and the documentation.
+  [(#2078)](https://github.com/PennyLaneAI/pennylane/pull/2078)
 
 * Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
   positions corresponding to vanishing state vector amplitudes is wrong.

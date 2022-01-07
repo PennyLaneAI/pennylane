@@ -313,7 +313,7 @@ class QNode:
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
-                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
+                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
             )
 
         if isinstance(diff_method, qml.gradients.gradient_transform):
@@ -421,10 +421,9 @@ class QNode:
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
         # cannot be done here since we don't yet know the composition of the circuit.
 
-        supported_device = hasattr(device, "_apply_operation")
-        supported_device = supported_device and hasattr(device, "_apply_unitary")
+        required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
+        supported_device = all(hasattr(device, attr) for attr in required_attrs)
         supported_device = supported_device and device.capabilities().get("returns_state")
-        supported_device = supported_device and hasattr(device, "adjoint_jacobian")
 
         if not supported_device:
             raise ValueError(
