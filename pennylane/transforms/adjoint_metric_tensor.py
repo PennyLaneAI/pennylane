@@ -24,27 +24,6 @@ import pennylane as qml
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
 
 
-def _get_generator(op):
-    """Reads out the generator and prefactor of an operation and converts
-    to matrix if necessary.
-
-    Args:
-        op (:class:`~.Operation`): Operation to obtain the generator of.
-    Returns:
-        array[float]: Generator matrix
-        float: Prefactor of the generator
-    """
-
-    generator, prefactor = op.generator
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
-    if op.inverse:
-        generator = generator.conj().T
-        prefactor *= -1
-
-    return generator, prefactor
-
-
 def _apply_operations(state, op, device, invert=False):
     """Wrapper that allows to apply a variety of operations---or groups
     of operations---to a state or to prepare a new state.
@@ -213,7 +192,7 @@ def _adjoint_metric_tensor_tape(tape, device):
     psi = _apply_operations(psi, group_after_trainable_op[-1], device)
 
     for j, outer_op in enumerate(trainable_operations):
-        generator_1, prefactor_1 = _get_generator(outer_op)
+        generator_1, prefactor_1 = qml.utils.get_generator(outer_op, return_matrix=True)
 
         # the state vector phi is missing a factor of 1j * prefactor_1
         phi = device._apply_unitary(
@@ -244,7 +223,7 @@ def _adjoint_metric_tensor_tape(tape, device):
             lam = _apply_operations(lam, group_after_trainable_op[i], device, invert=True)
             inner_op = trainable_operations[i]
             # extract and apply G_i
-            generator_2, prefactor_2 = _get_generator(inner_op)
+            generator_2, prefactor_2 = qml.utils.get_generator(inner_op, return_matrix=True)
             # this state vector is missing a factor of 1j * prefactor_2
             mu = device._apply_unitary(lam, qml.math.convert_like(generator_2, lam), inner_op.wires)
             phi_real = qml.math.reshape(qml.math.real(phi), (dim,))

@@ -43,8 +43,6 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    eigvals = pauli_eigs(1)
-    matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @property
     def num_params(self):
@@ -53,32 +51,84 @@ class Hadamard(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Hadamard operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+        Returns:
+            array: canonical matrix
 
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Hadamard operator.
+        **Example**
 
-        For the Hadamard operator,
+        >>> qml.Hadamard.compute_matrix()
+        [[ 0.70710678  0.70710678]
+         [ 0.70710678 -0.70710678]]
+        """
+        return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the Hadamard operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Hadamard.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
+
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        r"""Diagonalizing gates of this operator.
+
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of the Hadamard operator:
 
         .. math:: H = U^\dagger Z U
 
         where :math:`U = R_y(-\pi/4)`.
 
+        Args:
+            wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(~.Operation): A list of gates that diagonalize Hadamard in
-            the computational basis.
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Hadamard.compute_diagonalizing_gates(wires=[0])
+        [RY(-0.7853981633974483, wires=[0])]
         """
-        return [qml.RY(-np.pi / 4, wires=self.wires)]
+        return [qml.RY(-np.pi / 4, wires=wires)]
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.Hadamard.decomposition`.
+
+        Args:
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.Hadamard.compute_decomposition(0)
+        [PhaseShift(1.5707963267948966, wires=[0]),
+        RX(1.5707963267948966, wires=[0]),
+        PhaseShift(1.5707963267948966, wires=[0])]
+
+        """
         decomp_ops = [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi / 2, wires=wires),
@@ -110,8 +160,6 @@ class PauliX(Observable, Operation):
     """
     num_wires = 1
     basis = "X"
-    eigvals = pauli_eigs(1)
-    matrix = np.array([[0, 1], [1, 0]])
 
     @property
     def num_params(self):
@@ -120,30 +168,82 @@ class PauliX(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliX operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+        Returns:
+            array: canonical matrix
 
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of the Pauli-X operator.
+        **Example**
 
-        For the Pauli-X operator,
+        >>> qml.PauliX.compute_matrix()
+        [[0 1]
+         [1 0]]
+        """
+        return np.array([[0, 1], [1, 0]])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliX operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliX.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
+
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        r"""Diagonalizing gates of this operator.
+
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of PauliX:
 
         .. math:: X = H^\dagger Z H.
 
+        Args:
+           wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(qml.Operation): A list of gates that diagonalize PauliY in the
-            computational basis.
+           list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliX.compute_diagonalizing_gates(wires=[0])
+        [Hadamard(wires=[0])]
         """
-        return [Hadamard(wires=self.wires)]
+        return [Hadamard(wires=wires)]
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for specified wire. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.PauliX.decomposition`.
+
+        Args:
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PauliX.compute_decomposition(0)
+        [PhaseShift(1.5707963267948966, wires=[0]),
+        RX(3.141592653589793, wires=[0]),
+        PhaseShift(1.5707963267948966, wires=[0])]
+
+        """
         decomp_ops = [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RX(np.pi, wires=wires),
@@ -178,8 +278,6 @@ class PauliY(Observable, Operation):
     """
     num_wires = 1
     basis = "Y"
-    eigvals = pauli_eigs(1)
-    matrix = np.array([[0, -1j], [1j, 0]])
 
     @property
     def num_params(self):
@@ -188,36 +286,88 @@ class PauliY(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliY operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+        Returns:
+            array: canonical matrix
 
-    def diagonalizing_gates(self):
-        r"""Rotates the specified wires such that they
-        are in the eigenbasis of PauliY.
+        **Example**
 
-        For the Pauli-Y observable,
+        >>> qml.PauliY.compute_matrix()
+        [[ 0.+0.j -0.-1.j]
+         [ 0.+1.j  0.+0.j]]
+        """
+        return np.array([[0, -1j], [1j, 0]])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliY operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliY.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
+
+    @staticmethod
+    def compute_diagonalizing_gates(wires):
+        r"""Diagonalizing gates of this operator.
+
+        These gates rotate the specified wires such that they
+        are in the eigenbasis of PauliY:
 
         .. math:: Y = U^\dagger Z U
 
         where :math:`U=HSZ`.
 
+        Args:
+            wires (Iterable): wires that the operator acts on
+
         Returns:
-            list(~.Operation): A list of gates that diagonalize PauliY in the
-                computational basis.
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliY.compute_diagonalizing_gates(wires=[0])
+        [PauliZ(wires=[0]), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
-            PauliZ(wires=self.wires),
-            S(wires=self.wires),
-            Hadamard(wires=self.wires),
+            PauliZ(wires=wires),
+            S(wires=wires),
+            Hadamard(wires=wires),
         ]
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for specified wire. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.PauliY.decomposition`.
+
+        Args:
+            wires (Any, Wires): Single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PauliY.compute_decomposition(0)
+        [PhaseShift(1.5707963267948966, wires=[0]),
+        RY(3.141592653589793, wires=[0]),
+        PhaseShift(1.5707963267948966, wires=[0])]
+
+        """
         decomp_ops = [
             qml.PhaseShift(np.pi / 2, wires=wires),
             qml.RY(np.pi, wires=wires),
@@ -252,8 +402,6 @@ class PauliZ(Observable, Operation):
     """
     num_wires = 1
     basis = "Z"
-    eigvals = pauli_eigs(1)
-    matrix = np.array([[1, 0], [0, -1]])
 
     @property
     def num_params(self):
@@ -262,21 +410,76 @@ class PauliZ(Observable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliZ operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+        Returns:
+            array: canonical matrix
 
-    def diagonalizing_gates(self):
+        **Example**
+
+        >>> qml.PauliZ.compute_matrix()
+        [[ 1  0]
+         [ 0 -1]]
+        """
+        return np.array([[1, 0], [0, -1]])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliZ operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.PauliZ.compute_eigvals()
+        [ 1 -1]
+        """
+        return pauli_eigs(1)
+
+    @staticmethod
+    def compute_diagonalizing_gates(wires):  # pylint: disable=unused-argument
+        """Diagonalizing gates of this operator.
+
+        Args:
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.PauliZ.compute_diagonalizing_gates(wires=[0])
+        []
+        """
         return []
 
     @staticmethod
-    def decomposition(wires):
-        decomp_ops = [qml.PhaseShift(np.pi, wires=wires)]
-        return decomp_ops
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.PauliZ.decomposition`.
+
+        Args:
+            wires (Any, Wires): Single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PauliZ.compute_decomposition(0)
+        [PhaseShift(3.141592653589793, wires=[0])]
+
+        """
+        return [qml.PhaseShift(np.pi, wires=wires)]
 
     def adjoint(self):
         return PauliZ(wires=self.wires)
@@ -308,25 +511,64 @@ class S(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_eigvals = np.array([1, 1j])
-    op_matrix = np.array([[1, 0], [0, 1j]])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the S operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.S.compute_matrix()
+        [[1.+0.j 0.+0.j]
+         [0.+0.j 0.+1.j]]
+        """
+        return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def decomposition(wires):
-        decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
-        return decomp_ops
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the S operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.S.compute_eigvals()
+        [1.+0.j 0.+1.j]
+        """
+        return np.array([1, 1j])
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.S.decomposition`.
+
+        Args:
+            wires (Any, Wires): Single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.S.compute_decomposition(0)
+        [PhaseShift(1.5707963267948966, wires=[0])]
+
+        """
+        return [qml.PhaseShift(np.pi / 2, wires=wires)]
 
     def adjoint(self):
         return S(wires=self.wires).inv()
@@ -355,25 +597,64 @@ class T(Operation):
     """
     num_wires = 1
     basis = "Z"
-    op_matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
-    op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the T operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.T.compute_matrix()
+        [[1.+0.j         0.        +0.j        ]
+         [0.+0.j         0.70710678+0.70710678j]]
+        """
+        return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
-    def decomposition(wires):
-        decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
-        return decomp_ops
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the T operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.T.compute_eigvals()
+        [1.+0.j 0.70710678+0.70710678j]
+        """
+        return np.array([1, cmath.exp(1j * np.pi / 4)])
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.T.decomposition`.
+
+        Args:
+            wires (Any, Wires): Single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.T.compute_decomposition(0)
+        [PhaseShift(0.7853981633974483, wires=[0])]
+
+        """
+        return [qml.PhaseShift(np.pi / 4, wires=wires)]
 
     def adjoint(self):
         return T(wires=self.wires).inv()
@@ -402,23 +683,66 @@ class SX(Operation):
     """
     num_wires = 1
     basis = "X"
-    op_matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
-    op_eigvals = np.array([1, 1j])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SX operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SX.compute_matrix()
+        [[0.5+0.5j 0.5-0.5j]
+         [0.5-0.5j 0.5+0.5j]]
+        """
+        return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def decomposition(wires):
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the SX operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.SX.compute_eigvals()
+        [1.+0.j 0.+1.j]
+        """
+        return np.array([1, 1j])
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.SX.decomposition`.
+
+        Args:
+            wires (Any, Wires): Single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.SX.compute_decomposition(0)
+        [RZ(1.5707963267948966, wires=[0]),
+        RY(1.5707963267948966, wires=[0]),
+        RZ(-3.141592653589793, wires=[0]),
+        PhaseShift(1.5707963267948966, wires=[0])]
+
+        """
         decomp_ops = [
             qml.RZ(np.pi / 2, wires=wires),
             qml.RY(np.pi / 2, wires=wires),
@@ -458,7 +782,6 @@ class CNOT(Operation):
     """
     num_wires = 2
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     @property
     def num_params(self):
@@ -467,9 +790,22 @@ class CNOT(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return CNOT.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CNOT operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CNOT.compute_matrix()
+        [[1 0 0 0]
+         [0 1 0 0]
+         [0 0 0 1]
+         [0 0 1 0]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
     def adjoint(self):
         return CNOT(wires=self.wires)
@@ -505,8 +841,6 @@ class CZ(Operation):
     """
     num_wires = 2
     basis = "Z"
-    eigvals = np.array([1, 1, 1, -1])
-    matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @property
     def num_params(self):
@@ -515,13 +849,36 @@ class CZ(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CZ operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CZ.compute_matrix()
+        [[ 1  0  0  0]
+         [ 0  1  0  0]
+         [ 0  0  1  0]
+         [ 0  0  0 -1]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the CZ operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.CZ.compute_eigvals()
+        [1, 1, 1, -1]
+        """
+        return np.array([1, 1, 1, -1])
 
     def adjoint(self):
         return CZ(wires=self.wires)
@@ -554,14 +911,6 @@ class CY(Operation):
     """
     num_wires = 2
     basis = "Y"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, 0, -1j],
-            [0, 0, 1j, 0],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -570,14 +919,55 @@ class CY(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CY operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CY.compute_matrix()
+        [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
+         [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
+         [ 0.+0.j  0.+0.j  0.+1.j  0.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 0, -1j],
+                [0, 0, 1j, 0],
+            ]
+        )
 
     @staticmethod
-    def decomposition(wires):
-        decomp_ops = [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
-        return decomp_ops
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.CY.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CY.compute_decomposition(0)
+        [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
+
+        """
+        return [qml.CRY(np.pi, wires=wires), S(wires=wires[0])]
 
     def adjoint(self):
         return CY(wires=self.wires)
@@ -608,18 +998,51 @@ class SWAP(Operation):
     """
     num_wires = 2
     basis = "X"
-    matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SWAP operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SWAP.compute_matrix()
+        [[1 0 0 0]
+         [0 0 1 0]
+         [0 1 0 0]
+         [0 0 0 1]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.SWAP.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.SWAP.compute_decomposition((0,1))
+        [CNOT(wires=[0, 1]), CNOT(wires=[1, 0]), CNOT(wires=[0, 1])]
+
+        """
         decomp_ops = [
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[1], wires[0]]),
@@ -654,23 +1077,70 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
-    op_eigvals = np.array([1j, -1j, 1, 1])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the ISWAP operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.ISWAP.compute_matrix()
+        [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+1.j 0.+0.j]
+         [0.+0.j 0.+1.j 0.+0.j 0.+0.j]
+         [0.+0.j 0.+0.j 0.+0.j 1.+0.j]]
+        """
+        return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def decomposition(wires):
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the ISWAP operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.ISWAP.compute_eigvals()
+        [1j, -1j, 1, 1]
+        """
+        return np.array([1j, -1j, 1, 1])
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.ISWAP.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.ISWAP.compute_decomposition((0,1))
+        [S(wires=[0]),
+        S(wires=[1]),
+        Hadamard(wires=[0]),
+        CNOT(wires=[0, 1]),
+        CNOT(wires=[1, 0]),
+        Hadamard(wires=[1])]
+
+        """
         decomp_ops = [
             S(wires=wires[0]),
             S(wires=wires[1]),
@@ -705,30 +1175,84 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_matrix = np.array(
-        [
-            [1, 0, 0, 0],
-            [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
-            [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
-            [0, 0, 0, 1],
-        ]
-    )
     op_eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @property
     def num_params(self):
         return 0
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.op_matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the SISWAP operator.
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.op_eigvals
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.SISWAP.compute_matrix()
+        [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
+         [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
+         [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
+         [0.+0.j          0.+0.j          0.+0.j  1.+0.j]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0],
+                [0, INV_SQRT2, INV_SQRT2 * 1j, 0],
+                [0, INV_SQRT2 * 1j, INV_SQRT2, 0],
+                [0, 0, 0, 1],
+            ]
+        )
 
     @staticmethod
-    def decomposition(wires):
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the SISWAP operator.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.SISWAP.compute_eigvals()
+        [0.70710678+0.70710678j 0.70710678-0.70710678j 1.+0.j 1.+0.j]
+        """
+        return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.SISWAP.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.SISWAP.compute_decomposition((0,1))
+        [SX(wires=[0]),
+        RZ(1.5707963267948966, wires=[0]),
+        CNOT(wires=[0, 1]),
+        SX(wires=[0]),
+        RZ(5.497787143782138, wires=[0]),
+        SX(wires=[0]),
+        RZ(1.5707963267948966, wires=[0]),
+        SX(wires=[1]),
+        RZ(5.497787143782138, wires=[1]),
+        CNOT(wires=[0, 1]),
+        SX(wires=[0]),
+        SX(wires=[1])]
+
+        """
         decomp_ops = [
             SX(wires=wires[0]),
             qml.RZ(np.pi / 2, wires=wires[0]),
@@ -779,18 +1303,6 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-    matrix = np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -799,12 +1311,61 @@ class CSWAP(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CSWAP operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.CSWAP.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.CSWAP.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CSWAP.compute_decomposition((0,1,2))
+        [Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1])]
+
+        """
         decomp_ops = [
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
             qml.Toffoli(wires=[wires[0], wires[1], wires[2]]),
@@ -848,18 +1409,6 @@ class Toffoli(Operation):
     """
     num_wires = 3
     basis = "X"
-    matrix = np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-        ]
-    )
 
     @property
     def num_params(self):
@@ -868,12 +1417,75 @@ class Toffoli(Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
 
-    @classmethod
-    def _matrix(cls, *params):
-        return cls.matrix
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Toffoli operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Toffoli.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 1 0]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+            ]
+        )
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.Toffoli.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.Toffoli.compute_decomposition((0,1,2))
+        [Hadamard(wires=[2]),
+        CNOT(wires=[1, 2]),
+        T.inv(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        CNOT(wires=[1, 2]),
+        T.inv(wires=[2]),
+        CNOT(wires=[0, 2]),
+        T(wires=[2]),
+        T(wires=[1]),
+        CNOT(wires=[0, 1]),
+        Hadamard(wires=[2]),
+        T(wires=[0]),
+        T.inv(wires=[1]),
+        CNOT(wires=[0, 1])]
+
+        """
         decomp_ops = [
             Hadamard(wires=wires[2]),
             CNOT(wires=[wires[1], wires[2]]),
@@ -915,7 +1527,7 @@ class MultiControlledX(Operation):
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires or int]): a single target wire the operation acts on
         control_values (str): a string of bits representing the state of the control
-            qubits to control on (default is the all 1s state)
+            wires to control on (default is the all 1s state)
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of Toffoli gates
 
@@ -980,46 +1592,53 @@ class MultiControlledX(Operation):
         ):
             raise ValueError("The work wires must be different from the control and target wires")
 
-        self._target_wire = wires[0]
-        self._work_wires = work_wires
-        self._control_wires = control_wires
-
-        wires = control_wires + wires
-
         if not control_values:
             control_values = "1" * len(control_wires)
 
-        control_int = self._parse_control_values(control_wires, control_values)
-        self.control_values = control_values
+        self.hyperparameters["control_wires"] = control_wires
+        self.hyperparameters["work_wires"] = work_wires
+        self.hyperparameters["control_values"] = control_values
 
-        self._padding_left = control_int * 2
-        self._padding_right = 2 ** len(wires) - 2 - self._padding_left
-        self._CX = None
+        total_wires = control_wires + wires
 
-        super().__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(wires=total_wires, do_queue=do_queue)
 
     @property
     def num_params(self):
         return 0
 
-    def _matrix(self, *params):
-        if self._CX is None:
-            self._CX = block_diag(
-                np.eye(self._padding_left), PauliX.matrix, np.eye(self._padding_right)
-            )
-
-        return self._CX
-
-    @property
-    def control_wires(self):
-        return self._control_wires
-
-    def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
-
+    # pylint: disable=unused-argument
     @staticmethod
-    def _parse_control_values(control_wires, control_values):
-        """Ensure any user-specified control strings have the right format."""
+    def compute_matrix(
+        control_wires, control_values=None, **kwargs
+    ):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the MultiControlledX operator.
+
+        Args:
+            control_wires (Iterable): wires to place controls on
+            control_values (str): string of bits determining the controls
+
+        Returns:
+           tensor_like: matrix representation
+
+        **Example**
+
+        >>> qml.MultiControlledX.compute_matrix([0], '1')
+        [[1. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 1.]
+         [0. 0. 1. 0.]]
+        >>> qml.MultiControlledX.compute_matrix([1], '0')
+        [[0. 1. 0. 0.]
+         [1. 0. 0. 0.]
+         [0. 0. 1. 0.]
+         [0. 0. 0. 1.]]
+
+        """
+
+        if control_values is None:
+            control_values = "1" * len(control_wires)
+
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
                 raise ValueError("Length of control bit string must equal number of control wires.")
@@ -1032,49 +1651,93 @@ class MultiControlledX(Operation):
         else:
             raise ValueError("Alternative control values must be passed as a binary string.")
 
-        return control_int
+        padding_left = control_int * 2
+        padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
+        cx = block_diag(np.eye(padding_left), PauliX.compute_matrix(), np.eye(padding_right))
+        return cx
+
+    @property
+    def control_wires(self):
+        return self.wires[:~0]
+
+    def label(self, decimals=None, base_label=None):
+        return base_label or "⊕"
 
     def adjoint(self):
         return MultiControlledX(
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
-            control_values=self.control_values,
-            work_wires=self._work_wires,
+            control_values=self.hyperparameters["control_values"],
+            work_wires=self.hyperparameters["work_wires"],
         )
 
-    # pylint: disable=unused-argument
-    def decomposition(self, *args, **kwargs):
+    @staticmethod
+    def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
 
-        if len(self.control_wires) > 2 and len(self._work_wires) == 0:
-            raise ValueError(f"At least one work wire is required to decompose operation: {self}")
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.MultiControlledX.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on. Should contain both control wires
+                and target wire. Target wire is the last wire in the Iterable.
+            work_wires (Wires): optional work wires used to decompose
+                the operation into a series of Toffoli gates.
+            control_values (str): a string of bits representing the state of the control
+                wires to control on (default is the all 1s state)
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3],control_values="111", work_wires=qml.wires.Wires("aux"))
+        [Toffoli(wires=[2, 'aux', 3]),
+        Toffoli(wires=[0, 1, 'aux']),
+        Toffoli(wires=[2, 'aux', 3]),
+        Toffoli(wires=[0, 1, 'aux'])]
+
+        """
+
+        target_wire = wires[~0]
+        control_wires = wires[:~0]
+
+        if control_values is None:
+            control_values = "1" * len(control_wires)
+
+        if len(control_wires) > 2 and len(work_wires) == 0:
+            raise ValueError(
+                "At least one work wire is required to decompose operation: MultiControlledX"
+            )
 
         flips1 = [
-            qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(self.control_values)
-            if val == "0"
+            qml.PauliX(control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
-        if len(self.control_wires) == 1:
-            decomp = [qml.CNOT(wires=[self.control_wires[0], self._target_wire])]
-        elif len(self.control_wires) == 2:
-            decomp = [qml.Toffoli(wires=[*self.control_wires, self._target_wire])]
-        else:
-            num_work_wires_needed = len(self.control_wires) - 2
+        if len(control_wires) == 1:
+            decomp = [qml.CNOT(wires=[control_wires[0], target_wire])]
+        elif len(control_wires) == 2:
 
-            if len(self._work_wires) >= num_work_wires_needed:
-                decomp = self._decomposition_with_many_workers(
-                    self.control_wires, self._target_wire, self._work_wires
+            decomp = [qml.Toffoli(wires=[*control_wires, target_wire])]
+        else:
+            num_work_wires_needed = len(control_wires) - 2
+
+            if len(work_wires) >= num_work_wires_needed:
+                decomp = MultiControlledX._decomposition_with_many_workers(
+                    control_wires, target_wire, work_wires
                 )
             else:
-                work_wire = self._work_wires[0]
-                decomp = self._decomposition_with_one_worker(
-                    self.control_wires, self._target_wire, work_wire
+                work_wire = work_wires[0]
+                decomp = MultiControlledX._decomposition_with_one_worker(
+                    control_wires, target_wire, work_wire
                 )
 
         flips2 = [
-            qml.PauliX(self.control_wires[i])
-            for i, val in enumerate(self.control_values)
-            if val == "0"
+            qml.PauliX(control_wires[i]) for i, val in enumerate(control_values) if val == "0"
         ]
 
         return flips1 + decomp + flips2
@@ -1177,11 +1840,35 @@ class Barrier(Operation):
 
     def __init__(self, only_visual=False, wires=Wires([]), do_queue=True, id=None):
         self.only_visual = only_visual
+        self.hyperparameters["only_visual"] = only_visual
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
-    # pylint: disable=unused-argument
-    def decomposition(self, wires):
-        # pylint: disable=unused-argument
+    @staticmethod
+    def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
+        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
+        as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.Barrier.decomposition`.
+
+        ``Barrier`` decomposes into an empty list for all arguments.
+
+        Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+            only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
+
+        Returns:
+            list: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.Barrier.compute_decomposition(0)
+        []
+
+        """
         return []
 
     def label(self, decimals=None):

@@ -36,7 +36,6 @@ class Identity(CVObservable, Operation):
     grad_method = None
 
     ev_order = 1
-    eigvals = np.array([1, 1])
 
     @property
     def num_params(self):
@@ -45,22 +44,83 @@ class Identity(CVObservable, Operation):
     def label(self, decimals=None, base_label=None):
         return base_label or "I"
 
-    @classmethod
-    def _eigvals(cls, *params):
-        return cls.eigvals
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=,arguments-differ
+        """Eigenvalues of the Identity operator.
 
-    @classmethod
-    def _matrix(cls, *params):
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Identity.compute_eigvals()
+        [ 1 1]
+        """
+        return np.array([1, 1])
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Identity operator.
+
+        Returns:
+            array: canonical matrix
+
+        **Example**
+
+        >>> qml.Identity.compute_matrix()
+        [[1. 0.]
+         [0. 1.]]
+        """
         return np.eye(2)
 
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([1, 0, 0])
 
-    def diagonalizing_gates(self):
+    @staticmethod
+    def compute_diagonalizing_gates(wires):  # pylint: disable=arguments-differ,unused-argument
+        """Diagonalizing gates of this operator.
+
+        Args:
+            wires (Iterable): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Identity.compute_diagonalizing_gates(wires=[0])
+        []
+        """
+        return []
+
+    @staticmethod
+    def compute_decomposition(wires=None):  # pylint:disable=arguments-differ,unused-argument
+        r"""Compute the decomposition for the specified wire.
+        The decomposition defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+
+        See also :meth:`~.Identity.decomposition`.
+
+        Args:
+            wires (Any, Wires): A single wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.Identity.compute_decomposition(wires=0)
+        []
+
+        """
         return []
 
     @staticmethod
     def identity_op(*params):
         """Returns the matrix representation of the identity operator."""
-        return Identity._matrix(*params)
+        return Identity.compute_matrix(*params)

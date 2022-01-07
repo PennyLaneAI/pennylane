@@ -114,10 +114,12 @@ and :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1, \ldots)` for multi-mode ope
     Non-Gaussian CV operations and observables are currently only supported via
     the finite-difference method of gradient computation.
 """
+# pylint:disable=access-member-before-definition
 import abc
 import copy
 import itertools
 import functools
+import warnings
 from enum import Enum, IntEnum
 from scipy.sparse import kron, eye, coo_matrix
 
@@ -128,6 +130,143 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
+
+
+def expand_matrix(base_matrix, wires, wire_order):
+    """Re-express a base matrix acting on a subspace defined by a set of wire labels
+    according to a global wire order.
+
+    .. note::
+
+        This function has essentially the same behaviour as :func:`.utils.expand` but is fully
+        differentiable.
+
+    Args:
+        base_matrix (tensor_like): base matrix to expand
+        wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+        wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
+            contain additional labels
+
+    Returns:
+        tensor_like: expanded matrix
+
+    **Example**
+
+    If the wire order is identical to ``wires``, the original matrix gets returned:
+
+    >>> base_matrix = np.array([[1, 2, 3, 4],
+    ...                         [5, 6, 7, 8],
+    ...                         [9, 10, 11, 12],
+    ...                         [13, 14, 15, 16]])
+    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
+    [[ 1  2  3  4]
+     [ 5  6  7  8]
+     [ 9 10 11 12]
+     [13 14 15 16]]
+
+    If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
+
+    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0])
+    [[ 1  3  2  4]
+     [ 9 11 10 12]
+     [ 5  7  6  8]
+     [13 15 14 16]]
+
+    If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
+
+    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2])
+    [[ 1  2  0  0  3  4  0  0]
+     [ 5  6  0  0  7  8  0  0]
+     [ 0  0  1  2  0  0  3  4]
+     [ 0  0  5  6  0  0  7  8]
+     [ 9 10  0  0 11 12  0  0]
+     [13 14  0  0 15 16  0  0]
+     [ 0  0  9 10  0  0 11 12]
+     [ 0  0 13 14  0  0 15 16]]
+
+    The method works with tensors from all autodifferentiation frameworks, for example:
+
+    >>> base_matrix_torch = torch.tensor([[1., 2.],
+    ...                                   [3., 4.]], requires_grad=True)
+    >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
+    >>> type(res)
+    <class 'torch.Tensor'>
+    >>> res.requires_grad
+    True
+    """
+    # TODO[Maria]: In future we should consider making ``utils.expand`` differentiable and calling it here.
+    wire_order = Wires(wire_order)
+    n = len(wires)
+    interface = qml.math._multi_dispatch(base_matrix)  # pylint: disable=protected-access
+
+    # operator's wire positions relative to wire ordering
+    op_wire_pos = wire_order.indices(wires)
+
+    I = qml.math.reshape(
+        qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
+    )
+    axes = (list(range(n, 2 * n)), op_wire_pos)
+
+    # reshape op.matrix()
+    op_matrix_interface = qml.math.convert_like(base_matrix, I)
+    mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
+    mat_tensordot = qml.math.tensordot(
+        mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
+    )
+
+    unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
+    # permute matrix axes to match wire ordering
+    perm = op_wire_pos + unused_idxs
+    mat = qml.math.moveaxis(mat_tensordot, wire_order.indices(wire_order), perm)
+
+    mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
+
+    return mat
+
+
+# =============================================================================
+# Errors
+# =============================================================================
+
+
+class OperatorPropertyUndefined(Exception):
+    """Generic exception to be used for undefined
+    Operator properties or methods."""
+
+
+class DecompositionUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's representation as a decomposition is undefined."""
+
+
+class TermsUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's representation as a linear combination is undefined."""
+
+
+class MatrixUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's matrix representation is undefined."""
+
+
+class SparseMatrixUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's sparse matrix representation is undefined."""
+
+
+class EigvalsUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's eigenvalues are undefined."""
+
+
+class DiagGatesUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's diagonalizing gates are undefined."""
+
+
+class AdjointUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's adjoint version is undefined."""
+
+
+class GeneratorUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have a generator"""
+
 
 # =============================================================================
 # Wire types
@@ -197,7 +336,7 @@ State = ObservableReturnTypes.State
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods
+    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -300,94 +439,316 @@ class Operator(abc.ABC):
         """int: returns an integer hash uniquely representing the operator"""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
-    @classmethod
-    def _matrix(cls, *params):
-        """Matrix representation of the operator
-        in the computational basis.
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+        """Canonical matrix of this operator in the computational basis.
 
-        This is a *class method* that should be defined for all
-        new operations and observables, that returns the matrix representing
-        the operator in the computational basis.
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        This private method allows matrices to be computed
-        directly without instantiating the operators first.
+        .. note::
+            This method gets overwritten by subclasses to define the matrix representation
+            of a particular operator.
 
-        To return the matrices of *instantiated* operators,
-        please use the :attr:`~.Operator.matrix` property instead.
-
-        **Example:**
-
-        >>> qml.RY._matrix(0.5)
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            array: matrix representation
+            tensor_like: matrix representation
+
+        **Example**
+
+        >>> qml.CNOT.compute_matrix()
+        [[1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 0, 1],
+        [0, 0, 1, 0]]
+
+        The matrix representation may depend on parameters or hyperparameters:
+
+        >>> qml.Rot.compute_matrix(0.1, 0.2, 0.3)
+        [[ 0.97517033-0.19767681j -0.09933467+0.00996671j]
+         [ 0.09933467+0.00996671j  0.97517033+0.19767681j]]
+
+        If parameters are tensors, a tensor of the same type is returned:
+
+        >>> res = qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        >>> type(res)
+        <class 'torch.Tensor'>
         """
-        raise NotImplementedError
+        raise MatrixUndefinedError
 
-    @property
-    def matrix(self):
-        r"""Matrix representation of an instantiated operator
-        in the computational basis.
+    def matrix(self, wire_order=None):
+        r"""Matrix representation of this operator in the computational basis.
 
-        **Example:**
+        If ``wire_order`` is provided, the
+        numerical representation considers the position of the
+        operator's wires in the global wire order.
+        Otherwise, the wire order defaults to ``self.wires``.
 
-        >>> U = qml.RY(0.5, wires=1)
-        >>> U.matrix
-        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
-                   [ 0.24740396+0.j,  0.96891242+0.j]])
+        If the matrix depends on trainable parameters, the result
+        will be cast in the same autodifferentiation framework as the parameters.
+
+        .. note::
+            By default, this method calls the static method ``compute_matrix``,
+            which is used by subclasses to define the actual matrix representation.
+
+        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
 
         Returns:
-            array: matrix representation
+            tensor_like: matrix representation
+
+        **Example**
+
+        >>> U = qml.PauliX(wires="b")
+        >>> U.matrix()
+        [[0 1]
+         [1 0]]
+        >>> U.matrix(wire_order=["a", "b"])
+        [[0 1 0 0]
+         [1 0 0 0]
+         [0 0 0 1]
+         [0 0 1 0]]
+        >>> qml.RY(tf.Variable(0.5), wires="b").matrix()
+        tf.Tensor([[ 0.9689124  -0.24740396]
+                   [ 0.24740396  0.9689124 ]], shape=(2, 2), dtype=float32)
+
         """
-        return self._matrix(*self.parameters)
+        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the operator.
+        if wire_order is None or self.wires == Wires(wire_order):
+            return canonical_matrix
 
-        This is a *class method* that should be defined for all
-        new operations and observables that returns the eigenvalues
-        of the operator. Note that the eigenvalues are not guaranteed
-        to be in any particular order.
+        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
+        """Canonical matrix of this operator in the computational basis, using a sparse
+        matrix type.
 
-        The default implementation relies on the presence of the
-        :attr:`_matrix` method.
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
+        .. note::
+            This method gets overwritten by subclasses to define the sparse matrix representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        raise SparseMatrixUndefinedError
+
+    def sparse_matrix(self, wire_order=None):
+        r"""Matrix representation of this operator in the computational basis, using
+        a sparse matrix type.
+
+        If ``wire_order`` is provided, the
+        numerical representation considers the position of the
+        operator's wires in the global wire order.
+        Otherwise, the wire order defaults to ``self.wires``.
+
+        .. note::
+            By default, this method calls the static method ``compute_sparse_matrix``,
+            which is used by subclasses to define the actual numerical representation.
+
+        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
+
+        .. note::
+            The wire_order argument is not yet implemented.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
+
+        Returns:
+            scipy.sparse.coo.coo_matrix: matrix representation
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian(H, wires=[0]).sparse_matrix()
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        if wire_order is not None:
+            raise NotImplementedError("The wire_order argument is not yet implemented")
+        canonical_sparse_matrix = self.compute_sparse_matrix(
+            *self.parameters, **self.hyperparameters
+        )
+        return canonical_sparse_matrix
+
+    @staticmethod
+    def compute_eigvals(*params, **hyperparams):
+        """Eigenvalues of the operator in the computational basis.
+
+        The eigenvalues refer to the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        This static method allows eigenvalues to be computed
+        directly without instantiating the operator first.
         To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
+        please use the :meth:`~.Operator.eigvals()` method instead.
+
+        If :attr:`diagonalizing_gates` are specified, the order of the
+        eigenvalues matches the order of
+        the computational basis vectors when the observable is
+        diagonalized using these ops. Otherwise, no particular order is
+        guaranteed.
+
+        .. note::
+            This method gets overwritten by subclasses to define the eigenvalues
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
+
+        Returns:
+            array: eigenvalues
 
         **Example:**
 
-        >>> qml.RZ._eigvals(0.5)
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> qml.RZ.compute_eigvals(0.5)
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> qml.PauliX(wires=0).diagonalizing_gates()
+        [Hadamard(wires=[0])]
+        >>> qml.PauliX.compute_eigvals()
+        array([1, -1])
+        """
+        raise EigvalsUndefinedError
+
+    def eigvals(self):
+        r"""Eigenvalues of the operator.
+
+        If :attr:`diagonalizing_gates` are specified, the order of the
+        eigenvalues needs to match the order of
+        the computational basis vectors when the observable is
+        diagonalized using these ops. Otherwise, no particular order is
+        guaranteed.
+
+        .. note::
+            By default, this method calls the static method ``compute_eigvals``,
+            which is used by subclasses to define the actual eigenvalues. If no
+            eigenvalues are defined, it is attempted to compute them from the matrix
+            representation.
 
         Returns:
-            array: eigenvalue representation
-        """
-        return np.linalg.eigvals(cls._matrix(*params))
-
-    @property
-    def eigvals(self):
-        r"""Eigenvalues of an instantiated operator.
-
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
+            array: eigenvalues
 
         **Example:**
 
         >>> U = qml.RZ(0.5, wires=1)
-        >>> U.eigvals
-        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> U.eigvals()
+        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        >>> qml.PauliX(wires=0).diagonalizing_gates()
+        [Hadamard(wires=[0])]
+        >>> qml.PauliX.eigvals()
+        array([1, -1])
+        """
+
+        try:
+            return self.compute_eigvals(*self.parameters, **self.hyperparameters)
+        except EigvalsUndefinedError:
+            # By default, compute the eigenvalues from the matrix representation.
+            # This will raise a NotImplementedError if the matrix is undefined.
+            try:
+                return np.linalg.eigvals(self.matrix())
+            except MatrixUndefinedError as e:
+                raise EigvalsUndefinedError from e
+
+    @staticmethod
+    def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
+        r"""Static method to define the representation of this operation as a linear combination.
+
+        Each term in the linear combination is a pair of a scalar
+        value :math:`c_i` and an operator :math:`O_i`, so that the sum
+
+        .. math:: O = \sum_i c_i O_i
+
+        constructs this operator :math:`O`.
+
+        A ``NotImplementedError`` is raised if no representation by terms is defined.
+
+        .. note::
+            This method gets overwritten by subclasses to define the linear combination representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in the
+                ``hyperparameters`` attribute
 
         Returns:
-            array: eigvals representation
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
+
+        **Example**
+
+        >>> qml.Hamiltonian().compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
-        return self._eigvals(*self.parameters)
+        raise TermsUndefinedError
+
+    def terms(self):
+        r"""Representation of this operator as a linear combination.
+
+        Each term in the linear combination is a pair of a
+        scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
+
+        .. math:: O = \sum_i c_i O_i
+
+        constructs this operator :math:`O`.
+
+        .. note::
+            By default, this method calls the static method ``compute_terms``,
+            which is used by subclasses to define the concrete representation.
+
+        A ``NotImplementedError`` is raised if no representation through terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+                and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)]).terms()
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+
+        The coefficients are differentiable and can be stored as tensors:
+
+        >>> import tensorflow as tf
+        >>> op = qml.Hamiltonian(tf.Variable([1., 2.]), [qml.PauliX(0), qml.PauliZ(0)])
+        >>> op.terms()[0]
+        [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
+        """
+        return self.compute_terms(*self.parameters, **self.hyperparameters)
 
     @property
     @abc.abstractmethod
@@ -534,28 +895,160 @@ class Operator(abc.ABC):
         """Current parameter values."""
         return self.data.copy()
 
+    @property
+    def hyperparameters(self):
+        """dict: Dictionary of non-trainable variables that define this operation."""
+        # pylint: disable=attribute-defined-outside-init
+        if hasattr(self, "_hyperparameters"):
+            return self._hyperparameters
+        self._hyperparameters = {}
+        return self._hyperparameters
+
+    def decomposition(self):
+        r"""The decomposition of the Operator into a product of more fundamental gates.
+
+        .. math:: O = O_1 O_2 \dots O_n
+
+        .. note::
+            By default, this method calls the static method
+            :meth:`~.operation.Operator.compute_decomposition`. Unless the
+            :meth:`~.operation.Operator.compute_decomposition` has a custom signature,
+            this method should not be overwritten.
+
+        Returns:
+            list[Operator]: The decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
+
+        """
+        return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
+
     @staticmethod
-    def decomposition(*params, wires):
-        """Defines a decomposition of this operator into products of other operators.
+    def compute_decomposition(*params, wires=None, **hyperparameters):
+        r"""Determine the Operator's decomposition for specified parameters, wires,
+        and hyperparameters. The decomposition defines an Operator as a product of
+        more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of an
+        operator without a specific instance.
+
+        See also :meth:`~.operation.Operator.decomposition`.
+
+        .. note::
+            This method gets overwritten by subclasses, and the ``decomposition`` and
+            ``expand`` methods rely on its definition. By default, this method should always
+            take the Operator's parameters, wires, and hyperparameters as inputs, even if the
+            decomposition is independent of these values.
 
         Args:
-            params (tuple[float, int, array]): operator parameters
-            wires (Union(Sequence[int], Wires)): wires the operator acts on
+            *params: Variable length argument list.  Should match the ``parameters`` attribute
+
+        Keyword Args:
+            wires (Iterable, Wires): Wires that the operator acts on.
+            **hyperparameters: Variable length keyword arguments.  Should match the
+                ``hyperparameters`` attribute.
 
         Returns:
-            list[Operation]
-        """
-        raise NotImplementedError
+            list[Operator]: decomposition of the Operator into lower level operations
 
-    def decompose(self):
-        """Decomposes this operator into products of other operators.
+        **Example:**
+
+        >>> qml.IsingXX.compute_decomposition(1.23, (0,1))
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
+
+        """
+        raise DecompositionUndefinedError
+
+    @staticmethod
+    def compute_diagonalizing_gates(
+        *params, wires, **hyperparams
+    ):  # pylint: disable=unused-argument
+        r"""Defines a partial representation of this operator via
+        its eigendecomposition.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        In other words, the diagonalizing gates rotate the state into the eigenbasis
+        of this operator.
+
+        This is the static version of ``diagonalizing_gates``, which can be called
+        without creating an instance of the class.
+
+        .. note::
+
+            This method gets overwritten by subclasses to define the representation of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in ``op.parameters``
+            wires (Iterable): trainable parameters of this operator, as stored in ``op.wires``
+            hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            list[Operation]
+            list[.Operator]: A list of operators.
+
+        **Example**
+
+        >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
+        [Hadamard(wires=["q1"])]
         """
-        if self.num_params == 0:
-            return self.decomposition(wires=self.wires)
-        return self.decomposition(*self.parameters, wires=self.wires)
+        raise DiagGatesUndefinedError
+
+    def diagonalizing_gates(self):  # pylint:disable=no-self-use
+        r"""Defines a partial representation of this operator via
+        its eigendecomposition.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+        In other words, the diagonalizing gates rotate the state into the eigenbasis
+        of this operator.
+
+        Returns ``None`` if this operator does not define its diagonalizing gates.
+
+        .. note::
+
+            By default, this method calls the static method ``compute_diagonalizing_gates``,
+            which is used by subclasses to define the actual representation.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+
+        **Example**
+
+        >>> qml.PauliX(wires="q1").diagonalizing_gates()
+        [Hadamard(wires=["q1"])]
+        """
+        return self.compute_diagonalizing_gates(
+            *self.parameters, wires=self.wires, **self.hyperparameters
+        )
+
+    def generator(self):  # pylint: disable=no-self-use
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
+
+        For example, for operator
+
+        .. math::
+
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
+
+        The default value to return is ``None``, indicating that the operation has
+        no defined generator.
+        """
+        raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
@@ -599,8 +1092,6 @@ class Operation(Operator):
             This flag is useful if there is some reason to run an Operation
             outside of a BaseQNode context.
     """
-    # pylint: disable=abstract-method
-    string_for_inverse = ".inv"
 
     @property
     def grad_method(self):
@@ -685,36 +1176,11 @@ class Operation(Operator):
         return param_shift
 
     @property
-    def generator(self):
-        r"""Generator of the operation.
-
-        A length-2 list ``[generator, scaling_factor]``, where
-
-        * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
-          that acts as the generator of the current operation
-
-        * ``scaling_factor`` represents a scaling factor applied
-          to the generator operation
-
-        For example, if :math:`U(\theta)=e^{i0.7\theta \sigma_x}`, then
-        :math:`\sigma_x`, with scaling factor :math:`s`, is the generator
-        of operator :math:`U(\theta)`:
-
-        .. code-block:: python
-
-            generator = [PauliX, 0.7]
-
-        Default is ``[None, 1]``, indicating the operation has no generator.
-        """
-        return [None, 1]
-
-    @property
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
@@ -727,7 +1193,7 @@ class Operation(Operator):
         Returns:
             The adjointed operation.
         """
-        raise NotImplementedError
+        raise AdjointUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):
@@ -745,7 +1211,7 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decompose()
+            self.decomposition()
 
         if not self.data:
             # original operation has no trainable parameters
@@ -776,18 +1242,19 @@ class Operation(Operator):
             self.inverse = not self._inverse
         return self
 
-    @property
-    def matrix(self):
-        op_matrix = self._matrix(*self.parameters)
+    def matrix(self, wire_order=None):
+        canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
-            return qml.math.conj(qml.math.T(op_matrix))
+            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
 
-        return op_matrix
+        if wire_order is None or self.wires == Wires(wire_order):
+            return canonical_matrix
 
-    @property
+        return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+
     def eigvals(self):
-        op_eigvals = self._eigvals(*self.parameters)
+        op_eigvals = self.compute_eigvals(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
             return qml.math.conj(op_eigvals)
@@ -802,7 +1269,7 @@ class Operation(Operator):
     @property
     def name(self):
         """Get and set the name of the operator."""
-        return self._name + Operation.string_for_inverse if self.inverse else self._name
+        return self._name + ".inv" if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):
         if self.inverse:
@@ -861,51 +1328,54 @@ class Channel(Operation, abc.ABC):
     """
     # pylint: disable=abstract-method
 
-    @classmethod
+    @staticmethod
     @abc.abstractmethod
-    def _kraus_matrices(cls, *params):
+    def compute_kraus_matrices(*params, **hyperparams):  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
-        This is a class method that should be defined for all
-        new channels. It returns the Kraus matrices representing
-        the channel in the computational basis.
-
-        This private method allows matrices to be computed
+        This is a static method that should be defined for all
+        new channels, and which allows matrices to be computed
         directly without instantiating the channel first.
+
+        To return the Kraus matrices of an *instantiated* channel,
+        please use the :meth:`~.Operator.kraus_matrices()` method instead.
+
+        .. note::
+            This method gets overwritten by subclasses to define the kraus matrix representation
+            of a particular operator.
+
+        Args:
+            params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
+            hyperparams (dict): non-trainable hyperparameters of this operator,
+                as stored in the ``hyperparameters`` attribute
+
+        Returns:
+            list (array): list of Kraus matrices
 
         **Example**
 
-        >>> qml.AmplitudeDamping._kraus_matrices(0.1)
-        >>> [array([[1.       , 0.       ],
-        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
-        [0.        , 0.        ]])]
-
-        To return the Kraus matrices of an *instantiated* channel,
-        please use the :attr:`~.Operator.kraus_matrices` property instead.
-
-        Returns:
-            list(array): list of Kraus matrices
+        >>> qml.AmplitudeDamping.compute_kraus_matrices(0.1)
+        [array([[1., 0.], [0., 0.9486833]]),
+         array([[0., 0.31622777], [0., 0.]])]
         """
         raise NotImplementedError
 
-    @property
     def kraus_matrices(self):
         r"""Kraus matrices of an instantiated channel
         in the computational basis.
 
+        Returns:
+            list (array): list of Kraus matrices
+
         ** Example**
 
         >>> U = qml.AmplitudeDamping(0.1, wires=1)
-        >>> U.kraus_matrices
-        >>> [array([[1.       , 0.       ],
-        [0.       , 0.9486833]]), array([[0.        , 0.31622777],
-        [0.        , 0.        ]])]
-
-        Returns:
-            list(array): list of Kraus matrices
+        >>> U.kraus_matrices()
+        [array([[1., 0.], [0., 0.9486833]]),
+         array([[0., 0.31622777], [0., 0.]])]
         """
-        return self._kraus_matrices(*self.parameters)
+        return self.compute_kraus_matrices(*self.parameters, **self.hyperparameters)
 
 
 # =============================================================================
@@ -935,54 +1405,6 @@ class Observable(Operator):
 
     # pylint: disable=abstract-method
     return_type = None
-
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the observable.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`.
-
-        This is a *class method* that must be defined for all
-        new diagonal operations, that returns the eigenvalues
-        of the operator in the computational basis.
-
-        This private method allows eigenvalues to be computed
-        directly without instantiating the operators first.
-
-        To return the eigenvalues of *instantiated* operators,
-        please use the :attr:`~.Operator.eigvals` property instead.
-
-        **Example:**
-
-        >>> qml.PauliZ._eigvals()
-        >>> array([1, -1])
-
-        Returns:
-            array: eigenvalue representation
-        """
-        raise NotImplementedError
-
-    @property
-    def eigvals(self):
-        r"""Eigenvalues of an instantiated observable.
-
-        The order of the eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using :attr:`diagonalizing_gates`. This is a
-        requirement for using qubit observables in quantum functions.
-
-        **Example:**
-
-        >>> U = qml.PauliZ(wires=1)
-        >>> U.eigvals
-        >>> array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        return super().eigvals
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
@@ -1102,16 +1524,6 @@ class Observable(Operator):
         if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
             return self.__add__(other.__mul__(-1))
         raise ValueError(f"Cannot subtract {type(other)} from Observable")
-
-    def diagonalizing_gates(self):
-        r"""Returns the list of operations such that they
-        diagonalize the observable in the computational basis.
-
-        Returns:
-            list(qml.Operation): A list of gates that diagonalize
-            the observable in the computational basis.
-        """
-        raise NotImplementedError
 
 
 class Tensor(Observable):
@@ -1252,7 +1664,7 @@ class Tensor(Observable):
         Returns:
             list[Any]: flattened list containing all dependent parameters
         """
-        return [p for sublist in [o.data for o in self.obs] for p in sublist]
+        return sum((o.data for o in self.obs), [])
 
     @property
     def num_params(self):
@@ -1313,7 +1725,6 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    @property
     def eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
@@ -1352,7 +1763,7 @@ class Tensor(Observable):
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals)
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
 
         return self._eigvals_cache
 
@@ -1372,20 +1783,25 @@ class Tensor(Observable):
 
         return diag_gates
 
-    @property
-    def matrix(self):
-        r"""Matrix representation of the tensor operator
+    def matrix(self, wire_order=None):
+        r"""Matrix representation of the Tensor operator
         in the computational basis.
 
-        **Example:**
+        .. note::
 
-        Note that the returned matrix *only includes explicitly
-        declared observables* making up the tensor product;
-        that is, it only returns the matrix for the specified
-        subsystem it is defined for.
+            The wire_order argument is added for compatibility, but currently not implemented.
+            The Tensor class is planned to be removed soon.
+
+        Args:
+            wire_order (Iterable): global wire order, must contain all wire labels in this operator's wires
+
+        Returns:
+            array: matrix representation
+
+        **Example**
 
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix
+        >>> O.matrix()
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
                [ 0,  0, -1,  0],
@@ -1396,7 +1812,7 @@ class Tensor(Observable):
         must be explicitly included:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix
+        >>> O.matrix()
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
                [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
@@ -1405,15 +1821,19 @@ class Tensor(Observable):
                [ 0., -0.,  0., -0., -0.,  1., -0.,  0.],
                [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
                [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
-
-        Returns:
-            array: matrix representation
         """
+
+        if wire_order is not None:
+            raise NotImplementedError("The wire_order argument is currently not implemented.")
+
+        # Check for partially (but not fully) overlapping wires in the observables
+        partial_overlap = self.check_wires_partial_overlap()
+
         # group the observables based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix for i in g]
+            mats = [i.matrix() for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -1422,11 +1842,44 @@ class Tensor(Observable):
             # append diagonalizing unitary for specific wire to U_list
             U_list.append(mats[0])
 
+        mat_size = np.prod([np.shape(mat)[0] for mat in U_list])
+        wire_size = 2 ** len(self.wires)
+        if mat_size != wire_size:
+            if partial_overlap:
+                warnings.warn(
+                    "The matrix for Tensors of Tensors/Observables with partially "
+                    "overlapping wires might yield unexpected results. In particular "
+                    "the matrix size might be larger than intended."
+                )
+            else:
+                warnings.warn(
+                    f"The size of the returned matrix ({mat_size}) will not be compatible "
+                    f"with the subspace of the wires of the Tensor ({wire_size}). "
+                    "This likely is due to wires being used in multiple tensor product "
+                    "factors of the Tensor."
+                )
+
         # Return the Hermitian matrix representing the observable
         # over the defined wires.
         return functools.reduce(np.kron, U_list)
 
-    def sparse_matrix(self, wires=None):
+    def check_wires_partial_overlap(self):
+        r"""Tests whether any two observables in the Tensor have partially
+        overlapping wires and raise a warning if they do.
+
+        .. note::
+
+            Fully overlapping wires, i.e., observables with
+            same (sets of) wires are not reported, as the ``matrix`` method is
+            well-defined and implemented for this scenario.
+        """
+        for o1, o2 in itertools.combinations(self.obs, r=2):
+            shared = qml.wires.Wires.shared_wires([o1.wires, o2.wires])
+            if shared and (shared != o1.wires or shared != o2.wires):
+                return 1
+        return 0
+
+    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
@@ -1485,7 +1938,7 @@ class Tensor(Observable):
                 )
             # store the single-qubit ops according to the order of their wires
             idx = wires.index(o.wires)
-            list_of_sparse_ops[idx] = coo_matrix(o.matrix)
+            list_of_sparse_ops[idx] = coo_matrix(o.matrix())
 
         return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
 
@@ -1543,13 +1996,12 @@ class CV:
 
     # pylint: disable=no-member
 
-    def heisenberg_expand(self, U, wires):
+    def heisenberg_expand(self, U, wire_order):
         """Expand the given local Heisenberg-picture array into a full-system one.
 
         Args:
             U (array[float]): array to expand (expected to be of the dimension ``1+2*self.num_wires``)
-            wires (Wires): wires on the device the array ``U`` should be expanded
-                to apply to
+            wire_order (Wires): global wire order defining which subspace the operator acts on
 
         Raises:
             ValueError: if the size of the input matrix is invalid or `num_wires` is incorrect
@@ -1567,20 +2019,20 @@ class CV:
         if U_dim != 1 + 2 * nw:
             raise ValueError(f"{self.name}: Heisenberg matrix is the wrong size {U_dim}.")
 
-        if len(wires) == 0 or len(self.wires) == len(wires):
+        if len(wire_order) == 0 or len(self.wires) == len(wire_order):
             # no expansion necessary (U is a full-system matrix in the correct order)
             return U
 
-        if not wires.contains_wires(self.wires):
+        if not wire_order.contains_wires(self.wires):
             raise ValueError(
-                f"{self.name}: Some observable wires {self.wires} do not exist on this device with wires {wires}"
+                f"{self.name}: Some observable wires {self.wires} do not exist on this device with wires {wire_order}"
             )
 
         # get the indices that the operation's wires have on the device
-        wire_indices = wires.indices(self.wires)
+        wire_indices = wire_order.indices(self.wires)
 
         # expand U into the I, x_0, p_0, x_1, p_1, ... basis
-        dim = 1 + len(wires) * 2
+        dim = 1 + len(wire_order) * 2
 
         def loc(w):
             "Returns the slice denoting the location of (x_w, p_w) in the basis."
@@ -1708,7 +2160,7 @@ class CVOperation(CV, Operation):
 
         return pd
 
-    def heisenberg_tr(self, wires, inverse=False):
+    def heisenberg_tr(self, wire_order, inverse=False):
         r"""Heisenberg picture representation of the linear transformation carried
         out by the gate at current parameter values.
 
@@ -1726,7 +2178,7 @@ class CVOperation(CV, Operation):
         for non-Gaussian (and non-CV) gates.
 
         Args:
-            wires (Wires): wires on the device that the observable gets applied to
+            wire_order (Wires): global wire order defining which subspace the operator acts on
             inverse  (bool): if True, return the inverse transformation instead
 
         Raises:
@@ -1750,7 +2202,7 @@ class CVOperation(CV, Operation):
                 f"{self.name} is not a Gaussian operation, or is missing the _heisenberg_rep method."
             )
 
-        return self.heisenberg_expand(U, wires)
+        return self.heisenberg_expand(U, wire_order)
 
 
 class CVObservable(CV, Observable):
@@ -1773,7 +2225,7 @@ class CVObservable(CV, Observable):
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
 
-    def heisenberg_obs(self, wires):
+    def heisenberg_obs(self, wire_order):
         r"""Representation of the observable in the position/momentum operator basis.
 
         Returns the expansion :math:`q` of the observable, :math:`Q`, in the
@@ -1786,13 +2238,13 @@ class CVObservable(CV, Observable):
           such that :math:`Q = \sum_{ij} q_{ij} \mathbf{r}_i \mathbf{r}_j`.
 
         Args:
-            wires (Wires): wires on the device that the observable gets applied to
+            wire_order (Wires): global wire order defining which subspace the operator acts on
         Returns:
             array[float]: :math:`q`
         """
         p = self.parameters
         U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
-        return self.heisenberg_expand(U, wires)
+        return self.heisenberg_expand(U, wire_order)
 
 
 def operation_derivative(operation) -> np.ndarray:
@@ -1815,26 +2267,8 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = operation.generator
-
-    if generator is None:
-        raise ValueError(f"Operation {operation.name} does not have a generator")
-    if operation.num_params != 1:
-        # Note, this case should already be caught by the previous raise since we haven't worked out
-        # how to have an operator for multiple parameters. It is added here in case of a future
-        # change
-        raise ValueError(
-            f"Operation {operation.name} is not written in terms of a single parameter"
-        )
-
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
-
-    if operation.inverse:
-        prefactor *= -1
-        generator = qml.math.conj(qml.math.T(generator))
-
-    return 1j * prefactor * generator @ operation.matrix
+    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
+    return 1j * prefactor * generator @ operation.matrix()
 
 
 @qml.BooleanFn
@@ -1846,7 +2280,12 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator[0] is not None
+    try:
+        obj.generator()
+    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
+        return False
+
+    return True
 
 
 @qml.BooleanFn
@@ -1887,3 +2326,20 @@ def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qml.math.requires_grad``."""
     return any(qml.math.requires_grad(p) for p in obj.parameters)
+
+
+@qml.BooleanFn
+def defines_diagonalizing_gates(obj):
+    """Returns ``True`` if an operator defines the diagonalizing
+    gates are defined.
+
+    This helper function is useful if the property is to be checked in
+    a queuing context, but the resulting gates must not be queued.
+    """
+
+    with qml.tape.stop_recording():
+        try:
+            obj.diagonalizing_gates()
+        except DiagGatesUndefinedError:
+            return False
+        return True

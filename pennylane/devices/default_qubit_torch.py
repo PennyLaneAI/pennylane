@@ -150,6 +150,7 @@ class DefaultQubitTorch(DefaultQubit):
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
     _conj = staticmethod(torch.conj)
+    _real = staticmethod(torch.real)
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
@@ -297,8 +298,8 @@ class DefaultQubitTorch(DefaultQubit):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return self._asarray(unitary.eigvals, dtype=self.C_DTYPE)
-        return self._asarray(unitary.matrix, dtype=self.C_DTYPE)
+            return self._asarray(unitary.eigvals(), dtype=self.C_DTYPE)
+        return self._asarray(unitary.matrix(), dtype=self.C_DTYPE)
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state

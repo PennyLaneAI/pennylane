@@ -19,6 +19,8 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import functools
 import math
+from operator import matmul
+
 import numpy as np
 
 import pennylane as qml
@@ -57,7 +59,9 @@ class RX(Operation):
     num_wires = 1
     basis = "X"
     grad_method = "A"
-    generator = [PauliX, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliX(wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -66,10 +70,22 @@ class RX(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the RX operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RX.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000-0.2474j],
+                [0.0000-0.2474j, 0.9689+0.0000j]])
+        """
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
@@ -120,7 +136,9 @@ class RY(Operation):
     num_wires = 1
     basis = "Y"
     grad_method = "A"
-    generator = [PauliY, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliY(wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -129,9 +147,22 @@ class RY(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the RY operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RY.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689, -0.2474],
+                [ 0.2474,  0.9689]])
+        """
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -177,7 +208,9 @@ class RZ(Operation):
     num_wires = 1
     basis = "Z"
     grad_method = "A"
-    generator = [PauliZ, -1 / 2]
+
+    def generator(self):
+        return -0.5 * PauliZ(wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -186,10 +219,22 @@ class RZ(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the RZ operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.RZ.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j]])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -197,9 +242,21 @@ class RZ(Operation):
 
         return qml.math.diag([p, qml.math.conj(p)])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the RZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -245,7 +302,9 @@ class PhaseShift(Operation):
     num_wires = 1
     basis = "Z"
     grad_method = "A"
-    generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -257,10 +316,22 @@ class PhaseShift(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -268,10 +339,21 @@ class PhaseShift(Operation):
 
         return qml.math.diag([1, exp_part])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 0.8776+0.4794j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -280,9 +362,30 @@ class PhaseShift(Operation):
         return qml.math.stack([1, exp_part])
 
     @staticmethod
-    def decomposition(phi, wires):
-        decomp_ops = [RZ(phi, wires=wires)]
-        return decomp_ops
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.PhaseShift.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Any, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
+        [RZ(1.234, wires=[0])]
+
+        """
+        return [RZ(phi, wires=wires)]
 
     def adjoint(self):
         return PhaseShift(-self.data[0], wires=self.wires)
@@ -325,7 +428,9 @@ class ControlledPhaseShift(Operation):
     num_wires = 2
     basis = "Z"
     grad_method = "A"
-    generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1, 1]), wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -337,10 +442,24 @@ class ControlledPhaseShift(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the ControlledPhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
+            tensor([[1.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -348,10 +467,21 @@ class ControlledPhaseShift(Operation):
 
         return qml.math.diag([1, 1, 1, exp_part])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the ControlledPhaseShift operator.
 
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -360,7 +490,34 @@ class ControlledPhaseShift(Operation):
         return qml.math.stack([1, 1, 1, exp_part])
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+
+        See also :meth:`~.ControlledPhaseShift.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.ControlledPhaseShift.compute_decomposition(1.234, wires=(0,1))
+        [PhaseShift(0.617, wires=[0]),
+        CNOT(wires=[0, 1]),
+        PhaseShift(-0.617, wires=[1]),
+        CNOT(wires=[0, 1]),
+        PhaseShift(0.617, wires=[1])]
+
+        """
         decomp_ops = [
             qml.PhaseShift(phi / 2, wires=wires[0]),
             qml.CNOT(wires=wires),
@@ -409,7 +566,7 @@ class Rot(Operation):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Any, Wires): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -424,15 +581,29 @@ class Rot(Operation):
     def num_params(self):
         return 3
 
-    @classmethod
-    def _matrix(cls, *params):
-        # There are three input parameters to be dealt with
-        phi, theta, omega = params
+    @staticmethod
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the Rot operator.
 
+        Args:
+            phi (tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0993+0.0100j,  0.9752+0.1977j]])
+
+        """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch([phi, theta, omega])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -458,7 +629,31 @@ class Rot(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(phi, theta, omega, wires):
+    def compute_decomposition(phi, theta, omega, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.Rot.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            theta (float): rotation angle :math:`\theta`
+            omega (float): rotation angle :math:`\omega`
+            wires (Any, Wires): the wire the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.Rot.compute_decomposition(1.2, 2.3, 3.4, wires=0)
+        [RZ(1.2, wires=[0]), RY(2.3, wires=[0]), RZ(3.4, wires=[0])]
+
+        """
         decomp_ops = [
             RZ(phi, wires=wires),
             RY(theta, wires=wires),
@@ -498,7 +693,7 @@ class MultiRZ(Operation):
         will decompose the gate using :class:`~.RZ` and :class:`~.CNOT` gates.
 
     Args:
-        theta (float): rotation angle :math:`\theta`
+        theta (tensor_like or float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
@@ -507,51 +702,64 @@ class MultiRZ(Operation):
     num_wires = AnyWires
     grad_method = "A"
 
-    def __init__(self, theta, wires, do_queue=True, id=None):
+    def __init__(self, theta, wires=None, do_queue=True, id=None):
+        wires = Wires(wires)
+        self.hyperparameters["n_wires"] = len(wires)
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, theta, n):
-        """Matrix representation of a MultiRZ gate.
+    @staticmethod
+    def compute_matrix(theta, n_wires):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the MultiRZ operator.
 
         Args:
-            theta (float): Rotation angle.
-            n (int): Number of wires the rotation acts on. This has
-                to be given explicitly in the static method as the
-                wires object is not available.
+            theta (tensor_like or float): rotation angle
+            n_wires (int): number of wires the rotation acts on
 
         Returns:
-            array[complex]: The matrix representation
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.MultiRZ.compute_matrix(torch.tensor(0.1), 2)
+        tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
         """
-        multi_Z_rot_eigs = MultiRZ._eigvals(theta, n)
-        multi_Z_rot_matrix = qml.math.diag(multi_Z_rot_eigs)
+        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
 
-        return multi_Z_rot_matrix
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            eigs = qml.math.cast_like(eigs, 1j)
 
-    _generator = None
+        eigvals = qml.math.exp(-1j * theta / 2 * eigs)
+        return qml.math.diag(eigvals)
 
-    @property
     def generator(self):
-        if self._generator is None:
-            self._generator = [np.diag(pauli_eigs(len(self.wires))), -1 / 2]
-        return self._generator
+        return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
-    @property
-    def matrix(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_matrix`` method
-        if self.inverse:
-            # The matrix is diagonal, so there is no need to transpose
-            return qml.math.conj(self._matrix(*self.parameters, len(self.wires)))
+    @staticmethod
+    def compute_eigvals(theta, n_wires):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the MultiRZ operator.
 
-        return self._matrix(*self.parameters, len(self.wires))
+        Args:
+            theta (tensor_like or float): rotation angle
+            n_wires (int): number of wires the rotation acts on
 
-    @classmethod
-    def _eigvals(cls, theta, n):
-        eigs = qml.math.convert_like(pauli_eigs(n), theta)
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
+        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
+                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -559,25 +767,35 @@ class MultiRZ(Operation):
 
         return qml.math.exp(-1j * theta / 2 * eigs)
 
-    @property
-    def eigvals(self):
-        # Redefine the property here to pass additionally the number of wires to the ``_eigvals`` method
-        if self.inverse:
-            return qml.math.conj(self._eigvals(*self.parameters, len(self.wires)))
-
-        return self._eigvals(*self.parameters, len(self.wires))
-
     @staticmethod
-    def decomposition(theta, wires):
-        with qml.tape.OperationRecorder() as rec:
-            for i in range(len(wires) - 1, 0, -1):
-                qml.CNOT(wires=[wires[i], wires[i - 1]])
+    def compute_decomposition(theta, wires, **kwargs):  # pylint:disable=unused-argument
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
 
-            RZ(theta, wires=wires[0])
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            for i in range(len(wires) - 1):
-                qml.CNOT(wires=[wires[i + 1], wires[i]])
-        return rec.queue
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.MultiRZ.decomposition`.
+
+        Args:
+            theta (float): rotation angle :math:`\theta`
+            wires (Iterable, Wires): the wires the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.MultiRZ.compute_decomposition(1.2, wires=(0,1))
+        [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
+
+        """
+        ops = [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1])]
+        ops.append(RZ(theta, wires=wires[0]))
+        ops += [qml.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0])]
+
+        return ops
 
     def adjoint(self):
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -629,8 +847,8 @@ class PauliRot(Operation):
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": Hadamard._matrix(),
-        "Y": RX._matrix(np.pi / 2),
+        "X": Hadamard.compute_matrix(),
+        "Y": RX.compute_matrix(np.pi / 2),
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
@@ -699,17 +917,28 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
-    @classmethod
-    def _matrix(cls, *params):
-        pauli_word = params[1]
+    @staticmethod
+    def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the PauliRot operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+            pauli_word (str): string representation of Pauli word
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PauliRot.compute_matrix(0.5, 'X')
+        [[9.6891e-01+4.9796e-18j 2.7357e-17-2.4740e-01j]
+         [2.7357e-17-2.4740e-01j 9.6891e-01+4.9796e-18j]]
+        """
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
                 " Allowed characters are I, X, Y and Z"
             )
-
-        theta = params[0]
 
         interface = qml.math.get_interface(theta)
 
@@ -735,7 +964,7 @@ class PauliRot(Operation):
             *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
         )
 
-        multi_Z_rot_matrix = MultiRZ._matrix(theta, len(non_identity_gates))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
@@ -752,49 +981,22 @@ class PauliRot(Operation):
             list(range(len(pauli_word))),
         )
 
-    _generator = None
-
-    @property
     def generator(self):
-        if self._generator is None:
-            pauli_word = self.parameters[1]
+        pauli_word = self.parameters[1]
+        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
 
-            # Simplest case is if the Pauli is the identity matrix
-            if pauli_word == "I" * len(pauli_word):
-                self._generator = [np.eye(2 ** len(pauli_word)), -1 / 2]
-                return self._generator
+    @staticmethod
+    def compute_eigvals(theta, pauli_word):  # pylint: disable=,arguments-differ
+        """Eigenvalues of the PauliRot operator.
 
-            # We first generate the matrix excluding the identity parts and expand it afterwards.
-            # To this end, we have to store on which wires the non-identity parts act
-            non_identity_wires, non_identity_gates = zip(
-                *[(wire, gate) for wire, gate in enumerate(pauli_word) if gate != "I"]
-            )
+        Returns:
+            tensor_like: eigenvalues
 
-            # get MultiRZ's generator
-            multi_Z_rot_generator = qml.math.diag(pauli_eigs(len(non_identity_gates)))
+        **Example**
 
-            # now we conjugate with Hadamard and RX to create the Pauli string
-            conjugation_matrix = functools.reduce(
-                qml.math.kron,
-                [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
-            )
-
-            self._generator = [
-                expand(
-                    qml.math.dot(
-                        qml.math.conj(qml.math.T(conjugation_matrix)),
-                        qml.math.dot(multi_Z_rot_generator, conjugation_matrix),
-                    ),
-                    non_identity_wires,
-                    list(range(len(pauli_word))),
-                ),
-                -1 / 2,
-            ]
-
-        return self._generator
-
-    @classmethod
-    def _eigvals(cls, theta, pauli_word):
+        >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -802,36 +1004,63 @@ class PauliRot(Operation):
         if pauli_word == "I" * len(pauli_word):
             return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
 
-        return MultiRZ._eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
     @staticmethod
-    def decomposition(theta, pauli_word, wires):
-        # Catch cases when the wire is passed as a single int.
-        if isinstance(wires, int):
+    def compute_decomposition(theta, pauli_word, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.PauliRot.decomposition`.
+
+        Args:
+            theta (float): rotation angle :math:`\theta`
+            pauli_word (string): the Pauli word defining the rotation
+            wires (Iterable, Wires): the wires the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PauliRot.compute_decomposition(1.2, "XY", wires=(0,1))
+        [Hadamard(wires=[0]),
+        RX(1.5707963267948966, wires=[1]),
+        MultiRZ(1.2, wires=[0, 1]),
+        Hadamard(wires=[0]),
+        RX(-1.5707963267948966, wires=[1])]
+
+        """
+        if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
             wires = [wires]
-        with qml.tape.OperationRecorder() as rec:
-            # Check for identity and do nothing
-            if pauli_word == "I" * len(wires):
-                return []
 
-            active_wires, active_gates = zip(
-                *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
-            )
+        # Check for identity and do nothing
+        if pauli_word == "I" * len(wires):
+            return []
 
-            for wire, gate in zip(active_wires, active_gates):
-                if gate == "X":
-                    Hadamard(wires=[wire])
-                elif gate == "Y":
-                    RX(np.pi / 2, wires=[wire])
+        active_wires, active_gates = zip(
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        )
 
-            MultiRZ(theta, wires=list(active_wires))
+        ops = []
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                ops.append(Hadamard(wires=[wire]))
+            elif gate == "Y":
+                ops.append(RX(np.pi / 2, wires=[wire]))
 
-            for wire, gate in zip(active_wires, active_gates):
-                if gate == "X":
-                    Hadamard(wires=[wire])
-                elif gate == "Y":
-                    RX(-np.pi / 2, wires=[wire])
-        return rec.queue
+        ops.append(MultiRZ(theta, wires=list(active_wires)))
+
+        for wire, gate in zip(active_wires, active_gates):
+            if gate == "X":
+                ops.append(Hadamard(wires=[wire]))
+            elif gate == "Y":
+                ops.append(RX(-np.pi / 2, wires=[wire]))
+        return ops
 
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
@@ -890,10 +1119,8 @@ class CRX(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -905,9 +1132,24 @@ class CRX(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRX operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRX.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0+0.0j, 0.0+0.0j,    0.0+0.0j,    0.0+0.0j],
+                [0.0+0.0j, 1.0+0.0j,    0.0+0.0j,    0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j, 0.9689+0.0j, 0.0-0.2474j],
+                [0.0+0.0j, 0.0+0.0j, 0.0-0.2474j, 0.9689+0.0j]])
+        """
         interface = qml.math.get_interface(theta)
 
         c = qml.math.cos(theta / 2)
@@ -933,12 +1175,39 @@ class CRX(Operation):
         )
 
     @staticmethod
-    def decomposition(theta, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.CRot.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): the wires the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CRX.compute_decomposition(1.2, wires=(0,1))
+        [RZ(1.5707963267948966, wires=[1]),
+        RY(0.6, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RY(-0.6, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RZ(-1.5707963267948966, wires=[1])]
+
+        """
         decomp_ops = [
             RZ(np.pi / 2, wires=wires[1]),
-            RY(theta / 2, wires=wires[1]),
+            RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            RY(-theta / 2, wires=wires[1]),
+            RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RZ(-np.pi / 2, wires=wires[1]),
         ]
@@ -997,10 +1266,8 @@ class CRY(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1012,9 +1279,24 @@ class CRY(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRY operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRY.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  1.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.0000,  0.9689, -0.2474],
+                [ 0.0000,  0.0000,  0.2474,  0.9689]], dtype=torch.float64)
+        """
         interface = qml.math.get_interface(theta)
 
         c = qml.math.cos(theta / 2)
@@ -1033,11 +1315,36 @@ class CRY(Operation):
         )
 
     @staticmethod
-    def decomposition(theta, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.CRY.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CRY.compute_decomposition(1.2, wires=(0,1))
+        [RY(0.6, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RY(-0.6, wires=[1]),
+        CNOT(wires=[0, 1])]
+
+        """
         decomp_ops = [
-            RY(theta / 2, wires=wires[1]),
+            RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            RY(-theta / 2, wires=wires[1]),
+            RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
         ]
         return decomp_ops
@@ -1098,10 +1405,8 @@ class CRZ(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1113,10 +1418,24 @@ class CRZ(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRZ operator.
 
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRZ.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0+0.0j, 0.0+0.0j,       0.0+0.0j,       0.0+0.0j],
+                [0.0+0.0j, 1.0+0.0j,       0.0+0.0j,       0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j, 0.9689-0.2474j,       0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j,       0.0+0.0j, 0.9689+0.2474j]])
+        """
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
@@ -1124,9 +1443,22 @@ class CRZ(Operation):
 
         return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        theta = qml.math.flatten(qml.math.stack([params[0]]))[0]
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=arguments-differ
+        """Eigenvalues of the CRZ operator.
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        theta = qml.math.flatten(qml.math.stack([theta]))[0]
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -1136,7 +1468,32 @@ class CRZ(Operation):
         return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.CRZ.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): Wires that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.CRZ.compute_decomposition(1.2, wires=(0,1))
+        [PhaseShift(0.6, wires=[1]),
+        CNOT(wires=[0, 1]),
+        PhaseShift(-0.6, wires=[1]),
+        CNOT(wires=[0, 1])]
+
+        """
         decomp_ops = [
             PhaseShift(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -1207,14 +1564,30 @@ class CRot(Operation):
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi, theta, omega = params
+    @staticmethod
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the CRot operator.
 
+        Args:
+            phi(tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+         >>> qml.CRot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+         tensor([[ 1.0+0.0j,  0.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+                [ 0.0+0.0j,  1.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+                [ 0.0+0.0j,  0.0+0.0j,  0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
+        """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch([phi, theta, omega])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1246,7 +1619,37 @@ class CRot(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(phi, theta, omega, wires):
+    def compute_decomposition(phi, theta, omega, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.CRot.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            theta (float): rotation angle :math:`\theta`
+            omega (float): rotation angle :math:`\omega`
+            wires (Iterable, Wires): the wires the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.PhaseShift.compute_decomposition(1.234, wires=0)
+        [RZ(-1.1, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RZ(-2.3, wires=[1]),
+        RY(-1.15, wires=[1]),
+        CNOT(wires=[0, 1]),
+        RY(1.15, wires=[1]),
+        RZ(3.4, wires=[1])]
+
+        """
         decomp_ops = [
             RZ((phi - omega) / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
@@ -1296,7 +1699,9 @@ class U1(Operation):
     """
     num_wires = 1
     grad_method = "A"
-    generator = [np.array([[0, 0], [0, 1]]), 1]
+
+    def generator(self):
+        return qml.Projector(np.array([1]), wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1305,10 +1710,22 @@ class U1(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the U1 operator.
 
+        Args:
+            phi (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.U1.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
@@ -1317,7 +1734,29 @@ class U1(Operation):
         return qml.math.diag([1, exp_part])
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.U1.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.U1.compute_decomposition(1.234, wires=0)
+        [PhaseShift(1.234, wires=[0])]
+
+        """
         return [PhaseShift(phi, wires=wires)]
 
     def adjoint(self):
@@ -1371,11 +1810,24 @@ class U2(Operation):
     def num_params(self):
         return 2
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi, delta = params
+    @staticmethod
+    def compute_matrix(phi, lam):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the U2 operator.
 
-        interface = qml.math._multi_dispatch(params)
+        Args:
+            phi (tensor_like or float): azimuthal angle
+            lam (tensor_like or float): quantum phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.U2.compute_matrix(torch.tensor(0.1), torch.tensor(0.2))
+        tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
+                [ 0.7036+0.0706j,  0.6755+0.2090j]])
+        """
+        interface = qml.math._multi_dispatch([phi, lam])
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
@@ -1390,7 +1842,32 @@ class U2(Operation):
         return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(phi, delta, wires):
+    def compute_decomposition(phi, delta, wires):
+        r"""Compute the decomposition for the specified parameters and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.U2.decomposition`.
+
+        Args:
+            phi (float): azimuthal angle :math:`\phi`
+            delta (float): quantum phase :math:`\delta`
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.U2.compute_decomposition(1.23, 2.34, wires=0)
+        [Rot(2.34, 1.5707963267948966, -2.34, wires=[0]),
+        PhaseShift(2.34, wires=[0]),
+        PhaseShift(1.23, wires=[0])]
+
+        """
         decomp_ops = [
             Rot(delta, np.pi / 2, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
@@ -1453,14 +1930,29 @@ class U3(Operation):
     def num_params(self):
         return 3
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta, phi, delta = params
+    @staticmethod
+    def compute_matrix(theta, phi, delta):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the U3 operator.
 
+        Args:
+            theta (tensor_like or float): polar angle
+            phi (tensor_like or float): azimuthal angle
+            delta (tensor_like or float): quantum phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.U3.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 0.9988+0.0000j, -0.0477-0.0148j],
+                [ 0.0490+0.0099j,  0.8765+0.4788j]])
+
+        """
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch(params)
+        interface = qml.math._multi_dispatch([theta, phi, delta])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1480,7 +1972,33 @@ class U3(Operation):
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def decomposition(theta, phi, delta, wires):
+    def compute_decomposition(theta, phi, delta, wires):
+        r"""Compute the decomposition for the specified parameters and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.U3.decomposition`.
+
+        Args:
+            theta (float): polar angle :math:`\theta`
+            phi (float): azimuthal angle :math:`\phi`
+            delta (float): quantum phase :math:`\delta`
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.U3.compute_decomposition(1.23, 2.34, 3.45, wires=0)
+        [Rot(3.45, 1.23, -3.45, wires=[0]),
+        PhaseShift(3.45, wires=[0]),
+        PhaseShift(2.34, wires=[0])]
+
+        """
         decomp_ops = [
             Rot(delta, theta, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
@@ -1523,10 +2041,8 @@ class IsingXX(Operation):
     num_wires = 2
     grad_method = "A"
 
-    generator = [
-        np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
-        -1 / 2,
-    ]
+    def generator(self):
+        return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1535,10 +2051,25 @@ class IsingXX(Operation):
     def num_params(self):
         return 1
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the IsingXX operator.
 
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingXX.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j],
+                [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
+                [0.0000-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]],
+               dtype=torch.complex128)
+        """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
         Y = qml.math.convert_like(np.eye(4)[::-1].copy(), phi)
@@ -1552,7 +2083,29 @@ class IsingXX(Operation):
         return mat
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.IsingXX.decomposition`.
+
+        Args:
+            phi (float): the phase angle
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingXX.compute_decomposition(1.23, wires=(0,1))
+        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1]]
+
+        """
         decomp_ops = [
             qml.CNOT(wires=wires),
             RX(phi, wires=[wires[0]]),
@@ -1592,10 +2145,9 @@ class IsingYY(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
-        -1 / 2,
-    ]
+
+    def generator(self):
+        return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1605,17 +2157,53 @@ class IsingYY(Operation):
         return 1
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.IsingYY.decomposition`.
+
+        Args:
+            phi (float): the phase angle
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingYY.compute_decomposition(1.23, wires=(0,1))
+        [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
+
+        """
         return [
             qml.CY(wires=wires),
             qml.RY(phi, wires=[wires[0]]),
             qml.CY(wires=wires),
         ]
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the IsingYY operator.
 
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingYY.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.2474j],
+                [0.0000+0.0000j, 0.9689+0.0000j, 0.0000-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.0000j]])
+        """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
         Y = qml.math.convert_like(np.diag([1, -1, -1, 1])[::-1].copy(), phi)
@@ -1659,10 +2247,9 @@ class IsingZZ(Operation):
     """
     num_wires = 2
     grad_method = "A"
-    generator = [
-        np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
-        -1 / 2,
-    ]
+
+    def generator(self):
+        return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -1672,17 +2259,53 @@ class IsingZZ(Operation):
         return 1
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Compute the decomposition for the specified parameter and wires. The decomposition
+        defines an Operator as a product of more fundamental gates:
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+        See also :meth:`~.IsingZZ.decomposition`.
+
+        Args:
+            phi (float): the phase angle
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingZZ.compute_decomposition(1.23, wires=0)
+        [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
+
+        """
         return [
             qml.CNOT(wires=wires),
             qml.RZ(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
         ]
 
-    @classmethod
-    def _matrix(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        """Canonical matrix representation of the IsingZZ operator.
 
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingZZ.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
