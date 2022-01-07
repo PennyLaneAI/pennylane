@@ -41,12 +41,17 @@ def _add_op(op, layer_str, wire_map, decimals):
         for w in range(min_w+1, max_w):
             layer_str[w] = "├" if w in mapped_wires else "│"
 
-    for w in op.control_wires:
+    control_wires = getattr(op, "control_wires", [])
+    for w in control_wires:
         layer_str[wire_map[w]] += "C"
 
+    if hasattr(op, "label"):
+        label = op.label(decimals=decimals).replace("\n", "")
+    else: # is a tape
+        label = op.name or "Tape"
     for w in op.wires:
-        if w not in op.control_wires:
-            layer_str[wire_map[w]] += op.label(decimals=decimals).replace("\n", "")
+        if w not in control_wires:
+            layer_str[wire_map[w]] += label
 
     return layer_str
 
