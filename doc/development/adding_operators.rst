@@ -6,7 +6,7 @@ Adding new operators
 The following steps will help you to create custom operators, and to
 potentially add them to PennyLane.
 
-Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator - one whose
+Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator --- one whose
 action is defined by specifying a representation as a combination of other operators.
 For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
 while all other operations are found in ``pennylane/ops/``.
@@ -227,11 +227,11 @@ whether it supports operations using the operation name.
 
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device
-  might have a hardcoded implementation, _or_ it may refer to one of the
-  numerical representations of the operator (such as `operator.matrix`).
+  might have a hardcoded implementation, *or* it may refer to one of the
+  numerical representations of the operator (such as :meth:`.Operator.matrix`).
   
 - If the device does not register support for an operation with the same
-  name, PennyLane will automatically decompose the gate using `operator.decomposition`.
+  name, PennyLane will automatically decompose the gate using :meth:`.Operator.decomposition`.
 
 .. code-block:: python
 
@@ -272,9 +272,9 @@ we can even compute gradients of circuits that use the new gate without any extr
 Defining special properties of an operator
 ##########################################
 
-Apart from the main ``Operator`` class, operators with special methods or representations
-are implemented as subclasses ``Operation``, ``Observable``, ``Channel``,
-``CVOperation`` and ``CVOperation``.
+Apart from the main :class:`~.Operator` class, operators with special methods or representations
+are implemented as subclasses :class:`~.Operation`, :class:`~.Observable`, :class:`~.Channel`,
+:class:`~.CVOperation` and :class:`~.CVOperation`.
 
 However, unlike many other frameworks, PennyLane does not use class
 inheritance to define fine-grained properties of operators,
@@ -312,6 +312,9 @@ implementations. The onus is on the contributors of new operators to add them to
 .. note::
 
     The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
+    
+    Included attributes are listed in the ``Operation``
+    `documentation <https://pennylane.readthedocs.io/en/latest/code/qml_operation.html#operation-attributes>`__.
 
 Adding your new operator to PennyLane
 #####################################
