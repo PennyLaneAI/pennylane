@@ -209,8 +209,8 @@
 
 <h3>Bug fixes</h3>
 
-* The available `diff_method`s for QNodes given in an error message and the
-  documentation have been corrected.
+* The available `diff_method` options for QNodes has been corrected in both the
+  error messages and the documentation.
   [(#2078)](https://github.com/PennyLaneAI/pennylane/pull/2078)
 
 * Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
