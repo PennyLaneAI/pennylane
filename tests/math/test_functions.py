@@ -2257,6 +2257,25 @@ class TestSafeSqueeze:
         "shape, exclude_axis, expected_shape",
         list(
             zip(
+                input_shapes[:4],
+                [-1, -3, 0, 1],
+                [(2, 5, 3), (1, 9), (1,), (5, 1)],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_single_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
+        """Tests squeezing with the kwarg exclude_axis and a single axis to ignore
+        while squeezing."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, exclude_axis=exclude_axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, exclude_axis, expected_shape",
+        list(
+            zip(
                 input_shapes,
                 [(0,), (-2, 3), [1], {-1, -2}, []],
                 [(2, 5, 3), (9, 1), (1,), (5, 1), ()],
@@ -2264,8 +2283,8 @@ class TestSafeSqueeze:
         ),
     )
     @pytest.mark.parametrize("ones_fn", ones_functions)
-    def test_with_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
-        """Tests squeezing with the kwarg exclude_axis that gives axes to ignore
+    def test_with_multiple_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
+        """Tests squeezing with the kwarg exclude_axis and multiple axes to ignore
         while squeezing."""
 
         tensor = ones_fn(shape)
