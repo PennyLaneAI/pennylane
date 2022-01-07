@@ -125,7 +125,7 @@ class gradient_transform(qml.batch_transform):
             if not hybrid:
                 return qjac
 
-            qjac_axes = list(range(len(qml.math.shape(qjac))-1))
+            qjac_axes = list(range(len(qml.math.shape(qjac)) - 1))
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
@@ -145,6 +145,8 @@ class gradient_transform(qml.batch_transform):
                 # is present inside the QNode.
                 return qjac
 
-            return qml.math.safe_squeeze(qml.math.tensordot(qjac, cjac, [[-1], [0]]), axis=qjac_axes)
+            return qml.math.safe_squeeze(
+                qml.math.tensordot(qjac, cjac, [[-1], [0]]), axis=qjac_axes
+            )
 
         return jacobian_wrapper

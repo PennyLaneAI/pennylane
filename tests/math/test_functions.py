@@ -2176,6 +2176,7 @@ class TestSortFunction:
 
 ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
 
+
 class TestSafeSqueeze:
     """Test the safe version of squeeze that allows to specify
     axes of size bigger than one without raising an error and that
