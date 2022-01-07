@@ -450,7 +450,6 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, jax_deriv)
 
-    @pytest.mark.xfail
     def test_hessian_transform_is_differentiable_tensorflow(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
         (1d -> 1d)"""
@@ -471,7 +470,7 @@ class TestParameterShiftHessian:
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
         circuit.interface = "tf"
         with tf.GradientTape() as tf_tape:
-            hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)  # TypeError: Got an unexpected keyword argument 'axes'
+            hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
         tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
 
         assert np.allclose(expected, tensorflow_deriv)
