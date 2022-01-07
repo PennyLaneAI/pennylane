@@ -170,6 +170,10 @@
 
 <h3>Bug fixes</h3>
 
+* The available `diff_method`s for QNodes given in an error message and the
+  documentation have been corrected.
+  [(#2078)](https://github.com/PennyLaneAI/pennylane/pull/2078)
+
 * Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
   positions corresponding to vanishing state vector amplitudes is wrong.
   [(#2057)](https://github.com/PennyLaneAI/pennylane/pull/2057)
