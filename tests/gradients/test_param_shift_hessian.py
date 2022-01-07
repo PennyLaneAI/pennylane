@@ -426,7 +426,6 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, torch_deriv)
 
-    @pytest.mark.xfail
     def test_hessian_transform_is_differentiable_jax(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
         (1d -> 1d)"""
@@ -434,19 +433,19 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        @qml.qnode(dev, diff_method="backprop", max_diff=3)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=1)
+            return qml.expval(qml.PauliZ(1))
 
         x = np.array([0.1, 0.2], requires_grad=True)
         x_jax = jax.numpy.array([0.1, 0.2])
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
         circuit.interface = "jax"
-        jax_deriv = jax.jacobian(qml.gradients.param_shift_hessian(circuit))(x_jax)  # ValueError: The JAX interface only supports first order derivatives.
+        jax_deriv = jax.jacobian(qml.gradients.param_shift_hessian(circuit))(x_jax)
 
         assert np.allclose(expected, jax_deriv)
 

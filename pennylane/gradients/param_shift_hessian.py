@@ -149,7 +149,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
     def processing_fn(results):
         # The first results dimension is the number of terms/tapes in the parameter-shift
         # rule, the remaining ones are the QNode output dimensions.
-        out_dim = qml.math.shape(results)[1:]
+        out_dim = qml.math.shape(qml.math.stack(results))[1:]
         # The desired shape of the Hessian is:
         #       (QNode output dimensions, # trainable gate args, # trainable gate args),
         # but first we accumulate all elements into a list, since no array assingment is possible.
