@@ -50,4 +50,5 @@ from .tapering import (
     generate_symmetries,
     get_generators,
     transform_hamiltonian,
+    optimal_sector,
 )
