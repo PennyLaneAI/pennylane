@@ -234,6 +234,9 @@
 
 <h3>Documentation</h3>
 
+* Fixes an error in the signs of equations in the `DoubleExcitation` page.
+  [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
+
 * Extended the interfaces description page to explicitly mention device
   compatibility.
   [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
