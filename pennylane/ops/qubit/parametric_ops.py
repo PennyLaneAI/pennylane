@@ -34,7 +34,7 @@ INV_SQRT2 = 1 / math.sqrt(2)
 
 
 class RX(Operation):
-    r"""RX(phi, wires, do_queue=True, id=None)
+    r"""
     The single qubit X rotation
 
     .. math:: R_x(\phi) = e^{-i\phi\sigma_x/2} = \begin{bmatrix}
@@ -111,7 +111,7 @@ class RX(Operation):
 
 
 class RY(Operation):
-    r"""RY(phi, wires, do_queue=True, id=None)
+    r"""
     The single qubit Y rotation
 
     .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
@@ -183,7 +183,7 @@ class RY(Operation):
 
 
 class RZ(Operation):
-    r"""RZ(phi, wires, do_queue=True, id=None)
+    r"""
     The single qubit Z rotation
 
     .. math:: R_z(\phi) = e^{-i\phi\sigma_z/2} = \begin{bmatrix}
@@ -277,7 +277,7 @@ class RZ(Operation):
 
 
 class PhaseShift(Operation):
-    r"""PhaseShift(phi, wires, do_queue=True, id=None)
+    r"""
     Arbitrary single qubit local phase shift
 
     .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -399,7 +399,7 @@ class PhaseShift(Operation):
 
 
 class ControlledPhaseShift(Operation):
-    r"""ControlledPhaseShift(phi, wires, do_queue=True, id=None)
+    r"""
     A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -539,7 +539,7 @@ CPhase = ControlledPhaseShift
 
 
 class Rot(Operation):
-    r"""Rot(phi, theta, omega, wires, do_queue=True, id=None)
+    r"""
     Arbitrary single qubit rotation
 
     .. math::
@@ -673,7 +673,7 @@ class Rot(Operation):
 
 
 class MultiRZ(Operation):
-    r"""MultiRZ(theta, wires, do_queue=True, id=None)
+    r"""
     Arbitrary multi Z rotation.
 
     .. math::
@@ -802,7 +802,7 @@ class MultiRZ(Operation):
 
 
 class PauliRot(Operation):
-    r"""PauliRot(theta, pauli_word, wires, do_queue=True, id=None)
+    r"""
     Arbitrary Pauli word rotation.
 
     .. math::
@@ -1075,7 +1075,7 @@ four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class CRX(Operation):
-    r"""CRX(phi, wires, do_queue=True, id=None)
+    r"""
     The controlled-RX operator
 
     .. math::
@@ -1222,7 +1222,7 @@ class CRX(Operation):
 
 
 class CRY(Operation):
-    r"""CRY(phi, wires, do_queue=True, id=None)
+    r"""
     The controlled-RY operator
 
     .. math::
@@ -1358,7 +1358,7 @@ class CRY(Operation):
 
 
 class CRZ(Operation):
-    r"""CRZ(phi, wires, do_queue=True, id=None)
+    r"""
     The controlled-RZ operator
 
     .. math::
@@ -1511,7 +1511,7 @@ class CRZ(Operation):
 
 
 class CRot(Operation):
-    r"""CRot(phi, theta, omega, wires, do_queue=True, id=None)
+    r"""
     The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -1671,7 +1671,7 @@ class CRot(Operation):
 
 
 class U1(Operation):
-    r"""U1(phi, do_queue=True, id=None)
+    r"""
     U1 gate.
 
     .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -1764,7 +1764,7 @@ class U1(Operation):
 
 
 class U2(Operation):
-    r"""U2(phi, delta, wires, do_queue=True, id=None)
+    r"""
     U2 gate.
 
     .. math::
@@ -1883,7 +1883,7 @@ class U2(Operation):
 
 
 class U3(Operation):
-    r"""U3(theta, phi, delta, wires, do_queue=True, id=None)
+    r"""
     Arbitrary single qubit unitary.
 
     .. math::
@@ -2014,7 +2014,7 @@ class U3(Operation):
 
 
 class IsingXX(Operation):
-    r"""IsingXX(phi, wires, do_queue=True, id=None)
+    r"""
     Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
@@ -2119,7 +2119,7 @@ class IsingXX(Operation):
 
 
 class IsingYY(Operation):
-    r"""IsingYY(phi, wires, do_queue=True, id=None)
+    r"""
     Ising YY coupling gate
 
     .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
@@ -2221,7 +2221,7 @@ class IsingYY(Operation):
 
 
 class IsingZZ(Operation):
-    r""" IsingZZ(phi, wires, do_queue=True, id=None)
+    r"""
     Ising ZZ coupling gate
 
     .. math:: ZZ(\phi) = \begin{bmatrix}

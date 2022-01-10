@@ -27,7 +27,7 @@ from .matrix_ops import QubitUnitary
 
 
 class Hermitian(Observable):
-    r"""Hermitian(A, wires, do_queue=True, id=None)
+    r"""
     An arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
@@ -160,7 +160,7 @@ class Hermitian(Observable):
 
 
 class SparseHamiltonian(Observable):
-    r"""SparseHamiltonian(H, wires, do_queue=True, id=None)
+    r"""
     A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     .. warning::
@@ -259,7 +259,7 @@ class SparseHamiltonian(Observable):
 
 
 class Projector(Observable):
-    r"""Projector(basis_state, wires, do_queue=True, id=None)
+    r"""
     Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
 
     The expectation of this observable returns the value

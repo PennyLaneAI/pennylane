@@ -73,7 +73,7 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""pennylane.Rotation(phi, wires)
+    r"""
     Phase space rotation.
 
     .. math::
@@ -123,7 +123,7 @@ class Rotation(CVOperation):
 
 
 class Squeezing(CVOperation):
-    r"""pennylane.Squeezing(r, phi, wires, do_queue=True, id=None)
+    r"""
     Phase space squeezing.
 
     .. math::
@@ -184,7 +184,7 @@ class Squeezing(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""pennylane.Displacement(a, phi, wires, do_queue=True, id=None)
+    r"""
     Phase space displacement.
 
     .. math::
@@ -246,7 +246,7 @@ class Displacement(CVOperation):
 
 
 class Beamsplitter(CVOperation):
-    r"""pennylane.Beamsplitter(theta, phi, wires, do_queue=True, id=None)
+    r"""
     Beamsplitter interaction.
 
     .. math::
@@ -311,7 +311,7 @@ class Beamsplitter(CVOperation):
 
 
 class TwoModeSqueezing(CVOperation):
-    r"""pennylane.TwoModeSqueezing(r, phi, wires, do_queue=True, id=None)
+    r"""
     Phase space two-mode squeezing.
 
     .. math::
@@ -384,7 +384,7 @@ class TwoModeSqueezing(CVOperation):
 
 
 class QuadraticPhase(CVOperation):
-    r"""pennylane.QuadraticPhase(s, wires, do_queue=True, id=None)
+    r"""
     Quadratic phase shift.
 
     .. math::
@@ -440,7 +440,7 @@ class QuadraticPhase(CVOperation):
 
 
 class ControlledAddition(CVOperation):
-    r"""pennylane.ControlledAddition(s, wires, do_queue=True, id=None)
+    r"""
     Controlled addition operation.
 
     .. math::
@@ -502,7 +502,7 @@ class ControlledAddition(CVOperation):
 
 
 class ControlledPhase(CVOperation):
-    r"""pennylane.ControlledPhase(s, wires, do_queue=True, id=None)
+    r"""
     Controlled phase operation.
 
     .. math::
@@ -564,7 +564,7 @@ class ControlledPhase(CVOperation):
 
 
 class Kerr(CVOperation):
-    r"""pennylane.Kerr(kappa, wires, do_queue=True, id=None)
+    r"""
     Kerr interaction.
 
     .. math::
@@ -598,7 +598,7 @@ class Kerr(CVOperation):
 
 
 class CrossKerr(CVOperation):
-    r"""pennylane.CrossKerr(kappa, wires, do_queue=True, id=None)
+    r"""
     Cross-Kerr interaction.
 
     .. math::
@@ -632,7 +632,7 @@ class CrossKerr(CVOperation):
 
 
 class CubicPhase(CVOperation):
-    r"""pennylane.CubicPhase(gamma, wires, do_queue=True, id=None)
+    r"""
     Cubic phase shift.
 
     .. math::
@@ -669,7 +669,7 @@ class CubicPhase(CVOperation):
 
 
 class InterferometerUnitary(CVOperation):
-    r"""pennylane.InterferometerUnitary(U, wires, do_queue=True, id=None)
+    r"""
     A linear interferometer transforming the bosonic operators according to
     the unitary matrix :math:`U`.
 
@@ -747,7 +747,7 @@ class InterferometerUnitary(CVOperation):
 
 
 class CoherentState(CVOperation):
-    r"""pennylane.CoherentState(a, phi, wires, do_queue=True, id=None)
+    r"""
     Prepares a coherent state.
 
     **Details:**
@@ -776,7 +776,7 @@ class CoherentState(CVOperation):
 
 
 class SqueezedState(CVOperation):
-    r"""pennylane.SqueezedState(r, phi, wires, do_queue=True, id=None)
+    r"""
     Prepares a squeezed vacuum state.
 
     **Details:**
@@ -805,7 +805,7 @@ class SqueezedState(CVOperation):
 
 
 class DisplacedSqueezedState(CVOperation):
-    r"""pennylane.DisplacedSqueezedState(a, phi_a, r, phi_r, wires, do_queue=True, id=None)
+    r"""
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -844,7 +844,7 @@ class DisplacedSqueezedState(CVOperation):
 
 
 class ThermalState(CVOperation):
-    r"""pennylane.ThermalState(nbar, wires, do_queue=True, id=None)
+    r"""
     Prepares a thermal state.
 
     **Details:**
@@ -875,7 +875,7 @@ class ThermalState(CVOperation):
 
 
 class GaussianState(CVOperation):
-    r"""pennylane.GaussianState(V, r, wires, do_queue=True, id=None)
+    r"""
     Prepare subsystems in a given Gaussian state.
 
     **Details:**
@@ -908,7 +908,7 @@ class GaussianState(CVOperation):
 
 
 class FockState(CVOperation):
-    r"""pennylane.FockState(n, wires, do_queue=True, id=None)
+    r"""
     Prepares a single Fock state.
 
     **Details:**
@@ -960,7 +960,7 @@ class FockState(CVOperation):
 
 
 class FockStateVector(CVOperation):
-    r"""pennylane.FockStateVector(state, wires, do_queue=True, id=None)
+    r"""
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -1051,7 +1051,7 @@ class FockStateVector(CVOperation):
 
 
 class FockDensityMatrix(CVOperation):
-    r"""pennylane.FockDensityMatrix(state, wires, do_queue=True, id=None)
+    r"""
     Prepare subsystems using the given density matrix in the Fock basis.
 
     **Details:**
@@ -1080,7 +1080,7 @@ class FockDensityMatrix(CVOperation):
 
 
 class CatState(CVOperation):
-    r"""pennylane.CatState(a, phi, p, wires, do_queue=True, id=None)
+    r"""
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
@@ -1125,7 +1125,7 @@ class CatState(CVOperation):
 
 
 class NumberOperator(CVObservable):
-    r"""pennylane.ops.NumberOperator(wires)
+    r"""
     The photon number observable :math:`\langle \hat{n}\rangle`.
 
     The number operator is defined as
@@ -1154,6 +1154,9 @@ class NumberOperator(CVObservable):
 
     ev_order = 2
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     @property
     def num_params(self):
         return 0
@@ -1168,7 +1171,7 @@ class NumberOperator(CVObservable):
 
 
 class TensorN(CVObservable):
-    r"""pennylane.ops.TensorN(wires)
+    r"""
     The tensor product of the :class:`~.NumberOperator` acting on different wires.
 
     If a single wire is defined, returns a :class:`~.NumberOperator` instance for convenient gradient computations.
@@ -1207,6 +1210,9 @@ class TensorN(CVObservable):
     num_wires = AnyWires
     ev_order = None
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     def __new__(cls, *params, wires=None, do_queue=True):
         # Custom definition for __new__ needed such that a NumberOperator can
         # be returned when a single mode is defined
@@ -1230,7 +1236,7 @@ class TensorN(CVObservable):
 
 
 class X(CVObservable):
-    r"""pennylane.ops.X(wires)
+    r"""
     The position quadrature observable :math:`\hat{x}`.
 
     When used with the :func:`~.expval` function, the position expectation
@@ -1253,6 +1259,9 @@ class X(CVObservable):
 
     ev_order = 1
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     @property
     def num_params(self):
         return 0
@@ -1263,7 +1272,7 @@ class X(CVObservable):
 
 
 class P(CVObservable):
-    r"""pennylane.ops.P(wires)
+    r"""
     The momentum quadrature observable :math:`\hat{p}`.
 
     When used with the :func:`~.expval` function, the momentum expectation
@@ -1286,6 +1295,9 @@ class P(CVObservable):
 
     ev_order = 1
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     @property
     def num_params(self):
         return 0
@@ -1296,7 +1308,7 @@ class P(CVObservable):
 
 
 class QuadOperator(CVObservable):
-    r"""pennylane.ops.QuadOperator(phi, wires, do_queue=True, id=None)
+    r"""
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
     When used with the :func:`~.expval` function, the expectation
@@ -1371,7 +1383,7 @@ class QuadOperator(CVObservable):
 
 
 class PolyXP(CVObservable):
-    r"""pennylane.ops.PolyXP(q, wires, do_queue=True, id=None)
+    r"""
     An arbitrary second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
@@ -1419,7 +1431,7 @@ class PolyXP(CVObservable):
 
 
 class FockStateProjector(CVObservable):
-    r"""pennylane.ops.FockStateProjector(n, wires, do_queue=True, id=None)
+    r"""
     The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable

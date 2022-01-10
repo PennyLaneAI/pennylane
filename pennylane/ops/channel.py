@@ -23,7 +23,7 @@ from pennylane.operation import AnyWires, Channel
 
 
 class AmplitudeDamping(Channel):
-    r"""AmplitudeDamping(gamma, wires, do_queue=True, id=None)
+    r"""
     Single-qubit amplitude damping error channel.
 
     Interaction with the environment can lead to changes in the state populations of a qubit.
@@ -90,7 +90,7 @@ class AmplitudeDamping(Channel):
 
 
 class GeneralizedAmplitudeDamping(Channel):
-    r"""GeneralizedAmplitudeDamping(gamma, p, wires, do_queue=True, id=None)
+    r"""
     Single-qubit generalized amplitude damping error channel.
 
     This channel models the exchange of energy between a qubit and its environment
@@ -179,7 +179,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
 
 class PhaseDamping(Channel):
-    r"""PhaseDamping(gamma, wires, do_queue=True, id=None)
+    r"""
     Single-qubit phase damping error channel.
 
     Interaction with the environment can lead to loss of quantum information changes without any
@@ -244,7 +244,7 @@ class PhaseDamping(Channel):
 
 
 class DepolarizingChannel(Channel):
-    r"""DepolarizingChannel(p, wires, do_queue=True, id=None)
+    r"""
     Single-qubit symmetrically depolarizing error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -328,7 +328,7 @@ class DepolarizingChannel(Channel):
 
 
 class BitFlip(Channel):
-    r"""BitFlip(p, wires, do_queue=True, id=None)
+    r"""
     Single-qubit bit flip (Pauli :math:`X`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -395,7 +395,7 @@ class BitFlip(Channel):
 
 
 class ResetError(Channel):
-    r"""ResetError(p_0, p_1, wires, do_queue=True, id=None)
+    r"""
     Single-qubit Reset error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -494,7 +494,7 @@ class ResetError(Channel):
 
 
 class PauliError(Channel):
-    r"""PauliError(operators, p, wires)
+    r"""
     Pauli operator error channel for an arbitrary number of qubits.
 
     This channel is modelled by the following Kraus matrices:
@@ -604,7 +604,7 @@ class PauliError(Channel):
 
 
 class PhaseFlip(Channel):
-    r"""PhaseFlip(p, wires, do_queue=True, id=None)
+    r"""
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -671,7 +671,7 @@ class PhaseFlip(Channel):
 
 
 class QubitChannel(Channel):
-    r"""QubitChannel(K_list, wires, do_queue=True, id=None)
+    r"""
     Apply an arbitrary fixed quantum channel.
 
     Kraus matrices that represent the fixed channel are provided
@@ -743,7 +743,7 @@ class QubitChannel(Channel):
 
 
 class ThermalRelaxationError(Channel):
-    r"""ThermalRelaxationError(pe, t1, t2, tg, wires, do_queue=True, id=None)
+    r"""
     Thermal relaxation error channel.
 
     This channel is modelled by the following Kraus matrices:

@@ -34,7 +34,7 @@ four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class SingleExcitation(Operation):
-    r"""SingleExcitation(phi, wires, do_queue=True, id=None)
+    r"""
     Single excitation rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -161,7 +161,7 @@ class SingleExcitation(Operation):
 
 
 class SingleExcitationMinus(Operation):
-    r"""SingleExcitationMinus(phi, wires, do_queue=True, id=None)
+    r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
     .. math:: U_-(\phi) = \begin{bmatrix}
@@ -292,7 +292,7 @@ class SingleExcitationMinus(Operation):
 
 
 class SingleExcitationPlus(Operation):
-    r"""SingleExcitationPlus(phi, wires, do_queue=True, id=None)
+    r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
 
     .. math:: U_+(\phi) = \begin{bmatrix}
@@ -423,7 +423,7 @@ class SingleExcitationPlus(Operation):
 
 
 class DoubleExcitation(Operation):
-    r"""DoubleExcitation(phi, wires, do_queue=True, id=None)
+    r"""
     Double excitation rotation.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -613,7 +613,7 @@ class DoubleExcitation(Operation):
 
 
 class DoubleExcitationPlus(Operation):
-    r"""DoubleExcitationPlus(phi, wires, do_queue=True, id=None)
+    r"""
     Double excitation rotation with positive phase-shift outside the rotation subspace.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -699,7 +699,7 @@ class DoubleExcitationPlus(Operation):
 
 
 class DoubleExcitationMinus(Operation):
-    r"""DoubleExcitationMinus(phi, wires, do_queue=True, id=None)
+    r"""
     Double excitation rotation with negative phase-shift outside the rotation subspace.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -785,7 +785,7 @@ class DoubleExcitationMinus(Operation):
 
 
 class OrbitalRotation(Operation):
-    r"""OrbitalRotation(phi, wires, do_queue=True, id=None)
+    r"""
     Spin-adapted spatial orbital rotation.
 
     For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
