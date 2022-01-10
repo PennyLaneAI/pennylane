@@ -50,7 +50,6 @@ def merge_amplitude_embedding(tape):
     >>> optimized_qfunc = qml.transforms.merge_amplitude_embedding(qfunc)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
     >>> print(qml.draw(optimized_qnode)())
-
       0: ──╭C───────────────────────╭┤ State
       1: ──╰X───────────────────────├┤ State
       2: ──╭AmplitudeEmbedding(M0)──├┤ State

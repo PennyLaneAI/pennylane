@@ -204,8 +204,15 @@ class QNGOptimizer(GradientDescentOptimizer):
 
                 metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
 
-            self.metric_tensor = metric_tensor_fn(*args, **kwargs)
-            self.metric_tensor += self.lam * np.identity(self.metric_tensor.shape[0])
+            _metric_tensor = metric_tensor_fn(*args, **kwargs)
+            # Reshape metric tensor to be square
+            shape = qml.math.shape(_metric_tensor)
+            size = qml.math.prod(shape[: len(shape) // 2])
+            self.metric_tensor = qml.math.reshape(_metric_tensor, (size, size))
+            # Add regularization
+            self.metric_tensor = self.metric_tensor + self.lam * qml.math.eye(
+                size, like=_metric_tensor
+            )
 
         g, forward = self.compute_grad(qnode, args, kwargs, grad_fn=grad_fn)
         new_args = np.array(self.apply_grad(g, args), requires_grad=True)
