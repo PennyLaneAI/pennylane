@@ -93,6 +93,7 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
+        "MidCircuitMeasure",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -163,6 +164,7 @@ class DefaultQubit(QubitDevice):
         self._pre_rotated_state = self._state
 
         self._apply_ops = {
+            "MidCircuitMeasure": self._apply_mid_circuit_measure,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
@@ -247,6 +249,34 @@ class DefaultQubit(QubitDevice):
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _apply_mid_circuit_measure(self, state, axes, **kwargs):
+        num_qubits = len(state.shape)
+        axis = axes[0]
+
+        # get first slice
+        slicer_0 = [slice(None)] * num_qubits
+        slicer_0[axis] = 0
+        sub_0 = state[slicer_0]
+
+        # get second slice
+        slicer_1 = slicer_0.copy()
+        slicer_1[axis] = 1
+        sub_1 = state[slicer_1]
+
+        # get norms
+        sub_0_norm = np.linalg.norm(sub_0)
+        sub_1_norm = np.linalg.norm(sub_1)
+
+        # make measurement
+        result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
+
+        # collapse state and reset qubit
+        if result == 0:
+            collapsed_state = np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axis)
+        else:
+            collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axis)
+        return collapsed_state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
