@@ -21,6 +21,7 @@ from scipy.optimize import brute, shgo
 
 import pennylane as qml
 
+
 def _brute_optimizer(fun, num_steps, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
     ``num_steps`` times. Signature is as expected by ``RotosolveOptimizer._min_numeric``
@@ -31,6 +32,7 @@ def _brute_optimizer(fun, num_steps, **kwargs):
     for _ in range(num_steps):
         _range = (x_min - width / 2, x_min + width / 2)
         x_min, y_min, *_ = brute(fun, ranges=(_range,), full_output=True, Ns=Ns, **kwargs)
+        x_min = x_min[0]
         width /= Ns
 
     return x_min, y_min
@@ -41,7 +43,7 @@ def _shgo_optimizer(fun, **kwargs):
     Signature is as expected by ``RotosolveOptimizer._min_numeric`` below, providing
     a scalar minimal position and the function value at that position."""
     opt_res = shgo(fun, **kwargs)
-    return opt_res.x, opt_res.fun
+    return opt_res.x[0], opt_res.fun
 
 
 class RotosolveOptimizer:
@@ -188,14 +190,13 @@ class RotosolveOptimizer:
                 all_keys = set(_nums_frequency) | set(_spectra)
 
                 shape = qml.math.shape(arg)
-                indices = np.ndindex(shape) if len(shape)>0 else [()]
+                indices = np.ndindex(shape) if len(shape) > 0 else [()]
                 for par_idx in indices:
                     if par_idx not in all_keys:
                         raise ValueError(
                             "Neither the number of frequencies nor the frequency spectrum "
                             f"was provided for the entry {par_idx} of argument {arg_name}."
                         )
-
 
     def step_and_cost(
         self,
@@ -272,7 +273,7 @@ class RotosolveOptimizer:
                 before_args.append(arg)
                 continue
             shape = qml.math.shape(arg)
-            indices = np.ndindex(shape) if len(shape)>0 else [()]
+            indices = np.ndindex(shape) if len(shape) > 0 else [()]
             for par_idx in indices:
                 # Set a single parameter in a single argument to be reconstructed
                 num_freq = nums_frequency.get(arg_name, {}).get(par_idx, None)
@@ -281,33 +282,38 @@ class RotosolveOptimizer:
                     spectrum = np.array(spectrum)
                 _fun_at_zero = fun_at_zero if first_sub_update else None
 
-                if num_freq==1 or (spectrum is not None and len(spectrum[spectrum>0]))==1:
+                if num_freq == 1 or (spectrum is not None and len(spectrum[spectrum > 0])) == 1:
+                    _args = before_args + [arg] + after_args
                     univariate = self._restrict_to_univariate(
-                        objective_fn, arg_idx, par_idx, args, kwargs
+                        objective_fn, arg_idx, par_idx, _args, kwargs
                     )
-                    freq = 1. if num_freq is not None else spectrum[0]
+                    freq = 1.0 if num_freq is not None else spectrum[0]
                     x_min, y_min = self._min_analytic(univariate, freq, _fun_at_zero)
+                    arg = qml.math.scatter_element_add(arg, par_idx, x_min)
 
                 else:
                     ids = {arg_name: (par_idx,)}
-                    _nums_frequency = {arg_name: {par_idx: num_freq}} if num_freq is not None else None
+                    _nums_frequency = (
+                        {arg_name: {par_idx: num_freq}} if num_freq is not None else None
+                    )
                     _spectra = {arg_name: {par_idx: spectrum}} if spectrum is not None else None
 
-                    # Set up the reconstruction generator
-                    print(ids, _nums_frequency, _spectra)
+                    # Set up the reconstruction function
                     recon_fn = qml.fourier.reconstruct(
                         objective_fn, ids, _nums_frequency, _spectra, shifts
                     )
                     # Perform the reconstruction
                     _args = before_args + [arg] + after_args
                     recon = recon_fn(*_args, f0=_fun_at_zero, **kwargs)[arg_name][par_idx]
-                    __args = before_args + [qml.math.scatter_element_add(arg, par_idx, 0.3)] + after_args
-                    print(recon(0.3), objective_fn(*__args))
-                    print("Using numeric")
+
+                    __args = (
+                        before_args + [qml.math.scatter_element_add(arg, par_idx, 0.3)] + after_args
+                    )
+
                     x_min, y_min = self._min_numeric(recon)
 
-                # Update the currently treated argument
-                arg = qml.math.scatter_element_add(arg, par_idx, x_min)
+                    # Update the currently treated argument
+                    arg = qml.math.scatter_element_add(arg, par_idx, x_min - arg[par_idx])
                 first_sub_update = False
 
                 if full_output:
@@ -427,19 +433,17 @@ class RotosolveOptimizer:
             All arguments are set to the given ``args`` and the input value to this
             function is added to the marked parameter.
         """
-        if len(qml.math.shape(args[arg_idx])) == 0:
-            shift_vec = qml.math.ones_like(args[arg_idx])
+        the_arg = args[arg_idx]
+        if len(qml.math.shape(the_arg)) == 0:
+            shift_vec = qml.math.ones_like(the_arg)
         else:
-            shift_vec = qml.math.zeros_like(args[arg_idx])
+            shift_vec = qml.math.zeros_like(the_arg)
             shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
 
         def _univariate_fn(x):
-            new_arg = args[arg_idx] + shift_vec * x
-            new_args = args[:arg_idx] + (new_arg,) + args[arg_idx + 1 :]
-            return fn(*new_args, **kwargs)
+            return fn(*args[:arg_idx], the_arg + shift_vec * x, *args[arg_idx + 1 :], **kwargs)
 
         return _univariate_fn
-
 
     def _min_analytic(self, objective_fn, freq, f0):
         r"""Analytically minimize a trigonometric function that depends on a
