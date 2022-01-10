@@ -232,6 +232,11 @@
   through the `unitary_to_rot` optimization transform.
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
+* Fixes a bug which allows using `jax.jit` to be compatible with circuits 
+  which return `qml.probs` when the `default.qubit.jax` is provided with a custom shot 
+  vector.
+  [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
+
 <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
@@ -245,4 +250,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
