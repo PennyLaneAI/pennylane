@@ -64,8 +64,9 @@ def test_error_missing_frequency_info():
     with pytest.raises(ValueError, match="Neither the number of frequencies nor the"):
         opt.step(fun, x)
 
+
 def test_no_error_missing_frequency_info_untrainable():
-    """Test that no error is raised if neither nums_frequency nor spectra 
+    """Test that no error is raised if neither nums_frequency nor spectra
     is given for a parameter not marked as trainable."""
 
     opt = RotosolveOptimizer()
@@ -76,6 +77,7 @@ def test_no_error_missing_frequency_info_untrainable():
 
     opt.step(fun, x, y, nums_frequency=nums_frequency)
 
+
 def test_error_missing_frequency_info_single_par():
     """Test that an error is raised if neither nums_frequency nor spectra is given
     for one of the function arguments."""
@@ -84,11 +86,12 @@ def test_error_missing_frequency_info_single_par():
     fun = lambda x: qml.math.sum(x)
     x = np.arange(4, requires_grad=True)
     nums_frequency = {"x": {(0,): 1, (1,): 1}}
-    spectra = {"x": {(0,): [0., 1.], (2,): [0., 1.]}}
+    spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
     # For the first three entries either nums_frequency or spectra is provided
     with pytest.raises(ValueError, match=r"was provided for the entry \(3,\)"):
         opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
+
 
 classical_functions = [
     lambda x: np.sin(x + 0.124) * 2.5123,
@@ -452,7 +455,11 @@ qnode_nums_frequency = [
 qnode_spectra = [
     None,
     None,
-    {"x": {(): list(range(num_wires+1))}, "y": {(): list(range(num_wires+1))}, "z": {(): list(range(num_wires+1))}},
+    {
+        "x": {(): list(range(num_wires + 1))},
+        "y": {(): list(range(num_wires + 1))},
+        "z": {(): list(range(num_wires + 1))},
+    },
 ]
 
 
@@ -498,7 +505,9 @@ class TestWithQNodes:
         )
         assert np.isclose(qnode(*param), old_cost)
 
-    def test_multiple_steps(self, qnode, param, nums_frequency, spectra, optimizer, optimizer_kwargs):
+    def test_multiple_steps(
+        self, qnode, param, nums_frequency, spectra, optimizer, optimizer_kwargs
+    ):
         """Test executing multiple steps of the RotosolveOptimizer on a QNode."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
         # For the following 1D optimizers, the bounds need to be expanded for these QNodes
