@@ -396,10 +396,10 @@ class RotosolveOptimizer:
 
         Returns:
             list [array] or array: the new variable values :math:`x^{(t+1)}`.
-                If a single arg is provided, list [array] is replaced by array.
+            If a single arg is provided, list [array] is replaced by array.
             float: the objective function output prior to the step.
             list [float]: the intermediate objective values, only returned if
-                ``full_output=True``.
+            ``full_output=True``.
 
         The optimization step consists of multiple substeps. For each substep,
         one of the parameters in one of the QNode arguments is singled out, and the
@@ -424,6 +424,7 @@ class RotosolveOptimizer:
 
             ``RotosolveOptimizer`` will only update parameters that are *explicitly*
             markes as trainable via ``requires_grad``.
+
         """
         # todo: does this signature call cover all cases?
         sign_fn = objective_fn.func if isinstance(objective_fn, qml.QNode) else objective_fn
