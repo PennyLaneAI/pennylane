@@ -15,7 +15,6 @@
 # pylint: disable=too-many-branches,cell-var-from-loop
 
 from inspect import signature
-from functools import lru_cache
 import numpy as np
 from scipy.optimize import brute, shgo
 
@@ -47,6 +46,92 @@ def _shgo_optimizer(fun, **kwargs):
     return opt_res.x[0], opt_res.fun
 
 
+def _prepare_optimizer(optimizer, optimizer_kwargs):
+    """Set default optimizer and optimizer keyword arguments
+    for the one-dimensional optimization in each substep of Rotosolve."""
+    optimizer_kwargs = optimizer_kwargs or {}
+    optimizer = optimizer or "brute"
+
+    if optimizer == "brute":
+        optimizer = _brute_optimizer
+        optimizer_kwargs.setdefault("num_steps", 4)
+        optimizer_kwargs.setdefault("Ns", 100)
+    elif optimizer == "shgo":
+        optimizer = _shgo_optimizer
+        optimizer_kwargs.setdefault("bounds", ((-np.pi, np.pi),))
+
+    return optimizer, optimizer_kwargs
+
+
+def _restrict_to_univariate(fn, arg_idx, par_idx, args, kwargs):
+    r"""Restrict a function to a univariate function for given argument
+    and parameter indices.
+
+    Args:
+        fn (callable): Multivariate function
+        arg_idx (int): Index of the argument that contains the parameter to restrict to
+        par_idx (tuple[int]): Index of the parameter to restrict to within the argument
+        args (tuple): Arguments at which to restrict the function.
+        kwargs (dict): Keyword arguments at which to restrict the function.
+
+    Returns:
+        callable: Univariate restriction of ``fn``. That is, this callable takes
+        a single float value as input and has the same return type as ``fn``.
+        All arguments are set to the given ``args`` and the input value to this
+        function is added to the marked parameter.
+    """
+    the_arg = args[arg_idx]
+    if len(qml.math.shape(the_arg)) == 0:
+        shift_vec = qml.math.ones_like(the_arg)
+    else:
+        shift_vec = qml.math.zeros_like(the_arg)
+        shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
+
+    def _univariate_fn(x):
+        return fn(*args[:arg_idx], the_arg + shift_vec * x, *args[arg_idx + 1 :], **kwargs)
+
+    return _univariate_fn
+
+
+def _min_analytic(objective_fn, freq, f0):
+    r"""Analytically minimize a trigonometric function that depends on a
+    single parameter and has a single frequency. Uses two or
+    three function evaluations.
+
+    Args:
+        objective_fn (callable): Trigonometric function to minimize
+        freq (float): Frequency in the ``objective_fn``
+        f0 (float): Value of the ``objective_fn`` at zero. Reduces the
+            number of calls to the function from three to two if given.
+
+    Returns:
+        float: Position of the minimum of ``objective_fn``
+        float: Value of the minimum of ``objective_fn``
+
+    The closed form expression used here was derived in
+    `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
+    `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
+    `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
+    We use the notation of Appendix A of the latter reference, allowing
+    for an arbitrary frequency instead of restricting to ``freq=1``.
+    The returned position is guaranteed to lie within :math:`(-\pi, \pi]`.
+    """
+    if f0 is None:
+        f0 = objective_fn(0.0)
+    fp = objective_fn(0.5 * np.pi / freq)
+    fm = objective_fn(-0.5 * np.pi / freq)
+    C = 0.5 * (fp + fm)
+    B = np.arctan2(2 * f0 - fp - fm, fp - fm)
+    x_min = (-np.pi / 2 - B) / freq
+    A = np.sqrt((f0 - C) ** 2 + 0.25 * (fp - fm) ** 2)
+    y_min = -A + C
+
+    if x_min <= -np.pi:
+        x_min = x_min + 2 * np.pi
+
+    return x_min, y_min
+
+
 class RotosolveOptimizer:
     r"""Rotosolve gradient-free optimizer.
 
@@ -66,7 +151,7 @@ class RotosolveOptimizer:
             Alternatively, the following optimizers are built-in and can be chosen by
             passing their name:
 
-            - "brute": An iterative version of 
+            - "brute": An iterative version of
               `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_.
               It evaluates the function at ``Ns`` equidistant points across the range
               :math:`[-\pi, \pi]` and iteratively refines the range around the point
@@ -144,12 +229,12 @@ class RotosolveOptimizer:
 
     - ``rot_param`` controls three Pauli rotations with three parameters, multiplied with ``rot_weights``,
     - ``layer_par`` feeds into a layer of rotations with a single parameter, and
-    - ``crot_param`` feeds three parameters, multiplied with ``crot_weights``, into 
+    - ``crot_param`` feeds three parameters, multiplied with ``crot_weights``, into
       three controlled Pauli rotations.
 
     We also initialize a set of parameters for all these operations, and start with
     uniform weights, i.e. all ``rot_weights`` and ``crot_weights`` are set to one.
-    This means that all frequencies with which the parameters in ``rot_param`` and 
+    This means that all frequencies with which the parameters in ``rot_param`` and
     ``crot_param`` enter the QNode are integer-valued.
     The number of frequencies per parameter are summarized in ``nums_frequency``.
 
@@ -216,8 +301,8 @@ class RotosolveOptimizer:
     {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]}
     >>> spectra["crot_param"]
     {(0,): [-0.5, -0.25, 0.0, 0.25, 0.5], (1,): [-1.0, -0.5, 0.0, 0.5, 1.0], (2,): [-1.5, -0.75, 0.0, 0.75, 1.5]}
-    
-    We may provide these spectra instead of ``nums_frequency`` to Rotosolve to 
+
+    We may provide these spectra instead of ``nums_frequency`` to Rotosolve to
     enable the optimization of the QNode at these weights:
 
     >>> param = init_param
@@ -245,23 +330,7 @@ class RotosolveOptimizer:
     # pylint: disable=too-few-public-methods
 
     def __init__(self, optimizer=None, optimizer_kwargs=None):
-        self.optimizer, self.optimizer_kwargs = self._prepare_optimizer(optimizer, optimizer_kwargs)
-
-    def _prepare_optimizer(self, optimizer, optimizer_kwargs):
-        """Set default optimizer and optimizer keyword arguments
-        for the one-dimensional optimization in each substep of Rotosolve."""
-        optimizer_kwargs = optimizer_kwargs or {}
-        optimizer = optimizer or "brute"
-
-        if optimizer == "brute":
-            optimizer = _brute_optimizer
-            optimizer_kwargs.setdefault("num_steps", 4)
-            optimizer_kwargs.setdefault("Ns", 100)
-        elif optimizer == "shgo":
-            optimizer = _shgo_optimizer
-            optimizer_kwargs.setdefault("bounds", ((-np.pi, np.pi),))
-
-        return optimizer, optimizer_kwargs
+        self.optimizer, self.optimizer_kwargs = _prepare_optimizer(optimizer, optimizer_kwargs)
 
     def _validate_inputs(self, requires_grad, args, nums_frequency, spectra):
         """Checks that for each trainable argument either the number of
@@ -370,8 +439,6 @@ class RotosolveOptimizer:
         # the following hold the arguments not getting updated
         before_args = []
         after_args = list(args)
-        # mutable version of args to get updated
-        args_new = list(args)
 
         # Prepare intermediate minimization results cache
         if full_output:
@@ -398,11 +465,11 @@ class RotosolveOptimizer:
 
                 if num_freq == 1 or (spectrum is not None and len(spectrum[spectrum > 0])) == 1:
                     _args = before_args + [arg] + after_args
-                    univariate = self._restrict_to_univariate(
+                    univariate = _restrict_to_univariate(
                         objective_fn, arg_idx, par_idx, _args, kwargs
                     )
                     freq = 1.0 if num_freq is not None else spectrum[spectrum > 0][0]
-                    x_min, y_min = self._min_analytic(univariate, freq, _fun_at_zero)
+                    x_min, y_min = _min_analytic(univariate, freq, _fun_at_zero)
                     arg = qml.math.scatter_element_add(arg, par_idx, x_min)
 
                 else:
@@ -417,13 +484,9 @@ class RotosolveOptimizer:
                         objective_fn, ids, _nums_frequency, _spectra, shifts
                     )
                     # Perform the reconstruction
-                    _args = before_args + [arg] + after_args
-                    recon = recon_fn(*_args, f0=_fun_at_zero, **kwargs)[arg_name][par_idx]
-
-                    __args = (
-                        before_args + [qml.math.scatter_element_add(arg, par_idx, 0.3)] + after_args
-                    )
-
+                    recon = recon_fn(*before_args, arg, *after_args, f0=_fun_at_zero, **kwargs)[
+                        arg_name
+                    ][par_idx]
                     x_min, y_min = self._min_numeric(recon)
 
                     # Update the currently treated argument
@@ -535,73 +598,6 @@ class RotosolveOptimizer:
 
         return x_new
 
-    def _restrict_to_univariate(self, fn, arg_idx, par_idx, args, kwargs):
-        r"""Restrict a function to a univariate function for given argument
-        and parameter indices.
-
-        Args:
-            fn (callable): Multivariate function
-            arg_idx (int): Index of the argument that contains the parameter to restrict to
-            par_idx (tuple[int]): Index of the parameter to restrict to within the argument
-            args (tuple): Arguments at which to restrict the function.
-            kwargs (dict): Keyword arguments at which to restrict the function.
-
-        Returns:
-            callable: Univariate restriction of ``fn``. That is, this callable takes
-            a single float value as input and has the same return type as ``fn``.
-            All arguments are set to the given ``args`` and the input value to this
-            function is added to the marked parameter.
-        """
-        the_arg = args[arg_idx]
-        if len(qml.math.shape(the_arg)) == 0:
-            shift_vec = qml.math.ones_like(the_arg)
-        else:
-            shift_vec = qml.math.zeros_like(the_arg)
-            shift_vec = qml.math.scatter_element_add(shift_vec, par_idx, 1.0)
-
-        def _univariate_fn(x):
-            return fn(*args[:arg_idx], the_arg + shift_vec * x, *args[arg_idx + 1 :], **kwargs)
-
-        return _univariate_fn
-
-    def _min_analytic(self, objective_fn, freq, f0):
-        r"""Analytically minimize a trigonometric function that depends on a
-        single parameter and has a single frequency. Uses two or
-        three function evaluations.
-
-        Args:
-            objective_fn (callable): Trigonometric function to minimize
-            freq (float): Frequency in the ``objective_fn``
-            f0 (float): Value of the ``objective_fn`` at zero. Reduces the
-                number of calls to the function from three to two if given.
-
-        Returns:
-            float: Position of the minimum of ``objective_fn``
-            float: Value of the minimum of ``objective_fn``
-
-        The closed form expression used here was derived in
-        `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
-        `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
-        `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
-        We use the notation of Appendix A of the latter reference, allowing
-        for an arbitrary frequency instead of restricting to ``freq=1``.
-        The returned position is guaranteed to lie within :math:`(-\pi, \pi]`.
-        """
-        if f0 is None:
-            f0 = objective_fn(0.0)
-        fp = objective_fn(0.5 * np.pi / freq)
-        fm = objective_fn(-0.5 * np.pi / freq)
-        C = 0.5 * (fp + fm)
-        B = np.arctan2(2 * f0 - fp - fm, fp - fm)
-        x_min = (-np.pi / 2 - B) / freq
-        A = np.sqrt((f0 - C) ** 2 + 0.25 * (fp - fm) ** 2)
-        y_min = -A + C
-
-        if x_min <= -np.pi:
-            x_min = x_min + 2 * np.pi
-
-        return x_min, y_min
-
     def _min_numeric(self, objective_fn):
         r"""Numerically minimize a trigonometric function that depends on a
         single parameter. Uses potentially large numbers of function evaluations,
@@ -621,8 +617,5 @@ class RotosolveOptimizer:
         x_min, y_min = self.optimizer(objective_fn, **self.optimizer_kwargs)
         if y_min is None:
             y_min = objective_fn(x_min)
-
-        # if x_min <= -np.pi:
-        # x_min += 2 * np.pi
 
         return x_min, y_min
