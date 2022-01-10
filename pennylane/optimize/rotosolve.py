@@ -47,7 +47,7 @@ def _shgo_optimizer(fun, **kwargs):
 
 
 def _prepare_optimizer(optimizer, optimizer_kwargs):
-    """Set default optimizer and optimizer keyword arguments
+    r"""Set default optimizer and optimizer keyword arguments
     for the one-dimensional optimization in each substep of Rotosolve."""
     optimizer_kwargs = optimizer_kwargs or {}
     optimizer = optimizer or "brute"
@@ -322,8 +322,9 @@ class RotosolveOptimizer:
     Cost before step: -1.0
     Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
 
-    As we can see, the optimization got a bit harder and the optimizer reaches the global minimum
-    a bit later than for the previous weights.
+    As we can see, while the optimization got a bit harder and the optimizer takes a bit longer
+    to converge than previously, Rotosolve was able to adapt to the more complicated
+    dependence on the input arguments and still found the global minimum successfully.
     """
     # pylint: disable=too-few-public-methods
 
