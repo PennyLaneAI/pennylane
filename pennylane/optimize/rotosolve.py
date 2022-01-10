@@ -143,7 +143,7 @@ class RotosolveOptimizer:
 
     Args:
         optimizer (str or callable): Optimizer to use for the substeps of Rotosolve
-            that carries out a univariate (i.e. 1D) global optimization.
+            that carries out a univariate (i.e. single-parameter) global optimization.
             It must take a function ``fn`` that maps scalars to scalars and may take optional
             keyword arguments, and it must return two scalars:
             The input value ``x_min`` for which ``fn`` is minimal,
@@ -151,13 +151,13 @@ class RotosolveOptimizer:
             Alternatively, the following optimizers are built-in and can be chosen by
             passing their name:
 
-            - "brute": An iterative version of
+            - ``"brute"``: An iterative version of
               `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_.
               It evaluates the function at ``Ns`` equidistant points across the range
               :math:`[-\pi, \pi]` and iteratively refines the range around the point
               with the smallest cost value for ``num_steps`` times.
 
-            - "shgo": `SciPy's SHGO optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html>`_.
+            - ``"shgo"``: `SciPy's SHGO optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html>`_.
 
         optimizer_kwargs (dict): Keyword arguments to be passed to the ``optimizer``
             callable. For ``optimizer="shgo"``, the original keyword arguments of
@@ -167,7 +167,7 @@ class RotosolveOptimizer:
 
 
     For each parameter, a purely classical one-dimensional global optimization over the
-    interval :math:`(-\pi,\pi]` is performed, which can be replaced by a closed-form expression for
+    interval :math:`(-\pi,\pi]` is performed, which is replaced by a closed-form expression for
     the optimal value if the :math:`d^{th}` parametrized gate has only two eigenvalues. In this
     case, the optimal value :math:`\theta^*_d` is given by
 
@@ -199,6 +199,7 @@ class RotosolveOptimizer:
     Here we use the built-in iterative version of
     `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_
     with four iterations.
+    We will run Rotosolve itself for three iterations.
 
     >>> opt_kwargs = {"num_steps": 4}
     >>> opt = qml.optimize.RotosolveOptimizer(optimizer="brute", optimizer_kwargs=opt_kwargs)
@@ -214,13 +215,10 @@ class RotosolveOptimizer:
         def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
             for i, par in enumerate(rot_param*rot_weights):
                 qml.RX(par, wires=i)
-
             for w in dev.wires:
                 qml.RX(layer_par, wires=w)
-
             for i, par in enumerate(crot_param*crot_weights):
                 qml.CRY(par, wires=[i, (i+1)%3])
-
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
 
     This QNode is defined simply by measuring the expectation value of the tensor
@@ -295,7 +293,7 @@ class RotosolveOptimizer:
 
     >>> rot_weights = np.array([0.4, 0.8, 1.2], requires_grad=False)
     >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
-    >>> spectrum_fn = qml.fourier.qnode_spectrum(qnode)
+    >>> spectrum_fn = qml.fourier.qnode_spectrum(cost_function)
     >>> spectra = spectrum_fn(*param, rot_weights=rot_weights, crot_weights=crot_weights)
     >>> spectra["rot_param"]
     {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]}
