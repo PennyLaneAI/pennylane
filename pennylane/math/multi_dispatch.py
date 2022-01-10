@@ -14,6 +14,8 @@
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
+from collections.abc     import Sequence
+import functools
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -79,6 +81,81 @@ def _multi_dispatch(values):
         return "jax"
 
     return "numpy"
+
+
+def multi_dispatch(argnum=None, tensor_lists=None):
+    """Decorater to dispatch arguments handled by the interface. 
+    
+    This helps simplify definitions of new functions inside pennylane. Instead of writing
+    
+    .. code-block:: python
+        def some_function(tensor1, tensor2, option):
+            interface = qml.math._multi_dispatch([tensor1, tensor2])
+            ...
+            
+    We can decorate the function, indicating the arguments that are tensors handled
+    by the interface
+    
+    .. code-block:: python
+        @qml.math.multi_dispatch(argnum=[0, 1])
+        def some_function(tensor1, tensor2, option, like):
+            # the interface string is stored in `like`.
+            ...
+
+    Args:
+        argnum (list[int]): a list of integers indicating indicating the indices
+            to dispatch (i.e. the arguments that are tensors handled by an interface)
+            If None, dispatch over all arguments
+        tensor_lists(list[int]): a list of integers indicating which indices 
+            in argnum are lists of tensors.
+            If None, this option is ignored.
+
+    Returns:
+        decorator: 
+            
+    .. seealso:: :func:`pennylane.math.multi_dispatch._multi_dispatch`
+            
+    .. note::
+        This decorator makes the interface argument "like" optional as it utilizes
+        the utility function `_multi_dispatch` to automatically detect the appropriate
+        interface based on the tensor types.
+
+    ** Examples **
+    We can redefine external functions to be suitable for pennylane. Here, we
+    redefine autoray's `stack` function:
+    >>> stack = multi_dispatch(argnum=0, tensor_lists=0)(autoray.numpy.stack)
+    """
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            argnum = argnum or list(range(len(args)))
+            tensor_lists = tensor_lists or []
+
+            if not isinstance(argnum, Sequence):
+                argnum = [argnum]
+            if not isinstance(tensor_lists, Sequence):
+                tensor_lists = [tensor_lists]
+
+            dispatch_args = []
+
+            for a in argnum:
+                if a in tensor_lists:
+                    dispatch_args.extend(args[a])
+                else:
+                    dispatch_args.append(args[a])
+
+            interface = kwargs.pop("like", None)
+            interface = interface or _multi_dispatch(dispatch_args)
+            kwargs["like"] = interface
+
+            return fn(*args, **kwargs)
+
+    return decorator
+
+
+def dummy_fn():
+    return None
 
 
 def block_diag(values):
