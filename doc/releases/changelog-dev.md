@@ -253,6 +253,10 @@
   axes of size `1` where removed from the output gradient.
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
 
+* The available `diff_method` options for QNodes has been corrected in both the
+  error messages and the documentation.
+  [(#2078)](https://github.com/PennyLaneAI/pennylane/pull/2078)
+
 * Fixes a bug in `DefaultQubit` where the second derivative of QNodes at 
   positions corresponding to vanishing state vector amplitudes is wrong.
   [(#2057)](https://github.com/PennyLaneAI/pennylane/pull/2057)
@@ -273,6 +277,9 @@
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
 <h3>Documentation</h3>
+
+* Fixes an error in the signs of equations in the `DoubleExcitation` page.
+  [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
 
 * Extended the interfaces description page to explicitly mention device
   compatibility.
