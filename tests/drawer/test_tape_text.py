@@ -18,8 +18,8 @@ Unit tests for the `pennylane.draw_text` function.
 import pytest
 import pennylane as qml
 
-from pennylane.drawer import draw_text
-from pennylane.drawer.draw_text import _add_op
+from pennylane.drawer import tape_text
+from pennylane.drawer.tape_text import _add_op
 from pennylane.tape import QuantumTape
 
 default_wire_map = {0:0, 1:1, 2:2, 3:3}

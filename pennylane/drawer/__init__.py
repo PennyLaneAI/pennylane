@@ -20,7 +20,7 @@ This module provides the circuit drawing functionality used to display circuits 
 
 """
 
-from .draw_text import draw_text
+from .tape_text import tape_text
 from .circuit_drawer import CircuitDrawer
 from .charsets import CHARSETS
 from .tape_mpl import tape_mpl

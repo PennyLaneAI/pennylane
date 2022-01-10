@@ -29,9 +29,7 @@ measurement_label_map = {
     State: lambda label: "State"
 }
 
-
-def _add_op(op, layer_str, wire_map, decimals):
-    """Updates ``layer_str`` with ``op`` operation."""
+def _add_grouping_symbols(op, layer_str, wire_map):
     if len(op.wires) > 1:
         mapped_wires = [wire_map[w] for w in op.wires]
         min_w, max_w = min(mapped_wires),  max(mapped_wires)
@@ -41,14 +39,17 @@ def _add_op(op, layer_str, wire_map, decimals):
         for w in range(min_w+1, max_w):
             layer_str[w] = "├" if w in mapped_wires else "│"
 
-    control_wires = getattr(op, "control_wires", [])
+    return layer_str
+
+def _add_op(op, layer_str, wire_map, decimals):
+    """Updates ``layer_str`` with ``op`` operation."""
+    layer_str = _add_grouping_symbols(op, layer_str, wire_map)
+
+    control_wires = op.control_wires
     for w in control_wires:
         layer_str[wire_map[w]] += "C"
 
-    if hasattr(op, "label"):
-        label = op.label(decimals=decimals).replace("\n", "")
-    else: # is a tape
-        label = op.name or "Tape"
+    label = op.label(decimals=decimals).replace("\n", "")
     for w in op.wires:
         if w not in control_wires:
             layer_str[wire_map[w]] += label
@@ -70,19 +71,22 @@ def _add_measurement(m, layer_str, wire_map, decimals):
     return layer_str
 
 
-def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100):
+def tape_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100, tape_offset=None):
     """Text based diagram for a Quantum Tape.
     
     Args:
-        tape (QuantumTape)
+        tape (QuantumTape): the operations and measurements to draw
 
     Keyword Args:
-        wire_order (Iterable)
-        show_all_wires (Bool)
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        decimals (int): How many decimal points to include when formatting operation parameters.
+            Default ``None`` will omit parameters from operation labels.
         decimals (Int) : how many decimal points to display in the operation label.  If ``None``,
             no parameters will be displayed.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
-        begin anew beneath the previous lines.
+            begin anew beneath the previous lines.
+        tape_offset (list[Int]): Used to offset numbering when labelling nested tapes.
 
     Returns:
         str : String based graphic of the circuit.
@@ -119,11 +123,13 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
 
     **Max Length:**
 
+    The ``max_length`` keyword wraps long circuits
+
     >>> rng = np.random.default_rng(seed=42)
     >>> shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
     >>> params = rng.random(shape)
     >>> tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
-    >>> print(draw_text(tape2, max_length=60))
+    >>> print(tape_text(tape2, max_length=60))
     0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
     1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
     2: ──Rot────╰X─╭C────│───Rot─╰X─│──╭C─│──│─────Rot─│──│──╰C
@@ -138,7 +144,7 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
 
     **Wire Order:**
 
-    >>> print(draw_text(tape, wire_order=["aux", 2, 1, 0]))
+    >>> print(tape_text(tape, wire_order=["aux", 2, 1, 0]))
     aux: ──────────╭X─┤ <Z> State
       2: ─╭QFT──RZ─│──┤     State
       1: ─├QFT──RY─├C─┤     State
@@ -146,7 +152,7 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
 
     **Show all wires:**
 
-    >>> print(draw_text(tape, wire_order=["a", "b", "aux", 0,1,2], show_all_wires=True))
+    >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0,1,2], show_all_wires=True))
       a: ─────────────┤     State
       b: ─────────────┤     State
     aux: ──────────╭X─┤ <Z> State
@@ -155,6 +161,9 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
       2: ─╰QFT──RZ────┤     State
 
     """
+    if tape_offset is None:
+        tape_offset= [0] # use a list so it's a mutable data structure
+    tape_cache = []
 
     wire_map = convert_wire_order(tape.operations+tape.measurements, wire_order=wire_order,
         show_all_wires=show_all_wires)
@@ -179,8 +188,16 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
 
         for layer in layers:
             layer_str = [filler] * n_wires
+
             for op in layer:
-                layer_str = add(op, layer_str, wire_map, decimals)
+                if hasattr(op, "measurements"): # isa tape
+                    layer_str = _add_grouping_symbols(op, layer_str, wire_map)
+                    label = f"Tape:{tape_offset[0]+len(tape_cache)}"
+                    for w in op.wires:
+                        layer_str[wire_map[w]] += label
+                    tape_cache.append(op)
+                else:
+                    layer_str = add(op, layer_str, wire_map, decimals)
 
             max_label_len = max(len(s) for s in layer_str)
             layer_str = [s.ljust(max_label_len, filler) for s in layer_str]
@@ -198,4 +215,12 @@ def draw_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
         if ender:
             totals = [s + "─┤" for s in totals]
 
-    return "\n".join(finished_lines+totals)
+    tape_totals = "\n".join(finished_lines+totals)
+    current_tape_offset = tape_offset[0]
+    tape_offset[0] += len(tape_cache)
+    for i, nested_tape in enumerate(tape_cache):
+        label = f"\nTape:{i+current_tape_offset}"
+        tape_str = tape_text(nested_tape, wire_order, show_all_wires, decimals, max_length, tape_offset)
+        tape_totals = "\n".join([tape_totals, label, tape_str])
+
+    return tape_totals
