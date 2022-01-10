@@ -84,18 +84,18 @@ def _multi_dispatch(values):
 
 
 def multi_dispatch(argnum=None, tensor_lists=None):
-    """Decorater to dispatch arguments handled by the interface. 
-    
+    """Decorater to dispatch arguments handled by the interface.
+
     This helps simplify definitions of new functions inside pennylane. Instead of writing
-    
+
     .. code-block:: python
         def some_function(tensor1, tensor2, option):
             interface = qml.math._multi_dispatch([tensor1, tensor2])
             ...
-            
+
     We can decorate the function, indicating the arguments that are tensors handled
     by the interface
-    
+
     .. code-block:: python
         @qml.math.multi_dispatch(argnum=[0, 1])
         def some_function(tensor1, tensor2, option, like):
@@ -106,15 +106,15 @@ def multi_dispatch(argnum=None, tensor_lists=None):
         argnum (list[int]): a list of integers indicating indicating the indices
             to dispatch (i.e. the arguments that are tensors handled by an interface)
             If None, dispatch over all arguments
-        tensor_lists(list[int]): a list of integers indicating which indices 
+        tensor_lists(list[int]): a list of integers indicating which indices
             in argnum are lists of tensors.
             If None, this option is ignored.
 
     Returns:
-        decorator: 
-            
+        decorator:
+
     .. seealso:: :func:`pennylane.math.multi_dispatch._multi_dispatch`
-            
+
     .. note::
         This decorator makes the interface argument "like" optional as it utilizes
         the utility function `_multi_dispatch` to automatically detect the appropriate
@@ -152,11 +152,6 @@ def multi_dispatch(argnum=None, tensor_lists=None):
             return fn(*args, **kwargs)
 
     return decorator
-
-
-def dummy_fn():
-    return None
-
 
 def block_diag(values):
     """Combine a sequence of 2D tensors to form a block diagonal tensor.
