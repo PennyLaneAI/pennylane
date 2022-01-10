@@ -286,9 +286,12 @@ def _scatter_element_add_tf(tensor, index, value):
 
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
+
 def _transpose_tf(a, axes=None):
     import tensorflow as tf
+
     return tf.transpose(a, perm=axes)
+
 
 ar.register_function("tensorflow", "transpose", _transpose_tf)
 
