@@ -401,7 +401,6 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, autograd_deriv)
 
-    @pytest.mark.xfail
     def test_hessian_transform_is_differentiable_torch(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
         (1d -> 1d)"""
@@ -417,12 +416,12 @@ class TestParameterShiftHessian:
             return qml.probs(wires=1)
 
         x = np.array([0.1, 0.2], requires_grad=True)
-        x_torch = torch.tensor([0.1, 0.2], dtype=torch.float64, requires_grad=True)
+        x_torch = torch.tensor([0.1, 0.2], dtype=torch.float64)
 
         expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
         circuit.interface = "torch"
         jacobian_fn = torch.autograd.functional.jacobian
-        torch_deriv = jacobian_fn(qml.gradients.param_shift_hessian(circuit), x_torch)  # RuntimeError: Can't call numpy() on Tensor that requires grad. Use tensor.detach().numpy() instead.
+        torch_deriv = jacobian_fn(qml.gradients.param_shift_hessian(circuit), x_torch)[0]
 
         assert np.allclose(expected, torch_deriv)
 
