@@ -54,76 +54,41 @@ def successive_params(par1, par2):
     return walking_param
 
 
-@pytest.mark.skip("Old test")
-@pytest.mark.parametrize(
-    "fun, param, num_freq",
-    zip(
-        [
-            lambda x: np.sin(x),
-            lambda x: np.sin(x),
-            lambda x, y: np.sin(x) * np.sin(y),
-            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
-        ],
-        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
-        [[], [1, 1], [1], [1, 1, [1, 2]]],
-    ),
-)
-def test_wrong_len_nums_frequency(fun, param, num_freq):
-    """Test that an error is raised for a different number of
-    numbers of frequencies than number of function arguments."""
+def test_error_missing_frequency_info():
+    """Test that an error is raised if neither nums_frequency nor spectra is given."""
 
     opt = RotosolveOptimizer()
+    fun = lambda x: x
+    x = np.array(0.5, requires_grad=True)
 
-    with pytest.raises(ValueError, match="The length of the provided numbers of frequencies"):
-        opt.step(fun, *param, nums_frequency=num_freq)
+    with pytest.raises(ValueError, match="Neither the number of frequencies nor the"):
+        opt.step(fun, x)
 
-
-@pytest.mark.skip("Old test")
-@pytest.mark.parametrize(
-    "fun, param, num_freq",
-    zip(
-        [
-            lambda x: np.sin(x),
-            lambda x: np.sin(x),
-            lambda x, y: np.sin(x) * np.sin(y),
-            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
-        ],
-        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
-        [[[1, 1]], [[]], [[1], [1, 1]], [[1], [1]]],
-    ),
-)
-def test_wrong_num_of_nums_frequency_per_parameter(fun, param, num_freq):
-    """Test that an error is raised for a different number of
-    numbers of frequencies than number of function arguments."""
+def test_no_error_missing_frequency_info_untrainable():
+    """Test that no error is raised if neither nums_frequency nor spectra 
+    is given for a parameter not marked as trainable."""
 
     opt = RotosolveOptimizer()
+    fun = lambda x, y: x
+    x = np.array(0.5, requires_grad=True)
+    y = np.array(0.1, requires_grad=False)
+    nums_frequency = {"x": {(): 1}}
 
-    with pytest.raises(ValueError, match="The number of the frequency counts"):
-        opt.step(fun, *param, nums_frequency=num_freq)
+    opt.step(fun, x, y, nums_frequency=nums_frequency)
 
-
-@pytest.mark.skip("Old test")
-@pytest.mark.parametrize(
-    "fun, param, num_freq",
-    zip(
-        [
-            lambda x: np.sin(x),
-            lambda x: np.sin(x),
-            lambda x, y: np.sin(x) * np.sin(y),
-            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
-        ],
-        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
-        [[0.1], [1.0], [1, 1.0], [1, [1, 2 + 1j]]],
-    ),
-)
-def test_wrong_typed_nums_frequency(fun, param, num_freq):
-    """Test that an error is raised for a non-integer entry in the numbers of frequencies."""
+def test_error_missing_frequency_info_single_par():
+    """Test that an error is raised if neither nums_frequency nor spectra is given
+    for one of the function arguments."""
 
     opt = RotosolveOptimizer()
+    fun = lambda x: qml.math.sum(x)
+    x = np.arange(4, requires_grad=True)
+    nums_frequency = {"x": {(0,): 1, (1,): 1}}
+    spectra = {"x": {(0,): [0., 1.], (2,): [0., 1.]}}
 
-    with pytest.raises(ValueError, match="The numbers of frequencies are expected to be integers."):
-        opt.step(fun, *param, nums_frequency=num_freq)
-
+    # For the first three entries either nums_frequency or spectra is provided
+    with pytest.raises(ValueError, match=r"was provided for the entry \(3,\)"):
+        opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
 
 classical_functions = [
     lambda x: np.sin(x + 0.124) * 2.5123,
@@ -482,20 +447,25 @@ qnode_params = [
 qnode_nums_frequency = [
     {"x": {(): num_wires}},
     {"x": {(0,): 1, (1,): 1, (2,): 1}, "y": {(): 2 * num_wires}, "z": {(0,): 1, (1,): 2}},
-    {"x": {(): num_wires}, "y": {(): num_wires}, "z": {(): num_wires}},
+    None,
+]
+qnode_spectra = [
+    None,
+    None,
+    {"x": {(): list(range(num_wires+1))}, "y": {(): list(range(num_wires+1))}, "z": {(): list(range(num_wires+1))}},
 ]
 
 
 @pytest.mark.parametrize(
-    "qnode, param, num_freq",
-    list(zip(qnodes, qnode_params, qnode_nums_frequency)),
+    "qnode, param, nums_frequency, spectra",
+    list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra)),
 )
 @pytest.mark.parametrize(
     "optimizer, optimizer_kwargs",
     list(zip(optimizers, optimizer_kwargs)),
 )
 class TestWithQNodes:
-    def test_single_step(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
+    def test_single_step(self, qnode, param, nums_frequency, spectra, optimizer, optimizer_kwargs):
         """Test executing a single step of the RotosolveOptimizer on a QNode."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
         opt = RotosolveOptimizer(optimizer=optimizer, optimizer_kwargs=optimizer_kwargs)
@@ -504,7 +474,8 @@ class TestWithQNodes:
         new_param_step = opt.step(
             qnode,
             *param,
-            nums_frequency=num_freq,
+            nums_frequency=nums_frequency,
+            spectra=spectra,
         )
         if repack_param:
             new_param_step = (new_param_step,)
@@ -515,7 +486,8 @@ class TestWithQNodes:
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,
-            nums_frequency=num_freq,
+            nums_frequency=nums_frequency,
+            spectra=spectra,
         )
         if repack_param:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -526,7 +498,7 @@ class TestWithQNodes:
         )
         assert np.isclose(qnode(*param), old_cost)
 
-    def test_multiple_steps(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
+    def test_multiple_steps(self, qnode, param, nums_frequency, spectra, optimizer, optimizer_kwargs):
         """Test executing multiple steps of the RotosolveOptimizer on a QNode."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
         # For the following 1D optimizers, the bounds need to be expanded for these QNodes
@@ -541,7 +513,8 @@ class TestWithQNodes:
             param = opt.step(
                 qnode,
                 *param,
-                nums_frequency=num_freq,
+                nums_frequency=nums_frequency,
+                spectra=spectra,
             )
             # The following accounts for the unpacking functionality for length-1 param
             if repack_param:
