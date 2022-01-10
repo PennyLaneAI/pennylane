@@ -32,6 +32,7 @@ def _brute_optimizer(fun, num_steps, **kwargs):
     for _ in range(num_steps):
         _range = (x_min - width / 2, x_min + width / 2)
         x_min, y_min, *_ = brute(fun, ranges=(_range,), full_output=True, Ns=Ns, **kwargs)
+        # We only ever use this function for 1D optimization
         x_min = x_min[0]
         width /= Ns
 
@@ -55,6 +56,31 @@ class RotosolveOptimizer:
     separately reconstructing the cost function with respect to each circuit parameter,
     while keeping all other parameters fixed.
 
+    Args:
+        optimizer (str or callable): Optimizer to use for the substeps of Rotosolve
+            that carries out a univariate (i.e. 1D) global optimization.
+            It must take a function ``fn`` that maps scalars to scalars and may take optional
+            keyword arguments, and it must return two scalars:
+            The input value ``x_min`` for which ``fn`` is minimal,
+            as well as the minimal value ``y_min=fn(x_min)`` or ``None``.
+            Alternatively, the following optimizers are built-in and can be chosen by
+            passing their name:
+
+            - "brute": An iterative version of 
+              `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_.
+              It evaluates the function at ``Ns`` equidistant points across the range
+              :math:`[-\pi, \pi]` and iteratively refines the range around the point
+              with the smallest cost value for ``num_steps`` times.
+
+            - "shgo": `SciPy's SHGO optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html>`_.
+
+        optimizer_kwargs (dict): Keyword arguments to be passed to the ``optimizer``
+            callable. For ``optimizer="shgo"``, the original keyword arguments of
+            the SciPy implementation are available, for ``optimizer="brute"`` the
+            keyword arguments ``Ns`` and ``num_steps`` are useful, the ``ranges``
+            keyword argument is not available.
+
+
     For each parameter, a purely classical one-dimensional global optimization over the
     interval :math:`(-\pi,\pi]` is performed, which can be replaced by a closed-form expression for
     the optimal value if the :math:`d^{th}` parametrized gate has only two eigenvalues. In this
@@ -71,17 +97,27 @@ class RotosolveOptimizer:
     restricted to only depend on the parameter :math:`\theta_d`.
 
     The algorithm is described in further detail in
-    `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
-    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_, and the reconstruction
-    method used for more general operations is described in
+    `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_,
+    `Nakanishi, Fujii and Todo (2019) <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.2.043158>`_,
+    `Parrish et al. (2019) <https://arxiv.org/abs/1904.03206>`_,
+    and
+    `Ostaszewski et al. (2019) <https://quantum-journal.org/papers/q-2021-01-28-391/>`_,
+    and the reconstruction method used for more general operations is described in
     `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
     **Example:**
 
     Initialize the optimizer and set the number of steps to optimize over.
+    Recall that the optimization with ``RotosolveOptimizer`` uses global optimization substeps
+    of univariate functions. The optimization technique for these substeps can be chosen via the
+    ``optimizer`` and ``optimizer_kwargs`` keyword arguments.
+    Here we use the built-in iterative version of
+    `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_
+    with four iterations.
 
-    >>> opt = qml.optimize.RotosolveOptimizer()
-    >>> num_steps = 10
+    >>> opt_kwargs = {"num_steps": 4}
+    >>> opt = qml.optimize.RotosolveOptimizer(optimizer="brute", optimizer_kwargs=opt_kwargs)
+    >>> num_steps = 3
 
     Next, we create a QNode we wish to optimize:
 
@@ -90,14 +126,14 @@ class RotosolveOptimizer:
         dev = qml.device('default.qubit', wires=3, shots=None)
 
         @qml.qnode(dev)
-        def cost_function(rot_param, layer_par, crot_param):
-            for i, par in enumerate(rot_param):
+        def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
+            for i, par in enumerate(rot_param*rot_weights):
                 qml.RX(par, wires=i)
 
             for w in dev.wires:
                 qml.RX(layer_par, wires=w)
 
-            for i, par in enumerate(crot_param):
+            for i, par in enumerate(crot_param*crot_weights):
                 qml.CRY(par, wires=[i, (i+1)%3])
 
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(2))
@@ -106,57 +142,105 @@ class RotosolveOptimizer:
     product of ``PauliZ`` operators on all qubits.
     It takes three parameters:
 
-    - ``rot_param`` controls three Pauli rotations with three parameters (one frequency each),
-    - ``layer_par`` feeds into a layer of rotations with a single parameter (three frequencies), and
-    - ``crot_param`` feeds three parameters into three controlled Pauli rotations (two frequencies
-      each).
+    - ``rot_param`` controls three Pauli rotations with three parameters, multiplied with ``rot_weights``,
+    - ``layer_par`` feeds into a layer of rotations with a single parameter, and
+    - ``crot_param`` feeds three parameters, multiplied with ``crot_weights``, into 
+      three controlled Pauli rotations.
 
-    We also initialize a set of parameters for all these operations, and summarize
-    the numbers of frequencies in ``num_freqs``.
+    We also initialize a set of parameters for all these operations, and start with
+    uniform weights, i.e. all ``rot_weights`` and ``crot_weights`` are set to one.
+    This means that all frequencies with which the parameters in ``rot_param`` and 
+    ``crot_param`` enter the QNode are integer-valued.
+    The number of frequencies per parameter are summarized in ``nums_frequency``.
 
     .. code-block :: python
 
-        init_param = [
+        init_param = (
             np.array([0.3, 0.2, 0.67], requires_grad=True),
             np.array(1.1, requires_grad=True),
             np.array([-0.2, 0.1, -2.5], requires_grad=True),
-        ]
+        )
+        rot_weights = np.ones(3)
+        crot_weights = np.ones(3)
 
-        num_freqs = [[1, 1, 1], 3, [2, 2, 2]]
+        nums_frequency = {
+            "rot_param": {(0,): 1, (1,): 1, (2,): 1},
+            "layer_par": {(): 3},
+            "crot_param": {(0,): 2, (1,): 2, (2,): 2},
+        }
 
     The keyword argument ``requires_grad`` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
-    gradient-based optimizers when using Autograd.
+    gradient-based optimizers when using Autograd or Torch.
 
-    In addition, the optimization technique for the Rotosolve substeps can be chosen via the
-    ``optimizer`` and ``optimizer_kwargs`` keyword arguments.
-    As an extra feature, the minimized cost of the intermediate univariate reconstructions can
+    Now we carry out the optimization.
+    The minimized cost of the intermediate univariate reconstructions can
     be read out via ``full_output``, including the cost *after* the full Rotosolve step:
 
-    .. code-block :: python
+    >>> param = init_param
+    >>> cost_rotosolve = []
+    >>> for step in range(num_steps):
+    ...     param, cost, sub_cost = opt.step_and_cost(
+    ...         cost_function,
+    ...         *param,
+    ...         nums_frequency=nums_frequency,
+    ...         full_output=True,
+    ...         rot_weights = rot_weights,
+    ...         crot_weights = crot_weights,
+    ...     )
+    ...     print(f"Cost before step: {cost}")
+    ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+    ...     cost_rotosolve.extend(sub_cost)
+    Cost before step: 0.04200821039253547
+    Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
+    Cost before step: -0.9999999990681161
+    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+    Cost before step: -0.9999999999999996
+    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
 
-        param = init_param.copy()
-        cost_rotosolve = []
-        for step in range(num_steps):
-            param, cost, sub_cost = opt.step_and_cost(
-                cost_function,
-                *param,
-                num_freqs=num_freqs,
-                full_output=True,
-            )
-            print(f"Cost before step: {cost}")
-            print(f"Minimization substeps: {np.round(sub_cost, 6)}")
-            cost_rotosolve.extend(sub_cost)
-
-    The optimized values for ``x`` are now stored in ``param`` and (sub)steps-vs-cost can be
-    assessed by plotting ``cost_rotosolve``.
+    The optimized values for the parameters are now stored in ``param``
+    and the optimization behaviour can be assessed by plotting ``cost_rotosolve``,
+    which include the substeps of the Rotosolve optimization.
     The ``full_output`` feature is available for both, ``step`` and ``step_and_cost``.
 
-    The most general form ``RotosolveOptimizer`` is designed to tackle currently is any
-    trigonometric cost function with integer frequencies up to the given value
-    of ``num_freqs`` per parameter. Not all of the integers up to ``num_freqs`` have to
-    be present in the frequency spectrum. In order to tackle equidistant but non-integer
-    frequencies, we recommend rescaling the argument of the function of interest.
+    In general, the frequencies in a QNode will not be integer-valued, requiring us
+    to provide the ``RotosolveOptimizer`` not only with the number of frequencies
+    but their concrete values. For the example QNode above, this happens if the
+    weights are no longer one:
+
+    >>> rot_weights = np.array([0.4, 0.8, 1.2], requires_grad=False)
+    >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
+    >>> spectrum_fn = qml.fourier.qnode_spectrum(qnode)
+    >>> spectra = spectrum_fn(*param, rot_weights=rot_weights, crot_weights=crot_weights)
+    >>> spectra["rot_param"]
+    {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]}
+    >>> spectra["crot_param"]
+    {(0,): [-0.5, -0.25, 0.0, 0.25, 0.5], (1,): [-1.0, -0.5, 0.0, 0.5, 1.0], (2,): [-1.5, -0.75, 0.0, 0.75, 1.5]}
+    
+    We may provide these spectra instead of ``nums_frequency`` to Rotosolve to 
+    enable the optimization of the QNode at these weights:
+
+    >>> param = init_param
+    >>> for step in range(num_steps):
+    ...     param, cost, sub_cost = opt.step_and_cost(
+    ...         cost_function,
+    ...         *param,
+    ...         spectra=spectra,
+    ...         full_output=True,
+    ...         rot_weights = rot_weights,
+    ...         crot_weights = crot_weights,
+    ...     )
+    ...     print(f"Cost before step: {cost}")
+    ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
+    Cost before step: 0.09299359486191039
+    Minimization substeps: [-0.268008 -0.713209 -0.24993  -0.871989 -0.907672 -0.907892 -0.940474]
+    Cost before step: -0.9404742138557066
+    Minimization substeps: [-0.940474 -1.       -1.       -1.       -1.       -1.       -1.      ]
+    Cost before step: -1.0
+    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+
+    As we can see, the optimization got a bit harder and the optimizer reaches the global minimum
+    a bit later than for the previous weights.
     """
     # pylint: disable=too-few-public-methods
 
@@ -209,38 +293,68 @@ class RotosolveOptimizer:
         **kwargs,
     ):
         r"""Update args with one step of the optimizer and return the corresponding objective
-        function value prior to the step.
+        function value prior to the step. Each step includes multiple substeps, one per
+        parameter.
 
         Args:
             objective_fn (function): the objective function for optimization. It should take a
                 sequence of the values ``*args`` and a list of the gates ``generators`` as inputs,
                 and return a single value.
-            *args : variable length sequence containing the initial
-                values of the variables to be optimized over or a single float with the initial
-                value.
-            num_freqs (int or array[int]): The number of frequencies in the ``objective_fn`` per
-                parameter. If an ``int``, the same number is used for all parameters; if
-                ``array[int]``, the shape of ``args`` and ``num_freqs`` has to coincide.
-                Defaults to ``num_freqs=1``, corresponding to Pauli rotation gates.
-            optimizer (callable or str): the optimization method used for the univariate
-                minimization if there is more than one frequency with respect to the respective
-                parameter. If a callable, should have the signature
-                ``(fun, **kwargs) -> x_min, y_min``, where ``y_min`` is tracked and returned
-                if ``full_output==True`` but is not relevant to the optimization.
-                If ``"brute"`` or ``"shgo"``, the corresponding global optimizer of SciPy is used.
-                Defaults to ``"brute"``.
-            optimizer_kwargs : keyword arguments for the ``optimizer``. For ``"brute"`` and
-                ``"shgo"``, these kwargs are passed to the respective SciPy implementation.
-                Has to be given as one dictionary, *not variable length*.
+            *args (Sequence): variable length sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value.
+            nums_frequency (dict[dict]): The number of frequencies in the ``objective_fn`` per
+                parameter. The keys must correspond to argument names of the objective
+                function, the values must be dictionaries that map parameter indices (``tuple``)
+                in the argument to the number of frequencies with which it enters the objective
+                function (``int``).
+                The parameter index for a scalar QNode argument is ``()``, for
+                one-dimensional array QNode arguments, it takes the form ``(i,)`` for the
+                i-th parameter in the argument.
+            spectra (dict[dict]): Frequency spectra in the ``objective_fn`` per parameter.
+                The formatting is the same as for ``nums_frequency``, but the values
+                of the inner dictionaries must be sequences of frequencies
+                (``Sequence[float]``).
+                For each parameter, ``num_frequency`` take precedence over ``spectra``.
+            shifts (dict[dict]): Shift angles for the reconstruction per QNode parameter.
+                The keys have to be argument names of ``qnode`` and the inner dictionaries have to
+                be mappings from parameter indices to the respective shift angles to be used for
+                that parameter. For :math:`R` non-zero frequencies, there must be :math:`2R+1`
+                shifts given. Ignored if ``nums_frequency`` gives a number of frequencies
+                for the respective parameter in the QNode argument.
             full_output (bool): whether to return the intermediate minimized energy values from
-                the univariate optimization steps.
+                the univariate optimization substeps.
             **kwargs : variable length keyword arguments for the objective function.
 
         Returns:
-            tuple(list [array] or array, float): the new variable values :math:`x^{(t+1)}` and
-            the objective function output prior to the step.
-            If a single arg is provided, list [array] is replaced by array.
-            list [float]: the intermediate energy values, only returned if ``full_output=True``.
+            list [array] or array: the new variable values :math:`x^{(t+1)}`.
+                If a single arg is provided, list [array] is replaced by array.
+            float: the objective function output prior to the step.
+            list [float]: the intermediate objective values, only returned if
+                ``full_output=True``.
+
+        The optimization step consists of multiple substeps. For each substep,
+        one of the parameters in one of the QNode arguments is singled out, and the
+        objective function is considered as univariate function (i.e. function that
+        depends on a single scalar) of that parameter.
+        If ``nums_frequency`` states that there is only a single frequency, or ``spectra``
+        only contains one positive frequency, for a parameter, an analytic formula is
+        used to return the minimum of the univariate restriction.
+        For multiple frequencies, :func:`.fourier.reconstruct` is used to reconstruct
+        the univariate restriction and a numeric minimization is performed instead.
+        The latter minimization is performed using the ``optimizer`` passed to
+        ``RotosolveOptimizer`` at initialization.
+
+        .. note::
+
+            One of ``nums_frequency`` and ``spectra`` must contain information
+            about each parameter that is to be trained with ``RotosolveOptimizer``.
+            For each univariate reconstruction, the data in ``nums_frequency`` takes
+            precedence over the information in ``spectra``.
+
+        .. warning::
+
+            ``RotosolveOptimizer`` will only update parameters that are *explicitly*
+            markes as trainable via ``requires_grad``.
         """
         # todo: does this signature call cover all cases?
         sign_fn = objective_fn.func if isinstance(objective_fn, qml.QNode) else objective_fn
@@ -264,7 +378,7 @@ class RotosolveOptimizer:
             y_output = []
         # Compute the very first evaluation in order to be able to cache it
         fun_at_zero = objective_fn(*args, **kwargs)
-        first_sub_update = True
+        first_substep_in_step = True
 
         for arg_idx, (arg, arg_name) in enumerate(zip(args, arg_names)):
             del after_args[0]
@@ -275,19 +389,19 @@ class RotosolveOptimizer:
             shape = qml.math.shape(arg)
             indices = np.ndindex(shape) if len(shape) > 0 else [()]
             for par_idx in indices:
+                _fun_at_zero = fun_at_zero if first_substep_in_step else None
                 # Set a single parameter in a single argument to be reconstructed
                 num_freq = nums_frequency.get(arg_name, {}).get(par_idx, None)
                 spectrum = spectra.get(arg_name, {}).get(par_idx, None)
                 if spectrum is not None:
                     spectrum = np.array(spectrum)
-                _fun_at_zero = fun_at_zero if first_sub_update else None
 
                 if num_freq == 1 or (spectrum is not None and len(spectrum[spectrum > 0])) == 1:
                     _args = before_args + [arg] + after_args
                     univariate = self._restrict_to_univariate(
                         objective_fn, arg_idx, par_idx, _args, kwargs
                     )
-                    freq = 1.0 if num_freq is not None else spectrum[0]
+                    freq = 1.0 if num_freq is not None else spectrum[spectrum > 0][0]
                     x_min, y_min = self._min_analytic(univariate, freq, _fun_at_zero)
                     arg = qml.math.scatter_element_add(arg, par_idx, x_min)
 
@@ -314,7 +428,7 @@ class RotosolveOptimizer:
 
                     # Update the currently treated argument
                     arg = qml.math.scatter_element_add(arg, par_idx, x_min - arg[par_idx])
-                first_sub_update = False
+                first_substep_in_step = False
 
                 if full_output:
                     y_output.append(y_min)
@@ -343,37 +457,67 @@ class RotosolveOptimizer:
         full_output=False,
         **kwargs,
     ):
-        r"""Update args with one step of the optimizer.
+        r"""Update args with one step of the optimizer. Each step includes
+        multiple substeps, one per parameter.
 
         Args:
             objective_fn (function): the objective function for optimization. It should take a
                 sequence of the values ``*args`` and a list of the gates ``generators`` as inputs,
                 and return a single value.
-            *args : variable length sequence containing the initial
-                values of the variables to be optimized over or a single float with the initial
-                value.
-            num_freqs (int or array[int]): The number of frequencies in the ``objective_fn`` per
-                parameter. If an ``int``, the same number is used for all parameters; if
-                ``array[int]``, the shape of ``args`` and ``num_freqs`` has to coincide.
-                Defaults to ``num_freqs=1``, corresponding to Pauli rotation gates.
-            optimizer (callable or str): the optimization method used for the univariate
-                minimization if there is more than one frequency with respect to the respective
-                parameter. If a callable, should have the signature
-                ``(fun, **kwargs) -> x_min, y_min``, where ``y_min`` is tracked and returned
-                if ``full_output==True`` but is not relevant to the optimization.
-                If ``"brute"`` or ``"shgo"``, the corresponding global optimizer of SciPy is used.
-                Defaults to ``"brute"``.
-            optimizer_kwargs : keyword arguments for the ``optimizer``. For ``"brute"`` and
-                ``"shgo"``, these kwargs are passed to the respective SciPy implementation.
-                Has to be given as one dictionary, *not variable length*.
+            *args (Sequence): variable length sequence containing the initial values of the
+                variables to be optimized over or a single float with the initial value.
+            nums_frequency (dict[dict]): The number of frequencies in the ``objective_fn`` per
+                parameter. The keys must correspond to argument names of the objective
+                function, the values must be dictionaries that map parameter indices (``tuple``)
+                in the argument to the number of frequencies with which it enters the objective
+                function (``int``).
+                The parameter index for a scalar QNode argument is ``()``, for
+                one-dimensional array QNode arguments, it takes the form ``(i,)`` for the
+                i-th parameter in the argument.
+            spectra (dict[dict]): Frequency spectra in the ``objective_fn`` per parameter.
+                The formatting is the same as for ``nums_frequency``, but the values
+                of the inner dictionaries must be sequences of frequencies
+                (``Sequence[float]``).
+                For each parameter, ``num_frequency`` take precedence over ``spectra``.
+            shifts (dict[dict]): Shift angles for the reconstruction per QNode parameter.
+                The keys have to be argument names of ``qnode`` and the inner dictionaries have to
+                be mappings from parameter indices to the respective shift angles to be used for
+                that parameter. For :math:`R` non-zero frequencies, there must be :math:`2R+1`
+                shifts given. Ignored if ``nums_frequency`` gives a number of frequencies
+                for the respective parameter in the QNode argument.
             full_output (bool): whether to return the intermediate minimized energy values from
-                the univariate optimization steps.
+                the univariate optimization substeps.
             **kwargs : variable length keyword arguments for the objective function.
 
         Returns:
-            list [array]: the new variable values :math:`x^{(t+1)}`.
-            If a single arg is provided, list [array] is replaced by array.
-            list [float]: the intermediate energy values, only returned if ``full_output=True``.
+            list [array] or array: the new variable values :math:`x^{(t+1)}`.
+                If a single arg is provided, list [array] is replaced by array.
+            list [float]: the intermediate objective values, only returned if
+                ``full_output=True``.
+
+        The optimization step consists of multiple substeps. For each substep,
+        one of the parameters in one of the QNode arguments is singled out, and the
+        objective function is considered as univariate function (i.e. function that
+        depends on a single scalar) of that parameter.
+        If ``nums_frequency`` states that there is only a single frequency, or ``spectra``
+        only contains one positive frequency, for a parameter, an analytic formula is
+        used to return the minimum of the univariate restriction.
+        For multiple frequencies, :func:`.fourier.reconstruct` is used to reconstruct
+        the univariate restriction and a numeric minimization is performed instead.
+        The latter minimization is performed using the ``optimizer`` passed to
+        ``RotosolveOptimizer`` at initialization.
+
+        .. note::
+
+            One of ``nums_frequency`` and ``spectra`` must contain information
+            about each parameter that is to be trained with ``RotosolveOptimizer``.
+            For each univariate reconstruction, the data in ``nums_frequency`` takes
+            precedence over the information in ``spectra``.
+
+        .. warning::
+
+            ``RotosolveOptimizer`` will only update parameters that are *explicitly*
+            markes as trainable via ``requires_grad``.
         """
         x_new, _, *y_output = self.step_and_cost(
             objective_fn,
@@ -385,36 +529,11 @@ class RotosolveOptimizer:
             **kwargs,
         )
         if full_output:
-            return x_new, y_output
+            # For full_output=True, y_output was wrapped in an outer list due
+            # to the dynamic unpacking
+            return x_new, y_output[0]
+
         return x_new
-
-    def _rotosolve(
-        objective_fn, single_frequency, optimizer, optimizer_kwargs, full_output, fun_at_zero=None
-    ):
-        r"""The rotosolve step for a univariate (restriction of a) cost function.
-
-        Updates the parameter of the ``objective_fn`` based on Equation 1 in
-        `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_ if ``num_frequency==1``,
-        or based on a reconstruction and global minimization subroutine if ``num_frequency>1``.
-
-        Args:
-            objective_fn (function): the objective function for optimization. It should take a
-            num_frequency (int): the number of frequencies in the ``objective_fn``.
-            optimizer (callable or str): the optimization method used if ``num_frequency>1``.
-                If a callable, should have the signature
-                ``(fun, **kwargs) -> x_min, y_min``, where ``y_min`` is tracked and returned
-                if ``full_output==True`` but is not relevant to the optimization.
-                If ``"brute"`` or ``"shgo"``, the corresponding global optimizer of SciPy is used.
-            optimizer_kwargs : keyword arguments for the ``optimizer``. For ``"brute"`` and
-                ``"shgo"``, these kwargs are passed to the respective SciPy implementation.
-                Has to be given as one dictionary, *not variable length*.
-            full_output (bool): Whether to track the intermediate minimized energy values.
-            fun_at_zero (float): The value of ``fun`` at 0. Computed if not provided.
-
-        Returns:
-            x_min (float): the minimizing input of ``objective_fn`` within :math:`(-\pi, \pi]`.
-            y_min (float): the minimal value of ``objective_fn``.
-        """
 
     def _restrict_to_univariate(self, fn, arg_idx, par_idx, args, kwargs):
         r"""Restrict a function to a univariate function for given argument
@@ -485,8 +604,8 @@ class RotosolveOptimizer:
 
     def _min_numeric(self, objective_fn):
         r"""Numerically minimize a trigonometric function that depends on a
-        single parameter. Uses potentially large numbers of function evaluations.
-        The optimization method and options are stored in
+        single parameter. Uses potentially large numbers of function evaluations,
+        depending on the used optimizer. The optimization method and options are stored in
         ``RotosolveOptimizer.optimizer`` and ``RotosolveOptimizer.optimizer_kwargs``.
 
         Args:
@@ -503,7 +622,7 @@ class RotosolveOptimizer:
         if y_min is None:
             y_min = objective_fn(x_min)
 
-        if x_min <= -np.pi:
-            x_min += 2 * np.pi
+        # if x_min <= -np.pi:
+        # x_min += 2 * np.pi
 
         return x_min, y_min
