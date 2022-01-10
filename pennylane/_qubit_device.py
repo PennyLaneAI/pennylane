@@ -210,7 +210,11 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                r = qml.math.squeeze(r)
+
+                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                    r = r[0]
+                else:
+                    r = qml.math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
