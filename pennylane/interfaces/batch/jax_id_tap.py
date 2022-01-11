@@ -23,7 +23,6 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Variance, Expectation
 
 dtype = jnp.float64
 
@@ -37,10 +36,6 @@ def _execute_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
-    total_params = np.sum([len(p) for p in params])
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -110,15 +105,6 @@ def _execute_id_tap(
             host_callback.id_tap(non_diff_wrapper, args, tap_with_device=True)
             res = result
 
-            # param_idx = 0
-            # res = []
-
-            # # Group the vjps based on the parameters of the tapes
-            # for p in params:
-            #     param_vjp = vjps[param_idx : param_idx + len(p)]
-            #     res.append(param_vjp)
-            #     param_idx += len(p)
-
             # Unwrap partial results into ndim=0 arrays to allow
             # differentiability with JAX
             # E.g.,
@@ -162,9 +148,6 @@ def _execute_with_fwd_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
 
     @jax.custom_vjp
     def wrapped_exec(params):

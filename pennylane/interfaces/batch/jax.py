@@ -23,7 +23,6 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Variance, Expectation
 from .jax_id_tap import _execute_id_tap, _execute_with_fwd_id_tap
 
 dtype = jnp.float64
