@@ -214,6 +214,38 @@ def param_shift_hessian(tape, f0=None):
 
         - If the input is a tape, a tuple containing a list of generated tapes, in addition
           to a post-processing function to be applied to the evaluated tapes.
+
+    **Examples**
+
+        Applying the Hessian transform to a QNode directly computes the Hessian matrix:
+
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        ... def circuit(x):
+        ...     qml.RX(x[0], wires=0)
+        ...    qml.RY(x[1], wires=0)
+        ...    return qml.expval(qml.PauliZ(0))
+        >>> x = np.array([0.1, 0.2], requires_grad=True)
+        >>> qml.gradients.param_shift_hessian(circuit)(x)
+        tensor([[-0.97517033,  0.01983384],
+                [ 0.01983384, -0.97517033]], requires_grad=True)
+
+        Applying it to a quantum tape instead produces the parameter-shifted Hessian tapes
+        and a post-processing function to combine execution results into the Hessian matrix:
+
+        >>> tape = circuit.qnode
+        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(circuit)
+        >>> hessian_tapes
+        [<JacobianTape: wires=[0], params=2>,
+         <JacobianTape: wires=[0], params=2>,
+         <JacobianTape: wires=[0], params=2>,
+         <JacobianTape: wires=[0], params=2>,
+         <JacobianTape: wires=[0], params=2>,
+         <JacobianTape: wires=[0], params=2>,
+         <JacobianTape: wires=[0], params=2>]
+        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        array([[-0.97517033,  0.01983384],
+               [ 0.01983384, -0.97517033]])
     """
 
     # Perform input validation before generating tapes.
