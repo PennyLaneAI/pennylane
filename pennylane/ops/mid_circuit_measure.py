@@ -1,14 +1,34 @@
-import pennylane as qml
-import pennylane.numpy as np
+from sympy import Symbol
+# from sympy.core import Symbol
+# from ast import literal_eval
+
+
 from pennylane.operation import AnyWires, Operation
+
+
+class RuntimeResult(Symbol):
+    __slots__ = tuple()
+
+    def __new__(cls, name):
+        name = str(hash(name)) + "_measured"
+        obj = super().__new__(Symbol, name)
+        obj.__class__ = cls
+        return obj
+
+def Measure(wire):
+    runtime_var = RuntimeResult(wire)
+    MidCircuitMeasure(runtime_var, wires=wire)
+    return runtime_var
+
 
 
 class MidCircuitMeasure(Operation):
     num_wires = 1
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, measure_var, wires=None):
+        self.measure_var = measure_var
         self.runtime_value = None
-        super().__init__(*args, **kwargs)
+        super().__init__(wires=wires)
 
 
 class RuntimeOp(Operation):
@@ -35,14 +55,22 @@ class RuntimeOp(Operation):
         return unwrapped
 
 
+class IfOp(Operation):
+    num_wires = AnyWires
 
-class RuntimeFunc(Operation):
-    num_wires = None
+    def __init__(self, runtime_exp, then_op, *args, **kwargs):
+        self.runtime_exp = runtime_exp
+        self.then_op = then_op(*args, do_queue=False, **kwargs)
+        super().__init__(runtime_exp, then_op, *args, **kwargs)
 
-    def __init__(self, fun, args, kwargs):
-        self._fun = fun
-        self._args = args
-        self._kwargs = kwargs
+
+# class RuntimeFunc(Operation):
+#     num_wires = None
+#
+#     def __init__(self, fun, args, kwargs):
+#         self._fun = fun
+#         self._args = args
+#         self._kwargs = kwargs
 
 class Eval(Operation):
 

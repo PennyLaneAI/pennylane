@@ -23,6 +23,8 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
+import sympy as sp
+
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
@@ -94,6 +96,7 @@ class DefaultQubit(QubitDevice):
     operations = {
         "Identity",
         "RuntimeOp",
+        "IfOp",
         "MidCircuitMeasure",
         "BasisState",
         "QubitStateVector",
@@ -163,9 +166,12 @@ class DefaultQubit(QubitDevice):
         # state as an array of dimension [2]*wires.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        self._measured = {}
 
         self._apply_ops = {
             "MidCircuitMeasure": self._apply_mid_circuit_measure,
+            "IfOp": self._if_op,
+            "RuntimeOp": self._runtime_op,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
@@ -237,9 +243,6 @@ class DefaultQubit(QubitDevice):
         """
         wires = operation.wires
 
-        if operation.base_name == "RuntimeOp":
-            operation = operation.create_op()
-
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse, op_object=operation)
@@ -253,6 +256,19 @@ class DefaultQubit(QubitDevice):
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _runtime_op(self, state, axes, op_object=None, **kwargs):
+        operation = op_object.create_op()
+        return self._apply_operation(state, operation)
+
+    def _if_op(self, state, axes, op_object=None, **kwargs):
+        expr = op_object.runtime_exp
+        free_symbols = list(expr.free_symbols)
+        calc = sp.lambdify(free_symbols, expr)(*[self._measured[sym] for sym in free_symbols])
+        if calc:
+            return self._apply_operation(state, op_object.then_op)
+        else:
+            return state
 
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
         num_qubits = len(state.shape)
@@ -274,7 +290,7 @@ class DefaultQubit(QubitDevice):
 
         # make measurement
         result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
-        op_object.runtime_value = result
+        self._measured[op_object.measure_var] = result
 
         # collapse state and reset qubit
         if result == 0:
