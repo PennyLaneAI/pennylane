@@ -13,7 +13,6 @@
 # limitations under the License.
 """ Assertion test for multi_dispatch function/decorator
 """
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane import math as fn
 import autoray
@@ -37,7 +36,7 @@ test_multi_dispatch_stack_data = [
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
 def test_multi_dispatch_stack(x):
     """ Test that the decorated autoray function stack can handle all inputs """
-    stack = qml.math.multi_dispatch.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
+    stack = fn.multi_dispatch.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     res = stack(x)
     print(res)
     assert fn.allequal(res, [[1., 0.],[ 2., 3.]])
