@@ -36,7 +36,6 @@ def _execute_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     @jax.custom_vjp
     def wrapped_exec(params):
         result = []
@@ -148,7 +147,6 @@ def _execute_with_fwd_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     @jax.custom_vjp
     def wrapped_exec(params):
 
