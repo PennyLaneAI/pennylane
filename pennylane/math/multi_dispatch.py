@@ -88,19 +88,18 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
     This helps simplify definitions of new functions inside pennylane. Instead of writing
 
-    .. code-block:: python
-        def some_function(tensor1, tensor2, option):
-            interface = qml.math._multi_dispatch([tensor1, tensor2])
-            ...
+    >>> def some_function(tensor1, tensor2, option):
+    ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+    ...     ...
 
     We can decorate the function, indicating the arguments that are tensors handled
     by the interface
 
-    .. code-block:: python
-        @qml.math.multi_dispatch(argnum=[0, 1])
-        def some_function(tensor1, tensor2, option, like):
-            # the interface string is stored in `like`.
-            ...
+
+    >>> @qml.math.multi_dispatch(argnum=[0, 1])
+    ... def some_function(tensor1, tensor2, option, like):
+    ...     # the interface string is stored in `like`.
+    ...     ...
 
     Args:
         argnum (list[int]): a list of integers indicating indicating the indices
@@ -111,7 +110,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
             If None, this option is ignored.
 
     Returns:
-cd        decorator:
+        decorator:
 
     .. seealso:: :func:`pennylane.math.multi_dispatch._multi_dispatch`
 
@@ -122,8 +121,9 @@ cd        decorator:
 
     ** Examples **
     We can redefine external functions to be suitable for pennylane. Here, we
-    redefine autoray's `stack` function:
+    redefine autoray's `stack` function.
     >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
+
     """
 
     def decorator(fn):
