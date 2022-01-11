@@ -106,8 +106,11 @@ class RotosolveOptimizer:
             that carries out a univariate (i.e., single-parameter) global optimization.
             It must take a function ``fn`` that maps scalars to scalars, may take optional
             keyword arguments, and it must return two scalars:
-            The input value ``x_min`` for which ``fn`` is minimal,
-            as well as the minimal value ``y_min=fn(x_min)`` or ``None``.
+
+            - The input value ``x_min`` for which ``fn`` is minimal, and
+
+            - the minimal value ``y_min=fn(x_min)`` or ``None``.
+
             Alternatively, the following optimizers are built-in and can be chosen by
             passing their name:
 
@@ -617,12 +620,12 @@ class RotosolveOptimizer:
         `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
         `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
         `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
-        We use the notation of Appendix A of the last of these references, 
+        We use the notation of Appendix A of the last of these references,
         although we allow for an arbitrary frequency instead of restricting
         to :math:`f=1`.
         The returned position is guaranteed to lie within :math:`(-\pi/f, \pi/f]`.
 
-        The used formula for the minimization of the :math:`d-\text{th}` 
+        The used formula for the minimization of the :math:`d-\text{th}`
         parameter then reads
 
         .. math::

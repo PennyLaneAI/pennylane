@@ -5,7 +5,8 @@
 <h3>New features since last release</h3>
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
-  in the cost function.
+  in the cost function. Also note the changes in behaviour listed under _Breaking
+  changes_.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
 
   Previously, the `RotsolveOptimizer` was available for cost functions with
@@ -274,6 +275,28 @@
 
 <h3>Breaking changes</h3>
 
+* The behaviour of `RotosolveOptimizer` has been changed regarding
+  its keyword arguments.
+  [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
+
+  The keyword arguments `optimizer` and `optimizer_kwargs` for the
+  `RotosolveOptimizer` have been moved from `step` and `step_and_cost`
+  to the initialization `__init__`.
+
+  The keyword argument `num_freqs` has been renamed to `nums_frequency`
+  and is expected to take a different shape now:
+  Previously, it was expected to be an `int` or a list of entries, with
+  each entry in turn being either an `int` or a `list` of `int` entries.
+  Now the expected structure is a nested dictionary, matching the
+  formatting expected by
+  [qml.fourier.reconstruct](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.fourier.reconstruct.html)
+  This also matches the expected formatting of the new keyword arguments
+  `spectra` and `shifts`.
+
+  For more details, see the
+  [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
+
+
 <h3>Bug fixes</h3>
 
 * The available `diff_method` options for QNodes has been corrected in both the
@@ -299,8 +322,8 @@
   through the `unitary_to_rot` optimization transform.
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
-* Fixes a bug which allows using `jax.jit` to be compatible with circuits 
-  which return `qml.probs` when the `default.qubit.jax` is provided with a custom shot 
+* Fixes a bug which allows using `jax.jit` to be compatible with circuits
+  which return `qml.probs` when the `default.qubit.jax` is provided with a custom shot
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
