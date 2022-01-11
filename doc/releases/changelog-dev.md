@@ -148,6 +148,18 @@
 
 <h3>Improvements</h3>
 
+* The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
+  for QNode argument axes of size `1`.
+  [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
+
+  `qml.math.safe_squeeze` wraps `qml.math.squeeze`, with slight modifications:
+
+  - When provided the `axis` keyword argument, axes that do not have size `1` will be
+    ignored, instead of raising an error.
+
+  - The keyword argument `exclude_axis` allows to explicitly exclude axes from the
+    squeezing.
+
 * The `adjoint` transform now raises and error whenever the object it is applied to
   is not callable.
   [(#2060)](https://github.com/PennyLaneAI/pennylane/pull/2060)
@@ -237,6 +249,11 @@
   is provided as `argnum`.
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug in `gradient_transform` where the hybrid differentiation
+  of circuits with a single parametrized gate failed and QNode argument
+  axes of size `1` where removed from the output gradient.
+  [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
 
 * The available `diff_method` options for QNodes has been corrected in both the
   error messages and the documentation.
