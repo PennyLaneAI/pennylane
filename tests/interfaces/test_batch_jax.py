@@ -365,7 +365,6 @@ execute_kwargs = [
         "mode": "backward",
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
-
     # With jacobian support
     {
         "gradient_fn": param_shift,
@@ -374,7 +373,11 @@ execute_kwargs = [
     {
         "gradient_fn": "device",
         "mode": "forward",
-        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True, "jac_support": True},
+        "gradient_kwargs": {
+            "method": "adjoint_jacobian",
+            "use_device_state": True,
+            "jac_support": True,
+        },
     },
     {
         "gradient_fn": "device",

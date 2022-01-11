@@ -27,6 +27,7 @@ from pennylane.operation import Variance, Expectation
 
 dtype = jnp.float64
 
+
 def _execute_id_tap(
     params,
     tapes=None,
