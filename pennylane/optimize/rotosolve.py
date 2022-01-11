@@ -21,21 +21,21 @@ from scipy.optimize import brute, shgo
 import pennylane as qml
 
 
-def _brute_optimizer(fun, num_steps, **kwargs):
+def _brute_optimizer(fun, num_steps, bounds=None, **kwargs):
     r"""Brute force optimizer, wrapper of scipy.optimizer.brute that repeats it
     ``num_steps`` times. Signature is as expected by ``RotosolveOptimizer._min_numeric``
     below, returning a scalar minimal position and the function value at that position."""
-    width = 2 * np.pi
-    x_min = 0.0
     Ns = kwargs.pop("Ns")
+    width = bounds[0][1] - bounds[0][0]
+    center = (bounds[0][1] + bounds[0][0]) / 2
     for _ in range(num_steps):
-        _range = (x_min - width / 2, x_min + width / 2)
-        x_min, y_min, *_ = brute(fun, ranges=(_range,), full_output=True, Ns=Ns, **kwargs)
+        range_ = (center - width / 2, center + width / 2)
+        center, y_min, *_ = brute(fun, ranges=(range_,), full_output=True, Ns=Ns, **kwargs)
         # We only ever use this function for 1D optimization
-        x_min = x_min[0]
+        center = center[0]
         width /= Ns
 
-    return x_min, y_min
+    return center, y_min
 
 
 def _shgo_optimizer(fun, **kwargs):
@@ -58,7 +58,6 @@ def _prepare_optimizer(optimizer, optimizer_kwargs):
         optimizer_kwargs.setdefault("Ns", 100)
     elif optimizer == "shgo":
         optimizer = _shgo_optimizer
-        optimizer_kwargs.setdefault("bounds", ((-np.pi, np.pi),))
 
     return optimizer, optimizer_kwargs
 
@@ -91,45 +90,6 @@ def _restrict_to_univariate(fn, arg_idx, par_idx, args, kwargs):
         return fn(*args[:arg_idx], the_arg + shift_vec * x, *args[arg_idx + 1 :], **kwargs)
 
     return _univariate_fn
-
-
-def _min_analytic(objective_fn, freq, f0):
-    r"""Analytically minimize a trigonometric function that depends on a
-    single parameter and has a single frequency. Uses two or
-    three function evaluations.
-
-    Args:
-        objective_fn (callable): Trigonometric function to minimize
-        freq (float): Frequency in the ``objective_fn``
-        f0 (float): Value of the ``objective_fn`` at zero. Reduces the
-            number of calls to the function from three to two if given.
-
-    Returns:
-        float: Position of the minimum of ``objective_fn``
-        float: Value of the minimum of ``objective_fn``
-
-    The closed form expression used here was derived in
-    `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
-    `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
-    `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
-    We use the notation of Appendix A of the latter reference, allowing
-    for an arbitrary frequency instead of restricting to ``freq=1``.
-    The returned position is guaranteed to lie within :math:`(-\pi, \pi]`.
-    """
-    if f0 is None:
-        f0 = objective_fn(0.0)
-    fp = objective_fn(0.5 * np.pi / freq)
-    fm = objective_fn(-0.5 * np.pi / freq)
-    C = 0.5 * (fp + fm)
-    B = np.arctan2(2 * f0 - fp - fm, fp - fm)
-    x_min = (-np.pi / 2 - B) / freq
-    A = np.sqrt((f0 - C) ** 2 + 0.25 * (fp - fm) ** 2)
-    y_min = -A + C
-
-    if x_min <= -np.pi:
-        x_min = x_min + 2 * np.pi
-
-    return x_min, y_min
 
 
 class RotosolveOptimizer:
@@ -180,6 +140,12 @@ class RotosolveOptimizer:
 
     where :math:`\left<H\right>_{\theta_d}` is the expectation value of the objective function
     restricted to only depend on the parameter :math:`\theta_d`.
+
+    .. warning ::
+
+        The built-in one-dimensional optimizers ``"brute"`` and ``"shgo"`` for the substeps
+        of a Rotosolve optimization step use the interval :math:`(-\pi,\pi]`, rescaled with
+        the inverse smallest frequency as default domain to optimizer over.
 
     The algorithm is described in further detail in
     `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_,
@@ -401,7 +367,7 @@ class RotosolveOptimizer:
             ``full_output=True``.
 
         The optimization step consists of multiple substeps.
-        
+
         For each substep,
         one of the parameters in one of the QNode arguments is singled out, and the
         objective function is considered as univariate function (i.e., function that
@@ -473,7 +439,7 @@ class RotosolveOptimizer:
                         objective_fn, arg_idx, par_idx, _args, kwargs
                     )
                     freq = 1.0 if num_freq is not None else spectrum[spectrum > 0][0]
-                    x_min, y_min = _min_analytic(univariate, freq, _fun_at_zero)
+                    x_min, y_min = self.min_analytic(univariate, freq, _fun_at_zero)
                     arg = qml.math.scatter_element_add(arg, par_idx, x_min)
 
                 else:
@@ -491,7 +457,9 @@ class RotosolveOptimizer:
                     recon = recon_fn(*before_args, arg, *after_args, f0=_fun_at_zero, **kwargs)[
                         arg_name
                     ][par_idx]
-                    x_min, y_min = self._min_numeric(recon)
+                    if spectrum is None:
+                        spectrum = list(range(num_freq + 1))
+                    x_min, y_min = self._min_numeric(recon, spectrum)
 
                     # Update the currently treated argument
                     arg = qml.math.scatter_element_add(arg, par_idx, x_min - arg[par_idx])
@@ -602,7 +570,7 @@ class RotosolveOptimizer:
 
         return x_new
 
-    def _min_numeric(self, objective_fn):
+    def _min_numeric(self, objective_fn, spectrum):
         r"""Numerically minimize a trigonometric function that depends on a
         single parameter. Uses potentially large numbers of function evaluations,
         depending on the used optimizer. The optimization method and options are stored in
@@ -617,9 +585,66 @@ class RotosolveOptimizer:
 
         The returned position is guaranteed to lie within :math:`(-\pi, \pi]`.
         """
+        opt_kwargs = self.optimizer_kwargs.copy()
+        if "bounds" not in self.optimizer_kwargs:
+            spectrum = qml.math.array(spectrum)
+            half_width = np.pi / qml.math.min(spectrum[spectrum > 0])
+            opt_kwargs["bounds"] = ((-half_width, half_width),)
 
-        x_min, y_min = self.optimizer(objective_fn, **self.optimizer_kwargs)
+        x_min, y_min = self.optimizer(objective_fn, **opt_kwargs)
         if y_min is None:
             y_min = objective_fn(x_min)
+
+        return x_min, y_min
+
+    @staticmethod
+    def min_analytic(objective_fn, freq, f0):
+        r"""Analytically minimize a trigonometric function that depends on a
+        single parameter and has a single frequency. Uses two or
+        three function evaluations.
+
+        Args:
+            objective_fn (callable): Trigonometric function to minimize
+            freq (float): Frequency :math:`f` in the ``objective_fn``
+            f0 (float): Value of the ``objective_fn`` at zero. Reduces the
+                number of calls to the function from three to two if given.
+
+        Returns:
+            float: Position of the minimum of ``objective_fn``
+            float: Value of the minimum of ``objective_fn``
+
+        The closed form expression used here was derived in
+        `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
+        `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
+        `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
+        We use the notation of Appendix A of the last of these references, 
+        although we allow for an arbitrary frequency instead of restricting
+        to :math:`f=1`.
+        The returned position is guaranteed to lie within :math:`(-\pi/f, \pi/f]`.
+
+        The used formula for the minimization of the :math:`d-\text{th}` 
+        parameter then reads
+
+        .. math::
+
+            \theta^*_d &= \underset{\theta_d}{\text{argmin}}\left<H\right>_{\theta_d}\\
+                  &= -\frac{\pi}{2f} - \frac{1}{f}\text{arctan2}\left(2\left<H\right>_{\theta_d=0}
+                  - \left<H\right>_{\theta_d=\pi/(2f)} - \left<H\right>_{\theta_d=-\pi/(2f)},
+                  \left<H\right>_{\theta_d=\pi/(2f)} - \left<H\right>_{\theta_d=-\pi/(2f)}\right),
+
+        """
+        if f0 is None:
+            f0 = objective_fn(0.0)
+        shift = 0.5 * np.pi / freq
+        fp = objective_fn(shift)
+        fm = objective_fn(-shift)
+        C = 0.5 * (fp + fm)
+        B = np.arctan2(2 * f0 - fp - fm, fp - fm)
+        x_min = -shift - B / freq
+        A = np.sqrt((f0 - C) ** 2 + 0.25 * (fp - fm) ** 2)
+        y_min = -A + C
+
+        if x_min <= -2 * shift:
+            x_min = x_min + 4 * shift
 
         return x_min, y_min
