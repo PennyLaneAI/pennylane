@@ -378,9 +378,9 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None):
     """
     interface = _multi_dispatch([tensor])
     if interface == "tensorflow":
-        import tensorflow as tf
+        from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
-        exception = tf.python.framework.errors_impl.InvalidArgumentError
+        exception = InvalidArgumentError
     else:
         exception = ValueError
 
