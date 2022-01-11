@@ -143,8 +143,8 @@ class RotosolveOptimizer:
 
     Args:
         optimizer (str or callable): Optimizer to use for the substeps of Rotosolve
-            that carries out a univariate (i.e. single-parameter) global optimization.
-            It must take a function ``fn`` that maps scalars to scalars and may take optional
+            that carries out a univariate (i.e., single-parameter) global optimization.
+            It must take a function ``fn`` that maps scalars to scalars, may take optional
             keyword arguments, and it must return two scalars:
             The input value ``x_min`` for which ``fn`` is minimal,
             as well as the minimal value ``y_min=fn(x_min)`` or ``None``.
@@ -168,7 +168,7 @@ class RotosolveOptimizer:
 
     For each parameter, a purely classical one-dimensional global optimization over the
     interval :math:`(-\pi,\pi]` is performed, which is replaced by a closed-form expression for
-    the optimal value if the :math:`d^{th}` parametrized gate has only two eigenvalues. In this
+    the optimal value if the :math:`d\text{th}` parametrized gate has only two eigenvalues. In this
     case, the optimal value :math:`\theta^*_d` is given by
 
     .. math::
@@ -213,7 +213,7 @@ class RotosolveOptimizer:
 
         @qml.qnode(dev)
         def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
-            for i, par in enumerate(rot_param*rot_weights):
+            for i, par in enumerate(rot_param * rot_weights):
                 qml.RX(par, wires=i)
             for w in dev.wires:
                 qml.RX(layer_par, wires=w)
@@ -231,7 +231,7 @@ class RotosolveOptimizer:
       three controlled Pauli rotations.
 
     We also initialize a set of parameters for all these operations, and start with
-    uniform weights, i.e. all ``rot_weights`` and ``crot_weights`` are set to one.
+    uniform weights, i.e., all ``rot_weights`` and ``crot_weights`` are set to one.
     This means that all frequencies with which the parameters in ``rot_param`` and
     ``crot_param`` enter the QNode are integer-valued.
     The number of frequencies per parameter are summarized in ``nums_frequency``.
@@ -268,8 +268,8 @@ class RotosolveOptimizer:
     ...         *param,
     ...         nums_frequency=nums_frequency,
     ...         full_output=True,
-    ...         rot_weights = rot_weights,
-    ...         crot_weights = crot_weights,
+    ...         rot_weights=rot_weights,
+    ...         crot_weights=crot_weights,
     ...     )
     ...     print(f"Cost before step: {cost}")
     ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
@@ -400,13 +400,17 @@ class RotosolveOptimizer:
             list [float]: the intermediate objective values, only returned if
             ``full_output=True``.
 
-        The optimization step consists of multiple substeps. For each substep,
+        The optimization step consists of multiple substeps.
+        
+        For each substep,
         one of the parameters in one of the QNode arguments is singled out, and the
-        objective function is considered as univariate function (i.e. function that
+        objective function is considered as univariate function (i.e., function that
         depends on a single scalar) of that parameter.
+
         If ``nums_frequency`` states that there is only a single frequency, or ``spectra``
         only contains one positive frequency, for a parameter, an analytic formula is
         used to return the minimum of the univariate restriction.
+
         For multiple frequencies, :func:`.fourier.reconstruct` is used to reconstruct
         the univariate restriction and a numeric minimization is performed instead.
         The latter minimization is performed using the ``optimizer`` passed to

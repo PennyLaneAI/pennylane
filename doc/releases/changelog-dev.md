@@ -19,11 +19,11 @@
 
   @qml.qnode(dev)
   def qnode(x, Y):
-      qml.RX(2.5*x, wires=0)
+      qml.RX(2.5 * x, wires=0)
       qml.CNOT(wires=[0, 1])
-      qml.RZ(0.3*Y[0], wires=0)
-      qml.CRY(1.1*Y[1], wires=[1, 0])
-      return qml.expval(qml.PauliX(0)@qml.PauliZ(1))
+      qml.RZ(0.3 * Y[0], wires=0)
+      qml.CRY(1.1 * Y[1], wires=[1, 0])
+      return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
 
   x = np.array(0.8, requires_grad=True)
   Y = np.array([-0.2, 1.5], requires_grad=True)
@@ -64,9 +64,9 @@
   New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
   ```
   However, note that these intermediate minimal values are evaluations of the
-  _reconstructions_ that Rotosolve creates and uses internally for the optimization,
-  and not of the original objective function. For noisy cost functions, these may
-  be significantly different.
+  *reconstructions* that Rotosolve creates and uses internally for the optimization,
+  and not of the original objective function. For noisy cost functions, these intermediate
+  evaluations may differ significantly from evaluations of the original cost function.
 
 * A tensor network templates module has been added. Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented.
