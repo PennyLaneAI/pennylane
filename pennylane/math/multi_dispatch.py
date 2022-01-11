@@ -111,7 +111,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
             If None, this option is ignored.
 
     Returns:
-        decorator:
+cd        decorator:
 
     .. seealso:: :func:`pennylane.math.multi_dispatch._multi_dispatch`
 
