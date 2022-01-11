@@ -14,8 +14,8 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
-import pennylane as qml
 import pytest
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
     _binary_matrix,
@@ -28,6 +28,7 @@ from pennylane.hf.tapering import (
     generate_symmetries,
     get_generators,
     transform_hamiltonian,
+    optimal_sector,
 )
 
 
@@ -286,59 +287,11 @@ def test_generate_paulis(generators, num_qubits, result):
 
 
 @pytest.mark.parametrize(
-    ("hamiltonian", "num_qubits", "res_generators", "res_pauli_ops"),
+    ("symbols", "geometry", "num_qubits", "res_generators", "res_pauli_ops"),
     [
         (
-            qml.Hamiltonian(
-                np.array(
-                    [
-                        -0.09886397,
-                        0.17119775,
-                        0.17119775,
-                        -0.22278593,
-                        -0.22278593,
-                        0.16862219,
-                        0.0453222,
-                        -0.0453222,
-                        -0.0453222,
-                        0.0453222,
-                        0.12054482,
-                        0.16586702,
-                        0.16586702,
-                        0.12054482,
-                        0.17434844,
-                    ]
-                ),
-                [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-            ),
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
             4,
             [
                 qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
@@ -349,10 +302,13 @@ def test_generate_paulis(generators, num_qubits, result):
         ),
     ],
 )
-def test_generate_symmetries(hamiltonian, num_qubits, res_generators, res_pauli_ops):
+def test_generate_symmetries(symbols, geometry, num_qubits, res_generators, res_pauli_ops):
     r"""Test that generate_symmetries returns the correct result."""
 
+    mol = qml.hf.Molecule(symbols, geometry)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
     generators, pauli_ops = generate_symmetries(hamiltonian, num_qubits)
+
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
 
@@ -499,3 +455,85 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_
     for i, term in enumerate(sorted_terms):
         assert np.allclose(term[0], ham_ref.terms[0][i])
         assert term[1].compare(ham_ref.terms[1][i])
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "generators", "num_electrons", "result"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
+            0,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            2,
+            [1, -1, -1],
+        ),
+        (
+            ["He", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]], requires_grad=False),
+            1,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3)]),
+            ],
+            1,
+            [-1, 1],
+        ),
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
+                requires_grad=False,
+            ),
+            1,
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+            ],
+            2,
+            [-1, -1],
+        ),
+    ],
+)
+def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, result):
+    r"""Test that find_optimal_sector returns the correct result."""
+    mol = qml.hf.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
+
+    perm = optimal_sector(hamiltonian, generators, num_electrons)
+
+    assert perm == result
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "generators"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=False),
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ("num_electrons", "msg_match"),
+    [
+        (0, f"The number of active electrons must be greater than zero"),
+        (5, f"Number of active orbitals cannot be smaller than number of active electrons"),
+    ],
+)
+def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons, msg_match):
+    r"""Test that find_optimal_sector returns the correct result."""
+    mol = qml.hf.Molecule(symbols, geometry)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)()
+
+    with pytest.raises(ValueError, match=msg_match):
+        optimal_sector(hamiltonian, generators, num_electrons)
