@@ -376,6 +376,14 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None):
         or not excluded and that have size 1. If no axes are specified or excluded,
         all axes are attempted to be squeezed.
     """
+    interface = _multi_dispatch([tensor])
+    if interface == "tensorflow":
+        import tensorflow as tf
+
+        exception = tf.python.framework.errors_impl.InvalidArgumentError
+    else:
+        exception = ValueError
+
     num_axes = len(np.shape(tensor))
     if axis is None:
         if exclude_axis is None:
@@ -397,7 +405,7 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None):
         ax -= num_axes - len(np.shape(tensor))
         try:
             tensor = np.squeeze(tensor, axis=ax)
-        except Exception:
+        except exception:
             pass
     return tensor
 
