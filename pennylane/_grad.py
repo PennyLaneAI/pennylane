@@ -168,7 +168,7 @@ def jacobian(func, argnum=None):
     function and outputs a ``tuple``. The ``i`` th entry of the ``tuple`` has shape
     ``(*output shape, *shape of args[argnum[i]])``.
 
-    If the inferred value of ``argnum`` is a single-element list or if a single integer
+    If a single trainable argument is inferred, or if a single integer
     is provided as ``argnum``, the tuple is unpacked and its only entry is returned instead.
 
     **Example**

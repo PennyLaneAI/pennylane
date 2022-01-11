@@ -1874,7 +1874,6 @@ class TestBlockDiagDiffability:
         x, y = 0.2, 1.5
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
-        # Transposes in the following because autograd behaves strangely
         assert fn.allclose(res[0], exp[0])
         assert fn.allclose(res[1], exp[1])
 

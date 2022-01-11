@@ -231,7 +231,7 @@
   to stack and transpose, so that the output always has the shape of the second
   type.
 
-  Note that the behaviour is unchanged --- the Jacobian tuple is unpacked into
+  Note that the behaviour is unchanged --- that is, the Jacobian tuple is unpacked into
   a single Jacobian --- if `argnum=None` and there is only one QNode argument
   with respect to which the differentiation takes place, or if an integer
   is provided as `argnum`.
