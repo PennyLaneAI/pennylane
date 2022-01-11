@@ -397,7 +397,7 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None):
         ax -= num_axes - len(np.shape(tensor))
         try:
             tensor = np.squeeze(tensor, axis=ax)
-        except ValueError:
+        except Exception:
             pass
     return tensor
 
