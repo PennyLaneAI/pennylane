@@ -93,6 +93,7 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
+        "RuntimeOp",
         "MidCircuitMeasure",
         "BasisState",
         "QubitStateVector",
@@ -162,6 +163,8 @@ class DefaultQubit(QubitDevice):
         # state as an array of dimension [2]*wires.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+
+        self._classical_vars = {}
 
         self._apply_ops = {
             "MidCircuitMeasure": self._apply_mid_circuit_measure,
@@ -236,9 +239,14 @@ class DefaultQubit(QubitDevice):
         """
         wires = operation.wires
 
+        if operation.base_name == "RuntimeOp":
+            op_class = operation.parameters[0]
+            operation = op_class(self._classical_vars[operation.parameters[1]], do_queue=False, wires=operation.wires)
+            print("hello!")
+
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse, op_object=operation)
 
         matrix = self._get_unitary_matrix(operation)
 
@@ -254,15 +262,17 @@ class DefaultQubit(QubitDevice):
         num_qubits = len(state.shape)
         axis = axes[0]
 
+        op_object = kwargs["op_object"]
+
         # get first slice
         slicer_0 = [slice(None)] * num_qubits
         slicer_0[axis] = 0
-        sub_0 = state[slicer_0]
+        sub_0 = state[tuple(slicer_0)]
 
         # get second slice
         slicer_1 = slicer_0.copy()
         slicer_1[axis] = 1
-        sub_1 = state[slicer_1]
+        sub_1 = state[tuple(slicer_1)]
 
         # get norms
         sub_0_norm = np.linalg.norm(sub_0)
@@ -270,6 +280,7 @@ class DefaultQubit(QubitDevice):
 
         # make measurement
         result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
+        self._classical_vars[op_object.classical_var_name] = result
 
         # collapse state and reset qubit
         if result == 0:
