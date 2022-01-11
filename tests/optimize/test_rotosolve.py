@@ -150,10 +150,9 @@ def custom_optimizer(fun, **kwargs):
     return opt_res.x[0], None
 
 
-optimizers = [None, "brute", "shgo", custom_optimizer]
-optimizer_kwargs = [
+substep_optimizers = ["brute", "shgo", custom_optimizer]
+all_substep_kwargs = [
     {"Ns": 93, "num_steps": 3},
-    None,
     {"bounds": ((-1.0, 1.0),), "n": 512},
     {"bounds": ((-1.1, 1.4),)},
 ]
@@ -172,12 +171,12 @@ optimizer_kwargs = [
     ),
 )
 @pytest.mark.parametrize(
-    "optimizer, optimizer_kwargs",
-    list(zip(optimizers, optimizer_kwargs)),
+    "substep_optimizer, substep_kwargs",
+    list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithClassicalFunction:
     def test_number_of_function_calls(
-        self, fun, x_min, param, nums_freq, exp_num_calls, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         global num_calls
@@ -189,7 +188,7 @@ class TestWithClassicalFunction:
             num_calls += 1
             return fun(*args, **kwargs)
 
-        opt = RotosolveOptimizer(optimizer, optimizer_kwargs)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         # Parameters are not marked as trainable -> Expect only one execution for f0
         new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
@@ -202,11 +201,11 @@ class TestWithClassicalFunction:
         assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self, fun, x_min, param, nums_freq, exp_num_calls, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        opt = RotosolveOptimizer(optimizer, optimizer_kwargs)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         # Without trainable parameters, param should not be changed
         new_param_step = opt.step(
@@ -261,12 +260,12 @@ class TestWithClassicalFunction:
         assert np.isclose(old_cost, fun(*param))
 
     def test_full_output(
-        self, fun, x_min, param, nums_freq, exp_num_calls, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
-        opt = RotosolveOptimizer(optimizer, optimizer_kwargs)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         _, y_output_step = opt.step(
             fun,
@@ -298,9 +297,9 @@ class TestWithClassicalFunction:
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
     param = tuple(np.array(p, requires_grad=True) for p in param)
-    optimizer = "brute"
-    optimizer_kwargs = None
-    opt = RotosolveOptimizer(optimizer=optimizer, optimizer_kwargs=optimizer_kwargs)
+    substep_optimizer = "brute"
+    substep_kwargs = None
+    opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
     for _ in range(3):
         param = opt.step(
@@ -362,9 +361,9 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         """Tests convergence for easy classical functions in a single Rotosolve step
         with some arguments deactivated for training.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        optimizer = "brute"
-        optimizer_kwargs = None
-        opt = RotosolveOptimizer(optimizer=optimizer, optimizer_kwargs=optimizer_kwargs)
+        substep_optimizer = "brute"
+        substep_kwargs = None
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         new_param_step = opt.step(
             fun,
@@ -468,14 +467,16 @@ qnode_spectra = [
     list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra)),
 )
 @pytest.mark.parametrize(
-    "optimizer, optimizer_kwargs",
-    list(zip(optimizers, optimizer_kwargs)),
+    "substep_optimizer, substep_kwargs",
+    list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithQNodes:
-    def test_single_step(self, qnode, param, nums_frequency, spectra, optimizer, optimizer_kwargs):
+    def test_single_step(
+        self, qnode, param, nums_frequency, spectra, substep_optimizer, substep_kwargs
+    ):
         """Test executing a single step of the RotosolveOptimizer on a QNode."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
-        opt = RotosolveOptimizer(optimizer=optimizer, optimizer_kwargs=optimizer_kwargs)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         repack_param = len(param) == 1
         new_param_step = opt.step(
@@ -506,14 +507,14 @@ class TestWithQNodes:
         assert np.isclose(qnode(*param), old_cost)
 
     def test_multiple_steps(
-        self, qnode, param, nums_frequency, spectra, optimizer, optimizer_kwargs
+        self, qnode, param, nums_frequency, spectra, substep_optimizer, substep_kwargs
     ):
         """Test executing multiple steps of the RotosolveOptimizer on a QNode."""
         param = tuple(np.array(p, requires_grad=True) for p in param)
-        # For the following 1D optimizers, the bounds need to be expanded for these QNodes
-        if optimizer in ["shgo", custom_optimizer]:
-            optimizer_kwargs["bounds"] = ((-2.0, 2.0),)
-        opt = RotosolveOptimizer(optimizer=optimizer, optimizer_kwargs=optimizer_kwargs)
+        # For the following 1D substep_optimizer, the bounds need to be expanded for these QNodes
+        if substep_optimizer in ["shgo", custom_optimizer]:
+            substep_kwargs["bounds"] = ((-2.0, 2.0),)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         repack_param = len(param) == 1
         initial_cost = qnode(*param)
