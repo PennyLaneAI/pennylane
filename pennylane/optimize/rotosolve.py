@@ -69,7 +69,7 @@ def _restrict_to_univariate(fn, arg_idx, par_idx, args, kwargs):
 
     Args:
         fn (callable): Multivariate function
-        arg_idx (int): Index of the argument that contains the parameter to restrict to
+        arg_idx (int): Index of the argument that contains the parameter to restrict
         par_idx (tuple[int]): Index of the parameter to restrict to within the argument
         args (tuple): Arguments at which to restrict the function.
         kwargs (dict): Keyword arguments at which to restrict the function.
