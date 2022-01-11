@@ -297,10 +297,7 @@ class RotosolveOptimizer:
                     shift_vec = shift_vecs[par_index]
                     # univariate objective function
                     univariate_obj_fn = lambda x: objective_fn(
-                        *before_args,
-                        unflatten(x_flat + shift_vec * x, arg),
-                        *after_args,
-                        **kwargs,
+                        *before_args, unflatten(x_flat + shift_vec * x, arg), *after_args, **kwargs,
                     )
                     x_min, y_min = self._rotosolve(
                         univariate_obj_fn,

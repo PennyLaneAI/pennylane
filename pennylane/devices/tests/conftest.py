@@ -169,10 +169,7 @@ def pytest_addoption(parser):
     # The options are the three arguments every device takes
     addoption("--device", action="store", default=None, help="The device to test.")
     addoption(
-        "--shots",
-        action="store",
-        default=None,
-        help="Number of shots to use in stochastic mode.",
+        "--shots", action="store", default=None, help="Number of shots to use in stochastic mode.",
     )
     addoption(
         "--analytic",

@@ -95,9 +95,7 @@ class JAXInterface(AnnotatedQueue):
         def wrapped_exec(params):
             exec_fn = partial(self.execute_device, device=device)
             return host_callback.call(
-                exec_fn,
-                params,
-                result_shape=jax.ShapeDtypeStruct((1,), JAXInterface.dtype),
+                exec_fn, params, result_shape=jax.ShapeDtypeStruct((1,), JAXInterface.dtype),
             )
 
         def wrapped_exec_fwd(params):
