@@ -134,20 +134,6 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 
     class FlipAndRotate(qml.operation.Operation):
-        """One-sentence description of the operator.
-
-        Add more explanation. How is the operator defined, what are typical usage contexts?
-        What is the meaning of the different inputs? What options does a user have?
-
-        Args:
-            Inputs are described here
-
-        **Example**
-
-        Various code examples that explain how the operator is employed in practice.
-        It is recommended to add the examples as clearly marked tests to ensure their
-        maintenance.
-        """
 
         # Define how many wires the operator acts on in total.
         # In our case this may be one or two, which is why we
@@ -155,7 +141,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         num_wires = qml.operation.AnyWires
 
         # This attribute tells PennyLane what differentiation method to use. Here
-        # we request parameter-shift (or "automatic") differentiation.
+        # we request parameter-shift (or "analytic") differentiation.
         grad_method = "A"
 
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
@@ -274,7 +260,7 @@ Defining special properties of an operator
 
 Apart from the main :class:`~.Operator` class, operators with special methods or representations
 are implemented as subclasses :class:`~.Operation`, :class:`~.Observable`, :class:`~.Channel`,
-:class:`~.CVOperation` and :class:`~.CVOperation`.
+:class:`~.CVOperation` and :class:`~.CVObservable`.
 
 However, unlike many other frameworks, PennyLane does not use class
 inheritance to define fine-grained properties of operators,
@@ -328,7 +314,7 @@ The new operation may have to be imported in the module's ``__init__.py`` file i
 Make sure that all hyperparameters and errors are tested, and that the parameters can be passed as
 tensors from all supported autodifferentiation frameworks.
 
-Don't forget to also add the new operator to documentation in the ``docs/introduction/operations.rst`` file, or to
+Don't forget to also add the new operator to the documentation in the ``docs/introduction/operations.rst`` file, or to
 the template gallery if it is an ansatz. The latter is done by adding a ``customgalleryitem``
 to the correct section in ``doc/introduction/templates.rst``:
 
@@ -351,6 +337,7 @@ Here are a few more tips for adding operators:
   be added soon in a different context.
 
 * *Write good docstrings.* Explain what your operator does in a clear docstring with ample examples.
+  You find more about Pennylane standards in :doc:`/development/guide/documentation`.
 
 * *Efficient representations.* Try to implement representations as efficiently as possible, since they may
   be constructed several times.

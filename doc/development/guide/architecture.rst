@@ -59,7 +59,7 @@ Operators are uniquely defined by their **name**, their (trainable) **parameters
 their (non-trainable) **hyperparameters**, and the **wires** they act on. Note that the
 trainable parameters can be tensors of any supported autodifferentiation framework.
 
-The four defining properties are accessible for all :class:`~.Operator` instances:
+These four defining properties are accessible for all :class:`~.Operator` instances:
 
 >>> from jax import numpy as jnp
 >>> op = qml.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
@@ -126,11 +126,12 @@ QuantumTape
 Quantum operators and measurement processes can be used to build a quantum circuit.
 The user defines the circuit by constructing a quantum function, such as:
 
-def qfunc(params):
-    qml.RX(params[0], wires='b')
-    qml.CNOT(wires=['a', 'b'])
-    qml.RY(params[1], wires='a')
-    return qml.expval(qml.PauliZ(wires='b'))
+.. code-block:: python
+    def qfunc(params):
+        qml.RX(params[0], wires='b')
+        qml.CNOT(wires=['a', 'b'])
+        qml.RY(params[1], wires='a')
+        return qml.expval(qml.PauliZ(wires='b'))
 
 Internally, a quantum function is translated to a quantum tape, which is
 the central representation of a quantum circuit. The tape is a context manager that stores lists
@@ -257,9 +258,8 @@ The construction of tapes, as well as post-processing the results from executing
 are classical computations, and they are "tracked" by the autodifferentiation framework.
 In other words, these steps can invoke differentiable classical computations, such as:
 
-* The decomposition of a user-defined gate into other gates that take some
-  function of the original gate's parameters
-* The linear re-combination of Hamiltonian terms with trainable coefficients.
+* Computing gate parameters of a compiled circuit, which are functions of the original gate parameters.
+* Computing linear combinations of expectations, for example when evaluating Hamiltonians term-by-term.
 
 There are some devices where the execution of the quantum circuit is also tracked by the
 autodifferentiation framework. This is possible if the device is a simulator that is
