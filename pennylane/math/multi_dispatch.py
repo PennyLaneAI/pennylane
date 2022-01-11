@@ -83,7 +83,7 @@ def _multi_dispatch(values):
     return "numpy"
 
 
-def multi_dispatch(argnum=None, tensor_lists=None):
+def multi_dispatch(argnum=None, tensor_list=None):
     """Decorater to dispatch arguments handled by the interface.
 
     This helps simplify definitions of new functions inside pennylane. Instead of writing
@@ -123,23 +123,23 @@ def multi_dispatch(argnum=None, tensor_lists=None):
     ** Examples **
     We can redefine external functions to be suitable for pennylane. Here, we
     redefine autoray's `stack` function:
-    >>> stack = multi_dispatch(argnum=0, tensor_lists=0)(autoray.numpy.stack)
+    >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     """
 
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            argnum = argnum or list(range(len(args)))
-            tensor_lists = tensor_lists or []
+            argnums = argnum or list(range(len(args)))
+            tensor_lists = tensor_list or []
 
-            if not isinstance(argnum, Sequence):
-                argnum = [argnum]
+            if not isinstance(argnums, Sequence):
+                argnums = [argnums]
             if not isinstance(tensor_lists, Sequence):
                 tensor_lists = [tensor_lists]
 
             dispatch_args = []
 
-            for a in argnum:
+            for a in argnums:
                 if a in tensor_lists:
                     dispatch_args.extend(args[a])
                 else:
@@ -150,7 +150,7 @@ def multi_dispatch(argnum=None, tensor_lists=None):
             kwargs["like"] = interface
 
             return fn(*args, **kwargs)
-
+        return wrapper
     return decorator
 
 def block_diag(values):
