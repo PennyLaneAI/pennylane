@@ -88,7 +88,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     The output and its format depend on the backend:
 
     .. list-table:: Output format of ``classical_jacobian``
-       :widths: 25 25 25 25
+       :widths: 15 30 25 30
        :header-rows: 1
 
        * - Interface
