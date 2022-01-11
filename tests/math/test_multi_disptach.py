@@ -13,13 +13,13 @@
 # limitations under the License.
 """ Assertion test for multi_dispatch function/decorator
 """
-from pennylane import numpy as np
-from pennylane import math as fn
 import autoray
 import numpy as onp
 import pytest
+from pennylane import numpy as np
+from pennylane import math as fn
 
-    
+
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 
@@ -40,5 +40,3 @@ def test_multi_dispatch_stack(x):
     res = stack(x)
     print(res)
     assert fn.allequal(res, [[1., 0.],[ 2., 3.]])
-
-
