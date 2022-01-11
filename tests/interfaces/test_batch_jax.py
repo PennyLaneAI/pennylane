@@ -365,6 +365,22 @@ execute_kwargs = [
         "mode": "backward",
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
+
+    # With jacobian support
+    {
+        "gradient_fn": param_shift,
+        "gradient_kwargs": {"jac_support": True},
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True, "jac_support": True},
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "backward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "jac_support": True},
+    },
 ]
 
 
@@ -614,6 +630,10 @@ class TestJaxExecuteIntegration:
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent trainable
         parameters."""
+        jac_support = execute_kwargs.get("gradient_kwargs", {}).get("jac_support", False)
+        if not jac_support:
+            pytest.skip("Jacobian supported is not turned on for this test case.")
+
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
@@ -634,6 +654,10 @@ class TestJaxExecuteIntegration:
 
     def test_multiple_expvals(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
+        jac_support = execute_kwargs.get("gradient_kwargs", {}).get("jac_support", False)
+        if not jac_support:
+            pytest.skip("Jacobian supported is not turned on for this test case.")
+
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 

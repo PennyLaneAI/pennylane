@@ -68,10 +68,10 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
-    use_id_tap = _need_id_tap(tapes)
+    vector_valued = gradient_kwargs.pop("jac_support", False)
 
     if gradient_fn is None:
-        exec_fwd = _execute_with_fwd if not use_id_tap else _execute_with_fwd_id_tap
+        exec_fwd = _execute_with_fwd if not vector_valued else _execute_with_fwd_id_tap
         return exec_fwd(
             parameters,
             tapes=tapes,
@@ -81,7 +81,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    execute_func = _execute if not use_id_tap else _execute_id_tap
+    execute_func = _execute if not vector_valued else _execute_id_tap
     return execute_func(
         parameters,
         tapes=tapes,
@@ -91,26 +91,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_kwargs=gradient_kwargs,
         _n=_n,
     )
-
-
-def _need_id_tap(tapes):
-    """Validates that the input tapes are compatible with JAX support.
-
-    Raises:
-        ValueError: if tapes with non-scalar outputs were provided or a return
-        type other than variance and expectation value was used
-    """
-    for t in tapes:
-
-        if len(t.observables) != 1:
-            return True
-
-        for o in t.observables:
-            return_type = o.return_type
-            if return_type is not Variance and return_type is not Expectation:
-                return True
-
-        return False
 
 
 def _execute(
