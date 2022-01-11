@@ -59,7 +59,7 @@ def test_barrier_adjoint():
 
     @qml.qnode(dev)
     def my_circuit():
-        qml.adjoint(qml.Barrier)(wires=0)
+        adjoint(qml.Barrier)(wires=0)
         return qml.state()
 
     assert my_circuit()[0] == 1.0
@@ -99,6 +99,26 @@ def test_nested_adjoint_on_function():
     )
 
 
+with qml.tape.JacobianTape() as tape:
+    qml.PauliX(0)
+    qml.Hadamard(1)
+
+noncallable_objects = [
+    qml.RX(0.2, wires=0),
+    qml.AngleEmbedding(list(range(2)), wires=range(2)),
+    [qml.Hadamard(1), qml.RX(-0.2, wires=1)],
+    tape,
+]
+
+
+@pytest.mark.parametrize("obj", noncallable_objects)
+def test_error_adjoint_on_noncallable(obj):
+    """Test that an error is raised if qml.adjoint is applied to an object that
+    is not callable, as it silently does not have any effect on those."""
+    with pytest.raises(ValueError, match=f"{type(obj)} is not callable."):
+        adjoint(obj)
+
+
 class TestOutsideOfQueuing:
     """Test that operations and templates work with the adjoint transform when
     created outside of a queuing context"""
@@ -109,7 +129,7 @@ class TestOutsideOfQueuing:
     def test_single_op_non_param_adjoint(self, op, wires):
         """Test that the adjoint correctly inverts non-parametrized
         operations"""
-        op_adjoint = qml.adjoint(op)(wires=wires)
+        op_adjoint = adjoint(op)(wires=wires)
         expected = op(wires=wires).adjoint()
 
         assert type(op_adjoint) == type(expected)
@@ -121,7 +141,7 @@ class TestOutsideOfQueuing:
     def test_single_op_param_adjoint(self, op, par, wires):
         """Test that the adjoint correctly inverts operations with a single
         parameter"""
-        param_op_adjoint = qml.adjoint(op)(*par, wires=wires)
+        param_op_adjoint = adjoint(op)(*par, wires=wires)
         expected = op(*par, wires=wires).adjoint()
 
         assert type(param_op_adjoint) == type(expected)
@@ -136,7 +156,7 @@ class TestOutsideOfQueuing:
     @pytest.mark.parametrize("template, par, wires", template_ops)
     def test_templates_adjoint(self, template, par, wires):
         """Test that the adjoint correctly inverts templates"""
-        res = qml.adjoint(template)(*par, wires=wires)
+        res = adjoint(template)(*par, wires=wires)
         result = res if hasattr(res, "__iter__") else [res]  # handle single operation case
         expected_ops = template(*par, wires=wires)
 
@@ -150,7 +170,7 @@ class TestOutsideOfQueuing:
     def test_cv_template_adjoint(self):
         """Test that the adjoint correctly inverts CV templates"""
         template, par, wires = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]
-        result = qml.adjoint(template)(*par, wires=wires).expand().operations
+        result = adjoint(template)(*par, wires=wires).expand().operations
         expected_ops = template(*par, wires=wires).expand().operations
 
         for o1, o2 in zip(result, reversed(expected_ops)):

@@ -192,10 +192,10 @@ class TestQNodeIntegration:
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
 
-    def test_probs_jax_jit(self, tol):
-        """Test that returning probs works with jax and jit"""
+    def test_custom_shots_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit when using custom shot vector"""
         dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
-        expected = jnp.array([0.0, 1.0])
+        expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -203,10 +203,8 @@ class TestQNodeIntegration:
             qml.PauliX(wires=0)
             return qml.probs()
 
-        with pytest.raises(
-            ValueError, match="doesn't support getting probabilities when using a shot vector"
-        ):
-            result = circuit()
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
