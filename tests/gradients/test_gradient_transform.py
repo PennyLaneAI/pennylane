@@ -157,10 +157,6 @@ class TestGradientTransformIntegration:
 
     # TODO: Include the following test once the gradient_transform is fixed regarding the
     # usage of qml.math.squeeze.
-    # @pytest.mark.skip(
-    # "This test fails because of the usage of squeeze on the quantum"
-    # "Jacobian, which is incompatible with input arguments that have an axis of size 1."
-    # )
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
@@ -200,11 +196,6 @@ class TestGradientTransformIntegration:
 
     # TODO: Include the following test once the gradient_transform is fixed regarding the
     # usage of qml.math.squeeze.
-    # @pytest.mark.skip(
-    # "This test fails because of the usage of squeeze on the quantum"
-    # "Jacobian, which is incompatible with input arguments that have one or multiple"
-    # "axes of size 1, and with circuits that have a single gate."
-    # )
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
@@ -223,10 +214,6 @@ class TestGradientTransformIntegration:
 
     # TODO: Include the following test once the gradient_transform is fixed regarding the
     # usage of qml.math.squeeze.
-    # @pytest.mark.skip(
-    # "This test fails because of the usage of squeeze on the quantum"
-    # "Jacobian, which is incompatible with circuits that have a single gate."
-    # )
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""

@@ -153,8 +153,10 @@
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
 
   `qml.math.safe_squeeze` wraps `qml.math.squeeze`, with slight modifications:
+
   - When provided the `axis` keyword argument, axes that do not have size `1` will be
     ignored, instead of raising an error.
+
   - The keyword argument `exclude_axis` allows to explicitly exclude axes from the
     squeezing.
 
