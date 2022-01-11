@@ -13,7 +13,11 @@
 # limitations under the License.
 """
 This module contains functions for adding the JAX interface
-to a PennyLane Device class.
+using the experimental id_tap function to a PennyLane Device class.
+
+Note: as of JAX version 0.2.25, the id_tap function doesn't seem to support
+getting the gradient of jitted QNodes, but it supports using jax.jacobian with
+vector-valued QNodes (in contrast to host_callback.call).
 """
 
 # pylint: disable=too-many-arguments
@@ -21,7 +25,6 @@ import jax
 import jax.numpy as jnp
 from jax.experimental import host_callback
 
-import numpy as np
 import pennylane as qml
 
 dtype = jnp.float64
@@ -36,11 +39,12 @@ def _execute_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
     @jax.custom_vjp
     def wrapped_exec(params):
         result = []
 
-        def wrapper(p, t, device=None):
+        def wrapper(p, transforms, device=None):
             """Compute the forward pass."""
             new_tapes = []
 
