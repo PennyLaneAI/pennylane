@@ -380,7 +380,7 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None):
     if axis is None:
         if exclude_axis is None:
             return np.squeeze(tensor)
-        elif np.isscalar(exclude_axis):
+        if np.isscalar(exclude_axis):
             exclude_axis = [exclude_axis if exclude_axis >= 0 else num_axes + exclude_axis]
         else:
             exclude_axis = [(i if i >= 0 else num_axes + i) for i in exclude_axis]
@@ -397,7 +397,7 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None):
         ax -= num_axes - len(np.shape(tensor))
         try:
             tensor = np.squeeze(tensor, axis=ax)
-        except:
+        except ValueError:
             pass
     return tensor
 

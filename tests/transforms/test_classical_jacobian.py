@@ -128,7 +128,6 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
     qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
-    # NOTE: We use stacking to replicate qml.jacobian behaviour for equal-shaped inputs
     arg_shapes = [qml.math.shape(arg) for arg in args]
     if len(args) == 1:
         # For a single argument, the Jacobian is unpacked

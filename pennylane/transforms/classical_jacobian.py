@@ -94,7 +94,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
        * - Interface
          - ``argnum=None``
          - ``type(argnum)=int``
-         - ``type(argnum)=Sequence[int]``
+         - ``type(argnum) = Sequence[int]``
        * - ``'autograd'``
          - ``tuple(array)`` [1]
          - ``array``
