@@ -69,7 +69,7 @@ def _execute_id_tap(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
-            def non_diff_wrapper(args, t, device=None):
+            def non_diff_wrapper(args, transforms, device=None):
                 """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []
                 p = args
@@ -155,7 +155,7 @@ def _execute_with_fwd_id_tap(
         result = []
         jacobian = []
 
-        def wrapper(p, t, device):
+        def wrapper(p, transforms, device):
             """Compute the forward pass by returning the jacobian too."""
             new_tapes = []
 
@@ -173,8 +173,6 @@ def _execute_with_fwd_id_tap(
             jacs = [jax.device_put(jnp.array(r), device) for r in jacs]
             jacobian.extend(jacs)
 
-        fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
         host_callback.id_tap(wrapper, params, tap_with_device=True)
         return result, jacobian
 
