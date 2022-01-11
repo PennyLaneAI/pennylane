@@ -59,15 +59,17 @@ def _add_op(op, layer_str, wire_map, decimals):
 
 def _add_measurement(m, layer_str, wire_map, decimals):
     """Updates ``layer_str`` with the ``m`` measurement. """
+    layer_str = _add_grouping_symbols(m, layer_str, wire_map)
+
     obs_label = "" if m.obs is None else m.obs.label(decimals=decimals).replace("\n", "")
     meas_label = measurement_label_map[m.return_type](obs_label)
 
     if len(m.wires) == 0: # state or probability across all wires
         for _, w in wire_map.items():
-            layer_str[w] = meas_label
+            layer_str[w] += meas_label
 
     for w in m.wires:
-        layer_str[wire_map[w]] = meas_label
+        layer_str[wire_map[w]] += meas_label
     return layer_str
 
 
@@ -208,10 +210,9 @@ def tape_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
                 finished_lines += totals
                 finished_lines[-1] += "\n"
                 totals = [filler] * n_wires
-                line_length = 1
+                line_length = 1 + max_label_len
 
             totals = [filler.join([t, s]) for t, s in zip(totals, layer_str)]
-        
         if ender:
             totals = [s + "─┤" for s in totals]
 
