@@ -55,10 +55,9 @@
   ```pycon
   >>> x = np.array(0.8, requires_grad=True)
   >>> Y = np.array([-0.2, 1.5], requires_grad=True)
-  >>> cost_init = qnode(x, Y)
   >>> opt = qml.RotosolveOptimizer()
   >>> for _ in range(2):
-  ...     x, Y = opt.step(qnode, x, Y, spectra=spectra)
+  ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
   ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
   New cost: 0.0 reached via substeps [-0.  0.  0.]
   New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
