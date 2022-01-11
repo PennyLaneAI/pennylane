@@ -23,4 +23,4 @@ def test_multi_dispatch():
     stack = qml.math.multi_dispatch.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     result = stack(x)
     expected = onp.stack(x)
-    assert result == expected
+    assert (result == expected).all()
