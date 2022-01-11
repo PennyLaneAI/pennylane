@@ -505,10 +505,7 @@ class TestQNode:
                     [-tf.sin(x) / 2, tf.sin(x) / 2],
                     [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
                 ],
-                [
-                    [0, 0],
-                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
-                ],
+                [[0, 0], [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -534,11 +531,7 @@ class TestQNode:
             res = circuit(x, y)
 
         expected = np.array(
-            [
-                tf.cos(x),
-                (1 + tf.cos(x) * tf.cos(y)) / 2,
-                (1 - tf.cos(x) * tf.cos(y)) / 2,
-            ]
+            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2,]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -963,8 +956,7 @@ def qtransform(qnode, a, framework=tf):
 
 
 @pytest.mark.parametrize(
-    "dev_name,diff_method",
-    [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")],
+    "dev_name,diff_method", [("default.qubit", "finite-diff"), ("default.qubit.tf", "backprop")],
 )
 def test_transform(dev_name, diff_method, tol):
     """Test an example transform"""

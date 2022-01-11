@@ -178,8 +178,7 @@ optimizer_kwargs = [
     list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs)),
 )
 @pytest.mark.parametrize(
-    "optimizer, optimizer_kwargs",
-    list(zip(optimizers, optimizer_kwargs)),
+    "optimizer, optimizer_kwargs", list(zip(optimizers, optimizer_kwargs)),
 )
 class TestWithClassicalFunctions:
     def test_number_of_function_calls(
@@ -216,11 +215,7 @@ class TestWithClassicalFunctions:
         opt = RotosolveOptimizer()
 
         new_param_step = opt.step(
-            fun,
-            *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            fun, *param, num_freqs=num_freq, optimizer=optimizer, optimizer_kwargs=optimizer_kwargs,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -234,11 +229,7 @@ class TestWithClassicalFunctions:
         )
 
         new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            fun, *param, num_freqs=num_freq, optimizer=optimizer, optimizer_kwargs=optimizer_kwargs,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -296,11 +287,7 @@ def test_multiple_steps(fun, x_min, param, num_freq):
     optimizer_kwargs = None
     for _ in range(3):
         param = opt.step(
-            fun,
-            *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            fun, *param, num_freqs=num_freq, optimizer=optimizer, optimizer_kwargs=optimizer_kwargs,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(x_min) == 1:
@@ -350,12 +337,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
         opt = RotosolveOptimizer()
 
-        new_param_step = opt.step(
-            fun,
-            *param,
-            num_freqs=num_freq,
-            optimizer="brute",
-        )
+        new_param_step = opt.step(fun, *param, num_freqs=num_freq, optimizer="brute",)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step = (new_param_step,)
@@ -368,10 +350,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         )
 
         new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            num_freqs=num_freq,
-            optimizer="brute",
+            fun, *param, num_freqs=num_freq, optimizer="brute",
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -441,12 +420,10 @@ qnode_num_freqs = [
 
 
 @pytest.mark.parametrize(
-    "qnode, param, num_freq",
-    list(zip(qnodes, qnode_params, qnode_num_freqs)),
+    "qnode, param, num_freq", list(zip(qnodes, qnode_params, qnode_num_freqs)),
 )
 @pytest.mark.parametrize(
-    "optimizer, optimizer_kwargs",
-    list(zip(optimizers, optimizer_kwargs)),
+    "optimizer, optimizer_kwargs", list(zip(optimizers, optimizer_kwargs)),
 )
 class TestWithQNodes:
     def test_single_step(self, qnode, param, num_freq, optimizer, optimizer_kwargs):

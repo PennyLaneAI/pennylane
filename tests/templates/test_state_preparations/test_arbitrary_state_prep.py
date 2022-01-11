@@ -204,12 +204,7 @@ class TestAttributes:
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
-        "n_wires, expected_shape",
-        [
-            (3, (14,)),
-            (1, (2,)),
-            (2, (6,)),
-        ],
+        "n_wires, expected_shape", [(3, (14,)), (1, (2,)), (2, (6,)),],
     )
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""

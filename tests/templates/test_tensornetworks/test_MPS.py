@@ -25,12 +25,7 @@ class TestIndicesMPS:
     """Test function that computes MPS indices"""
 
     @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
-            (5, 3),
-            (9, 5),
-            (11, 7),
-        ],
+        ("n_wires", "n_block_wires"), [(5, 3), (9, 5), (11, 7),],
     )
     def test_exception_n_block_wires_uneven(self, n_wires, n_block_wires):
         """Verifies that an exception is raised if n_block_wires is not even."""
@@ -41,12 +36,7 @@ class TestIndicesMPS:
             compute_indices_MPS(range(n_wires), n_block_wires)
 
     @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
-            (3, 4),
-            (6, 8),
-            (10, 14),
-        ],
+        ("n_wires", "n_block_wires"), [(3, 4), (6, 8), (10, 14),],
     )
     def test_exception_n_block_wires_large(self, n_wires, n_block_wires):
         """Verifies that an exception is raised when n_block_wires is too large."""
@@ -71,12 +61,7 @@ class TestIndicesMPS:
             compute_indices_MPS(range(n_wires), n_block_wires)
 
     @pytest.mark.parametrize(
-        ("n_wires", "n_block_wires"),
-        [
-            (5, 4),
-            (9, 4),
-            (7, 6),
-        ],
+        ("n_wires", "n_block_wires"), [(5, 4), (9, 4), (7, 6),],
     )
     def test_warning_many_wires(self, n_wires, n_block_wires):
         """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
@@ -178,8 +163,7 @@ class TestAttributes:
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
-        ("wires", "n_block_wires"),
-        [(range(7), 4), (range(13), 6)],
+        ("wires", "n_block_wires"), [(range(7), 4), (range(13), 6)],
     )
     def test_get_n_blocks_warning(self, wires, n_block_wires):
         """Test that get_n_blocks() warns the user when there are too many wires."""
@@ -208,8 +192,7 @@ class TestAttributes:
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
-        ("wires", "n_block_wires"),
-        [(range(4), 5), (range(9), 20)],
+        ("wires", "n_block_wires"), [(range(4), 5), (range(9), 20)],
     )
     def test_get_n_blocks(self, wires, n_block_wires):
         """Test that the number of blocks attribute raises an error when n_block_wires is too large."""

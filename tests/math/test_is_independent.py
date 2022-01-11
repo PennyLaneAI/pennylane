@@ -407,11 +407,7 @@ if have_tf:
 
         args_dependent = [
             (tf.Variable(0.1), np.array(-2.1), tf.Variable(-0.9)),
-            (
-                tf.Variable(
-                    np.ones((3, 8)) * 1.1,
-                ),
-            ),
+            (tf.Variable(np.ones((3, 8)) * 1.1,),),
             *args_dependent_lambdas,
         ]
 

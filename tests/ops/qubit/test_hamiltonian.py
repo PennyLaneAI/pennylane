@@ -161,10 +161,7 @@ simplify_hamiltonians = [
         ),
         qml.Hamiltonian([], []),
     ),
-    (
-        qml.Hamiltonian([0], [qml.Identity(0)]),
-        qml.Hamiltonian([0], [qml.Identity(0)]),
-    ),
+    (qml.Hamiltonian([0], [qml.Identity(0)]), qml.Hamiltonian([0], [qml.Identity(0)]),),
 ]
 
 equal_hamiltonians = [
@@ -356,11 +353,7 @@ mul_hamiltonians = [
         ),
     ),
     # The result is the zero Hamiltonian
-    (
-        0,
-        qml.Hamiltonian([1], [qml.PauliX(0)]),
-        qml.Hamiltonian([0], [qml.PauliX(0)]),
-    ),
+    (0, qml.Hamiltonian([1], [qml.PauliX(0)]), qml.Hamiltonian([0], [qml.PauliX(0)]),),
     (
         0,
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -1246,10 +1239,7 @@ class TestHamiltonianDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(
                 qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
+                    coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, grouping_type=group,
                 )
             )
 
@@ -1281,12 +1271,7 @@ class TestHamiltonianDifferentiation:
         def circuit(param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)],))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(param)
@@ -1319,10 +1304,7 @@ class TestHamiltonianDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(
                 qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
+                    coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, grouping_type=group,
                 )
             )
 
@@ -1389,10 +1371,7 @@ class TestHamiltonianDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(
                 qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
+                    coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, grouping_type=group,
                 )
             )
 
@@ -1461,10 +1440,7 @@ class TestHamiltonianDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(
                 qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
+                    coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, grouping_type=group,
                 )
             )
 
@@ -1504,12 +1480,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)],))
 
         res = circuit(coeffs, param)
         res.backward()
@@ -1550,10 +1521,7 @@ class TestHamiltonianDifferentiation:
             qml.RY(param, wires=0)
             return qml.expval(
                 qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
+                    coeffs, [qml.PauliX(0), qml.PauliZ(0)], simplify=simplify, grouping_type=group,
                 )
             )
 
@@ -1592,12 +1560,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)],))
 
         with tf.GradientTape() as tape:
             res = circuit(coeffs, param)
@@ -1633,12 +1596,7 @@ class TestHamiltonianDifferentiation:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)],))
 
         grad_fn = qml.grad(circuit)
         with pytest.raises(

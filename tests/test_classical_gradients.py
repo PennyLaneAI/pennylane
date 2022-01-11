@@ -88,10 +88,7 @@ class TestGradientMultiVar:
         """Tests gradients with a multivariate exp and tanh."""
         multi_var = lambda x: np.exp(x[0] / 3) * np.tanh(x[1])
         grad_multi_var = lambda x: np.array(
-            [
-                np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
-            ]
+            [np.exp(x[0] / 3) / 3 * np.tanh(x[1]), np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),]
         )
         x_vec = np.random.uniform(-5, 5, size=(2))
         g = qml.grad(multi_var, 0)

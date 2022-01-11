@@ -220,11 +220,7 @@ class TestInputs:
             (np.ones((4, 3)), 4, "Weights tensor must"),
             (np.ones((4, 2, 2)), 4, "Weights tensor must"),
             (np.ones((4, 3, 1)), 4, "Weights tensor must"),
-            (
-                np.ones((4, 3, 1)),
-                1,
-                "Expected the number of qubits",
-            ),
+            (np.ones((4, 3, 1)), 1, "Expected the number of qubits",),
         ],
     )
     def test_exceptions(self, weights, n_wires, msg_match):
@@ -255,11 +251,7 @@ class TestAttributes:
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected_shape",
-        [
-            (2, 3, (2, 2, 2)),
-            (2, 2, (2, 1, 2)),
-        ],
+        "n_layers, n_wires, expected_shape", [(2, 3, (2, 2, 2)), (2, 2, (2, 1, 2)),],
     )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""

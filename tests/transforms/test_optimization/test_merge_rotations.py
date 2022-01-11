@@ -26,10 +26,7 @@ class TestMergeRotations:
 
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
-        [
-            (0.3, -0.2, [qml.RZ(0.1, wires=0)]),
-            (0.15, -0.15, []),
-        ],
+        [(0.3, -0.2, [qml.RZ(0.1, wires=0)]), (0.15, -0.15, []),],
     )
     def test_one_qubit_rotation_merge(self, theta_1, theta_2, expected_ops):
         """Test that a single-qubit circuit with adjacent rotation along the same
@@ -217,10 +214,7 @@ class TestMergeRotations:
 
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
-        [
-            (0.3, -0.2, [qml.CRY(0.1, wires=["w1", "w2"])]),
-            (0.15, -0.15, []),
-        ],
+        [(0.3, -0.2, [qml.CRY(0.1, wires=["w1", "w2"])]), (0.15, -0.15, []),],
     )
     def test_controlled_rotation_merge(self, theta_1, theta_2, expected_ops):
         """Test that adjacent controlled rotations on the same wires in same order get merged."""

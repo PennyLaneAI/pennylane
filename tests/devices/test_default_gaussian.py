@@ -110,8 +110,7 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        DeviceError,
-        match=msg,
+        DeviceError, match=msg,
     ):
         qml.device("default.gaussian", wires=1, shots=1, analytic=True)
 

@@ -140,15 +140,11 @@ class TestDecomposition:
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
             qml.QuantumPhaseEstimation(
-                qml.PauliX.matrix,
-                target_wires=[0],
-                estimation_wires=[1, 2],
+                qml.PauliX.matrix, target_wires=[0], estimation_wires=[1, 2],
             )
 
             qml.adjoint(qml.QuantumPhaseEstimation)(
-                qml.PauliX.matrix,
-                target_wires=[0],
-                estimation_wires=[1, 2],
+                qml.PauliX.matrix, target_wires=[0], estimation_wires=[1, 2],
             )
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)

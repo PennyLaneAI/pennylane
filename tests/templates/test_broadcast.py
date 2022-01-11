@@ -195,11 +195,7 @@ class TestBuiltinPatterns:
             assert isinstance(gate, target_gate)
 
     @pytest.mark.parametrize(
-        "pars1, pars2, gate",
-        [
-            ([[], [], []], None, T),
-            ([1, 2, 3], [[1], [2], [3]], RX),
-        ],
+        "pars1, pars2, gate", [([[], [], []], None, T), ([1, 2, 3], [[1], [2], [3]], RX),],
     )
     def test_correct_queue_same_gate_unitary_different_parameter_formats(self, pars1, pars2, gate):
         """Tests that specific parameter inputs have the same output."""

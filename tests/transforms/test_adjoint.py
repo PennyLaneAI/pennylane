@@ -327,11 +327,7 @@ class TestTemplateIntegration:
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
-        "template",
-        [
-            qml.templates.ParticleConservingU1,
-            qml.templates.ParticleConservingU2,
-        ],
+        "template", [qml.templates.ParticleConservingU1, qml.templates.ParticleConservingU2,],
     )
     def test_particle_conserving(self, template):
         """Test that the adjoint correctly inverts particle conserving layers"""

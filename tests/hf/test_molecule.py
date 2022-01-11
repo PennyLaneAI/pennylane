@@ -26,10 +26,7 @@ class TestMolecule:
     """Tests for generating a molecule object."""
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry"),
-        [
-            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
-        ],
+        ("symbols", "geometry"), [(["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),],
     )
     def test_build_molecule(self, symbols, geometry):
         r"""Test that the generated molecule object has the correct type."""
@@ -37,10 +34,7 @@ class TestMolecule:
         assert isinstance(mol, Molecule)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry"),
-        [
-            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
-        ],
+        ("symbols", "geometry"), [(["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),],
     )
     def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
@@ -48,10 +42,7 @@ class TestMolecule:
             Molecule(symbols, geometry, basis_name="6-31g")
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry"),
-        [
-            (["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
-        ],
+        ("symbols", "geometry"), [(["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),],
     )
     def test_symbol_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong/not-supported atomic symbol is entered."""
@@ -60,9 +51,7 @@ class TestMolecule:
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "charge", "mult", "basis_name"),
-        [
-            (["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 1, "sto-3g"),
-        ],
+        [(["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 0, 1, "sto-3g"),],
     )
     def test_default_inputs(self, symbols, geometry, charge, mult, basis_name):
         r"""Test that the molecule object contains correct default molecular input data."""
@@ -76,15 +65,7 @@ class TestMolecule:
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges"),
-        [
-            (
-                ["H", "F"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-                10,
-                6,
-                [1, 9],
-            ),
-        ],
+        [(["H", "F"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]), 10, 6, [1, 9],),],
     )
     def test_molecule_data(self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges):
         r"""Test that the molecule object contains correct molecular data."""

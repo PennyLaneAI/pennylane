@@ -199,11 +199,7 @@ class TestOperations:
 
     numeric_queues = [
         [qml.RX(0.3, wires=[0])],
-        [
-            qml.RX(0.3, wires=[0]),
-            qml.RX(0.4, wires=[1]),
-            qml.RX(0.5, wires=[2]),
-        ],
+        [qml.RX(0.3, wires=[0]), qml.RX(0.4, wires=[1]), qml.RX(0.5, wires=[2]),],
     ]
 
     observables = [[qml.PauliZ(0)], [qml.PauliX(0)], [qml.PauliY(0)]]

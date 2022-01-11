@@ -171,9 +171,7 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    def test_exception_fewer_qubits_than_features(
-        self,
-    ):
+    def test_exception_fewer_qubits_than_features(self,):
         """Verifies that exception raised if there are fewer
         wires than features."""
 
@@ -223,12 +221,7 @@ class TestInputs:
             circuit()
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected_shape",
-        [
-            (2, 3, (2, 6)),
-            (2, 1, (2, 1)),
-            (2, 2, (2, 3)),
-        ],
+        "n_layers, n_wires, expected_shape", [(2, 3, (2, 6)), (2, 1, (2, 1)), (2, 2, (2, 3)),],
     )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""

@@ -33,9 +33,7 @@ class TestCreateExpandFn:
     def test_create_expand_fn(self):
         """Test creation of expand_fn."""
         expand_fn = qml.transforms.create_expand_fn(
-            depth=10,
-            stop_at=self.crit_0,
-            docstring=self.doc_0,
+            depth=10, stop_at=self.crit_0, docstring=self.doc_0,
         )
         assert expand_fn.__doc__ == "Test docstring."
 
