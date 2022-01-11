@@ -281,7 +281,7 @@
 
   The keyword arguments `optimizer` and `optimizer_kwargs` for the
   `RotosolveOptimizer` have been renamed to `substep_optimizer`
-  and `substep_kwargs`, respectively. Furthermore they have been 
+  and `substep_kwargs`, respectively. Furthermore they have been
   moved from `step` and `step_and_cost` to the initialization `__init__`.
 
   The keyword argument `num_freqs` has been renamed to `nums_frequency`
