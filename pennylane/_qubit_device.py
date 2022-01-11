@@ -887,7 +887,7 @@ class QubitDevice(Device):
             if m.return_type is not qml.operation.Expectation:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
-                    f" measurement {m.return_type.value}"
+                    f" measurement {m.return_type.runtime_value}"
                 )
 
             if m.obs.name == "Hamiltonian":

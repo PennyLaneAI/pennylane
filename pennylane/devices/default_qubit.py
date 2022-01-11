@@ -164,8 +164,6 @@ class DefaultQubit(QubitDevice):
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
 
-        self._classical_vars = {}
-
         self._apply_ops = {
             "MidCircuitMeasure": self._apply_mid_circuit_measure,
             "PauliX": self._apply_x,
@@ -240,9 +238,7 @@ class DefaultQubit(QubitDevice):
         wires = operation.wires
 
         if operation.base_name == "RuntimeOp":
-            op_class = operation.parameters[0]
-            operation = op_class(self._classical_vars[operation.parameters[1]], do_queue=False, wires=operation.wires)
-            print("hello!")
+            operation = operation.create_op()
 
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
@@ -258,11 +254,9 @@ class DefaultQubit(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _apply_mid_circuit_measure(self, state, axes, **kwargs):
+    def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
         num_qubits = len(state.shape)
         axis = axes[0]
-
-        op_object = kwargs["op_object"]
 
         # get first slice
         slicer_0 = [slice(None)] * num_qubits
@@ -280,7 +274,7 @@ class DefaultQubit(QubitDevice):
 
         # make measurement
         result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
-        self._classical_vars[op_object.classical_var_name] = result
+        op_object.runtime_value = result
 
         # collapse state and reset qubit
         if result == 0:
