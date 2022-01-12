@@ -337,7 +337,7 @@ Here are a few more tips for adding operators:
   be added soon in a different context.
 
 * *Write good docstrings.* Explain what your operator does in a clear docstring with ample examples.
-  You find more about Pennylane standards in :doc:`/development/guide/documentation`.
+  You find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 
 * *Efficient representations.* Try to implement representations as efficiently as possible, since they may
   be constructed several times.
