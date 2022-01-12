@@ -566,12 +566,13 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     **Example**
 
     >>> symbols = ['H', 'H']
-    >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
     >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-    >>> paulix_sector = qml.hf.optimal_sector(H, generators, 2)
-    >>> qml.hf.transform_hartree_fock(generators, pauli_x_ops, paulix_sector, 2, 4)
+    >>> paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
+    >>> qml.hf.transform_hf(generators, pauli_x_ops, paulix_sector, 
+                            mol.n_electrons, len(H.wires))
         [1]
     """
 

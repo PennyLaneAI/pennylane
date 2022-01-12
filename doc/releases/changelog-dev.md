@@ -73,8 +73,7 @@
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
-  With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
-  on a reduced number of qubits.
+  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respecitvely.
 
   ```python
   symbols = ["H", "H"]
@@ -82,16 +81,20 @@
   mol = qml.hf.Molecule(symbols, geometry)
   H = qml.hf.generate_hamiltonian(mol)(geometry)
   generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
-  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
+  opt_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
+  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  hf_tapered = qml.hf.transform_hf(generators, pauli_x_ops, paulix_sector,
+                                    mol.n_electrons, len(H.wires))      
   ```
-
   ```pycon
   >>> print(H_tapered)
     ((-0.321034397355719+0j)) [I0]
   + ((0.1809270275619743+0j)) [X0]
   + ((0.7959678503870796+0j)) [Z0]
+  >>> print(hf_tapered)
+    [1]
   ```
+  
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
