@@ -21,7 +21,7 @@ from pennylane import numpy as np
 
 class TestParameterShiftHessian:
     """Test the general functionality of the param_shift_hessian method
-       on the default interface (autograd)"""
+    on the default interface (autograd)"""
 
     def test_single_two_term_gate(self):
         """Test that the correct hessian is calculated for a QNode with single RX operator
@@ -544,7 +544,7 @@ class TestInterfaces:
         x_torch = torch.tensor([0.1, 0.2], dtype=torch.float64, requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
-        circuit.interface = 'torch'
+        circuit.interface = "torch"
         hess = qml.gradients.param_shift_hessian(circuit)(x_torch)[0]
 
         assert np.allclose(expected, hess.detach())
@@ -591,7 +591,7 @@ class TestInterfaces:
         x_jax = jax.numpy.array([0.1, 0.2])
 
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
-        circuit.interface = 'jax'
+        circuit.interface = "jax"
         hess = qml.gradients.param_shift_hessian(circuit)(x_jax)
 
         assert np.allclose(expected, hess)
@@ -638,7 +638,7 @@ class TestInterfaces:
         x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
         expected = qml.jacobian(qml.jacobian(circuit))(x_np)
-        circuit.interface = 'tf'
+        circuit.interface = "tf"
         with tf.GradientTape():
             hess = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
 
