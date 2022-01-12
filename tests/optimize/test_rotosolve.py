@@ -14,6 +14,7 @@
 """
 Unit tests for the ``RotosolveOptimizer``.
 """
+import functools
 import pytest
 from scipy.optimize import shgo
 
@@ -53,72 +54,43 @@ def successive_params(par1, par2):
     return walking_param
 
 
-@pytest.mark.parametrize(
-    "fun, param, num_freq",
-    zip(
-        [
-            lambda x: np.sin(x),
-            lambda x: np.sin(x),
-            lambda x, y: np.sin(x) * np.sin(y),
-            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
-        ],
-        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
-        [[], [1, 1], [1], [1, 1, [1, 2]]],
-    ),
-)
-def test_wrong_len_num_freqs(fun, param, num_freq):
-    """Test that an error is raised for a different number of
-    numbers of frequencies than number of function arguments."""
+def test_error_missing_frequency_info():
+    """Test that an error is raised if neither nums_frequency nor spectra is given."""
 
     opt = RotosolveOptimizer()
+    fun = lambda x: x
+    x = np.array(0.5, requires_grad=True)
 
-    with pytest.raises(ValueError, match="The length of the provided numbers of frequencies"):
-        opt.step(fun, *param, num_freqs=num_freq)
+    with pytest.raises(ValueError, match="Neither the number of frequencies nor the"):
+        opt.step(fun, x)
 
 
-@pytest.mark.parametrize(
-    "fun, param, num_freq",
-    zip(
-        [
-            lambda x: np.sin(x),
-            lambda x: np.sin(x),
-            lambda x, y: np.sin(x) * np.sin(y),
-            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
-        ],
-        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
-        [[[1, 1]], [[]], [[1], [1, 1]], [[1], [1]]],
-    ),
-)
-def test_wrong_num_of_num_freqs_per_parameter(fun, param, num_freq):
-    """Test that an error is raised for a different number of
-    numbers of frequencies than number of function arguments."""
+def test_no_error_missing_frequency_info_untrainable():
+    """Test that no error is raised if neither nums_frequency nor spectra
+    is given for a parameter not marked as trainable."""
 
     opt = RotosolveOptimizer()
+    fun = lambda x, y: x
+    x = np.array(0.5, requires_grad=True)
+    y = np.array(0.1, requires_grad=False)
+    nums_frequency = {"x": {(): 1}}
 
-    with pytest.raises(ValueError, match="The number of the frequency counts"):
-        opt.step(fun, *param, num_freqs=num_freq)
+    opt.step(fun, x, y, nums_frequency=nums_frequency)
 
 
-@pytest.mark.parametrize(
-    "fun, param, num_freq",
-    zip(
-        [
-            lambda x: np.sin(x),
-            lambda x: np.sin(x),
-            lambda x, y: np.sin(x) * np.sin(y),
-            lambda x, y: np.sin(x) * np.sin(y[0]) * np.sin(y[1]),
-        ],
-        [[0.5], [0.5], [0.5, 0.2], [0.5, [0.2, 0.4]]],
-        [[0.1], [1.0], [1, 1.0], [1, [1, 2 + 1j]]],
-    ),
-)
-def test_wrong_typed_num_freqs(fun, param, num_freq):
-    """Test that an error is raised for a non-integer entry in the numbers of frequencies."""
+def test_error_missing_frequency_info_single_par():
+    """Test that an error is raised if neither nums_frequency nor spectra is given
+    for one of the function arguments."""
 
     opt = RotosolveOptimizer()
+    fun = lambda x: qml.math.sum(x)
+    x = np.arange(4, requires_grad=True)
+    nums_frequency = {"x": {(0,): 1, (1,): 1}}
+    spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
-    with pytest.raises(ValueError, match="The numbers of frequencies are expected to be integers."):
-        opt.step(fun, *param, num_freqs=num_freq)
+    # For the first three entries either nums_frequency or spectra is provided
+    with pytest.raises(ValueError, match=r"was provided for the entry \(3,\)"):
+        opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
 
 
 classical_functions = [
@@ -133,12 +105,15 @@ classical_functions = [
         - np.cos(2 * y[1] - 1.35) * 0.111
     ),
     lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
-    lambda x, y, z: -np.cos(x + 0.06)
-    - np.cos(2 * x + 0.12) * 0.872
-    + np.sin(y - 2.01 / 3 - np.pi / 3)
-    + np.sin(3 * y - 2.01)
-    - np.cos(z - 1.35) * 0.111,
+    lambda x, y, z: (
+        -np.cos(x + 0.06)
+        - np.cos(2 * x + 0.12) * 0.872
+        + np.sin(y - 2.01 / 3 - np.pi / 3)
+        + np.sin(3 * y - 2.01)
+        - np.cos(z - 1.35) * 0.111
+    ),
 ]
+
 classical_minima = [
     (-np.pi / 2 - 0.124,),
     ([-0.12, -np.pi / 2 + 2.01, 1.35],),
@@ -147,6 +122,7 @@ classical_minima = [
     (-0.12, -np.pi / 2 + 2.01, 1.35),
     (-0.12 / 2, (-np.pi / 2 + 2.01) / 3, 1.35),
 ]
+
 classical_params = [
     (0.24,),
     ([0.2, -0.3, 0.1],),
@@ -155,72 +131,104 @@ classical_params = [
     (0.1, 0.2, 0.5),
     (0.9, 0.7, 0.2),
 ]
-classical_num_freqs = [[1], [[1, 1, 1]], [1, [1, 1]], [1, 2], 1, [2, 3, 1]]
+
+classical_nums_frequency = [
+    {"x": {(): 1}},
+    {"x": {(0,): 1, (1,): 1, (2,): 1}},
+    {"x": {(): 1}, "y": {(0,): 1, (1,): 1}},
+    {"x": {(): 1}, "y": {(0,): 2, (1,): 2}},
+    {"x": {(): 1}, "y": {(): 1}, "z": {(): 1}},
+    {"x": {(): 2}, "y": {(): 3}, "z": {(): 1}},
+]
+
+classical_expected_num_calls = [3, 9, 9, 13, 9, 15]
 
 
 def custom_optimizer(fun, **kwargs):
     r"""Wrapper for ``scipy.optimize.shgo`` that does not return y_min."""
     opt_res = shgo(fun, **kwargs)
-    return opt_res.x, None
+    return opt_res.x[0], None
 
 
-optimizers = [None, "brute", "shgo", custom_optimizer]
-optimizer_kwargs = [
+substep_optimizers = ["brute", "shgo", custom_optimizer]
+all_substep_kwargs = [
     {"Ns": 93, "num_steps": 3},
-    None,
     {"bounds": ((-1.0, 1.0),), "n": 512},
     {"bounds": ((-1.1, 1.4),)},
 ]
 
 
 @pytest.mark.parametrize(
-    "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs)),
+    "fun, x_min, param, nums_freq, exp_num_calls",
+    list(
+        zip(
+            classical_functions,
+            classical_minima,
+            classical_params,
+            classical_nums_frequency,
+            classical_expected_num_calls,
+        )
+    ),
 )
 @pytest.mark.parametrize(
-    "optimizer, optimizer_kwargs",
-    list(zip(optimizers, optimizer_kwargs)),
+    "substep_optimizer, substep_kwargs",
+    list(zip(substep_optimizers, all_substep_kwargs)),
 )
-class TestWithClassicalFunctions:
+class TestWithClassicalFunction:
     def test_number_of_function_calls(
-        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
         global num_calls
         num_calls = 0
 
+        @functools.wraps(fun)
         def _fun(*args, **kwargs):
             global num_calls
             num_calls += 1
             return fun(*args, **kwargs)
 
-        opt = RotosolveOptimizer()
-        new_param = opt.step(
-            _fun,
-            *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
-        )
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
-        expected_num_calls = np.sum(
-            np.fromiter(_flatten(expand_num_freq(num_freq, param)), dtype=int) * 2 + 1
-        )
-        assert num_calls == expected_num_calls
+        # Parameters are not marked as trainable -> Expect only one execution for f0
+        new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
+        assert num_calls == 1
+        num_calls = 0
+
+        # Parameters are now marked as trainable -> Expect full number of executions
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
+        assert num_calls == exp_num_calls
 
     def test_single_step_convergence(
-        self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests convergence for easy classical functions in a single Rotosolve step.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        opt = RotosolveOptimizer()
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
+        # Without trainable parameters, param should not be changed
         new_param_step = opt.step(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
+        )
+        # The following accounts for the unpacking functionality for length-1 param
+        if len(param) == 1:
+            new_param_step = (new_param_step,)
+
+        assert np.allclose(
+            np.fromiter(_flatten(param), dtype=float),
+            np.fromiter(_flatten(new_param_step), dtype=float),
+            atol=1e-5,
+        )
+
+        # With trainable parameters, training should happen
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        new_param_step = opt.step(
+            fun,
+            *param,
+            nums_frequency=nums_freq,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -233,12 +241,11 @@ class TestWithClassicalFunctions:
             atol=1e-5,
         )
 
+        # Now with step_and_cost and trainable params
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -252,30 +259,29 @@ class TestWithClassicalFunctions:
         )
         assert np.isclose(old_cost, fun(*param))
 
-    def test_full_output(self, fun, x_min, param, num_freq, optimizer, optimizer_kwargs):
+    def test_full_output(
+        self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
+    ):
         """Tests the ``full_output`` feature of Rotosolve, delivering intermediate cost
         function values at the univariate optimization substeps."""
-        opt = RotosolveOptimizer()
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         _, y_output_step = opt.step(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
             full_output=True,
         )
         new_param, old_cost, y_output_step_and_cost = opt.step_and_cost(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_freq,
             full_output=True,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
-            new_param_step = (new_param,)
+            new_param = (new_param,)
         expected_intermediate_x = successive_params(param, new_param)
         expected_y_output = [fun(*par) for par in expected_intermediate_x[1:]]
 
@@ -286,23 +292,22 @@ class TestWithClassicalFunctions:
 
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_num_freqs)),
+    list(zip(classical_functions, classical_minima, classical_params, classical_nums_frequency)),
 )
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
-    opt = RotosolveOptimizer()
+    param = tuple(np.array(p, requires_grad=True) for p in param)
+    substep_optimizer = "brute"
+    substep_kwargs = None
+    opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
-    optimizer = "brute"
-    optimizer_kwargs = None
     for _ in range(3):
         param = opt.step(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=num_freq,
         )
-        # The following accounts for the unpacking functionality for length-1 param
+        # The following accounts for the unpacking functionality for length-one param
         if len(x_min) == 1:
             param = (param,)
 
@@ -326,10 +331,18 @@ classical_minima_deact = [
 ]
 classical_params_deact = [
     (np.array(0.24, requires_grad=False),),
-    (0.3, np.array([0.8, 0.1], requires_grad=False)),
-    (0.1, np.array(0.2, requires_grad=False), 0.5),
+    (np.array(0.3, requires_grad=True), np.array([0.8, 0.1], requires_grad=False)),
+    (
+        np.array(0.1, requires_grad=True),
+        np.array(0.2, requires_grad=False),
+        np.array(0.5, requires_grad=True),
+    ),
 ]
-classical_num_freqs_deact = [[], [1], 1]
+classical_nums_frequency_deact = [
+    {"x": {(): 1}},
+    {"x": {(): 1}, "y": {(0,): 1, (1,): 1}},
+    {"x": {(): 1}, "y": {(): 1}, "z": {(): 1}},
+]
 
 
 @pytest.mark.parametrize(
@@ -339,7 +352,7 @@ classical_num_freqs_deact = [[], [1], 1]
             classical_functions_deact,
             classical_minima_deact,
             classical_params_deact,
-            classical_num_freqs_deact,
+            classical_nums_frequency_deact,
         )
     ),
 )
@@ -348,13 +361,14 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         """Tests convergence for easy classical functions in a single Rotosolve step
         with some arguments deactivated for training.
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
-        opt = RotosolveOptimizer()
+        substep_optimizer = "brute"
+        substep_kwargs = None
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         new_param_step = opt.step(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer="brute",
+            nums_frequency=num_freq,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -370,8 +384,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             fun,
             *param,
-            num_freqs=num_freq,
-            optimizer="brute",
+            nums_frequency=num_freq,
         )
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
@@ -433,32 +446,44 @@ qnode_params = [
     (np.array([0.1, -0.3, 2.9]), 1.3, [0.2, 0.1]),
     (1.2, -2.3, -0.2),
 ]
-qnode_num_freqs = [
-    [num_wires],
-    [1, 2 * num_wires, [1, 2]],
-    num_wires,
+qnode_nums_frequency = [
+    {"x": {(): num_wires}},
+    {"x": {(0,): 1, (1,): 1, (2,): 1}, "y": {(): 2 * num_wires}, "z": {(0,): 1, (1,): 2}},
+    None,
+]
+qnode_spectra = [
+    None,
+    None,
+    {
+        "x": {(): list(range(num_wires + 1))},
+        "y": {(): list(range(num_wires + 1))},
+        "z": {(): list(range(num_wires + 1))},
+    },
 ]
 
 
 @pytest.mark.parametrize(
-    "qnode, param, num_freq",
-    list(zip(qnodes, qnode_params, qnode_num_freqs)),
+    "qnode, param, nums_frequency, spectra",
+    list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra)),
 )
 @pytest.mark.parametrize(
-    "optimizer, optimizer_kwargs",
-    list(zip(optimizers, optimizer_kwargs)),
+    "substep_optimizer, substep_kwargs",
+    list(zip(substep_optimizers, all_substep_kwargs)),
 )
 class TestWithQNodes:
-    def test_single_step(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
-        opt = RotosolveOptimizer()
+    def test_single_step(
+        self, qnode, param, nums_frequency, spectra, substep_optimizer, substep_kwargs
+    ):
+        """Test executing a single step of the RotosolveOptimizer on a QNode."""
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         repack_param = len(param) == 1
         new_param_step = opt.step(
             qnode,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_frequency,
+            spectra=spectra,
         )
         if repack_param:
             new_param_step = (new_param_step,)
@@ -469,9 +494,8 @@ class TestWithQNodes:
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,
-            num_freqs=num_freq,
-            optimizer=optimizer,
-            optimizer_kwargs=optimizer_kwargs,
+            nums_frequency=nums_frequency,
+            spectra=spectra,
         )
         if repack_param:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -482,8 +506,15 @@ class TestWithQNodes:
         )
         assert np.isclose(qnode(*param), old_cost)
 
-    def test_multiple_steps(self, qnode, param, num_freq, optimizer, optimizer_kwargs):
-        opt = RotosolveOptimizer()
+    def test_multiple_steps(
+        self, qnode, param, nums_frequency, spectra, substep_optimizer, substep_kwargs
+    ):
+        """Test executing multiple steps of the RotosolveOptimizer on a QNode."""
+        param = tuple(np.array(p, requires_grad=True) for p in param)
+        # For the following 1D substep_optimizer, the bounds need to be expanded for these QNodes
+        if substep_optimizer in ["shgo", custom_optimizer]:
+            substep_kwargs["bounds"] = ((-2.0, 2.0),)
+        opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
         repack_param = len(param) == 1
         initial_cost = qnode(*param)
@@ -492,9 +523,8 @@ class TestWithQNodes:
             param = opt.step(
                 qnode,
                 *param,
-                num_freqs=num_freq,
-                optimizer=optimizer,
-                optimizer_kwargs=optimizer_kwargs,
+                nums_frequency=nums_frequency,
+                spectra=spectra,
             )
             # The following accounts for the unpacking functionality for length-1 param
             if repack_param:
