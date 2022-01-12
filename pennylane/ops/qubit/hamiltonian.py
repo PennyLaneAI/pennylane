@@ -211,7 +211,7 @@ class Hamiltonian(Observable):
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "𝓗")
+        return super().label(decimals=None, base_label=base_label or "𝓗")
 
     @property
     def coeffs(self):

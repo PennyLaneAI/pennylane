@@ -30,6 +30,7 @@ measurement_label_map = {
 }
 
 def _add_grouping_symbols(op, layer_str, wire_map):
+    """Adds symbols indicating the extent of a given object."""
     if len(op.wires) > 1:
         mapped_wires = [wire_map[w] for w in op.wires]
         min_w, max_w = min(mapped_wires),  max(mapped_wires)
@@ -66,8 +67,8 @@ def _add_measurement(m, layer_str, wire_map, decimals):
     meas_label = measurement_label_map[m.return_type](obs_label)
 
     if len(m.wires) == 0: # state or probability across all wires
-        for _, w in wire_map.items():
-            layer_str[w] += meas_label
+        for i in range(len(layer_str)):
+            layer_str[i] += meas_label
 
     for w in m.wires:
         layer_str[wire_map[w]] += meas_label
@@ -193,6 +194,7 @@ def tape_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
             layer_str = [filler] * n_wires
 
             for op in layer:
+                # Currently can't use `isinstance(op, QuantumTape)` due to circular imports
                 if hasattr(op, "measurements"): # isa tape
                     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
                     label = f"Tape:{tape_offset[0]+len(tape_cache)}"
@@ -204,7 +206,7 @@ def tape_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
 
             max_label_len = max(len(s) for s in layer_str)
             layer_str = [s.ljust(max_label_len, filler) for s in layer_str]
-            
+
             line_length += max_label_len + 1 # one for the filler character
             if line_length > max_length:
                 # move totals into finished_lines and reset totals
@@ -217,6 +219,7 @@ def tape_text(tape, wire_order=None, show_all_wires=False, decimals=None, max_le
         if ender:
             totals = [s + "─┤" for s in totals]
 
+    # Recursively handle nested tapes #
     tape_totals = "\n".join(finished_lines+totals)
     current_tape_offset = tape_offset[0]
     tape_offset[0] += len(tape_cache)

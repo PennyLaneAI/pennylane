@@ -181,13 +181,135 @@ single_op_tests_data = [
 (qml.QubitStateVector([0,1,0,0], wires=(0,1)), '0: ─╭QubitStateVector─┤  \n1: ─╰QubitStateVector─┤  '),
 (qml.Kerr(1.234, wires=0), '0: ──Kerr(1.23)─┤  '),
 (qml.GroverOperator(wires=(0,1,2)), '0: ─╭GroverOperator─┤  \n1: ─├GroverOperator─┤  \n2: ─╰GroverOperator─┤  '),
+(qml.RX(1.234, wires=0).inv(), '0: ──RX⁻¹(1.23)─┤  '),
+(qml.expval(qml.PauliZ(0)), '0: ───┤  <Z>'),
+(qml.var(qml.PauliZ(0)), '0: ───┤  Var[Z]'),
+(qml.probs(wires=0), '0: ───┤  Probs'),
+(qml.sample(wires=0), '0: ───┤  Sample'),
+(qml.expval(0.1*qml.PauliX(0)@qml.PauliY(1)), '0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>')
 ]
 
 @pytest.mark.parametrize("op, expected", single_op_tests_data)
 def test_single_ops(op, expected):
+    """Tests a variety of different single operation tapes render as expected."""
 
     with QuantumTape() as tape:
         qml.apply(op)
 
     assert tape_text(tape, decimals=2) == expected
 
+class TestLayering:
+
+    def test_adjacent_ops(self):
+        """Test non-blocking gates end up on same layer."""
+
+        with QuantumTape() as tape:
+            qml.PauliX(0)
+            qml.PauliX(1)
+            qml.PauliX(2)
+
+        assert tape_text(tape) == '0: ──X─┤  \n1: ──X─┤  \n2: ──X─┤  '
+
+    def test_blocking_ops(self):
+        """Test single qubit gates on same wire line up."""
+
+        with QuantumTape() as tape:
+            qml.PauliX(0)
+            qml.PauliX(0)
+            qml.PauliX(0)
+
+        assert tape_text(tape) == '0: ──X──X──X─┤  '
+
+    def test_blocking_multiwire_gate(self):
+        """Tests gate gets blocked by multi-wire gate."""
+
+        with QuantumTape() as tape:
+            qml.PauliX(0)
+            qml.IsingXX(1.2345, wires=(0,2))
+            qml.PauliX(1)
+
+        expected = ('0: ──X─╭IsingXX────┤  \n'
+                    '1: ────│─────────X─┤  \n'
+                    '2: ────╰IsingXX────┤  ')
+
+        assert tape_text(tape, wire_order=[0,1,2]) == expected
+
+class TestNestedTapes:
+    """Test situations with nested tapes."""
+
+    def test_multiple_nested_tapes(self):
+        """Test numbers consistent with multiple nested tapes and 
+        multiple levels of nesting."""
+
+        with QuantumTape() as tape:
+            qml.PauliX(0)
+            with QuantumTape() as tape0:
+                qml.PauliY(0)
+                qml.PauliZ(0)
+                with QuantumTape() as tape2:
+                    qml.PauliX(0)
+            with QuantumTape() as tape1:
+                qml.PauliY(0)
+                with QuantumTape() as tape3:
+                    qml.PauliZ(0)
+
+        expected = ('0: ──X──Tape:0──Tape:1─┤  \n'
+                    '\nTape:0\n'
+                    '0: ──Y──Z──Tape:2─┤  \n'
+                    '\nTape:2\n'
+                    '0: ──X─┤  \n'
+                    '\nTape:1\n'
+                    '0: ──Y──Tape:3─┤  \n'
+                    '\nTape:3\n'
+                    '0: ──Z─┤  ')
+
+        assert tape_text(tape) == expected
+
+    def test_nested_tapes_decimals(self):
+        """Test decimals keyword passed to nested tapes."""
+
+        with QuantumTape() as tape:
+            qml.RX(1.2345, wires=0)
+            with QuantumTape() as tape0:
+                qml.Rot(1.2345,2.3456,3.456, wires=0)
+
+        expected = ('0: ──RX(1.2)──Tape:0─┤  \n'
+                    '\nTape:0\n'
+                    '0: ──Rot(1.2,2.3,3.5)─┤  ')
+
+        assert tape_text(tape, decimals=1) == expected
+
+    def test_nested_tapes_wire_order(self):
+        """Test wire order preserved in nested tapes."""
+
+        with QuantumTape() as tape:
+            qml.PauliX(0)
+            qml.PauliY(1)
+            with QuantumTape() as tape0:
+                qml.PauliX(0)
+                qml.PauliY(1)
+
+        expected = ('1: ──Y─╭Tape:0─┤  \n'
+                    '0: ──X─╰Tape:0─┤  \n'
+                    '\nTape:0\n'
+                    '1: ──Y─┤  \n0: ──X─┤  ')
+
+        assert tape_text(tape, wire_order=[1,0]) == expected
+
+    def test_nested_tapes_max_length(self):
+        """Test max length passes to recursive tapes."""
+
+        with QuantumTape() as tape:
+            qml.PauliX(0)
+            with QuantumTape() as tape0:
+                for _ in range(10):
+                    qml.PauliX(0)
+
+        expected = ('0: ──X──Tape:0─┤  \n'
+                    '\nTape:0\n'
+                    '0: ──X──X──X──X──X\n'
+                    '\n───X──X──X──X──X─┤  ')
+
+        out = tape_text(tape, max_length=20)
+        assert out == expected
+        assert max(len(s) for s in out.split("\n")) <= 20
