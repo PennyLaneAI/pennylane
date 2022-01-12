@@ -50,17 +50,12 @@ def circuit_3():
 
 
 hamiltonian_1 = qml.Hamiltonian(
-    coeffs=[-1.0] * 3,
-    observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
+    coeffs=[-1.0] * 3, observables=[qml.PauliX(0), qml.PauliZ(1), qml.PauliY(0) @ qml.PauliX(1)],
 )
 
 hamiltonian_2 = qml.Hamiltonian(
     coeffs=[-0.2, 0.3, -0.15],
-    observables=[
-        qml.PauliY(1),
-        qml.PauliZ(0) @ qml.PauliZ(1),
-        qml.PauliX(0) @ qml.PauliX(1),
-    ],
+    observables=[qml.PauliY(1), qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @ qml.PauliX(1),],
 )
 
 hamiltonian_3 = qml.Hamiltonian(
@@ -143,8 +138,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
     restriction = qml.Hamiltonian(
-        coeffs=[1.0] * 3,
-        observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
+        coeffs=[1.0] * 3, observables=[qml.PauliX(0), qml.PauliY(1), qml.PauliY(0) @ qml.PauliY(1)],
     )
 
     opt = LieAlgebraOptimizer(circuit=lie_circuit, restriction=restriction)
@@ -270,8 +264,7 @@ def test_lie_algebra_hamiltonian_input_1_check():
         return qml.state()
 
     with pytest.raises(
-        TypeError,
-        match="circuit must return the expectation value of a Hamiltonian",
+        TypeError, match="circuit must return the expectation value of a Hamiltonian",
     ):
         LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
@@ -298,8 +291,7 @@ def test_lie_algebra_restriction_check():
 
     restriction = "not_a_hamiltonian"
     with pytest.raises(
-        TypeError,
-        match="restriction must be a Hamiltonian",
+        TypeError, match="restriction must be a Hamiltonian",
     ):
         LieAlgebraOptimizer(circuit=circuit, restriction=restriction, stepsize=0.001)
 

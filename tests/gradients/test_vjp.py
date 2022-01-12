@@ -164,22 +164,10 @@ class TestVJP:
             np.array(
                 [
                     [-2 * np.sin(x), 0],
-                    [
-                        -(np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        -(np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
+                    [-(np.cos(y / 2) ** 2 * np.sin(x)), -(np.cos(x / 2) ** 2 * np.sin(y)),],
+                    [-(np.sin(x) * np.sin(y / 2) ** 2), (np.cos(x / 2) ** 2 * np.sin(y)),],
+                    [(np.sin(x) * np.sin(y / 2) ** 2), (np.sin(x / 2) ** 2 * np.sin(y)),],
+                    [(np.cos(y / 2) ** 2 * np.sin(x)), -(np.sin(x / 2) ** 2 * np.sin(y)),],
                 ]
             )
             / 2

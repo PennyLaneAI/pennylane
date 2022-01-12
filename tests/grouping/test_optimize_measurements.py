@@ -27,10 +27,7 @@ class TestOptimizeMeasurements:
     observables_diagonalized = [
         (
             [PauliY(0), PauliX(0) @ PauliX(1), PauliZ(1)],
-            [
-                [PauliZ(wires=[0]) @ PauliZ(wires=[1])],
-                [PauliZ(wires=[0]), PauliZ(wires=[1])],
-            ],
+            [[PauliZ(wires=[0]) @ PauliZ(wires=[1])], [PauliZ(wires=[0]), PauliZ(wires=[1])],],
         ),
         (
             [
@@ -42,10 +39,7 @@ class TestOptimizeMeasurements:
             ],
             [
                 [Identity(wires=[0]), PauliZ(wires=[1]) @ PauliZ(wires=[2])],
-                [
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]),
-                ],
+                [PauliZ(wires=[1]) @ PauliZ(wires=[2]) @ PauliZ(wires=[3]), PauliZ(wires=[2]),],
                 [PauliZ(wires=[1]) @ PauliZ(wires=[4])],
             ],
         ),

@@ -320,12 +320,7 @@ def test_pauli_mult(p1, p2, p_ref):
 
 
 @pytest.mark.parametrize(
-    ("symbol", "operator"),
-    [
-        ("X", qml.PauliX),
-        ("Y", qml.PauliY),
-        ("Z", qml.PauliZ),
-    ],
+    ("symbol", "operator"), [("X", qml.PauliX), ("Y", qml.PauliY), ("Z", qml.PauliZ),],
 )
 def test_return_pauli(symbol, operator):
     r"""Test that_return_pauli returns the correct operator."""

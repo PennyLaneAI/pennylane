@@ -254,11 +254,7 @@ class TestInputs:
             weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles
         ):
             qml.AllSinglesDoubles(
-                weights=weights,
-                wires=wires,
-                hf_state=hf_state,
-                singles=singles,
-                doubles=doubles,
+                weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -266,11 +262,7 @@ class TestInputs:
 
         with pytest.raises(ValueError, match=msg_match):
             qnode(
-                weights=weights,
-                wires=wires,
-                hf_state=hf_state,
-                singles=singles,
-                doubles=doubles,
+                weights=weights, wires=wires, hf_state=hf_state, singles=singles, doubles=doubles,
             )
 
     def test_id(self):

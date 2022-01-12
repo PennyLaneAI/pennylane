@@ -119,12 +119,7 @@ class TestHamiltonianSupport:
         def circuit(coeffs, param):
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
+            return qml.expval(qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)],))
 
         grad_fn = qml.grad(circuit)
         grad = grad_fn(coeffs, param)
@@ -1278,40 +1273,56 @@ class TestTensorVar:
 
         res = circuit([0, 0])
         expected = (
-            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.cos(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.cos(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([0, 1])
         expected = (
-            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.sin(varphi / 2) * np.cos(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.sin(varphi / 2) * np.sin(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([1, 0])
         expected = (
-            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.sin(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.sin(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
         res = circuit([1, 1])
         expected = (
-            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) - (
-            (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
-            - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
-        ) ** 2
+            (
+                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                + (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            - (
+                (np.cos(varphi / 2) * np.sin(phi / 2) * np.cos(theta / 2)) ** 2
+                - (np.cos(varphi / 2) * np.cos(phi / 2) * np.sin(theta / 2)) ** 2
+            )
+            ** 2
+        )
         assert np.allclose(res, expected, atol=tol(dev.shots))

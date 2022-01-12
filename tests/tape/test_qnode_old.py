@@ -435,15 +435,7 @@ class TestValidation:
         assert qnode.diff_method == "finite-diff"
 
     @pytest.mark.parametrize(
-        "method",
-        [
-            "best",
-            "parameter-shift",
-            "finite-diff",
-            "reversible",
-            "adjoint",
-            "backprop",
-        ],
+        "method", ["best", "parameter-shift", "finite-diff", "reversible", "adjoint", "backprop",],
     )
     def test_to_tf(self, method, mocker):
         """Test if interface change is working"""
@@ -462,15 +454,7 @@ class TestValidation:
             spy.assert_called_once()
 
     @pytest.mark.parametrize(
-        "method",
-        [
-            "best",
-            "parameter-shift",
-            "finite-diff",
-            "reversible",
-            "adjoint",
-            "backprop",
-        ],
+        "method", ["best", "parameter-shift", "finite-diff", "reversible", "adjoint", "backprop",],
     )
     def test_to_autograd(self, method, mocker):
         """Test if interface change is working"""
@@ -489,15 +473,7 @@ class TestValidation:
             spy.assert_called_once()
 
     @pytest.mark.parametrize(
-        "method",
-        [
-            "best",
-            "parameter-shift",
-            "finite-diff",
-            "reversible",
-            "adjoint",
-            "backprop",
-        ],
+        "method", ["best", "parameter-shift", "finite-diff", "reversible", "adjoint", "backprop",],
     )
     def test_to_torch(self, method, mocker):
         """Test if interface change is working"""
@@ -516,15 +492,7 @@ class TestValidation:
             spy.assert_called_once()
 
     @pytest.mark.parametrize(
-        "method",
-        [
-            "best",
-            "parameter-shift",
-            "finite-diff",
-            "reversible",
-            "adjoint",
-            "backprop",
-        ],
+        "method", ["best", "parameter-shift", "finite-diff", "reversible", "adjoint", "backprop",],
     )
     def test_to_jax(self, method, mocker):
         """Test if interface change is working"""
@@ -702,9 +670,7 @@ class TestTapeConstruction:
             @classmethod
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
-                capabilities.update(
-                    provides_jacobian=True,
-                )
+                capabilities.update(provides_jacobian=True,)
                 return capabilities
 
             def jacobian(self, *args, **kwargs):

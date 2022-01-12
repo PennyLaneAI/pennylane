@@ -43,9 +43,7 @@ class GradientDescentOptimizer:
     @property
     def _stepsize(self):
         warnings.warn(
-            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
-            UserWarning,
-            stacklevel=2,
+            "'_stepsize' is deprecated. Please use 'stepsize' instead.", UserWarning, stacklevel=2,
         )
 
         return self.stepsize
@@ -53,9 +51,7 @@ class GradientDescentOptimizer:
     @_stepsize.setter
     def _stepsize(self, stepsize):
         warnings.warn(
-            "'_stepsize' is deprecated. Please use 'stepsize' instead.",
-            UserWarning,
-            stacklevel=2,
+            "'_stepsize' is deprecated. Please use 'stepsize' instead.", UserWarning, stacklevel=2,
         )
 
         self.stepsize = stepsize

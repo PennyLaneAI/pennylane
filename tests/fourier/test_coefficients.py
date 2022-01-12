@@ -227,14 +227,7 @@ class TestAntiAliasing:
 
     @pytest.mark.parametrize(
         "circuit,inpt,degree,expected_coeffs",
-        [
-            (
-                circuit_two_qubits_repeated_param,
-                np.array([0.5]),
-                1,
-                np.array([0.5, 0, 0]),
-            ),
-        ],
+        [(circuit_two_qubits_repeated_param, np.array([0.5]), 1, np.array([0.5, 0, 0]),),],
     )
     def test_anti_aliasing_incorrect(self, circuit, inpt, degree, expected_coeffs):
         """Test that anti-aliasing function gives correct results when we ask for

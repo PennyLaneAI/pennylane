@@ -396,8 +396,7 @@ class TestReconstructGen:
         assert fun_close(fun, rec)
 
     @pytest.mark.parametrize(
-        "fun, spectrum, expected_grad",
-        zip(c_funs, spectra, expected_grads),
+        "fun, spectrum, expected_grad", zip(c_funs, spectra, expected_grads),
     )
     def test_differentiability_autograd(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -409,8 +408,7 @@ class TestReconstructGen:
         assert fun_close(expected_grad, grad, zero=pnp.array(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
-        "fun, spectrum, expected_grad",
-        zip(c_funs, spectra, expected_grads),
+        "fun, spectrum, expected_grad", zip(c_funs, spectra, expected_grads),
     )
     def test_differentiability_jax(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -426,8 +424,7 @@ class TestReconstructGen:
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
     @pytest.mark.parametrize(
-        "fun, spectrum, expected_grad",
-        zip(c_funs, spectra, expected_grads),
+        "fun, spectrum, expected_grad", zip(c_funs, spectra, expected_grads),
     )
     def test_differentiability_tensorflow(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -447,8 +444,7 @@ class TestReconstructGen:
         assert fun_close(expected_grad, grad, zero=tf.Variable(0.0))
 
     @pytest.mark.parametrize(
-        "fun, spectrum, expected_grad",
-        zip(c_funs, spectra, expected_grads),
+        "fun, spectrum, expected_grad", zip(c_funs, spectra, expected_grads),
     )
     def test_differentiability_torch(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -553,11 +549,7 @@ all_shifts = [
 ]
 
 all_nums_frequency = [
-    {
-        "x": {0: 1, 1: 4},
-        "y": {3: 1, 1: 1, 5: 9},
-        "z": {i: 2 * i for i in range(20)},
-    },
+    {"x": {0: 1, 1: 4}, "y": {3: 1, 1: 1, 5: 9}, "z": {i: 2 * i for i in range(20)},},
 ]
 
 
@@ -592,11 +584,7 @@ class TestPrepareJobs:
     def test_with_spectra(self, ids, spectra, tol):
         """Test the prepared jobs when using spectra and shifts."""
         ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
-            ids,
-            nums_frequency=None,
-            spectra=spectra,
-            shifts=None,
-            atol=tol,
+            ids, nums_frequency=None, spectra=spectra, shifts=None, atol=tol,
         )
         if ids is None:
             assert self.nested_dict_ids_match(spectra, ids_)
@@ -626,11 +614,7 @@ class TestPrepareJobs:
     def test_with_spectra_and_shifts(self, ids, spectra, shifts, tol):
         """Test the prepared jobs when using spectra and shifts."""
         ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
-            ids,
-            nums_frequency=None,
-            spectra=spectra,
-            shifts=shifts,
-            atol=tol,
+            ids, nums_frequency=None, spectra=spectra, shifts=shifts, atol=tol,
         )
         if ids is None:
             assert self.nested_dict_ids_match(spectra, ids_)
@@ -675,13 +659,7 @@ class TestPrepareJobs:
         """Test the prepared jobs when using nums_frequency."""
         """Test ``_prepare_jobs`` with a large variety of test cases (cheap)."""
 
-        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(
-            ids,
-            nums_frequency,
-            None,
-            None,
-            atol=tol,
-        )
+        ids_, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, None, None, atol=tol,)
 
         # Check ids
         if ids is None:
@@ -757,11 +735,7 @@ y = 2.3
 X = pnp.array([i ** 1.2 - 2.0 / i for i in range(1, 6)])
 Y = pnp.array([i ** 0.9 - 1.0 / i for i in range(1, 6)])
 Z = pnp.array(
-    [
-        [0.3, 9.1, -0.2, 0.6, 1.2],
-        [0.9, -0.1, 1.6, 2.3, -1.5],
-        [0.3, 0.1, -0.9, 0.6, 1.8],
-    ]
+    [[0.3, 9.1, -0.2, 0.6, 1.2], [0.9, -0.1, 1.6, 2.3, -1.5], [0.3, 0.1, -0.9, 0.6, 1.8],]
 )
 
 test_cases_qnodes = [
@@ -816,8 +790,7 @@ class TestReconstruct:
     reconstructed function with respect to their single scalar argument."""
 
     @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls", test_cases_qnodes,
     )
     def test_with_qnode(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
@@ -853,8 +826,7 @@ class TestReconstruct:
                 assert fun_close(rec, univariate, 10)
 
     @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls", test_cases_qnodes,
     )
     def test_differentiability_autograd(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
@@ -895,8 +867,7 @@ class TestReconstruct:
                 assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls", test_cases_qnodes,
     )
     def test_differentiability_jax(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
@@ -939,8 +910,7 @@ class TestReconstruct:
                 assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls", test_cases_qnodes,
     )
     def test_differentiability_tensorflow(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
@@ -1016,8 +986,7 @@ class TestReconstruct:
                 assert fun_close(grad, exp_grad, 10)
 
     @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
+        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls", test_cases_qnodes,
     )
     def test_differentiability_torch(
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker

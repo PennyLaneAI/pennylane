@@ -67,11 +67,7 @@ label_data = [
     ),  # wire order includes unused wires
     (
         {"wire_order": ["aux", 0, "a", 1.234], "show_all_wires": True},
-        [
-            "aux",
-            "0",
-            "a",
-        ],
+        ["aux", "0", "a",],
     ),  # show_all_wires=True
 ]
 

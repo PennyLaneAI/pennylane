@@ -297,9 +297,7 @@ class TestMitiqIntegration:
         assert np.allclose(exact_val, [1, 1])
         assert all(mitigated_err < noisy_err)
 
-    @pytest.mark.xfail(
-        reason="Using external tape transforms breaks differentiability",
-    )
+    @pytest.mark.xfail(reason="Using external tape transforms breaks differentiability",)
     def test_grad(self):
         """Tests if the gradient is calculated successfully."""
         from mitiq.zne.scaling import fold_global

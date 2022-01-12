@@ -240,17 +240,7 @@ class TestKernelTargetAlignment:
             rescale_class_labels=False,
         )
 
-        K1 = np.array(
-            [
-                [
-                    1,
-                    0.2,
-                    0.2,
-                ],
-                [0.2, 1, 0.2],
-                [0.2, 0.2, 1],
-            ]
-        )
+        K1 = np.array([[1, 0.2, 0.2,], [0.2, 1, 0.2], [0.2, 0.2, 1],])
         K2 = np.array([[1, -1, 1], [-1, 1, -1], [1, -1, 1]])
         expected_alignment = np.trace(np.dot(K1, K2)) / math.sqrt(
             np.trace(np.dot(K1, K1)) * np.trace(np.dot(K2, K2))
@@ -275,17 +265,7 @@ class TestKernelTargetAlignment:
             rescale_class_labels=True,
         )
 
-        K1 = np.array(
-            [
-                [
-                    1,
-                    0.2,
-                    0.2,
-                ],
-                [0.2, 1, 0.2],
-                [0.2, 0.2, 1],
-            ]
-        )
+        K1 = np.array([[1, 0.2, 0.2,], [0.2, 1, 0.2], [0.2, 0.2, 1],])
         _Y = np.array([1 / 2, -1, 1 / 2])
         K2 = np.outer(_Y, _Y)
         expected_alignment = np.trace(np.dot(K1, K2)) / math.sqrt(
@@ -300,12 +280,7 @@ class TestRegularization:
     """Tests regularization/postprocessing methods."""
 
     @pytest.mark.parametrize(
-        "input",
-        [
-            (np.diag([1, 0.4])),
-            (np.diag([1, 0.0])),
-            (np.array([[1, -0.5], [-0.5, 1]])),
-        ],
+        "input", [(np.diag([1, 0.4])), (np.diag([1, 0.0])), (np.array([[1, -0.5], [-0.5, 1]])),],
     )
     def test_do_nothing_on_non_negative(self, input):
         """Test thresholding, displacing and flipping matrix to do nothing on PSD matrices."""
@@ -344,10 +319,7 @@ class TestRegularization:
         "input,expected_output",
         [
             (np.diag([1, -1]), np.diag([1, 1])),
-            (
-                np.array([[1, 1], [1, -1]]),
-                np.array([[math.sqrt(2), 0], [0, math.sqrt(2)]]),
-            ),
+            (np.array([[1, 1], [1, -1]]), np.array([[math.sqrt(2), 0], [0, math.sqrt(2)]]),),
             (np.array([[0, 1], [1, 0]]), np.array([[1, 0], [0, 1]])),
         ],
     )
@@ -412,10 +384,7 @@ class TestRegularization:
         assert np.allclose(output, expected_output, atol=1e-5)
 
     @pytest.mark.parametrize(
-        "input",
-        [
-            (np.diag([1, -1])),
-        ],
+        "input", [(np.diag([1, -1])),],
     )
     def test_closest_psd_matrix_import_error(self, input, mocker):
         """Test import error raising if cvxpy is not installed."""
@@ -426,10 +395,7 @@ class TestRegularization:
         assert "CVXPY is required" in str(import_error.value)
 
     @pytest.mark.parametrize(
-        "input,solver",
-        [
-            (np.diag([1, -1]), "I am not a solver"),
-        ],
+        "input,solver", [(np.diag([1, -1]), "I am not a solver"),],
     )
     @pytest.mark.usefixtures("skip_if_no_cvxpy_support")
     def test_closest_psd_matrix_solve_error(self, input, solver):

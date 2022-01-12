@@ -160,12 +160,7 @@ class TestAttributes:
     """Test methods and attributes."""
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires",
-        [
-            (2, 3),
-            (2, 1),
-            (2, 2),
-        ],
+        "n_layers, n_wires", [(2, 3), (2, 1), (2, 2),],
     )
     def test_shapes(self, n_layers, n_wires, tol):
         """Test that the shape method returns the correct shapes for

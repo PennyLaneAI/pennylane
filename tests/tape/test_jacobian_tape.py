@@ -486,8 +486,7 @@ class TestJacobian:
         diff_methods = ["F"]
         argnum = []
         with pytest.warns(
-            UserWarning,
-            match="No trainable parameters",
+            UserWarning, match="No trainable parameters",
         ):
             res = tape._choose_params_with_methods(diff_methods, argnum)
 
@@ -667,22 +666,10 @@ class TestJacobianIntegration:
             np.array(
                 [
                     [-2 * np.sin(x), 0],
-                    [
-                        -(np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        -(np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.cos(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.sin(x) * np.sin(y / 2) ** 2),
-                        (np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
-                    [
-                        (np.cos(y / 2) ** 2 * np.sin(x)),
-                        -(np.sin(x / 2) ** 2 * np.sin(y)),
-                    ],
+                    [-(np.cos(y / 2) ** 2 * np.sin(x)), -(np.cos(x / 2) ** 2 * np.sin(y)),],
+                    [-(np.sin(x) * np.sin(y / 2) ** 2), (np.cos(x / 2) ** 2 * np.sin(y)),],
+                    [(np.sin(x) * np.sin(y / 2) ** 2), (np.sin(x / 2) ** 2 * np.sin(y)),],
+                    [(np.cos(y / 2) ** 2 * np.sin(x)), -(np.sin(x / 2) ** 2 * np.sin(y)),],
                 ]
             )
             / 2
@@ -788,8 +775,7 @@ class TestHessian:
             qml.state()
 
         with pytest.raises(
-            ValueError,
-            match=r"The Hessian method does not support circuits that return the state",
+            ValueError, match=r"The Hessian method does not support circuits that return the state",
         ):
             tape.hessian(None)
 
