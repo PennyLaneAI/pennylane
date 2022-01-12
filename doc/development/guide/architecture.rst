@@ -127,6 +127,7 @@ Quantum operators and measurement processes can be used to build a quantum circu
 The user defines the circuit by constructing a quantum function, such as:
 
 .. code-block:: python
+
     def qfunc(params):
         qml.RX(params[0], wires='b')
         qml.CNOT(wires=['a', 'b'])
