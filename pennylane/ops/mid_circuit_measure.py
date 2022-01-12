@@ -6,19 +6,43 @@ from sympy import Symbol
 from pennylane.operation import AnyWires, Operation
 
 
-class RuntimeResult(Symbol):
-    __slots__ = tuple()
+# class RuntimeResult(Symbol):
+#     __slots__ = tuple()
+#
+#     count = 0
+#
+#     def __new__(cls, name):
+#         # name = str(hash(name)) + "_measured" + "_"
+#         obj = super().__new__(Symbol, name)
+#         obj.__class__ = cls
+#         return obj
 
-    def __new__(cls, name):
-        name = str(hash(name)) + "_measured"
-        obj = super().__new__(Symbol, name)
-        obj.__class__ = cls
-        return obj
+# def Measure(wire):
+#     # runtime_var = RuntimeResult(wire)
+#     runtime_var = Symbol(f"measurement_{Measure._count}")
+#     Measure._count += 1
+#     MidCircuitMeasure(runtime_var, wires=wire)
+#     return runtime_var
+#
+# Measure._count = 0
 
-def Measure(wire):
-    runtime_var = RuntimeResult(wire)
-    MidCircuitMeasure(runtime_var, wires=wire)
-    return runtime_var
+class MeasureClass:
+
+    def __init__(self):
+        self._count = 0
+
+    def _get_count(self):
+        count = self._count
+        self._count += 1
+        return count
+
+    def __call__(self, wire):
+        runtime_var = Symbol(f"measurement_{self._get_count()}")
+        MidCircuitMeasure(runtime_var, wires=wire)
+        return runtime_var
+
+Measure = MeasureClass()
+
 
 
 
