@@ -96,7 +96,7 @@ class DefaultQubit(QubitDevice):
     operations = {
         "Identity",
         "RuntimeOp",
-        "IfOp",
+        "If",
         "MidCircuitMeasure",
         "BasisState",
         "QubitStateVector",
@@ -170,7 +170,7 @@ class DefaultQubit(QubitDevice):
 
         self._apply_ops = {
             "MidCircuitMeasure": self._apply_mid_circuit_measure,
-            "IfOp": self._if_op,
+            "If": self._if_op,
             "RuntimeOp": self._runtime_op,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
