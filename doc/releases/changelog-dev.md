@@ -5,8 +5,8 @@
 <h3>New features since last release</h3>
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
-  in the cost function. Also note the changes in behaviour listed under _Breaking
-  changes_.
+  in the cost function. Also note the changes in behaviour listed under *Breaking
+  changes*.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
 
   Previously, the `RotsolveOptimizer` was available for cost functions with
