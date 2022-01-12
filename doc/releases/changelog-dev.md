@@ -205,6 +205,9 @@
 * The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
+* Added `multi_dispatch` decorator that helps ease the definition of new functions.
+  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2082)
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
@@ -250,4 +253,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
