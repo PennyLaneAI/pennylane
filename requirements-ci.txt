@@ -4,11 +4,12 @@ cvxpy
 cvxopt
 networkx
 retworkx
-tensornetwork==0.3
+tensornetwork
 autograd
 toml
 appdirs
-semantic_version==2.6
+semantic_version
 dask[delayed]
 autoray
 matplotlib
+sympy
