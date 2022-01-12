@@ -26,7 +26,6 @@ from pennylane.optimize import (
     AdagradOptimizer,
     RMSPropOptimizer,
     AdamOptimizer,
-    RotosolveOptimizer,
 )
 
 
@@ -52,11 +51,8 @@ def opt(opt_name):
     if opt_name == "adam":
         return AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
 
-    if opt_name == "roto":
-        return RotosolveOptimizer()
 
-
-@pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam", "roto"])
+@pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam"])
 class TestOverOpts:
     """Tests keywords, multiple arguements, and non-training arguments in relevant optimizers"""
 
@@ -83,12 +79,8 @@ class TestOverOpts:
 
         args3, kwargs3 = spy.call_args_list[-1]
 
-        if opt_name != "roto":
-            assert args2 == (x,)
-            assert args3 == (x,)
-        else:
-            assert not np.allclose(x_new_two, x, atol=tol)
-            assert not np.allclose(x_new_three_wc, x, atol=tol)
+        assert args2 == (x,)
+        assert args3 == (x,)
 
         assert kwargs2 == {"c": 2.0}
         assert kwargs3 == {"c": 3.0}
@@ -118,13 +110,8 @@ class TestOverOpts:
         self.reset(opt)
         args_called2, kwargs2 = spy.call_args_list[-1]  # just take last call
 
-        if opt_name != "roto":
-            assert args_called1 == (x, y, z)
-            assert args_called2 == (x_new, y_new, z_new)
-        else:
-            assert not np.allclose(x_new, x, atol=tol)
-            assert not np.allclose(y_new, y, atol=tol)
-            assert not np.allclose(z_new, z, atol=tol)
+        assert args_called1 == (x, y, z)
+        assert args_called2 == (x_new, y_new, z_new)
 
         assert kwargs1 == {}
         assert kwargs2 == {}
