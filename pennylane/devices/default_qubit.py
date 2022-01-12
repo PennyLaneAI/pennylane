@@ -260,7 +260,6 @@ class DefaultQubit(QubitDevice):
         free_symbols = list(expr.free_symbols)
         calc = sp.lambdify(free_symbols, expr)(*[self._measured[sym] for sym in free_symbols])
         if calc:
-            print(free_symbols)
             return self._apply_operation(state, op_object.then_op)
         else:
             return state
