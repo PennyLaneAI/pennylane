@@ -83,7 +83,8 @@ class TestDecomposition:
         """Tests that an exception is raised if the Hamiltonian does not have
         the correct shape"""
         with pytest.raises(
-            ValueError, match="The Hamiltonian should have shape",
+            ValueError,
+            match="The Hamiltonian should have shape",
         ):
             pu.decompose_hamiltonian(hamiltonian)
 
@@ -370,7 +371,8 @@ class TestPauliEigs:
     def test_correct_eigenvalues_pauli_kronecker_products_three_qubits(self, pauli_product):
         """Test the paulieigs function for three qubits"""
         assert np.array_equal(
-            pu.pauli_eigs(3), np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))),
+            pu.pauli_eigs(3),
+            np.diag(np.kron(self.pauliz, np.kron(self.pauliz, self.pauliz))),
         )
 
     @pytest.mark.parametrize("depth", list(range(1, 6)))
@@ -499,7 +501,8 @@ class TestExpand:
     def test_expand_invalid_wires(self):
         """test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'original_wires' argument",
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
         ):
             pu.expand(U2, [-1, 5], 4)
 
@@ -611,7 +614,8 @@ class TestExpand:
     def test_expand_vector_invalid_wires(self):
         """Test exception raised if unphysical subsystems provided."""
         with pytest.raises(
-            ValueError, match="Invalid target subsystems provided in 'original_wires' argument",
+            ValueError,
+            match="Invalid target subsystems provided in 'original_wires' argument",
         ):
             pu.expand_vector(TestExpand.VECTOR2, [-1, 5], 4)
 

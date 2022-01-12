@@ -400,7 +400,11 @@ class TestQNode:
             res.backward()
 
     @pytest.mark.parametrize(
-        "U", [torch.tensor([[0, 1], [1, 0]], requires_grad=False), np.array([[0, 1], [1, 0]]),],
+        "U",
+        [
+            torch.tensor([[0, 1], [1, 0]], requires_grad=False),
+            np.array([[0, 1], [1, 0]]),
+        ],
     )
     def test_matrix_parameter(self, dev_name, diff_method, U, tol):
         """Test that the Torch interface works correctly
@@ -506,7 +510,10 @@ class TestQNode:
         expected = np.array(
             [
                 [np.cos(x_val / 2) ** 2, np.sin(x_val / 2) ** 2],
-                [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2,],
+                [
+                    (1 + np.cos(x_val) * np.cos(y_val)) / 2,
+                    (1 - np.cos(x_val) * np.cos(y_val)) / 2,
+                ],
             ]
         )
 

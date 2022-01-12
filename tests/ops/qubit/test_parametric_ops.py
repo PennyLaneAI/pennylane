@@ -972,7 +972,8 @@ class TestPauliRot:
 
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize(
-        "pauli_word,expected_matrix", PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
+        "pauli_word,expected_matrix",
+        PAULI_ROT_PARAMETRIC_MATRIX_TEST_DATA,
     )
     def test_PauliRot_matrix_parametric(self, theta, pauli_word, expected_matrix, tol):
         """Test parametrically that the PauliRot matrix is correct."""
@@ -983,7 +984,8 @@ class TestPauliRot:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "theta,pauli_word,expected_matrix", PAULI_ROT_MATRIX_TEST_DATA,
+        "theta,pauli_word,expected_matrix",
+        PAULI_ROT_MATRIX_TEST_DATA,
     )
     def test_PauliRot_matrix(self, theta, pauli_word, expected_matrix, tol):
         """Test non-parametrically that the PauliRot matrix is correct."""
@@ -1189,7 +1191,11 @@ class TestPauliRot:
             qml.PauliRot(0.3, "IXYZV", wires=[0, 1, 2, 3, 4])
 
     @pytest.mark.parametrize(
-        "pauli_word,wires", [("XYZ", [0, 1]), ("XYZ", [0, 1, 2, 3]),],
+        "pauli_word,wires",
+        [
+            ("XYZ", [0, 1]),
+            ("XYZ", [0, 1, 2, 3]),
+        ],
     )
     def test_init_incorrect_pauli_word_length_error(self, pauli_word, wires):
         """Test that __init__ throws an error if a Pauli word of wrong length is supplied."""
@@ -1202,7 +1208,15 @@ class TestPauliRot:
 
     @pytest.mark.parametrize(
         "pauli_word",
-        [("XIZ"), ("IIII"), ("XIYIZI"), ("IXI"), ("IIIIIZI"), ("XYZIII"), ("IIIXYZ"),],
+        [
+            ("XIZ"),
+            ("IIII"),
+            ("XIYIZI"),
+            ("IXI"),
+            ("IIIIIZI"),
+            ("XYZIII"),
+            ("IIIXYZ"),
+        ],
     )
     def test_multirz_generator(self, pauli_word):
         """Test that the generator of the MultiRZ gate is correct."""
@@ -1255,7 +1269,12 @@ class TestMultiRZ:
         "wires,expected_matrix",
         [
             ([0], qml.RZ._matrix),
-            ([0, 1], lambda theta: np.diag(np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2),),),
+            (
+                [0, 1],
+                lambda theta: np.diag(
+                    np.exp(1j * np.array([-1, 1, 1, -1]) * theta / 2),
+                ),
+            ),
             (
                 [0, 1, 2],
                 lambda theta: np.diag(
@@ -1399,8 +1418,20 @@ label_data = [
         "R(XYZ)\n(1)",
         "R(XYZ)⁻¹\n(1)",
     ),
-    (qml.PhaseShift(1.2345, wires=0), "Rϕ", "Rϕ\n(1.23)", "Rϕ\n(1)", "Rϕ⁻¹\n(1)",),
-    (qml.ControlledPhaseShift(1.2345, wires=(0, 1)), "Rϕ", "Rϕ\n(1.23)", "Rϕ\n(1)", "Rϕ⁻¹\n(1)",),
+    (
+        qml.PhaseShift(1.2345, wires=0),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
+        "Rϕ⁻¹\n(1)",
+    ),
+    (
+        qml.ControlledPhaseShift(1.2345, wires=(0, 1)),
+        "Rϕ",
+        "Rϕ\n(1.23)",
+        "Rϕ\n(1)",
+        "Rϕ⁻¹\n(1)",
+    ),
     (qml.CRX(1.234, wires=(0, 1)), "RX", "RX\n(1.23)", "RX\n(1)", "RX⁻¹\n(1)"),
     (qml.CRY(1.234, wires=(0, 1)), "RY", "RY\n(1.23)", "RY\n(1)", "RY⁻¹\n(1)"),
     (qml.CRZ(1.234, wires=(0, 1)), "RZ", "RZ\n(1.23)", "RZ\n(1)", "RZ⁻¹\n(1)"),

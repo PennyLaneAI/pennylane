@@ -301,7 +301,9 @@ def _to_numpy_torch(x):
 
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 ar.register_function(
-    "torch", "asarray", lambda x, device=None: _i("torch").as_tensor(x, device=device),
+    "torch",
+    "asarray",
+    lambda x, device=None: _i("torch").as_tensor(x, device=device),
 )
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
@@ -488,6 +490,8 @@ ar.register_function("jax", "to_numpy", _to_numpy_jax)
 ar.register_function("jax", "block_diag", lambda x: _i("jax").scipy.linalg.block_diag(*x))
 ar.register_function("jax", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function(
-    "jax", "scatter_element_add", lambda x, index, value: x.at[tuple(index)].add(value),
+    "jax",
+    "scatter_element_add",
+    lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)

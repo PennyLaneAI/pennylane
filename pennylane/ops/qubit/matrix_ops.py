@@ -70,7 +70,8 @@ class QubitUnitary(Operation):
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
             if not qml.math.allclose(
-                qml.math.dot(U, qml.math.T(qml.math.conj(U))), qml.math.eye(qml.math.shape(U)[0]),
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
+                qml.math.eye(qml.math.shape(U)[0]),
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
@@ -164,7 +165,12 @@ class ControlledQubitUnitary(QubitUnitary):
     grad_method = None
 
     def __init__(
-        self, *params, control_wires=None, wires=None, control_values=None, do_queue=True,
+        self,
+        *params,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        do_queue=True,
     ):
         if control_wires is None:
             raise ValueError("Must specify control wires")

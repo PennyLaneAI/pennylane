@@ -193,7 +193,8 @@ process_id_cases_unknown_arg = [
 
 class TestHelpers:
     @pytest.mark.parametrize(
-        "circuit, enc_args, argnum, enc_args_exp, argnum_exp", process_id_cases,
+        "circuit, enc_args, argnum, enc_args_exp, argnum_exp",
+        process_id_cases,
     )
     def test_process_ids(self, circuit, enc_args, argnum, enc_args_exp, argnum_exp):
         dev = qml.device("default.qubit", wires=2)
@@ -204,7 +205,8 @@ class TestHelpers:
         assert np.allclose(argnum, argnum_exp)
 
     @pytest.mark.parametrize(
-        "circuit, enc_args, argnum", process_id_cases_unknown_arg,
+        "circuit, enc_args, argnum",
+        process_id_cases_unknown_arg,
     )
     def test_process_ids_unknown_arg(self, circuit, enc_args, argnum):
         dev = qml.device("default.qubit", wires=2)
@@ -223,7 +225,8 @@ class TestCircuits:
     """Tests that the spectrum is returned as expected."""
 
     @pytest.mark.parametrize(
-        "circuit, args, expected", zip(circuits_linear, all_args, expected_spectra),
+        "circuit, args, expected",
+        zip(circuits_linear, all_args, expected_spectra),
     )
     def test_various_circuits(self, circuit, args, expected):
         """Test the spectrum for some simple standard circuits."""

@@ -110,7 +110,13 @@ def _validate_tapes(tapes):
 
 
 def _execute(
-    params, tapes=None, device=None, execute_fn=None, gradient_fn=None, gradient_kwargs=None, _n=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
     _validate_tapes(tapes)
@@ -157,7 +163,11 @@ def _execute(
                     new_tapes[-1].trainable_params = t.trainable_params
 
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    new_tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs,
+                    new_tapes,
+                    dy,
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
                 )
 
                 partial_res = execute_fn(vjp_tapes)[0]
@@ -166,7 +176,9 @@ def _execute(
 
             args = tuple(params) + (g,)
             vjps = host_callback.call(
-                non_diff_wrapper, args, result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
+                non_diff_wrapper,
+                args,
+                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
             )
 
             param_idx = 0
@@ -212,7 +224,12 @@ def _execute(
 
 # The execute function in forward mode
 def _execute_with_fwd(
-    params, tapes=None, device=None, execute_fn=None, gradient_kwargs=None, _n=1,
+    params,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_kwargs=None,
+    _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
     _validate_tapes(tapes)
@@ -238,7 +255,9 @@ def _execute_with_fwd(
         fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
         res, jacs = host_callback.call(
-            wrapper, params, result_shape=tuple([fwd_shapes, jacobian_shape]),
+            wrapper,
+            params,
+            result_shape=tuple([fwd_shapes, jacobian_shape]),
         )
         return res, jacs
 

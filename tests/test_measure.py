@@ -310,7 +310,8 @@ class TestStatisticsQueuing:
     """Tests for annotating the return types of the statistics functions"""
 
     @pytest.mark.parametrize(
-        "op", [qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity],
+        "op",
+        [qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity],
     )
     def test_annotating_obs_return_type(self, stat_func, return_type, op):
         """Test that the return_type related info is updated for a

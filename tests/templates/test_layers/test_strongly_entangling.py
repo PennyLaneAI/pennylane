@@ -163,7 +163,11 @@ class TestAttributes:
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, expected_shape",
-        [(2, 3, (2, 3, 3)), (2, 1, (2, 1, 3)), (2, 2, (2, 2, 3)),],
+        [
+            (2, 3, (2, 3, 3)),
+            (2, 1, (2, 1, 3)),
+            (2, 2, (2, 2, 3)),
+        ],
     )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
@@ -205,7 +209,13 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        weights_tuple = [[tuple(weights[0][0]), tuple(weights[0][1]), tuple(weights[0][2]),]]
+        weights_tuple = [
+            [
+                tuple(weights[0][0]),
+                tuple(weights[0][1]),
+                tuple(weights[0][2]),
+            ]
+        ]
         res = circuit(weights_tuple)
         res2 = circuit2(tuple(weights_tuple))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)

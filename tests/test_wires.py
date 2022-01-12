@@ -124,7 +124,9 @@ class TestWires:
         wires = Wires(iterable)
         assert len(wires) == len(iterable)
 
-    def test_contains(self,):
+    def test_contains(
+        self,
+    ):
         """Tests the __contains__() method."""
 
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
@@ -139,7 +141,9 @@ class TestWires:
         assert not [0, 4] in wires
         assert not [4] in wires
 
-    def test_contains_wires(self,):
+    def test_contains_wires(
+        self,
+    ):
         """Tests the dedicated contains_wires() method."""
 
         wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])

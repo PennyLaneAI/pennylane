@@ -537,7 +537,12 @@ class TestMultiControlledX:
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
             ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
-            ([0, 1], [2, 3], "10", "MultiControlledX accepts a single target wire.",),
+            (
+                [0, 1],
+                [2, 3],
+                "10",
+                "MultiControlledX accepts a single target wire.",
+            ),
         ],
     )
     def test_invalid_mixed_polarity_controls(

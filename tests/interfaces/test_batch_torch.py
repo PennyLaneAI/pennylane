@@ -551,7 +551,12 @@ class TestTorchExecuteIntegration:
             device=torch_device,
         )
 
-        assert torch.allclose(tape_params, expected, atol=tol, rtol=0,)
+        assert torch.allclose(
+            tape_params,
+            expected,
+            atol=tol,
+            rtol=0,
+        )
 
         res.backward()
 
@@ -930,7 +935,10 @@ class TestHigherOrderDerivatives:
             a, b = x.detach().numpy()
 
         expected_res = torch.tensor(
-            [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b),],
+            [
+                0.5 + 0.5 * np.cos(a) * np.cos(b),
+                0.5 - 0.5 * np.cos(a) * np.cos(b),
+            ],
             dtype=res.dtype,
             device=torch_device,
         )

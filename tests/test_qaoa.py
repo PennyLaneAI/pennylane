@@ -1385,7 +1385,8 @@ class TestCycles:
             _partial_cycle_mixer(g, edge)
 
     @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])],
+        "g",
+        [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])],
     )
     def test_cycle_mixer(self, g):
         """Test if the cycle_mixer Hamiltonian maps valid cycles to valid cycles"""
@@ -1451,7 +1452,8 @@ class TestCycles:
             assert destination_indxs.issubset(invalid_bitstrings_indx)
 
     @pytest.mark.parametrize(
-        "g", [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])],
+        "g",
+        [nx.complete_graph(3), rx.generators.mesh_graph(3, [0, 1, 2])],
     )
     def test_cycle_mixer_error(self, g):
         """Test if the cycle_mixer raises ValueError"""

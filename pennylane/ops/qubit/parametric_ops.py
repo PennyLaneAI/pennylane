@@ -408,8 +408,14 @@ class Rot(Operation):
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
         mat = [
-            [qml.math.exp(-0.5j * (phi + omega)) * c, -qml.math.exp(0.5j * (phi - omega)) * s,],
-            [qml.math.exp(-0.5j * (phi - omega)) * s, qml.math.exp(0.5j * (phi + omega)) * c,],
+            [
+                qml.math.exp(-0.5j * (phi + omega)) * c,
+                -qml.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                qml.math.exp(-0.5j * (phi - omega)) * s,
+                qml.math.exp(0.5j * (phi + omega)) * c,
+            ],
         ]
 
         return qml.math.stack([qml.math.stack(row) for row in mat])

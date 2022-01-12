@@ -26,10 +26,30 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         ("k", "delta_sz", "init_state", "wires"),
         [
-            (1, 0, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3]),),
-            (1, -1, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3]),),
-            (2, 1, qml.math.array([1, 1, 0, 0]), qml.math.array([0, 1, 2, 3]),),
-            (2, 0, qml.math.array([1, 1, 0, 0, 0, 0]), qml.math.array([0, 1, 2, 3, 4, 5]),),
+            (
+                1,
+                0,
+                qml.math.array([1, 1, 0, 0]),
+                qml.math.array([0, 1, 2, 3]),
+            ),
+            (
+                1,
+                -1,
+                qml.math.array([1, 1, 0, 0]),
+                qml.math.array([0, 1, 2, 3]),
+            ),
+            (
+                2,
+                1,
+                qml.math.array([1, 1, 0, 0]),
+                qml.math.array([0, 1, 2, 3]),
+            ),
+            (
+                2,
+                0,
+                qml.math.array([1, 1, 0, 0, 0, 0]),
+                qml.math.array([0, 1, 2, 3, 4, 5]),
+            ),
             (
                 2,
                 1,
@@ -111,7 +131,11 @@ class TestDecomposition:
         @qml.qnode(dev)
         def circuit():
             qml.kUpCCGSD(
-                weights, wires=range(4), k=1, delta_sz=0, init_state=np.array([0, 1, 0, 1]),
+                weights,
+                wires=range(4),
+                k=1,
+                delta_sz=0,
+                init_state=np.array([0, 1, 0, 1]),
             )
             return qml.expval(qml.Identity(0))
 
@@ -390,7 +414,11 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.kUpCCGSD(
-                weights=weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state,
+                weights=weights,
+                wires=wires,
+                k=k,
+                delta_sz=delta_sz,
+                init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -449,7 +477,11 @@ class TestAttributes:
 
 def circuit_template(weights):
     qml.kUpCCGSD(
-        weights, wires=range(4), k=1, delta_sz=0, init_state=np.array([1, 1, 0, 0]),
+        weights,
+        wires=range(4),
+        k=1,
+        delta_sz=0,
+        init_state=np.array([1, 1, 0, 0]),
     )
     return qml.expval(qml.PauliZ(0))
 

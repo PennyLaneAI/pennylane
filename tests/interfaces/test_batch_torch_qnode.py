@@ -349,7 +349,11 @@ class TestQNode:
             res.backward()
 
     @pytest.mark.parametrize(
-        "U", [torch.tensor([[0, 1], [1, 0]], requires_grad=False), np.array([[0, 1], [1, 0]]),],
+        "U",
+        [
+            torch.tensor([[0, 1], [1, 0]], requires_grad=False),
+            np.array([[0, 1], [1, 0]]),
+        ],
     )
     def test_matrix_parameter(self, dev_name, diff_method, mode, U, tol):
         """Test that the Torch interface works correctly
@@ -629,7 +633,10 @@ class TestQubitIntegration:
         expected = np.array(
             [
                 [np.cos(x_val / 2) ** 2, np.sin(x_val / 2) ** 2],
-                [(1 + np.cos(x_val) * np.cos(y_val)) / 2, (1 - np.cos(x_val) * np.cos(y_val)) / 2,],
+                [
+                    (1 + np.cos(x_val) * np.cos(y_val)) / 2,
+                    (1 - np.cos(x_val) * np.cos(y_val)) / 2,
+                ],
             ]
         )
 
@@ -1195,7 +1202,11 @@ class TestTapeExpansion:
             expected = torch.tensor(
                 [
                     [0, -torch.cos(d[0] + w[0]) * torch.sin(d[1] + w[1]), 0],
-                    [0, -torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0]), -torch.sin(d[1] + w[1]),],
+                    [
+                        0,
+                        -torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0]),
+                        -torch.sin(d[1] + w[1]),
+                    ],
                 ]
             )
             assert torch.allclose(grad2_w_c, expected)
@@ -1264,7 +1275,11 @@ class TestTapeExpansion:
             expected = torch.tensor(
                 [
                     [0, -torch.cos(d[0] + w[0]) * torch.sin(d[1] + w[1]), 0],
-                    [0, -torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0]), -torch.sin(d[1] + w[1]),],
+                    [
+                        0,
+                        -torch.cos(d[1] + w[1]) * torch.sin(d[0] + w[0]),
+                        -torch.sin(d[1] + w[1]),
+                    ],
                 ]
             )
             assert torch.allclose(grad2_w_c, expected, atol=0.1)

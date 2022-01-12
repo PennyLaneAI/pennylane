@@ -83,7 +83,17 @@ interfaces = ["jax", "autograd", "tf", "torch"]
 
 class_jacs = [
     (np.ones(4),),
-    (np.array([np.cos(a), 1 / 3, 0.0, 0.0,]), np.array([0.0, 0.0, 2 * b, -1 / (b ** 2)]),),
+    (
+        np.array(
+            [
+                np.cos(a),
+                1 / 3,
+                0.0,
+                0.0,
+            ]
+        ),
+        np.array([0.0, 0.0, 2 * b, -1 / (b ** 2)]),
+    ),
     (np.eye(len(x)),),
     (
         np.vstack([np.eye(len(x)), np.zeros((4, 3))]),

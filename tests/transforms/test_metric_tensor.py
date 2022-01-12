@@ -329,7 +329,8 @@ class TestMetricTensor:
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
 
         params = np.array(
-            [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272], requires_grad=True,
+            [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
+            requires_grad=True,
         )
 
         G = qml.metric_tensor(circuit, approx="block-diag")(params)
@@ -477,7 +478,8 @@ class TestMetricTensor:
         correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
         params = np.array(
-            [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272], requires_grad=True,
+            [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
+            requires_grad=True,
         )
 
         G = qml.metric_tensor(circuit, approx="diag")(params)
@@ -726,8 +728,16 @@ fubini_ansatze = [
 
 B = np.array(
     [
-        [[0.73, 0.49, 0.04], [0.29, 0.45, 0.59], [0.64, 0.06, 0.26],],
-        [[0.93, 0.14, 0.46], [0.31, 0.83, 0.79], [0.25, 0.40, 0.16],],
+        [
+            [0.73, 0.49, 0.04],
+            [0.29, 0.45, 0.59],
+            [0.64, 0.06, 0.26],
+        ],
+        [
+            [0.93, 0.14, 0.46],
+            [0.31, 0.83, 0.79],
+            [0.25, 0.40, 0.16],
+        ],
     ],
     requires_grad=True,
 )

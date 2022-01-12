@@ -808,7 +808,11 @@ class TestOrbitalRotation:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"), [(-0.1), (0.1),],
+        ("phi"),
+        [
+            (-0.1),
+            (0.1),
+        ],
     )
     def test_autograd_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
@@ -830,7 +834,8 @@ class TestOrbitalRotation:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"), [(-0.1), (0.1)],
+        ("phi"),
+        [(-0.1), (0.1)],
     )
     def test_tf_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
@@ -856,7 +861,11 @@ class TestOrbitalRotation:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"), [(-0.1), (0.1),],
+        ("phi"),
+        [
+            (-0.1),
+            (0.1),
+        ],
     )
     def test_jax_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
@@ -880,7 +889,11 @@ class TestOrbitalRotation:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"), [(-0.1), (0.1),],
+        ("phi"),
+        [
+            (-0.1),
+            (0.1),
+        ],
     )
     def test_torch_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the

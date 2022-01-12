@@ -572,7 +572,10 @@ class TestQubitIntegration:
         expected = np.array(
             [
                 [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
-                [[np.sin(x) / 2, 0], [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],],
+                [
+                    [np.sin(x) / 2, 0],
+                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                ],
             ]
         )
 
@@ -1294,10 +1297,11 @@ class TestTapeExpansion:
             assert np.allclose(grad2_c, 0)
 
             grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
-            expected = (
-                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
-                [0, -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]), -np.sin(d[1] + w[1]),],
-            )
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
             assert np.allclose(grad2_w_c, expected)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
@@ -1350,10 +1354,11 @@ class TestTapeExpansion:
             assert np.allclose(grad2_c, 0, atol=0.1)
 
             grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
-            expected = (
-                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
-                [0, -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]), -np.sin(d[1] + w[1]),],
-            )
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
             assert np.allclose(grad2_w_c, expected, atol=0.1)
 
 

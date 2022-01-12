@@ -24,20 +24,19 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 
 test_multi_dispatch_stack_data = [
-    [[1.0, 0.0], [2.0, 3.0]],
-    ([1.0, 0.0], [2.0, 3.0]),
-    onp.array([[1.0, 0.0], [2.0, 3.0]]),
-    np.array([[1.0, 0.0], [2.0, 3.0]]),
-    # torch.tensor([[1.,0.],[2.,3.]]),
-    tf.Variable([[1.0, 0.0], [2.0, 3.0]]),
-    tf.constant([[1.0, 0.0], [2.0, 3.0]]),
+    [[1.,0.],[2.,3.]],
+    ([1.,0.],[2.,3.]),
+    onp.array([[1.,0.],[2.,3.]]),
+    np.array([[1.,0.],[2.,3.]]),
+    #torch.tensor([[1.,0.],[2.,3.]]),
+    tf.Variable([[1.,0.],[2.,3.]]),
+    tf.constant([[1.,0.],[2.,3.]]),
 ]
-
 
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
 def test_multi_dispatch_stack(x):
     """ Test that the decorated autoray function stack can handle all inputs """
-    stack = fn.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
+    stack = fn.multi_dispatch.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     res = stack(x)
     print(res)
-    assert fn.allequal(res, [[1.0, 0.0], [2.0, 3.0]])
+    assert fn.allequal(res, [[1., 0.],[ 2., 3.]])

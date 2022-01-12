@@ -634,7 +634,10 @@ class TestQubitIntegration:
                     [-tf.sin(x) / 2, tf.sin(x) / 2],
                     [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
                 ],
-                [[0, 0], [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],],
+                [
+                    [0, 0],
+                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+                ],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -660,7 +663,11 @@ class TestQubitIntegration:
             res = circuit(x, y)
 
         expected = np.array(
-            [tf.cos(x), (1 + tf.cos(x) * tf.cos(y)) / 2, (1 - tf.cos(x) * tf.cos(y)) / 2,]
+            [
+                tf.cos(x),
+                (1 + tf.cos(x) * tf.cos(y)) / 2,
+                (1 - tf.cos(x) * tf.cos(y)) / 2,
+            ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1164,10 +1171,11 @@ class TestTapeExpansion:
             assert grad2_c is None or np.allclose(grad2_c, 0)
 
             grad2_w_c = t2.jacobian(grad[1], c)
-            expected = (
-                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
-                [0, -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]), -np.sin(d[1] + w[1]),],
-            )
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
             assert np.allclose(grad2_w_c, expected)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
@@ -1223,10 +1231,11 @@ class TestTapeExpansion:
             assert grad2_c is None
 
             grad2_w_c = t2.jacobian(grad[1], c)
-            expected = (
-                [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0],
-                [0, -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]), -np.sin(d[1] + w[1]),],
-            )
+            expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
+                0,
+                -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
+                -np.sin(d[1] + w[1]),
+            ]
             assert np.allclose(grad2_w_c, expected, atol=0.1)
 
 
@@ -1397,7 +1406,10 @@ class TestAutograph:
                     [-tf.sin(x) / 2, tf.sin(x) / 2],
                     [-tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
                 ],
-                [[0, 0], [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],],
+                [
+                    [0, 0],
+                    [-tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+                ],
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)

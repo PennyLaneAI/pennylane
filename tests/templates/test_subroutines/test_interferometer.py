@@ -295,7 +295,11 @@ class TestInterferometer:
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, expected",
-        [(2, 3, [(3,), (3,), (3,)]), (3, 1, [(0,), (0,), (1,)]), (4, 2, [(1,), (1,), (2,)]),],
+        [
+            (2, 3, [(3,), (3,), (3,)]),
+            (3, 1, [(0,), (0,), (1,)]),
+            (4, 2, [(1,), (1,), (2,)]),
+        ],
     )
     def test_shapes(self, n_layers, n_wires, tol, expected):
         """Test that the shape method returns the correct shapes for

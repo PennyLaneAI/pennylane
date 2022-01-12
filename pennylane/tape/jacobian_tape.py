@@ -428,7 +428,8 @@ class JacobianTape(QuantumTape):
 
         if num_params == 0:
             warnings.warn(
-                "No trainable parameters were specified for computing the Jacobian.", UserWarning,
+                "No trainable parameters were specified for computing the Jacobian.",
+                UserWarning,
             )
             return []
 

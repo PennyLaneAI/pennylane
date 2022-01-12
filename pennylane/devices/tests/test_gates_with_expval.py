@@ -110,12 +110,26 @@ class TestGatesQubitExpval:
             ("Rot", [-pi / 4, pi / 4, pi / 2], 1 / sqrt(2)),
             (
                 "QubitUnitary",
-                [np.array([[1j / sqrt(2), 1j / sqrt(2)], [1j / sqrt(2), -1j / sqrt(2)],])],
+                [
+                    np.array(
+                        [
+                            [1j / sqrt(2), 1j / sqrt(2)],
+                            [1j / sqrt(2), -1j / sqrt(2)],
+                        ]
+                    )
+                ],
                 0,
             ),
             (
                 "QubitUnitary",
-                [np.array([[-1j / sqrt(2), 1j / sqrt(2)], [1j / sqrt(2), 1j / sqrt(2)],])],
+                [
+                    np.array(
+                        [
+                            [-1j / sqrt(2), 1j / sqrt(2)],
+                            [1j / sqrt(2), 1j / sqrt(2)],
+                        ]
+                    )
+                ],
                 0,
             ),
         ],
@@ -207,7 +221,13 @@ class TestGatesQubitExpval:
 
     # This test uses initial state |0> and checks one Z expval
     @pytest.mark.parametrize(
-        "name,expected_output", [("PauliX", -1), ("PauliY", -1), ("PauliZ", 1), ("Hadamard", 0),],
+        "name,expected_output",
+        [
+            ("PauliX", -1),
+            ("PauliY", -1),
+            ("PauliZ", 1),
+            ("Hadamard", 0),
+        ],
     )
     def test_supported_gate_single_wire_no_parameters(self, device, tol, name, expected_output):
         """Tests supported non-parametrized gates that act on a single wire"""
@@ -226,7 +246,11 @@ class TestGatesQubitExpval:
     # This test uses initial state |Phi+> and checks two Z expvals
     @pytest.mark.parametrize(
         "name,expected_output",
-        [("CNOT", [-1 / 2, 1]), ("SWAP", [-1 / 2, -1 / 2]), ("CZ", [-1 / 2, -1 / 2]),],
+        [
+            ("CNOT", [-1 / 2, 1]),
+            ("SWAP", [-1 / 2, -1 / 2]),
+            ("CZ", [-1 / 2, -1 / 2]),
+        ],
     )
     def test_supported_gate_two_wires_no_parameters(self, device, tol, name, expected_output):
         """Tests supported parametrized gates that act on two wires"""
@@ -246,7 +270,10 @@ class TestGatesQubitExpval:
         assert np.allclose(circuit(), expected_output, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
-        "name,expected_output", [("CSWAP", [-1, -1, 1]),],
+        "name,expected_output",
+        [
+            ("CSWAP", [-1, -1, 1]),
+        ],
     )
     def test_supported_gate_three_wires_no_parameters(self, device, tol, name, expected_output):
         """Tests supported non-parametrized gates that act on three wires"""
@@ -270,7 +297,12 @@ class TestGateInverseExpval:
     applying the inverse of gates."""
 
     @pytest.mark.parametrize(
-        "name,expected_output", [("PauliX", 1), ("PauliY", 1), ("S", -1),],
+        "name,expected_output",
+        [
+            ("PauliX", 1),
+            ("PauliY", 1),
+            ("S", -1),
+        ],
     )
     def test_inverse_circuit(self, device, tol, name, expected_output, skip_if):
         """Tests the inverse of supported non-parametrized gates that act on a
@@ -291,7 +323,12 @@ class TestGateInverseExpval:
         assert np.isclose(circuit(), expected_output, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
-        "name,expected_output", [("PauliX", 1), ("PauliY", 1), ("S", -1),],
+        "name,expected_output",
+        [
+            ("PauliX", 1),
+            ("PauliY", 1),
+            ("S", -1),
+        ],
     )
     def test_inverse_circuit_calling_inv_multiple_times(
         self, device, tol, name, expected_output, skip_if

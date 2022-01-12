@@ -238,7 +238,10 @@ class QNode:
         """String representation."""
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
         return detail.format(
-            self.device.num_wires, self.device.short_name, self.interface, self.diff_method,
+            self.device.num_wires,
+            self.device.short_name,
+            self.interface,
+            self.diff_method,
         )
 
     @staticmethod
@@ -399,7 +402,9 @@ class QNode:
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 device = qml.device(
-                    backprop_devices[interface], wires=device.wires, shots=device.shots,
+                    backprop_devices[interface],
+                    wires=device.wires,
+                    shots=device.shots,
                 )
                 return JacobianTape, interface, device, {"method": "backprop"}
 

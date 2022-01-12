@@ -307,7 +307,8 @@ class TestOperatorIntegration:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            qml.QuantumFunctionError, match=f"Operator {DummyOp.__name__} must act on all wires",
+            qml.QuantumFunctionError,
+            match=f"Operator {DummyOp.__name__} must act on all wires",
         ):
             circuit()
 

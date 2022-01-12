@@ -69,7 +69,9 @@ class TestJaxExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=lambda x: x, interface="jax",)[0][0]
+            return execute([tape], device, gradient_fn=lambda x: x, interface="jax",)[
+                0
+            ][0]
 
         with pytest.raises(ValueError, match="Unknown gradient function"):
             res = jax.grad(cost)(a, device=dev)
@@ -88,7 +90,11 @@ class TestJaxExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             return execute(
-                [tape], device, gradient_fn=param_shift, mode="forward", interface="jax",
+                [tape],
+                device,
+                gradient_fn=param_shift,
+                mode="forward",
+                interface="jax",
             )[0]
 
         with pytest.raises(

@@ -98,7 +98,17 @@ class Attribute(set):
 
 
 composable_rotations = Attribute(
-    ["RX", "RY", "RZ", "PhaseShift", "CRX", "CRY", "CRZ", "ControlledPhaseShift", "Rot",]
+    [
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "ControlledPhaseShift",
+        "Rot",
+    ]
 )
 """Attribute: Operations for which composing multiple copies of the operation results in an
 addition (or alternative accumulation) of parameters.

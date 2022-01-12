@@ -246,10 +246,12 @@ class RepresentationResolver:
             x = 2 * idx + 1
             p = 2 * idx + 2
             poly_str += RepresentationResolver._format_poly_term(
-                coefficients[0, x] + coefficients[x, 0], f"x{self.charset.to_subscript(idx)}",
+                coefficients[0, x] + coefficients[x, 0],
+                f"x{self.charset.to_subscript(idx)}",
             )
             poly_str += RepresentationResolver._format_poly_term(
-                coefficients[0, p] + coefficients[p, 0], f"p{self.charset.to_subscript(idx)}",
+                coefficients[0, p] + coefficients[p, 0],
+                f"p{self.charset.to_subscript(idx)}",
             )
 
         for idx1 in range(0, coefficients.shape[0] // 2):

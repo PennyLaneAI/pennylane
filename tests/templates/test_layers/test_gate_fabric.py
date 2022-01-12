@@ -700,7 +700,9 @@ class TestInputs:
         @qml.qnode(dev)
         def circuit():
             qml.GateFabric(
-                weights=weights, wires=wires, init_state=init_state,
+                weights=weights,
+                wires=wires,
+                init_state=init_state,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -721,7 +723,11 @@ class TestAttributes:
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, expected_shape",
-        [(2, 4, (2, 1, 2)), (2, 6, (2, 2, 2)), (2, 8, (2, 3, 2)),],
+        [
+            (2, 4, (2, 1, 2)),
+            (2, 6, (2, 2, 2)),
+            (2, 8, (2, 3, 2)),
+        ],
     )
     def test_shape(self, n_layers, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""

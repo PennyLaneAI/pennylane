@@ -111,7 +111,10 @@ def test_grover_diffusion_matrix(n_wires):
 
     ctrl_str = "0" * (n_wires - 1)
     CX = MultiControlledX(
-        control_values=ctrl_str, control_wires=wires[:-1], wires=wires[-1], work_wires=None,
+        control_values=ctrl_str,
+        control_wires=wires[:-1],
+        wires=wires[-1],
+        work_wires=None,
     ).matrix
 
     M = functools.reduce(np.kron, oplist)

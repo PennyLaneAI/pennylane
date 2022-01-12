@@ -375,7 +375,15 @@ class TestPauliError:
     OPERATORS = ["X", "XY", "ZX"]
     WIRES = [[1], [0, 1], [3, 1]]
     EXPECTED_KS = [
-        [np.sqrt(0.5) * np.eye(2), np.array([[0.0, 0.70710678], [0.70710678, 0.0],]),],
+        [
+            np.sqrt(0.5) * np.eye(2),
+            np.array(
+                [
+                    [0.0, 0.70710678],
+                    [0.70710678, 0.0],
+                ]
+            ),
+        ],
         [
             np.sqrt(0.5) * np.eye(4),
             np.array(
@@ -615,4 +623,11 @@ class TestThermalRelaxationError:
             return qml.expval(qml.PauliZ(0))
 
         gradient = np.squeeze(qml.grad(circuit)(pe))
-        assert np.allclose(gradient, np.array([(1 / 0.1) * (circuit(0.1) - circuit(0.0)),]),)
+        assert np.allclose(
+            gradient,
+            np.array(
+                [
+                    (1 / 0.1) * (circuit(0.1) - circuit(0.0)),
+                ]
+            ),
+        )

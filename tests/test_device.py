@@ -338,7 +338,8 @@ class TestInternalFunctions:
         observables = [qml.expval(qml.PauliZ(0))]
 
         with pytest.raises(
-            DeviceError, match="Gate CNOT not supported on device MockDevice",
+            DeviceError,
+            match="Gate CNOT not supported on device MockDevice",
         ):
             dev.check_validity(queue, observables)
 
@@ -442,12 +443,14 @@ class TestInternalFunctions:
         dev = mock_device_supporting_paulis()
 
         with pytest.raises(
-            DeviceError, match=f"The inverse of gates are not supported on device {dev.short_name}",
+            DeviceError,
+            match=f"The inverse of gates are not supported on device {dev.short_name}",
         ):
             dev.check_validity([qml.PauliZ(0).inv()], [])
 
         with pytest.raises(
-            DeviceError, match=f"The inverse of gates are not supported on device {dev.short_name}",
+            DeviceError,
+            match=f"The inverse of gates are not supported on device {dev.short_name}",
         ):
             dev.check_validity([], [qml.PauliZ(0).inv()])
 

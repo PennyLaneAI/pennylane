@@ -96,7 +96,8 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        DeviceError, match=msg,
+        DeviceError,
+        match=msg,
     ):
         qml.device("default.qubit", wires=1, shots=1, analytic=True)
 
@@ -300,7 +301,10 @@ class TestApply:
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0,
+            qubit_device_2_wires._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
 
     test_data_three_wires_no_parameters = [

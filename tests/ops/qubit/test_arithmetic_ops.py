@@ -21,7 +21,10 @@ import pennylane as qml
 
 
 @pytest.mark.parametrize(
-    "op_builder", [lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),],
+    "op_builder",
+    [
+        lambda: qml.QubitCarry(wires=[0, 1, 2, 3]),
+    ],
 )
 def test_adjoint_with_decomposition(op_builder):
     """Tests the ``QubitCarry`` op under adjoint and decomposition."""

@@ -223,7 +223,10 @@ class QNode:
         """String representation."""
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
         return detail.format(
-            self.device.num_wires, self.device.short_name, self.interface, self.diff_method,
+            self.device.num_wires,
+            self.device.short_name,
+            self.interface,
+            self.diff_method,
         )
 
     @property
@@ -391,7 +394,9 @@ class QNode:
                     batch_transform = device.batch_transform
 
                     device = qml.device(
-                        backprop_devices[interface], wires=device.wires, shots=device.shots,
+                        backprop_devices[interface],
+                        wires=device.wires,
+                        shots=device.shots,
                     )
                     device.expand_fn = expand_fn
                     device.batch_transform = batch_transform

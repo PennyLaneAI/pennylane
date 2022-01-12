@@ -274,7 +274,12 @@ def test_gradient_kinetic_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
                 requires_grad=True,
             ),
             # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
-            np.array([[-2.03852075, -1.6024171], [-1.6024171, -2.03852075],]),
+            np.array(
+                [
+                    [-2.03852075, -1.6024171],
+                    [-1.6024171, -2.03852075],
+                ]
+            ),
         )
     ],
 )
@@ -297,7 +302,12 @@ def test_attraction_matrix(symbols, geometry, alpha, v_ref):
                 requires_grad=True,
             ),
             # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
-            np.array([[-2.03852075, -1.6024171], [-1.6024171, -2.03852075],]),
+            np.array(
+                [
+                    [-2.03852075, -1.6024171],
+                    [-1.6024171, -2.03852075],
+                ]
+            ),
         )
     ],
 )
@@ -317,7 +327,12 @@ def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             # attraction matrix obtained from pyscf using mol.intor('int1e_nuc')
-            np.array([[-2.03852075, -1.6024171], [-1.6024171, -2.03852075],]),
+            np.array(
+                [
+                    [-2.03852075, -1.6024171],
+                    [-1.6024171, -2.03852075],
+                ]
+            ),
         )
     ],
 )
@@ -346,10 +361,16 @@ def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
                 [
                     [
                         [[0.0, 0.0, 0.0], [0.0, 0.0, 0.44900112]],
-                        [[0.0, 0.0, -0.26468668], [0.0, 0.0, 0.26468668],],
+                        [
+                            [0.0, 0.0, -0.26468668],
+                            [0.0, 0.0, 0.26468668],
+                        ],
                     ],
                     [
-                        [[0.0, 0.0, -0.26468668], [0.0, 0.0, 0.26468668],],
+                        [
+                            [0.0, 0.0, -0.26468668],
+                            [0.0, 0.0, 0.26468668],
+                        ],
                         [[0.0, 0.0, -0.44900112], [0.0, 0.0, 0.0]],
                     ],
                 ]
@@ -444,7 +465,12 @@ def test_repulsion_tensor_nodiff(symbols, geometry, e_ref):
                 requires_grad=True,
             ),
             # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
-            np.array([[-1.27848886, -1.21916326], [-1.21916326, -1.27848886],]),
+            np.array(
+                [
+                    [-1.27848886, -1.21916326],
+                    [-1.21916326, -1.27848886],
+                ]
+            ),
         )
     ],
 )
@@ -463,7 +489,12 @@ def test_core_matrix(symbols, geometry, alpha, c_ref):
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
-            np.array([[-1.27848886, -1.21916326], [-1.21916326, -1.27848886],]),
+            np.array(
+                [
+                    [-1.27848886, -1.21916326],
+                    [-1.21916326, -1.27848886],
+                ]
+            ),
         )
     ],
 )
@@ -486,7 +517,12 @@ def test_core_matrix_nodiff(symbols, geometry, c_ref):
                 requires_grad=True,
             ),
             # core matrix obtained from pyscf using scf.RHF(mol).get_hcore()
-            np.array([[-1.27848886, -1.21916326], [-1.21916326, -1.27848886],]),
+            np.array(
+                [
+                    [-1.27848886, -1.21916326],
+                    [-1.21916326, -1.27848886],
+                ]
+            ),
         )
     ],
 )
