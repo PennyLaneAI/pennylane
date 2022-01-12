@@ -14,7 +14,7 @@
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
-from collections.abc import Sequence
+from collections.abc     import Sequence
 import functools
 
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -150,11 +150,8 @@ def multi_dispatch(argnum=None, tensor_list=None):
             kwargs["like"] = interface
 
             return fn(*args, **kwargs)
-
         return wrapper
-
     return decorator
-
 
 def block_diag(values):
     """Combine a sequence of 2D tensors to form a block diagonal tensor.
