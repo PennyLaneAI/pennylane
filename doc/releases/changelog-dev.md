@@ -195,8 +195,8 @@
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
 * Fixes a bug in which passing required arguments into operations as
-  keyword arguments would throw an error because the call-sign didn't
-  match the function definition. 
+  keyword arguments would throw an error because the documented call
+  signature didn't match the function definition. 
   [(#1976)](https://github.com/PennyLaneAI/pennylane/pull/1976)
 
 <h3>Documentation</h3>
