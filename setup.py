@@ -21,13 +21,14 @@ requirements = [
     "numpy",
     "scipy",
     "networkx",
+    "retworkx",
     "autograd",
     "toml",
     "appdirs",
     "semantic_version==2.6",
     "autoray",
     "cachetools",
-    "pennylane-lightning>=0.18",
+    "pennylane-lightning>=0.20",
     "dask",
     "distributed"
 ]
@@ -51,7 +52,7 @@ info = {
             'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
             'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
             'default.mixed = pennylane.devices.default_mixed:DefaultMixed',
-            'task.qubit = pennylane.devices:TaskQubit',
+	    'task.qubit = pennylane.devices:TaskQubit',
             ],
         'console_scripts': [
                 'pl-device-test=pennylane.devices.tests:cli'
