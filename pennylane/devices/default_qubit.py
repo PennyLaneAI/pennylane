@@ -95,7 +95,6 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
-        "RuntimeOp",
         "If",
         "MidCircuitMeasure",
         "BasisState",
@@ -171,7 +170,6 @@ class DefaultQubit(QubitDevice):
         self._apply_ops = {
             "MidCircuitMeasure": self._apply_mid_circuit_measure,
             "If": self._if_op,
-            "RuntimeOp": self._runtime_op,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
@@ -256,10 +254,6 @@ class DefaultQubit(QubitDevice):
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
-
-    def _runtime_op(self, state, axes, op_object=None, **kwargs):
-        operation = op_object.create_op()
-        return self._apply_operation(state, operation)
 
     def _if_op(self, state, axes, op_object=None, **kwargs):
         expr = op_object.runtime_exp

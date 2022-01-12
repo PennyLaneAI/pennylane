@@ -1,6 +1,5 @@
 from sympy import Symbol
 
-
 from pennylane.operation import AnyWires, Operation
 
 class _MeasureClass:
@@ -28,30 +27,6 @@ class MidCircuitMeasure(Operation):
         self.measure_var = measure_var
         self.runtime_value = None
         super().__init__(wires=wires)
-
-
-class RuntimeOp(Operation):
-    num_wires = AnyWires
-
-    def __init__(self, op, *args, **kwargs):
-        self.op = op
-        self.args = args
-        self.kwargs = kwargs
-        super().__init__(*args, **kwargs)
-
-    def create_op(self):
-        return self.op(*self.unwrap_args(self.args), do_queue=False, **self.kwargs)
-
-
-    @staticmethod
-    def unwrap_args(args):
-        unwrapped = []
-        for arg in args:
-            if isinstance(arg, MidCircuitMeasure):
-                unwrapped.append(arg.runtime_value)
-            else:
-                unwrapped.append(arg)
-        return unwrapped
 
 
 class If(Operation):
