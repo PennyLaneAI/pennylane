@@ -41,6 +41,7 @@ def _add_grouping_symbols(op, layer_str, wire_map):
 
     return layer_str
 
+
 def _add_op(op, layer_str, wire_map, decimals):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)

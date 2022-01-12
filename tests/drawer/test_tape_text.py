@@ -120,6 +120,14 @@ class TestDecimals:
 
         assert tape_text(tape, decimals=2) == expected
 
+    def test_decimals_multiparameters(self):
+
+        with QuantumTape() as tape_rot:
+            qml.Rot(1.2345, 2.3456, 3.4566, wires=0)
+
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        assert tape_text(tape_rot, decimals=2) == expected
+
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers"""
 
@@ -128,6 +136,7 @@ class TestDecimals:
                     "1.234: ──RZ(3)─┤  ")
 
         assert tape_text(tape, decimals=0) == expected
+
 
 class TestMaxLength:
 
@@ -141,7 +150,7 @@ class TestMaxLength:
             for _ in range(3):
                 qml.sample()
 
-        out = tape_text(tape)
+        out = tape_text(tape_ml)
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
     @pytest.mark.parametrize("ml", [10, 15, 20])
@@ -157,3 +166,28 @@ class TestMaxLength:
 
         out = tape_text(tape, max_length=ml)
         assert max(len(s) for s in out.split("\n")) <= ml
+
+
+single_op_tests_data = [
+(qml.CNOT(wires=(0,1)), '0: ─╭C─┤  \n1: ─╰X─┤  '),
+(qml.Toffoli(wires=(0,1,2)), '0: ─╭C─┤  \n1: ─├C─┤  \n2: ─╰X─┤  '),
+(qml.Barrier(wires=(0,1,2)), '0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  '),
+(qml.CSWAP(wires=(0,1,2)), '0: ─╭C────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  '),
+(qml.DoubleExcitationPlus(1.23, wires=(0,1,2,3)),
+    '0: ─╭G²₊(1.23)─┤  \n1: ─├G²₊(1.23)─┤  \n2: ─├G²₊(1.23)─┤  \n3: ─╰G²₊(1.23)─┤  '),
+(qml.QubitUnitary(qml.numpy.eye(4), wires=(0,1)), '0: ─╭U─┤  \n1: ─╰U─┤  '),
+(qml.QubitSum(wires=(0,1,2)), '0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  '),
+(qml.AmplitudeDamping(0.98, wires=0), '0: ──AmplitudeDamping(0.98)─┤  '),
+(qml.QubitStateVector([0,1,0,0], wires=(0,1)), '0: ─╭QubitStateVector─┤  \n1: ─╰QubitStateVector─┤  '),
+(qml.Kerr(1.234, wires=0), '0: ──Kerr(1.23)─┤  '),
+(qml.GroverOperator(wires=(0,1,2)), '0: ─╭GroverOperator─┤  \n1: ─├GroverOperator─┤  \n2: ─╰GroverOperator─┤  '),
+]
+
+@pytest.mark.parametrize("op, expected", single_op_tests_data)
+def test_single_ops(op, expected):
+
+    with QuantumTape() as tape:
+        qml.apply(op)
+
+    assert tape_text(tape, decimals=2) == expected
+
