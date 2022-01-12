@@ -160,7 +160,7 @@
   ```python
   dev = qml.device("default.qubit", wires=2)
 
-  @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+  @qml.qnode(dev)
   def circuit(x):
       qml.RX(x[0], wires=0)
       qml.RY(x[1], wires=0)

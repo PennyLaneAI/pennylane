@@ -20,7 +20,8 @@ from pennylane import numpy as np
 
 
 class TestParameterShiftHessian:
-    """Tests for the param_shift_hessian method"""
+    """Test the general functionality of the param_shift_hessian method
+       on the default interface (autograd)"""
 
     def test_single_two_term_gate(self):
         """Test that the correct hessian is calculated for a QNode with single RX operator
@@ -299,6 +300,25 @@ class TestParameterShiftHessian:
 
         assert all(np.allclose(expected[i], hessian[i]) for i in range(3))
 
+    def test_hessian_transform_is_differentiable(self):
+        """Test that the 3rd derivate can be calculated via auto-differentiation (1d -> 1d)"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        derivative = qml.jacobian(qml.gradients.param_shift_hessian(circuit))(x)
+
+        assert np.allclose(expected, derivative)
+
     # Some bounds we could choose to meet on the efficiency of the hessian implementation
     # for operations with two eigenvalues (2-term shift rule):
     # - < jacobian(jacobian())
@@ -383,100 +403,6 @@ class TestParameterShiftHessian:
         assert hessian_qruns < jacobian_qruns
         assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
         assert hessian_qruns <= 3 ** 3
-
-    def test_hessian_transform_is_differentiable_autograd(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in Autograd
-        (1d -> 1d)"""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=1)
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-
-        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-        autograd_deriv = qml.jacobian(qml.gradients.param_shift_hessian(circuit))(x)
-
-        assert np.allclose(expected, autograd_deriv)
-
-    def test_hessian_transform_is_differentiable_torch(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
-        (1d -> 1d)"""
-        torch = pytest.importorskip("torch")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=1)
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-        x_torch = torch.tensor([0.1, 0.2], dtype=torch.float64)
-
-        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-        circuit.interface = "torch"
-        jacobian_fn = torch.autograd.functional.jacobian
-        torch_deriv = jacobian_fn(qml.gradients.param_shift_hessian(circuit), x_torch)[0]
-
-        assert np.allclose(expected, torch_deriv)
-
-    @pytest.mark.slow
-    def test_hessian_transform_is_differentiable_jax(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
-        (1d -> 1d)"""
-        jax = pytest.importorskip("jax")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, diff_method="backprop", max_diff=3)
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-        x_jax = jax.numpy.array([0.1, 0.2])
-
-        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-        circuit.interface = "jax"
-        jax_deriv = jax.jacobian(qml.gradients.param_shift_hessian(circuit))(x_jax)
-
-        assert np.allclose(expected, jax_deriv)
-
-    @pytest.mark.slow
-    def test_hessian_transform_is_differentiable_tensorflow(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
-        (1d -> 1d)"""
-        tf = pytest.importorskip("tensorflow")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=1)
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
-        circuit.interface = "tf"
-        with tf.GradientTape() as tf_tape:
-            hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
-        tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
-
-        assert np.allclose(expected, tensorflow_deriv)
 
     def test_error_unsupported_operation(self):
         """Test that the correct error is thrown for unsopperted operations"""
@@ -596,3 +522,150 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian1, hessian2)
         assert qruns1 < qruns2
+
+
+class TestInterfaces:
+    """Test the param_shift_hessian method on different interfaces"""
+
+    def test_hessian_transform_with_torch(self):
+        """Test that the Hessian transform can be used with Torch (1d -> 1d)"""
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x_np = np.array([0.1, 0.2], requires_grad=True)
+        x_torch = torch.tensor([0.1, 0.2], dtype=torch.float64, requires_grad=True)
+
+        expected = qml.jacobian(qml.jacobian(circuit))(x_np)
+        circuit.interface = 'torch'
+        hess = qml.gradients.param_shift_hessian(circuit)(x_torch)[0]
+
+        assert np.allclose(expected, hess.detach())
+
+    def test_hessian_transform_is_differentiable_torch(self):
+        """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
+        (1d -> 1d)"""
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+        x_torch = torch.tensor([0.1, 0.2], dtype=torch.float64, requires_grad=True)
+
+        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        circuit.interface = "torch"
+        jacobian_fn = torch.autograd.functional.jacobian
+        torch_deriv = jacobian_fn(qml.gradients.param_shift_hessian(circuit), x_torch)[0]
+
+        assert np.allclose(expected, torch_deriv)
+
+    @pytest.mark.slow
+    def test_hessian_transform_with_jax(self):
+        """Test that the Hessian transform can be used with JAX (1d -> 1d)"""
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x_np = np.array([0.1, 0.2], requires_grad=True)
+        x_jax = jax.numpy.array([0.1, 0.2])
+
+        expected = qml.jacobian(qml.jacobian(circuit))(x_np)
+        circuit.interface = 'jax'
+        hess = qml.gradients.param_shift_hessian(circuit)(x_jax)
+
+        assert np.allclose(expected, hess)
+
+    @pytest.mark.slow
+    def test_hessian_transform_is_differentiable_jax(self):
+        """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
+        (1d -> 1d)"""
+        jax = pytest.importorskip("jax")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", max_diff=3)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+        x_jax = jax.numpy.array([0.1, 0.2])
+
+        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        circuit.interface = "jax"
+        jax_deriv = jax.jacobian(qml.gradients.param_shift_hessian(circuit))(x_jax)
+
+        assert np.allclose(expected, jax_deriv)
+
+    @pytest.mark.slow
+    def test_hessian_transform_with_tensorflow(self):
+        """Test that the Hessian transform can be used with TensorFlow (1d -> 1d)"""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x_np = np.array([0.1, 0.2], requires_grad=True)
+        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+        expected = qml.jacobian(qml.jacobian(circuit))(x_np)
+        circuit.interface = 'tf'
+        with tf.GradientTape():
+            hess = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
+
+        assert np.allclose(expected, hess)
+
+    @pytest.mark.slow
+    def test_hessian_transform_is_differentiable_tensorflow(self):
+        """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
+        (1d -> 1d)"""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
+
+        expected = qml.jacobian(qml.jacobian(qml.jacobian(circuit)))(x)
+        circuit.interface = "tf"
+        with tf.GradientTape() as tf_tape:
+            hessian = qml.gradients.param_shift_hessian(circuit)(x_tf)[0]
+        tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
+
+        assert np.allclose(expected, tensorflow_deriv)
