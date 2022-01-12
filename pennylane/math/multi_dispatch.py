@@ -532,6 +532,8 @@ def scatter_element_add(tensor, index, value, like=None):
     tensor([[ 0.1000, 20.2000,  0.3000],
             [ 0.4000,  0.5000, 10.6000]])
     """
+    if len(np.shape(tensor)) == 0 and index == ():
+        return tensor + value
 
     interface = like or _multi_dispatch([tensor, value])
     return np.scatter_element_add(tensor, index, value, like=interface)
