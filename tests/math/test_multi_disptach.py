@@ -36,7 +36,7 @@ test_multi_dispatch_stack_data = [
 
 @pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
 def test_multi_dispatch_stack(x):
-    """ Test that the decorated autoray function stack can handle all inputs """
+    """Test that the decorated autoray function stack can handle all inputs"""
     stack = fn.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     res = stack(x)
     print(res)
