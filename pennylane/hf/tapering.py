@@ -571,7 +571,7 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
     >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
     >>> paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
-    >>> qml.hf.transform_hf(generators, pauli_x_ops, paulix_sector, 
+    >>> qml.hf.transform_hf(generators, pauli_x_ops, paulix_sector,
                             mol.n_electrons, len(H.wires))
         [1]
     """
