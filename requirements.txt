@@ -1,7 +1,7 @@
 numpy==1.21
 scipy==1.7
 cvxpy==1.1
-cvxopt==1.2
+cvxopt==1.2.7
 cachetools==4.2.2
 networkx==2.6
 retworkx==0.10.2
