@@ -1,4 +1,4 @@
-from sympy import Symbol
+import sympy as sp
 
 from pennylane.operation import AnyWires, Operation
 
@@ -13,7 +13,7 @@ class _MeasureClass:
         return count
 
     def __call__(self, wire):
-        runtime_var = Symbol(f"measurement_{self._get_count()}")
+        runtime_var = sp.Symbol(f"measurement_{self._get_count()}")
         MidCircuitMeasure(runtime_var, wires=wire)
         return runtime_var
 
