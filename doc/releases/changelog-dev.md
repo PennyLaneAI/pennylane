@@ -274,7 +274,7 @@
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
 * Added `multi_dispatch` decorator that helps ease the definition of new functions.
-  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2082)
+  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
 
 <h3>Breaking changes</h3>
 
