@@ -171,12 +171,8 @@ all_substep_kwargs = [
     ),
 )
 @pytest.mark.parametrize(
-<<<<<<< HEAD
-    "optimizer, optimizer_kwargs", list(zip(optimizers, optimizer_kwargs)),
-=======
     "substep_optimizer, substep_kwargs",
     list(zip(substep_optimizers, all_substep_kwargs)),
->>>>>>> e7635a33e055f1e793b85f763de660706eff3a0b
 )
 class TestWithClassicalFunction:
     def test_number_of_function_calls(
