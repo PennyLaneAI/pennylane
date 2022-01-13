@@ -22,14 +22,21 @@ class Leaf:
         self.values = args
 
     def __add__(self, other):
+        if isinstance(other, Node):
+            return other.__radd__(self)
         if not isinstance(other, Leaf):
             other = Leaf(other)
         return Leaf(*self.values, *other.values)
 
     def __radd__(self, other):
+        if isinstance(other, Node):
+            return other.__add__(self)
         if not isinstance(other, Leaf):
             other = Leaf([other])
         return Leaf(*other.values, *self.values)
+
+    def transform_leaves(self, fun):
+        return Leaf(fun(*self.values))
 
 
 class Node:
@@ -91,17 +98,14 @@ class Node:
 
     def transform_leaves(self, fun):
         new_node = Node(self.name)
-        if isinstance(self.zero, Leaf):
-            new_node.zero = fun(self.zero)
-            new_node.one = fun(self.one)
-        else:
-            new_node.zero = self.zero.transform_leaves(fun)
-            new_node.one = self.one.transform_leaves(fun)
+        new_node.zero = self.zero.transform_leaves(fun)
+        new_node.one = self.one.transform_leaves(fun)
+        return new_node
 
 
 test, what = Node("test"), Node("what")
 
-ok = test + what
+ok = (test + what).transform_leaves(lambda x, y: x + y)
 
 print("new")
 
