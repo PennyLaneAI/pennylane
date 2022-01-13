@@ -122,9 +122,11 @@ def multi_dispatch(argnum=None, tensor_list=None):
         the utility function `_multi_dispatch` to automatically detect the appropriate
         interface based on the tensor types.
 
-    ** Examples **
-    We can redefine external functions to be suitable for pennylane. Here, we
-    redefine autoray's `stack` function.
+    **Examples**
+
+    We can redefine external functions to be suitable for PennyLane. Here, we
+    redefine Autoray's ``stack`` function.
+
     >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
 
     """
