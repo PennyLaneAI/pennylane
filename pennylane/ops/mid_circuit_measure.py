@@ -51,9 +51,9 @@ class OutcomeValue:
     def _merge(self, other):
         if isinstance(other, PossibleOutcomes):
             new_node = PossibleOutcomes(None)
-            new_node.measurement_id = other.measurement_id
-            new_node.zero = self._merge(other.zero)
-            new_node.one = self._merge(other.one)
+            new_node.dependent_on = other.dependent_on
+            new_node.zero_case = self._merge(other.zero_case)
+            new_node.one_case = self._merge(other.one_case)
             return new_node
         elif isinstance(other, OutcomeValue):
             return OutcomeValue(*self.values, *other.values)
@@ -75,9 +75,9 @@ class OutcomeValue:
 class PossibleOutcomes:
 
     def __init__(self, name):
-        self.zero = OutcomeValue(0)
-        self.one = OutcomeValue(1)
-        self.measurement_id = name
+        self.zero_case = OutcomeValue(0)
+        self.one_case = OutcomeValue(1)
+        self.dependent_on = name
 
     def __add__(self, other):
         return apply_to_outcome(lambda x, y: x + y)(self, other)
@@ -93,16 +93,16 @@ class PossibleOutcomes:
 
     def _str_builder(self):
         build = []
-        if isinstance(self.zero, PossibleOutcomes):
-            for v in self.zero._str_builder():
-                build.append(f"{self.measurement_id}=0,{v}")
-            for v in self.one._str_builder():
-                build.append(f"{self.measurement_id}=1,{v}")
+        if isinstance(self.zero_case, PossibleOutcomes):
+            for v in self.zero_case._str_builder():
+                build.append(f"{self.dependent_on}=0,{v}")
+            for v in self.one_case._str_builder():
+                build.append(f"{self.dependent_on}=1,{v}")
         else:
-            for v in self.zero._str_builder():
-                build.append(f"{self.measurement_id}=0 {v}")
-            for v in self.one._str_builder():
-                build.append(f"{self.measurement_id}=1 {v}")
+            for v in self.zero_case._str_builder():
+                build.append(f"{self.dependent_on}=0 {v}")
+            for v in self.one_case._str_builder():
+                build.append(f"{self.dependent_on}=1 {v}")
         return build
 
     def __str__(self):
@@ -112,46 +112,46 @@ class PossibleOutcomes:
     def _merge(self, other):
         if isinstance(other, PossibleOutcomes):
             new_node = PossibleOutcomes(None)
-            if self.measurement_id == other.measurement_id:
-                new_node.measurement_id = self.measurement_id
-                new_node.zero = self.zero._merge(other.zero)
-                new_node.one = self.one._merge(other.one)
-            elif self.measurement_id < other.measurement_id:
-                new_node.measurement_id = self.measurement_id
-                new_node.zero = self.zero._merge(other)
-                new_node.one = self.one._merge(other)
-            elif self.measurement_id > other.measurement_id:
-                new_node.measurement_id = other.measurement_id
-                new_node.zero = self._merge(other.zero)
-                new_node.one = self._merge(other.one)
+            if self.dependent_on == other.dependent_on:
+                new_node.dependent_on = self.dependent_on
+                new_node.zero_case = self.zero_case._merge(other.zero_case)
+                new_node.one_case = self.one_case._merge(other.one_case)
+            elif self.dependent_on < other.dependent_on:
+                new_node.dependent_on = self.dependent_on
+                new_node.zero_case = self.zero_case._merge(other)
+                new_node.one_case = self.one_case._merge(other)
+            elif self.dependent_on > other.dependent_on:
+                new_node.dependent_on = other.dependent_on
+                new_node.zero_case = self._merge(other.zero_case)
+                new_node.one_case = self._merge(other.one_case)
             return new_node
         elif isinstance(other, OutcomeValue):
             new_node = PossibleOutcomes(None)
-            new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero._merge(other)
-            new_node.one = self.one._merge(other)
+            new_node.dependent_on = self.dependent_on
+            new_node.zero_case = self.zero_case._merge(other)
+            new_node.one_case = self.one_case._merge(other)
             return new_node
         else:
             leaf = OutcomeValue(other)
             new_node = PossibleOutcomes(None)
-            new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero._merge(leaf)
-            new_node.one = self.one._merge(leaf)
+            new_node.dependent_on = self.dependent_on
+            new_node.zero_case = self.zero_case._merge(leaf)
+            new_node.one_case = self.one_case._merge(leaf)
             return new_node
 
     def _transform_leaves(self, fun):
-        new_node = PossibleOutcomes(self.measurement_id)
-        new_node.zero = self.zero._transform_leaves(fun)
-        new_node.one = self.one._transform_leaves(fun)
+        new_node = PossibleOutcomes(self.dependent_on)
+        new_node.zero_case = self.zero_case._transform_leaves(fun)
+        new_node.one_case = self.one_case._transform_leaves(fun)
         return new_node
 
     def get_computation(self, runtime_measurements):
-        if self.measurement_id in runtime_measurements:
-            result = runtime_measurements[self.measurement_id]
+        if self.dependent_on in runtime_measurements:
+            result = runtime_measurements[self.dependent_on]
             if result == 0:
-                return self.zero.get_computation(runtime_measurements)
+                return self.zero_case.get_computation(runtime_measurements)
             else:
-                return self.one.get_computation(runtime_measurements)
+                return self.one_case.get_computation(runtime_measurements)
 
 
 
