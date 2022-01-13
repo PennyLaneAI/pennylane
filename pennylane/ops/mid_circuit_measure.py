@@ -4,10 +4,10 @@ from pennylane.operation import AnyWires, Operation
 
 def Measure(wire):
     name = uuid.uuid4()
-    MidCircuitMeasure(name, wire)
-    return Node(name)
+    _MidCircuitMeasure(name, wire)
+    return UnknownOutcome(name)
 
-class MidCircuitMeasure(Operation):
+class _MidCircuitMeasure(Operation):
     num_wires = 1
 
     def __init__(self, measure_var, wires=None):
@@ -16,27 +16,27 @@ class MidCircuitMeasure(Operation):
         super().__init__(wires=wires)
 
 
-class Leaf:
+class OutcomeValue:
 
     def __init__(self, *args):
         self.values = args
 
     def __add__(self, other):
-        if isinstance(other, Node):
+        if isinstance(other, UnknownOutcome):
             return other.__radd__(self)
-        if not isinstance(other, Leaf):
-            other = Leaf(other)
-        return Leaf(*self.values, *other.values)
+        if not isinstance(other, OutcomeValue):
+            other = OutcomeValue(other)
+        return OutcomeValue(*self.values, *other.values)
 
     def __radd__(self, other):
-        if isinstance(other, Node):
+        if isinstance(other, UnknownOutcome):
             return other.__add__(self)
-        if not isinstance(other, Leaf):
-            other = Leaf([other])
-        return Leaf(*other.values, *self.values)
+        if not isinstance(other, OutcomeValue):
+            other = OutcomeValue([other])
+        return OutcomeValue(*other.values, *self.values)
 
     def transform_leaves(self, fun):
-        return Leaf(fun(*self.values))
+        return OutcomeValue(fun(*self.values))
 
     def get_computation(self, runtime_measurements):
         if len(self.values) == 1:
@@ -44,21 +44,21 @@ class Leaf:
         return self.values
 
 
-class Node:
+class UnknownOutcome:
 
     def __init__(self, name):
-        self.zero = Leaf(0)
-        self.one = Leaf(1)
+        self.zero = OutcomeValue(0)
+        self.one = OutcomeValue(1)
         self.name = name
 
     def __add__(self, other):
-        new_node = Node(None)
-        if isinstance(other, Leaf):
+        new_node = UnknownOutcome(None)
+        if isinstance(other, OutcomeValue):
             new_node.name = self.name
             new_node.zero = self.zero.__add__(other)
             new_node.one = self.one.__add__(other)
-        elif not isinstance(other, Node):
-            leaf = Leaf(other)
+        elif not isinstance(other, UnknownOutcome):
+            leaf = OutcomeValue(other)
             new_node.name = self.name
             new_node.zero = self.zero.__add__(leaf)
             new_node.one = self.one.__add__(leaf)
@@ -77,13 +77,13 @@ class Node:
         return new_node
 
     def __radd__(self, other):
-        new_node = Node(None)
-        if isinstance(other, Leaf):
+        new_node = UnknownOutcome(None)
+        if isinstance(other, OutcomeValue):
             new_node.name = self.name
             new_node.zero = self.zero.__radd__(other)
             new_node.one = self.one.__radd__(other)
-        elif not isinstance(other, Node):
-            leaf = Leaf([other])
+        elif not isinstance(other, UnknownOutcome):
+            leaf = OutcomeValue([other])
             new_node.name = self.name
             new_node.zero = self.zero.__radd__(leaf)
             new_node.one = self.one.__radd__(leaf)
@@ -102,7 +102,7 @@ class Node:
         return new_node
 
     def transform_leaves(self, fun):
-        new_node = Node(self.name)
+        new_node = UnknownOutcome(self.name)
         new_node.zero = self.zero.transform_leaves(fun)
         new_node.one = self.one.transform_leaves(fun)
         return new_node
@@ -110,7 +110,7 @@ class Node:
     @classmethod
     def runtime(cls, fun):
         def wrapper(*args, **kwargs):
-            partial = Leaf()
+            partial = OutcomeValue()
             for arg in args:
                 partial = partial + arg
             partial.transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
@@ -134,5 +134,16 @@ class If(Operation):
         self.runtime_exp = runtime_exp
         self.then_op = then_op(*args, do_queue=False, **kwargs)
         super().__init__(*args, **kwargs)
+
+class RuntimeOp(Operation):
+    num_wires = AnyWires
+
+    def __init__(self, op):
+        self._op = op
+        self._unknown_ops
+
+    def __call__(self, *args, **kwargs):
+        self._unknown_ops = UnknownOutcome.runtime(lambda *args: self._op(*args, do_queue=False, **kwargs))
+
 
 

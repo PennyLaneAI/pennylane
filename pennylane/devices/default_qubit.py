@@ -96,7 +96,7 @@ class DefaultQubit(QubitDevice):
     operations = {
         "Identity",
         "If",
-        "MidCircuitMeasure",
+        "_MidCircuitMeasure",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
