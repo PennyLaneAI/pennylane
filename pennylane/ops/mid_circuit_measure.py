@@ -107,15 +107,6 @@ class PossibleOutcomes:
         new_node.one = self.one._transform_leaves(fun)
         return new_node
 
-    @classmethod
-    def apply_to_all(cls, fun):
-        def wrapper(*args, **kwargs):
-            partial = OutcomeValue()
-            for arg in args:
-                partial = partial + arg
-            return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
-        return wrapper
-
     def get_computation(self, runtime_measurements):
         if self.measurement_id in runtime_measurements:
             result = runtime_measurements[self.measurement_id]
@@ -124,12 +115,20 @@ class PossibleOutcomes:
             else:
                 return self.one.get_computation(runtime_measurements)
 
+def apply_to_outcome(fun):
+    def wrapper(*args, **kwargs):
+        partial = OutcomeValue()
+        for arg in args:
+            partial = partial + arg
+        return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
+    return wrapper
+
 class RuntimeOp(Operation):
     num_wires = AnyWires
 
     def __init__(self, op, *args, wires=None, **kwargs):
         self.op = op
-        self.unknown_ops = PossibleOutcomes.apply_to_all(
+        self.unknown_ops = apply_to_outcome(
             lambda *unwrapped: self.op(*unwrapped, do_queue=False, wires=wires, **kwargs)
         )(*args)
         super().__init__(wires=wires)
