@@ -23,8 +23,6 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
-import sympy as sp
-
 from scipy.sparse import coo_matrix
 
 import pennylane as qml

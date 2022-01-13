@@ -248,10 +248,10 @@ def pytest_runtest_makereport(item, call):
             # and those using not implemented features
             if (
                 call.excinfo.type == qml.DeviceError
-                and "supported" in str(call.excinfo.name)
+                and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):
-                tr.wasxfail = "reason:" + str(call.excinfo.name)
+                tr.wasxfail = "reason:" + str(call.excinfo.value)
                 tr.outcome = "skipped"
 
     return tr
