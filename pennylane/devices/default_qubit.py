@@ -257,8 +257,7 @@ class DefaultQubit(QubitDevice):
 
     def _if_op(self, state, axes, op_object=None, **kwargs):
         expr = op_object.runtime_exp
-        free_symbols = list(expr.free_symbols)
-        calc = sp.lambdify(free_symbols, expr)(*[self._measured[sym] for sym in free_symbols])
+        calc = expr.get_computation(self._measured)
         if calc:
             return self._apply_operation(state, op_object.then_op)
         else:

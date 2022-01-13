@@ -4,7 +4,7 @@ from pennylane.operation import AnyWires, Operation
 
 def Measure(wire):
     name = uuid.uuid4()
-    MidCircuitMeasure(uuid.uuid4(), wire)
+    MidCircuitMeasure(name, wire)
     return Node(name)
 
 class MidCircuitMeasure(Operation):
@@ -39,6 +39,8 @@ class Leaf:
         return Leaf(fun(*self.values))
 
     def get_computation(self, runtime_measurements):
+        if len(self.values) == 1:
+            return self.values[0]
         return self.values
 
 
@@ -122,13 +124,6 @@ class Node:
                 return self.zero.get_computation(runtime_measurements)
             else:
                 return self.one.get_computation(runtime_measurements)
-
-
-test, what = Node("test"), Node("what")
-
-ok = (test + what).transform_leaves(lambda x, y: x + y)
-
-print("new")
 
 
 
