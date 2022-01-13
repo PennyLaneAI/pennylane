@@ -4,6 +4,7 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
+
 class TestMidCircuitMeasurements:
     """Tests the continuous variable based operations."""
 
@@ -16,7 +17,6 @@ class TestMidCircuitMeasurements:
             qml.RY(rads, wires=0)
 
             return qml.probs(wires=0)
-
 
         @qml.qnode(dev)
         def teleportation_circuit(rads):
@@ -50,7 +50,6 @@ class TestMidCircuitMeasurements:
 
         assert np.linalg.norm(normal_probs - teleported_probs) < 0.01
 
-
     def test_simple_runtime_op(self):
         dev = qml.device("default.qubit", wires=2)
 
@@ -79,7 +78,7 @@ class TestMidCircuitMeasurements:
             m1 = qml.Measure(1)
             m2 = qml.Measure(2)
 
-            out1 = 2*m0 + m1
+            out1 = 2 * m0 + m1
 
             out2 = qml.apply_to_outcome(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
 

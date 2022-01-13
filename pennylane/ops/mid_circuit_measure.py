@@ -4,6 +4,7 @@ from typing import Union, Any, Dict, TypeVar, Generic, Callable
 
 from pennylane.operation import AnyWires, Operation
 
+
 def Measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
@@ -14,6 +15,7 @@ def Measure(wire):
     _MidCircuitMeasure(name, wire)
     return MeasurementDependantValue(name, 0, 1)
 
+
 class RuntimeOp(Operation):
     """
     Run an operation with parameters being outcomes of mid-circuit measurements.
@@ -23,6 +25,7 @@ class RuntimeOp(Operation):
     m0 = qml.Measure(0)
     qml.RuntimeOp(qml.RZ, m0, wires=1)
     """
+
     num_wires = AnyWires
 
     def __init__(self, op, *args, wires=None, **kwargs):
@@ -42,6 +45,7 @@ class If(Operation):
     m0 = qml.Measure(0)
     qml.If(m0, qml.RZ, 1.2, wires=1)
     """
+
     num_wires = AnyWires
 
     def __init__(self, runtime_exp, then_op, *args, **kwargs):
@@ -58,6 +62,7 @@ class _MidCircuitMeasure(Operation):
         self.runtime_value = None
         super().__init__(wires=wires)
 
+
 def apply_to_outcome(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
@@ -66,16 +71,20 @@ def apply_to_outcome(fun):
     m0 = qml.Measure(0)
     m0_sin = qml.apply_to_outcome(np.sin)(m0)
     """
+
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
             partial = partial._merge(arg)  # pylint: disable=protected-access
         return partial._transform_leaves(  # pylint: disable=protected-access
-            lambda *unwrapped: fun(*unwrapped, **kwargs))
+            lambda *unwrapped: fun(*unwrapped, **kwargs)
+        )
+
     return wrapper
 
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class MeasurementDependantValue(Generic[T]):
     """
@@ -85,9 +94,12 @@ class MeasurementDependantValue(Generic[T]):
     supports python __dunder__ mathematical operations. as well as qml.apply_to_outcome to perform arbitrary function.
     """
 
-    def __init__(self, measurement_id: str,
-                 zero_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
-                 one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T]):
+    def __init__(
+        self,
+        measurement_id: str,
+        zero_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
+        one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
+    ):
         self.dependent_on: str = measurement_id
         if isinstance(zero_case, MeasurementDependantValue) or isinstance(zero_case, _Value):
             self.zero_case = zero_case
@@ -105,10 +117,10 @@ class MeasurementDependantValue(Generic[T]):
         return apply_to_outcome(lambda x, y: y + x)(self, other)
 
     def __mul__(self, other: Any):
-        return apply_to_outcome(lambda x, y: x*y)(self, other)
+        return apply_to_outcome(lambda x, y: x * y)(self, other)
 
     def __rmul__(self, other: Any):
-        return apply_to_outcome(lambda x, y: y*x)(self, other)
+        return apply_to_outcome(lambda x, y: y * x)(self, other)
 
     def _str_builder(self):
         build = []
@@ -126,7 +138,6 @@ class MeasurementDependantValue(Generic[T]):
 
     def __str__(self):
         return "\n".join(self._str_builder())
-
 
     def _merge(self, other: Union["MeasurementDependantValue", "_Value", Any]):
         """
@@ -157,28 +168,33 @@ class MeasurementDependantValue(Generic[T]):
                 return MeasurementDependantValue(
                     self.dependent_on,
                     self.zero_case._merge(other.zero_case),  # pylint: disable=protected-access
-                    self.one_case._merge(other.one_case))  # pylint: disable=protected-access
+                    self.one_case._merge(other.one_case),
+                )  # pylint: disable=protected-access
             if self.dependent_on < other.dependent_on:
                 return MeasurementDependantValue(
                     self.dependent_on,
                     self.zero_case._merge(other),  # pylint: disable=protected-access
-                    self.one_case._merge(other))  # pylint: disable=protected-access
+                    self.one_case._merge(other),
+                )  # pylint: disable=protected-access
             if self.dependent_on > other.dependent_on:
                 return MeasurementDependantValue(
                     other.dependent_on,
                     self._merge(other.zero_case),  # pylint: disable=protected-access
-                    self._merge(other.one_case))  # pylint: disable=protected-access
+                    self._merge(other.one_case),
+                )  # pylint: disable=protected-access
         elif isinstance(other, _Value):
             return MeasurementDependantValue(
                 self.dependent_on,
                 self.zero_case._merge(other),  # pylint: disable=protected-access
-                self.one_case._merge(other))  # pylint: disable=protected-access
+                self.one_case._merge(other),
+            )  # pylint: disable=protected-access
         else:
             leaf = _Value(other)
             return MeasurementDependantValue(
                 self.dependent_on,
                 self.zero_case._merge(leaf),  # pylint: disable=protected-access
-                self.one_case._merge(leaf))  # pylint: disable=protected-access
+                self.one_case._merge(leaf),
+            )  # pylint: disable=protected-access
 
     def _transform_leaves(self, fun: Callable):
         """
@@ -187,7 +203,8 @@ class MeasurementDependantValue(Generic[T]):
         return MeasurementDependantValue(
             self.dependent_on,
             self.zero_case._transform_leaves(fun),  # pylint: disable=protected-access
-            self.one_case._transform_leaves(fun))  # pylint: disable=protected-access
+            self.one_case._transform_leaves(fun),
+        )  # pylint: disable=protected-access
 
     def get_computation(self, runtime_measurements: Dict[str, int]):
         """
@@ -202,19 +219,20 @@ class MeasurementDependantValue(Generic[T]):
         else:
             raise ValueError
 
+
 class _Value(Generic[T]):
     """
     Leaf node for a MeasurementDependantValue tree structure.
     """
+
     def __init__(self, *args):
         self.values = args
 
     def _merge(self, other):
         if isinstance(other, MeasurementDependantValue):
             return MeasurementDependantValue(
-                other.dependent_on,
-                self._merge(other.zero_case),
-                self._merge(other.one_case))
+                other.dependent_on, self._merge(other.zero_case), self._merge(other.one_case)
+            )
         elif isinstance(other, _Value):
             return _Value(*self.values, *other.values)
         else:
