@@ -300,7 +300,8 @@ class RotosolveOptimizer:
         else:
             self.substep_optimizer = substep_optimizer
 
-    def _validate_inputs(self, requires_grad, args, nums_frequency, spectra):
+    @staticmethod
+    def _validate_inputs(requires_grad, args, nums_frequency, spectra):
         """Checks that for each trainable argument either the number of
         frequencies or the frequency spectrum is given."""
 
