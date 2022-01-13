@@ -93,10 +93,16 @@ class PossibleOutcomes:
 
     def _str_builder(self):
         build = []
-        for v in self.zero._str_builder():
-            build.append(f"{self.measurement_id}=0,{v}")
-        for v in self.one._str_builder():
-            build.append(f"{self.measurement_id}=0,{v}")
+        if isinstance(self.zero, PossibleOutcomes):
+            for v in self.zero._str_builder():
+                build.append(f"{self.measurement_id}=0,{v}")
+            for v in self.one._str_builder():
+                build.append(f"{self.measurement_id}=1,{v}")
+        else:
+            for v in self.zero._str_builder():
+                build.append(f"{self.measurement_id}=0 {v}")
+            for v in self.one._str_builder():
+                build.append(f"{self.measurement_id}=1 {v}")
         return build
 
     def __str__(self):
