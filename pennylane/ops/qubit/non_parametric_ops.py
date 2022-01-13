@@ -1186,3 +1186,6 @@ class Barrier(Operation):
 
     def label(self, decimals=None):
         return "||"
+
+    def adjoint(self):
+        return Barrier(wires=self.wires)

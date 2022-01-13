@@ -525,6 +525,27 @@ class TestBarrier:
 
         assert optimized_gates == 2
 
+    def test_barrier_adjoint(self):
+        """Test if Barrier is correctly included in queue after adjoint"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            barrier()
+            qml.adjoint(barrier)()
+            return qml.state()
+
+        def barrier():
+            qml.PauliX(wires=0)
+            qml.Barrier(wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+
+        circuit()
+        queue = circuit.tape.queue
+
+        assert queue[1].name == "Barrier"
+        assert queue[4].name == "Barrier"
+
 
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""
