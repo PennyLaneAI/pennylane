@@ -90,8 +90,6 @@ def tape_text(
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        decimals (Int) : how many decimal points to display in the operation label.  If ``None``,
-            no parameters will be displayed.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
         tape_offset (list[Int]): Used to offset numbering when labelling nested tapes. Used internally for
