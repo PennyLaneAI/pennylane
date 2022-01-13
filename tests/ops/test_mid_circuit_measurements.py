@@ -6,7 +6,7 @@ import pennylane.numpy as np
 
 
 class TestMidCircuitMeasurements:
-    """Tests the continuous variable based operations."""
+    """Tests mid circuit measurements"""
 
     @pytest.mark.parametrize("r", np.linspace(0.0, 1.6, 10))
     def test_quantum_teleportation(self, r):
@@ -24,7 +24,7 @@ class TestMidCircuitMeasurements:
             # Create Alice's secret qubit state
             qml.RY(rads, wires=0)
 
-            # create bell state between wires 1, 2. 1 is held by Alice and 2 held by Bob
+            # create an EPR pair with wires 1 and 2. 1 is held by Alice and 2 held by Bob
             qml.Hadamard(wires=1)
             qml.CNOT(wires=[1, 2])
 
