@@ -4,6 +4,8 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
+from pennylane.ops.mid_circuit_measure import PossibleOutcomes
+
 class TestMidCircuitMeasurements:
     """Tests the continuous variable based operations."""
 
@@ -52,7 +54,7 @@ class TestMidCircuitMeasurements:
 
 
     def test_runtime_op(self):
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def runtime_circuit():
@@ -64,4 +66,32 @@ class TestMidCircuitMeasurements:
             return qml.probs(wires=1)
 
         value = runtime_circuit()
-        print(value)
+
+    def test_runtime_op(self):
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def runtime_circuit():
+            qml.Hadamard(wires=0)
+            qml.Hadamard(wires=1)
+            qml.Hadamard(wires=2)
+
+            m0 = qml.Measure(0)
+            m1 = qml.Measure(1)
+            m2 = qml.Measure(2)
+
+            @PossibleOutcomes.apply_to_all
+            def weird_func(x, y, z):
+                return np.sin(x) * y + z
+
+            rot = weird_func(m0, m1, m2)
+
+            qml.RuntimeOp(qml.RZ, rot, wires=1)
+
+            return qml.probs(wires=1)
+
+        value = runtime_circuit()
+
+        def test_runtime_op(self):
+            dev = qml.device("default.qubit", wires=2)

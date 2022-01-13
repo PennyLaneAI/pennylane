@@ -35,7 +35,7 @@ class OutcomeValue:
             other = OutcomeValue([other])
         return OutcomeValue(*other.values, *self.values)
 
-    def transform_leaves(self, fun):
+    def _transform_leaves(self, fun):
         return OutcomeValue(fun(*self.values))
 
     def get_computation(self, runtime_measurements):
@@ -103,8 +103,8 @@ class PossibleOutcomes:
 
     def _transform_leaves(self, fun):
         new_node = PossibleOutcomes(self.measurement_id)
-        new_node.zero = self.zero.transform_leaves(fun)
-        new_node.one = self.one.transform_leaves(fun)
+        new_node.zero = self.zero._transform_leaves(fun)
+        new_node.one = self.one._transform_leaves(fun)
         return new_node
 
     @classmethod
