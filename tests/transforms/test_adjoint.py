@@ -65,6 +65,29 @@ def test_barrier_adjoint():
     assert my_circuit()[0] == 1.0
 
 
+def test_identity_adjoint():
+    """Check that the adjoint for Identity is working"""
+    dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @qml.qnode(dev)
+    def circuit():
+        identity()
+        qml.adjoint(identity)()
+        return qml.state()
+
+    def identity():
+        qml.PauliX(wires=0)
+        qml.Identity(0)
+        qml.CNOT(wires=[0, 1])
+
+    assert circuit()[0] == 1.0
+
+    queue = circuit.tape.queue
+
+    assert queue[1].name == "Identity"
+    assert queue[4].name == "Identity"
+
+
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)

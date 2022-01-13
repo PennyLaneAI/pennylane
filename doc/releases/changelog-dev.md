@@ -273,7 +273,8 @@
 * The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
-* Barrier now supports `adjoint` method.
+* The Barrier and Identity operations now support the `adjoint` method.
+  [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
 <h3>Breaking changes</h3>
