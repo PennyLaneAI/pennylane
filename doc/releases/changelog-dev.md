@@ -285,6 +285,10 @@
 * The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
+* The Barrier and Identity operations now support the `adjoint` method.
+  [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
+  [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
