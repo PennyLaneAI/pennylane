@@ -14,7 +14,7 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, ControlledQubitUnitary
@@ -146,7 +146,7 @@ class QuantumPhaseEstimation(Operation):
 
         return tape
 
-    def adjoint(self):
+    def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = QuantumPhaseEstimation(
             *self.parameters, target_wires=self.target_wires, estimation_wires=self.estimation_wires
         )

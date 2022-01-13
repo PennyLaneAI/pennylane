@@ -371,7 +371,8 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
             given. Ignored if ``nums_frequency!=None``.
 
     Returns:
-        function: Function which accepts the same arguments as the QNode.
+        function: Function which accepts the same arguments as the QNode and one additional
+        keyword argument ``f0`` to provide the QNode value at the given arguments.
         When called, this function will return a dictionary of dictionaries,
         formatted like ``nums_frequency`` or ``spectra`` ,
         that contains the univariate reconstructions per QNode parameter.
@@ -438,7 +439,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     >>> recon_Y1 = rec["Y"][(1,)]
     >>> np.isclose(recon_Y0(Y[0]), circuit_value)
     True
-    >>> np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3)
+    >>> np.isclose(recon_Y1(Y[1]+1.3), circuit(x, Y+np.eye(2)[1]*1.3))
     True
 
     We successfully reconstructed the dependence on the two entries of ``Y`` ,
@@ -459,7 +460,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     dict_keys(['x', 'Y'])
     >>> spectra["x"]
     {(): [-1.0, 0.0, 1.0]}
-    >>> print(*_spectra["Y"].items(), sep="\n")
+    >>> print(*spectra["Y"].items(), sep="\n")
     ((0,), [-1.0, 0.0, 1.0])
     ((1,), [-6.0, -5.0, -4.0, -1.0, 0.0, 1.0, 4.0, 5.0, 6.0])
 
@@ -616,15 +617,14 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
     atol = 1e-8
     ids, recon_fn, jobs, need_f0 = _prepare_jobs(ids, nums_frequency, spectra, shifts, atol)
-    arg_names = list(signature(qnode.func).parameters.keys())
+    sign_fn = qnode.func if isinstance(qnode, qml.QNode) else qnode
+    arg_names = list(signature(sign_fn).parameters.keys())
     arg_idx_from_names = {arg_name: i for i, arg_name in enumerate(arg_names)}
 
     @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        if need_f0:
+    def wrapper(*args, f0=None, **kwargs):
+        if f0 is None and need_f0:
             f0 = qnode(*args, **kwargs)
-        else:
-            f0 = None
 
         interface = qml.math.get_interface(args[0])
 
