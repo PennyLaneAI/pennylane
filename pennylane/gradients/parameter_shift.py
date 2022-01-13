@@ -157,7 +157,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             if op.return_type is not qml.operation.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
-                    f"coefficients for expectations, not {op.return_type.name}"
+                    f"coefficients for expectations, not {op.return_type.value}"
                 )
 
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
