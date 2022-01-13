@@ -86,13 +86,8 @@ def _multi_dispatch(values):
 def multi_dispatch(argnum=None, tensor_list=None):
     """Decorater to dispatch arguments handled by the interface.
 
-    This helps simplify definitions of new functions inside PennyLane. Instead of writing
-
-    >>> def some_function(tensor1, tensor2, option):
-    ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
-    ...     ...
-
-    We can decorate the function, indicating the arguments that are tensors handled
+    This helps simplify definitions of new functions inside PennyLane. We can
+    decorate the function, indicating the arguments that are tensors handled
     by the interface
 
 
@@ -100,6 +95,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
     ... def some_function(tensor1, tensor2, option, like):
     ...     # the interface string is stored in `like`.
     ...     ...
+
 
     Args:
         argnum (list[int]): A list of integers indicating indicating the indices
@@ -128,6 +124,27 @@ def multi_dispatch(argnum=None, tensor_list=None):
     redefine Autoray's ``stack`` function.
 
     >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
+
+    We can also define more elaborate custom function. Here is an example of a ``custom_function`` that
+    computes :math:`c \sum_i (v_i)^T v_i`, where :math:`v_i` are vectors in ``values`` and
+    :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first argument ``values``,
+    how ``tensor_list=0`` indicates that said first argument is a list of vectors, and that ``coefficient`` is not
+    dispatched.
+
+    >>> @math.multi_dispatch(argnum=0,tensor_list=0)
+    >>> def custom_function(values, like, coefficient=10):
+    >>>     # values is a list of vectors
+    >>>     # like can force the interface (optional)
+    >>>     return coefficient * np.sum([math.dot(v,v) for v in values])
+
+    We can then run
+
+    >>> values = [np.array([1,2,3]) for _ in range(5)]
+    >>> print(custom_function(values))
+
+    and obtain
+
+    >>> 700
 
     """
 

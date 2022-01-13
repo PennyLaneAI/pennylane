@@ -273,7 +273,21 @@
 * The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
   [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
-* Added `multi_dispatch` decorator that helps ease the definition of new functions.
+* Added `multi_dispatch` decorator that helps ease the definition of new functions
+  inside PennyLane. We can decorate the function, indicating the arguments that are
+  tensors handled by the interface    
+    
+  >>> @qml.math.multi_dispatch(argnum=[0, 1])
+  ... def some_function(tensor1, tensor2, option, like):
+  ...     # the interface string is stored in ``like``.
+  ...     ...
+  
+  Previously, this was done using the private utility function ``_multi_dispatch``.
+  
+  >>> def some_function(tensor1, tensor2, option):
+  ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+  ...     ...
+  
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
 
 <h3>Breaking changes</h3>

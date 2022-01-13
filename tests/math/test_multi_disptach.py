@@ -16,20 +16,22 @@
 import autoray
 import numpy as onp
 import pytest
+from autoray import numpy as anp
 from pennylane import numpy as np
 from pennylane import math as fn
 
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
 
 test_multi_dispatch_stack_data = [
     [[1.0, 0.0], [2.0, 3.0]],
     ([1.0, 0.0], [2.0, 3.0]),
     onp.array([[1.0, 0.0], [2.0, 3.0]]),
+    anp.array([[1.0, 0.0], [2.0, 3.0]]),
     np.array([[1.0, 0.0], [2.0, 3.0]]),
-    # torch.tensor([[1.,0.],[2.,3.]]),
-    tf.Variable([[1.0, 0.0], [2.0, 3.0]]),
+    jax.numpy.array([[1.0, 0.0], [2.0, 3.0]]),
     tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
@@ -40,3 +42,39 @@ def test_multi_dispatch_stack(x):
     stack = fn.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     res = stack(x)
     assert fn.allequal(res, [[1.0, 0.0], [2.0, 3.0]])
+
+
+@pytest.mark.parametrize("x", test_multi_dispatch_stack_data)
+def test_multi_dispatch_decorate(x):
+    """Test decorating a standard numpy function for PennyLane"""
+
+    @fn.multi_dispatch(argnum=[0], tensor_list=[0])
+    def tensordot(x, like, axes=None):
+        return np.tensordot(x[0], x[1], axes=axes)
+
+    assert fn.allequal(tensordot(x, axes=(0, 0)).numpy(), 2)
+
+
+test_data0 = [
+    (1, 2, 3),
+    [1, 2, 3],
+    onp.array([1, 2, 3]),
+    anp.array([1, 2, 3]),
+    np.array([1, 2, 3]),
+    torch.tensor([1, 2, 3]),
+    jax.numpy.array([1, 2, 3]),
+    tf.constant([1, 2, 3]),
+]
+
+test_data = [(x, x) for x in test_data0]
+
+
+@pytest.mark.parametrize("t1,t2", test_data)
+def test_multi_dispatch_decorate2(t1, t2):
+    """Test decorating a standard numpy function for PennyLane, this time using 2 separate inputs"""
+
+    @fn.multi_dispatch(argnum=[0, 1], tensor_list=None)
+    def tensordot(tensor1, tensor2, like, axes=None):
+        return np.tensordot(tensor1, tensor2, axes=axes)
+
+    assert fn.allequal(tensordot(t1, t2, axes=(0, 0)).numpy(), 14)
