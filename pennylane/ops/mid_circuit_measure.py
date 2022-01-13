@@ -59,8 +59,15 @@ class _MidCircuitMeasure(Operation):
         super().__init__(wires=wires)
 
 def apply_to_outcome(fun):
+    """
+    Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
+
+    ex:
+    m0 = qml.Measure(0)
+    m0_sin = qml.apply_to_outcome(np.sin)(m0)
+    """
     def wrapper(*args, **kwargs):
-        partial = Value()
+        partial = _Value()
         for arg in args:
             partial = partial._merge(arg)
         return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
@@ -71,11 +78,13 @@ class MeasurementDependantValue:
     """
     A class representing unknown measurement outcomes. Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
+
+    supports python __dunder__ mathematical operations. as well as qml.apply_to_outcome to perform arbitrary function.
     """
 
     def __init__(self, measurement_id: str):
-        self.zero_case: Union[MeasurementDependantValue, Value] = Value(0)
-        self.one_case: Union[MeasurementDependantValue, Value] = Value(1)
+        self.zero_case: Union[MeasurementDependantValue, _Value] = _Value(0)
+        self.one_case: Union[MeasurementDependantValue, _Value] = _Value(1)
         self.dependent_on: str = measurement_id
 
     def __add__(self, other: Any):
@@ -108,7 +117,7 @@ class MeasurementDependantValue:
         return "\n".join(self._str_builder())
 
 
-    def _merge(self, other: Any):
+    def _merge(self, other: Union["MeasurementDependantValue", "_Value", Any]):
         """
         Merge this MeasurementDependantValue with `other`.
 
@@ -119,15 +128,15 @@ class MeasurementDependantValue:
 
         with another MeasurementDependantValue:
 
-        f93fjdj3:0 => 100
-        f93fjdj3:1 => 67
+        f93fjdj3=0 => 100
+        f93fjdj3=1 => 67
 
         will result in:
 
-        df3jff4t:0,f93fjdj3:0 => 3.4,100
-        df3jff4t:0,f93fjdj3:1 => 3.4,67
-        df3jff4t:1,f93fjdj3:0 => 1,100
-        df3jff4t:1,f93fjdj3:1 => 1,67
+        df3jff4t=0,f93fjdj3=0 => 3.4,100
+        df3jff4t=0,f93fjdj3=1 => 3.4,67
+        df3jff4t=1,f93fjdj3=0 => 1,100
+        df3jff4t=1,f93fjdj3=1 => 1,67
 
         """
         if isinstance(other, MeasurementDependantValue):
@@ -145,14 +154,14 @@ class MeasurementDependantValue:
                 new_node.zero_case = self._merge(other.zero_case)
                 new_node.one_case = self._merge(other.one_case)
             return new_node
-        elif isinstance(other, Value):
+        elif isinstance(other, _Value):
             new_node = MeasurementDependantValue(None)
             new_node.dependent_on = self.dependent_on
             new_node.zero_case = self.zero_case._merge(other)
             new_node.one_case = self.one_case._merge(other)
             return new_node
         else:
-            leaf = Value(other)
+            leaf = _Value(other)
             new_node = MeasurementDependantValue(None)
             new_node.dependent_on = self.dependent_on
             new_node.zero_case = self.zero_case._merge(leaf)
@@ -168,7 +177,7 @@ class MeasurementDependantValue:
         new_node.one_case = self.one_case._transform_leaves(fun)
         return new_node
 
-    def get_computation(self, runtime_measurements: Dict[str, Union[0, 1]]):
+    def get_computation(self, runtime_measurements: Dict[str, int]):
         """
         Given a list of measurement outcomes get the correct computation.
         """
@@ -179,9 +188,9 @@ class MeasurementDependantValue:
             else:
                 return self.one_case.get_computation(runtime_measurements)
 
-class Value:
+class _Value:
     """
-
+    Leaf node for a MeasurementDependantValue tree structure.
     """
     def __init__(self, *args):
         self.values = args
@@ -193,13 +202,13 @@ class Value:
             new_node.zero_case = self._merge(other.zero_case)
             new_node.one_case = self._merge(other.one_case)
             return new_node
-        elif isinstance(other, Value):
-            return Value(*self.values, *other.values)
+        elif isinstance(other, _Value):
+            return _Value(*self.values, *other.values)
         else:
-            return Value(*self.values, other)
+            return _Value(*self.values, other)
 
     def _transform_leaves(self, fun):
-        return Value(fun(*self.values))
+        return _Value(fun(*self.values))
 
     def get_computation(self, runtime_measurements):
         if len(self.values) == 1:
