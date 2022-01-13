@@ -105,6 +105,16 @@ class Node:
         new_node.one = self.one.transform_leaves(fun)
         return new_node
 
+    @classmethod
+    def runtime(cls, fun):
+        def wrapper(*args, **kwargs):
+            partial = Leaf()
+            for arg in args:
+                partial = partial + arg
+            partial.transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
+            return partial
+        return wrapper
+
     def get_computation(self, runtime_measurements):
         if self.name in runtime_measurements:
             result = runtime_measurements[self.name]
