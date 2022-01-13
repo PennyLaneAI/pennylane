@@ -188,7 +188,7 @@ class MeasurementDependantValue(Generic[T]):
             df3jff4t=1,f93fjdj3=1 => 1,67
             ```
 
-        (note the uuid's in the example represent a distinct measurement of a qubit.)
+        (note the uuids in the example represent distinct measurements of different qubit.)
 
         """
         if isinstance(other, MeasurementDependantValue):
