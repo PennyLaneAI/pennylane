@@ -39,5 +39,4 @@ def test_multi_dispatch_stack(x):
     """Test that the decorated autoray function stack can handle all inputs"""
     stack = fn.multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
     res = stack(x)
-    print(res)
     assert fn.allequal(res, [[1.0, 0.0], [2.0, 3.0]])
