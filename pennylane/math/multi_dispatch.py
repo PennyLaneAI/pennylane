@@ -102,9 +102,9 @@ def multi_dispatch(argnum=None, tensor_list=None):
     ...     ...
 
     Args:
-        argnum (list[int]): a list of integers indicating indicating the indices
-            to dispatch (i.e. the arguments that are tensors handled by an interface)
-            If None, dispatch over all arguments
+        argnum (list[int]): A list of integers indicating indicating the indices
+            to dispatch (i.e., the arguments that are tensors handled by an interface).
+            If ``None``, dispatch over all arguments.
         tensor_lists(list[int]): a list of integers indicating which indices
             in argnum are lists of tensors.
             If None, this option is ignored.
