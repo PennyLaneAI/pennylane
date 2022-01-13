@@ -21,19 +21,16 @@ class OutcomeValue:
     def __init__(self, *args):
         self.values = args
 
-    def __add__(self, other):
+    def _merge(self, other):
         if isinstance(other, PossibleOutcomes):
-            return other.__radd__(self)
+            new_node = PossibleOutcomes(None)
+            new_node.measurement_id = other.measurement_id
+            new_node.zero = self._merge(other.zero)
+            new_node.one = self._merge(other.one)
+            return new_node
         if not isinstance(other, OutcomeValue):
             other = OutcomeValue(other)
         return OutcomeValue(*self.values, *other.values)
-
-    def __radd__(self, other):
-        if isinstance(other, PossibleOutcomes):
-            return other.__add__(self)
-        if not isinstance(other, OutcomeValue):
-            other = OutcomeValue([other])
-        return OutcomeValue(*other.values, *self.values)
 
     def _transform_leaves(self, fun):
         return OutcomeValue(fun(*self.values))
@@ -52,53 +49,40 @@ class PossibleOutcomes:
         self.measurement_id = name
 
     def __add__(self, other):
+        return apply_to_outcome(lambda x, y: x + y)(self, other)
+
+    def __radd__(self, other):
+        return apply_to_outcome(lambda x, y: y + x)(self, other)
+
+    def __mul__(self, other):
+        return apply_to_outcome(lambda x, y: x*y)(self, other)
+
+    def __rmul__(self, other):
+        return apply_to_outcome(lambda x, y: y*x)(self, other)
+
+    def _merge(self, other):
         new_node = PossibleOutcomes(None)
         if isinstance(other, OutcomeValue):
             new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero.__add__(other)
-            new_node.one = self.one.__add__(other)
+            new_node.zero = self.zero._merge(other)
+            new_node.one = self.one._merge(other)
         elif not isinstance(other, PossibleOutcomes):
             leaf = OutcomeValue(other)
             new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero.__add__(leaf)
-            new_node.one = self.one.__add__(leaf)
+            new_node.zero = self.zero._merge(leaf)
+            new_node.one = self.one._merge(leaf)
         elif self.measurement_id == other.measurement_id:
             new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero.__add__(other.zero)
-            new_node.one = self.one.__add__(other.zero)
+            new_node.zero = self.zero._merge(other.zero)
+            new_node.one = self.one._merge(other.one)
         elif self.measurement_id < other.measurement_id:
             new_node.measurement_id = self.measurement_id
-            new_node.zero = other.__radd__(self.zero)
-            new_node.one = other.__radd__(self.one)
+            new_node.zero = self.zero._merge(other)
+            new_node.one = self.one._merge(other)
         elif self.measurement_id > other.measurement_id:
             new_node.measurement_id = other.measurement_id
-            new_node.zero = self.__add__(other.zero)
-            new_node.one = self.__add__(other.one)
-        return new_node
-
-    def __radd__(self, other):
-        new_node = PossibleOutcomes(None)
-        if isinstance(other, OutcomeValue):
-            new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero.__radd__(other)
-            new_node.one = self.one.__radd__(other)
-        elif not isinstance(other, PossibleOutcomes):
-            leaf = OutcomeValue([other])
-            new_node.measurement_id = self.measurement_id
-            new_node.zero = self.zero.__radd__(leaf)
-            new_node.one = self.one.__radd__(leaf)
-        elif self.measurement_id == other.measurement_id:
-            new_node.measurement_id = self.measurement_id
-            new_node.zero = other.zero.__radd__(self.zero)
-            new_node.one = other.zero.__radd__(self.one)
-        elif self.measurement_id < other.measurement_id:
-            new_node.measurement_id = self.measurement_id
-            new_node.zero = other.__add__(self.zero)
-            new_node.one = other.__add__(self.one)
-        elif self.measurement_id > other.measurement_id:
-            new_node.measurement_id = other.measurement_id
-            new_node.zero = self.__radd__(other.zero)
-            new_node.one = self.__radd__(other.one)
+            new_node.zero = self._merge(other.zero)
+            new_node.one = self._merge(other.one)
         return new_node
 
     def _transform_leaves(self, fun):
@@ -119,7 +103,7 @@ def apply_to_outcome(fun):
     def wrapper(*args, **kwargs):
         partial = OutcomeValue()
         for arg in args:
-            partial = partial + arg
+            partial = partial._merge(arg)
         return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
     return wrapper
 
