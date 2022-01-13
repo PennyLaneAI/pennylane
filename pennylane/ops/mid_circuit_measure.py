@@ -107,9 +107,9 @@ class MeasurementDependantValue:
             for v in self.one_case._str_builder():
                 build.append(f"{self.dependent_on}=1,{v}")
         else:
-            for v in self.zero_case._str_builder():
+            for v in self.zero_case._str_builder():  # pylint: disable=protected-access
                 build.append(f"{self.dependent_on}=0 {v}")
-            for v in self.one_case._str_builder():
+            for v in self.one_case._str_builder():  # pylint: disable=protected-access
                 build.append(f"{self.dependent_on}=1 {v}")
         return build
 
