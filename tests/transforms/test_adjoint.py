@@ -71,11 +71,11 @@ def test_identity_adjoint():
 
     @qml.qnode(dev)
     def circuit():
-        barrier()
-        qml.adjoint(barrier)()
+        identity()
+        qml.adjoint(identity)()
         return qml.state()
 
-    def barrier():
+    def identity():
         qml.PauliX(wires=0)
         qml.Identity(0)
         qml.CNOT(wires=[0, 1])
