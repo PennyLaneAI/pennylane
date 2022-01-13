@@ -392,6 +392,7 @@ class TestJaxExecuteIntegration:
         b = jnp.array(0.2)
         res = cost(a, b)
 
+        print(execute_kwargs)
         assert len(res) == 2
         assert res[0].shape == (1,)
         assert res[1].shape == (1,)
@@ -408,6 +409,7 @@ class TestJaxExecuteIntegration:
             return execute([tape], dev, interface="jax", **execute_kwargs)[0][0]
 
         res = jax.grad(cost)(a)
+        print(res)
         assert res.shape == ()
 
         # compare to standard tape jacobian
@@ -614,7 +616,7 @@ class TestJaxExecuteIntegration:
         parameters."""
         jac_support = execute_kwargs.get("gradient_kwargs", {}).get("jac_support", False)
         if not jac_support:
-            pytest.skip("Jacobian supported is not turned on for this test case.")
+            pytest.skip("Jacobian support is not turned on for this test case.")
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -638,7 +640,7 @@ class TestJaxExecuteIntegration:
         """Tests computing multiple expectation values in a tape."""
         jac_support = execute_kwargs.get("gradient_kwargs", {}).get("jac_support", False)
         if not jac_support:
-            pytest.skip("Jacobian supported is not turned on for this test case.")
+            pytest.skip("Jacobian support is not turned on for this test case.")
 
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
@@ -657,5 +659,5 @@ class TestJaxExecuteIntegration:
             return res[0]
 
         res = jax.jacobian(cost)(params, cache=None)
+        print(res)
         assert res.shape == (2, 3)
-        # cost(params, cache=None)

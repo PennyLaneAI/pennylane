@@ -23,7 +23,8 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from .jax_id_tap import _execute_id_tap, _execute_with_fwd_id_tap
+from .jax_jacobian import _execute_id_tap, _execute_with_fwd_id_tap
+from copy import deepcopy
 
 dtype = jnp.float64
 
@@ -67,7 +68,12 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
-    vector_valued = gradient_kwargs.pop("jac_support", False)
+    # Copy not to mutate the original dictionary if the same dictionary is
+    # being used for multiple executions
+    gradient_kwargs = deepcopy(gradient_kwargs)
+    jac_sup = gradient_kwargs.pop("jac_support", False)
+    vv_support = gradient_kwargs.pop("vector_valued_support", False)
+    vector_valued = jac_sup or vv_support
 
     if gradient_fn is None:
         exec_fwd = _execute_with_fwd if not vector_valued else _execute_with_fwd_id_tap

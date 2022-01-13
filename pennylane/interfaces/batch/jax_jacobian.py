@@ -39,6 +39,7 @@ def _execute_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
     @jax.custom_vjp
     def wrapped_exec(params):
         result = []
@@ -59,9 +60,7 @@ def _execute_id_tap(
             result.append(res)
 
         host_callback.id_tap(wrapper, params, tap_with_device=True)
-        if isinstance(result, list) and len(result) > 0:
-            return result[0]
-        return result
+        return result[0]
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
@@ -125,7 +124,6 @@ def _execute_id_tap(
                     unwrapped_res.append(r)
 
                 res = unwrapped_res
-
             return (tuple(res),)
 
         # Gradient function is a device method.
@@ -150,11 +148,13 @@ def _execute_with_fwd_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
     @jax.custom_vjp
     def wrapped_exec(params):
 
         result = []
         jacobian = []
+
 
         def wrapper(p, transforms, device):
             """Compute the forward pass by returning the jacobian too."""
@@ -179,12 +179,12 @@ def _execute_with_fwd_id_tap(
 
     def wrapped_exec_fwd(params):
         res, jacs = wrapped_exec(params)
-        return res, tuple([jacs, params])
+        return res, jacs
 
     def wrapped_exec_bwd(params, g):
 
         # Use the jacobian that was computed on the forward pass
-        jacs, params = params
+        jacs = params
 
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases
@@ -197,9 +197,11 @@ def _execute_with_fwd_id_tap(
         for j in jacs:
             this_j = []
             for i in range(j.shape[1]):
-                this_j.append(j[0, i])
+                arr = j[0, i] if j.shape[0] == 1 else jnp.array([j[k, i] for k in range(j.shape[0])])
+                print(j[0, i], jnp.array([j[k, i] for k in range(j.shape[0])]))
+                this_j.append(arr)
             res_jacs.append(this_j)
-        return tuple([tuple(res_jacs)])
+        return (tuple(res_jacs),)
 
     wrapped_exec.defvjp(wrapped_exec_fwd, wrapped_exec_bwd)
     res = wrapped_exec(params)
