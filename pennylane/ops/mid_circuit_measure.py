@@ -1,6 +1,6 @@
 import uuid
 
-from typing import Union, Any, Dict
+from typing import Union, Any, Dict, TypeVar, Generic, Callable
 
 from pennylane.operation import AnyWires, Operation
 
@@ -12,7 +12,7 @@ def Measure(wire):
     """
     name = str(uuid.uuid4())[:8]  # might need to use more characters
     _MidCircuitMeasure(name, wire)
-    return MeasurementDependantValue(name)
+    return MeasurementDependantValue(name, 0, 1)
 
 class RuntimeOp(Operation):
     """
@@ -75,7 +75,9 @@ def apply_to_outcome(fun):
     return wrapper
 
 
-class MeasurementDependantValue:
+T = TypeVar('T')
+
+class MeasurementDependantValue(Generic[T]):
     """
     A class representing unknown measurement outcomes. Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
@@ -83,10 +85,18 @@ class MeasurementDependantValue:
     supports python __dunder__ mathematical operations. as well as qml.apply_to_outcome to perform arbitrary function.
     """
 
-    def __init__(self, measurement_id: str):
-        self.zero_case: Union[MeasurementDependantValue, _Value] = _Value(0)
-        self.one_case: Union[MeasurementDependantValue, _Value] = _Value(1)
+    def __init__(self, measurement_id: str,
+                 zero_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
+                 one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T]):
         self.dependent_on: str = measurement_id
+        if isinstance(zero_case, MeasurementDependantValue) or isinstance(zero_case, _Value):
+            self.zero_case = zero_case
+        else:
+            self.zero_case = _Value(zero_case)
+        if isinstance(one_case, MeasurementDependantValue) or isinstance(one_case, _Value):
+            self.one_case = one_case
+        else:
+            self.one_case = _Value(one_case)
 
     def __add__(self, other: Any):
         return apply_to_outcome(lambda x, y: x + y)(self, other)
@@ -143,42 +153,41 @@ class MeasurementDependantValue:
 
         """
         if isinstance(other, MeasurementDependantValue):
-            new_node = MeasurementDependantValue(None)
             if self.dependent_on == other.dependent_on:
-                new_node.dependent_on = self.dependent_on
-                new_node.zero_case = self.zero_case._merge(other.zero_case)  # pylint: disable=protected-access
-                new_node.one_case = self.one_case._merge(other.one_case)  # pylint: disable=protected-access
-            elif self.dependent_on < other.dependent_on:
-                new_node.dependent_on = self.dependent_on
-                new_node.zero_case = self.zero_case._merge(other)  # pylint: disable=protected-access
-                new_node.one_case = self.one_case._merge(other)  # pylint: disable=protected-access
-            elif self.dependent_on > other.dependent_on:
-                new_node.dependent_on = other.dependent_on
-                new_node.zero_case = self._merge(other.zero_case)  # pylint: disable=protected-access
-                new_node.one_case = self._merge(other.one_case)  # pylint: disable=protected-access
-            return new_node
+                return MeasurementDependantValue(
+                    self.dependent_on,
+                    self.zero_case._merge(other.zero_case),  # pylint: disable=protected-access
+                    self.one_case._merge(other.one_case))  # pylint: disable=protected-access
+            if self.dependent_on < other.dependent_on:
+                return MeasurementDependantValue(
+                    self.dependent_on,
+                    self.zero_case._merge(other),  # pylint: disable=protected-access
+                    self.one_case._merge(other))  # pylint: disable=protected-access
+            if self.dependent_on > other.dependent_on:
+                return MeasurementDependantValue(
+                    other.dependent_on,
+                    self._merge(other.zero_case),  # pylint: disable=protected-access
+                    self._merge(other.one_case))  # pylint: disable=protected-access
         elif isinstance(other, _Value):
-            new_node = MeasurementDependantValue(None)
-            new_node.dependent_on = self.dependent_on
-            new_node.zero_case = self.zero_case._merge(other)  # pylint: disable=protected-access
-            new_node.one_case = self.one_case._merge(other)  # pylint: disable=protected-access
-            return new_node
+            return MeasurementDependantValue(
+                self.dependent_on,
+                self.zero_case._merge(other),  # pylint: disable=protected-access
+                self.one_case._merge(other))  # pylint: disable=protected-access
         else:
             leaf = _Value(other)
-            new_node = MeasurementDependantValue(None)
-            new_node.dependent_on = self.dependent_on
-            new_node.zero_case = self.zero_case._merge(leaf)  # pylint: disable=protected-access
-            new_node.one_case = self.one_case._merge(leaf)  # pylint: disable=protected-access
-            return new_node
+            return MeasurementDependantValue(
+                self.dependent_on,
+                self.zero_case._merge(leaf),  # pylint: disable=protected-access
+                self.one_case._merge(leaf))  # pylint: disable=protected-access
 
-    def _transform_leaves(self, fun: callable):
+    def _transform_leaves(self, fun: Callable):
         """
         Transform the leaves of a MeasurementDependantValue with `fun`.
         """
-        new_node = MeasurementDependantValue(self.dependent_on)
-        new_node.zero_case = self.zero_case._transform_leaves(fun)  # pylint: disable=protected-access
-        new_node.one_case = self.one_case._transform_leaves(fun)  # pylint: disable=protected-access
-        return new_node
+        return MeasurementDependantValue(
+            self.dependent_on,
+            self.zero_case._transform_leaves(fun),  # pylint: disable=protected-access
+            self.one_case._transform_leaves(fun))  # pylint: disable=protected-access
 
     def get_computation(self, runtime_measurements: Dict[str, int]):
         """
@@ -190,8 +199,10 @@ class MeasurementDependantValue:
                 return self.zero_case.get_computation(runtime_measurements)
             else:
                 return self.one_case.get_computation(runtime_measurements)
+        else:
+            raise ValueError
 
-class _Value:
+class _Value(Generic[T]):
     """
     Leaf node for a MeasurementDependantValue tree structure.
     """
@@ -200,11 +211,10 @@ class _Value:
 
     def _merge(self, other):
         if isinstance(other, MeasurementDependantValue):
-            new_node = MeasurementDependantValue(None)
-            new_node.dependent_on = other.dependent_on
-            new_node.zero_case = self._merge(other.zero_case)
-            new_node.one_case = self._merge(other.one_case)
-            return new_node
+            return MeasurementDependantValue(
+                other.dependent_on,
+                self._merge(other.zero_case),
+                self._merge(other.one_case))
         elif isinstance(other, _Value):
             return _Value(*self.values, *other.values)
         else:
@@ -213,7 +223,7 @@ class _Value:
     def _transform_leaves(self, fun):
         return _Value(fun(*self.values))
 
-    def get_computation(self, runtime_measurements):
+    def get_computation(self, _):
         if len(self.values) == 1:
             return self.values[0]
         return self.values
