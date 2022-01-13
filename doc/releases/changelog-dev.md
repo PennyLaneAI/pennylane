@@ -194,6 +194,11 @@
   through the `unitary_to_rot` optimization transform.
   [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
 
+* Fixes a bug in which passing required arguments into operations as
+  keyword arguments would throw an error because the documented call
+  signature didn't match the function definition. 
+  [(#1976)](https://github.com/PennyLaneAI/pennylane/pull/1976)
+
 <h3>Documentation</h3>
 
 * Extended the interfaces description page to explicitly mention device
@@ -321,4 +326,4 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, Ankit Khandelwal, 
-Christina Lee, Maria Schuld, Antal Száva, David Wierichs, Shaoming Zhang
+Christina Lee, Maria Schuld, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
