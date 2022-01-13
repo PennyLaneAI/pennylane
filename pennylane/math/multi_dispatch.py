@@ -86,7 +86,7 @@ def _multi_dispatch(values):
 def multi_dispatch(argnum=None, tensor_list=None):
     """Decorater to dispatch arguments handled by the interface.
 
-    This helps simplify definitions of new functions inside pennylane. Instead of writing
+    This helps simplify definitions of new functions inside PennyLane. Instead of writing
 
     >>> def some_function(tensor1, tensor2, option):
     ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
