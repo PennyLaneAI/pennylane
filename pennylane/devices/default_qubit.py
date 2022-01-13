@@ -168,7 +168,7 @@ class DefaultQubit(QubitDevice):
         self._measured = {}
 
         self._apply_ops = {
-            "MidCircuitMeasure": self._apply_mid_circuit_measure,
+            "_MidCircuitMeasure": self._apply_mid_circuit_measure,
             "If": self._if_op,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
