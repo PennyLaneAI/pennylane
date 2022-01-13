@@ -1,4 +1,9 @@
+"""
+Mid-circuit measurements and associated operations.
+"""
+
 import uuid
+import functools
 
 from typing import Union, Any, Dict, TypeVar, Generic, Callable
 
@@ -9,7 +14,9 @@ def Measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
 
-    m0 = qml.Measure(0)
+        ```
+        m0 = qml.Measure(0)
+        ```
     """
     name = str(uuid.uuid4())[:8]  # might need to use more characters
     _MidCircuitMeasure(name, wire)
@@ -20,10 +27,12 @@ class RuntimeOp(Operation):
     """
     Run an operation with parameters being outcomes of mid-circuit measurements.
 
-    ex:
+        Ex:
 
-    m0 = qml.Measure(0)
-    qml.RuntimeOp(qml.RZ, m0, wires=1)
+        ```
+        m0 = qml.Measure(0)
+        qml.RuntimeOp(qml.RZ, m0, wires=1)
+        ```
     """
 
     num_wires = AnyWires
@@ -40,10 +49,12 @@ class If(Operation):
     """
     Run an operation conditionally on the outcome of mid-circuit measurements.
 
-    ex:
+        Ex:
 
-    m0 = qml.Measure(0)
-    qml.If(m0, qml.RZ, 1.2, wires=1)
+        ```
+        m0 = qml.Measure(0)
+        qml.If(m0, qml.RZ, 1.2, wires=1)
+        ```
     """
 
     num_wires = AnyWires
@@ -55,6 +66,9 @@ class If(Operation):
 
 
 class _MidCircuitMeasure(Operation):
+    """
+    Operation to perform mid-circuit measurement.
+    """
     num_wires = 1
 
     def __init__(self, measure_var, wires=None):
@@ -67,11 +81,14 @@ def apply_to_outcome(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
 
-    ex:
-    m0 = qml.Measure(0)
-    m0_sin = qml.apply_to_outcome(np.sin)(m0)
+        Ex:
+        ```
+        m0 = qml.Measure(0)
+        m0_sin = qml.apply_to_outcome(np.sin)(m0)
+        ```
     """
 
+    @functools.wraps(fun)
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
@@ -88,10 +105,11 @@ T = TypeVar("T")
 
 class MeasurementDependantValue(Generic[T]):
     """
-    A class representing unknown measurement outcomes. Since we don't know the actual outcomes at circuit creation time,
+    A class representing unknown measurement outcomes.
+    Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
 
-    supports python __dunder__ mathematical operations. as well as qml.apply_to_outcome to perform arbitrary function.
+    supports python __dunder__ mathematical operations. As well as arbitrary functions using qml.apply_to_outcome
     """
 
     def __init__(
@@ -123,6 +141,9 @@ class MeasurementDependantValue(Generic[T]):
         return apply_to_outcome(lambda x, y: y * x)(self, other)
 
     def _str_builder(self):
+        """
+        Helper method for __str__
+        """
         build = []
         if isinstance(self.zero_case, MeasurementDependantValue):
             for v in self.zero_case._str_builder():  # pylint: disable=protected-access
@@ -143,22 +164,28 @@ class MeasurementDependantValue(Generic[T]):
         """
         Merge this MeasurementDependantValue with `other`.
 
-        Ex: Merging a MeasurementDependantValue such as:
+            Ex: Merging a MeasurementDependantValue such as:
 
-        df3jff4t=0 => 3.4
-        df3jff4t=1 => 1
+            ```
+            df3jff4t=0 => 3.4
+            df3jff4t=1 => 1
+            ```
 
-        with another MeasurementDependantValue:
+            with another MeasurementDependantValue:
 
-        f93fjdj3=0 => 100
-        f93fjdj3=1 => 67
+            ```
+            f93fjdj3=0 => 100
+            f93fjdj3=1 => 67
+            ```
 
-        will result in:
+            will result in:
 
-        df3jff4t=0,f93fjdj3=0 => 3.4,100
-        df3jff4t=0,f93fjdj3=1 => 3.4,67
-        df3jff4t=1,f93fjdj3=0 => 1,100
-        df3jff4t=1,f93fjdj3=1 => 1,67
+            ```
+            df3jff4t=0,f93fjdj3=0 => 3.4,100
+            df3jff4t=0,f93fjdj3=1 => 3.4,67
+            df3jff4t=1,f93fjdj3=0 => 1,100
+            df3jff4t=1,f93fjdj3=1 => 1,67
+            ```
 
         (note the uuid's in the representation represent a distinct measurement of a qubit.)
 
@@ -229,6 +256,9 @@ class _Value(Generic[T]):
         self.values = args
 
     def _merge(self, other):
+        """
+        Works with MeasurementDependantValue._merge
+        """
         if isinstance(other, MeasurementDependantValue):
             return MeasurementDependantValue(
                 other.dependent_on, self._merge(other.zero_case), self._merge(other.one_case)
@@ -239,9 +269,15 @@ class _Value(Generic[T]):
             return _Value(*self.values, other)
 
     def _transform_leaves(self, fun):
+        """
+        Works with MeasurementDependantValue._transform_leaves
+        """
         return _Value(fun(*self.values))
 
     def get_computation(self, _):
+        """
+        Works with MeasurementDependantValue.get_computation
+        """
         if len(self.values) == 1:
             return self.values[0]
         return self.values
