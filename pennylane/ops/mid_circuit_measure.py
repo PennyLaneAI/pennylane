@@ -113,8 +113,7 @@ class PossibleOutcomes:
             partial = OutcomeValue()
             for arg in args:
                 partial = partial + arg
-            partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
-            return partial
+            return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
         return wrapper
 
     def get_computation(self, runtime_measurements):
@@ -125,6 +124,15 @@ class PossibleOutcomes:
             else:
                 return self.one.get_computation(runtime_measurements)
 
+class RuntimeOp(Operation):
+    num_wires = AnyWires
+
+    def __init__(self, op, *args, wires=None, **kwargs):
+        self.op = op
+        self.unknown_ops = PossibleOutcomes.apply_to_all(
+            lambda *unwrapped: self.op(*unwrapped, do_queue=False, wires=wires, **kwargs)
+        )(*args)
+        super().__init__(wires=wires)
 
 
 class If(Operation):
@@ -133,14 +141,6 @@ class If(Operation):
     def __init__(self, runtime_exp, then_op, *args, **kwargs):
         self.runtime_exp = runtime_exp
         self.then_op = then_op(*args, do_queue=False, **kwargs)
-        super().__init__(*args, **kwargs)
-
-class RuntimeOp(Operation):
-    num_wires = AnyWires
-
-    def __init__(self, op, *args, **kwargs):
-        self._op = op
-        self._unknown_ops = PossibleOutcomes.apply_to_all(lambda *args: self._op(*args, do_queue=False, **kwargs))
         super().__init__(*args, **kwargs)
 
 

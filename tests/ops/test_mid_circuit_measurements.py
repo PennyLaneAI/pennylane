@@ -49,3 +49,19 @@ class TestMidCircuitMeasurements:
         teleported_probs = teleportation_circuit(r)
 
         assert np.linalg.norm(normal_probs - teleported_probs) < 0.01
+
+
+    def test_runtime_op(self):
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def runtime_circuit():
+            qml.Hadamard(wires=0)
+            m0 = qml.Measure(0)
+
+            qml.RuntimeOp(qml.RZ, m0, wires=1)
+
+            return qml.probs(wires=1)
+
+        value = runtime_circuit()
+        print(value)
