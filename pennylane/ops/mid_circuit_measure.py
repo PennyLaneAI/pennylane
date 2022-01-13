@@ -49,29 +49,29 @@ class PossibleOutcomes:
     def __init__(self, name):
         self.zero = OutcomeValue(0)
         self.one = OutcomeValue(1)
-        self.name = name
+        self.measurement_id = name
 
     def __add__(self, other):
         new_node = PossibleOutcomes(None)
         if isinstance(other, OutcomeValue):
-            new_node.name = self.name
+            new_node.measurement_id = self.measurement_id
             new_node.zero = self.zero.__add__(other)
             new_node.one = self.one.__add__(other)
         elif not isinstance(other, PossibleOutcomes):
             leaf = OutcomeValue(other)
-            new_node.name = self.name
+            new_node.measurement_id = self.measurement_id
             new_node.zero = self.zero.__add__(leaf)
             new_node.one = self.one.__add__(leaf)
-        elif self.name == other.name:
-            new_node.name = self.name
+        elif self.measurement_id == other.measurement_id:
+            new_node.measurement_id = self.measurement_id
             new_node.zero = self.zero.__add__(other.zero)
             new_node.one = self.one.__add__(other.zero)
-        elif self.name < other.name:
-            new_node.name = self.name
+        elif self.measurement_id < other.measurement_id:
+            new_node.measurement_id = self.measurement_id
             new_node.zero = other.__radd__(self.zero)
             new_node.one = other.__radd__(self.one)
-        elif self.name > other.name:
-            new_node.name = other.name
+        elif self.measurement_id > other.measurement_id:
+            new_node.measurement_id = other.measurement_id
             new_node.zero = self.__add__(other.zero)
             new_node.one = self.__add__(other.one)
         return new_node
@@ -79,30 +79,30 @@ class PossibleOutcomes:
     def __radd__(self, other):
         new_node = PossibleOutcomes(None)
         if isinstance(other, OutcomeValue):
-            new_node.name = self.name
+            new_node.measurement_id = self.measurement_id
             new_node.zero = self.zero.__radd__(other)
             new_node.one = self.one.__radd__(other)
         elif not isinstance(other, PossibleOutcomes):
             leaf = OutcomeValue([other])
-            new_node.name = self.name
+            new_node.measurement_id = self.measurement_id
             new_node.zero = self.zero.__radd__(leaf)
             new_node.one = self.one.__radd__(leaf)
-        elif self.name == other.name:
-            new_node.name = self.name
+        elif self.measurement_id == other.measurement_id:
+            new_node.measurement_id = self.measurement_id
             new_node.zero = other.zero.__radd__(self.zero)
             new_node.one = other.zero.__radd__(self.one)
-        elif self.name < other.name:
-            new_node.name = self.name
+        elif self.measurement_id < other.measurement_id:
+            new_node.measurement_id = self.measurement_id
             new_node.zero = other.__add__(self.zero)
             new_node.one = other.__add__(self.one)
-        elif self.name > other.name:
-            new_node.name = other.name
+        elif self.measurement_id > other.measurement_id:
+            new_node.measurement_id = other.measurement_id
             new_node.zero = self.__radd__(other.zero)
             new_node.one = self.__radd__(other.one)
         return new_node
 
     def _transform_leaves(self, fun):
-        new_node = PossibleOutcomes(self.name)
+        new_node = PossibleOutcomes(self.measurement_id)
         new_node.zero = self.zero.transform_leaves(fun)
         new_node.one = self.one.transform_leaves(fun)
         return new_node
@@ -118,8 +118,8 @@ class PossibleOutcomes:
         return wrapper
 
     def get_computation(self, runtime_measurements):
-        if self.name in runtime_measurements:
-            result = runtime_measurements[self.name]
+        if self.measurement_id in runtime_measurements:
+            result = runtime_measurements[self.measurement_id]
             if result == 0:
                 return self.zero.get_computation(runtime_measurements)
             else:
