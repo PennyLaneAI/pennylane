@@ -69,8 +69,9 @@ def apply_to_outcome(fun):
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
-            partial = partial._merge(arg)
-        return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
+            partial = partial._merge(arg)  # pylint: disable=protected-access
+        return partial._transform_leaves(  # pylint: disable=protected-access
+            lambda *unwrapped: fun(*unwrapped, **kwargs))
     return wrapper
 
 
@@ -102,9 +103,9 @@ class MeasurementDependantValue:
     def _str_builder(self):
         build = []
         if isinstance(self.zero_case, MeasurementDependantValue):
-            for v in self.zero_case._str_builder():
+            for v in self.zero_case._str_builder():  # pylint: disable=protected-access
                 build.append(f"{self.dependent_on}=0,{v}")
-            for v in self.one_case._str_builder():
+            for v in self.one_case._str_builder():  # pylint: disable=protected-access
                 build.append(f"{self.dependent_on}=1,{v}")
         else:
             for v in self.zero_case._str_builder():  # pylint: disable=protected-access
@@ -145,29 +146,29 @@ class MeasurementDependantValue:
             new_node = MeasurementDependantValue(None)
             if self.dependent_on == other.dependent_on:
                 new_node.dependent_on = self.dependent_on
-                new_node.zero_case = self.zero_case._merge(other.zero_case)
-                new_node.one_case = self.one_case._merge(other.one_case)
+                new_node.zero_case = self.zero_case._merge(other.zero_case)  # pylint: disable=protected-access
+                new_node.one_case = self.one_case._merge(other.one_case)  # pylint: disable=protected-access
             elif self.dependent_on < other.dependent_on:
                 new_node.dependent_on = self.dependent_on
-                new_node.zero_case = self.zero_case._merge(other)
-                new_node.one_case = self.one_case._merge(other)
+                new_node.zero_case = self.zero_case._merge(other)  # pylint: disable=protected-access
+                new_node.one_case = self.one_case._merge(other)  # pylint: disable=protected-access
             elif self.dependent_on > other.dependent_on:
                 new_node.dependent_on = other.dependent_on
-                new_node.zero_case = self._merge(other.zero_case)
-                new_node.one_case = self._merge(other.one_case)
+                new_node.zero_case = self._merge(other.zero_case)  # pylint: disable=protected-access
+                new_node.one_case = self._merge(other.one_case)  # pylint: disable=protected-access
             return new_node
         elif isinstance(other, _Value):
             new_node = MeasurementDependantValue(None)
             new_node.dependent_on = self.dependent_on
-            new_node.zero_case = self.zero_case._merge(other)
-            new_node.one_case = self.one_case._merge(other)
+            new_node.zero_case = self.zero_case._merge(other)  # pylint: disable=protected-access
+            new_node.one_case = self.one_case._merge(other)  # pylint: disable=protected-access
             return new_node
         else:
             leaf = _Value(other)
             new_node = MeasurementDependantValue(None)
             new_node.dependent_on = self.dependent_on
-            new_node.zero_case = self.zero_case._merge(leaf)
-            new_node.one_case = self.one_case._merge(leaf)
+            new_node.zero_case = self.zero_case._merge(leaf)  # pylint: disable=protected-access
+            new_node.one_case = self.one_case._merge(leaf)  # pylint: disable=protected-access
             return new_node
 
     def _transform_leaves(self, fun: callable):
@@ -175,8 +176,8 @@ class MeasurementDependantValue:
         Transform the leaves of a MeasurementDependantValue with `fun`.
         """
         new_node = MeasurementDependantValue(self.dependent_on)
-        new_node.zero_case = self.zero_case._transform_leaves(fun)
-        new_node.one_case = self.one_case._transform_leaves(fun)
+        new_node.zero_case = self.zero_case._transform_leaves(fun)  # pylint: disable=protected-access
+        new_node.one_case = self.one_case._transform_leaves(fun)  # pylint: disable=protected-access
         return new_node
 
     def get_computation(self, runtime_measurements: Dict[str, int]):
