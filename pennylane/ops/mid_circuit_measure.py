@@ -123,8 +123,8 @@ class MeasurementDependantValue:
 
         Ex: Merging a MeasurementDependantValue such as:
 
-        df3jff4t:0 => 3.4
-        df3jff4t:1 => 1
+        df3jff4t=0 => 3.4
+        df3jff4t=1 => 1
 
         with another MeasurementDependantValue:
 
@@ -137,6 +137,8 @@ class MeasurementDependantValue:
         df3jff4t=0,f93fjdj3=1 => 3.4,67
         df3jff4t=1,f93fjdj3=0 => 1,100
         df3jff4t=1,f93fjdj3=1 => 1,67
+
+        (note the uuid's in the representation represent a distinct measurement of a qubit.)
 
         """
         if isinstance(other, MeasurementDependantValue):
