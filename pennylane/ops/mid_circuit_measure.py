@@ -38,6 +38,9 @@ class Leaf:
     def transform_leaves(self, fun):
         return Leaf(fun(*self.values))
 
+    def get_computation(self, runtime_measurements):
+        return self.values
+
 
 class Node:
 
@@ -101,6 +104,14 @@ class Node:
         new_node.zero = self.zero.transform_leaves(fun)
         new_node.one = self.one.transform_leaves(fun)
         return new_node
+
+    def get_computation(self, runtime_measurements):
+        if self.name in runtime_measurements:
+            result = runtime_measurements[self.name]
+            if result == 0:
+                return self.zero.get_computation(runtime_measurements)
+            else:
+                return self.one.get_computation(runtime_measurements)
 
 
 test, what = Node("test"), Node("what")
