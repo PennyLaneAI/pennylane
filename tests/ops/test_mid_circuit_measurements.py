@@ -79,7 +79,7 @@ class TestMidCircuitMeasurements:
             m1 = qml.Measure(1)
             m2 = qml.Measure(2)
 
-            out1 = m0 * m1
+            out1 = 2*m0 + m1
 
             out2 = qml.apply_to_outcome(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
 
