@@ -84,23 +84,9 @@ class grad:
         argnum = []
 
         for idx, arg in enumerate(args):
-
             trainable = getattr(arg, "requires_grad", None)
-            array_box = isinstance(arg, ArrayBox)
-
-            if trainable is None and not array_box:
-
-                warnings.warn(
-                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
-                    "have to explicitly specify requires_grad=True (or the "
-                    "argnum argument must be passed) in order for trainable parameters to be "
-                    "identified.",
-                    UserWarning,
-                )
-
-            if trainable is None:
+            if trainable is None and isinstance(arg, ArrayBox):
                 trainable = True
-
             if trainable:
                 argnum.append(idx)
 
@@ -292,23 +278,9 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
-
             trainable = getattr(arg, "requires_grad", None)
-            is_array_box = isinstance(arg, ArrayBox)
-
-            if trainable is None and not is_array_box:
-
-                warnings.warn(
-                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
-                    "have to explicitly specify requires_grad=True (or the "
-                    "argnum argument must be passed) in order for trainable parameters to be "
-                    "identified.",
-                    UserWarning,
-                )
-
-            if trainable is None:
+            if trainable is None and isinstance(arg, ArrayBox):
                 trainable = True
-
             if trainable:
                 argnum.append(idx)
 

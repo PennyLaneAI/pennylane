@@ -107,7 +107,7 @@ class tensor(_np.ndarray):
         [0., 0., 0.]], requires_grad=True)
     """
 
-    def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
+    def __new__(cls, input_array, *args, requires_grad=False, **kwargs):
         obj = asarray(input_array, *args, **kwargs)
 
         if isinstance(obj, onp.ndarray):
@@ -165,7 +165,7 @@ class tensor(_np.ndarray):
 
         # if any of the inputs were trainable, the output is also trainable
         requires_grad = any(
-            isinstance(x, onp.ndarray) and getattr(x, "requires_grad", True) for x in inputs
+            isinstance(x, onp.ndarray) and getattr(x, "requires_grad", False) for x in inputs
         )
 
         # Iterate through the ufunc outputs and convert each to a PennyLane tensor.
