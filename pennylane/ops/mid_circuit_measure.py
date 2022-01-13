@@ -1,13 +1,28 @@
 import uuid
 
+from typing import Union, Any, Dict
+
 from pennylane.operation import AnyWires, Operation
 
 def Measure(wire):
+    """
+    Create a mid-circuit measurement and return an outcome.
+
+    m0 = qml.Measure(0)
+    """
     name = str(uuid.uuid4())[:8]  # might need to use more characters
     _MidCircuitMeasure(name, wire)
-    return PossibleOutcomes(name)
+    return MeasurementDependantValue(name)
 
 class RuntimeOp(Operation):
+    """
+    Run an operation with parameters being outcomes of mid-circuit measurements.
+
+    ex:
+
+    m0 = qml.Measure(0)
+    qml.RuntimeOp(qml.RZ, m0, wires=1)
+    """
     num_wires = AnyWires
 
     def __init__(self, op, *args, wires=None, **kwargs):
@@ -19,6 +34,14 @@ class RuntimeOp(Operation):
 
 
 class If(Operation):
+    """
+    Run an operation conditionally on the outcome of mid-circuit measurements.
+
+    ex:
+
+    m0 = qml.Measure(0)
+    qml.If(m0, qml.RZ, 1.2, wires=1)
+    """
     num_wires = AnyWires
 
     def __init__(self, runtime_exp, then_op, *args, **kwargs):
@@ -37,63 +60,39 @@ class _MidCircuitMeasure(Operation):
 
 def apply_to_outcome(fun):
     def wrapper(*args, **kwargs):
-        partial = OutcomeValue()
+        partial = Value()
         for arg in args:
             partial = partial._merge(arg)
         return partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
     return wrapper
 
-class OutcomeValue:
 
-    def __init__(self, *args):
-        self.values = args
+class MeasurementDependantValue:
+    """
+    A class representing unknown measurement outcomes. Since we don't know the actual outcomes at circuit creation time,
+    consider all scenarios.
+    """
 
-    def _merge(self, other):
-        if isinstance(other, PossibleOutcomes):
-            new_node = PossibleOutcomes(None)
-            new_node.dependent_on = other.dependent_on
-            new_node.zero_case = self._merge(other.zero_case)
-            new_node.one_case = self._merge(other.one_case)
-            return new_node
-        elif isinstance(other, OutcomeValue):
-            return OutcomeValue(*self.values, *other.values)
-        else:
-            return OutcomeValue(*self.values, other)
+    def __init__(self, measurement_id: str):
+        self.zero_case: Union[MeasurementDependantValue, Value] = Value(0)
+        self.one_case: Union[MeasurementDependantValue, Value] = Value(1)
+        self.dependent_on: str = measurement_id
 
-    def _transform_leaves(self, fun):
-        return OutcomeValue(fun(*self.values))
-
-    def get_computation(self, runtime_measurements):
-        if len(self.values) == 1:
-            return self.values[0]
-        return self.values
-
-    def _str_builder(self):
-        return [f"=> {', '.join(str(v) for v in self.values)}"]
-
-
-class PossibleOutcomes:
-
-    def __init__(self, name):
-        self.zero_case = OutcomeValue(0)
-        self.one_case = OutcomeValue(1)
-        self.dependent_on = name
-
-    def __add__(self, other):
+    def __add__(self, other: Any):
         return apply_to_outcome(lambda x, y: x + y)(self, other)
 
-    def __radd__(self, other):
+    def __radd__(self, other: Any):
         return apply_to_outcome(lambda x, y: y + x)(self, other)
 
-    def __mul__(self, other):
+    def __mul__(self, other: Any):
         return apply_to_outcome(lambda x, y: x*y)(self, other)
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: Any):
         return apply_to_outcome(lambda x, y: y*x)(self, other)
 
     def _str_builder(self):
         build = []
-        if isinstance(self.zero_case, PossibleOutcomes):
+        if isinstance(self.zero_case, MeasurementDependantValue):
             for v in self.zero_case._str_builder():
                 build.append(f"{self.dependent_on}=0,{v}")
             for v in self.one_case._str_builder():
@@ -109,9 +108,30 @@ class PossibleOutcomes:
         return "\n".join(self._str_builder())
 
 
-    def _merge(self, other):
-        if isinstance(other, PossibleOutcomes):
-            new_node = PossibleOutcomes(None)
+    def _merge(self, other: Any):
+        """
+        Merge this MeasurementDependantValue with `other`.
+
+        Ex: Merging a MeasurementDependantValue such as:
+
+        df3jff4t:0 => 3.4
+        df3jff4t:1 => 1
+
+        with another MeasurementDependantValue:
+
+        f93fjdj3:0 => 100
+        f93fjdj3:1 => 67
+
+        will result in:
+
+        df3jff4t:0,f93fjdj3:0 => 3.4,100
+        df3jff4t:0,f93fjdj3:1 => 3.4,67
+        df3jff4t:1,f93fjdj3:0 => 1,100
+        df3jff4t:1,f93fjdj3:1 => 1,67
+
+        """
+        if isinstance(other, MeasurementDependantValue):
+            new_node = MeasurementDependantValue(None)
             if self.dependent_on == other.dependent_on:
                 new_node.dependent_on = self.dependent_on
                 new_node.zero_case = self.zero_case._merge(other.zero_case)
@@ -125,27 +145,33 @@ class PossibleOutcomes:
                 new_node.zero_case = self._merge(other.zero_case)
                 new_node.one_case = self._merge(other.one_case)
             return new_node
-        elif isinstance(other, OutcomeValue):
-            new_node = PossibleOutcomes(None)
+        elif isinstance(other, Value):
+            new_node = MeasurementDependantValue(None)
             new_node.dependent_on = self.dependent_on
             new_node.zero_case = self.zero_case._merge(other)
             new_node.one_case = self.one_case._merge(other)
             return new_node
         else:
-            leaf = OutcomeValue(other)
-            new_node = PossibleOutcomes(None)
+            leaf = Value(other)
+            new_node = MeasurementDependantValue(None)
             new_node.dependent_on = self.dependent_on
             new_node.zero_case = self.zero_case._merge(leaf)
             new_node.one_case = self.one_case._merge(leaf)
             return new_node
 
-    def _transform_leaves(self, fun):
-        new_node = PossibleOutcomes(self.dependent_on)
+    def _transform_leaves(self, fun: callable):
+        """
+        Transform the leaves of a MeasurementDependantValue with `fun`.
+        """
+        new_node = MeasurementDependantValue(self.dependent_on)
         new_node.zero_case = self.zero_case._transform_leaves(fun)
         new_node.one_case = self.one_case._transform_leaves(fun)
         return new_node
 
-    def get_computation(self, runtime_measurements):
+    def get_computation(self, runtime_measurements: Dict[str, Union[0, 1]]):
+        """
+        Given a list of measurement outcomes get the correct computation.
+        """
         if self.dependent_on in runtime_measurements:
             result = runtime_measurements[self.dependent_on]
             if result == 0:
@@ -153,6 +179,32 @@ class PossibleOutcomes:
             else:
                 return self.one_case.get_computation(runtime_measurements)
 
+class Value:
+    """
 
+    """
+    def __init__(self, *args):
+        self.values = args
 
+    def _merge(self, other):
+        if isinstance(other, MeasurementDependantValue):
+            new_node = MeasurementDependantValue(None)
+            new_node.dependent_on = other.dependent_on
+            new_node.zero_case = self._merge(other.zero_case)
+            new_node.one_case = self._merge(other.one_case)
+            return new_node
+        elif isinstance(other, Value):
+            return Value(*self.values, *other.values)
+        else:
+            return Value(*self.values, other)
 
+    def _transform_leaves(self, fun):
+        return Value(fun(*self.values))
+
+    def get_computation(self, runtime_measurements):
+        if len(self.values) == 1:
+            return self.values[0]
+        return self.values
+
+    def _str_builder(self):
+        return [f"=> {', '.join(str(v) for v in self.values)}"]
