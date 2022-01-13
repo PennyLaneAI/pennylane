@@ -78,7 +78,7 @@ class PossibleOutcomes:
                 new_node.one = self._merge(other.one)
             return new_node
         elif isinstance(other, OutcomeValue):
-            new_node = OutcomeValue(None)
+            new_node = PossibleOutcomes(None)
             new_node.measurement_id = self.measurement_id
             new_node.zero = self.zero._merge(other)
             new_node.one = self.one._merge(other)
