@@ -4,8 +4,6 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
-from pennylane.ops.mid_circuit_measure import PossibleOutcomes
-
 class TestMidCircuitMeasurements:
     """Tests the continuous variable based operations."""
 
@@ -81,11 +79,13 @@ class TestMidCircuitMeasurements:
             m1 = qml.Measure(1)
             m2 = qml.Measure(2)
 
-            @PossibleOutcomes.apply_to_all
-            def weird_func(x, y, z):
-                return np.sin(x) * y + z
+            @qml.apply_to_outcome
+            def fun_1(x, y):
+                return x * y
 
-            rot = weird_func(m0, m1, m2)
+            out1 = fun_1(m0, m1)
+
+            rot = qml.apply_to_outcome(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
 
             qml.RuntimeOp(qml.RZ, rot, wires=1)
 
