@@ -18,9 +18,9 @@ def Measure(wire):
         m0 = qml.Measure(0)
         ```
     """
-    name = str(uuid.uuid4())[:8]  # might need to use more characters
-    _MidCircuitMeasure(name, wire)
-    return MeasurementDependantValue(name, 0, 1)
+    measurement_id = str(uuid.uuid4())[:8]  # might need to use more characters
+    _MidCircuitMeasure(measurement_id, wire)
+    return MeasurementDependantValue(measurement_id, 0, 1)
 
 
 class RuntimeOp(Operation):
