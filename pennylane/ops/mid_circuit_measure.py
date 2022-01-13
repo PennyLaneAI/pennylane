@@ -5,7 +5,7 @@ from pennylane.operation import AnyWires, Operation
 def Measure(wire):
     name = uuid.uuid4()
     _MidCircuitMeasure(name, wire)
-    return UnknownOutcome(name)
+    return PossibleOutcomes(name)
 
 class _MidCircuitMeasure(Operation):
     num_wires = 1
@@ -22,14 +22,14 @@ class OutcomeValue:
         self.values = args
 
     def __add__(self, other):
-        if isinstance(other, UnknownOutcome):
+        if isinstance(other, PossibleOutcomes):
             return other.__radd__(self)
         if not isinstance(other, OutcomeValue):
             other = OutcomeValue(other)
         return OutcomeValue(*self.values, *other.values)
 
     def __radd__(self, other):
-        if isinstance(other, UnknownOutcome):
+        if isinstance(other, PossibleOutcomes):
             return other.__add__(self)
         if not isinstance(other, OutcomeValue):
             other = OutcomeValue([other])
@@ -44,7 +44,7 @@ class OutcomeValue:
         return self.values
 
 
-class UnknownOutcome:
+class PossibleOutcomes:
 
     def __init__(self, name):
         self.zero = OutcomeValue(0)
@@ -52,12 +52,12 @@ class UnknownOutcome:
         self.name = name
 
     def __add__(self, other):
-        new_node = UnknownOutcome(None)
+        new_node = PossibleOutcomes(None)
         if isinstance(other, OutcomeValue):
             new_node.name = self.name
             new_node.zero = self.zero.__add__(other)
             new_node.one = self.one.__add__(other)
-        elif not isinstance(other, UnknownOutcome):
+        elif not isinstance(other, PossibleOutcomes):
             leaf = OutcomeValue(other)
             new_node.name = self.name
             new_node.zero = self.zero.__add__(leaf)
@@ -77,12 +77,12 @@ class UnknownOutcome:
         return new_node
 
     def __radd__(self, other):
-        new_node = UnknownOutcome(None)
+        new_node = PossibleOutcomes(None)
         if isinstance(other, OutcomeValue):
             new_node.name = self.name
             new_node.zero = self.zero.__radd__(other)
             new_node.one = self.one.__radd__(other)
-        elif not isinstance(other, UnknownOutcome):
+        elif not isinstance(other, PossibleOutcomes):
             leaf = OutcomeValue([other])
             new_node.name = self.name
             new_node.zero = self.zero.__radd__(leaf)
@@ -101,19 +101,19 @@ class UnknownOutcome:
             new_node.one = self.__radd__(other.one)
         return new_node
 
-    def transform_leaves(self, fun):
-        new_node = UnknownOutcome(self.name)
+    def _transform_leaves(self, fun):
+        new_node = PossibleOutcomes(self.name)
         new_node.zero = self.zero.transform_leaves(fun)
         new_node.one = self.one.transform_leaves(fun)
         return new_node
 
     @classmethod
-    def runtime(cls, fun):
+    def apply_to_all(cls, fun):
         def wrapper(*args, **kwargs):
             partial = OutcomeValue()
             for arg in args:
                 partial = partial + arg
-            partial.transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
+            partial._transform_leaves(lambda *unwrapped: fun(*unwrapped, **kwargs))
             return partial
         return wrapper
 
@@ -138,12 +138,11 @@ class If(Operation):
 class RuntimeOp(Operation):
     num_wires = AnyWires
 
-    def __init__(self, op):
+    def __init__(self, op, *args, **kwargs):
         self._op = op
-        self._unknown_ops
+        self._unknown_ops = PossibleOutcomes.apply_to_all(lambda *args: self._op(*args, do_queue=False, **kwargs))
+        super().__init__(*args, **kwargs)
 
-    def __call__(self, *args, **kwargs):
-        self._unknown_ops = UnknownOutcome.runtime(lambda *args: self._op(*args, do_queue=False, **kwargs))
 
 
 
