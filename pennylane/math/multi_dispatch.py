@@ -110,7 +110,10 @@ def multi_dispatch(argnum=None, tensor_list=None):
             If ``None``, this option is ignored.
 
     Returns:
-        decorator:
+        func: A wrapped version of the function, which will automatically attempt
+        to dispatch to the correct autodifferentiation framework for the requested
+        arguments. Note that the ``like`` argument will be optional, but can be provided
+        if an explicit override is needed.
 
     .. seealso:: :func:`pennylane.math.multi_dispatch._multi_dispatch`
 
