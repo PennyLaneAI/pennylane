@@ -146,6 +146,34 @@ class TestDecimals:
 
         assert tape_text(tape, decimals=0) == expected
 
+    def test_torch_parameters(self):
+        """Test torch parameters in tape display as normal numbers."""
+        torch = pytest.importorskip("torch")
+        with QuantumTape() as tape_torch:
+            qml.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
+
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        assert tape_text(tape_torch, decimals=2) == expected
+
+    def test_tensorflow_parameters(self):
+        """Test tensorflow parameters display as normal numbers."""
+        tf = pytest.importorskip("tensorflow")
+        with QuantumTape() as tape_tf:
+            qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
+
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        assert tape_text(tape_tf, decimals=2) == expected
+
+    def test_jax_parameters(self):
+        """Test jax parameters in tape display as normal numbers."""
+        jnp = pytest.importorskip("jax.numpy")
+
+        with QuantumTape() as tape_jax:
+            qml.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)
+
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        assert tape_text(tape_jax, decimals=2) == expected
+
 
 class TestMaxLength:
     def test_max_length_default(self):
