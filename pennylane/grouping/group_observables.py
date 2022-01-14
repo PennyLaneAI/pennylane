@@ -171,7 +171,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         self.grouped_paulis = [
             [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
-            for grouping in coloured_binary_paulis.values()
+            for grouping in coloured_binary_paulis._values()
         ]
 
         return self.grouped_paulis

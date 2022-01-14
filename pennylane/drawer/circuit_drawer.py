@@ -388,7 +388,7 @@ class CircuitDrawer:
                 "T",
                 [
                     draw_fn(self.representation_resolver)
-                    for draw_fn in self.representation_resolver.tape_cache.values()
+                    for draw_fn in self.representation_resolver.tape_cache._values()
                 ],
                 self.representation_resolver.label_offsets["tape"],
             ),

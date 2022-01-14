@@ -89,6 +89,25 @@ class MeasurementDependantValue(Generic[T]):
         else:
             self._one_case = _Value(one_case)
 
+    @property
+    def branches(self):
+        branch_dict = {}
+        if isinstance(self._zero_case, MeasurementDependantValue):
+            for k, v in self._zero_case.branches.items():
+                branch_dict[(0, *k)] = v
+            for k, v in self._one_case.branches.items():
+                branch_dict[(1, *k)] = v
+        else:
+            branch_dict[(0,)] = self._zero_case.values
+            branch_dict[(1,)] = self._one_case.values
+        return branch_dict
+
+    @property
+    def measurements(self):
+        if isinstance(self._zero_case, MeasurementDependantValue):
+            return [self._dependent_on, *self._zero_case.measurements]
+        return [self._dependent_on]
+
     # define all mathematical __dunder__ methods https://docs.python.org/3/library/operator.html
     def __add__(self, other: Any):
         return apply_to_measurement_dependant_values(lambda x, y: x + y)(self, other)
@@ -102,25 +121,13 @@ class MeasurementDependantValue(Generic[T]):
     def __rmul__(self, other: Any):
         return apply_to_measurement_dependant_values(lambda x, y: y * x)(self, other)
 
-    def _str_builder(self):
-        """
-        Helper method for __str__
-        """
-        build = []
-        if isinstance(self._zero_case, MeasurementDependantValue):
-            for v in self._zero_case._str_builder():
-                build.append(f"{self._dependent_on}=0,{v}")
-            for v in self._one_case._str_builder():
-                build.append(f"{self._dependent_on}=1,{v}")
-        else:
-            for v in self._zero_case._str_builder():
-                build.append(f"{self._dependent_on}=0 {v}")
-            for v in self._one_case._str_builder():
-                build.append(f"{self._dependent_on}=1 {v}")
-        return build
-
     def __str__(self):
-        return "\n".join(self._str_builder())
+        measurements = self.measurements
+        lines = []
+        for k, v in self.branches.items():
+            lines.append(",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+        return "\n".join(lines)
+
 
     def _merge(self, other: Union["MeasurementDependantValue", "_Value", Any]):
         """
@@ -204,8 +211,8 @@ class _Value(Generic[T]):
     Leaf node for a MeasurementDependantValue tree structure.
     """
 
-    def __init__(self, *args):
-        self.values = args
+    def __init__(self, *values):
+        self._values = values
 
     def _merge(self, other):
         """
@@ -216,25 +223,26 @@ class _Value(Generic[T]):
                 other._dependent_on, self._merge(other._zero_case), self._merge(other._one_case)
             )
         if isinstance(other, _Value):
-            return _Value(*self.values, *other.values)
-        return _Value(*self.values, other)
+            return _Value(*self._values, *other._values)
+        return _Value(*self._values, other)
 
     def _transform_leaves(self, fun):
         """
         Works with MeasurementDependantValue._transform_leaves
         """
-        return _Value(fun(*self.values))
+        return _Value(fun(*self._values))
+
+    @property
+    def values(self):
+        if len(self._values) == 1:
+            return self._values[0]
+        return self._values
 
     def get_computation(self, _):
         """
         Works with MeasurementDependantValue.get_computation
         """
-        if len(self.values) == 1:
-            return self.values[0]
         return self.values
-
-    def _str_builder(self):
-        return [f"=> {', '.join(str(v) for v in self.values)}"]
 
 
 def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
