@@ -198,13 +198,13 @@ class MeasurementDependantValue(Generic[T]):
                     self.zero_case._merge(other.zero_case),  # pylint: disable=protected-access
                     self.one_case._merge(other.one_case),  # pylint: disable=protected-access
                 )
-            if self.dependent_on < other.dependent_on:
+            elif self.dependent_on < other.dependent_on:
                 return MeasurementDependantValue(
                     self.dependent_on,
                     self.zero_case._merge(other),  # pylint: disable=protected-access
                     self.one_case._merge(other),  # pylint: disable=protected-access
                 )
-            if self.dependent_on > other.dependent_on:
+            else:
                 return MeasurementDependantValue(
                     other.dependent_on,
                     self._merge(other.zero_case),  # pylint: disable=protected-access
