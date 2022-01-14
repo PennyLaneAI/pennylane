@@ -253,7 +253,7 @@ class _Value(Generic[T]):
             return MeasurementDependantValue(
                 other.dependent_on, self._merge(other.zero_case), self._merge(other.one_case)
             )
-        elif isinstance(other, _Value):
+        if isinstance(other, _Value):
             return _Value(*self.values, *other.values)
         else:
             return _Value(*self.values, other)
