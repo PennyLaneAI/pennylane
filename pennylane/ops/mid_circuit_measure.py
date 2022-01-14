@@ -224,8 +224,8 @@ class MeasurementDependantValue(Generic[T]):
         return MeasurementDependantValue(
             self.dependent_on,
             self.zero_case._transform_leaves(fun),  # pylint: disable=protected-access
-            self.one_case._transform_leaves(fun),
-        )  # pylint: disable=protected-access
+            self.one_case._transform_leaves(fun),  # pylint: disable=protected-access
+        )
 
     def get_computation(self, runtime_measurements: Dict[str, int]):
         """
@@ -236,8 +236,7 @@ class MeasurementDependantValue(Generic[T]):
             if result == 0:
                 return self.zero_case.get_computation(runtime_measurements)
             return self.one_case.get_computation(runtime_measurements)
-        else:
-            raise ValueError
+        raise ValueError
 
 
 class _Value(Generic[T]):
