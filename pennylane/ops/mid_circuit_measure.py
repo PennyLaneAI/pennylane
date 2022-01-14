@@ -40,7 +40,12 @@ class RuntimeOp(Operation):
     def __init__(self, op, *args, wires=None, **kwargs):
         self.op = op
         self.unknown_ops = apply_to_outcome(
-            lambda *unwrapped: self.op(*unwrapped, do_queue=False, wires=wires, **kwargs)
+            lambda *unwrapped: self.op(  # pylint: disable=unnecessary-lambda
+                *unwrapped,
+                do_queue=False,
+                wires=wires,
+                **kwargs
+            )
         )(*args)
         super().__init__(wires=wires)
 
@@ -236,7 +241,7 @@ class MeasurementDependantValue(Generic[T]):
             return self.one_case.get_computation(runtime_measurements)
         raise ValueError
 
-
+# pylint: disable=too-few-public-methods
 class _Value(Generic[T]):
     """
     Leaf node for a MeasurementDependantValue tree structure.
