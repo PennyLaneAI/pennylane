@@ -50,9 +50,6 @@ def compute_vjp(dy, jac, num=None):
     jac = math.reshape(jac, [num, -1])
 
     try:
-        if hasattr(dy, "val"):
-            dy = dy.val
-
         if math.allclose(dy, 0):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero.
