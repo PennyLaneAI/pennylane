@@ -195,11 +195,30 @@ def param_shift_hessian(tape, f0=None):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters.
 
+    Use this transform to explicitly generate and explore parameter-shift circuits for computing
+    the Hessian of QNodes directly, without computing first derivatives.
+
+    For second-order derivatives of more complicated cost functions, please consider using your
+    chosen autodifferentiation framework directly, by chaining gradient computations:
+
+    >>> qml.jacobian(qml.grad(cost))(weights)
+
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
+
+    .. warning::
+
+        Currently only supports quantum operations that obey a two-term shift rule,
+        which includes the following operations:
+
+        "RX", "RY", "RZ", "Rot", "PhaseShift", "ControlledPhaseShift", "MultiRZ", "PauliRot",
+        "U1", "U2", "U3", "SingleExcitationMinus", "SingleExcitationPlus", "DoubleExcitationMinus",
+        "DoubleExcitationPlus", "OrbitalRotation".
+
+        An ValueError is raised for QuantumTapes containing any operations not in this list.
 
     Returns:
         tensor_like or tuple[list[QuantumTape], function]:
