@@ -146,16 +146,19 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
-* A new gradient transform `qml.gradients.param_shift_hessian` has been added to directly compute
-  the Hessian (2nd order partial derivative matrix) of a QNode or quantum tape. The transform
-  generates parameter-shifted tapes which allow the Hessian to be computed analytically on hardware
-  and software devices. Compared to using an auto-differentiation framework with the parameter-shift
-  method on a QNode to compute the Hessian, the transform will use fewer device invocations and
-  can be used to inspect the parameter-shifted "Hessian" tapes. The transform is fully
-  differentiable on supported PennyLane interfaces.
+* A new method `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
+  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The method generates
+  parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
+  software devices. Compared to using an auto-differentiation framework to compute the Hessian
+  via parameter shifts, this method will use fewer device invocations and can be used to inspect
+  the parameter-shifted "Hessian tapes" directly. The method remains fully differentiable on all
+  supported PennyLane interfaces.
+
+  Additionally, the parameter-shift Hessian comes with a new batch transform decorator
+  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian methods.
   [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
 
-  The following code demonstrates how to use the Hessian transform.
+  The following code demonstrates how to use the parameter-shift Hessian:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
