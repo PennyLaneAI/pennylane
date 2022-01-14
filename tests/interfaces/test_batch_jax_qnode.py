@@ -111,13 +111,13 @@ class TestQNode:
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
 
-    def test_jacobian_forward_mode_raises(self, dev_name, diff_method, mode, mocker, tol, jac_support):
+    def test_jacobian_forward_mode_raises(
+        self, dev_name, diff_method, mode, mocker, tol, jac_support
+    ):
         """Test jacobian calculation raises an error in forward mode for
         adjoint differentiation."""
         if diff_method != "adjoint" or mode != "forward" or not jac_support:
-            pytest.skip(
-                "Test only applicable for forward mode adjoint differentiation."
-            )
+            pytest.skip("Test only applicable for forward mode adjoint differentiation.")
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -522,9 +522,7 @@ class TestQubitIntegration:
 
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-    def test_multi_probs_diff(
-        self, dev_name, diff_method, mode, tol, jac_support
-    ):
+    def test_multi_probs_diff(self, dev_name, diff_method, mode, tol, jac_support):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
         if diff_method != "backprop" and not jac_support:
@@ -581,10 +579,14 @@ class TestQubitIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("ret", [[qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))], [qml.probs(wires=[0]), qml.probs(wires=[1, 2])]])
-    def test_probs_raises(
-        self, dev_name, diff_method, mode, tol, jac_support, ret
-    ):
+    @pytest.mark.parametrize(
+        "ret",
+        [
+            [qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))],
+            [qml.probs(wires=[0]), qml.probs(wires=[1, 2])],
+        ],
+    )
+    def test_probs_raises(self, dev_name, diff_method, mode, tol, jac_support, ret):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
         if diff_method != "backprop" and not jac_support:
@@ -595,7 +597,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support qml.probs")
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 

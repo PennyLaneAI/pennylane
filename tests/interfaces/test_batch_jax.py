@@ -698,7 +698,9 @@ class TestJaxExecuteIntegration:
         jac_support = execute_kwargs.get("gradient_kwargs", {}).get("jac_support", False)
         fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
         if not jac_support or fwd_mode:
-            pytest.skip("Jacobian support is not turned on ir forward mode was set for this test case.")
+            pytest.skip(
+                "Jacobian support is not turned on ir forward mode was set for this test case."
+            )
 
         def cost(x, y, device, interface, ek):
             with qml.tape.JacobianTape() as tape1:
@@ -724,12 +726,12 @@ class TestJaxExecuteIntegration:
         x_ = np.array(0.543)
         y_ = np.array(-0.654)
 
-        res = jax.jacobian(cost, argnums=(0, 1))(x,y, dev, interface="jax", ek=execute_kwargs)
+        res = jax.jacobian(cost, argnums=(0, 1))(x, y, dev, interface="jax", ek=execute_kwargs)
 
         ek = deepcopy(execute_kwargs)
         ek["gradient_kwargs"].pop("jac_support")
-        exp = qml.jacobian(cost, argnum=(0,1))(x_,y_, dev, interface="autograd", ek=ek)
-        for r,e in zip(res, exp):
+        exp = qml.jacobian(cost, argnum=(0, 1))(x_, y_, dev, interface="autograd", ek=ek)
+        for r, e in zip(res, exp):
             assert jnp.allclose(r, e)
 
     def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):

@@ -56,8 +56,8 @@ def _execute_id_tap(
                 # TODO: this case is unsupported because JAX gets into issues with ragged arrays.
                 # TypeError: JAX only supports number and bool dtypes, got dtype object in array
                 raise ValueError(
-                    "The JAX interface only supports qml.probs in the return "\
-                    "statement of QNodes when all measurements have Probability "\
+                    "The JAX interface only supports qml.probs in the return "
+                    "statement of QNodes when all measurements have Probability "
                     "return types and measurements act on the same number of wires."
                 )
 
