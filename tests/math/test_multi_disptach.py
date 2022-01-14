@@ -79,21 +79,24 @@ def test_multi_dispatch_decorate2(t1, t2):
 
     assert fn.allequal(tensordot(t1, t2, axes=(0, 0)).numpy(), 14)
 
+
 test_data_values = [
-    [[1,2,3] for _ in range(5)],
-    [(1,2,3) for _ in range(5)],
-    [np.array([1,2,3]) for _ in range(5)],
-    [onp.array([1,2,3]) for _ in range(5)],
-    [anp.array([1,2,3]) for _ in range(5)],
-    [torch.tensor([1,2,3]) for _ in range(5)],
-    [jax.numpy.array([1,2,3]) for _ in range(5)],
-    [tf.constant([1,2,3]) for _ in range(5)]
+    [[1, 2, 3] for _ in range(5)],
+    [(1, 2, 3) for _ in range(5)],
+    [np.array([1, 2, 3]) for _ in range(5)],
+    [onp.array([1, 2, 3]) for _ in range(5)],
+    [anp.array([1, 2, 3]) for _ in range(5)],
+    [torch.tensor([1, 2, 3]) for _ in range(5)],
+    [jax.numpy.array([1, 2, 3]) for _ in range(5)],
+    [tf.constant([1, 2, 3]) for _ in range(5)],
 ]
+
 
 @pytest.mark.parametrize("values", test_data_values)
 def test_multi_dispatch_decorate3(values):
-    """Test decorating a custom function for PennyLane including a non-dispatchable parameter """
-    @fn.multi_dispatch(argnum=0,tensor_list=0)
+    """Test decorating a custom function for PennyLane including a non-dispatchable parameter"""
+
+    @fn.multi_dispatch(argnum=0, tensor_list=0)
     def custom_function(values, like, coefficient=10):
         """
         A dummy custom function that computes coeff :math:`c \\sum_i (v_i)^T v_i` where :math:`v_i` are vectors in ``values``
@@ -101,5 +104,6 @@ def test_multi_dispatch_decorate3(values):
         values is a list of vectors
         like can force the interface (optional)
         """
-        return coefficient * np.sum([fn.dot(v,v) for v in values])
-    assert fn.allequal(custom_function(values),700)
+        return coefficient * np.sum([fn.dot(v, v) for v in values])
+
+    assert fn.allequal(custom_function(values), 700)

@@ -135,6 +135,8 @@ def multi_dispatch(argnum=None, tensor_list=None):
     >>> def custom_function(values, like, coefficient=10):
     >>>     # values is a list of vectors
     >>>     # like can force the interface (optional)
+    >>>     if like == "tensorflow":
+    >>>         # add interface-specific handling if necessary
     >>>     return coefficient * np.sum([math.dot(v,v) for v in values])
 
     We can then run

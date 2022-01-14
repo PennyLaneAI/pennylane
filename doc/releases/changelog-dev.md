@@ -296,8 +296,6 @@
   ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
   ...     ...
   ```
-  
-  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
 
 <h3>Breaking changes</h3>
 
