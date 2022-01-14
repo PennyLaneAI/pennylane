@@ -23,7 +23,6 @@ def mid_measure(wire):
     return MeasurementDependantValue(measurement_id, 0, 1)
 
 
-
 class _MidCircuitMeasure(Operation):
     """
     Operation to perform mid-circuit measurement.
@@ -89,6 +88,7 @@ class MeasurementDependantValue(Generic[T]):
         else:
             self.one_case = _Value(one_case)
 
+    # define all mathematical __dunder__ methods https://docs.python.org/3/library/operator.html
     def __add__(self, other: Any):
         return apply_to_measurement_dependant_values(lambda x, y: x + y)(self, other)
 
@@ -245,6 +245,7 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: type):
         m0 = qml.mid_measure(0)
         qml.if_then(m0, qml.RZ)(1.2, wires=1)
     """
+
     class _IfOp(Operation):
 
         num_wires = then_op.num_wires
@@ -267,6 +268,7 @@ def condition(condition_op: type):
         m0 = qml.mid_measure(0)
         qml.condition(qml.RZ)(m0, wires=1)
     """
+
     class _ConditionOp(Operation):
 
         num_wires = condition_op.num_wires
