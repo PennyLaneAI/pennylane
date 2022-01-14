@@ -169,7 +169,7 @@ class DefaultQubit(QubitDevice):
         self._apply_ops = {
             "_MidCircuitMeasure": self._apply_mid_circuit_measure,
             "RuntimeOp": self._apply_runtime_op,
-            "If": self._if_op,
+            "If": self._apply_if_op,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
@@ -257,13 +257,12 @@ class DefaultQubit(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _if_op(self, state, axes, op_object=None, **kwargs):
+    def _apply_if_op(self, state, axes, op_object=None, **kwargs):
         expr = op_object.runtime_exp
         calc = expr.get_computation(self._measured)
         if calc:
             return self._apply_operation(state, op_object.then_op)
-        else:
-            return state
+        return state
 
     def _apply_runtime_op(self, state, axes, op_object=None, **kwargs):
         op = op_object.unknown_ops.get_computation(self._measured)
@@ -355,13 +354,13 @@ class DefaultQubit(QubitDevice):
         state_z = self._apply_z(state, axes)
         return SQRT2INV * (state_x + state_z)
 
-    def _apply_s(self, state, axes, inverse=False):
+    def _apply_s(self, state, axes, inverse=False, **kwargs):
         return self._apply_phase(state, axes, 1j, inverse)
 
-    def _apply_t(self, state, axes, inverse=False):
+    def _apply_t(self, state, axes, inverse=False, **kwargs):
         return self._apply_phase(state, axes, TPHASE, inverse)
 
-    def _apply_sx(self, state, axes, inverse=False):
+    def _apply_sx(self, state, axes, inverse=False, **kwargs):
         """Apply the Square Root X gate.
 
         Args:
@@ -483,7 +482,7 @@ class DefaultQubit(QubitDevice):
         state_z = self._apply_z(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_z], axis=axes[0])
 
-    def _apply_phase(self, state, axes, parameters, inverse=False):
+    def _apply_phase(self, state, axes, parameters, inverse=False, **kwargs):
         """Applies a phase onto the 1 index along the axis specified in ``axes``.
 
         Args:
@@ -664,7 +663,7 @@ class DefaultQubit(QubitDevice):
 
         return density_matrix
 
-    def _apply_state_vector(self, state, device_wires):
+    def _apply_state_vector(self, state, device_wires, **kwargs):
         """Initialize the internal state vector in a specified state.
 
         Args:
@@ -706,7 +705,7 @@ class DefaultQubit(QubitDevice):
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
-    def _apply_basis_state(self, state, wires):
+    def _apply_basis_state(self, state, wires, **kwargs):
         """Initialize the state vector in a specified computational basis state.
 
         Args:
@@ -733,7 +732,7 @@ class DefaultQubit(QubitDevice):
 
         self._state = self._create_basis_state(num)
 
-    def _apply_unitary(self, state, mat, wires):
+    def _apply_unitary(self, state, mat, wires, **kwargs):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
@@ -760,7 +759,7 @@ class DefaultQubit(QubitDevice):
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
 
-    def _apply_unitary_einsum(self, state, mat, wires):
+    def _apply_unitary_einsum(self, state, mat, wires, **kwargs):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
@@ -801,7 +800,7 @@ class DefaultQubit(QubitDevice):
 
         return self._einsum(einsum_indices, mat, state)
 
-    def _apply_diagonal_unitary(self, state, phases, wires):
+    def _apply_diagonal_unitary(self, state, phases, wires, **kwargs):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
