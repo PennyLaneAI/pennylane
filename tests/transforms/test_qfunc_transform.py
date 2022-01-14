@@ -419,5 +419,4 @@ class TestQFuncTransformGradients:
 
         grad = jax.grad(qnode, argnums=[0, 1, 2])(x, a, b)
         expected = qml.grad(self.expval)(np.array(x), np.array(a), np.array(b))
-        print(grad, expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))

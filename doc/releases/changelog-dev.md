@@ -216,6 +216,18 @@
 
 <h3>Improvements</h3>
 
+* The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
+  for QNode argument axes of size `1`.
+  [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
+
+  `qml.math.safe_squeeze` wraps `qml.math.squeeze`, with slight modifications:
+
+  - When provided the `axis` keyword argument, axes that do not have size `1` will be
+    ignored, instead of raising an error.
+
+  - The keyword argument `exclude_axis` allows to explicitly exclude axes from the
+    squeezing.
+
 * The `adjoint` transform now raises and error whenever the object it is applied to
   is not callable.
   [(#2060)](https://github.com/PennyLaneAI/pennylane/pull/2060)
@@ -279,6 +291,35 @@
 
 <h3>Breaking changes</h3>
 
+* `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+  now follow a different convention regarding their output shape when being used
+  with the Autograd interface
+  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
+
+  See the previous entry for details. This breaking change immediately follows from
+  the change in `qml.jacobian` whenever `hybrid=True` is used in the above methods.
+
+* `qml.jacobian` now follows a different convention regarding its output shape.
+  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
+
+  Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
+  QNode arguments, which succeeded whenever the arguments have the same shape.
+  In this case, the stacked Jacobian would also be transposed, leading to the 
+  output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
+
+  If no stacking and transposing occurs, the output shape instead is a `tuple`
+  where each entry corresponds to one QNode argument and has the shape
+  `(*output_shape, *QNode_arg_shape)`.
+
+  This breaking change alters the behaviour in the first case and removes the attempt
+  to stack and transpose, so that the output always has the shape of the second
+  type.
+
+  Note that the behaviour is unchanged --- that is, the Jacobian tuple is unpacked into
+  a single Jacobian --- if `argnum=None` and there is only one QNode argument
+  with respect to which the differentiation takes place, or if an integer
+  is provided as `argnum`.
+
 * The behaviour of `RotosolveOptimizer` has been changed regarding
   its keyword arguments.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
@@ -301,8 +342,12 @@
   For more details, see the
   [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
 
-
 <h3>Bug fixes</h3>
+
+* Fixes a bug in `gradient_transform` where the hybrid differentiation
+  of circuits with a single parametrized gate failed and QNode argument
+  axes of size `1` where removed from the output gradient.
+  [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
 
 * The available `diff_method` options for QNodes has been corrected in both the
   error messages and the documentation.
