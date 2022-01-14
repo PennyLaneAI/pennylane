@@ -296,10 +296,11 @@ class DefaultQubit(QubitDevice):
 
         # collapse state and reset qubit
         if result == 0:
-            collapsed_state = np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
-        else:
-            collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axes[0])
-        return collapsed_state
+            return np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
+
+        # if 1 perform qubit reset
+        collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axes[0])
+        return self._roll(collapsed_state, 1, axes[0])
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
