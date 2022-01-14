@@ -247,6 +247,9 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
     """
 
     class _IfOp(Operation):
+        """
+        Helper private class for `if_then` function.
+        """
 
         num_wires = then_op.num_wires
         op: Type[Operation] = then_op
@@ -270,14 +273,21 @@ def condition(condition_op: Type[Operation]):
     """
 
     class _ConditionOp(Operation):
+        """
+        Helper private class for `condition` function.
+        """
 
         num_wires = condition_op.num_wires
         op: Type[Operation] = condition_op
 
         def __init__(self, *args, **kwargs):
-            self.measurement_dependant_op: MeasurementDependantValue[Operation] = apply_to_measurement_dependant_values(
+            self.measurement_dependant_op: MeasurementDependantValue[
+                Operation
+            ] = apply_to_measurement_dependant_values(
                 lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
-            )(*args)
+            )(
+                *args
+            )
             super().__init__(*args, **kwargs)
 
     return _ConditionOp
