@@ -14,9 +14,9 @@ def mid_measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
 
-        ```
+    .. code-block:: text
+
         m0 = qml.Measure(0)
-        ```
     """
     measurement_id = str(uuid.uuid4())[:8]  # might need to use more characters
     _MidCircuitMeasure(measurement_id, wire)
@@ -41,11 +41,12 @@ def apply_to_outcome(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
 
-        Ex:
-        ```
-        m0 = qml.Measure(0)
+    Ex:
+
+    .. code-block:: text
+
+        m0 = qml.mid_measure(0)
         m0_sin = qml.apply_to_outcome(np.sin)(m0)
-        ```
     """
 
     @functools.wraps(fun)
@@ -124,28 +125,28 @@ class MeasurementDependantValue(Generic[T]):
         """
         Merge this MeasurementDependantValue with `other`.
 
-            Ex: Merging a MeasurementDependantValue such as:
+        Ex: Merging a MeasurementDependantValue such as
 
-            ```
+        .. code-block:: text
+
             df3jff4t=0 => 3.4
             df3jff4t=1 => 1
-            ```
 
-            with another MeasurementDependantValue:
+        with another MeasurementDependantValue:
 
-            ```
+        .. code-block:: text
+
             f93fjdj3=0 => 100
             f93fjdj3=1 => 67
-            ```
 
-            will result in:
+        will result in:
 
-            ```
+        .. code-block:: text
+
             df3jff4t=0,f93fjdj3=0 => 3.4,100
             df3jff4t=0,f93fjdj3=1 => 3.4,67
             df3jff4t=1,f93fjdj3=0 => 1,100
             df3jff4t=1,f93fjdj3=1 => 1,67
-            ```
 
         (note the uuids in the example represent distinct measurements of different qubit.)
 
@@ -239,12 +240,10 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: type):
     """
     Run an operation conditionally on the outcome of mid-circuit measurements.
 
-        Ex:
+    .. code-block:: text
 
-        ```
         m0 = qml.mid_measure(0)
         qml.if_then(m0, qml.RZ)(1.2, wires=1)
-        ```
     """
     class _IfOp(Operation):
 
@@ -263,14 +262,12 @@ def condition(condition_op: type):
     """
     Run an operation with parameters being outcomes of mid-circuit measurements.
 
-        Ex:
+    .. code-block:: text
 
-        ```
         m0 = qml.mid_measure(0)
         qml.condition(qml.RZ)(m0, wires=1)
-        ```
     """
-    class _RuntimeOp(Operation):
+    class _ConditionOp(Operation):
 
         num_wires = condition_op.num_wires
         op = condition_op
@@ -281,4 +278,4 @@ def condition(condition_op: type):
             )(*args)
             super().__init__(*args, **kwargs)
 
-    return _RuntimeOp
+    return _ConditionOp
