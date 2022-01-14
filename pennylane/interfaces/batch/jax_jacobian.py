@@ -45,7 +45,9 @@ def _execute_id_tap(
 
         for t in tapes:
             probs_return = [
-                len(meas.wires) for meas in t._measurements if meas.return_type is qml.operation.Probability
+                len(meas.wires)
+                for meas in t._measurements
+                if meas.return_type is qml.operation.Probability
             ]
 
             if len(probs_return) > 1 and len(set(probs_return)) > 1:
@@ -97,7 +99,7 @@ def _execute_id_tap(
             # (array([[-0.2583534,  0.2583534],
             #         [-0.2050439,  0.2050439]]),
             #  array([[-5.55111512e-17, -6.93889390e-18],
-            #         [ 2.60430006e-01, -2.60430006e-01]])) 
+            #         [ 2.60430006e-01, -2.60430006e-01]]))
             # -----
             # Calling swapaxes on each array helps:
             # res = tuple(r.swapaxes(0, 1) for r in res)
