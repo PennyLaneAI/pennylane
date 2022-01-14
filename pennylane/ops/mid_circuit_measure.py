@@ -22,53 +22,6 @@ def mid_measure(wire):
     _MidCircuitMeasure(measurement_id, wire)
     return MeasurementDependantValue(measurement_id, 0, 1)
 
-def run(run_op):
-    """
-    Run an operation with parameters being outcomes of mid-circuit measurements.
-
-        Ex:
-
-        ```
-        m0 = qml.Measure(0)
-        qml.RuntimeOp(qml.RZ, m0, wires=1)
-        ```
-    """
-    class _RuntimeOp(Operation):
-
-        num_wires = run_op.num_wires
-        op = run_op
-
-        def __init__(self, *args, **kwargs):
-            self.unknown_ops = apply_to_outcome(
-                lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
-            )(*args)
-            super().__init__(*args, **kwargs)
-
-    return _RuntimeOp
-
-
-def if_then(expr, then_op):
-    """
-    Run an operation conditionally on the outcome of mid-circuit measurements.
-
-        Ex:
-
-        ```
-        m0 = qml.Measure(0)
-        qml.If(m0, qml.RZ, 1.2, wires=1)
-        ```
-    """
-    class _IfOp(Operation):
-
-        num_wires = then_op.num_wires
-        op = then_op
-        if_expr = expr
-
-        def __init__(self, *args, **kwargs):
-            self.then_op = then_op(*args, do_queue=False, **kwargs)
-            super().__init__(*args, **kwargs)
-
-    return _IfOp
 
 
 class _MidCircuitMeasure(Operation):
@@ -280,3 +233,52 @@ class _Value(Generic[T]):
 
     def _str_builder(self):
         return [f"=> {', '.join(str(v) for v in self.values)}"]
+
+
+def if_then(expr: MeasurementDependantValue[bool], then_op: type):
+    """
+    Run an operation conditionally on the outcome of mid-circuit measurements.
+
+        Ex:
+
+        ```
+        m0 = qml.mid_measure(0)
+        qml.if_then(m0, qml.RZ)(1.2, wires=1)
+        ```
+    """
+    class _IfOp(Operation):
+
+        num_wires = then_op.num_wires
+        op = then_op
+        if_expr = expr
+
+        def __init__(self, *args, **kwargs):
+            self.then_op = then_op(*args, do_queue=False, **kwargs)
+            super().__init__(*args, **kwargs)
+
+    return _IfOp
+
+
+def condition(condition_op: type):
+    """
+    Run an operation with parameters being outcomes of mid-circuit measurements.
+
+        Ex:
+
+        ```
+        m0 = qml.mid_measure(0)
+        qml.condition(qml.RZ)(m0, wires=1)
+        ```
+    """
+    class _RuntimeOp(Operation):
+
+        num_wires = condition_op.num_wires
+        op = condition_op
+
+        def __init__(self, *args, **kwargs):
+            self.unknown_ops = apply_to_outcome(
+                lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
+            )(*args)
+            super().__init__(*args, **kwargs)
+
+    return _RuntimeOp

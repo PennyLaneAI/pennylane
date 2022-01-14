@@ -58,7 +58,7 @@ class TestMidCircuitMeasurements:
             qml.Hadamard(wires=0)
             m0 = qml.mid_measure(0)
 
-            qml.run(qml.RZ)(m0, wires=1)
+            qml.condition(qml.RZ)(m0, wires=1)
 
             return qml.probs(wires=1)
 
@@ -82,7 +82,7 @@ class TestMidCircuitMeasurements:
 
             out2 = qml.apply_to_outcome(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
 
-            qml.run(qml.RZ)(out2, wires=1)
+            qml.condition(qml.RZ)(out2, wires=1)
 
             return qml.probs(wires=1)
 

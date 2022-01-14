@@ -21,7 +21,7 @@ such as gates, state preparations and observables.
 from .cv import *
 from .qubit import *
 from .channel import *
-from .mid_circuit_measure import mid_measure, if_then, run, apply_to_outcome
+from .mid_circuit_measure import mid_measure, if_then, condition, apply_to_outcome
 
 from .cv import __all__ as _cv__all__
 from .cv import ops as _cv__ops__
