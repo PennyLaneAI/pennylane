@@ -493,22 +493,23 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
-        expected = np.array(
-            [
-                [[-np.sin(x) / 2, np.sin(x) / 2], [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2]],
+        if diff_method in ("parameter-shift", "finite-diff"):
+
+            with pytest.raises(ValueError, match="not supported with custom gradient functions"):
+                jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        else:
+            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            expected = np.array(
                 [
-                    [0, 0],
-                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
-        )
+                    [[-np.sin(x) / 2, np.sin(x) / 2], [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2]],
+                    [
+                        [0, 0],
+                        [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                    ],
+                ]
+            )
 
-        # print("Result: ", res, "\n")
-        # print("Expected: ", expected.T, "\n")
-        # print("Expected: ", expected, "\n")
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol, jac_support):

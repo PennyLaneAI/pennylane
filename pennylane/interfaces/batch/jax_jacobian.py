@@ -77,6 +77,12 @@ def _execute_id_tap(
         result = []
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+            for t in tapes:
+                probs_return = [meas.return_type is qml.operation.Probability for meas in t._measurements]
+
+                if len(probs_return) > 1:
+                    raise ValueError("Computing the jacobian of QNodes that return multiple probabilities is "\
+                    "not supported with custom gradient functions.")
 
             def non_diff_wrapper(args, transforms, device=None):
                 """Compute the VJP in a non-differentiable manner."""

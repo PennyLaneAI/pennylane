@@ -231,7 +231,7 @@ class QubitDevice(Device):
             results = self.statistics(circuit.observables)
 
         if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            results = self._asarray(results, dtype=object)
+            results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
 
