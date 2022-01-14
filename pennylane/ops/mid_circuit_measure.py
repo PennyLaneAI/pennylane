@@ -79,7 +79,7 @@ class MeasurementDependantValue(Generic[T]):
         zero_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
         one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
     ):
-        self.dependent_on = measurement_id
+        self._dependent_on = measurement_id
         if isinstance(zero_case, (MeasurementDependantValue, _Value)):
             self._zero_case = zero_case
         else:
@@ -109,14 +109,14 @@ class MeasurementDependantValue(Generic[T]):
         build = []
         if isinstance(self._zero_case, MeasurementDependantValue):
             for v in self._zero_case._str_builder():
-                build.append(f"{self.dependent_on}=0,{v}")
+                build.append(f"{self._dependent_on}=0,{v}")
             for v in self._one_case._str_builder():
-                build.append(f"{self.dependent_on}=1,{v}")
+                build.append(f"{self._dependent_on}=1,{v}")
         else:
             for v in self._zero_case._str_builder():
-                build.append(f"{self.dependent_on}=0 {v}")
+                build.append(f"{self._dependent_on}=0 {v}")
             for v in self._one_case._str_builder():
-                build.append(f"{self.dependent_on}=1 {v}")
+                build.append(f"{self._dependent_on}=1 {v}")
         return build
 
     def __str__(self):
@@ -153,25 +153,25 @@ class MeasurementDependantValue(Generic[T]):
 
         """
         if isinstance(other, MeasurementDependantValue):
-            if self.dependent_on == other.dependent_on:
+            if self._dependent_on == other._dependent_on:
                 return MeasurementDependantValue(
-                    self.dependent_on,
+                    self._dependent_on,
                     self._zero_case._merge(other._zero_case),
                     self._one_case._merge(other._one_case),
                 )
-            if self.dependent_on < other.dependent_on:
+            if self._dependent_on < other._dependent_on:
                 return MeasurementDependantValue(
-                    self.dependent_on,
+                    self._dependent_on,
                     self._zero_case._merge(other),
                     self._one_case._merge(other),
                 )
             return MeasurementDependantValue(
-                other.dependent_on,
+                other._dependent_on,
                 self._merge(other._zero_case),
                 self._merge(other._one_case),
             )
         return MeasurementDependantValue(
-            self.dependent_on,
+            self._dependent_on,
             self._zero_case._merge(other),
             self._one_case._merge(other),
         )
@@ -181,7 +181,7 @@ class MeasurementDependantValue(Generic[T]):
         Transform the leaves of a MeasurementDependantValue with `fun`.
         """
         return MeasurementDependantValue(
-            self.dependent_on,
+            self._dependent_on,
             self._zero_case._transform_leaves(fun),
             self._one_case._transform_leaves(fun),
         )
@@ -190,8 +190,8 @@ class MeasurementDependantValue(Generic[T]):
         """
         Given a list of measurement outcomes get the correct computation.
         """
-        if self.dependent_on in runtime_measurements:
-            result = runtime_measurements[self.dependent_on]
+        if self._dependent_on in runtime_measurements:
+            result = runtime_measurements[self._dependent_on]
             if result == 0:
                 return self._zero_case.get_computation(runtime_measurements)
             return self._one_case.get_computation(runtime_measurements)
@@ -213,7 +213,7 @@ class _Value(Generic[T]):
         """
         if isinstance(other, MeasurementDependantValue):
             return MeasurementDependantValue(
-                other.dependent_on, self._merge(other._zero_case), self._merge(other._one_case)
+                other._dependent_on, self._merge(other._zero_case), self._merge(other._one_case)
             )
         if isinstance(other, _Value):
             return _Value(*self.values, *other.values)
