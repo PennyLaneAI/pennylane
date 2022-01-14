@@ -7,7 +7,7 @@ import functools
 
 from typing import Union, Any, Dict, TypeVar, Generic, Callable
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 
 
 def mid_measure(wire):
@@ -37,7 +37,7 @@ class _MidCircuitMeasure(Operation):
         super().__init__(wires=wires)
 
 
-def apply_to_outcome(fun):
+def apply_to_measurement_dependant_values(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
 
@@ -90,16 +90,16 @@ class MeasurementDependantValue(Generic[T]):
             self.one_case = _Value(one_case)
 
     def __add__(self, other: Any):
-        return apply_to_outcome(lambda x, y: x + y)(self, other)
+        return apply_to_measurement_dependant_values(lambda x, y: x + y)(self, other)
 
     def __radd__(self, other: Any):
-        return apply_to_outcome(lambda x, y: y + x)(self, other)
+        return apply_to_measurement_dependant_values(lambda x, y: y + x)(self, other)
 
     def __mul__(self, other: Any):
-        return apply_to_outcome(lambda x, y: x * y)(self, other)
+        return apply_to_measurement_dependant_values(lambda x, y: x * y)(self, other)
 
     def __rmul__(self, other: Any):
-        return apply_to_outcome(lambda x, y: y * x)(self, other)
+        return apply_to_measurement_dependant_values(lambda x, y: y * x)(self, other)
 
     def _str_builder(self):
         """
@@ -273,7 +273,7 @@ def condition(condition_op: type):
         op = condition_op
 
         def __init__(self, *args, **kwargs):
-            self.unknown_ops = apply_to_outcome(
+            self.unknown_ops = apply_to_measurement_dependant_values(
                 lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
             )(*args)
             super().__init__(*args, **kwargs)

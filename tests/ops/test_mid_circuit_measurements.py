@@ -80,7 +80,7 @@ class TestMidCircuitMeasurements:
 
             out1 = 2 * m0 + m1
 
-            out2 = qml.apply_to_outcome(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
+            out2 = qml.apply_to_measurement_dependant_values(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
 
             qml.condition(qml.RZ)(out2, wires=1)
 
