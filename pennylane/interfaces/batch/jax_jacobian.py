@@ -50,12 +50,15 @@ def _execute_id_tap(
                 if meas.return_type is qml.operation.Probability
             ]
 
-            if len(probs_return) > 1 and len(set(probs_return)) > 1:
+            num_probs = len(probs_return)
+            not_only_probs = num_probs > 0 and num_probs != len(t._measurements)
+            if not_only_probs or (num_probs > 1 and len(set(probs_return)) > 1):
                 # TODO: this case is unsupported because JAX gets into issues with ragged arrays.
                 # TypeError: JAX only supports number and bool dtypes, got dtype object in array
                 raise ValueError(
-                    "Evaluating QNodes that return multiple probabilities with "
-                    "where the number of wires are different is not supported."
+                    "The JAX interface only supports qml.probs in the return "\
+                    "statement of QNodes when all measurements have Probability "\
+                    "return types and measurements act on the same number of wires."
                 )
 
         def wrapper(p, transforms, device=None):
@@ -71,11 +74,9 @@ def _execute_id_tap(
 
             # Put the array back to the device as we're using id_tap
             res = [jax.device_put(jnp.array(r), device) for r in res]
-            result.append(res)
+            result.extend(res)
 
         host_callback.id_tap(wrapper, params, tap_with_device=True)
-        if isinstance(result, list) and len(result) > 0:
-            return result[0]
         return result
 
     def wrapped_exec_fwd(params):

@@ -522,7 +522,7 @@ class TestQubitIntegration:
 
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-    def test_multiple_probability_differentiation(
+    def test_multi_probs_diff(
         self, dev_name, diff_method, mode, tol, jac_support
     ):
         """Tests correct output shape and evaluation for a tape
@@ -580,6 +580,34 @@ class TestQubitIntegration:
         )
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("ret", [[qml.probs(wires=[0]), qml.expval(qml.PauliZ(0))], [qml.probs(wires=[0]), qml.probs(wires=[1, 2])]])
+    def test_probs_raises(
+        self, dev_name, diff_method, mode, tol, jac_support, ret
+    ):
+        """Tests correct output shape and evaluation for a tape
+        with multiple prob outputs"""
+        if diff_method != "backprop" and not jac_support:
+            pytest.skip(
+                "JAX interface requires either the backprop device or jacobian support to be turned on."
+            )
+
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support qml.probs")
+
+        dev = qml.device('default.qubit', wires=3)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        @qml.qnode(dev, diff_method="parameter-shift", interface="jax", jac_support=True)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return [qml.apply(r) for r in ret]
+
+        with pytest.raises(ValueError):
+            circuit(x, y)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol, jac_support):
