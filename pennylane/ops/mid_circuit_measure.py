@@ -52,9 +52,9 @@ def apply_to_measurement_dependant_values(fun):
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
-            partial = partial._merge(arg)  # pylint: disable=protected-access
-        return partial._transform_leaves(  # pylint: disable=protected-access
-            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
+            partial = partial._merge(arg)
+        return partial._transform_leaves(
+            lambda *unwrapped: fun(*unwrapped, **kwargs)
         )
 
     return wrapper
@@ -63,6 +63,7 @@ def apply_to_measurement_dependant_values(fun):
 T = TypeVar("T")
 
 
+# pylint: disable=protected-access
 class MeasurementDependantValue(Generic[T]):
     """
     A class representing unknown measurement outcomes.
@@ -80,13 +81,13 @@ class MeasurementDependantValue(Generic[T]):
     ):
         self.dependent_on = measurement_id
         if isinstance(zero_case, (MeasurementDependantValue, _Value)):
-            self.zero_case = zero_case
+            self._zero_case = zero_case
         else:
-            self.zero_case = _Value(zero_case)
+            self._zero_case = _Value(zero_case)
         if isinstance(one_case, (MeasurementDependantValue, _Value)):
-            self.one_case = one_case
+            self._one_case = one_case
         else:
-            self.one_case = _Value(one_case)
+            self._one_case = _Value(one_case)
 
     # define all mathematical __dunder__ methods https://docs.python.org/3/library/operator.html
     def __add__(self, other: Any):
@@ -106,15 +107,15 @@ class MeasurementDependantValue(Generic[T]):
         Helper method for __str__
         """
         build = []
-        if isinstance(self.zero_case, MeasurementDependantValue):
-            for v in self.zero_case._str_builder():  # pylint: disable=protected-access
+        if isinstance(self._zero_case, MeasurementDependantValue):
+            for v in self._zero_case._str_builder():
                 build.append(f"{self.dependent_on}=0,{v}")
-            for v in self.one_case._str_builder():  # pylint: disable=protected-access
+            for v in self._one_case._str_builder():
                 build.append(f"{self.dependent_on}=1,{v}")
         else:
-            for v in self.zero_case._str_builder():  # pylint: disable=protected-access
+            for v in self._zero_case._str_builder():
                 build.append(f"{self.dependent_on}=0 {v}")
-            for v in self.one_case._str_builder():  # pylint: disable=protected-access
+            for v in self._one_case._str_builder():
                 build.append(f"{self.dependent_on}=1 {v}")
         return build
 
@@ -155,24 +156,24 @@ class MeasurementDependantValue(Generic[T]):
             if self.dependent_on == other.dependent_on:
                 return MeasurementDependantValue(
                     self.dependent_on,
-                    self.zero_case._merge(other.zero_case),  # pylint: disable=protected-access
-                    self.one_case._merge(other.one_case),  # pylint: disable=protected-access
+                    self._zero_case._merge(other._zero_case),
+                    self._one_case._merge(other._one_case),
                 )
             if self.dependent_on < other.dependent_on:
                 return MeasurementDependantValue(
                     self.dependent_on,
-                    self.zero_case._merge(other),  # pylint: disable=protected-access
-                    self.one_case._merge(other),  # pylint: disable=protected-access
+                    self._zero_case._merge(other),
+                    self._one_case._merge(other),
                 )
             return MeasurementDependantValue(
                 other.dependent_on,
-                self._merge(other.zero_case),  # pylint: disable=protected-access
-                self._merge(other.one_case),  # pylint: disable=protected-access
+                self._merge(other._zero_case),
+                self._merge(other._one_case),
             )
         return MeasurementDependantValue(
             self.dependent_on,
-            self.zero_case._merge(other),  # pylint: disable=protected-access
-            self.one_case._merge(other),  # pylint: disable=protected-access
+            self._zero_case._merge(other),
+            self._one_case._merge(other),
         )
 
     def _transform_leaves(self, fun: Callable):
@@ -181,8 +182,8 @@ class MeasurementDependantValue(Generic[T]):
         """
         return MeasurementDependantValue(
             self.dependent_on,
-            self.zero_case._transform_leaves(fun),  # pylint: disable=protected-access
-            self.one_case._transform_leaves(fun),  # pylint: disable=protected-access
+            self._zero_case._transform_leaves(fun),
+            self._one_case._transform_leaves(fun),
         )
 
     def get_computation(self, runtime_measurements: Dict[str, int]):
@@ -192,12 +193,12 @@ class MeasurementDependantValue(Generic[T]):
         if self.dependent_on in runtime_measurements:
             result = runtime_measurements[self.dependent_on]
             if result == 0:
-                return self.zero_case.get_computation(runtime_measurements)
-            return self.one_case.get_computation(runtime_measurements)
+                return self._zero_case.get_computation(runtime_measurements)
+            return self._one_case.get_computation(runtime_measurements)
         raise ValueError
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,protected-access
 class _Value(Generic[T]):
     """
     Leaf node for a MeasurementDependantValue tree structure.
@@ -212,7 +213,7 @@ class _Value(Generic[T]):
         """
         if isinstance(other, MeasurementDependantValue):
             return MeasurementDependantValue(
-                other.dependent_on, self._merge(other.zero_case), self._merge(other.one_case)
+                other.dependent_on, self._merge(other._zero_case), self._merge(other._one_case)
             )
         if isinstance(other, _Value):
             return _Value(*self.values, *other.values)
