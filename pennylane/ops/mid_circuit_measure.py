@@ -10,7 +10,7 @@ from typing import Union, Any, Dict, TypeVar, Generic, Callable
 from pennylane.operation import AnyWires, Operation
 
 
-def Measure(wire):
+def mid_measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
 
@@ -22,8 +22,7 @@ def Measure(wire):
     _MidCircuitMeasure(measurement_id, wire)
     return MeasurementDependantValue(measurement_id, 0, 1)
 
-
-class RuntimeOp(Operation):
+def run(run_op):
     """
     Run an operation with parameters being outcomes of mid-circuit measurements.
 
@@ -34,18 +33,21 @@ class RuntimeOp(Operation):
         qml.RuntimeOp(qml.RZ, m0, wires=1)
         ```
     """
+    class _RuntimeOp(Operation):
 
-    num_wires = AnyWires
+        num_wires = run_op.num_wires
+        op = run_op
 
-    def __init__(self, op, *args, wires=None, **kwargs):
-        self.op = op
-        self.unknown_ops = apply_to_outcome(
-            lambda *unwrapped: self.op(*unwrapped, do_queue=False, wires=wires, **kwargs)
-        )(*args)
-        super().__init__(wires=wires)
+        def __init__(self, *args, **kwargs):
+            self.unknown_ops = apply_to_outcome(
+                lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
+            )(*args)
+            super().__init__(*args, **kwargs)
+
+    return _RuntimeOp
 
 
-class If(Operation):
+def if_then(expr, then_op):
     """
     Run an operation conditionally on the outcome of mid-circuit measurements.
 
@@ -56,13 +58,17 @@ class If(Operation):
         qml.If(m0, qml.RZ, 1.2, wires=1)
         ```
     """
+    class _IfOp(Operation):
 
-    num_wires = AnyWires
+        num_wires = then_op.num_wires
+        op = then_op
+        if_expr = expr
 
-    def __init__(self, runtime_exp, then_op, *args, **kwargs):
-        self.runtime_exp = runtime_exp
-        self.then_op = then_op(*args, do_queue=False, **kwargs)
-        super().__init__(*args, **kwargs)
+        def __init__(self, *args, **kwargs):
+            self.then_op = then_op(*args, do_queue=False, **kwargs)
+            super().__init__(*args, **kwargs)
+
+    return _IfOp
 
 
 class _MidCircuitMeasure(Operation):

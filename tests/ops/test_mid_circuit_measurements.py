@@ -35,13 +35,13 @@ class TestMidCircuitMeasurements:
             qml.Hadamard(wires=0)
 
             # Alice measures her qubits, obtaining one of four results, and sends this information to Bob.
-            m_0 = qml.Measure(0)
-            m_1 = qml.Measure(1)
+            m_0 = qml.mid_measure(0)
+            m_1 = qml.mid_measure(1)
 
             # Given Alice's measurements, Bob performs one of four operations on his half of the EPR pair and
             # recovers the original quantum state.
-            qml.If(m_1, qml.RX, math.pi, wires=2)
-            qml.If(m_0, qml.RZ, math.pi, wires=2)
+            qml.if_then(m_1, qml.RX)(math.pi, wires=2)
+            qml.if_then(m_0, qml.RZ)(math.pi, wires=2)
 
             return qml.probs(wires=2)
 
@@ -56,9 +56,9 @@ class TestMidCircuitMeasurements:
         @qml.qnode(dev)
         def runtime_circuit():
             qml.Hadamard(wires=0)
-            m0 = qml.Measure(0)
+            m0 = qml.mid_measure(0)
 
-            qml.RuntimeOp(qml.RZ, m0, wires=1)
+            qml.run(qml.RZ)(m0, wires=1)
 
             return qml.probs(wires=1)
 
@@ -74,15 +74,15 @@ class TestMidCircuitMeasurements:
             qml.Hadamard(wires=1)
             qml.Hadamard(wires=2)
 
-            m0 = qml.Measure(0)
-            m1 = qml.Measure(1)
-            m2 = qml.Measure(2)
+            m0 = qml.mid_measure(0)
+            m1 = qml.mid_measure(1)
+            m2 = qml.mid_measure(2)
 
             out1 = 2 * m0 + m1
 
             out2 = qml.apply_to_outcome(lambda x, y, z: np.sin(x) + y + z)(out1, m1, m2)
 
-            qml.RuntimeOp(qml.RZ, out2, wires=1)
+            qml.run(qml.RZ)(out2, wires=1)
 
             return qml.probs(wires=1)
 
