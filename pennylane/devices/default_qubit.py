@@ -258,6 +258,9 @@ class DefaultQubit(QubitDevice):
         return self._apply_unitary(state, matrix, wires)
 
     def _apply_if_op(self, state, axes, op_object=None, **kwargs):
+        """
+        Evaluate the MeasurementDependantValue[bool] value and then conditionally apply the operation.
+        """
         expr = op_object.if_expr
         calc = expr.get_computation(self._measured)
         if calc:
@@ -265,10 +268,17 @@ class DefaultQubit(QubitDevice):
         return state
 
     def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
+        """
+        Given the measured values, retrieve the op with the correct parameters and run it.
+        """
         op = op_object.unknown_ops.get_computation(self._measured)
         return self._apply_operation(state, op)
 
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
+        """
+        Slice the state along the qubit axes, make a random choice about which half of the state to keep, and reset
+        the qubit to |0\
+        """
         num_qubits = len(state.shape)
         axis = axes[0]
 
