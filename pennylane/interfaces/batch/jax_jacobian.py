@@ -43,6 +43,19 @@ def _execute_id_tap(
     def wrapped_exec(params):
         result = []
 
+        for t in tapes:
+            probs_return = [
+                len(meas.wires) for meas in t._measurements if meas.return_type is qml.operation.Probability
+            ]
+
+            if len(probs_return) > 1 and len(set(probs_return)) > 1:
+                # TODO: this case is unsupported because JAX gets into issues with ragged arrays.
+                # TypeError: JAX only supports number and bool dtypes, got dtype object in array
+                raise ValueError(
+                    "Evaluating QNodes that return multiple probabilities with "
+                    "where the number of wires are different is not supported."
+                )
+
         def wrapper(p, transforms, device=None):
             """Compute the forward pass."""
             new_tapes = []
@@ -70,16 +83,26 @@ def _execute_id_tap(
         result = []
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-            for t in tapes:
-                probs_return = [
-                    1 for meas in t._measurements if meas.return_type is qml.operation.Probability
-                ]
 
-                if sum(probs_return) > 1:
-                    raise ValueError(
-                        "Computing the jacobian of QNodes that return multiple probabilities is "
-                        "not supported with custom gradient functions."
-                    )
+            # TODO: for multiple probability returns this branch returns
+            # arrays with axes swapped:
+            # -----
+            # (DeviceArray([[-0.25835338, -0.2050439 ],
+            #               [ 0.25835338,  0.2050439 ]], dtype=float32, weak_type=True),
+            #  DeviceArray([[ 5.551115e-17,  2.604300e-01],
+            #               [ 6.938894e-18, -2.604300e-01]], dtype=float32, weak_type=True))
+            # -----
+            # As opposed to the autograd results of:
+            # -----
+            # (array([[-0.2583534,  0.2583534],
+            #         [-0.2050439,  0.2050439]]),
+            #  array([[-5.55111512e-17, -6.93889390e-18],
+            #         [ 2.60430006e-01, -2.60430006e-01]])) 
+            # -----
+            # Calling swapaxes on each array helps:
+            # res = tuple(r.swapaxes(0, 1) for r in res)
+            #
+            # Making the change internally here would require mutating BatchTraces
 
             def non_diff_wrapper(args, transforms, device=None):
                 """Compute the VJP in a non-differentiable manner."""

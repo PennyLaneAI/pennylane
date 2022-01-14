@@ -450,7 +450,7 @@ class TestQubitIntegration:
                 [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
             ]
         )
-        assert np.allclose(res, exp.T, atol=tol, rtol=0)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_probability_jac_with_autograd(self, dev_name, diff_method, mode, tol, jac_support):
         """Tests correct output shape and evaluation for a tape
@@ -527,24 +527,28 @@ class TestQubitIntegration:
 
         if diff_method in ("parameter-shift", "finite-diff"):
 
-            with pytest.raises(ValueError, match="not supported with custom gradient functions"):
-                jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+
+            # TODO: remove the swapping of axes when custom gradient outputs
+            # have been adjusted
+            res = tuple(r.swapaxes(0, 1) for r in res)
         else:
             res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
-            expected = np.array(
-                [
-                    [
-                        [-np.sin(x) / 2, np.sin(x) / 2],
-                        [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2],
-                    ],
-                    [
-                        [0, 0],
-                        [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
-                    ],
-                ]
-            )
 
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = np.array(
+            [
+                [
+                    [-np.sin(x) / 2, np.sin(x) / 2],
+                    [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2],
+                ],
+                [
+                    [0, 0],
+                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                ],
+            ]
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol, jac_support):
