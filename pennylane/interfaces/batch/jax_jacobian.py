@@ -87,15 +87,17 @@ def _execute_id_tap(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
-            # TODO: for multiple probability returns this branch returns
-            # arrays with axes swapped:
+            # TODO: for multiple probability measurements where each acts on
+            # the same number of wires (e.g., return qml.probs(wires=[0]),
+            # qml.probs(wires=[1])) the axes in the results need to be swapped
+            # to match backprop & other interfaces:
             # -----
             # (DeviceArray([[-0.25835338, -0.2050439 ],
             #               [ 0.25835338,  0.2050439 ]], dtype=float32, weak_type=True),
             #  DeviceArray([[ 5.551115e-17,  2.604300e-01],
             #               [ 6.938894e-18, -2.604300e-01]], dtype=float32, weak_type=True))
             # -----
-            # As opposed to the autograd results of:
+            # Compare that e.g., to the autograd results:
             # -----
             # (array([[-0.2583534,  0.2583534],
             #         [-0.2050439,  0.2050439]]),
@@ -105,7 +107,8 @@ def _execute_id_tap(
             # Calling swapaxes on each array helps:
             # res = tuple(r.swapaxes(0, 1) for r in res)
             #
-            # Making the change internally here would require mutating BatchTraces
+            # Making the change here would require mutating the underlying
+            # arrays contained by BatchTraces.
 
             def non_diff_wrapper(args, transforms, device=None):
                 """Compute the VJP in a non-differentiable manner."""
