@@ -193,17 +193,6 @@ class MeasurementDependantValue(Generic[T]):
             self._one_case._transform_leaves(fun),
         )
 
-    def get_computation(self, runtime_measurements: Dict[str, int]):
-        """
-        Given a list of measurement outcomes get the correct computation.
-        """
-        if self._dependent_on in runtime_measurements:
-            result = runtime_measurements[self._dependent_on]
-            if result == 0:
-                return self._zero_case.get_computation(runtime_measurements)
-            return self._one_case.get_computation(runtime_measurements)
-        raise ValueError
-
 
 # pylint: disable=too-few-public-methods,protected-access
 class _Value(Generic[T]):
@@ -262,7 +251,8 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
 
         num_wires = then_op.num_wires
         op: Type[Operation] = then_op
-        if_expr: MeasurementDependantValue[bool] = expr
+        branches = expr.branches
+        required_measurements = expr.measurements
 
         def __init__(self, *args, **kwargs):
             self.then_op = then_op(*args, do_queue=False, **kwargs)
@@ -290,13 +280,13 @@ def condition(condition_op: Type[Operation]):
         op: Type[Operation] = condition_op
 
         def __init__(self, *args, **kwargs):
-            self.measurement_dependant_op: Union[
-                MeasurementDependantValue[Operation], _Value[Operation]
-            ] = apply_to_measurement_dependant_values(
+            measurement_dependant_op = apply_to_measurement_dependant_values(
                 lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
             )(
                 *args
             )
+            self.branches = measurement_dependant_op.branches
+            self.dependant_measurements = measurement_dependant_op.measurements
             super().__init__(*args, **kwargs)
 
     return _ConditionOp

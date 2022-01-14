@@ -261,8 +261,12 @@ class DefaultQubit(QubitDevice):
         """
         Evaluate the MeasurementDependantValue[bool] value and then conditionally apply the operation.
         """
-        expr = op_object.if_expr
-        calc = expr.get_computation(self._measured)
+        branches = op_object.branches
+        required_measurements = op_object.required_measurements
+        calc = branches[tuple(
+            self._measured[measurement_id] for measurement_id in required_measurements
+        )]
+        # calc = expr.get_computation(self._measured)
         if calc:
             return self._apply_operation(state, op_object.then_op)
         return state
@@ -271,7 +275,11 @@ class DefaultQubit(QubitDevice):
         """
         Given the measured values, retrieve the op with the correct parameters and run it.
         """
-        op = op_object.measurement_dependant_op.get_computation(self._measured)
+        branches = op_object.branches
+        required_measurements = op_object.dependant_measurements
+        op = branches[tuple(
+            self._measured[measurement_id] for measurement_id in required_measurements
+        )]
         return self._apply_operation(state, op)
 
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
@@ -294,7 +302,7 @@ class DefaultQubit(QubitDevice):
         result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
         self._measured[op_object.measure_var] = result
 
-        # collapse state and reset qubit
+        # collapse state
         if result == 0:
             return np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
 
