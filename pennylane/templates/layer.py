@@ -30,7 +30,11 @@ def _preprocess(args, depth):
 
     for arg in args:
 
-        if shape(arg)[0] != depth:
+        if (isinstance(args[0], list) and (len(args[0]) != depth)):
+            raise ValueError(
+                f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
+            )
+        elif (shape(arg)[0] != depth):
             raise ValueError(
                 f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
             )

@@ -71,7 +71,7 @@ class QubitUnitary(Operation):
             # here we issue a warning to check the operation, instead of raising an error outright.
             if not qml.math.allclose(
                 qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-                qml.math.eye(qml.math.shape(U)[0]),
+                qml.math.eye(qml.math.shape(U)[0]), atol=1e-6
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
