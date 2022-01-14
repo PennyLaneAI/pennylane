@@ -97,10 +97,10 @@ For computations with vector-valued QNodes, a dedicated keyword argument can be
 set upon QNode creation. This is required for cases other than
 ``diff_method="backprop"``.
 
-Vector-valued QNodes are QNodes with return statements contain:
+Vector-valued QNodes are QNodes with return statements that contain:
 
-* ``qml.probs`, ``qml.state``, ``qml.density_matrix` or ``qml.sample`` measurements or;
-* A mix of various measurement types.
+* A single vector-valued measurement such as ``qml.probs``, ``qml.state``, ``qml.density_matrix`` or ``qml.sample``;
+* Multiple measurements with a mix of various measurement types.
 
 When creating a QNode, vector-valued support can be turned on by setting either
 the ``vector_valued_support`` or the ``jac_support`` keyword argument to
@@ -130,7 +130,7 @@ computed:
 
 .. note::
 
-    The jax.jit transform is incompatible with vector-valued support.
+    The ``jax.jit`` transform is incompatible with vector-valued QNode support.
 
 
 .. _jax_optimize:
