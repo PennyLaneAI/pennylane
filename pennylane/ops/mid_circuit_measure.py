@@ -255,8 +255,7 @@ class _Value(Generic[T]):
             )
         if isinstance(other, _Value):
             return _Value(*self.values, *other.values)
-        else:
-            return _Value(*self.values, other)
+        return _Value(*self.values, other)
 
     def _transform_leaves(self, fun):
         """
