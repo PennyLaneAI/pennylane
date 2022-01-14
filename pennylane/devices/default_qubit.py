@@ -271,7 +271,7 @@ class DefaultQubit(QubitDevice):
         """
         Given the measured values, retrieve the op with the correct parameters and run it.
         """
-        op = op_object.unknown_ops.get_computation(self._measured)
+        op = op_object.measurement_dependant_op.get_computation(self._measured)
         return self._apply_operation(state, op)
 
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
