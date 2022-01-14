@@ -279,18 +279,12 @@ class DefaultQubit(QubitDevice):
         Slice the state along the qubit axes, make a random choice about which half of the state to keep, and reset
         the qubit to |0\
         """
-        num_qubits = len(state.shape)
-        axis = axes[0]
+        sl_0 = _get_slice(0, axes[0], self.num_wires)
+        sl_1 = _get_slice(1, axes[0], self.num_wires)
 
-        # get first slice
-        slicer_0 = [slice(None)] * num_qubits
-        slicer_0[axis] = 0
-        sub_0 = state[tuple(slicer_0)]
-
-        # get second slice
-        slicer_1 = slicer_0.copy()
-        slicer_1[axis] = 1
-        sub_1 = state[tuple(slicer_1)]
+        # get sub-states
+        sub_0 = state[sl_0]
+        sub_1 = state[sl_1]
 
         # get norms
         sub_0_norm = np.linalg.norm(sub_0)
@@ -302,9 +296,9 @@ class DefaultQubit(QubitDevice):
 
         # collapse state and reset qubit
         if result == 0:
-            collapsed_state = np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axis)
+            collapsed_state = np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
         else:
-            collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axis)
+            collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axes[0])
         return collapsed_state
 
     def _apply_x(self, state, axes, **kwargs):
