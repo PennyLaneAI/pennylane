@@ -220,9 +220,13 @@ class QNGOptimizer(GradientDescentOptimizer):
         if forward is None:
             forward = qnode(*args, **kwargs)
 
-        # unwrap from list if one argument, cleaner return
-        if len(new_args) == 1:
-            return new_args[0], forward
+        # Note: for now, we only have single element lists as the new
+        # arguments, but this might change, see TODO below.
+        # Once the other approach is implemented, we need to unwrap from list
+        # if one argument for a cleaner return.
+        # if len(new_args) == 1:
+        return new_args[0], forward
+
         # TODO: The scenario of the following return statement is not implemented
         # yet, as currently only a single metric tensor can be processed.
         # An optimizer refactor is needed to accomodate for this (similar to other
