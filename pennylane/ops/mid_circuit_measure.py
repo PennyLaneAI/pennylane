@@ -100,7 +100,7 @@ def apply_to_outcome(fun):
         for arg in args:
             partial = partial._merge(arg)  # pylint: disable=protected-access
         return partial._transform_leaves(  # pylint: disable=protected-access
-            lambda *unwrapped: fun(*unwrapped, **kwargs)
+            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
         )
 
     return wrapper
