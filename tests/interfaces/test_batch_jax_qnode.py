@@ -459,9 +459,7 @@ class TestQubitIntegration:
         exp = qml.jacobian(autograd_qnode, argnum=[0, 1])(x_, y_)
         res = jax.jacobian(jax_qnode, argnums=[0, 1])(x, y)
 
-        # Note: we transpose to make up for the output format difference
-        # between Autograd and JAX
-        assert np.allclose(res, exp.T, atol=tol, rtol=0)
+        assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_multiple_probability_differentiation(self, dev_name, diff_method, mode, tol, jac_support):
         """Tests correct output shape and evaluation for a tape
