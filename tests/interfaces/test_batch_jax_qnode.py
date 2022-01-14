@@ -74,7 +74,7 @@ class TestQNode:
                 "JAX interface requires either the backprop device or jacobian support to be turned on."
             )
 
-        if mode == "forward":
+        if diff_method != "backprop" and mode == "forward":
             pytest.skip(
                 "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
             )
@@ -110,6 +110,37 @@ class TestQNode:
 
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
+
+    def test_jacobian_forward_mode_raises(self, dev_name, diff_method, mode, mocker, tol, jac_support):
+        """Test jacobian calculation raises an error in forward mode for
+        adjoint differentiation."""
+        if diff_method != "adjoint" or mode != "forward" or not jac_support:
+            pytest.skip(
+                "Test only applicable for forward mode adjoint differentiation."
+            )
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="jax", jac_support=jac_support, diff_method=diff_method, mode=mode)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+        res = circuit(a, b)
+
+        assert circuit.qtape.trainable_params == [0, 1]
+        assert res.shape == (2,)
+
+        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        with pytest.raises(ValueError):
+            res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
 
     def test_jacobian_no_evaluate(self, dev_name, diff_method, mode, mocker, tol, jac_support):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""

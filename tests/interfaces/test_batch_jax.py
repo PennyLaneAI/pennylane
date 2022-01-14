@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the jax interface"""
 import functools
+from copy import deepcopy
 
 import pytest
 
@@ -662,6 +663,45 @@ class TestJaxExecuteIntegration:
 
         res = jax.jacobian(cost)(params, cache=None)
         assert res.shape == (2, 3)
+
+    def test_multi_tape_jacobian(self, execute_kwargs):
+
+        jac_support = execute_kwargs.get("gradient_kwargs", {}).get("jac_support", False)
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if not jac_support or fwd_mode:
+            pytest.skip("Jacobian support is not turned on ir forward mode was set for this test case.")
+
+        def cost(x, y, device, interface, ek):
+            with qml.tape.JacobianTape() as tape1:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
+
+        dev = qml.device("default.qubit", wires=2)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        x_ = np.array(0.543)
+        y_ = np.array(-0.654)
+
+        res = jax.jacobian(cost, argnums=(0, 1))(x,y, dev, interface="jax", ek=execute_kwargs)
+
+        ek = deepcopy(execute_kwargs)
+        ek["gradient_kwargs"].pop("jac_support")
+        exp = qml.jacobian(cost, argnum=(0,1))(x_,y_, dev, interface="autograd", ek=ek)
+        for r,e in zip(res, exp):
+            assert jnp.allclose(r, e)
 
     def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
