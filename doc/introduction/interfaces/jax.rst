@@ -90,6 +90,48 @@ DeviceArray([-0.47942555,  0.        ], dtype=float32)
 >>> theta_grad
 DeviceArray(-3.4332792e-10, dtype=float32)
 
+Vector-valued QNode support
+---------------------------
+
+For computations with vector-valued QNodes, a dedicated keyword argument can be
+set upon QNode creation. This is required for cases other than
+``diff_method="backprop"``.
+
+Vector-valued QNodes are QNodes with return statements contain:
+
+* ``qml.probs`, ``qml.state``, ``qml.density_matrix` or ``qml.sample`` measurements or;
+* A mix of various measurement types.
+
+When creating a QNode, vector-valued support can be turned on by setting either
+the ``vector_valued_support`` or the ``jac_support`` keyword argument to
+``True``:
+
+.. code-block:: python
+
+    dev = qml.device('default.qubit', wires=3)
+    x = jnp.array(0.543)
+    y = jnp.array(-0.654)
+
+    @qml.qnode(dev, diff_method="parameter-shift", interface="jax", jac_support=True)
+    def circuit(x, y):
+        qml.RX(x, wires=[0])
+        qml.RY(y, wires=[1])
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+    circuit(x, y)
+
+Once vector-valued support is turned on, the jacobian of QNodes can also be
+computed:
+
+.. code-block:: python
+
+    jax.jacobian(circuit, argnums=[0, 1])(x, y)
+
+.. note::
+
+    The jax.jit transform is incompatible with vector-valued support.
+
 
 .. _jax_optimize:
 
