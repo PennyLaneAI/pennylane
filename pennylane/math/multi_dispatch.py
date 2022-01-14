@@ -88,7 +88,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
     This helps simplify definitions of new functions inside PennyLane. We can
     decorate the function, indicating the arguments that are tensors handled
-    by the interface
+    by the interface:
 
 
     >>> @qml.math.multi_dispatch(argnum=[0, 1])
