@@ -16,15 +16,17 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 
+from copy import deepcopy
+
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
+import numpy as np
 from jax.experimental import host_callback
 
-import numpy as np
 import pennylane as qml
+
 from .jax_jacobian import _execute_id_tap, _execute_with_fwd_id_tap
-from copy import deepcopy
 
 dtype = jnp.float64
 
