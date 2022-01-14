@@ -589,6 +589,9 @@ class TestQubitIntegration:
         if mode == "forward":
             pytest.skip("Sampling not possible with forward mode differentiation.")
 
+        if diff_method == "adjoint":
+            pytest.skip("Sampling not possible with adjoint differentiation.")
+
         dev = qml.device(dev_name, wires=2, shots=10)
 
         @qnode(dev, diff_method=diff_method, interface="jax", jac_support=jac_support, mode=mode)

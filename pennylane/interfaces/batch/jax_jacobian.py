@@ -56,19 +56,13 @@ def _execute_id_tap(
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # Put the array back to the device as we're using id_tap
-            device_res = []
-            for r in res[0]:
-                if not isinstance(r, jnp.ndarray):
-                    r = jnp.array(r)
-
-                new_r = jax.device_put(r, device)
-                device_res.append(r)
-            result.append(device_res)
+            res = [jax.device_put(jnp.array(r), device) for r in res]
+            result.append(res)
 
         host_callback.id_tap(wrapper, params, tap_with_device=True)
-        #wrapper(params, [])
+        if isinstance(result, list) and len(result) > 0:
+            return result[0]
         return result
-        #return result
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
@@ -78,9 +72,9 @@ def _execute_id_tap(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             for t in tapes:
-                probs_return = [meas.return_type is qml.operation.Probability for meas in t._measurements]
+                probs_return = [1 for meas in t._measurements if meas.return_type is qml.operation.Probability]
 
-                if len(probs_return) > 1:
+                if sum(probs_return) > 1:
                     raise ValueError("Computing the jacobian of QNodes that return multiple probabilities is "\
                     "not supported with custom gradient functions.")
 

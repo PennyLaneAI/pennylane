@@ -185,7 +185,6 @@ def _execute(
             # is mapped to
             # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
             # dtype=float32), DeviceArray(0., dtype=float32)]].
-            print(g)
             need_unwrapping = any(r.ndim != 0 for r in res)
             if need_unwrapping:
                 unwrapped_res = []
