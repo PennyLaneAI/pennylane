@@ -236,6 +236,7 @@ class MeasurementDependantValue(Generic[T]):
             return self.one_case.get_computation(runtime_measurements)
         raise ValueError
 
+
 # pylint: disable=too-few-public-methods
 class _Value(Generic[T]):
     """
