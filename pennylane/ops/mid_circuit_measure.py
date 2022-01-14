@@ -14,7 +14,7 @@ def mid_measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
 
-    .. code-block:: text
+    .. code-block:: python
 
         m0 = qml.Measure(0)
     """
@@ -42,7 +42,7 @@ def apply_to_measurement_dependant_values(fun):
 
     Ex:
 
-    .. code-block:: text
+    .. code-block:: python
 
         m0 = qml.mid_measure(0)
         m0_sin = qml.apply_to_outcome(np.sin)(m0)
@@ -127,21 +127,21 @@ class MeasurementDependantValue(Generic[T]):
 
         Ex: Merging a MeasurementDependantValue such as
 
-        .. code-block:: text
+        .. code-block:: python
 
             df3jff4t=0 => 3.4
             df3jff4t=1 => 1
 
         with another MeasurementDependantValue:
 
-        .. code-block:: text
+        .. code-block:: python
 
             f93fjdj3=0 => 100
             f93fjdj3=1 => 67
 
         will result in:
 
-        .. code-block:: text
+        .. code-block:: python
 
             df3jff4t=0,f93fjdj3=0 => 3.4,100
             df3jff4t=0,f93fjdj3=1 => 3.4,67
@@ -240,7 +240,7 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
     """
     Run an operation conditionally on the outcome of mid-circuit measurements.
 
-    .. code-block:: text
+    .. code-block:: python
 
         m0 = qml.mid_measure(0)
         qml.if_then(m0, qml.RZ)(1.2, wires=1)
@@ -266,7 +266,7 @@ def condition(condition_op: Type[Operation]):
     """
     Run an operation with parameters being outcomes of mid-circuit measurements.
 
-    .. code-block:: text
+    .. code-block:: python
 
         m0 = qml.mid_measure(0)
         qml.condition(qml.RZ)(m0, wires=1)
