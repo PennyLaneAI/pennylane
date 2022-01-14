@@ -84,7 +84,7 @@ def _multi_dispatch(values):
 
 
 def multi_dispatch(argnum=None, tensor_list=None):
-    """Decorater to dispatch arguments handled by the interface.
+    r"""Decorater to dispatch arguments handled by the interface.
 
     This helps simplify definitions of new functions inside PennyLane. We can
     decorate the function, indicating the arguments that are tensors handled
