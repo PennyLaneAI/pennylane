@@ -697,7 +697,7 @@ class QNode:
             res = self.qtape.execute(device=self.device)
 
         finite_diff = any(
-            getattr(x["op"], "grad_method", None) == "F" for x in self.qtape._par_info._values()
+            getattr(x["op"], "grad_method", None) == "F" for x in self.qtape._par_info.values()
         )
         if finite_diff and self.diff_method_change:
             self.diff_method = "finite-diff"
