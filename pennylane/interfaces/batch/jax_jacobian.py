@@ -56,11 +56,19 @@ def _execute_id_tap(
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
             # Put the array back to the device as we're using id_tap
-            res = [jax.device_put(jnp.array(r), device) for r in res]
-            result.append(res)
+            device_res = []
+            for r in res[0]:
+                if not isinstance(r, jnp.ndarray):
+                    r = jnp.array(r)
+
+                new_r = jax.device_put(r, device)
+                device_res.append(r)
+            result.append(device_res)
 
         host_callback.id_tap(wrapper, params, tap_with_device=True)
-        return result[0]
+        #wrapper(params, [])
+        return result
+        #return result
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
@@ -99,7 +107,7 @@ def _execute_id_tap(
                 res = processing_fn(partial_res)
 
                 # Put the array back to the device as we're using id_tap
-                res = [jax.device_put(jnp.array(r), device) for r in res]
+                res = [jax.device_put(r, device) for r in res]
                 result.extend(res)
 
             args = tuple(params)
@@ -124,6 +132,12 @@ def _execute_id_tap(
                     unwrapped_res.append(r)
 
                 res = unwrapped_res
+
+            # final_res = []
+            # for row in res[0]:
+            #     arr = row.val
+            #     final_res.append(arr.reshape(2,2).T)
+            # res = [jnp.array(final_res)]
             return (tuple(res),)
 
         # Gradient function is a device method.
@@ -179,12 +193,20 @@ def _execute_with_fwd_id_tap(
 
     def wrapped_exec_fwd(params):
         res, jacs = wrapped_exec(params)
-        return res, jacs
+        return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
 
-        # Use the jacobian that was computed on the forward pass
-        jacs = params
+        # # Use the jacobian that was computed on the forward pass
+        jacs, params = params
+
+        # Note: there is an issue when jax.jacobian is being used, either due
+        # to issues with tensor updating (TypeError: Updates tensor must be of
+        # rank 0; got 1) or because jax.vmap introduces a redundant
+        # dimensionality in the result by duplicating entries
+        scalar_outputs = all(t._output_dim == 1 for t in tapes)
+        if not scalar_outputs:
+            raise ValueError("Computing the jacobian of vector-valued tapes is not supported currently in forward mode.")
 
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases
@@ -197,8 +219,14 @@ def _execute_with_fwd_id_tap(
         for j in jacs:
             this_j = []
             for i in range(j.shape[1]):
-                arr = j[0, i] if j.shape[0] == 1 else jnp.array([j[k, i] for k in range(j.shape[0])])
-                print(j[0, i], jnp.array([j[k, i] for k in range(j.shape[0])]))
+
+                # Note: the following line uses the fact that we have tapes
+                # with scalar outputs Otherwise, we'd have to iterate over
+                # multiple indices in the first dimension, e.g., by having the
+                # following update rule:
+                # arr = j[0, i] if j.shape[0] == 1 else jnp.array([j[k, i] for k in range(j.shape[0])])
+                # This, however, raises TypeError: Updates tensor must be of rank 0; got 1.
+                arr = j[0, i]
                 this_j.append(arr)
             res_jacs.append(this_j)
         return (tuple(res_jacs),)

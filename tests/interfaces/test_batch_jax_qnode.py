@@ -72,6 +72,9 @@ class TestQNode:
         if diff_method != "backprop" and not jac_support:
             pytest.skip("JAX interface requires either the backprop device or jacobian support to be turned on.")
 
+        if mode == "forward":
+            pytest.skip("Computing the jacobian of vector-valued tapes is not supported currently in forward mode.")
+
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
         elif diff_method == "finite-diff":
@@ -108,6 +111,9 @@ class TestQNode:
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
         if diff_method != "backprop" and not jac_support:
             pytest.skip("JAX interface requires either the backprop device or jacobian support to be turned on.")
+
+        if mode == "forward":
+            pytest.skip("Computing the jacobian of vector-valued tapes is not supported currently in forward mode.")
 
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
@@ -490,10 +496,10 @@ class TestQubitIntegration:
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = np.array(
             [
-                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
+                [[-np.sin(x) / 2, np.sin(x) / 2], [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2]],
                 [
-                    [np.sin(x) / 2, 0],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                    [0, 0],
+                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
                 ],
             ]
         )
@@ -502,7 +508,7 @@ class TestQubitIntegration:
         # print("Expected: ", expected.T, "\n")
         # print("Expected: ", expected, "\n")
 
-        assert np.allclose(res, expected.T, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol, jac_support):
