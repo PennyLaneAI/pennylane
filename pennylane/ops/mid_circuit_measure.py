@@ -120,11 +120,11 @@ class MeasurementDependantValue(Generic[T]):
         one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
     ):
         self.dependent_on = measurement_id
-        if isinstance(zero_case, MeasurementDependantValue) or isinstance(zero_case, _Value):
+        if isinstance(zero_case, (MeasurementDependantValue, _Value)):
             self.zero_case = zero_case
         else:
             self.zero_case = _Value(zero_case)
-        if isinstance(one_case, MeasurementDependantValue) or isinstance(one_case, _Value):
+        if isinstance(one_case, (MeasurementDependantValue, _Value)):
             self.one_case = one_case
         else:
             self.one_case = _Value(one_case)
@@ -235,8 +235,7 @@ class MeasurementDependantValue(Generic[T]):
             result = runtime_measurements[self.dependent_on]
             if result == 0:
                 return self.zero_case.get_computation(runtime_measurements)
-            else:
-                return self.one_case.get_computation(runtime_measurements)
+            return self.one_case.get_computation(runtime_measurements)
         else:
             raise ValueError
 
