@@ -139,12 +139,9 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
     We can then run
 
-    >>> values = [np.array([1,2,3]) for _ in range(5)]
-    >>> print(custom_function(values))
-
-    and obtain
-
-    >>> 700
+    >>> values = [np.array([1, 2, 3]) for _ in range(5)]
+    >>> custom_function(values)
+    700
 
     """
 
