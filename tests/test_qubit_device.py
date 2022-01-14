@@ -924,7 +924,9 @@ class TestShotList:
 
         # test gradient works
         res = qml.jacobian(circuit)(0.5, 0.1)
-        assert res.shape == (2,) + expected_shape
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == expected_shape
+        assert res[1].shape == expected_shape
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 4), 16],

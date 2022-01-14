@@ -128,14 +128,10 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
     qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
-    # NOTE: We use stacking to replicate qml.jacobian behaviour for equal-shaped inputs
     arg_shapes = [qml.math.shape(arg) for arg in args]
     if len(args) == 1:
         # For a single argument, the Jacobian is unpacked
         assert np.allclose(jac, expected_jac[0])
-    elif all(sh == arg_shapes[0] for sh in arg_shapes[1:]):
-        expected_jac = qml.math.stack(expected_jac).T
-        assert np.allclose(jac, expected_jac)
     else:
         assert len(jac) == len(expected_jac)
         for _jac, _expected_jac in zip(jac, expected_jac):
@@ -268,6 +264,7 @@ def test_autograd_with_single_list_argnum(circuit, args, expected_jac, argnum, d
     qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
+
     assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
 
