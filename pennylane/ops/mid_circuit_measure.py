@@ -281,8 +281,8 @@ def condition(condition_op: Type[Operation]):
         op: Type[Operation] = condition_op
 
         def __init__(self, *args, **kwargs):
-            self.measurement_dependant_op: MeasurementDependantValue[
-                Operation
+            self.measurement_dependant_op: Union[
+                MeasurementDependantValue[Operation], _Value[Operation]
             ] = apply_to_measurement_dependant_values(
                 lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
             )(
