@@ -66,7 +66,6 @@ def fun_close(fun1, fun2, zero=None, tol=1e-5, samples=100):
 
     for x in X:
         if not np.isclose(fun1(x), fun2(x), atol=tol, rtol=0):
-            print(f"{fun1(x)} != {fun2(x)} at {x}")
             return False
     return True
 

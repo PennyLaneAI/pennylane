@@ -150,11 +150,13 @@ def test_numerical_analytic_diff_agree(init_state, tol):
     res_A = qml.jacobian(circuit_A)(*params)
 
     # Both jacobians should be of shape (2**prob.wires, num_params)
-    assert res_F.shape == (2 ** 2, 3)
-    assert res_F.shape == (2 ** 2, 3)
+    assert isinstance(res_F, tuple) and len(res_F) == 3
+    assert all(_r.shape == (2 ** 2,) for _r in res_F)
+    assert isinstance(res_A, tuple) and len(res_A) == 3
+    assert all(_r.shape == (2 ** 2,) for _r in res_A)
 
     # Check that they agree up to numeric tolerance
-    assert np.allclose(res_F, res_A, atol=tol, rtol=0)
+    assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
 
 
 @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])

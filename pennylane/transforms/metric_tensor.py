@@ -259,7 +259,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     )
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
+def _contract_metric_tensor_with_cjac(mt, cjac):
     """Execute the contraction of pre-computed classical Jacobian(s)
     and the metric tensor of a tape in order to obtain the hybrid
     metric tensor of a QNode.
@@ -267,14 +267,12 @@ def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
     Args:
         mt (array): Metric tensor of a tape (2-dimensional)
         cjac (array or tuple[array]): The classical Jacobian of a QNode
-        args (tuple): QNode arguments
-        interface (str): QNode interface
 
     Returns:
         array or tuple[array]: Hybrid metric tensor(s) of the QNode.
         The number of metric tensors depends on the number of QNode arguments
-        for which the classical Jacobian was computed, their shape on the
-        shape of these QNode arguments.
+        for which the classical Jacobian was computed, the tensor shape(s)
+        depend on the shape of these QNode arguments.
     """
     if isinstance(cjac, tuple):
         # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac
@@ -296,36 +294,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
         # is present inside the QNode.
         return mt
 
-    # TODO: Remove the following behaviour once the stacking behaviour in `qml.jacobian`
-    # has been removed. The additional arguments `args` and `interface` can be removed
-    # accordingly.
-
-    # Get number of gate arguments that were considered trainable
-    num_gate_args = qml.math.shape(mt)[0]
-    # Get trainable args
-    # pylint: disable=protected-access
-    trainable_args_idx = qml.gradients.gradient_transform._jacobian_trainable_args(args, interface)
-    # Since all arguments have the same shape, obtain shape from the first trainable arg
-    qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
-    num_qnode_args = len(trainable_args_idx)
-
-    if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
-        # single QNode argument
-        cjac_axis = [0]
-    elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
-        # multiple QNode arguments with stacking
-        cjac_axis = [-2]
-    else:  # pragma: no cover
-        warnings.warn(
-            "Unexpected classical Jacobian encoutered, could not compute the hybrid "
-            "metric tensor of the QNode. You can still attempt to obtain the quantum "
-            "metric tensor with the `hybrid=False` parameter.",
-            UserWarning,
-        )
-        return ()
-
-    mt = qml.math.tensordot(mt, cjac, [[-1], cjac_axis])
-    mt = qml.math.tensordot(cjac, mt, [cjac_axis, [0]])
+    mt = qml.math.tensordot(cjac, qml.math.tensordot(mt, cjac, axes=[[-1], [0]]), axes=[[0], [0]])
 
     return mt
 
@@ -382,7 +351,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
 
-        return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
+        return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper
 
