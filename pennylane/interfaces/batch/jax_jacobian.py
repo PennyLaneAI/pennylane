@@ -39,7 +39,6 @@ def _execute_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     @jax.custom_vjp
     def wrapped_exec(params):
         result = []
@@ -72,11 +71,15 @@ def _execute_id_tap(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
             for t in tapes:
-                probs_return = [1 for meas in t._measurements if meas.return_type is qml.operation.Probability]
+                probs_return = [
+                    1 for meas in t._measurements if meas.return_type is qml.operation.Probability
+                ]
 
                 if sum(probs_return) > 1:
-                    raise ValueError("Computing the jacobian of QNodes that return multiple probabilities is "\
-                    "not supported with custom gradient functions.")
+                    raise ValueError(
+                        "Computing the jacobian of QNodes that return multiple probabilities is "
+                        "not supported with custom gradient functions."
+                    )
 
             def non_diff_wrapper(args, transforms, device=None):
                 """Compute the VJP in a non-differentiable manner."""
@@ -162,13 +165,11 @@ def _execute_with_fwd_id_tap(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     @jax.custom_vjp
     def wrapped_exec(params):
 
         result = []
         jacobian = []
-
 
         def wrapper(p, transforms, device):
             """Compute the forward pass by returning the jacobian too."""
@@ -206,7 +207,9 @@ def _execute_with_fwd_id_tap(
         # dimensionality in the result by duplicating entries
         scalar_outputs = all(t._output_dim == 1 for t in tapes)
         if not scalar_outputs:
-            raise ValueError("Computing the jacobian of vector-valued tapes is not supported currently in forward mode.")
+            raise ValueError(
+                "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+            )
 
         # Adjust the structure of how the jacobian is returned to match the
         # non-forward mode cases
