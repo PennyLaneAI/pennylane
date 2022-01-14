@@ -223,16 +223,18 @@ class QNGOptimizer(GradientDescentOptimizer):
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0], forward
-        # TODO: The following is essentially not implemented yet, as only
-        # a single metric tensor can be processed. An optimizer refactor
-        # is needed to accomodate for this.
+        # TODO: The scenario of the following return statement is not implemented
+        # yet, as currently only a single metric tensor can be processed.
+        # An optimizer refactor is needed to accomodate for this (similar to other
+        # optimizers for which `apply_grad` will have to be patched to allow for
+        # tuple-valued gradients to be processed)
         #
         # For multiple QNode arguments, `qml.jacobian` and `qml.metric_tensor`
         # return a tuple of arrays. Each of the gradient arrays has to be processed
         # together with the corresponding array in the metric tensor tuple.
         # This requires modifications of the `GradientDescentOptimizer` base class
         # as none of the optimizers accomodate for this use case.
-        return new_args, forward
+        # return new_args, forward
 
     # pylint: disable=arguments-differ
     def step(
