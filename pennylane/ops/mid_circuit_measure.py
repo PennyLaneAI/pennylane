@@ -209,12 +209,11 @@ class MeasurementDependantValue(Generic[T]):
                 self._merge(other.zero_case),  # pylint: disable=protected-access
                 self._merge(other.one_case),  # pylint: disable=protected-access
             )
-        else:
-            return MeasurementDependantValue(
-                self.dependent_on,
-                self.zero_case._merge(other),  # pylint: disable=protected-access
-                self.one_case._merge(other),  # pylint: disable=protected-access
-            )
+        return MeasurementDependantValue(
+            self.dependent_on,
+            self.zero_case._merge(other),  # pylint: disable=protected-access
+            self.one_case._merge(other),  # pylint: disable=protected-access
+        )
 
     def _transform_leaves(self, fun: Callable):
         """
