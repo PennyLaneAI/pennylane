@@ -282,16 +282,20 @@
   tensors handled by the interface:
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
     
+  ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
   ... def some_function(tensor1, tensor2, option, like):
   ...     # the interface string is stored in ``like``.
   ...     ...
+  ```
   
-  Previously, this was done using the private utility function ``_multi_dispatch``.
+  Previously, this was done using the private utility function `_multi_dispatch`.
   
+  ```pycon
   >>> def some_function(tensor1, tensor2, option):
   ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
   ...     ...
+  ```
   
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
 
