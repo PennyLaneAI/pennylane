@@ -126,7 +126,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
     >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
 
     We can also define more elaborate custom function. Here is an example of a ``custom_function`` that
-    computes :math:`c \sum_i (v_i)^T v_i`, where :math:`v_i` are vectors in ``values`` and
+    computes :math:`c \\sum_i (v_i)^T v_i`, where :math:`v_i` are vectors in ``values`` and
     :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first argument ``values``,
     how ``tensor_list=0`` indicates that said first argument is a list of vectors, and that ``coefficient`` is not
     dispatched.
@@ -151,8 +151,8 @@ def multi_dispatch(argnum=None, tensor_list=None):
     def decorator(fn):
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
-            argnums = argnum or list(range(len(args)))
-            tensor_lists = tensor_list or []
+            argnums = argnum if argnum is not None else list(range(len(args)))
+            tensor_lists = tensor_list if tensor_list is not None else []
 
             if not isinstance(argnums, Sequence):
                 argnums = [argnums]
