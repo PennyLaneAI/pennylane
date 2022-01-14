@@ -53,9 +53,10 @@ def apply_to_measurement_dependant_values(fun):
         partial = _Value()
         for arg in args:
             partial = partial._merge(arg)
-        return partial._transform_leaves(
+        partial._transform_leaves_inplace(
             lambda *unwrapped: fun(*unwrapped, **kwargs)
         )
+        return partial
 
     return wrapper
 
@@ -72,6 +73,8 @@ class MeasurementDependantValue(Generic[T]):
 
     supports python __dunder__ mathematical operations. As well as arbitrary functions using qml.apply_to_outcome
     """
+
+    __slots__ = ("_dependent_on", "_zero_case", "_one_case")
 
     def __init__(
         self,
@@ -183,15 +186,12 @@ class MeasurementDependantValue(Generic[T]):
             self._one_case._merge(other),
         )
 
-    def _transform_leaves(self, fun: Callable):
+    def _transform_leaves_inplace(self, fun: Callable):
         """
         Transform the leaves of a MeasurementDependantValue with `fun`.
         """
-        return MeasurementDependantValue(
-            self._dependent_on,
-            self._zero_case._transform_leaves(fun),
-            self._one_case._transform_leaves(fun),
-        )
+        self._zero_case._transform_leaves_inplace(fun)
+        self._one_case._transform_leaves_inplace(fun)
 
 
 # pylint: disable=too-few-public-methods,protected-access
@@ -199,6 +199,8 @@ class _Value(Generic[T]):
     """
     Leaf node for a MeasurementDependantValue tree structure.
     """
+
+    __slots__ = ("_values",)
 
     def __init__(self, *values):
         self._values = values
@@ -215,23 +217,17 @@ class _Value(Generic[T]):
             return _Value(*self._values, *other._values)
         return _Value(*self._values, other)
 
-    def _transform_leaves(self, fun):
+    def _transform_leaves_inplace(self, fun):
         """
         Works with MeasurementDependantValue._transform_leaves
         """
-        return _Value(fun(*self._values))
+        self._values = (fun(*self._values),)
 
     @property
     def values(self):
         if len(self._values) == 1:
             return self._values[0]
         return self._values
-
-    def get_computation(self, _):
-        """
-        Works with MeasurementDependantValue.get_computation
-        """
-        return self.values
 
 
 def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
