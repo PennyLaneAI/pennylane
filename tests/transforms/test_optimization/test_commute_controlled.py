@@ -53,7 +53,6 @@ class TestCommuteControlled:
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        print(ops)
 
         names_expected = ["PauliX", "ControlledQubitUnitary", "PauliX"]
         wires_expected = [Wires(2), Wires([0, 2]), Wires(2)]
@@ -71,7 +70,6 @@ class TestCommuteControlled:
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        print(ops)
 
         names_expected = ["PauliZ", "CNOT", "PauliY"]
         wires_expected = [Wires("b"), Wires([2, "b"]), Wires("b")]
