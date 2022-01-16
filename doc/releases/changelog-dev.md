@@ -289,6 +289,8 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
+* BasisStatePreparation now supports `batch_params` decorator. [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
@@ -304,7 +306,7 @@
 
   Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
   QNode arguments, which succeeded whenever the arguments have the same shape.
-  In this case, the stacked Jacobian would also be transposed, leading to the 
+  In this case, the stacked Jacobian would also be transposed, leading to the
   output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
 
   If no stacking and transposing occurs, the output shape instead is a `tuple`
@@ -390,4 +392,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Edward Jiang, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
