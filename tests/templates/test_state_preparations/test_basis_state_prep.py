@@ -138,6 +138,10 @@ class TestInputs:
             qml.BasisStatePreparation(basis_state, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
+        with pytest.raises(ValueError, match="Basis states must be one-dimensional"):
+            basis_state = np.array([[[0, 1]]])
+            circuit(basis_state)
+
         with pytest.raises(ValueError, match="Basis states must be of length"):
             basis_state = np.array([0, 1, 0])
             circuit(basis_state)
