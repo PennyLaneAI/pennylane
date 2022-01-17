@@ -547,6 +547,28 @@ class TestBarrier:
         assert queue[4].name == "Barrier"
 
 
+class TestWireCut:
+    """Tests for the WireCut operator"""
+
+    def test_behaves_as_identity(self):
+        """Tests that the WireCut operator behaves as the Identity"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def with_wirecut():
+            qml.PauliX(wires=0)
+            qml.WireCut(wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def without_wirecut():
+            qml.PauliX(wires=0)
+            return qml.state()
+
+        assert with_wirecut().all() == without_wirecut().all()
+
+
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""
 
