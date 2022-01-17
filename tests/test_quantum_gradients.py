@@ -199,8 +199,8 @@ class TestCVGradient:
         grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(*par)
 
         # the different methods agree
-        assert grad_A == pytest.approx(grad_F, abs=tol)
-        assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        assert qml.math.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
         # check against the known analytic formula
         r0, phi0, r1, phi1 = par
@@ -214,7 +214,7 @@ class TestCVGradient:
         )
         dn[3] = 0.5 * np.sin(phi0 - phi1) * np.sinh(2 * r0) * np.sinh(2 * r1)
 
-        assert dn[np.newaxis, :] == pytest.approx(grad_F, abs=tol)
+        assert all(qml.math.isclose(dn[i], grad_F[i], atol=tol, rtol=0) for i in range(4))
 
     def test_cv_gradients_repeated_gate_parameters(self, gaussian_dev, tol):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
@@ -232,8 +232,8 @@ class TestCVGradient:
         grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(*par)
 
         # the different methods agree
-        assert grad_A == pytest.approx(grad_F, abs=tol)
-        assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        assert qml.math.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
     def test_cv_gradients_parameters_inside_array(self, gaussian_dev, tol):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
@@ -276,8 +276,8 @@ class TestCVGradient:
         grad_A2 = qml.gradients.param_shift_cv(q, dev=gaussian_dev, force_order2=True)(*par)
 
         # the different methods agree
-        assert grad_A == pytest.approx(grad_F, abs=tol)
-        assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        assert qml.math.allclose(grad_A, grad_F, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
     def test_CVOperation_with_heisenberg_and_no_params(self, gaussian_dev, tol):
         """An integration test for InterferometerUnitary, a gate that supports analytic differentiation
@@ -457,9 +457,9 @@ class TestQubitGradient:
         grad_auto = grad_fn(*params)
 
         # gradients computed with different methods must agree
-        assert grad_fd1 == pytest.approx(grad_fd2, abs=tol)
-        assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
-        assert np.allclose(grad_fd1, grad_auto, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_fd2, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_angle, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_auto, atol=tol, rtol=0)
 
     def test_hybrid_gradients(self, qubit_device_2_wires, tol):
         "Tests that the various ways of computing the gradient of a hybrid computation all agree."
@@ -533,7 +533,7 @@ class TestQubitGradient:
             "Gradient of classical computed symbolically, can use normal numpy functions."
             val = classical((a, b))
             J = grad_method(quantum)(a, np.log(b))
-            return val * np.array([J[0, 0] + J[1, 0], (J[0, 1] + J[1, 1]) / b])
+            return val * np.array([J[0][0] + J[0][1], (J[1][0] + J[1][1]) / b])
 
         param = np.array([-0.1259, 1.53])
         y0 = classical(param)
@@ -544,9 +544,9 @@ class TestQubitGradient:
         grad_angle = d_classical(*param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
-        assert grad_fd1 == pytest.approx(grad_angle, abs=tol)
-        assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
-        assert grad_angle == pytest.approx(grad_auto, abs=tol)
+        assert qml.math.allclose(grad_fd1, grad_angle, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_auto, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_angle, grad_auto, atol=tol, rtol=0)
 
     def test_qnode_gradient_fanout(self, qubit_device_1_wire, tol):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."

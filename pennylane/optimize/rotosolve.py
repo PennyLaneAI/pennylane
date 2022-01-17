@@ -46,6 +46,26 @@ def _shgo_optimizer(fun, **kwargs):
     return opt_res.x[0], opt_res.fun
 
 
+def _validate_inputs(requires_grad, args, nums_frequency, spectra):
+    """Checks that for each trainable argument either the number of
+    frequencies or the frequency spectrum is given."""
+
+    for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
+        if _requires_grad:
+            _nums_frequency = nums_frequency.get(arg_name, {})
+            _spectra = spectra.get(arg_name, {})
+            all_keys = set(_nums_frequency) | set(_spectra)
+
+            shape = qml.math.shape(arg)
+            indices = np.ndindex(shape) if len(shape) > 0 else [()]
+            for par_idx in indices:
+                if par_idx not in all_keys:
+                    raise ValueError(
+                        "Neither the number of frequencies nor the frequency spectrum "
+                        f"was provided for the entry {par_idx} of argument {arg_name}."
+                    )
+
+
 def _restrict_to_univariate(fn, arg_idx, par_idx, args, kwargs):
     r"""Restrict a function to a univariate function for given argument
     and parameter indices.
@@ -300,25 +320,6 @@ class RotosolveOptimizer:
         else:
             self.substep_optimizer = substep_optimizer
 
-    def _validate_inputs(self, requires_grad, args, nums_frequency, spectra):
-        """Checks that for each trainable argument either the number of
-        frequencies or the frequency spectrum is given."""
-
-        for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
-            if _requires_grad:
-                _nums_frequency = nums_frequency.get(arg_name, {})
-                _spectra = spectra.get(arg_name, {})
-                all_keys = set(_nums_frequency) | set(_spectra)
-
-                shape = qml.math.shape(arg)
-                indices = np.ndindex(shape) if len(shape) > 0 else [()]
-                for par_idx in indices:
-                    if par_idx not in all_keys:
-                        raise ValueError(
-                            "Neither the number of frequencies nor the frequency spectrum "
-                            f"was provided for the entry {par_idx} of argument {arg_name}."
-                        )
-
     def step_and_cost(
         self,
         objective_fn,
@@ -407,7 +408,7 @@ class RotosolveOptimizer:
         }
         nums_frequency = nums_frequency or {}
         spectra = spectra or {}
-        self._validate_inputs(requires_grad, args, nums_frequency, spectra)
+        _validate_inputs(requires_grad, args, nums_frequency, spectra)
 
         # we will single out one arg to change at a time
         # the following hold the arguments not getting updated

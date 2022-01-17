@@ -1851,12 +1851,17 @@ def test_block_diag(tensors):
 
 class TestBlockDiagDiffability:
 
-    expected = lambda self, x, y: np.array(
+    expected = lambda self, x, y: (
         [
-            [[-np.sin(x * y) * y, -np.sin(x * y) * x], [0, 0], [0, 0]],
-            [[0, 0], [1.0, 0.0], [0, 1.2]],
-            [[0, 0], [2 * x, -1 / 3], [-1 / y, x / y ** 2]],
-        ]
+            [-np.sin(x * y) * y, 0, 0],
+            [0, 1.0, 0],
+            [0, 2 * x, -1 / y],
+        ],
+        [
+            [-np.sin(x * y) * x, 0, 0],
+            [0, 0.0, 1.2],
+            [0, -1 / 3, x / y ** 2],
+        ],
     )
 
     def test_autograd(self):
@@ -1869,9 +1874,8 @@ class TestBlockDiagDiffability:
         x, y = 0.2, 1.5
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
-        # Transposes in the following because autograd behaves strangely
-        assert fn.allclose(res[:, :, 0].T, exp[:, :, 0])
-        assert fn.allclose(res[:, :, 1].T, exp[:, :, 1])
+        assert fn.allclose(res[0], exp[0])
+        assert fn.allclose(res[1], exp[1])
 
     def test_jax(self):
         """Tests for differentiating the block diagonal function with JAX."""
@@ -1884,8 +1888,8 @@ class TestBlockDiagDiffability:
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
-        assert fn.allclose(exp[:, :, 0], res[0])
-        assert fn.allclose(exp[:, :, 1], res[1])
+        assert fn.allclose(exp[0], res[0])
+        assert fn.allclose(exp[1], res[1])
 
     def test_tf(self):
         """Tests for differentiating the block diagonal function with Tensorflow."""
@@ -2167,3 +2171,126 @@ class TestSortFunction:
         result = fn.sort(input)
 
         assert all(result == test_output)
+
+
+ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
+
+
+class TestSafeSqueeze:
+    """Test the safe version of squeeze that allows to specify
+    axes of size bigger than one without raising an error and that
+    allows to exclude axes."""
+
+    input_shapes = [
+        (2, 5, 3),
+        (1, 1, 9, 1),
+        (1, 1),
+        (5, 1),
+        (),
+    ]
+
+    @pytest.mark.parametrize(
+        "shape, expected_shape",
+        list(zip(input_shapes, [(2, 5, 3), (9,), (), (5,), ()])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_without_kwargs(self, ones_fn, shape, expected_shape):
+        """Test squeezing without specifying axes."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor)
+        assert fn.shape(squeezed) == expected_shape
+
+    # Skipping the first and last input shape
+    @pytest.mark.parametrize(
+        "shape, axis, expected_shape",
+        list(zip(input_shapes[1:4], [3, -2, 1], [(1, 1, 9), (1,), (5,)])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_axis_of_size_one(self, ones_fn, shape, axis, expected_shape):
+        """Test squeezing a single axis with size one."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, axis",
+        list(zip(input_shapes[:2], [1, 2])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_axis_of_any_size(self, ones_fn, shape, axis):
+        """Test squeezing a single axis of any size."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == shape
+
+    # Skipping the first and last input shape
+    @pytest.mark.parametrize(
+        "shape, axis, expected_shape",
+        list(zip(input_shapes[1:4], [(0, 1, -1), [1, -2], {1}], [(9,), (), (5,)])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_multiple_axes_of_size_one(self, ones_fn, shape, axis, expected_shape):
+        """Test squeezing multiple axes with size one."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, axis, expected_shape",
+        list(
+            zip(
+                input_shapes,
+                [(2, 1), (0, 1, 2), [0], {0, 1}, []],
+                [(2, 5, 3), (9, 1), (1,), (5,), ()],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_multiple_axes_of_any_size(self, ones_fn, shape, axis, expected_shape):
+        """Test squeezing multiple axes with any size."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, exclude_axis, expected_shape",
+        list(
+            zip(
+                input_shapes[:4],
+                [-1, -3, 0, 1],
+                [(2, 5, 3), (1, 9), (1,), (5, 1)],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_single_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
+        """Tests squeezing with the kwarg exclude_axis and a single axis to ignore
+        while squeezing."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, exclude_axis=exclude_axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, exclude_axis, expected_shape",
+        list(
+            zip(
+                input_shapes,
+                [(0,), (-2, 3), [1], {-1, -2}, []],
+                [(2, 5, 3), (9, 1), (1,), (5, 1), ()],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_multiple_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
+        """Tests squeezing with the kwarg exclude_axis and multiple axes to ignore
+        while squeezing."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, exclude_axis=exclude_axis)
+        assert fn.shape(squeezed) == expected_shape
