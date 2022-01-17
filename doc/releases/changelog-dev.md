@@ -289,6 +289,26 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
+* Added a new `multi_dispatch` decorator that helps ease the definition of new functions
+  inside PennyLane. We can decorate the function, indicating the arguments that are
+  tensors handled by the interface:
+  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
+    
+  ```pycon
+  >>> @qml.math.multi_dispatch(argnum=[0, 1])
+  ... def some_function(tensor1, tensor2, option, like):
+  ...     # the interface string is stored in ``like``.
+  ...     ...
+  ```
+  
+  Previously, this was done using the private utility function `_multi_dispatch`.
+  
+  ```pycon
+  >>> def some_function(tensor1, tensor2, option):
+  ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+  ...     ...
+  ```
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
@@ -390,4 +410,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang

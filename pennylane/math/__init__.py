@@ -35,6 +35,7 @@ import autoray as ar
 
 from .multi_dispatch import (
     _multi_dispatch,
+    multi_dispatch,
     block_diag,
     concatenate,
     diag,
@@ -76,6 +77,7 @@ def __getattr__(name):
 
 __all__ = [
     "_multi_dispatch",
+    "multi_dispatch",
     "allclose",
     "allequal",
     "block_diag",
