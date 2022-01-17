@@ -93,7 +93,7 @@ test_data_values = [
 
 
 @pytest.mark.parametrize("values", test_data_values)
-def test_multi_dispatch_decorate3(values):
+def test_multi_dispatch_decorate_non_dispatch(values):
     """Test decorating a custom function for PennyLane including a non-dispatchable parameter"""
 
     @fn.multi_dispatch(argnum=0, tensor_list=0)
