@@ -111,27 +111,28 @@ def tape_text(
             qml.Toffoli(wires=(0,1,"aux"))
 
             qml.expval(qml.PauliZ("aux"))
-            qml.state()
+            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
+            qml.probs()
 
     >>> print(draw_text(tape))
-      0: ─╭QFT──RX─╭C─┤     State
-      1: ─├QFT──RY─├C─┤     State
-      2: ─╰QFT──RZ─│──┤     State
-    aux: ──────────╰X─┤ <Z> State
+      0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z]  Probs
+      1: ─├QFT──RY─├C─┤ ╰Var[Z@Z]  Probs
+      2: ─╰QFT──RZ─│──┤            Probs
+    aux: ──────────╰X─┤  <Z>       Probs
 
     .. UsageDetails::
 
-    **Decimals:**
+    By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
+    are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
     >>> print(draw_text(tape, decimals=2))
-      0: ─╭QFT──RX(1.23)─╭C─┤     State
-      1: ─├QFT──RY(1.23)─├C─┤     State
-      2: ─╰QFT──RZ(1.23)─│──┤     State
-    aux: ────────────────╰X─┤ <Z> State
+      0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z]  Probs
+      1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z]  Probs
+      2: ─╰QFT──RZ(1.23)─│──┤            Probs
+    aux: ────────────────╰X─┤  <Z>       Probs
 
-    **Max Length:**
 
-    The ``max_length`` keyword wraps long circuits
+    The ``max_length`` keyword wraps long circuits:
 
     >>> rng = np.random.default_rng(seed=42)
     >>> shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
@@ -150,23 +151,24 @@ def tape_text(
     ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤
     ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤
 
-    **Wire Order:**
+    The ``wire_order`` keyword specifies the order of the wires from
+    top to bottom:
 
     >>> print(tape_text(tape, wire_order=["aux", 2, 1, 0]))
-    aux: ──────────╭X─┤ <Z> State
-      2: ─╭QFT──RZ─│──┤     State
-      1: ─├QFT──RY─├C─┤     State
-      0: ─╰QFT──RX─╰C─┤     State
+    aux: ──────────╭X─┤  <Z>       Probs
+      2: ─╭QFT──RZ─│──┤            Probs
+      1: ─├QFT──RY─├C─┤ ╭Var[Z@Z]  Probs
+      0: ─╰QFT──RX─╰C─┤ ╰Var[Z@Z]  Probs
 
-    **Show all wires:**
+    If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
     >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0,1,2], show_all_wires=True))
-      a: ─────────────┤     State
-      b: ─────────────┤     State
-    aux: ──────────╭X─┤ <Z> State
-      0: ─╭QFT──RX─├C─┤     State
-      1: ─├QFT──RY─╰C─┤     State
-      2: ─╰QFT──RZ────┤     State
+      a: ─────────────┤            Probs
+      b: ─────────────┤            Probs
+    aux: ──────────╭X─┤  <Z>       Probs
+      0: ─╭QFT──RX─├C─┤ ╭Var[Z@Z]  Probs
+      1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z]  Probs
+      2: ─╰QFT──RZ────┤            Probs
 
     """
     if tape_offset is None:
