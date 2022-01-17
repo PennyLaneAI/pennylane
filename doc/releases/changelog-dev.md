@@ -289,7 +289,7 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
-* Added `multi_dispatch` decorator that helps ease the definition of new functions
+* Added a new `multi_dispatch` decorator that helps ease the definition of new functions
   inside PennyLane. We can decorate the function, indicating the arguments that are
   tensors handled by the interface:
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
