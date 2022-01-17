@@ -61,17 +61,23 @@ class BasisStatePreparation(Operation):
             shape = qml.math.shape(state)
 
             if len(shape) != 1:
-                raise ValueError(f"Basis states must be one-dimensional; state {i} has shape {shape}.")
+                raise ValueError(
+                    f"Basis states must be one-dimensional; state {i} has shape {shape}."
+                )
 
             n_bits = shape[0]
             if n_bits != len(wires):
-                raise ValueError(f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}.")
+                raise ValueError(
+                    f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
+                )
 
             # we can extract a list here, because embedding is not differentiable
             state = list(qml.math.toarray(state))
 
             if not all(bit in [0, 1] for bit in state):
-                raise ValueError(f"Basis states must only consist of 0s and 1s; state {i} is {basis_state}")
+                raise ValueError(
+                    f"Basis states must only consist of 0s and 1s; state {i} is {basis_state}"
+                )
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 
