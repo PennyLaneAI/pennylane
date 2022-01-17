@@ -203,40 +203,43 @@ def param_shift_hessian(tape, f0=None):
 
     >>> qml.jacobian(qml.grad(cost))(weights)
 
-    Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
-            and the Hessian tapes include the original input tape, the 'f0' value is used
-            instead of evaluating the input tape, reducing the number of device invocations.
+    .. note::
 
-    .. warning::
-
-        Currently only supports quantum operations that obey a two-term shift rule,
+        Currently, parametric gates are only supported if they obey a two-term shift rule,
         which includes the following operations:
 
         "RX", "RY", "RZ", "Rot", "PhaseShift", "ControlledPhaseShift", "MultiRZ", "PauliRot",
         "U1", "U2", "U3", "SingleExcitationMinus", "SingleExcitationPlus", "DoubleExcitationMinus",
         "DoubleExcitationPlus", "OrbitalRotation".
 
-        An ValueError is raised for QuantumTapes containing any operations not in this list.
+    Args:
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
+            and the Hessian tapes include the original input tape, the 'f0' value is used
+            instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tensor_like or tuple[list[QuantumTape], function]:
+        tensor_like or tuple[tensor_like] or tuple[list[QuantumTape], function]:
 
-        - If the input is a QNode, a tensor representing the output of the hybrid Hessian matrix
-          of size ``(QNode output dimensions, QNode input dimensions, QNode input dimensions)``
-          is returned. When the keyword ``hybrid=False`` is specified, the purely quantum Hessian
-          matrix is returned instead, with the dimensions
-          ``(QNode output dimensions, number of gate arguments, number of gate arguments)``.
-          The difference between the two accounts for the mapping of QNode arguments
-          to the actual gate arguments, which can include classical computations.
+        - If the input is a QNode with a single trainable argument, a tensor representing the
+          Hessian of size ``(*QNode output dimensions, *QNode input dimensions, *QNode input dimensions)``
+          is returned.
 
-        - If the input is a tape, a tuple containing a list of generated tapes, in addition
-          to a post-processing function to be applied to the evaluated tapes.
+        - If the input is a QNode with multiple trainable arguments, a tuple of Hessian tensors is
+          returned, one for each argument.
+
+        - If the input is a tape, a tuple containing the list of parameter-shifted tapes, and a
+          post-processing function to be applied to the evaluated tapes, is returned.
+
+        Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
+        QNode arguments, which can include classical computations on those arguments before they are
+        passed to quantum operations. The "purely quantum" Hessian can instead be obtained with
+        ``hybrid=False``, which is then computed with respect to the gate arguments and produces a
+        result of shape ``(*QNode output dimensions, # gate arguments, # gate arguments)``.
 
     **Example**
 
-    Applying the Hessian transform directly to a QNode computes the Hessian matrix:
+    Applying the Hessian transform to a QNode computes its Hessian tensor:
 
     >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
@@ -253,7 +256,7 @@ def param_shift_hessian(tape, f0=None):
 
         The Hessian transform can also be applied to a quantum tape, instead producing the
         parameter-shifted Hessian tapes and a post-processing function to combine execution
-        results into the Hessian matrix:
+        results:
 
         >>> circuit(x)  # generate the QuantumTape inside the QNode
         >>> tape = circuit.qtape
