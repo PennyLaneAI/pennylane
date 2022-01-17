@@ -14,8 +14,16 @@
 """Contains transforms and helpers functions for decomposing arbitrary unitary
 operations into elementary gates.
 """
+
+from functools import partial
 import pennylane as qml
 from pennylane import math
+
+# Conditionally import jax; check for special case with jax.lax.cond so that we can JIT
+try:
+    from jax.lax import cond
+except (ModuleNotFoundError, ImportError) as e:
+    pass
 
 
 def _convert_to_su2(U):
@@ -34,6 +42,32 @@ def _convert_to_su2(U):
     exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 2
     return U * math.exp(exp_angle)
 
+
+def _compute_rot_angles(U):
+    # Derive theta from the off-diagonal element. We very very carefully rescale
+    # the value to make sure it's between -1 and 1 by subtracting a small number
+    # in the cases where we have a positive-valued element.
+    element = math.abs(U[0, 1])
+    theta = 2 * math.arcsin(element - math.sign(element) * 1e-16)
+
+    # Compute phi and omega from the angles of the top row; use atan2 to keep
+    # the angle within -np.pi and np.pi, and add very small values to avoid the
+    # undefined case of 0/0. We add a smaller value to the imaginary part than
+    # the real part because it is imag / real in the definition of atan2.
+    angle_U00 = math.arctan2(math.imag(U[0, 0]) + 1e-128, math.real(U[0, 0]) + 1e-64)
+    angle_U10 = math.arctan2(math.imag(U[1, 0]) + 1e-128, math.real(U[1, 0]) + 1e-64)
+
+    phi = -angle_U10 - angle_U00
+    omega = angle_U10 - angle_U00
+
+    return phi, theta, omega
+
+def _make_rz(U):
+    return partial(qml.RZ, 2 * math.angle(U[1, 1]))
+
+
+def _make_rot(U):
+    return partial(qml.Rot, *_compute_rot_angles(U))
 
 def zyz_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
@@ -71,20 +105,19 @@ def zyz_decomposition(U, wire):
     """
     U = _convert_to_su2(U)
 
-    # Derive theta from the off-diagonal element. We very very carefully rescale
-    # the value to make sure it's between -1 and 1 by subtracting a small number
-    # in the cases where we have a positive-valued element.
-    element = math.abs(U[0, 1])
-    theta = 2 * math.arcsin(element - math.sign(element) * 1e-16)
+    if math.is_abstract(U):
+        interface = math._multi_dispatch(U)
 
-    # Compute phi and omega from the angles of the top row; use atan2 to keep
-    # the angle within -np.pi and np.pi, and add very small values to avoid the
-    # undefined case of 0/0. We add a smaller value to the imaginary part than
-    # the real part because it is imag / real in the definition of atan2.
-    angle_U00 = math.arctan2(math.imag(U[0, 0]) + 1e-128, math.real(U[0, 0]) + 1e-64)
-    angle_U10 = math.arctan2(math.imag(U[1, 0]) + 1e-128, math.real(U[1, 0]) + 1e-64)
+        if interface == "jax":
+            return cond(
+                math.allclose(U[0, 1], 0.0),
+                lambda _: _make_rz, 
+                lambda _: _make_rot,
+                U
+            )(wires=wire)
 
-    phi = -angle_U10 - angle_U00
-    omega = angle_U10 - angle_U00
+    if math.allclose(U[0, 1], 0.0):
+        return [qml.RZ(2 * math.angle(U[1, 1]), wires=wire)]
 
+    phi, theta, omega = _compute_rot_angles(U)
     return [qml.Rot(phi, theta, omega, wires=wire)]
