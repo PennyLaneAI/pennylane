@@ -70,7 +70,7 @@ test_data = [(x, x) for x in test_data0]
 
 
 @pytest.mark.parametrize("t1,t2", test_data)
-def test_multi_dispatch_decorate2(t1, t2):
+def test_multi_dispatch_decorate_argnum_none(t1, t2):
     """Test decorating a standard numpy function for PennyLane, automatically dispatching all inputs by choosing argnum=None"""
 
     @fn.multi_dispatch(argnum=None, tensor_list=None)
