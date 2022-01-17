@@ -16,7 +16,7 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane import qnode, QNode
+from pennylane.qnode_old import qnode, QNode
 from pennylane.tape import JacobianTape, QubitParamShiftTape
 
 
@@ -106,10 +106,6 @@ class TestQNode:
         assert isinstance(res, np.ndarray)
         assert res.shape == tuple()
 
-        # without the interface, the tape is unable to deduce
-        # trainable parameters
-        assert circuit.qtape.trainable_params == {0, 1}
-
         # gradients should cause an error
         with pytest.raises(TypeError, match="must be real number, not ArrayBox"):
             qml.grad(circuit)(a)
@@ -133,7 +129,7 @@ class TestQNode:
         assert circuit.qtape.interface == "autograd"
 
         # the tape is able to deduce trainable parameters
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         # gradients should work
         grad = qml.grad(circuit)(a)
@@ -191,15 +187,17 @@ class TestQNode:
 
         res = circuit(a, b)
 
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
         assert res.shape == (2,)
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(a, b)
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res, tuple) and len(res) == 2
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         if diff_method == "finite-diff":
             spy.assert_called()
@@ -223,8 +221,10 @@ class TestQNode:
 
         jac_fn = qml.jacobian(circuit)
         res = jac_fn(a, b)
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res, tuple) and len(res) == 2
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         if diff_method == "finite-diff":
             spy.assert_called()
@@ -236,8 +236,10 @@ class TestQNode:
         b = np.array(0.832, requires_grad=True)
 
         res = jac_fn(a, b)
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res, tuple) and len(res) == 2
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_jacobian_options(self, dev_name, diff_method, mocker, tol):
         """Test setting jacobian options"""
@@ -289,7 +291,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == {0, 1}
+        assert circuit.qtape.trainable_params == [0, 1]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -305,7 +307,7 @@ class TestQNode:
         res = grad_fn(a, b)
 
         # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == {0}
+        assert circuit.qtape.trainable_params == [0]
 
         expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -317,7 +319,7 @@ class TestQNode:
         a = np.array(0.54, requires_grad=False)
         b = np.array(0.8, requires_grad=True)
         circuit(a, b)
-        assert circuit.qtape.trainable_params == {1}
+        assert circuit.qtape.trainable_params == [1]
 
     def test_classical_processing(self, dev_name, diff_method, tol):
         """Test classical processing within the quantum tape"""
@@ -337,11 +339,11 @@ class TestQNode:
         res = qml.jacobian(circuit)(a, b, c)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {0, 2}
+            assert circuit.qtape.trainable_params == [0, 2]
             tape_params = np.array(circuit.qtape.get_parameters())
             assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
-        assert res.shape == (2,)
+        assert isinstance(res, tuple) and len(res) == 2
 
     def test_no_trainable_parameters(self, dev_name, diff_method, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -360,7 +362,7 @@ class TestQNode:
         res = circuit(a, b)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == set()
+            assert circuit.qtape.trainable_params == []
 
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
@@ -392,7 +394,7 @@ class TestQNode:
         res = circuit(U, a)
 
         if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == {1}
+            assert circuit.qtape.trainable_params == [1]
 
         res = qml.grad(circuit)(U, a)
         assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
@@ -423,7 +425,7 @@ class TestQNode:
             return qml.expval(qml.PauliX(0))
 
         res = circuit(a, p)
-        assert circuit.qtape.trainable_params == {1, 2, 3, 4}
+        assert circuit.qtape.trainable_params == [1, 2, 3, 4]
 
         assert [i.name for i in circuit.qtape.operations] == ["RX", "Rot", "PhaseShift"]
         assert np.all(circuit.qtape.get_parameters() == [p[2], p[0], -p[2], p[1] + p[2]])
@@ -465,14 +467,14 @@ class TestQNode:
             return qml.probs(wires=[1])
 
         res = qml.jacobian(circuit)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
 
-        expected = np.array(
-            [
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        expected = (
+            [-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
+            [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_multiple_probability_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
@@ -503,17 +505,21 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        expected = np.array(
+        assert isinstance(res, tuple) and len(res) == 2
+
+        expected = (
             [
-                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
-                [
-                    [np.sin(x) / 2, 0],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
+                [-np.sin(x) / 2, np.sin(x) / 2],
+                [-np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
+            ],
+            [
+                [0, 0],
+                [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+            ],
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
@@ -540,14 +546,14 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        expected = np.array(
-            [
-                [-np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        assert isinstance(res, tuple) and len(res) == 2
+
+        expected = (
+            [-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2],
+            [0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation_variance(self, dev_name, diff_method, tol):
         """Tests correct output shape and evaluation for a tape
@@ -574,14 +580,14 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        expected = np.array(
-            [
-                [2 * np.cos(x) * np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        assert isinstance(res, tuple) and len(res) == 2
+
+        expected = (
+            [np.sin(2 * x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
+            [0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_sampling(self, dev_name, diff_method):
         """Test sampling works as expected"""
@@ -607,7 +613,7 @@ class TestQNode:
         differentiated"""
         dev = qml.device(dev_name, wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode_old.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(data1):
             qml.templates.AmplitudeEmbedding(data1, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
@@ -622,12 +628,12 @@ class TestQNode:
         """Test that the gradient of chained QNodes works without error"""
         dev = qml.device(dev_name, wires=2)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode_old.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit1(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
+        @qml.qnode_old.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(data, wires=[0, 1])
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
@@ -639,8 +645,8 @@ class TestQNode:
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
 
-        w1 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=3)
-        w2 = qml.init.strong_ent_layers_normal(n_wires=2, n_layers=4)
+        w1 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2))
+        w2 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=2))
 
         weights = [w1, w2]
 
@@ -654,7 +660,7 @@ class TestQNode:
         is correct."""
         dev1 = qml.device(dev_name, wires=3)
 
-        @qml.qnode(dev1, diff_method=diff_method)
+        @qml.qnode_old.qnode(dev1, diff_method=diff_method)
         def circuit1(a, b, c):
             qml.RX(a, wires=0)
             qml.RX(b, wires=1)
@@ -665,7 +671,7 @@ class TestQNode:
 
         dev2 = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev2, diff_method=diff_method)
+        @qml.qnode_old.qnode(dev2, diff_method=diff_method)
         def circuit2(data, weights):
             qml.RX(data[0], wires=0)
             qml.RX(data[1], wires=1)
@@ -729,11 +735,11 @@ class TestQNode:
         if diff_method != "backprop":
             # Check that the gradient was computed
             # for all parameters in circuit2
-            assert circuit2.qtape.trainable_params == {0, 1, 2, 3}
+            assert circuit2.qtape.trainable_params == [0, 1, 2, 3]
 
             # Check that the parameter-shift rule was not applied
             # to the first parameter of circuit1.
-            assert circuit1.qtape.trainable_params == {1, 2}
+            assert circuit1.qtape.trainable_params == [1, 2]
 
     def test_second_derivative(self, dev_name, diff_method, mocker, tol):
         """Test second derivative calculation of a scalar valued QNode"""
@@ -981,15 +987,22 @@ class TestQNode:
 
         jac_fn = qml.jacobian(circuit)
         g = jac_fn(a, b)
+        assert isinstance(g, tuple) and len(g) == 2
 
-        expected_g = [
-            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-        ]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = (
+            [-0.5 * np.sin(a) * np.cos(b), 0.5 * np.sin(a) * np.cos(b)],
+            [-0.5 * np.cos(a) * np.sin(b), 0.5 * np.cos(a) * np.sin(b)],
+        )
+        assert np.allclose(g[0], expected_g[0], atol=tol, rtol=0)
+        assert np.allclose(g[1], expected_g[1], atol=tol, rtol=0)
 
         spy = mocker.spy(JacobianTape, "hessian")
-        hess = qml.jacobian(jac_fn)(a, b)
+        jac_fn_a = lambda *args: jac_fn(*args)[0]
+        jac_fn_b = lambda *args: jac_fn(*args)[1]
+        hess_a = qml.jacobian(jac_fn_a)(a, b)
+        hess_b = qml.jacobian(jac_fn_b)(a, b)
+        assert isinstance(hess_a, tuple) and len(hess_a) == 2
+        assert isinstance(hess_b, tuple) and len(hess_b) == 2
 
         if diff_method == "backprop":
             spy.assert_not_called()
@@ -998,17 +1011,17 @@ class TestQNode:
             # since autograd will treat them as separate arguments.
             assert spy.call_count == 4
 
-        expected_hess = [
-            [
-                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-            ],
-            [
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-            ],
-        ]
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        exp_hess_a = (
+            [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+            [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+        )
+        exp_hess_b = (
+            [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+            [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+        )
+        for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b]):
+            assert np.allclose(hess[0], exp_hess[0], atol=tol, rtol=0)
+            assert np.allclose(hess[1], exp_hess[1], atol=tol, rtol=0)
 
     def test_hessian_ragged(self, dev_name, diff_method, mocker, tol):
         """Test hessian calculation of a ragged QNode"""
@@ -1078,7 +1091,7 @@ class TestQNode:
 
         dev = qml.device(dev_name, wires=1)
 
-        @qml.qnode(dev, diff_method="parameter-shift")
+        @qml.qnode_old.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RY(x[0], wires=0)
             qml.RX(x[1], wires=0)
@@ -1120,7 +1133,7 @@ def test_adjoint_reuse_device_state(mocker):
     """Tests that the autograd interface reuses the device state for adjoint differentiation"""
     dev = qml.device("default.qubit", wires=1)
 
-    @qml.qnode(dev, diff_method="adjoint")
+    @qml.qnode_old.qnode(dev, diff_method="adjoint")
     def circ(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))

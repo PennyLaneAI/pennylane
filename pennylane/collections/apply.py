@@ -37,12 +37,13 @@ def apply(func, qnode_collection):
     As we are using the ``'torch'`` interface, we now apply ``torch.sum``
     to the QNodeCollection:
 
-    >>> cost = qml.apply(torch.sum, qnodes)
+    >>> cost = qml.collections.apply(torch.sum, qnodes)
 
     This is a lazy composition --- no QNode evaluation has yet occured. Evaluation
     only occurs when the returned function ``cost`` is evaluated:
 
-    >>> x = qml.init.strong_ent_layers_normal(3, 2)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(layers=3, qubits=2)
+    >>> x = np.random.random(shape)
     >>> cost(x)
     tensor(0.9092, dtype=torch.float64, grad_fn=<SumBackward0>)
     """

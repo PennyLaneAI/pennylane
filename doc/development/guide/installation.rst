@@ -62,7 +62,7 @@ are required:
 
 * `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 0.10
 
-* `pySCF <https://sunqm.github.io/pyscf>`__
+* `pySCF <https://sunqm.github.io/pyscf>`__ < 2.0
   and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.4
 
 * `Psi4 <http://www.psicode.org/>`__ and

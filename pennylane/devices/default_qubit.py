@@ -27,7 +27,7 @@ from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
-from pennylane.operation import DiagonalOperation
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
 
@@ -92,6 +92,7 @@ class DefaultQubit(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Identity",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -137,6 +138,8 @@ class DefaultQubit(QubitDevice):
         "DoubleExcitationMinus",
         "QubitCarry",
         "QubitSum",
+        "OrbitalRotation",
+        "QFT",
     }
 
     observables = {
@@ -181,9 +184,7 @@ class DefaultQubit(QubitDevice):
             mapped_wires = [self.wire_map[w] for w in wires]
         except KeyError as e:
             raise WireError(
-                "Did not find some of the wires {} on device with wires {}.".format(
-                    wires.labels, self.wires.labels
-                )
+                f"Did not find some of the wires {wires.labels} on device with wires {self.wires.labels}."
             ) from e
 
         return mapped_wires
@@ -203,8 +204,8 @@ class DefaultQubit(QubitDevice):
 
             if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
                 raise DeviceError(
-                    "Operation {} cannot be used after other Operations have already been applied "
-                    "on a {} device.".format(operation.name, self.short_name)
+                    f"Operation {operation.name} cannot be used after other Operations have already been applied "
+                    f"on a {self.short_name} device."
                 )
 
             if isinstance(operation, QubitStateVector):
@@ -239,7 +240,7 @@ class DefaultQubit(QubitDevice):
 
         matrix = self._get_unitary_matrix(operation)
 
-        if isinstance(operation, DiagonalOperation):
+        if operation in diagonal_in_z_basis:
             return self._apply_diagonal_unitary(state, matrix, wires)
         if len(wires) <= 2:
             # Einsum is faster for small gates
@@ -467,8 +468,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             float: returns the expectation value of the observable
         """
-        # intercept Hamiltonians here; in future, we want a logic that handles
-        # general observables that do not define eigenvalues
+        # intercept other Hamiltonians
+        # TODO: Ideally, this logic should not live in the Device, but be moved
+        # to a component that can be re-used by devices as needed.
         if observable.name in ("Hamiltonian", "SparseHamiltonian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
@@ -484,6 +486,7 @@ class DefaultQubit(QubitDevice):
                 # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
                 # representation of the Pauliword
                 res = qml.math.cast(qml.math.convert_like(0.0, observable.data), dtype=complex)
+                interface = qml.math.get_interface(self.state)
 
                 # Note: it is important that we use the Hamiltonian's data and not the coeffs attribute.
                 # This is because the .data attribute may be 'unwrapped' as required by the interfaces,
@@ -499,7 +502,11 @@ class DefaultQubit(QubitDevice):
                         * Hmat
                         * qml.math.gather(self.state, coo.col)
                     )
-                    c = qml.math.cast(qml.math.convert_like(coeff, product), "complex128")
+                    c = qml.math.convert_like(coeff, product)
+
+                    if interface == "tensorflow":
+                        c = qml.math.cast(c, "complex128")
+
                     res = qml.math.convert_like(res, product) + qml.math.sum(c * product)
 
             else:
@@ -511,9 +518,10 @@ class DefaultQubit(QubitDevice):
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.matrix
 
+                state = qml.math.toarray(self.state)
                 res = coo_matrix.dot(
-                    coo_matrix(qml.math.conj(self.state)),
-                    coo_matrix.dot(Hmat, coo_matrix(self.state.reshape(len(self.state), 1))),
+                    coo_matrix(qml.math.conj(state)),
+                    coo_matrix.dot(Hmat, coo_matrix(state.reshape(len(self.state), 1))),
                 ).toarray()[0]
 
             if observable.name == "Hamiltonian":
@@ -534,7 +542,7 @@ class DefaultQubit(QubitDevice):
             the unitary in the computational basis, or, in the case of a diagonal unitary,
             a 1D array representing the matrix diagonal.
         """
-        if isinstance(unitary, DiagonalOperation):
+        if unitary in diagonal_in_z_basis:
             return unitary.eigvals
 
         return unitary.matrix
@@ -621,16 +629,13 @@ class DefaultQubit(QubitDevice):
         state = self._asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
-        if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
+        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        norm_error_message = "Sum of amplitudes-squared does not equal one."
-        if qml.math.get_interface(state) == "torch":
-            if not qml.math.allclose(qml.math.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError(norm_error_message)
-        else:
-            if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-                raise ValueError(norm_error_message)
+        norm = qml.math.linalg.norm(state, ord=2)
+        if not qml.math.is_abstract(norm):
+            if not qml.math.allclose(norm, 1.0, atol=tolerance):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire wires with the state
@@ -673,7 +678,8 @@ class DefaultQubit(QubitDevice):
 
         # get computational basis state number
         basis_states = 2 ** (self.num_wires - 1 - np.array(device_wires))
-        num = int(np.dot(state, basis_states))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
@@ -741,14 +747,7 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = (
-            "{new_indices}{affected_indices},{state_indices}->{new_state_indices}".format(
-                affected_indices=affected_indices,
-                state_indices=state_indices,
-                new_indices=new_indices,
-                new_state_indices=new_state_indices,
-            )
-        )
+        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
 
         return self._einsum(einsum_indices, mat, state)
 
@@ -774,10 +773,7 @@ class DefaultQubit(QubitDevice):
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
-        einsum_indices = "{affected_indices},{state_indices}->{state_indices}".format(
-            affected_indices=affected_indices, state_indices=state_indices
-        )
-
+        einsum_indices = f"{affected_indices},{state_indices}->{state_indices}"
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):
@@ -793,5 +789,8 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
+        flat_state = self._flatten(self._state)
+        real_state = self._real(flat_state)
+        imag_state = self._imag(flat_state)
+        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
         return prob

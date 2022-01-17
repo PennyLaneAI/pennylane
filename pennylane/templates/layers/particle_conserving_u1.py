@@ -189,11 +189,12 @@ class ParticleConservingU1(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            from pennylane.templates import ParticleConservingU1
+            import numpy as np
             from functools import partial
 
-            # Build the electronic Hamiltonian from a local .xyz file
-            h, qubits = qml.qchem.molecular_hamiltonian("h2", "h2.xyz")
+            # Build the electronic Hamiltonian
+            symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+            h, qubits = qml.qchem.molecular_hamiltonian(symbols, coordinates)
 
             # Define the Hartree-Fock state
             electrons = 2
@@ -203,38 +204,37 @@ class ParticleConservingU1(Operation):
             dev = qml.device('default.qubit', wires=qubits)
 
             # Define the ansatz
-            ansatz = partial(ParticleConservingU1, init_state=ref_state)
+            ansatz = partial(qml.ParticleConservingU1, init_state=ref_state)
 
             # Define the cost function
             cost_fn = qml.ExpvalCost(ansatz, h, dev)
 
             # Compute the expectation value of 'h'
             layers = 2
-            params = qml.init.particle_conserving_u1_normal(layers, qubits)
+            shape = qml.ParticleConservingU1.shape(layers, qubits)
+            params = np.random.random(shape)
             print(cost_fn(params))
 
         **Parameter shape**
 
-        The shape of the weights argument can be computed by the static method
+        The shape of the trainable weights tensor can be computed by the static method
         :meth:`~.ParticleConservingU1.shape` and used when creating randomly
         initialised weight tensors:
 
         .. code-block:: python
 
-            shape = ParticleConservingU1.shape(n_layers=2, n_wires=2)
-            weights = np.random.random(size=shape)
+            shape = qml.ParticleConservingU1.shape(n_layers=2, n_wires=2)
+            params = np.random.random(size=shape)
     """
 
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
     def __init__(self, weights, wires, init_state=None, do_queue=True, id=None):
 
         if len(wires) < 2:
             raise ValueError(
-                "Expected the number of qubits to be greater than one; "
-                "got wires {}".format(wires)
+                f"Expected the number of qubits to be greater than one; " f"got wires {wires}"
             )
 
         shape = qml.math.shape(weights)
@@ -259,6 +259,10 @@ class ParticleConservingU1(Operation):
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
+    @property
+    def num_params(self):
+        return 1
+
     def expand(self):
 
         nm_wires = [self.wires[l : l + 2] for l in range(0, len(self.wires) - 1, 2)]
@@ -266,7 +270,7 @@ class ParticleConservingU1(Operation):
 
         with qml.tape.QuantumTape() as tape:
 
-            qml.templates.BasisEmbedding(self.init_state, wires=self.wires)
+            qml.BasisEmbedding(self.init_state, wires=self.wires)
 
             for l in range(self.n_layers):
                 for i, wires_ in enumerate(nm_wires):
@@ -290,6 +294,6 @@ class ParticleConservingU1(Operation):
 
         if n_wires < 2:
             raise ValueError(
-                "The number of qubits must be greater than one; got 'n_wires' = {}".format(n_wires)
+                f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, n_wires - 1, 2

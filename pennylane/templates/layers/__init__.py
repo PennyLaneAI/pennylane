@@ -23,3 +23,4 @@ from .simplified_two_design import SimplifiedTwoDesign
 from .basic_entangler import BasicEntanglerLayers
 from .particle_conserving_u2 import ParticleConservingU2
 from .particle_conserving_u1 import ParticleConservingU1
+from .gate_fabric import GateFabric

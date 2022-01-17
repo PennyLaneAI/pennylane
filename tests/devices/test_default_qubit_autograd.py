@@ -84,7 +84,7 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert circuit.diff_options["method"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -132,7 +132,7 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.diff_options["method"] == "backprop"
+        assert circuit.gradient_fn == "backprop"
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -198,8 +198,8 @@ class TestPassthruIntegration:
         circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
-        assert circuit1.diff_options["method"] == "backprop"
-        assert circuit2.diff_options["method"] == "analytic"
+        assert circuit1.gradient_fn == "backprop"
+        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = circuit1(p)
 
@@ -280,6 +280,22 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(qml.jacobian(circuit)(x), 0.0)
+        assert qml.math.isclose(qml.jacobian(qml.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(qml.grad(qml.grad(circuit))(x), -1.0)
+
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_autograd_interface_gradient(self, operation, diff_method, tol):
@@ -312,11 +328,11 @@ class TestPassthruIntegration:
 
         # Check that the correct differentiation method is being used.
         if diff_method == "backprop":
-            assert circuit.diff_options["method"] == "backprop"
+            assert circuit.gradient_fn == "backprop"
         elif diff_method == "parameter-shift":
-            assert circuit.diff_options["method"] == "analytic"
+            assert circuit.gradient_fn is qml.gradients.param_shift
         else:
-            assert circuit.diff_options["method"] == "numeric"
+            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         res = qml.grad(cost)(params)
         expected_grad = (
@@ -361,9 +377,8 @@ class TestHighLevelIntegration:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        weights = np.array(
-            qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2), requires_grad=True
-        )
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+        weights = np.random.random(shape, requires_grad=True)
 
         grad = qml.grad(circuit)(weights)
         assert grad.shape == weights.shape
@@ -405,7 +420,7 @@ class TestOps:
             qml.MultiRZ(param, wires=[0, 1])
             return qml.probs(wires=list(range(wires)))
 
-        param = 0.3
+        param = np.array(0.3, requires_grad=True)
         res = qml.jacobian(circuit)(param)
         assert np.allclose(res, np.zeros(wires ** 2))
 
@@ -419,7 +434,7 @@ class TestOps:
             qml.RY(param, wires=0).inv()
             return qml.expval(qml.PauliX(0))
 
-        x = 0.3
+        x = np.array(0.3, requires_grad=True)
         res = circuit(x)
         assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
 

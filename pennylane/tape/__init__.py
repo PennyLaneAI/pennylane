@@ -21,4 +21,5 @@ from .cv_param_shift import CVParamShiftTape
 from .qubit_param_shift import QubitParamShiftTape
 from .reversible import ReversibleTape
 from .operation_recorder import OperationRecorder
+from .stop_recording import stop_recording
 from .unwrap import Unwrap, UnwrapTape

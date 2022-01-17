@@ -137,7 +137,7 @@ To include non-differentiable data arguments, simply use ``tf.constant``:
 
     @qml.qnode(dev, interface='tf')
     def circuit3(weights, data):
-        qml.templates.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
+        qml.AmplitudeEmbedding(data, normalize=True, wires=[0, 1])
         qml.RX(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         qml.CNOT(wires=[0, 1])

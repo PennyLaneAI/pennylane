@@ -14,6 +14,8 @@
 """Multiple dispatch functions"""
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import warnings
+from collections.abc import Sequence
+import functools
 
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
@@ -44,24 +46,24 @@ def _multi_dispatch(values):
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 
-    * Vanilla NumPy arrays can be used alongside other tensor objects; they will
-      always be treated as non-differentiable constants.
+    * Vanilla NumPy arrays and SciPy sparse matrices can be used alongside other tensor objects;
+      they will always be treated as non-differentiable constants.
     """
     if "resource_variable" in getattr(values, "__module__", tuple()):
         values = np.asarray(values)
 
     interfaces = {get_interface(v) for v in values}
 
-    if len(set(interfaces) - {"numpy", "autograd"}) > 1:
+    if len(set(interfaces) - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
-    non_numpy_interfaces = set(interfaces) - {"numpy"}
+    non_numpy_scipy_interfaces = set(interfaces) - {"numpy", "scipy"}
 
-    if len(non_numpy_interfaces) > 1:
+    if len(non_numpy_scipy_interfaces) > 1:
         # contains autograd and another interface
         warnings.warn(
-            f"Contains tensors of types {non_numpy_interfaces}; dispatch will prioritize "
+            f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
             "TensorFlow and PyTorch over autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
@@ -79,6 +81,102 @@ def _multi_dispatch(values):
         return "jax"
 
     return "numpy"
+
+
+def multi_dispatch(argnum=None, tensor_list=None):
+    r"""Decorater to dispatch arguments handled by the interface.
+
+    This helps simplify definitions of new functions inside PennyLane. We can
+    decorate the function, indicating the arguments that are tensors handled
+    by the interface:
+
+
+    >>> @qml.math.multi_dispatch(argnum=[0, 1])
+    ... def some_function(tensor1, tensor2, option, like):
+    ...     # the interface string is stored in `like`.
+    ...     ...
+
+
+    Args:
+        argnum (list[int]): A list of integers indicating indicating the indices
+            to dispatch (i.e., the arguments that are tensors handled by an interface).
+            If ``None``, dispatch over all arguments.
+        tensor_lists (list[int]): a list of integers indicating which indices
+            in ``argnum`` are expected to be lists of tensors.
+            If ``None``, this option is ignored.
+
+    Returns:
+        func: A wrapped version of the function, which will automatically attempt
+        to dispatch to the correct autodifferentiation framework for the requested
+        arguments. Note that the ``like`` argument will be optional, but can be provided
+        if an explicit override is needed.
+
+    .. seealso:: :func:`pennylane.math.multi_dispatch._multi_dispatch`
+
+    .. note::
+        This decorator makes the interface argument "like" optional as it utilizes
+        the utility function `_multi_dispatch` to automatically detect the appropriate
+        interface based on the tensor types.
+
+    **Examples**
+
+    We can redefine external functions to be suitable for PennyLane. Here, we
+    redefine Autoray's ``stack`` function.
+
+    >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
+
+    We can also use the ``multi_dispatch`` decorator to dispatch
+    arguments of more more elaborate custom functions. Here is an example
+    of a ``custom_function`` that
+    computes :math:`c \\sum_i (v_i)^T v_i`, where :math:`v_i` are vectors in ``values`` and
+    :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first argument ``values``,
+    how ``tensor_list=0`` indicates that said first argument is a list of vectors, and that ``coefficient`` is not
+    dispatched.
+
+    >>> @math.multi_dispatch(argnum=0, tensor_list=0)
+    >>> def custom_function(values, like, coefficient=10):
+    >>>     # values is a list of vectors
+    >>>     # like can force the interface (optional)
+    >>>     if like == "tensorflow":
+    >>>         # add interface-specific handling if necessary
+    >>>     return coefficient * np.sum([math.dot(v,v) for v in values])
+
+    We can then run
+
+    >>> values = [np.array([1, 2, 3]) for _ in range(5)]
+    >>> custom_function(values)
+    700
+
+    """
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            argnums = argnum if argnum is not None else list(range(len(args)))
+            tensor_lists = tensor_list if tensor_list is not None else []
+
+            if not isinstance(argnums, Sequence):
+                argnums = [argnums]
+            if not isinstance(tensor_lists, Sequence):
+                tensor_lists = [tensor_lists]
+
+            dispatch_args = []
+
+            for a in argnums:
+                if a in tensor_lists:
+                    dispatch_args.extend(args[a])
+                else:
+                    dispatch_args.append(args[a])
+
+            interface = kwargs.pop("like", None)
+            interface = interface or _multi_dispatch(dispatch_args)
+            kwargs["like"] = interface
+
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def block_diag(values):
@@ -235,21 +333,51 @@ def dot(tensor1, tensor2):
         if x.ndim <= 2 and y.ndim <= 2:
             return x @ y
 
-        return np.tensordot(x, y, dims=[[-1], [-2]], like=interface)
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     if interface == "tensorflow":
-        if x.ndim == 0 and y.ndim == 0:
+        if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
             return x * y
 
-        if y.ndim == 1:
+        if len(np.shape(y)) == 1:
             return np.tensordot(x, y, axes=[[-1], [0]], like=interface)
 
-        if x.ndim == 2 and y.ndim == 2:
+        if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
             return x @ y
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
     return np.dot(x, y, like=interface)
+
+
+def tensordot(tensor1, tensor2, axes=None):
+    """Returns the tensor product of two tensors.
+    In general ``axes`` specifies either the set of axes for both
+    tensors that are contracted (with the first/second entry of ``axes``
+    giving all axis indices for the first/second tensor) or --- if it is
+    an integer --- the number of last/first axes of the first/second
+    tensor to contract over.
+    There are some non-obvious special cases:
+
+    * If both tensors are 0-dimensional, ``axes`` must be 0.
+      and a 0-dimensional scalar is returned containing the simple product.
+
+    * If both tensors are 1-dimensional and ``axes=0``, the outer product
+      is returned.
+
+    * Products between a non-0-dimensional and a 0-dimensional tensor are not
+      supported in all interfaces.
+
+    Args:
+        tensor1 (tensor_like): input tensor
+        tensor2 (tensor_like): input tensor
+        axes (int or list[list[int]]): Axes to contract over, see detail description.
+
+    Returns:
+        tensor_like: the tensor product of the two input tensors
+    """
+    interface = _multi_dispatch([tensor1, tensor2])
+    return np.tensordot(tensor1, tensor2, axes=axes, like=interface)
 
 
 def get_trainable_indices(values):
@@ -274,11 +402,25 @@ def get_trainable_indices(values):
     Trainable: {0}
     tensor(0.0899685, requires_grad=True)
     """
+    trainable = requires_grad
     interface = _multi_dispatch(values)
     trainable_params = set()
 
+    if interface == "jax":
+        import jax
+
+        if not any(isinstance(v, jax.core.Tracer) for v in values):
+            # No JAX tracing is occuring; treat all `DeviceArray` objects as trainable.
+            trainable = lambda p, **kwargs: isinstance(p, jax.numpy.DeviceArray)
+        else:
+            # JAX tracing is occuring; use the default behaviour (only traced arrays
+            # are treated as trainable). This is required to ensure that `jax.grad(func, argnums=...)
+            # works correctly, as the argnums argnument determines which parameters are
+            # traced arrays.
+            trainable = requires_grad
+
     for idx, p in enumerate(values):
-        if requires_grad(p, interface=interface):
+        if trainable(p, interface=interface):
             trainable_params.add(idx)
 
     return trainable_params
@@ -317,6 +459,55 @@ def ones_like(tensor, dtype=None):
     return np.ones_like(tensor)
 
 
+def safe_squeeze(tensor, axis=None, exclude_axis=None):
+    """Squeeze a tensor either along all axes, specified axes or all
+    but a set of excluded axes. For selective squeezing, catch errors
+    and do nothing if the selected axes do not have size 1.
+
+    Args:
+        tensor (tensor_like): input tensor
+        axis (int or Sequence[int]): Axis/axes to squeeze
+        exclude_axis (int or Sequence[int]): Axis/axes not to squeeze
+
+    Return:
+        tensor_like: The input tensor with those axes removed that were specified
+        or not excluded and that have size 1. If no axes are specified or excluded,
+        all axes are attempted to be squeezed.
+    """
+    interface = _multi_dispatch([tensor])
+    if interface == "tensorflow":
+        from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
+        exception = InvalidArgumentError
+    else:
+        exception = ValueError
+
+    num_axes = len(np.shape(tensor))
+    if axis is None:
+        if exclude_axis is None:
+            return np.squeeze(tensor)
+        if np.isscalar(exclude_axis):
+            exclude_axis = [exclude_axis if exclude_axis >= 0 else num_axes + exclude_axis]
+        else:
+            exclude_axis = [(i if i >= 0 else num_axes + i) for i in exclude_axis]
+        axis = [i for i in range(num_axes) if not i in exclude_axis]
+    elif np.isscalar(axis):
+        axis = [axis if axis >= 0 else num_axes + axis]
+    else:
+        axis = [(i if i >= 0 else num_axes + i) for i in axis]
+
+    for ax in sorted(set(axis)):
+        # Modify the axis index to squeeze by the number of squeezes already
+        # performed - this works because we squeeze in increasing axis index order.
+        # If the axis index is negative, no modification is needed.
+        ax -= num_axes - len(np.shape(tensor))
+        try:
+            tensor = np.squeeze(tensor, axis=ax)
+        except exception:
+            pass
+    return tensor
+
+
 def stack(values, axis=0):
     """Stack a sequence of tensors along the specified axis.
 
@@ -351,28 +542,73 @@ def stack(values, axis=0):
     return np.stack(values, axis=axis, like=interface)
 
 
-def where(condition, x, y):
-    """Returns elements chosen from x or y depending on a boolean tensor condition.
+def where(condition, x=None, y=None):
+    """Returns elements chosen from x or y depending on a boolean tensor condition,
+    or the indices of entries satisfying the condition.
 
     The input tensors ``condition``, ``x``, and ``y`` must all be broadcastable to the same shape.
 
     Args:
-        condition (tensor_like[bool]): A boolean tensor. Where True, elements from
-            ``x`` will be chosen, otherwise ``y``.
+        condition (tensor_like[bool]): A boolean tensor. Where ``True`` , elements from
+            ``x`` will be chosen, otherwise ``y``. If ``x`` and ``y`` are ``None`` the
+            indices where ``condition==True`` holds will be returned.
         x (tensor_like): values from which to choose if the condition evaluates to ``True``
         y (tensor_like): values from which to choose if the condition evaluates to ``False``
 
     Returns:
-        tensor_like: A tensor with elements from ``x`` where the condition is ``True``, and
-        ``y`` otherwise. The output tensor has the same shape as the input tensors.
+        tensor_like or tuple[tensor_like]: If ``x is None`` and ``y is None``, a tensor
+        or tuple of tensors with the indices where ``condition`` is ``True`` .
+        Else, a tensor with elements from ``x`` where the ``condition`` is ``True``,
+        and ``y`` otherwise. In this case, the output tensor has the same shape as
+        the input tensors.
 
-    **Example**
+    **Example with three arguments**
 
     >>> a = torch.tensor([0.6, 0.23, 0.7, 1.5, 1.7], requires_grad=True)
     >>> b = torch.tensor([-1., -2., -3., -4., -5.], requires_grad=True)
     >>> math.where(a < 1, a, b)
     tensor([ 0.6000,  0.2300,  0.7000, -4.0000, -5.0000], grad_fn=<SWhereBackward>)
+
+    .. warning::
+
+        The output format for ``x=None`` and ``y=None`` follows the respective
+        interface and differs between TensorFlow and all other interfaces:
+        For TensorFlow, the output is a tensor with shape
+        ``(num_true, len(condition.shape))`` where ``num_true`` is the number
+        of entries in ``condition`` that are ``True`` .
+        The entry at position ``(i, j)`` is the ``j`` th entry of the ``i`` th
+        index.
+        For all other interfaces, the output is a tuple of tensor-like objects,
+        with the ``j`` th object indicating the ``j`` th entries of all indices.
+        Also see the examples below.
+
+    **Example with single argument**
+
+    For Torch, Autograd, JAX and NumPy, the output formatting is as follows:
+
+    >>> a = [[0.6, 0.23, 1.7],[1.5, 0.7, -0.2]]
+    >>> math.where(torch.tensor(a) < 1)
+    (tensor([0, 0, 1, 1]), tensor([0, 1, 1, 2]))
+
+    This is not a single tensor-like object but corresponds to the shape
+    ``(2, 4)`` . For TensorFlow, on the other hand:
+
+    >>> math.where(tf.constant(a) < 1)
+    tf.Tensor(
+    [[0 0]
+     [0 1]
+     [1 1]
+     [1 2]], shape=(4, 2), dtype=int64)
+
+    As we can see, the dimensions are swapped and the output is a single Tensor.
+    Note that the number of dimensions of the output does *not* depend on the input
+    shape, it is always two-dimensional.
+
     """
+    if x is None and y is None:
+        interface = _multi_dispatch([condition])
+        return np.where(condition, like=interface)
+
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
 
 
@@ -411,6 +647,43 @@ def frobenius_inner_product(A, B, normalize=False):
         inner_product = inner_product / norm
 
     return inner_product
+
+
+def scatter_element_add(tensor, index, value, like=None):
+    """In-place addition of a multidimensional value over various
+    indices of a tensor.
+
+    Args:
+        tensor (tensor_like[float]): Tensor to add the value to
+        index (tuple or list[tuple]): Indices to which to add the value
+        value (float or tensor_like[float]): Value to add to ``tensor``
+        like (str): Manually chosen interface to dispatch to.
+    Returns:
+        tensor_like[float]: The tensor with the value added at the given indices.
+
+    **Example**
+
+    >>> tensor = torch.tensor([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
+    >>> index = (1, 2)
+    >>> value = -3.1
+    >>> qml.math.scatter_element_add(tensor, index, value)
+    tensor([[ 0.1000,  0.2000,  0.3000],
+            [ 0.4000,  0.5000, -2.5000]])
+
+    If multiple indices are given, in the form of a list of tuples, the
+    ``k`` th tuple is interpreted to contain the ``k`` th entry of all indices:
+
+    >>> indices = [(1, 0), (2, 1)] # This will modify the entries (1, 2) and (0, 1)
+    >>> values = torch.tensor([10, 20])
+    >>> qml.math.scatter_element_add(tensor, indices, values)
+    tensor([[ 0.1000, 20.2000,  0.3000],
+            [ 0.4000,  0.5000, 10.6000]])
+    """
+    if len(np.shape(tensor)) == 0 and index == ():
+        return tensor + value
+
+    interface = like or _multi_dispatch([tensor, value])
+    return np.scatter_element_add(tensor, index, value, like=interface)
 
 
 def unwrap(values, max_depth=None):

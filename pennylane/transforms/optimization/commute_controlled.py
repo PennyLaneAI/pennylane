@@ -61,12 +61,11 @@ def _commute_controlled_right(op_list):
 
             # If the next gate does not have control_wires defined, it is not
             # controlled so we can't push through.
-            try:
-                shared_controls = Wires.shared_wires(
-                    [Wires(current_gate.wires), next_gate.control_wires]
-                )
-            except (NotImplementedError, AttributeError):
+            if len(next_gate.control_wires) == 0:
                 break
+            shared_controls = Wires.shared_wires(
+                [Wires(current_gate.wires), next_gate.control_wires]
+            )
 
             # Case 1: overlap is on the control wires. Only Z-type gates go through
             if len(shared_controls) > 0:
@@ -127,12 +126,11 @@ def _commute_controlled_left(op_list):
             if prev_gate.basis is None:
                 break
 
-            try:
-                shared_controls = Wires.shared_wires(
-                    [Wires(current_gate.wires), prev_gate.control_wires]
-                )
-            except (NotImplementedError, AttributeError):
+            if len(prev_gate.control_wires) == 0:
                 break
+            shared_controls = Wires.shared_wires(
+                [Wires(current_gate.wires), prev_gate.control_wires]
+            )
 
             if len(shared_controls) > 0:
                 if current_gate.basis == "Z":

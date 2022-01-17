@@ -129,9 +129,7 @@ class TestKerasLayer:
         w[qml.qnn.keras.KerasLayer._input_arg] = n_qubits
         with pytest.raises(
             ValueError,
-            match="{} argument should not have its dimension".format(
-                qml.qnn.keras.KerasLayer._input_arg
-            ),
+            match=f"{qml.qnn.keras.KerasLayer._input_arg} argument should not have its dimension",
         ):
             KerasLayer(c, w, output_dim)
 

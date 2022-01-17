@@ -74,6 +74,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
             if getattr(arg, "requires_grad", True):
                 x_flat = _flatten(arg)
                 grad_flat = list(_flatten(grad[trained_index]))
+                trained_index += 1
 
                 self._update_accumulation(index, grad_flat)
 

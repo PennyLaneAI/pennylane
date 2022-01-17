@@ -29,9 +29,6 @@ to verify and test quantum gradient computations.
     default_qubit_autograd
     default_gaussian
     default_mixed
-    tf_ops
-    torch_ops
-    autograd_ops
     tests
 """
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this

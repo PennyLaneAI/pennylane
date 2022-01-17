@@ -23,16 +23,21 @@ Transforms
 Transforms that act on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Thes transforms accept QNodes, and return new transformed functions
+These transforms accept QNodes, and return new transformed functions
 that compute the desired quantity.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.classical_jacobian
+    ~batch_params
     ~draw
+    ~draw_mpl
+    ~transforms.get_unitary_matrix
     ~metric_tensor
+    ~adjoint_metric_tensor
     ~specs
+    ~transforms.mitigate_with_zne
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -45,9 +50,9 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
-    ~transforms.invisible
     ~apply_controlled_Q
     ~quantum_monte_carlo
+    ~transforms.insert
 
 Transforms for circuit compilation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,6 +68,9 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_rotations
     ~transforms.single_qubit_fusion
     ~transforms.unitary_to_rot
+    ~transforms.merge_amplitude_embedding
+    ~transforms.remove_barrier
+    ~transforms.undo_swaps
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -72,6 +80,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
+    ~transforms.set_decomposition
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -98,27 +107,49 @@ to help build custom QNode, quantum function, and tape transforms:
     ~batch_transform
     ~qfunc_transform
     ~transforms.make_tape
+    ~transforms.create_expand_fn
+    ~transforms.create_decomp_expand_fn
+    ~transforms.expand_invalid_trainable
+    ~transforms.expand_multipar
+    ~transforms.expand_trainable_multipar
+    ~transforms.expand_nonunitary_gen
 """
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
+from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw
+from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
-from .invisible import invisible
 from .measurement_grouping import measurement_grouping
 from .mitigation import cnot_pair_insertion, unitary_folding, zne
 from .metric_tensor import metric_tensor
+from .adjoint_metric_tensor import adjoint_metric_tensor
+from .insert_ops import insert
+from .mitigate import mitigate_with_zne
 from .optimization import (
     cancel_inverses,
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
+    merge_amplitude_embedding,
+    remove_barrier,
+    undo_swaps,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
+from .get_unitary_matrix import get_unitary_matrix
+from .tape_expand import (
+    expand_invalid_trainable,
+    expand_multipar,
+    expand_nonunitary_gen,
+    expand_trainable_multipar,
+    create_expand_fn,
+    create_decomp_expand_fn,
+    set_decomposition,
+)

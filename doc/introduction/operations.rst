@@ -52,7 +52,8 @@ Non-parametric Ops
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Hadamard
     ~pennylane.PauliX
     ~pennylane.PauliY
@@ -70,6 +71,7 @@ Non-parametric Ops
     ~pennylane.CSWAP
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
+    ~pennylane.Barrier
 
 :html:`</div>`
 
@@ -121,6 +123,7 @@ Quantum Chemistry Ops
     ~pennylane.DoubleExcitation
     ~pennylane.DoubleExcitationPlus
     ~pennylane.DoubleExcitationMinus
+    ~pennylane.OrbitalRotation
 
 :html:`</div>`
 
@@ -167,6 +170,7 @@ Qubit state preparation
 
     ~pennylane.BasisState
     ~pennylane.QubitStateVector
+    ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
 
@@ -189,7 +193,9 @@ Noisy channels
     ~pennylane.BitFlip
     ~pennylane.PhaseFlip
     ~pennylane.ResetError
+    ~pennylane.PauliError
     ~pennylane.QubitChannel
+    ~pennylane.ThermalRelaxationError
 
 :html:`</div>`
 
@@ -254,14 +260,15 @@ CV Gates
 
 .. autosummary::
     :nosignatures:
-
+    
+    ~pennylane.Identity
     ~pennylane.Beamsplitter
     ~pennylane.ControlledAddition
     ~pennylane.ControlledPhase
     ~pennylane.CrossKerr
     ~pennylane.CubicPhase
     ~pennylane.Displacement
-    ~pennylane.Interferometer
+    ~pennylane.InterferometerUnitary
     ~pennylane.Kerr
     ~pennylane.QuadraticPhase
     ~pennylane.Rotation

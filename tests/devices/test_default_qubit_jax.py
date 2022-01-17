@@ -1,3 +1,16 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
@@ -152,6 +165,47 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
+    def test_probs_jax(self, tol):
+        """Test that returning probs works with jax"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_custom_shots_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit when using custom shot vector"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs()
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
 
@@ -171,6 +225,96 @@ class TestQNodeIntegration:
         c = circuit(jax.random.PRNGKey(1))
         np.testing.assert_array_equal(a, b)
         assert not np.all(a == c)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_arg_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector as argument works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            wires = list(range(2))
+            qml.QubitStateVector(x, wires=wires)
+            return [qml.expval(qml.PauliX(wires=i)) for i in wires]
+
+        res = circuit(state_vector)
+        assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_arg_jax(self, state_vector, tol):
+        """Test that Qubit state vector as argument works with jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            wires = list(range(2))
+            qml.QubitStateVector(x, wires=wires)
+            return [qml.expval(qml.PauliX(wires=i)) for i in wires]
+
+        res = circuit(state_vector)
+        assert jnp.allclose(jnp.array(res), jnp.array([0, 1]), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax_jit(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax.jit"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circuit(0.1)
+        assert jnp.allclose(jnp.array(res), 1, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0]), jnp.array([0.5 + 0.5j, 0.5 + 0.5j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax(self, state_vector, tol):
+        """Test that Qubit state vector works with a jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        res = circuit(0.1)
+        assert jnp.allclose(jnp.array(res), 1, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize(
+        "state_vector",
+        [np.array([0.1 + 0.1j, 0.2 + 0.2j, 0, 0]), jnp.array([0.1 + 0.1j, 0.2 + 0.2j, 0, 0])],
+    )
+    def test_qubit_state_vector_jax_not_normed(self, state_vector, tol):
+        """Test that an error is raised when Qubit state vector is not normed works with a jax"""
+        dev = qml.device("default.qubit.jax", wires=list(range(2)))
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.QubitStateVector(state_vector, wires=dev.wires)
+            for w in dev.wires:
+                qml.RZ(x, wires=w, id="x")
+            return qml.expval(qml.PauliZ(wires=0))
+
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+            circuit(0.1)
 
     def test_sampling_op_by_op(self):
         """Test that op-by-op sampling works as a new user would expect"""
@@ -372,7 +516,7 @@ class TestPassthruIntegration:
 
         grad = jax.jit(jax.grad(cost, argnums=(0, 1)))(a, b)
         expected = [jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)]
-        assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+        assert jnp.allclose(jnp.array(grad), jnp.array(expected), atol=tol, rtol=0)
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -394,7 +538,24 @@ class TestPassthruIntegration:
         expected_grad = jnp.array(
             [-0.5 * jnp.sin(a) * (jnp.cos(b) + 1), 0.5 * jnp.sin(b) * (1 - jnp.cos(a))]
         )
-        assert jnp.allclose(res, expected_grad, atol=tol, rtol=0)
+
+        assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(jax.grad(circuit)(x), 0.0)
+        assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
@@ -485,7 +646,9 @@ class TestHighLevelIntegration:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        weights = jnp.array(qml.init.strong_ent_layers_normal(n_wires=2, n_layers=2))
+        weights = jnp.array(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
         grad = jax.grad(circuit)(weights)
         assert grad.shape == weights.shape

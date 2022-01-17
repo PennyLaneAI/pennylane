@@ -193,7 +193,7 @@ ANSAETZE = [
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
 EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
-LAYER_PARAMS = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=3)
+LAYER_PARAMS = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
 
 CIRCUITS = [
     (lambda params, wires=None: None, EMPTY_PARAMS),
@@ -215,7 +215,9 @@ def mock_device(monkeypatch):
         m.setattr(
             qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
         )
-        m.setattr(qml.Device, "operations", ["RX", "Rot", "CNOT", "Hadamard", "QubitStateVector"])
+        m.setattr(
+            qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "QubitStateVector"]
+        )
         m.setattr(
             qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
         )
@@ -363,12 +365,13 @@ class TestVQE:
 
         # Checking that the qnodes contain the step size and order
         for qnode in cost.qnodes:
-            assert qnode.diff_options["h"] == 123
-            assert qnode.diff_options["order"] == 2
+            assert qnode.gradient_kwargs["h"] == 123
+            assert qnode.gradient_kwargs["order"] == 2
 
     @pytest.mark.slow
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
-    def test_optimize(self, interface, tf_support, torch_support):
+    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
+    def test_optimize(self, interface, tf_support, torch_support, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
         if interface == "tf" and not tf_support:
@@ -376,7 +379,7 @@ class TestVQE:
         if interface == "torch" and not torch_support:
             pytest.skip("This test requires Torch")
 
-        dev = qml.device("default.qubit", wires=4)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
         hamiltonian = big_hamiltonian
 
         cost = qml.ExpvalCost(
@@ -396,7 +399,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -408,7 +413,7 @@ class TestVQE:
         assert exec_opt == 5  # Number of groups in the Hamiltonian
         assert exec_no_opt == 15
 
-        assert np.allclose(c1, c2)
+        assert np.allclose(c1, c2, atol=1e-1)
 
     @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     def test_optimize_multiple_terms(self, interface, tf_support, torch_support):
@@ -452,7 +457,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 5, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
+        w = np.random.random(shape)
 
         c1 = cost(w)
         exec_opt = dev.num_executions
@@ -487,7 +494,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 
         dc = qml.grad(cost)(w)
         exec_opt = dev.num_executions
@@ -515,7 +524,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
 
         dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
@@ -538,7 +549,10 @@ class TestVQE:
             interface="torch",
         )
 
-        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        w = torch.tensor(w, requires_grad=True)
 
         res = cost(w)
         res.backward()
@@ -560,7 +574,10 @@ class TestVQE:
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, optimize=True, interface="tf"
         )
 
-        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        w = tf.Variable(w)
 
         with tf.GradientTape() as tape:
             res = cost(w)
@@ -569,11 +586,12 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
-    def test_metric_tensor(self):
+    @pytest.mark.parametrize("approx", [None, "block-diag", "diag"])
+    def test_metric_tensor(self, approx):
         """Test that the metric tensor can be calculated."""
 
-        dev = qml.device("default.qubit", wires=2)
-        p = np.array([1.0, 1.0, 1.0])
+        dev = qml.device("default.qubit", wires=3)
+        p = pnp.array([1.0, 1.0, 1.0], requires_grad=True)
 
         def ansatz(params, **kwargs):
             qml.RX(params[0], wires=0)
@@ -583,9 +601,9 @@ class TestVQE:
 
         h = qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliZ(1)])
         qnodes = qml.ExpvalCost(ansatz, h, dev)
-        mt = qml.metric_tensor(qnodes)(p)
+        mt = qml.metric_tensor(qnodes, approx=approx)(p)
         assert mt.shape == (3, 3)
-        assert isinstance(mt, np.ndarray)
+        assert isinstance(mt, pnp.ndarray)
 
     def test_multiple_devices(self, mocker):
         """Test that passing multiple devices to ExpvalCost works correctly"""
@@ -598,7 +616,9 @@ class TestVQE:
         h = qml.Hamiltonian([1, 1], obs)
 
         qnodes = qml.ExpvalCost(qml.templates.BasicEntanglerLayers, h, dev)
-        w = qml.init.basic_entangler_layers_uniform(3, 2, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.BasicEntanglerLayers.shape(n_layers=3, n_wires=2))
+        w = pnp.array(w, requires_grad=True)
 
         res = qnodes(w)
 
@@ -611,7 +631,7 @@ class TestVQE:
         assert np.allclose(res, exp)
 
         with pytest.warns(UserWarning, match="ExpvalCost was instantiated with multiple devices."):
-            qml.metric_tensor(qnodes)(w)
+            qml.metric_tensor(qnodes, approx="block-diag")(w)
 
     def test_multiple_devices_opt_true(self):
         """Test if a ValueError is raised when multiple devices are passed when optimize=True."""
@@ -630,6 +650,12 @@ class TestVQE:
 
         with pytest.raises(ValueError, match="sums of expectation values"):
             qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, hamiltonian, dev, measure="var")
+
+
+# Test data
+np.random.seed(1967)
+shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
+PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 
 
 class TestNewVQE:
@@ -669,7 +695,8 @@ class TestNewVQE:
         """Tests a VQE circuit where the observable does not act on all wires."""
         dev = qml.device("default.qubit", wires=3)
         coeffs = [1.0, 1.0, 1.0]
-        w = qml.init.strong_ent_layers_uniform(1, 2, seed=1967)
+        np.random.seed(1967)
+        w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2))
 
         observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
         H1 = qml.Hamiltonian(coeffs, observables1)
@@ -735,7 +762,7 @@ class TestNewVQE:
         dev = qml.device("default.qubit", wires=4)
         H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
         H2 = qml.Hamiltonian(coeffs, [qml.PauliZ(2), qml.PauliY(2), qml.PauliZ(3)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        w = PARAMS
 
         @qml.qnode(dev)
         def circuit():
@@ -763,7 +790,7 @@ class TestNewVQE:
         coeffs = [1.0, 1.0, 1.0]
         dev = qml.device("default.qubit", wires=4)
         H1 = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        w = PARAMS
 
         @qml.qnode(dev)
         def circuit():
@@ -806,7 +833,7 @@ class TestNewVQE:
         """Tests the VQE gradient in the autograd interface."""
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = pnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        w = pnp.array(PARAMS, requires_grad=True)
 
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(w):
@@ -820,7 +847,7 @@ class TestNewVQE:
         """Tests the VQE gradient for a "zero" Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
         H = qml.Hamiltonian([0], [qml.PauliX(0)])
-        w = qml.init.strong_ent_layers_uniform(2, 4, seed=1967)
+        w = pnp.array(PARAMS, requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(w):
@@ -844,7 +871,7 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        w = torch.tensor(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), requires_grad=True)
+        w = torch.tensor(PARAMS, requires_grad=True)
 
         res = circuit(w)
         res.backward()
@@ -865,7 +892,7 @@ class TestNewVQE:
             qml.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qml.expval(H)
 
-        w = tf.Variable(qml.init.strong_ent_layers_uniform(2, 4, seed=1967), dtype=tf.double)
+        w = tf.Variable(PARAMS, dtype=tf.double)
 
         with tf.GradientTape() as tape:
             res = circuit(w)
@@ -882,7 +909,8 @@ class TestNewVQE:
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        w = jnp.array(qml.init.strong_ent_layers_uniform(2, 4, seed=1967))
+        np.random.seed(1967)
+        w = jnp.array(PARAMS)
 
         @qml.qnode(dev, interface="jax")
         def circuit(w):
@@ -1058,32 +1086,36 @@ class TestMultipleInterfaceIntegration:
 
         H = qml.Hamiltonian(coeffs, observables)
 
+        np.random.seed(1)
+        shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
+        params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+
         # TensorFlow interface
-        params = Variable(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
+        w = Variable(params)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
-            loss = cost(params)
-            res_tf = np.array(tape.gradient(loss, params))
+            loss = cost(w)
+            res_tf = np.array(tape.gradient(loss, w))
 
         # Torch interface
-        params = torch.tensor(qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1))
-        params = torch.autograd.Variable(params, requires_grad=True)
+        w = torch.tensor(params, requires_grad=True)
+        w = torch.autograd.Variable(w, requires_grad=True)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="torch")
-        loss = cost(params)
+        loss = cost(w)
         loss.backward()
-        res_torch = params.grad.numpy()
+        res_torch = w.grad.numpy()
 
         # NumPy interface
-        params = qml.init.strong_ent_layers_normal(n_layers=3, n_wires=2, seed=1)
+        w = params
         ansatz = qml.templates.layers.StronglyEntanglingLayers
         cost = qml.ExpvalCost(ansatz, H, dev, interface="autograd")
         dcost = qml.grad(cost, argnum=[0])
-        res = dcost(params)
+        res = dcost(w)
 
         assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)

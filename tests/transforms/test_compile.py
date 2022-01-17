@@ -442,11 +442,11 @@ class TestCompileInterfaces:
             transformed_qfunc, dev, interface="tf", diff_method=diff_method
         )
 
-        original_x = tf.Variable([0.8, -0.6, 0.4])
-        original_params = tf.Variable(tf.ones((2, 3)))
+        original_x = tf.Variable([0.8, -0.6, 0.4], dtype=tf.float64)
+        original_params = tf.Variable(tf.ones((2, 3), dtype=tf.float64))
 
-        transformed_x = tf.Variable([0.8, -0.6, 0.4])
-        transformed_params = tf.Variable(tf.ones((2, 3)))
+        transformed_x = tf.Variable([0.8, -0.6, 0.4], dtype=tf.float64)
+        transformed_params = tf.Variable(tf.ones((2, 3), dtype=tf.float64))
 
         original_result = original_qnode(original_x, original_params)
         transformed_result = transformed_qnode(transformed_x, transformed_params)

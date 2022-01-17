@@ -14,7 +14,7 @@
 """
 Contains the QuantumPhaseEstimation template.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,arguments-differ
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, ControlledQubitUnitary
@@ -104,9 +104,8 @@ class QuantumPhaseEstimation(Operation):
             # Need to rescale phase due to convention of RX gate
             phase_estimated = 4 * np.pi * (1 - phase_estimated)
     """
-    num_params = 1
     num_wires = AnyWires
-    par_domain = "A"
+    grad_method = None
 
     def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
         self.target_wires = list(target_wires)
@@ -120,6 +119,10 @@ class QuantumPhaseEstimation(Operation):
             )
 
         super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 1
 
     def expand(self):
         unitary = self.parameters[0]
@@ -138,4 +141,14 @@ class QuantumPhaseEstimation(Operation):
 
             qml.templates.QFT(wires=self.estimation_wires).inv()
 
+        if self.inverse:
+            tape.inv()
+
         return tape
+
+    def adjoint(self):  # pylint: disable=arguments-differ
+        adjoint_op = QuantumPhaseEstimation(
+            *self.parameters, target_wires=self.target_wires, estimation_wires=self.estimation_wires
+        )
+        adjoint_op.inverse = not self.inverse
+        return adjoint_op

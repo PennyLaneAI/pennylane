@@ -18,51 +18,6 @@ from pennylane import numpy as np
 from gate_data import I, SWAP
 
 
-def compute_matrix_from_ops_one_qubit(ops):
-    """Given a list of single-qubit operations, construct its matrix representation."""
-
-    mat = I
-
-    for op in ops:
-        mat = qml.math.dot(op.matrix, mat)
-    return mat
-
-
-def compute_matrix_from_ops_two_qubit(ops, wire_order):
-    """Given a list of two-qubit operations, construct its matrix representation."""
-
-    mat = np.eye(4)
-
-    wire_order = qml.wires.Wires(wire_order)
-
-    for op in ops:
-        op_wires = qml.wires.Wires(op.wires)
-
-        if len(op_wires) == 1:
-            # These first two cases are to cover tensorflow quirks
-            if op.name == "RZ":
-                op_mat = qml.RZ(*qml.math.unwrap(op.parameters), wires=0).matrix
-            elif op.name == "Rot":
-                op_mat = qml.Rot(*qml.math.unwrap(op.parameters), wires=0).matrix
-            else:
-                op_mat = qml.math.unwrap(op.matrix)
-
-            if op_wires[0] == wire_order[0]:
-                tensor_prod = np.kron(op_mat, I)
-            else:
-                tensor_prod = np.kron(I, op_mat)
-
-            mat = np.dot(tensor_prod, mat)
-
-        else:
-            if op_wires == wire_order:
-                mat = np.dot(op.matrix, mat)
-            else:
-                mat = np.linalg.multi_dot([SWAP, op.matrix, SWAP, mat])
-
-    return mat
-
-
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):
     """Takes two matrices and checks if multiplying one by the conjugate
     transpose of the other gives the identity."""

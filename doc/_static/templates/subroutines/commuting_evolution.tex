@@ -1,0 +1,14 @@
+\documentclass[border=6pt]{standalone}
+
+\usepackage{qcircuit}
+
+\begin{document}
+
+\Qcircuit @C=1em @R=0em {
+& \multigate{3}{e^{-i t \sum_j c_j P_j} = \prod_j e^{-i t c_j P_j}} & \qw \\
+& \ghost{e^{-i t \sum_j c_j P_j} = \prod_j e^{-i t c_j P_j}} & \qw \\
+& \ghost{e^{-i t \sum_j c_j P_j} = \prod_j e^{-i t c_j P_j}} & \qw \\
+& \ghost{e^{-i t \sum_j c_j P_j} = \prod_j e^{-i t c_j P_j}} & \qw
+}
+
+\end{document}

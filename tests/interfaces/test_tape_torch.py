@@ -66,7 +66,7 @@ class TestTorchQuantumTape:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliX(0))
 
-        assert tape.trainable_params == {0, 2}
+        assert tape.trainable_params == [0, 2]
         assert np.all(tape.get_parameters() == [a, c])
 
     def test_execution(self):
@@ -79,7 +79,25 @@ class TestTorchQuantumTape:
             qml.RX(torch.tensor(0.2), wires=0)
             qml.expval(qml.PauliZ(0))
 
-        assert tape.trainable_params == {0}
+        assert tape.trainable_params == [0]
+        res = tape.execute(dev)
+
+        assert isinstance(res, torch.Tensor)
+        assert res.shape == (1,)
+
+    def test_execution_on_tf_device(self):
+        """Test execution on a TF device"""
+        tf = pytest.importorskip("tensorflow")
+
+        a = torch.tensor(0.1, requires_grad=True)
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        with TorchInterface.apply(JacobianTape()) as tape:
+            qml.RY(a, wires=0)
+            qml.RX(torch.tensor(0.2), wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        assert tape.trainable_params == [0]
         res = tape.execute(dev)
 
         assert isinstance(res, torch.Tensor)
@@ -105,7 +123,7 @@ class TestTorchQuantumTape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {1, 2}
+        assert tape.trainable_params == [1, 2]
         res = tape.execute(dev)
 
         assert isinstance(res, torch.Tensor)
@@ -161,7 +179,7 @@ class TestTorchQuantumTape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
         res = tape.execute(dev)
 
         assert isinstance(res, torch.Tensor)
@@ -187,7 +205,7 @@ class TestTorchQuantumTape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         loss = torch.sum(tape.execute(dev))
         loss.backward()
@@ -225,7 +243,7 @@ class TestTorchQuantumTape:
             qml.RX(params[1] + params[1] ** 2 + torch.sin(params[0]), wires=0)
             qml.expval(qml.PauliZ(0))
 
-        assert tape.trainable_params == {0, 2}
+        assert tape.trainable_params == [0, 2]
 
         tape_params = [i.detach().numpy() for i in tape.get_parameters()]
         assert np.allclose(
@@ -252,7 +270,7 @@ class TestTorchQuantumTape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
-        assert tape.trainable_params == set()
+        assert tape.trainable_params == []
 
         res = tape.execute(dev)
 
@@ -279,7 +297,7 @@ class TestTorchQuantumTape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        assert tape.trainable_params == {1}
+        assert tape.trainable_params == [1]
         res = tape.execute(dev)
 
         assert np.allclose(res.detach().numpy(), -np.cos(a_val), atol=tol, rtol=0)
@@ -316,7 +334,7 @@ class TestTorchQuantumTape:
 
         tape = TorchInterface.apply(tape.expand())
 
-        assert tape.trainable_params == {1, 2, 3, 4}
+        assert tape.trainable_params == [1, 2, 3, 4]
         assert [i.name for i in tape.operations] == ["RX", "Rot", "PhaseShift"]
 
         tape_params = [i.detach().numpy() for i in tape.get_parameters()]

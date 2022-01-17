@@ -210,6 +210,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._update_circuit_info()
+    new_tape._output_dim = tape.output_dim
     return new_tape
 
 
@@ -270,7 +271,7 @@ class QuantumTape(AnnotatedQueue):
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:
 
-    >>> tape.trainable_params = {0} # set only the first parameter as free
+    >>> tape.trainable_params = [0] # set only the first parameter as trainable
     >>> tape.set_parameters([0.56])
     >>> tape.get_parameters()
     [0.56]
@@ -317,7 +318,7 @@ class QuantumTape(AnnotatedQueue):
         parameter indices (in the order they appear on the tape), and values are a
         dictionary containing the corresponding operation and operation parameter index."""
 
-        self._trainable_params = set()
+        self._trainable_params = []
         self._graph = None
         self._specs = None
         self._depth = None
@@ -421,7 +422,7 @@ class QuantumTape(AnnotatedQueue):
                     )
 
                 # invert the operation if required
-                obj.inverse = info.get("inverse", False)
+                obj.inverse = info.get("inverse", obj.inverse)
 
                 if isinstance(obj, STATE_PREP_OPS):
                     if self._ops:
@@ -493,8 +494,13 @@ class QuantumTape(AnnotatedQueue):
                 param_count += 1
 
     def _update_trainable_params(self):
-        """Set the trainable parameters"""
-        self._trainable_params = set(self._par_info)
+        """Set the trainable parameters
+
+        self._par_info.keys() is assumed to be sorted
+        As its order is maintained, this assumes that self._par_info
+        is created in a sorted manner, as in _update_par_info
+        """
+        self._trainable_params = list(self._par_info)
 
     def _update(self):
         """Update all internal tape metadata regarding processed operations and observables"""
@@ -593,7 +599,7 @@ class QuantumTape(AnnotatedQueue):
 
         Here, let's set some trainable parameters:
 
-        >>> tape.trainable_params = {1, 2}
+        >>> tape.trainable_params = [1, 2]
         >>> tape.get_parameters()
         [0.432, 0.543]
 
@@ -613,7 +619,7 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters(trainable_only=True)
         [0.543, 0.432]
         >>> tape.trainable_params
-        {1, 4}
+        [1, 4]
         """
         # we must remap the old parameter
         # indices to the new ones after the operation order is reversed.
@@ -644,7 +650,7 @@ class QuantumTape(AnnotatedQueue):
         parameter_mapping = dict(zip(parameter_indices, range(len(parameter_indices))))
 
         # map the params
-        self.trainable_params = {parameter_mapping[i] for i in self.trainable_params}
+        self.trainable_params = [parameter_mapping[i] for i in self.trainable_params]
         self._par_info = {parameter_mapping[k]: v for k, v in self._par_info.items()}
 
         for idx, op in enumerate(self._ops):
@@ -666,7 +672,9 @@ class QuantumTape(AnnotatedQueue):
             ~.QuantumTape: the adjointed tape
         """
         new_tape = self.copy(copy_operations=True)
-        qml.transforms.invisible(new_tape.inv)()
+
+        with qml.tape.stop_recording():
+            new_tape.inv()
 
         # the current implementation of the adjoint
         # transform requires that the returned inverted object
@@ -682,7 +690,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def trainable_params(self):
-        """Store or return a set containing the indices of parameters that support
+        """Store or return a list containing the indices of parameters that support
         differentiability. The indices provided match the order of appearence in the
         quantum circuit.
 
@@ -713,13 +721,10 @@ class QuantumTape(AnnotatedQueue):
                 qml.expval(qml.PauliZ(wires=[0]))
 
         >>> tape.trainable_params
-        {0, 1, 2}
-        >>> tape.trainable_params = {0} # set only the first parameter as free
+        [0, 1, 2]
+        >>> tape.trainable_params = [0] # set only the first parameter as trainable
         >>> tape.get_parameters()
         [0.432]
-
-        Args:
-            param_indices (set[int]): parameter indices
         """
         return self._trainable_params
 
@@ -728,15 +733,15 @@ class QuantumTape(AnnotatedQueue):
         """Store the indices of parameters that support differentiability.
 
         Args:
-            param_indices (set[int]): parameter indices
+            param_indices (list[int]): parameter indices
         """
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
-            raise ValueError("Argument indices must be positive integers.")
+            raise ValueError("Argument indices must be non-negative integers.")
 
         if any(i > len(self._par_info) for i in param_indices):
             raise ValueError(f"Tape has at most {self.num_params} parameters.")
 
-        self._trainable_params = param_indices
+        self._trainable_params = sorted(set(param_indices))
 
     def get_operation(self, idx):
         """Returns the trainable operation, and the corresponding operation argument
@@ -751,14 +756,17 @@ class QuantumTape(AnnotatedQueue):
             for the provided trainable parameter.
         """
         # get the index of the parameter in the tape
-        t_idx = list(self.trainable_params)[idx]
+        t_idx = self.trainable_params[idx]
+
+        # get the info for the parameter
+        info = self._par_info[t_idx]
 
         # get the corresponding operation
-        op = self._par_info[t_idx]["op"]
+        op = info["op"]
 
         # get the corresponding operation parameter index
         # (that is, index of the parameter within the operation)
-        p_idx = self._par_info[t_idx]["p_idx"]
+        p_idx = info["p_idx"]
         return op, p_idx
 
     def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
@@ -789,7 +797,7 @@ class QuantumTape(AnnotatedQueue):
         Setting the trainable parameter indices will result in only the specified
         parameters being returned:
 
-        >>> tape.trainable_params = {1} # set the second parameter as free
+        >>> tape.trainable_params = [1] # set the second parameter as trainable
         >>> tape.get_parameters()
         [0.543]
 
@@ -806,7 +814,6 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[p_idx]["op"]
             op_idx = self._par_info[p_idx]["p_idx"]
             params.append(op.data[op_idx])
-
         return params
 
     def set_parameters(self, params, trainable_only=True):
@@ -839,7 +846,7 @@ class QuantumTape(AnnotatedQueue):
         parameters being modifiable. Note that this only modifies the number of
         parameters that must be passed.
 
-        >>> tape.trainable_params = {0, 2} # set the first and third parameter as free
+        >>> tape.trainable_params = [0, 2] # set the first and third parameter as trainable
         >>> tape.set_parameters([-0.1, 0.5])
         >>> tape.get_parameters(trainable_only=False)
         [-0.1, 0.2, 0.5]
@@ -886,7 +893,7 @@ class QuantumTape(AnnotatedQueue):
         ...     with tape.unwrap():
         ...         print("Trainable params:", tape.trainable_params)
         ...         print("Unwrapped params:", tape.get_parameters())
-        Trainable params: {0, 2}
+        Trainable params: [0, 2]
         Unwrapped params: [0.1, 0.3]
         >>> print("Original parameters:", tape.get_parameters())
         Original parameters: [<tf.Variable 'Variable:0' shape=() dtype=float32, numpy=0.1>,
@@ -1080,7 +1087,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False):
+    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
         """Draw the quantum tape as a circuit diagram.
 
         Consider the following circuit as an example:
@@ -1108,6 +1115,7 @@ class QuantumTape(AnnotatedQueue):
                 "ascii" are supported.
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
+            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
 
         Raises:
             ValueError: if the given charset is not supported
@@ -1119,9 +1127,10 @@ class QuantumTape(AnnotatedQueue):
             charset=charset,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
+            max_length=max_length,
         )
 
-    def to_openqasm(self, wires=None, rotations=True, measure_all=True):
+    def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
         Measurements are assumed to be performed on all qubits in the computational basis. An
@@ -1141,6 +1150,7 @@ class QuantumTape(AnnotatedQueue):
                 measured wires such that they are in the eigenbasis of the circuit observables.
             measure_all (bool): whether to perform a computational basis measurement on all qubits
                 or just those specified in the tape
+            precision (int): decimal digits to display for parameters
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1157,8 +1167,8 @@ class QuantumTape(AnnotatedQueue):
             return qasm_str
 
         # create the quantum and classical registers
-        qasm_str += "qreg q[{}];\n".format(len(wires))
-        qasm_str += "creg c[{}];\n".format(len(wires))
+        qasm_str += f"qreg q[{len(wires)}];\n"
+        qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations
         operations = self.operations
@@ -1191,11 +1201,13 @@ class QuantumTape(AnnotatedQueue):
             if op.num_params > 0:
                 # If the operation takes parameters, construct a string
                 # with parameter values.
-                params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
+                if precision is not None:
+                    params = "(" + ",".join([f"{p:.{precision}}" for p in op.parameters]) + ")"
+                else:
+                    # use default precision
+                    params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
-            qasm_str += "{name}{params} {wires};\n".format(
-                name=gate, params=params, wires=wire_labels
-            )
+            qasm_str += f"{gate}{params} {wire_labels};\n"
 
         # apply computational basis measurements to each quantum register
         # NOTE: This is not strictly necessary, we could inspect self.observables,

@@ -35,6 +35,7 @@ import autoray as ar
 
 from .multi_dispatch import (
     _multi_dispatch,
+    multi_dispatch,
     block_diag,
     concatenate,
     diag,
@@ -42,7 +43,10 @@ from .multi_dispatch import (
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
+    safe_squeeze,
+    scatter_element_add,
     stack,
+    tensordot,
     unwrap,
     where,
 )
@@ -54,11 +58,13 @@ from .utils import (
     allequal,
     cast,
     cast_like,
+    is_abstract,
     convert_like,
     get_interface,
     requires_grad,
 )
 
+from .is_independent import is_independent
 
 sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
@@ -71,23 +77,29 @@ def __getattr__(name):
 
 __all__ = [
     "_multi_dispatch",
-    "block_diag",
-    "concatenate",
-    "diag",
-    "dot",
-    "ones_like",
-    "stack",
-    "where",
+    "multi_dispatch",
     "allclose",
     "allequal",
+    "block_diag",
     "cast",
     "cast_like",
+    "concatenate",
     "convert_like",
-    "get_interface",
-    "requires_grad",
     "cov_matrix",
-    "marginal_prob",
-    "unwrap",
+    "diag",
+    "dot",
     "frobenius_inner_product",
+    "get_interface",
     "get_trainable_indices",
+    "is_abstract",
+    "is_independent",
+    "marginal_prob",
+    "ones_like",
+    "requires_grad",
+    "safe_squeeze",
+    "scatter_element_add",
+    "stack",
+    "tensordot",
+    "unwrap",
+    "where",
 ]

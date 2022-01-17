@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import cmath
 import math
 import numpy as np
 
@@ -78,9 +77,7 @@ class SingleExcitation(Operation):
         circuit(0.1)
     """
 
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
@@ -88,13 +85,20 @@ class SingleExcitation(Operation):
         -1 / 2,
     ]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        return np.array([[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        mat = qml.math.diag([1, c, c, 1])
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
     def decomposition(theta, wires):
@@ -108,6 +112,9 @@ class SingleExcitation(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G")
 
 
 class SingleExcitationMinus(Operation):
@@ -133,23 +140,35 @@ class SingleExcitationMinus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
 
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(-1j * theta / 2)
+        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
     def decomposition(theta, wires):
@@ -169,6 +188,9 @@ class SingleExcitationMinus(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
 class SingleExcitationPlus(Operation):
@@ -194,23 +216,35 @@ class SingleExcitationPlus(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
 
     """
-    num_params = 1
     num_wires = 2
-    par_domain = "R"
     grad_method = "A"
     generator = [
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
 
-        return np.array([[e, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, e]])
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(1j * theta / 2)
+        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
     def decomposition(theta, wires):
@@ -231,6 +265,9 @@ class SingleExcitationPlus(Operation):
         (phi,) = self.parameters
         return SingleExcitationPlus(-phi, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₊")
+
 
 class DoubleExcitation(Operation):
     r"""DoubleExcitation(phi, wires)
@@ -241,8 +278,8 @@ class DoubleExcitation(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
 
     while leaving all other basis states unchanged.
 
@@ -264,7 +301,7 @@ class DoubleExcitation(Operation):
     **Example**
 
     The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
-    \phi/2)|1100\rangle +\sin(\phi/2)|0011\rangle)`:
+    \phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
 
@@ -279,10 +316,7 @@ class DoubleExcitation(Operation):
 
         circuit(0.1)
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -291,19 +325,21 @@ class DoubleExcitation(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
 
-        U = np.eye(16)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
-        return U
+        mat = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
+        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
+        mat = qml.math.scatter_element_add(mat, (12, 3), s)
+        return mat
 
     @staticmethod
     def decomposition(theta, wires):
@@ -345,6 +381,9 @@ class DoubleExcitation(Operation):
         (theta,) = self.parameters
         return DoubleExcitation(-theta, wires=self.wires)
 
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²")
+
 
 class DoubleExcitationPlus(Operation):
     r"""DoubleExcitationPlus(phi, wires)
@@ -373,10 +412,7 @@ class DoubleExcitationPlus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
 
     G = -1 * np.eye(16, dtype=np.complex64)
@@ -386,24 +422,39 @@ class DoubleExcitationPlus(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(1j * theta / 2)
 
-        U = e * np.eye(16, dtype=np.complex64)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
-        return U
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(1j * theta / 2)
+
+        mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
+        mat = qml.math.scatter_element_add(mat, (3, 3), c)
+        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
+        mat = qml.math.scatter_element_add(mat, (12, 3), s)
+        mat = qml.math.scatter_element_add(mat, (12, 12), c)
+        return mat
 
     def adjoint(self):
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₊")
 
 
 class DoubleExcitationMinus(Operation):
@@ -433,10 +484,7 @@ class DoubleExcitationMinus(Operation):
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
     """
-
-    num_params = 1
     num_wires = 4
-    par_domain = "R"
     grad_method = "A"
 
     G = np.eye(16, dtype=np.complex64)
@@ -446,21 +494,184 @@ class DoubleExcitationMinus(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    @property
+    def num_params(self):
+        return 1
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
-        c = math.cos(theta / 2)
-        s = math.sin(theta / 2)
-        e = cmath.exp(-1j * theta / 2)
 
-        U = e * np.eye(16, dtype=np.complex64)
-        U[3, 3] = c  # 3 (dec) = 0011 (bin)
-        U[3, 12] = -s  # 12 (dec) = 1100 (bin)
-        U[12, 3] = s
-        U[12, 12] = c
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
-        return U
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(-1j * theta / 2)
+        mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
+        mat = qml.math.scatter_element_add(mat, (3, 3), c)
+        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
+        mat = qml.math.scatter_element_add(mat, (12, 3), s)
+        mat = qml.math.scatter_element_add(mat, (12, 12), c)
+        return mat
 
     def adjoint(self):
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₋")
+
+
+class OrbitalRotation(Operation):
+    r"""OrbitalRotation(phi, wires)
+    Spin-adapted spatial orbital rotation.
+
+    For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
+    performs the following transformation
+
+    .. math::
+        &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
+        &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
+
+    with the same orbital operation applied in the :math:`\alpha` and :math:`\beta` spin orbitals.
+
+    .. figure:: ../../_static/qchem/orbital_rotation_decomposition_extended.png
+        :align: center
+        :width: 100%
+        :target: javascript:void(0);
+
+    Here, :math:`G(\phi)` represents a single-excitation Givens rotation, implemented in PennyLane
+    as the :class:`~.SingleExcitation` operation.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Gradient recipe: The ``OrbitalRotation`` operator satisfies the four-term parameter-shift rule
+      (see Appendix F, https://arxiv.org/abs/2104.05695)
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    .. code-block::
+
+        >>> dev = qml.device('default.qubit', wires=4)
+        >>> @qml.qnode(dev)
+        ... def circuit(phi):
+        ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+        ...     qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        ...     return qml.state()
+        >>> circuit(0.1)
+        array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+                0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+                0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+                0.        +0.j])
+    """
+    num_wires = 4
+    grad_method = "A"
+    grad_recipe = four_term_grad_recipe
+    generator = [
+        qml.math.array(
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, -1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, -1j, 0, 0, -1j, 0, 0, 0, 0, 0, 0],
+                [0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0],
+                [0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0],
+                [0, 0, 0, 0, 0, 0, 1j, 0, 0, 1j, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1j, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        ),
+        -1 / 2,
+    ]
+
+    @property
+    def num_params(self):
+        return 1
+
+    @classmethod
+    def _matrix(cls, *params):
+        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+
+        phi = params[0]
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([16]), phi)
+        else:
+            z = qml.math.zeros([16], like=interface)
+
+        diag = qml.math.diag([1, c, c, c ** 2, c, 1, c ** 2, c, c, c ** 2, 1, c, c ** 2, c, c, 1])
+
+        U = diag + qml.math.stack(
+            [
+                z,
+                qml.math.stack([0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0]),
+                qml.math.stack([0, 0, 0, 0, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s * s, 0, 0, 0]),
+                qml.math.stack([0, s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                z,
+                qml.math.stack([0, 0, 0, c * s, 0, 0, 0, 0, 0, -s * s, 0, 0, -c * s, 0, 0, 0]),
+                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0]),
+                qml.math.stack([0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                qml.math.stack([0, 0, 0, c * s, 0, 0, -s * s, 0, 0, 0, 0, 0, -c * s, 0, 0, 0]),
+                z,
+                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0]),
+                qml.math.stack([0, 0, 0, s * s, 0, 0, c * s, 0, 0, c * s, 0, 0, 0, 0, 0, 0]),
+                qml.math.stack([0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0]),
+                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0]),
+                z,
+            ]
+        )
+
+        return U
+
+    @staticmethod
+    def decomposition(phi, wires):
+        # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
+        decomp_ops = [
+            qml.Hadamard(wires=wires[3]),
+            qml.Hadamard(wires=wires[2]),
+            qml.CNOT(wires=[wires[3], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[0]]),
+            qml.RY(phi / 2, wires=wires[3]),
+            qml.RY(phi / 2, wires=wires[2]),
+            qml.RY(phi / 2, wires=wires[1]),
+            qml.RY(phi / 2, wires=wires[0]),
+            qml.CNOT(wires=[wires[3], wires[1]]),
+            qml.CNOT(wires=[wires[2], wires[0]]),
+            qml.Hadamard(wires=wires[3]),
+            qml.Hadamard(wires=wires[2]),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return OrbitalRotation(-phi, wires=self.wires)

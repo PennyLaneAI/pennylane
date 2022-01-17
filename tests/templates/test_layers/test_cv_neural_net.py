@@ -72,12 +72,20 @@ class TestDecomposition:
         shapes = expected_shapes(1, n_wires)
         weights = [np.random.random(shape) for shape in shapes]
 
-        op = qml.templates.CVNeuralNetLayers(*weights, wires=range(n_wires))
+        op = qml.CVNeuralNetLayers(*weights, wires=range(n_wires))
         tape = op.expand()
 
-        for i, gate in enumerate(tape.operations):
-            assert gate.name == expected_names[i]
-            assert gate.wires.labels == tuple(expected_wires[i])
+        i = 0
+        for gate in tape.operations:
+            if gate.name != "Interferometer":
+                assert gate.name == expected_names[i]
+                assert gate.wires.labels == tuple(expected_wires[i])
+                i = i + 1
+            else:
+                for gate_inter in gate.expand().operations:
+                    assert gate_inter.name == expected_names[i]
+                    assert gate_inter.wires.labels == tuple(expected_wires[i])
+                    i = i + 1
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -89,12 +97,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.CVNeuralNetLayers(*weights, wires=range(3))
+            qml.CVNeuralNetLayers(*weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.CVNeuralNetLayers(*weights, wires=["z", "a", "k"])
+            qml.CVNeuralNetLayers(*weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -117,14 +125,14 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.CVNeuralNetLayers(*weights, wires=range(2))
+            qml.CVNeuralNetLayers(*weights, wires=range(2))
             return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match="The first dimension of all parameters"):
             circuit()
 
     def test_cvqnn_layers_exception_second_dim(self):
-        """Check exception if weong dimension of weights"""
+        """Check exception if wrong dimension of weights"""
         shapes = expected_shapes(1, 2)
         weights = [np.random.random(shape) for shape in shapes[:-1]]
         weights += [np.random.random((1, shapes[-1][1] - 1))]
@@ -133,7 +141,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.CVNeuralNetLayers(*weights, wires=range(2))
+            qml.CVNeuralNetLayers(*weights, wires=range(2))
             return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match="Got unexpected shape for one or more parameters"):
@@ -144,7 +152,7 @@ class TestInputs:
         shapes = expected_shapes(1, 2)
         weights = [np.random.random(shape) for shape in shapes]
 
-        template = qml.templates.CVNeuralNetLayers(*weights, wires=range(2), id="a")
+        template = qml.CVNeuralNetLayers(*weights, wires=range(2), id="a")
         assert template.id == "a"
 
 
@@ -163,14 +171,14 @@ class TestAttributes:
         """Test that the shape method returns the correct shapes for
         the weight tensors"""
 
-        shapes = qml.templates.CVNeuralNetLayers.shape(n_layers, n_wires)
+        shapes = qml.CVNeuralNetLayers.shape(n_layers, n_wires)
         expected = expected_shapes(n_layers, n_wires)
 
         assert np.allclose(shapes, expected, atol=tol, rtol=0)
 
 
 def circuit_template(*weights):
-    qml.templates.CVNeuralNetLayers(*weights, range(2))
+    qml.CVNeuralNetLayers(*weights, range(2))
     return qml.expval(qml.X(0))
 
 
@@ -193,6 +201,23 @@ def circuit_decomposed(*weights):
     qml.Kerr(weights[10][0, 0], wires=0)
     qml.Kerr(weights[10][0, 1], wires=1)
     return qml.expval(qml.X(0))
+
+
+def test_adjoint():
+    """Test that the adjoint method works"""
+    dev = DummyDevice(wires=2)
+    np.random.seed(42)
+
+    shapes = qml.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
+    weights = [np.random.random(shape) for shape in shapes]
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.CVNeuralNetLayers(*weights, wires=[0, 1])
+        qml.adjoint(qml.CVNeuralNetLayers)(*weights, wires=[0, 1])
+        return qml.expval(qml.X(0))
+
+    assert qml.math.allclose(circuit(), 0)
 
 
 class TestInterfaces:

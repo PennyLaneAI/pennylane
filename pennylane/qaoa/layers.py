@@ -85,17 +85,14 @@ def cost_layer(gamma, hamiltonian):
 
         which gives us a circuit of the form:
 
-        >>> circuit(0.5)
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)(0.5))
         0: ──H──RZ(1)──╭RZ(1)──┤ ⟨Z⟩
         1: ──H─────────╰RZ(1)──┤ ⟨Z⟩
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
+            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
 
     if not _diagonal_terms(hamiltonian):
@@ -146,17 +143,14 @@ def mixer_layer(alpha, hamiltonian):
 
         which gives us a circuit of the form:
 
-        >>> circuit(0.5)
-        >>> print(circuit.draw())
+        >>> print(qml.draw(circuit)(0.5))
         0: ──H──RZ(1)──H──H──╭RZ(1)──H──┤ ⟨Z⟩
         1: ──H───────────────╰RZ(1)──H──┤ ⟨Z⟩
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
         raise ValueError(
-            "hamiltonian must be of type pennylane.Hamiltonian, got {}".format(
-                type(hamiltonian).__name__
-            )
+            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
         )
 
     qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)

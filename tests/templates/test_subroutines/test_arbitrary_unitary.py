@@ -101,7 +101,7 @@ class TestDecomposition:
         """Test that the correct gates are applied on a single wire."""
         weights = np.arange(3, dtype=float)
 
-        op = qml.templates.ArbitraryUnitary(weights, wires=[0])
+        op = qml.ArbitraryUnitary(weights, wires=[0])
         queue = op.expand().operations
 
         for gate in queue:
@@ -118,7 +118,7 @@ class TestDecomposition:
         """Test that the correct gates are applied on two wires."""
         weights = np.arange(15, dtype=float)
 
-        op = qml.templates.ArbitraryUnitary(weights, wires=[0, 1])
+        op = qml.ArbitraryUnitary(weights, wires=[0, 1])
         queue = op.expand().operations
 
         for gate in queue:
@@ -156,12 +156,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.ArbitraryUnitary(weights, wires=range(3))
+            qml.ArbitraryUnitary(weights, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.ArbitraryUnitary(weights, wires=["z", "a", "k"])
+            qml.ArbitraryUnitary(weights, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -180,7 +180,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(weights):
-            qml.templates.ArbitraryUnitary(weights, wires=range(2))
+            qml.ArbitraryUnitary(weights, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Weights tensor must be of shape"):
@@ -189,9 +189,7 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.ArbitraryUnitary(
-            np.random.random(size=(63,)), wires=range(3), id="a"
-        )
+        template = qml.ArbitraryUnitary(np.random.random(size=(63,)), wires=range(3), id="a")
         assert template.id == "a"
 
 
@@ -209,7 +207,7 @@ class TestAttributes:
     def test_shape(self, n_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.templates.ArbitraryUnitary.shape(n_wires)
+        shape = qml.ArbitraryUnitary.shape(n_wires)
         assert shape == expected_shape
 
 
@@ -219,7 +217,7 @@ paulis_two_qubits = PAULI_WORD_TEST_DATA[1][1]
 
 
 def circuit_template(weights):
-    qml.templates.ArbitraryUnitary(weights, wires=range(2))
+    qml.ArbitraryUnitary(weights, wires=range(2))
     return qml.expval(qml.PauliZ(0))
 
 

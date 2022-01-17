@@ -46,6 +46,7 @@ extensions = [
     "m2r2"
 ]
 
+os.environ["SPHINX_BUILD"] = "1"
 source_suffix = ['.rst', '.md']
 
 autosummary_generate = True

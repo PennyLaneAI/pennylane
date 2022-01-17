@@ -14,14 +14,15 @@ PennyLane's :mod:`template <pennylane.template>` library.
     :mod:`subroutines <pennylane.templates.subroutines>`. Below you need to replace ``<templ_type>`` with the
     correct template type.
 
-Templates are just gates
-~~~~~~~~~~~~~~~~~~~~~~~~
+Templates are just operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Conceptually, there is no difference in PennyLane between a template or ansatz and a :doc:`operation </introduction/operations>`.
-Both inherit from the :class:`Operation <pennylane.operation.Operation>` class, which has an ``expand()`` function
-that can be used to define a decomposition into other gates. If a device does not recognise the name of the operation,
-it calls the ``expand()`` function which returns a :class:`tape <pennylane.tape.QuantumTape>` instance that
-represents the queue of the decomposing gates.
+Conceptually, there is no difference in PennyLane between a template or ansatz and a gate --- they are
+both :doc:`operations </introduction/operations>` and inherit from the
+:class:`Operation <pennylane.operation.Operation>` class. Unless a device knows how to implement this class on a
+quantum computer, it queries the operation's ``expand()`` method, which expresses the operation as a
+decomposition of other operations. More precisely, this method returns a :class:`tape <pennylane.tape.QuantumTape>`
+instance that represents the queue of the decomposition.
 
 For example, the following shows a simple template for a layer of of Pauli-X rotations:
 
@@ -32,8 +33,8 @@ For example, the following shows a simple template for a layer of of Pauli-X rot
 
     class MyNewTemplate(Operation):
 
-        num_params = 1
-        num_wires = AnyWires
+        num_params = 1 # how many trainable parameters does this operation expect
+        num_wires = AnyWires # what wires does this operation act on
         par_domain = "A"  # note: this attribute will be deprecated soon
 
         def expand(self):

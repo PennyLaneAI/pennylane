@@ -5,6 +5,7 @@ autograd
 autoray
 jax==0.2.19
 jaxlib==0.1.71
+mistune==0.8.4
 m2r2
 numpy
 pygments-github-lexers
@@ -12,10 +13,10 @@ semantic_version==2.6
 scipy
 docutils==0.16
 sphinx==3.5.3
-sphinx-automodapi
+sphinx-automodapi==0.13
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
-tensorflow==2.5.1
+tensorflow==2.5.2
 tensornetwork==0.3
 toml
 torch==1.9.0+cpu

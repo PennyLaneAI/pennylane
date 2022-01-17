@@ -27,7 +27,7 @@ class TestDecomposition:
     def test_expansion(self, features):
         """Checks the queue for the default settings."""
 
-        op = qml.templates.SqueezingEmbedding(features=features, wires=range(3))
+        op = qml.SqueezingEmbedding(features=features, wires=range(3))
         tape = op.expand()
 
         assert len(tape.operations) == len(features)
@@ -44,9 +44,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(
-                features=x, wires=range(n_wires), method="amplitude", c=1
-            )
+            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="amplitude", c=1)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),
@@ -64,11 +62,9 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
+            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase", c=1)
             qml.Beamsplitter(np.pi / 2, 0, wires=[0, 1])
-            qml.templates.SqueezingEmbedding(
-                features=[0, 0], wires=range(n_wires), method="phase", c=1
-            )
+            qml.SqueezingEmbedding(features=[0, 0], wires=range(n_wires), method="phase", c=1)
             return [
                 qml.expval(qml.NumberOperator(wires=0)),
                 qml.expval(qml.NumberOperator(wires=1)),
@@ -86,12 +82,12 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.templates.SqueezingEmbedding(features, wires=range(3))
+            qml.SqueezingEmbedding(features, wires=range(3))
             return qml.expval(qml.Identity(0))
 
         @qml.qnode(dev2)
         def circuit2():
-            qml.templates.SqueezingEmbedding(features, wires=["z", "a", "k"])
+            qml.SqueezingEmbedding(features, wires=["z", "a", "k"])
             return qml.expval(qml.Identity("z"))
 
         circuit()
@@ -112,7 +108,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase")
+            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="phase")
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="Features must be of"):
@@ -126,7 +122,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=range(n_wires), method="A")
+            qml.SqueezingEmbedding(features=x, wires=range(n_wires), method="A")
             return [qml.expval(qml.X(i)) for i in range(n_wires)]
 
         with pytest.raises(ValueError, match="did not recognize"):
@@ -140,7 +136,7 @@ class TestInputs:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.templates.SqueezingEmbedding(features=x, wires=[0, 1])
+            qml.SqueezingEmbedding(features=x, wires=[0, 1])
             return qml.expval(qml.X(0))
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
@@ -148,12 +144,12 @@ class TestInputs:
 
     def test_id(self):
         """Tests that the id attribute can be set."""
-        template = qml.templates.SqueezingEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
+        template = qml.SqueezingEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
         assert template.id == "a"
 
 
 def circuit_template(features):
-    qml.templates.SqueezingEmbedding(features, range(3))
+    qml.SqueezingEmbedding(features, range(3))
     qml.Beamsplitter(0.5, 0, wires=[2, 1])
     qml.Beamsplitter(0.5, 0, wires=[1, 0])
     return qml.expval(qml.X(0))

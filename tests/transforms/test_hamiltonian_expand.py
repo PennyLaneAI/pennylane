@@ -16,7 +16,6 @@ import pytest
 import numpy as np
 import pennylane as qml
 import pennylane.tape
-from pennylane.interfaces.autograd import AutogradInterface
 
 """Defines the device used for all tests"""
 
@@ -181,12 +180,10 @@ class TestHamiltonianExpval:
 
             qml.expval(H)
 
-        AutogradInterface.apply(tape)
-
         def cost(x):
             tape.set_parameters(x, trainable_only=False)
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
-            res = [t.execute(dev) for t in tapes]
+            res = qml.execute(tapes, dev, qml.gradients.param_shift)
             return fn(res)
 
         assert np.isclose(cost(var), output)
@@ -198,7 +195,6 @@ class TestHamiltonianExpval:
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
 
         tf = pytest.importorskip("tensorflow")
-        from pennylane.interfaces.tf import TFInterface
 
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
@@ -225,9 +221,8 @@ class TestHamiltonianExpval:
                     qml.CNOT(wires=[2, 0])
                 qml.expval(H)
 
-            TFInterface.apply(tape)
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
-            res = fn([t.execute(dev) for t in tapes])
+            res = fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
             assert np.isclose(res, output)
 

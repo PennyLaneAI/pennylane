@@ -84,7 +84,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     ``opt.total_shots_used`` can be used to track the number of shots per
     iteration, and across the life of the optimizer, respectively.
 
-    >>> params = qml.init.strong_ent_layers_uniform(n_layers=2, n_wires=2)
+    >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+    >>> params = np.random.random(shape)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10)
     >>> for i in range(60):
     ...    params = opt.step(cost, params)

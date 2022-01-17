@@ -21,7 +21,6 @@ To add a new pattern:
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import pennylane as qml
-from pennylane.templates.decorator import template
 from pennylane.wires import Wires
 
 OPTIONS = {"single", "double", "double_odd", "chain", "ring", "pyramid", "all_to_all", "custom"}
@@ -108,7 +107,7 @@ def _preprocess(parameters, pattern, wires):
     if isinstance(pattern, str):
         _wires = wires
         if pattern not in OPTIONS:
-            raise ValueError(f"did not recognize pattern {pattern}".format())
+            raise ValueError(f"did not recognize pattern {pattern}")
     else:
         # turn custom pattern into list of Wires objects
         _wires = [Wires(w) for w in pattern]
@@ -132,16 +131,13 @@ def _preprocess(parameters, pattern, wires):
         num_params = PATTERN_TO_NUM_PARAMS[pattern](_wires)
         if shape[0] != num_params:
             raise ValueError(
-                "Parameters must contain entries for {} unitaries; got {} entries".format(
-                    num_params, shape[0]
-                )
+                f"Parameters must contain entries for {num_params} unitaries; got {shape[0]} entries"
             )
 
     wire_sequence = PATTERN_TO_WIRES[pattern](_wires)
     return wire_sequence, parameters
 
 
-@template
 def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     r"""Applies a unitary multiple times to a specific pattern of wires.
 
@@ -268,9 +264,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            from pennylane.templates import template
-
-            @template
             def mytemplate(pars, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars, wires=wires)
@@ -307,9 +300,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            from pennylane.templates import template
-
-            @template
             def mytemplate(pars1, pars2, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars1, wires=wires)
@@ -340,7 +330,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            @template
             def mytemplate(pars, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars[0], wires=wires)
@@ -357,7 +346,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            @template
             def mytemplate(pars1, pars2, wires):
                 qml.Hadamard(wires=wires)
                 qml.RY(pars1, wires=wires)
@@ -377,7 +365,6 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
         .. code-block:: python
 
-            @template
             def mytemplate(wires, h=True):
                 if h:
                     qml.Hadamard(wires=wires)

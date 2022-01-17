@@ -16,14 +16,19 @@
 from functools import partial
 
 from pennylane import apply
-from pennylane.tape import get_active_tape
+from pennylane.tape import stop_recording
 from pennylane.ops import __all__ as all_ops
 
 from pennylane.transforms import single_tape_transform, qfunc_transform
-from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
+from pennylane.transforms.optimization import (
+    cancel_inverses,
+    commute_controlled,
+    merge_rotations,
+    remove_barrier,
+)
 
 
-default_pipeline = [commute_controlled, cancel_inverses, merge_rotations]
+default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 
 
 @qfunc_transform
@@ -140,16 +145,17 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     # as well as to decompose over a specified basis set
     # First, though, we have to stop whatever tape may be recording so that we
     # don't queue anything as a result of the expansion or transform pipeline
-    current_tape = get_active_tape()
 
-    with current_tape.stop_recording():
+    with stop_recording():
         if basis_set is not None:
             expanded_tape = tape.expand(
                 depth=expand_depth, stop_at=lambda obj: obj.name in basis_set
             )
         else:
             # Expands out anything that is not a single operation (i.e., the templates)
-            expanded_tape = tape.expand(stop_at=lambda obj: obj.name in all_ops)
+            # expand barriers when `only_visual=True`
+            stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+            expanded_tape = tape.expand(stop_at=stop_at)
 
         # Apply the full set of compilation transforms num_passes times
         for _ in range(num_passes):

@@ -271,7 +271,7 @@ class TestCaching:
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache)[0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, max_diff=2)[0]
 
         # No caching: number of executions is not ideal
         hess1 = qml.jacobian(qml.grad(cost))(params, cache=False)
@@ -300,7 +300,7 @@ class TestCaching:
 
         expected_runs_ideal = 1  # forward pass
         expected_runs_ideal += 2 * N  # Jacobian
-        expected_runs_ideal += 2 * N + 1  # Hessian diagonal
+        expected_runs_ideal += N + 1  # Hessian diagonal
         expected_runs_ideal += 4 * N * (N - 1) // 2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs_ideal
         assert expected_runs_ideal < expected_runs
@@ -406,7 +406,7 @@ class TestAutogradExecuteIntegration:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape.trainable_params = {0}
+        tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
         expected = fn(dev.batch_execute(tapes))
 
@@ -434,10 +434,12 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(cost)(a, b, device=dev)
-        assert res.shape == (2, 2)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (2,)
+        assert res[1].shape == (2,)
 
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_tape_no_parameters(self, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
@@ -485,7 +487,7 @@ class TestAutogradExecuteIntegration:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(1))
 
-        assert tape.trainable_params == {0, 1}
+        assert tape.trainable_params == [0, 1]
 
         def cost(a, b):
             tape.set_parameters([a, b])
@@ -505,11 +507,12 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
         jac = jac_fn(a, b)
-        expected = [
-            [-2 * np.sin(2 * a), 0],
-            [2 * np.sin(2 * a) * np.sin(b), -np.cos(2 * a) * np.cos(b)],
-        ]
-        assert np.allclose(jac, expected, atol=tol, rtol=0)
+        expected = (
+            [-2 * np.sin(2 * a), 2 * np.sin(2 * a) * np.sin(b)],
+            [0, -np.cos(2 * a) * np.cos(b)],
+        )
+        assert isinstance(jac, tuple) and len(jac) == 2
+        assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
 
     def test_classical_processing(self, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
@@ -528,7 +531,10 @@ class TestAutogradExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
-        assert res.shape == (1, 2)
+        # Only two arguments are trainable
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (1,)
+        assert res[1].shape == (1,)
 
     def test_no_trainable_parameters(self, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -662,19 +668,27 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert res.shape == (2, 2, 2)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (2, 2)
+        assert res[1].shape == (2, 2)
 
-        expected = np.array(
-            [
-                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
+        expected = (
+            np.array(
                 [
-                    [np.sin(x) / 2, 0],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
+                    [-np.sin(x) / 2, np.sin(x) / 2],
+                    [-np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0],
+                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                ]
+            ),
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
@@ -704,14 +718,16 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        expected = np.array(
-            [
-                [-np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
+
+        expected = (
+            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_sampling(self, execute_kwargs):
         """Test sampling works as expected"""
@@ -744,7 +760,7 @@ class TestHigherOrderDerivatives:
             np.array([-2.0, 0], requires_grad=True),
         ],
     )
-    def test_parameter_shift_hessian(self, params, tol):
+    def test_parameter_shift_hessian(self, params, tol, recwarn):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -763,7 +779,7 @@ class TestHigherOrderDerivatives:
                 qml.CNOT(wires=[0, 1])
                 qml.probs(wires=1)
 
-            result = execute([tape1, tape2], dev, gradient_fn=param_shift)
+            result = execute([tape1, tape2], dev, gradient_fn=param_shift, max_diff=2)
             return result[0] + result[1][0, 0]
 
         res = cost_fn(params)
@@ -786,7 +802,11 @@ class TestHigherOrderDerivatives:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_adjoint_hessian(self, tol):
+        # Check that no deprecation warnigns are emitted due to trainable
+        # parameters with the Autograd interface
+        assert len(recwarn) == 0
+
+    def test_adjoint_hessian(self, tol, recwarn):
         """Since the adjoint hessian is not a differentiable transform,
         higher-order derivatives are not supported."""
         dev = qml.device("default.qubit.autograd", wires=2)
@@ -810,6 +830,10 @@ class TestHigherOrderDerivatives:
             res = qml.jacobian(qml.grad(cost_fn))(params)
 
         assert np.allclose(res, np.zeros([2, 2]), atol=tol, rtol=0)
+
+        # Check that no additional deprecation warnigns are emitted due to trainable
+        # parameters with the Autograd interface
+        assert len(recwarn) == 0
 
     def test_max_diff(self, tol):
         """Test that setting the max_diff parameter blocks higher-order
@@ -912,6 +936,32 @@ class TestOverridingShots:
         # shots were then returned to the built-in value
         assert spy.call_args_list[1][0] == (dev, 123)
 
+    def test_overriding_device_with_shot_vector(self):
+        """Overriding a device that has a batch of shots set
+        results in original shots being returned after execution"""
+        dev = qml.device("default.qubit", wires=2, shots=[10, (1, 3), 5])
+
+        assert dev.shots == 18
+        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+
+        a, b = np.array([0.543, -0.654], requires_grad=True)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliY(1))
+
+        res = execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
+        assert len(res) == 1
+
+        # device is unchanged
+        assert dev.shots == 18
+        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+
+        res = execute([tape], dev, gradient_fn=param_shift)[0]
+        assert len(res) == 5
+
     def test_gradient_integration(self, tol):
         """Test that temporarily setting the shots works
         for gradient computations"""
@@ -929,10 +979,14 @@ class TestOverridingShots:
 
         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
         assert dev.shots is None
-        assert len(res) == 3
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(np.mean(res, axis=0), expected, atol=0.1, rtol=0)
+        assert all(
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+        )
 
 
 execute_kwargs = [

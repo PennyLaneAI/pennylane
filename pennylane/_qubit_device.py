@@ -210,7 +210,11 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                r = qml.math.squeeze(r)
+
+                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                    r = r[0]
+                else:
+                    r = qml.math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
@@ -420,7 +424,7 @@ class QubitDevice(Device):
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
-                    "Unsupported return type specified for observable {}".format(obs.name)
+                    f"Unsupported return type specified for observable {obs.name}"
                 )
 
         return results
@@ -845,8 +849,7 @@ class QubitDevice(Device):
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
         After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
-        gates to scan backwards through the circuit. This method is similar to the reversible
-        method, but has a lower time overhead and a similar memory overhead.
+        gates to scan backwards through the circuit.
 
         .. note::
             The adjoint differentiation method has the following restrictions:
@@ -920,7 +923,7 @@ class QubitDevice(Device):
         for op in reversed(tape.operations):
             if op.num_params > 1:
                 if isinstance(op, qml.Rot) and not op.inverse:
-                    ops = op.decomposition(*op.parameters, wires=op.wires)
+                    ops = op.decompose()
                     expanded_ops.extend(reversed(ops))
                 else:
                     raise qml.QuantumFunctionError(

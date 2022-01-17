@@ -4,5 +4,5 @@ pennylane>=0.13.0
 openfermion==1.0
 openfermionpsi4==0.5
 h5py<=3.2.1
-pyscf>=1.7.2
+pyscf>=1.7.2,<2.0
 openfermionpyscf==0.5

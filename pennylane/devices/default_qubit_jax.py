@@ -15,9 +15,8 @@
 reference plugin.
 """
 import pennylane as qml
-from pennylane.operation import DiagonalOperation
 from pennylane.devices import DefaultQubit
-from pennylane.devices import jax_ops
+from pennylane.wires import Wires
 
 import numpy as np
 
@@ -133,30 +132,6 @@ class DefaultQubitJax(DefaultQubit):
     name = "Default qubit (jax) PennyLane plugin"
     short_name = "default.qubit.jax"
 
-    parametric_ops = {
-        "PhaseShift": jax_ops.PhaseShift,
-        "ControlledPhaseShift": jax_ops.ControlledPhaseShift,
-        "CPhase": jax_ops.ControlledPhaseShift,
-        "RX": jax_ops.RX,
-        "RY": jax_ops.RY,
-        "RZ": jax_ops.RZ,
-        "Rot": jax_ops.Rot,
-        "CRX": jax_ops.CRX,
-        "CRY": jax_ops.CRY,
-        "CRZ": jax_ops.CRZ,
-        "CRot": jax_ops.CRot,
-        "MultiRZ": jax_ops.MultiRZ,
-        "IsingXX": jax_ops.IsingXX,
-        "IsingYY": jax_ops.IsingYY,
-        "IsingZZ": jax_ops.IsingZZ,
-        "SingleExcitation": jax_ops.SingleExcitation,
-        "SingleExcitationPlus": jax_ops.SingleExcitationPlus,
-        "SingleExcitationMinus": jax_ops.SingleExcitationMinus,
-        "DoubleExcitation": jax_ops.DoubleExcitation,
-        "DoubleExcitationPlus": jax_ops.DoubleExcitationPlus,
-        "DoubleExcitationMinus": jax_ops.DoubleExcitationMinus,
-    }
-
     _asarray = staticmethod(jnp.array)
     _dot = staticmethod(jnp.dot)
     _abs = staticmethod(jnp.abs)
@@ -173,6 +148,7 @@ class DefaultQubitJax(DefaultQubit):
         )
     )
     _conj = staticmethod(jnp.conj)
+    _real = staticmethod(jnp.real)
     _imag = staticmethod(jnp.imag)
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
@@ -207,35 +183,6 @@ class DefaultQubitJax(DefaultQubit):
         new_array = jnp.zeros(new_dimensions, dtype=array.dtype.type)
         new_array = new_array.at[indices].set(array)
         return new_array
-
-    def _get_unitary_matrix(self, unitary):
-        """Return the matrix representing a unitary operation.
-
-        Args:
-            unitary (~.Operation): a PennyLane unitary operation
-
-        Returns:
-            array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis, or, in the case of a diagonal unitary,
-            a 1D array representing the matrix diagonal.
-        """
-        op_name = unitary.name.split(".inv")[0]
-
-        if op_name in self.parametric_ops:
-            if op_name == "MultiRZ":
-                mat = self.parametric_ops[op_name](*unitary.parameters, len(unitary.wires))
-            else:
-                mat = self.parametric_ops[op_name](*unitary.parameters)
-
-            if unitary.inverse:
-                mat = self._transpose(self._conj(mat))
-
-            return mat
-
-        if isinstance(unitary, DiagonalOperation):
-            return unitary.eigvals
-
-        return unitary.matrix
 
     def sample_basis_states(self, number_of_states, state_probability):
         """Sample from the computational basis states based on the state
@@ -284,3 +231,73 @@ class DefaultQubitJax(DefaultQubit):
         powers_of_two = 1 << jnp.arange(num_wires, dtype=dtype)
         states_sampled_base_ten = samples[:, None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
+
+    def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
+        """Return the estimated probability of each computational basis state
+        using the generated samples.
+
+        Args:
+            wires (Iterable[Number, str], Number, str, Wires): wires to calculate
+                marginal probabilities for. Wires not provided are traced out of the system.
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Returns:
+            array[float]: list of the probabilities
+        """
+
+        wires = wires or self.wires
+        # convert to a wires object
+        wires = Wires(wires)
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+        num_wires = len(device_wires)
+
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        samples = self._samples[sample_slice, device_wires]
+
+        # convert samples from a list of 0, 1 integers, to base 10 representation
+        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        indices = samples @ powers_of_two
+
+        if bin_size is not None:
+            bins = len(samples) // bin_size
+
+            indices = indices.reshape((bins, -1))
+            prob = np.zeros(
+                [2 ** num_wires + 1, bins], dtype=jnp.float64
+            )  # extend it to store 'filled values'
+            prob = qml.math.convert_like(prob, indices)
+
+            # count the basis state occurrences, and construct the probability vector
+            for b, idx in enumerate(indices):
+                idx = qml.math.convert_like(idx, indices)
+                basis_states, counts = qml.math.unique(
+                    idx, return_counts=True, size=2 ** num_wires, fill_value=-1
+                )
+
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[state, b].set(count / bin_size)
+
+            prob = jnp.resize(
+                prob, (2 ** num_wires, bins)
+            )  # resize prob which discards the 'filled values'
+
+        else:
+            basis_states, counts = qml.math.unique(
+                indices, return_counts=True, size=2 ** num_wires, fill_value=-1
+            )
+            prob = np.zeros([2 ** num_wires + 1], dtype=jnp.float64)
+            prob = qml.math.convert_like(prob, indices)
+
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[state].set(count / len(samples))
+
+            prob = jnp.resize(
+                prob, 2 ** num_wires
+            )  # resize prob which discards the 'filled values'
+
+        return self._asarray(prob, dtype=self.R_DTYPE)

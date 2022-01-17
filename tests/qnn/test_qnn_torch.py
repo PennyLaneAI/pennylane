@@ -96,9 +96,7 @@ class TestTorchLayer:
         w[qml.qnn.torch.TorchLayer._input_arg] = n_qubits
         with pytest.raises(
             ValueError,
-            match="{} argument should not have its dimension".format(
-                qml.qnn.torch.TorchLayer._input_arg
-            ),
+            match=f"{qml.qnn.torch.TorchLayer._input_arg} argument should not have its dimension",
         ):
             TorchLayer(c, w)
 
@@ -389,33 +387,6 @@ class TestTorchLayer:
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
-    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
-    def test_cuda_backward(self):
-        """Test if TorchLayer can be run on GPU"""
-        if not torch.cuda.is_available():
-            pytest.skip("Cuda device not available")
-        else:
-            try:
-                n_qubits = 4
-                dev = qml.device("default.qubit", wires=n_qubits)
-
-                @qml.qnode(dev, interface="torch")
-                def circuit(inputs, weights):
-                    qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-                    qml.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
-                    return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
-
-                n_layers = 1
-                weight_shapes = {"weights": (n_layers, n_qubits)}
-
-                qlayer = qml.qnn.TorchLayer(circuit, weight_shapes)
-
-                x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
-                loss = torch.sum(qlayer(x)).squeeze()
-                loss.backward()
-            except Exception:
-                pytest.fail("Exception raised in torch CUDA backward")
-
 
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
@@ -489,11 +460,9 @@ class TestTorchLayerIntegration:
         state_dict = module.state_dict()
         dict_keys = set(state_dict.keys())
 
-        clayer_weights = set("clayer{}.weight".format(i + 1) for i in range(3))
-        clayer_biases = set("clayer{}.bias".format(i + 1) for i in range(3))
-        qlayer_params = set(
-            "qlayer{}.w{}".format(i + 1, j + 1) for i in range(2) for j in range(len(w))
-        )
+        clayer_weights = set(f"clayer{i + 1}.weight" for i in range(3))
+        clayer_biases = set(f"clayer{i + 1}.bias" for i in range(3))
+        qlayer_params = set(f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w)))
 
         all_params = clayer_weights | clayer_biases | qlayer_params
 

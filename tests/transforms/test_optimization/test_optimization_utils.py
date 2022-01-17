@@ -21,7 +21,8 @@ from pennylane.transforms.optimization.optimization_utils import (
     fuse_rot_angles,
 )
 
-from utils import check_matrix_equivalence, compute_matrix_from_ops_one_qubit
+from utils import check_matrix_equivalence
+from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 
 sample_op_list = [
@@ -60,16 +61,23 @@ class TestRotGateFusion:
         """Test that a set of rotations of the form YZY is correctly converted
         to a sequence of the form ZYZ."""
 
-        original_ops = [
+        def original_ops():
             qml.RY(angles[0], wires=0),
             qml.RZ(angles[1], wires=0),
             qml.RY(angles[2], wires=0),
-        ]
-        product_yzy = compute_matrix_from_ops_one_qubit(original_ops)
+
+        compute_matrix = get_unitary_matrix(original_ops, [0])
+        product_yzy = compute_matrix()
 
         z1, y, z2 = _yzy_to_zyz(angles)
-        transformed_ops = [qml.RZ(z1, wires=0), qml.RY(y, wires=0), qml.RZ(z2, wires=0)]
-        product_zyz = compute_matrix_from_ops_one_qubit(transformed_ops)
+
+        def transformed_ops():
+            qml.RZ(z1, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z2, wires=0)
+
+        compute_transformed_matrix = get_unitary_matrix(transformed_ops, [0])
+        product_zyz = compute_transformed_matrix()
 
         assert check_matrix_equivalence(product_yzy, product_zyz)
 
@@ -95,8 +103,12 @@ class TestRotGateFusion:
         """Test that the fusion of two Rot gates has the same effect as
         applying the Rots sequentially."""
 
-        original_ops = [qml.Rot(*angles_1, wires=0), qml.Rot(*angles_2, wires=0)]
-        matrix_expected = compute_matrix_from_ops_one_qubit(original_ops)
+        def original_ops():
+            qml.Rot(*angles_1, wires=0)
+            qml.Rot(*angles_2, wires=0)
+
+        compute_matrix = get_unitary_matrix(original_ops, [0])
+        matrix_expected = compute_matrix()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix

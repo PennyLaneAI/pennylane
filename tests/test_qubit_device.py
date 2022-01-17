@@ -302,9 +302,7 @@ class TestExtractStatistics:
         """Tests that the statistics method simply builds a results list without any side-effects"""
 
         class SomeObservable(qml.operation.Observable):
-            num_params = 0
             num_wires = 1
-            par_domain = "F"
             return_type = returntype
 
         obs = SomeObservable(wires=0)
@@ -331,9 +329,7 @@ class TestExtractStatistics:
         """Tests that the statistics method returns an empty list if the return type is None"""
 
         class SomeObservable(qml.operation.Observable):
-            num_params = 0
             num_wires = 1
-            par_domain = "F"
             return_type = returntype
 
         obs = SomeObservable(wires=0)
@@ -351,9 +347,7 @@ class TestExtractStatistics:
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
 
         class SomeObservable(qml.operation.Observable):
-            num_params = 0
             num_wires = 1
-            par_domain = "F"
             return_type = returntype
 
         obs = SomeObservable(wires=0)
@@ -435,7 +429,7 @@ class TestStatesToBinary:
         dev = mock_qubit_device()
         res = dev.states_to_binary(samples, wires)
 
-        format_smt = "{{:0{}b}}".format(wires)
+        format_smt = f"{{:0{wires}b}}"
         expected = np.array([[int(x) for x in list(format_smt.format(i))] for i in samples])
 
         assert np.all(res == expected)
@@ -930,7 +924,9 @@ class TestShotList:
 
         # test gradient works
         res = qml.jacobian(circuit)(0.5, 0.1)
-        assert res.shape == (2,) + expected_shape
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == expected_shape
+        assert res[1].shape == expected_shape
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 4), 16],

@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for caching executions of the quantum device."""
-import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.measure import expval
 from pennylane import qnode, QNode
 from pennylane.devices import DefaultQubit
+from pennylane import numpy as np
 
 
 def qfunc(x, y):
@@ -138,7 +138,7 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=2, cache=10)
         qn = QNode(qfunc, dev, interface="autograd")
         d_qnode = qml.grad(qn)
-        args = [0.1, 0.2]
+        args = np.array([0.1, 0.2], requires_grad=True)
 
         d_qnode(*args)
         spy = mocker.spy(DefaultQubit, "apply")
@@ -248,15 +248,51 @@ class TestCaching:
         d_qfunc = qml.grad(qfunc)
 
         spy = mocker.spy(DefaultQubit, "apply")
-        g = d_qfunc(0.1, 0.2)
+        x, y = np.array(0.1, requires_grad=True), np.array(0.2, requires_grad=True)
+        g = d_qfunc(x, y)
         calls1 = len(spy.call_args_list)
-        d_qfunc(0.1, 0.2)
+        d_qfunc(x, y)
         calls2 = len(spy.call_args_list)
 
-        d_qfunc(0.1, 0.3)
+        x, y = np.array(0.1, requires_grad=True), np.array(0.3, requires_grad=True)
+        d_qfunc(x, y)
         calls3 = len(spy.call_args_list)
 
         assert calls1 == 5
         assert calls2 == 5
         assert calls3 == 10
         assert g is not None
+
+    devs = [
+        (qml.device("default.qubit", wires=2)),
+        (qml.device("default.qubit", cache=1, wires=2)),
+    ]
+
+    @pytest.mark.parametrize("dev", devs)
+    def test_different_return_type(self, dev):
+        """Test that same circuit with different return type, returns different results"""
+        wires = range(2)
+
+        hamiltonian = np.array(
+            [
+                [-2.5623 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 - 0.1234j],
+                [0.0 + 0.0j, -2.5623 + 0.0j, 0.0 + 0.1234j, 0.0 + 0.0j],
+                [0.0 + 0.0j, 0.0 - 0.1234j, -2.5623 + 0.0j, 0.0 + 0.0j],
+                [0.0 + 0.1234j, 0.0 + 0.0j, 0.0 + 0.0j, -2.5623 + 0.0j],
+            ]
+        )
+
+        np.random.seed(172)
+        params = np.random.randn(2, 2)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def expval_circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+            return qml.expval(qml.Hermitian(hamiltonian, wires=wires))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def var_circuit(params):
+            qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+            return qml.var(qml.Hermitian(hamiltonian, wires=wires))
+
+        assert expval_circuit(params) != var_circuit(params)

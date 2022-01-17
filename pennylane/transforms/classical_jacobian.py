@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def classical_jacobian(qnode, argnum=None):
+def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     r"""Returns a function to extract the Jacobian
     matrix of the classical part of a QNode.
 
@@ -30,6 +30,8 @@ def classical_jacobian(qnode, argnum=None):
         qnode (pennylane.QNode): QNode to compute the (classical) Jacobian of
         argnum (int or Sequence[int]): indices of QNode arguments with respect to which
             the (classical) Jacobian is computed
+        expand_fn (None or function): an expansion function (if required) to be applied to the
+            QNode quantum tape before the classical Jacobian is computed
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
@@ -83,36 +85,39 @@ def classical_jacobian(qnode, argnum=None):
 
     For a QNode with multiple QNode arguments, the arguments with respect to which the
     Jacobian is computed can be controlled with the ``argnum`` keyword argument.
-    The output for ``argnum=None`` depends on the backend:
+    The output and its format depend on the backend:
 
     .. list-table:: Output format of ``classical_jacobian``
-       :widths: 25 25 25 25
+       :widths: 15 25 25 35
        :header-rows: 1
 
        * - Interface
          - ``argnum=None``
          - ``type(argnum)=int``
-         - ``argnum=Sequence[int]``
+         - ``type(argnum) = Sequence[int]``
        * - ``'autograd'``
-         - ``tuple(arrays)`` [1]
+         - ``tuple(array)`` [1]
          - ``array``
          - ``tuple(array)``
        * - ``'jax'``
-         - ``array``
+         - ``array`` [2]
          - ``array``
          - ``tuple(array)``
        * - ``'tf'``
-         - ``tuple(arrays)``
+         - ``tuple(array)``
          - ``array``
          - ``tuple(array)``
        * - ``'torch'``
-         - ``tuple(arrays)``
+         - ``tuple(array)``
          - ``array``
          - ``tuple(array)``
 
-    [1] If all QNode argument are scalars, the tuple is unpacked and the one-dimensional Jacobian
-    arrays are stacked into one ``array``. If there only is one QNode argument, the tuple is
-    unpacked as well. Both is due to the behaviour of ``qml.jacobian``.
+    [1] If there only is one trainable QNode argument, the tuple is unpacked to a
+    single ``array``, as is the case for :func:`.jacobian`.
+
+    [2] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
+    interfaces. This means that only the classical Jacobian with respect to the first
+    QNode argument is computed if no ``argnum`` is provided.
 
     **Example with ``argnum``**
 
@@ -130,43 +135,34 @@ def classical_jacobian(qnode, argnum=None):
 
     Only the Jacobians with respect to the arguments ``x`` and ``y`` were computed, and
     returned as a tuple of ``arrays``.
-
     """
 
     def classical_preprocessing(*args, **kwargs):
         """Returns the trainable gate parameters for a given QNode input."""
-        trainable_only = kwargs.pop("_trainable_only", True)
+        kwargs.pop("shots", None)
         qnode.construct(args, kwargs)
-        return qml.math.stack(qnode.qtape.get_parameters(trainable_only=trainable_only))
+        tape = qnode.qtape
+
+        if expand_fn is not None:
+            tape = expand_fn(tape)
+
+        return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     if qnode.interface == "autograd":
 
-        def _jacobian(*args, **kwargs):
-            if argnum is None:
-                jac = qml.jacobian(classical_preprocessing)(*args, **kwargs)
-            elif np.isscalar(argnum):
-                jac = qml.jacobian(classical_preprocessing, argnum=argnum)(*args, **kwargs)
-            else:
-                jac = tuple(
-                    (
-                        qml.jacobian(classical_preprocessing, argnum=i)(*args, **kwargs)
-                        for i in argnum
-                    )
-                )
-            return jac
-
-        return _jacobian
+        return qml.jacobian(classical_preprocessing, argnum=argnum)
 
     if qnode.interface == "torch":
         import torch
 
         def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
             jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
-            if argnum is not None:
-                if np.isscalar(argnum):
-                    jac = jac[argnum]
-                else:
-                    jac = tuple((jac[idx] for idx in argnum))
+
+            torch_argnum = argnum if argnum is not None else qml.math.get_trainable_indices(args)
+            if np.isscalar(torch_argnum):
+                jac = jac[torch_argnum]
+            else:
+                jac = tuple((jac[idx] for idx in torch_argnum))
             return jac
 
         return _jacobian
@@ -177,7 +173,14 @@ def classical_jacobian(qnode, argnum=None):
         argnum = 0 if argnum is None else argnum
 
         def _jacobian(*args, **kwargs):
-            kwargs["_trainable_only"] = False
+            if trainable_only:
+                _argnum = list(range(len(args)))
+                full_jac = jax.jacobian(classical_preprocessing, argnums=_argnum)(*args, **kwargs)
+                if np.isscalar(argnum):
+                    return full_jac[argnum]
+
+                return tuple(full_jac[i] for i in argnum)
+
             return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
 
         return _jacobian

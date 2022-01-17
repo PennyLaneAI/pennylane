@@ -202,7 +202,6 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    :hidden:
 
    code/qml
-   code/qml_init
    code/qml_interfaces
    code/qml_operation
    code/qml_devices
@@ -212,12 +211,12 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_kernels
    code/qml_math
    code/qml_qaoa
+   code/qml_hf
    code/qml_qchem
    code/qml_qnn
    code/qml_tape
-   code/qml_templates
    code/qml_transforms
-   code/qml_circuit_drawer
+   code/qml_drawer
    code/qml_utils
    code/qml_wires
    code/qml_beta
