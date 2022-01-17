@@ -131,7 +131,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
     how ``tensor_list=0`` indicates that said first argument is a list of vectors, and that ``coefficient`` is not
     dispatched.
 
-    >>> @math.multi_dispatch(argnum=0,tensor_list=0)
+    >>> @math.multi_dispatch(argnum=0, tensor_list=0)
     >>> def custom_function(values, like, coefficient=10):
     >>>     # values is a list of vectors
     >>>     # like can force the interface (optional)
