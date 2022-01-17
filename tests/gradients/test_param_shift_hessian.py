@@ -166,6 +166,7 @@ class TestParameterShiftHessian:
     def test_multiple_two_term_gates_matrix_output(self):
         """Test that the correct hessian is calculated for higher dimensional QNode outputs
         (1d -> 2d)"""
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -185,6 +186,7 @@ class TestParameterShiftHessian:
     def test_multiple_two_term_gates_matrix_input(self):
         """Test that the correct hessian is calculated for higher dimensional cl. jacobians
         (2d -> 2d)"""
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -206,10 +208,11 @@ class TestParameterShiftHessian:
     @pytest.mark.slow
     def test_multiple_qnode_arguments_scalar(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (0D->1D)"""
+        jax = pytest.importorskip("jax")
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -222,7 +225,13 @@ class TestParameterShiftHessian:
         y = np.array(0.5, requires_grad=True)
         z = np.array(0.3, requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x, y, z)
+        expected = tuple(
+            jax.jacobian(jax.jacobian(circuit, argnums=i), argnums=i)(
+                jax.numpy.array(x), jax.numpy.array(y), jax.numpy.array(z)
+            )
+            for i in range(3)
+        )
+        circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
         assert np.allclose(expected, hessian)
@@ -230,10 +239,11 @@ class TestParameterShiftHessian:
     @pytest.mark.slow
     def test_multiple_qnode_arguments_vector(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
+        jax = pytest.importorskip("jax")
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
@@ -246,7 +256,13 @@ class TestParameterShiftHessian:
         y = np.array([0.5, 0.7], requires_grad=True)
         z = np.array([0.3, 0.2], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x, y, z)
+        expected = tuple(
+            jax.jacobian(jax.jacobian(circuit, argnums=i), argnums=i)(
+                jax.numpy.array(x), jax.numpy.array(y), jax.numpy.array(z)
+            )
+            for i in range(3)
+        )
+        circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
         assert np.allclose(expected, hessian)
@@ -254,10 +270,11 @@ class TestParameterShiftHessian:
     @pytest.mark.slow
     def test_multiple_qnode_arguments_matrix(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (2D->1D)"""
+        jax = pytest.importorskip("jax")
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(x, y, z):
             qml.RX(x[0, 0], wires=0)
             qml.RY(y[0, 0], wires=1)
@@ -270,7 +287,13 @@ class TestParameterShiftHessian:
         y = np.array([[0.5, 0.7], [0.2, 0.4]], requires_grad=True)
         z = np.array([[0.3, 0.2], [0.2, 0.4]], requires_grad=True)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x, y, z)
+        expected = tuple(
+            jax.jacobian(jax.jacobian(circuit, argnums=i), argnums=i)(
+                jax.numpy.array(x), jax.numpy.array(y), jax.numpy.array(z)
+            )
+            for i in range(3)
+        )
+        circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
         assert np.allclose(expected, hessian)
@@ -319,8 +342,7 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, derivative)
 
-    # Some bounds we could choose to meet on the efficiency of the hessian implementation
-    # for operations with two eigenvalues (2-term shift rule):
+    # Some bounds on the efficiency (device executions) of the hessian for 2-term shift rules:
     # - < jacobian(jacobian())
     # - <= 2^d * (m+d-1)C(d)      see arXiv:2008.06517 p. 4
     # - <= 3^m                    see arXiv:2008.06517 p. 4
