@@ -240,7 +240,8 @@ class TestVJPGradients:
 
         dev = qml.device("default.qubit", wires=2)
 
-        params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
         dy = torch.tensor([-1.0, 0.0, 0.0, 1.0], dtype=torch.float64)
 
         with qml.tape.JacobianTape() as tape:
@@ -255,7 +256,7 @@ class TestVJPGradients:
         cost = vjp[0]
         cost.backward()
 
-        exp = qml.jacobian(lambda x: expected(x)[0])(params.detach().numpy())
+        exp = qml.jacobian(lambda x: expected(x)[0])(params_np)
         assert np.allclose(params.grad, exp, atol=tol, rtol=0)
 
     @pytest.mark.slow
@@ -266,7 +267,8 @@ class TestVJPGradients:
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params = tf.Variable(params_np, dtype=tf.float64)
         dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
 
         with tf.GradientTape() as t:
@@ -280,7 +282,7 @@ class TestVJPGradients:
         assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
 
         res = t.jacobian(vjp, params)
-        assert np.allclose(res, qml.jacobian(expected)(params.numpy()), atol=tol, rtol=0)
+        assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
     @pytest.mark.slow
     def test_jax(self, tol):
@@ -290,7 +292,8 @@ class TestVJPGradients:
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit.jax", wires=2)
-        params = jnp.array([0.543, -0.654])
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params = jnp.array(params_np)
 
         @partial(jax.jit, static_argnums=1)
         def cost_fn(x, dy):
@@ -307,7 +310,7 @@ class TestVJPGradients:
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
 
         res = jax.jacobian(cost_fn, argnums=0)(params, dy)
-        exp = qml.jacobian(expected)(np.array(params))
+        exp = qml.jacobian(expected)(params_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
 

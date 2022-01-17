@@ -380,7 +380,7 @@ class TestGradientTransformIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = 0.543
+        x = np.array(0.543, requires_grad=True)
 
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
