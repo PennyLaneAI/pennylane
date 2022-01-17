@@ -1189,3 +1189,24 @@ class Barrier(Operation):
 
     def adjoint(self):
         return Barrier(wires=self.wires)
+
+
+class WireCut(Operation):
+    r"""WireCut(wires)
+    The wire cut operator, used to manually place qubit cut locations.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_wires = AnyWires
+    grad_method = None
+
+    def expand(self):
+        with qml.tape.QuantumTape() as tape:
+            ...
+        return tape
