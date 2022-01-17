@@ -322,7 +322,8 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
-* BasisStatePreparation now supports `batch_params` decorator. [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
+* `qml.BasisStatePreparation` now supports the `batch_params` decorator.
+  [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
 
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
   inside PennyLane. We can decorate the function, indicating the arguments that are
