@@ -495,7 +495,7 @@ class DefaultQubit(QubitDevice):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
                     coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), "complex128")
+                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
                         qml.math.gather(qml.math.conj(self.state), coo.row)
