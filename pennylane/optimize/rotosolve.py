@@ -563,11 +563,6 @@ class RotosolveOptimizer:
             For each univariate reconstruction, the data in ``nums_frequency`` takes
             precedence over the information in ``spectra``.
 
-        .. warning::
-
-            ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-            marked as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
-            or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
         """
         x_new, _, *y_output = self.step_and_cost(
             objective_fn,
