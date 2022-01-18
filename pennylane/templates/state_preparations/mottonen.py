@@ -93,7 +93,7 @@ def compute_theta(alpha):
     return theta / 2 ** k
 
 
-def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire, op_list):
+def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     r"""Applies a uniformly-controlled rotation to the target qubit.
 
     A uniformly-controlled rotation is a sequence of multi-controlled
@@ -113,9 +113,11 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire, op_l
         alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
-        op_list (list[~.Operation]): list of operations to append to
-    """
 
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    op_list = []
     theta = compute_theta(alpha)
 
     gray_code_rank = len(control_wires)
@@ -357,7 +359,7 @@ class MottonenStatePreparation(Operation):
             alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
             control = wires_reverse[k:]
             target = wires_reverse[k - 1]
-            _apply_uniform_rotation_dagger(qml.RY, alpha_y_k, control, target, op_list)
+            op_list.extend(_apply_uniform_rotation_dagger(qml.RY, alpha_y_k, control, target))
 
         # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
         if not qml.math.allclose(omega, 0):
@@ -366,6 +368,6 @@ class MottonenStatePreparation(Operation):
                 control = wires_reverse[k:]
                 target = wires_reverse[k - 1]
                 if len(alpha_z_k) > 0:
-                    _apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target, op_list)
+                    op_list.extend(_apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target))
 
         return op_list

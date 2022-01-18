@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
-def decompose_ua(op_list, phi, wires=None):
+def decompose_ua(phi, wires=None):
     r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
     
@@ -37,12 +37,14 @@ def decompose_ua(op_list, phi, wires=None):
     :math:`U_A(\phi)` is expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
     :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
 
-        Args:
-        op_list (list[.Operator]): list of operators to append to
+    Args:
         phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
         wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
-    """
 
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    op_list = []
     n, m = wires
 
     op_list.append(qml.CZ(wires=wires))
@@ -58,27 +60,30 @@ def decompose_ua(op_list, phi, wires=None):
     return op_list
 
 
-def u1_ex_gate(op_list, phi, theta, wires=None):
+def u1_ex_gate(phi, theta, wires=None):
     r"""Appends the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
     in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
     a hardware-efficient particle-conserving VQE ansatz for quantum chemistry
     simulations.
 
     Args:
-        op_list (list[.Operator]): list of operators to append to
         phi (float): angle entering the unitary :math:`U_A(\phi)`
         theta (float): angle entering the rotation :math:`R(0, 2\theta, 0)`
         wires (list[Iterable]): the two wires ``n`` and ``m`` the circuit acts on
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
     """
+    op_list = []
 
     # C-UA(phi)
-    decompose_ua(op_list, phi, wires=wires)
+    op_list.extend(decompose_ua(phi, wires=wires))
 
     op_list.append(qml.CZ(wires=wires[::-1]))
     op_list.append(qml.CRot(0, 2 * theta, 0, wires=wires[::-1]))
 
     # C-UA(-phi)
-    decompose_ua(op_list, -phi, wires=wires)
+    op_list.extend(decompose_ua(-phi, wires=wires))
 
     return op_list
 
@@ -316,9 +321,9 @@ class ParticleConservingU1(Operation):
 
         for l in range(n_layers):
             for i, wires_ in enumerate(nm_wires):
-                op_list = u1_ex_gate(
-                    op_list, weights[l, i, 0], weights[l, i, 1], wires=wires_
-                )
+                op_list.extend(u1_ex_gate(
+                    weights[l, i, 0], weights[l, i, 1], wires=wires_
+                ))
 
         return op_list
 
