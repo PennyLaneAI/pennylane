@@ -185,6 +185,7 @@ class MeasurementProcess:
             self.obs.diagonalizing_gates()
             MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
 
+        print(tape)
         return tape
 
     def queue(self, context=qml.QueuingContext):
