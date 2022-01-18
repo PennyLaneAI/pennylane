@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
+from functools import partial
 import itertools
 import numpy as onp
 import pytest
@@ -546,7 +547,9 @@ class TestDot:
 
 
 class TestTensordotTorch:
-    """Tests for the tensor product function in torch."""
+    """Tests for the tensor product function in torch.
+    This test is required because the functionality of tensordot for Torch
+    is being patched in PennyLane, as compared to autoray."""
 
     v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
     v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
@@ -761,6 +764,86 @@ class TestTensordotTorch:
     def test_tensordot_torch_tensor_matrix(self, M, expected, axes1, axes2):
         assert fn.allclose(fn.tensordot(self.T1, M, axes=[axes1, axes2]), expected)
 
+class TestTensordotDifferentiability:
+
+    v0 = np.array([0.1, 5.3, -0.9, 1.1])
+    v1 = np.array([0.5, -1.7, -2.9, 0.0])
+    v2 = np.array([-0.4, 9.1, 1.6])
+    exp_shapes = ((len(v0), len(v2), len(v0)), (len(v0), len(v2), len(v2)))
+    exp_jacs = (np.zeros(exp_shapes[0]), np.zeros(exp_shapes[1]))
+    for i in range(len(v0)):
+        exp_jacs[0][i, : , i] = v2
+    for i in range(len(v2)):
+        exp_jacs[1][:, i , i] = v0
+
+    def test_autograd(self):
+        """Tests differentiability of tensordot with Autograd."""
+        v0 = np.array(self.v0, requires_grad=True)
+        v1 = np.array(self.v1, requires_grad=True)
+        v2 = np.array(self.v2, requires_grad=True)
+
+        # Test inner product
+        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnum=(0, 1))(v0, v1)
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnum=(0, 1))(v0, v2)
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+    def test_torch(self):
+        """Tests differentiability of tensordot with Torch."""
+        jac_fn = torch.autograd.functional.jacobian
+
+        v0 = torch.tensor(self.v0, requires_grad=True, dtype=torch.float64)
+        v1 = torch.tensor(self.v1, requires_grad=True, dtype=torch.float64)
+        v2 = torch.tensor(self.v2, requires_grad=True, dtype=torch.float64)
+
+        # Test inner product
+        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), (v0, v1))
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = jac_fn(partial(fn.tensordot, axes=0), (v0, v2))
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+    def test_jax(self):
+        """Tests differentiability of tensordot with JAX."""
+        jac_fn = jax.jacobian
+
+        v0 = jnp.array(self.v0)
+        v1 = jnp.array(self.v1)
+        v2 = jnp.array(self.v2)
+
+        # Test inner product
+        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), argnums=(0, 1))(v0, v1)
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = jac_fn(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+    def test_tensorflow(self):
+        """Tests differentiability of tensordot with TensorFlow."""
+        def jac_fn(func, args):
+            with tf.GradientTape() as tape:
+                out = func(*args)
+            return tape.jacobian(out, args)
+
+        v0 = tf.Variable(self.v0, dtype=tf.float64)
+        v1 = tf.Variable(self.v1, dtype=tf.float64)
+        v2 = tf.Variable(self.v2, dtype=tf.float64)
+
+        # Test inner product
+        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), (v0, v1))
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = jac_fn(partial(fn.tensordot, axes=0), (v0, v2))
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
 
 # the following test data is of the form
 # [original shape, axis to expand, new shape]
