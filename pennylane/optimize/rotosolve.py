@@ -50,6 +50,11 @@ def _validate_inputs(requires_grad, args, nums_frequency, spectra):
     """Checks that for each trainable argument either the number of
     frequencies or the frequency spectrum is given."""
 
+    if not any(requires_grad.values()):
+        raise ValueError(
+            "Found no parameters to optimize. The parameters to optimize "
+            "have to be marked as trainable."
+        )
     for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
         if _requires_grad:
             _nums_frequency = nums_frequency.get(arg_name, {})
@@ -396,7 +401,7 @@ class RotosolveOptimizer:
         .. warning::
 
             ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-            markes as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
+            marked as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
             or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
 
         """
@@ -561,7 +566,7 @@ class RotosolveOptimizer:
         .. warning::
 
             ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-            markes as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
+            marked as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
             or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
         """
         x_new, _, *y_output = self.step_and_cost(
