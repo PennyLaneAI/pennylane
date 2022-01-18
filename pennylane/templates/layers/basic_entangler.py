@@ -161,7 +161,7 @@ class BasicEntanglerLayers(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.BasicEntanglerLayers.decomposition`.
+        .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
 
         Args:
             weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
@@ -170,7 +170,7 @@ class BasicEntanglerLayers(Operation):
             rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

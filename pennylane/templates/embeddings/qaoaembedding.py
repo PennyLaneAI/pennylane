@@ -216,16 +216,16 @@ class QAOAEmbedding(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.QAOAEmbedding.decomposition`.
+        .. seealso:: :meth:`~.QAOAEmbedding.decomposition`.
 
         Args:
             features (tensor_like): tensor of features to encode
             weights (tensor_like): tensor of weights
             wires (Any or Iterable[Any]): wires that the template acts on
-            local_field (~.Operator): class of local field gate
+            local_field (.Operator): class of local field gate
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

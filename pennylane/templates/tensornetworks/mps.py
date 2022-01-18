@@ -162,7 +162,7 @@ class MPS(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.MPS.decomposition`.
+        .. seealso:: :meth:`~.MPS.decomposition`.
 
         Args:
             weights (list[tensor_like]): list containing the weights for all blocks
@@ -171,7 +171,7 @@ class MPS(Operation):
             ind_gates (array): array of wire indices
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         return [block(weights=weights[idx][:], wires=w.tolist()) for idx, w in enumerate(ind_gates)]
 

@@ -188,7 +188,7 @@ class UCCSD(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.UCCSD.decomposition`.
+        .. seealso:: :meth:`~.UCCSD.decomposition`.
 
         Args:
             weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
@@ -202,7 +202,7 @@ class UCCSD(Operation):
                 HF state. ``init_state`` is used to initialize the wires.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         op_list = []
 

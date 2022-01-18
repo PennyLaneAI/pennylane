@@ -938,7 +938,7 @@ class Operator(abc.ABC):
         ``compute_decomposition`` is a static method and can provide the decomposition of an
         operator without a specific instance.
 
-        See also :meth:`~.operation.Operator.decomposition`.
+        .. seealso:: :meth:`~.operation.Operator.decomposition`.
 
         .. note::
             This method gets overwritten by subclasses, and the ``decomposition`` and

@@ -181,7 +181,7 @@ class StronglyEntanglingLayers(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.StronglyEntanglingLayers.decomposition`.
+        .. seealso:: :meth:`~.StronglyEntanglingLayers.decomposition`.
 
         Args:
             weights (tensor_like): weight tensor
@@ -190,7 +190,7 @@ class StronglyEntanglingLayers(Operation):
             imprimitive (pennylane.ops.Operation): two-qubit gate to use
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

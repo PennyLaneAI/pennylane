@@ -219,7 +219,7 @@ class RandomLayers(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.RandomLayers.decomposition`.
+        .. seealso:: :meth:`~.RandomLayers.decomposition`.
 
         Args:
             weights (tensor_like): weight tensor
@@ -230,7 +230,7 @@ class RandomLayers(Operation):
             seed (int): seed to generate random architecture
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

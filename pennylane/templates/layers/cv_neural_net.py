@@ -156,7 +156,7 @@ class CVNeuralNetLayers(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.CVNeuralNetLayers.decomposition`.
+        .. seealso:: :meth:`~.CVNeuralNetLayers.decomposition`.
 
         Args:
 
@@ -174,7 +174,7 @@ class CVNeuralNetLayers(Operation):
             wires (Any or Iterable[Any]): wires that the operator acts on
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

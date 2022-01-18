@@ -325,14 +325,14 @@ class MottonenStatePreparation(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.MottonenStatePreparation.decomposition`.
+        .. seealso:: :meth:`~.MottonenStatePreparation.decomposition`.
 
         Args:
             state_vector (tensor_like): Normalized state vector of shape ``(2^len(wires),)``
             wires (Any or Iterable[Any]): wires that the operator acts on
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

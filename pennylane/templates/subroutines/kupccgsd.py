@@ -256,7 +256,7 @@ class kUpCCGSD(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.kUpCCGSD.decomposition`.
+        .. seealso:: :meth:`~.kUpCCGSD.decomposition`.
 
         Args:
             weights (tensor_like): tensor containing the parameters entering the Z rotation
@@ -268,7 +268,7 @@ class kUpCCGSD(Operation):
                 HF state.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         init_state_flipped = np.flip(init_state)
         op_list = []

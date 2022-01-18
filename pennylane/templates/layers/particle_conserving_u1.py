@@ -20,6 +20,70 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
+def decompose_ua(op_list, phi, wires=None):
+    r"""Appends the circuit decomposing the controlled application of the unitary
+    :math:`U_A(\phi)`
+    
+    .. math::
+    
+        U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
+        
+    in terms of the quantum operations supported by PennyLane.
+    
+    :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
+    to define two-qubit exchange gates required to build particle-conserving
+    VQE ansatze for quantum chemistry simulations. See :func:`~.ParticleConservingU1`.
+
+    :math:`U_A(\phi)` is expressed in terms of ``PhaseShift``, ``Rot`` and ``PauliZ`` operations
+    :math:`U_A(\phi) = R_\phi(-2\phi) R(-\phi, \pi, \phi) \sigma_z`.
+
+        Args:
+        op_list (list[.Operator]): list of operators to append to
+        phi (float): angle :math:`\phi` defining the unitary :math:`U_A(\phi)`
+        wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
+    """
+
+    n, m = wires
+
+    op_list.append(qml.CZ(wires=wires))
+    op_list.append(qml.CRot(-phi, np.pi, phi, wires=wires))
+
+    # decomposition of C-PhaseShift(2*phi) gate
+    op_list.append(qml.PhaseShift(-phi, wires=m))
+    op_list.append(qml.CNOT(wires=wires))
+    op_list.append(qml.PhaseShift(phi, wires=m))
+    op_list.append(qml.CNOT(wires=wires))
+    op_list.append(qml.PhaseShift(-phi, wires=n))
+
+    return op_list
+
+
+def u1_ex_gate(op_list, phi, theta, wires=None):
+    r"""Appends the two-qubit exchange gate :math:`U_{1,\mathrm{ex}}` proposed
+    in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build
+    a hardware-efficient particle-conserving VQE ansatz for quantum chemistry
+    simulations.
+
+    Args:
+        op_list (list[.Operator]): list of operators to append to
+        phi (float): angle entering the unitary :math:`U_A(\phi)`
+        theta (float): angle entering the rotation :math:`R(0, 2\theta, 0)`
+        wires (list[Iterable]): the two wires ``n`` and ``m`` the circuit acts on
+    """
+
+    # C-UA(phi)
+    decompose_ua(op_list, phi, wires=wires)
+
+    op_list.append(qml.CZ(wires=wires[::-1]))
+    op_list.append(qml.CRot(0, 2 * theta, 0, wires=wires[::-1]))
+
+    # C-UA(-phi)
+    decompose_ua(op_list, -phi, wires=wires)
+
+    return op_list
+
+
+
 class ParticleConservingU1(Operation):
     r"""Implements the heuristic VQE ansatz for quantum chemistry simulations using the
     particle-conserving gate :math:`U_{1,\mathrm{ex}}` proposed by Barkoutsos *et al.* in
@@ -214,7 +278,7 @@ class ParticleConservingU1(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.ParticleConservingU1.decomposition`.
+        .. seealso:: :meth:`~.ParticleConservingU1.decomposition`.
 
         Args:
             weights (tensor_like): Array of weights of shape ``(D, M, 2)``.
@@ -225,7 +289,7 @@ class ParticleConservingU1(Operation):
                 used to initialize the wires
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 
@@ -246,8 +310,8 @@ class ParticleConservingU1(Operation):
          PhaseShift(tensor(0.3000), wires=['a'])]
         """
 
-        nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
-        nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
+        nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
+        nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = qml.math.shape(weights)[0]
         op_list = []
 
@@ -255,34 +319,9 @@ class ParticleConservingU1(Operation):
 
         for l in range(n_layers):
             for i, wires_ in enumerate(nm_wires):
-
-                phi = weights[l, i, 0]
-                theta = weights[l, i, 1]
-
-                # ---- decomposition of C-UA(phi)
-                op_list.append(qml.CZ(wires=wires_))
-                op_list.append(qml.CRot(-phi, np.pi, phi, wires=wires_))
-                # decomposition of C-PhaseShift(2*phi) gate
-                op_list.append(qml.PhaseShift(-phi, wires=wires_[1]))
-                op_list.append(qml.CNOT(wires=wires_))
-                op_list.append(qml.PhaseShift(phi, wires=wires_[1]))
-                op_list.append(qml.CNOT(wires=wires_))
-                op_list.append(qml.PhaseShift(-phi, wires=wires_[0]))
-                # --------
-
-                op_list.append(qml.CZ(wires=wires_[::-1]))
-                op_list.append(qml.CRot(0, 2 * theta, 0, wires=wires_[::-1]))
-
-                # ---- decomposition of C-UA(-phi)
-                op_list.append(qml.CZ(wires=wires_))
-                op_list.append(qml.CRot(phi, np.pi, -phi, wires=wires_))
-                # decomposition of C-PhaseShift(2*phi) gate
-                op_list.append(qml.PhaseShift(phi, wires=wires_[1]))
-                op_list.append(qml.CNOT(wires=wires_))
-                op_list.append(qml.PhaseShift(-phi, wires=wires_[1]))
-                op_list.append(qml.CNOT(wires=wires_))
-                op_list.append(qml.PhaseShift(phi, wires=wires_[0]))
-                # --------
+                u1_ex_gate(
+                    weights[0][l, i, 0], weights[0][l, i, 1], wires=wires_
+                )
 
         return op_list
 

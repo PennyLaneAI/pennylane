@@ -125,7 +125,7 @@ class GroverOperator(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.GroverOperator.decomposition`.
+        .. seealso:: :meth:`~.GroverOperator.decomposition`.
 
         Args:
             wires (Any or Iterable[Any]): wires that the operator acts on
@@ -134,7 +134,7 @@ class GroverOperator(Operation):
             n_wires (int): number of (non-work) wires used
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         ctrl_str = "0" * (len(wires) - 1)
 

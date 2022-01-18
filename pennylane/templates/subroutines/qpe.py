@@ -141,7 +141,7 @@ class QuantumPhaseEstimation(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.QuantumPhaseEstimation.decomposition`.
+        .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
 
         Args:
             unitary (array): the phase estimation unitary, specified as a matrix
@@ -151,7 +151,7 @@ class QuantumPhaseEstimation(Operation):
                 estimation
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
 
         unitary_powers = [unitary]

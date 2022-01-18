@@ -119,7 +119,7 @@ class ArbitraryUnitary(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.ArbitraryUnitary.decomposition`.
+        .. seealso:: :meth:`~.ArbitraryUnitary.decomposition`.
 
         Args:
             weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
@@ -128,7 +128,7 @@ class ArbitraryUnitary(Operation):
 
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         op_list = []
 

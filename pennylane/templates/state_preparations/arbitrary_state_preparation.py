@@ -107,7 +107,7 @@ class ArbitraryStatePreparation(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.ArbitraryStatePreparation.decomposition`.
+        .. seealso:: :meth:`~.ArbitraryStatePreparation.decomposition`.
 
         Args:
             weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^{n+1} - 2`
@@ -115,7 +115,7 @@ class ArbitraryStatePreparation(Operation):
             wires (Any or Iterable[Any]): wires that the operator acts on
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

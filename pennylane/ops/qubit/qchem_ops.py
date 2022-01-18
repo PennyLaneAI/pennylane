@@ -124,7 +124,7 @@ class SingleExcitation(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.SingleExcitation.decomposition`.
+        .. seealso:: :meth:`~.SingleExcitation.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -235,7 +235,7 @@ class SingleExcitationMinus(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.SingleExcitationMinus.decomposition`.
+        .. seealso:: :meth:`~.SingleExcitationMinus.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -360,7 +360,7 @@ class SingleExcitationPlus(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.SingleExcitationPlus.decomposition`.
+        .. seealso:: :meth:`~.SingleExcitationPlus.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -501,7 +501,7 @@ class DoubleExcitation(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.DoubleExcitation.decomposition`.
+        .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
 
         For the source of this decomposition, see page 17 of
         `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
@@ -876,7 +876,7 @@ class OrbitalRotation(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.OrbitalRotation.decomposition`.
+        .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
 
         For the source of this decomposition, see page 18 of
         `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .

@@ -345,7 +345,7 @@ class PhaseShift(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.PhaseShift.decomposition`.
+        .. seealso:: :meth:`~.PhaseShift.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -468,7 +468,7 @@ class ControlledPhaseShift(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.ControlledPhaseShift.decomposition`.
+        .. seealso:: :meth:`~.ControlledPhaseShift.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -600,7 +600,7 @@ class Rot(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.Rot.decomposition`.
+        .. seealso:: :meth:`~.Rot.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -738,7 +738,7 @@ class MultiRZ(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.MultiRZ.decomposition`.
+        .. seealso:: :meth:`~.MultiRZ.decomposition`.
 
         Args:
             theta (float): rotation angle :math:`\theta`
@@ -973,7 +973,7 @@ class PauliRot(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.PauliRot.decomposition`.
+        .. seealso:: :meth:`~.PauliRot.decomposition`.
 
         Args:
             theta (float): rotation angle :math:`\theta`
@@ -1135,7 +1135,7 @@ class CRX(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.CRot.decomposition`.
+        .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -1269,7 +1269,7 @@ class CRY(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.CRY.decomposition`.
+        .. seealso:: :meth:`~.CRY.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -1416,7 +1416,7 @@ class CRZ(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.CRZ.decomposition`.
+        .. seealso:: :meth:`~.CRZ.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -1561,7 +1561,7 @@ class CRot(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.CRot.decomposition`.
+        .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -1670,7 +1670,7 @@ class U1(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.U1.decomposition`.
+        .. seealso:: :meth:`~.U1.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -1772,7 +1772,7 @@ class U2(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.U2.decomposition`.
+        .. seealso:: :meth:`~.U2.decomposition`.
 
         Args:
             phi (float): azimuthal angle :math:`\phi`
@@ -1896,7 +1896,7 @@ class U3(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.U3.decomposition`.
+        .. seealso:: :meth:`~.U3.decomposition`.
 
         Args:
             theta (float): polar angle :math:`\theta`
@@ -2001,7 +2001,7 @@ class IsingXX(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.IsingXX.decomposition`.
+        .. seealso:: :meth:`~.IsingXX.decomposition`.
 
         Args:
             phi (float): the phase angle
@@ -2069,7 +2069,7 @@ class IsingYY(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.IsingYY.decomposition`.
+        .. seealso:: :meth:`~.IsingYY.decomposition`.
 
         Args:
             phi (float): the phase angle
@@ -2165,7 +2165,7 @@ class IsingZZ(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.IsingZZ.decomposition`.
+        .. seealso:: :meth:`~.IsingZZ.decomposition`.
 
         Args:
             phi (float): the phase angle

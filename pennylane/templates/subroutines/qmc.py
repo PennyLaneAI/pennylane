@@ -377,7 +377,7 @@ class QuantumMonteCarlo(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.QuantumMonteCarlo.decomposition`.
+        .. seealso:: :meth:`~.QuantumMonteCarlo.decomposition`.
 
         Args:
             A (array): unitary matrix corresponding to an input probability distribution
@@ -389,7 +389,7 @@ class QuantumMonteCarlo(Operation):
             estimation_wires (Iterable[Any]): the estimation wires
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),

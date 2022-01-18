@@ -49,10 +49,10 @@ def _layer1(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(Hadamard(wires=s))
@@ -96,10 +96,10 @@ def _layer2(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(RX(-np.pi / 2, wires=s))
@@ -143,10 +143,10 @@ def _layer3(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(Hadamard(wires=s))
@@ -190,10 +190,10 @@ def _layer4(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(Hadamard(wires=s))
@@ -237,10 +237,10 @@ def _layer5(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(RX(-np.pi / 2, wires=s))
@@ -284,10 +284,10 @@ def _layer6(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(Hadamard(wires=s))
@@ -331,10 +331,10 @@ def _layer7(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     op_list.append(RX(-np.pi / 2, wires=s))
@@ -378,10 +378,10 @@ def _layer8(weight, s, r, q, p, set_cnot_wires, op_list):
         q (int): qubit index ``q``
         p (int): qubit index ``p``
         set_cnot_wires (list[Wires]): list of CNOT wires
-        op_list (list[~.Operator]): decomposition list to append to
+        op_list (list[.Operator]): decomposition list to append to
 
     Returns:
-        list[~.Operator]: decomposition filled with operators by this function
+        list[.Operator]: decomposition filled with operators by this function
     """
 
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
@@ -565,7 +565,7 @@ class FermionicDoubleExcitation(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.FermionicDoubleExcitation.decomposition`.
+        .. seealso:: :meth:`~.FermionicDoubleExcitation.decomposition`.
 
         Args:
             weight (float or tensor_like): angle :math:`\theta` entering the Z rotation
@@ -576,7 +576,7 @@ class FermionicDoubleExcitation(Operation):
                 orbitals in the interval ``[q, p]``.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         s = wires1[0]
         r = wires1[-1]

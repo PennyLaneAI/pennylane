@@ -203,7 +203,7 @@ class Interferometer(CVOperation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.Interferometer.decomposition`.
+        .. seealso:: :meth:`~.Interferometer.decomposition`.
 
         Args:
             theta (tensor_like): size :math:`(M(M-1)/2,)` tensor of transmittivity angles
@@ -214,7 +214,7 @@ class Interferometer(CVOperation):
             beamsplitter (str): beamsplitter convention
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
 
         wires = Wires(wires)

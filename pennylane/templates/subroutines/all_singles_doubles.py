@@ -170,7 +170,7 @@ class AllSinglesDoubles(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.AllSinglesDoubles.decomposition`.
+        .. seealso:: :meth:`~.AllSinglesDoubles.decomposition`.
 
         Args:
             weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
@@ -185,7 +185,7 @@ class AllSinglesDoubles(Operation):
                 the :class:`~.pennylane.DoubleExcitation` operations act on
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         op_list = []
 

@@ -188,7 +188,7 @@ class ParticleConservingU2(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.ParticleConservingU2.decomposition`.
+        .. seealso:: :meth:`~.ParticleConservingU2.decomposition`.
 
         Args:
             weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
@@ -199,7 +199,7 @@ class ParticleConservingU2(Operation):
                 used to initialize the wires.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

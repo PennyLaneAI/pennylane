@@ -225,7 +225,7 @@ class GateFabric(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.GateFabric.decomposition`.
+        .. seealso:: :meth:`~.GateFabric.decomposition`.
 
         Args:
             weights (tensor_like): Array of weights of shape ``(D, L, 2)``\,
@@ -238,7 +238,7 @@ class GateFabric(Operation):
                 Default value is :math:`\hat{I}`.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

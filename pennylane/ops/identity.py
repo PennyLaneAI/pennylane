@@ -104,7 +104,7 @@ class Identity(CVObservable, Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.Identity.decomposition`.
+        .. seealso:: :meth:`~.Identity.decomposition`.
 
         Args:
             wires (Any, Wires): A single wire that the operator acts on.

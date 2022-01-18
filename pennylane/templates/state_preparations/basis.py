@@ -83,14 +83,14 @@ class BasisStatePreparation(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.BasisStatePreparation.decomposition`.
+        .. seealso:: :meth:`~.BasisStatePreparation.decomposition`.
 
         Args:
             wires (Any or Iterable[Any]): wires that the operator acts on
             basis_state (array): Input array of shape ``(len(wires),)``
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
 
         **Example**
 

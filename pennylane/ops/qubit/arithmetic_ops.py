@@ -151,7 +151,7 @@ class QubitCarry(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.QubitCarry.decomposition`.
+        .. seealso:: :meth:`~.QubitCarry.decomposition`.
 
         Args:
             wires (Iterable[Any], Wires): Wires that the operator acts on.
@@ -280,7 +280,7 @@ class QubitSum(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.QubitSum.decomposition`.
+        .. seealso:: :meth:`~.QubitSum.decomposition`.
 
         Args:
             wires (Iterable[Any], Wires): Wires that the operator acts on.

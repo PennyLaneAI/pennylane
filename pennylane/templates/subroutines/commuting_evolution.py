@@ -145,7 +145,7 @@ class CommutingEvolution(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.CommutingEvolution.decomposition`.
+        .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
 
         Args:
             time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
                 generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
         hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)

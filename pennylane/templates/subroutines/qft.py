@@ -98,7 +98,7 @@ class QFT(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.QFT.decomposition`.
+        .. seealso:: :meth:`~.QFT.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.

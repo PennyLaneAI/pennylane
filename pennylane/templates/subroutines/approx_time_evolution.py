@@ -129,7 +129,7 @@ class ApproxTimeEvolution(Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.ApproxTimeEvolution.decomposition`.
+        .. seealso:: :meth:`~.ApproxTimeEvolution.decomposition`.
 
         Args:
             coeffs_and_time (list[tensor_like or float]): list of coefficients of the Hamiltonian, appended by the time
@@ -142,7 +142,7 @@ class ApproxTimeEvolution(Operation):
             n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
         Returns:
-            list[~.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the Operator into lower-level operations
         """
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
