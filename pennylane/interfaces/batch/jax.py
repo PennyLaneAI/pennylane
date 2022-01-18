@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ def _execute(
             return res
 
         shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        res = host_callback.call(wrapper, params, result_shape=shapes)
+        res = wrapper(params)
         return res
 
     def wrapped_exec_fwd(params):
@@ -172,14 +172,10 @@ def _execute(
 
                 partial_res = execute_fn(vjp_tapes)[0]
                 res = processing_fn(partial_res)
-                return np.concatenate(res)
+                return jnp.concatenate(res)
 
             args = tuple(params) + (g,)
-            vjps = host_callback.call(
-                non_diff_wrapper,
-                args,
-                result_shape=jax.ShapeDtypeStruct((total_params,), dtype),
-            )
+            vjps = non_diff_wrapper(args)
 
             param_idx = 0
             res = []
@@ -254,11 +250,7 @@ def _execute_with_fwd(
 
         fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
-        res, jacs = host_callback.call(
-            wrapper,
-            params,
-            result_shape=tuple([fwd_shapes, jacobian_shape]),
-        )
+        res, jacs = wrapper(params)
         return res, jacs
 
     def wrapped_exec_fwd(params):
