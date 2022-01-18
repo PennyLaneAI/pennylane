@@ -98,7 +98,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
     Args:
-        argnum (list[int]): A list of integers indicating the indices
+        argnum (list[int]): A list of integers indicating indicating the indices
             to dispatch (i.e., the arguments that are tensors handled by an interface).
             If ``None``, dispatch over all arguments.
         tensor_lists (list[int]): a list of integers indicating which indices
@@ -126,12 +126,12 @@ def multi_dispatch(argnum=None, tensor_list=None):
     >>> stack = multi_dispatch(argnum=0, tensor_list=0)(autoray.numpy.stack)
 
     We can also use the ``multi_dispatch`` decorator to dispatch
-    arguments of more elaborate custom functions. Here is an example
+    arguments of more more elaborate custom functions. Here is an example
     of a ``custom_function`` that
     computes :math:`c \\sum_i (v_i)^T v_i`, where :math:`v_i` are vectors in ``values`` and
-    :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first
-    argument ``values``, how ``tensor_list=0`` indicates that said first argument is a
-    list of vectors, and that ``coefficient`` is not dispatched.
+    :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first argument ``values``,
+    how ``tensor_list=0`` indicates that said first argument is a list of vectors, and that ``coefficient`` is not
+    dispatched.
 
     >>> @math.multi_dispatch(argnum=0, tensor_list=0)
     >>> def custom_function(values, like, coefficient=10):
@@ -179,8 +179,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
     return decorator
 
 
-@multi_dispatch(argnum=[0], tensor_list=[0])
-def block_diag(values, like=None):
+def block_diag(values):
     """Combine a sequence of 2D tensors to form a block diagonal tensor.
 
     Args:
@@ -204,12 +203,12 @@ def block_diag(values, like=None):
             [ 0,  0, -1, -6, -3,  0],
             [ 0,  0,  0,  0,  0,  5]])
     """
-    values = np.coerce(values, like=like)
-    return np.block_diag(values, like=like)
+    interface = _multi_dispatch(values)
+    values = np.coerce(values, like=interface)
+    return np.block_diag(values, like=interface)
 
 
-@multi_dispatch(argnum=[0], tensor_list=[0])
-def concatenate(values, axis=0, like=None):
+def concatenate(values, axis=0):
     """Concatenate a sequence of tensors along the specified axis.
 
     .. warning::
@@ -236,7 +235,9 @@ def concatenate(values, axis=0, like=None):
     <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
-    if like == "torch":
+    interface = _multi_dispatch(values)
+
+    if interface == "torch":
         import torch
 
         if axis is None:
@@ -247,19 +248,15 @@ def concatenate(values, axis=0, like=None):
         else:
             values = [torch.as_tensor(t) for t in values]
 
-    if like == "tensorflow" and axis is None:
+    if interface == "tensorflow" and axis is None:
         # flatten and then concatenate zero'th dimension
         # to reproduce numpy's behaviour
         values = [np.flatten(np.array(t)) for t in values]
         axis = 0
 
-    return np.concatenate(values, axis=axis, like=like)
+    return np.concatenate(values, axis=axis, like=interface)
 
 
-# Note that diag is not eligible for the multi_dispatch decorator because
-# it is used sometimes with iterable `values` that need to be interpreted
-# as a list of tensors, and sometimes with a single tensor `values` that
-# might not be iterable (for example a TensorFlow `Variable`)
 def diag(values, k=0):
     """Construct a diagonal tensor from a list of scalars.
 
@@ -295,14 +292,14 @@ def diag(values, k=0):
             [0.0000, 0.0000, 0.0000]])
     """
     interface = _multi_dispatch(values)
+
     if isinstance(values, (list, tuple)):
         values = np.stack(np.coerce(values, like=interface), like=interface)
 
     return np.diag(values, k=k, like=interface)
 
 
-@multi_dispatch(argnum=[0, 1])
-def dot(tensor1, tensor2, like=None):
+def dot(tensor1, tensor2):
     """Returns the matrix or dot product of two tensors.
 
     * If both tensors are 0-dimensional, elementwise multiplication
@@ -326,34 +323,34 @@ def dot(tensor1, tensor2, like=None):
     Returns:
         tensor_like: the matrix or dot product of two tensors
     """
-    x, y = np.coerce([tensor1, tensor2], like=like)
+    interface = _multi_dispatch([tensor1, tensor2])
+    x, y = np.coerce([tensor1, tensor2], like=interface)
 
-    if like == "torch":
+    if interface == "torch":
         if x.ndim == 0 and y.ndim == 0:
             return x * y
 
         if x.ndim <= 2 and y.ndim <= 2:
             return x @ y
 
-        return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
-    if like == "tensorflow":
+    if interface == "tensorflow":
         if len(np.shape(x)) == 0 and len(np.shape(y)) == 0:
             return x * y
 
         if len(np.shape(y)) == 1:
-            return np.tensordot(x, y, axes=[[-1], [0]], like=like)
+            return np.tensordot(x, y, axes=[[-1], [0]], like=interface)
 
         if len(np.shape(x)) == 2 and len(np.shape(y)) == 2:
             return x @ y
 
-        return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
+        return np.tensordot(x, y, axes=[[-1], [-2]], like=interface)
 
-    return np.dot(x, y, like=like)
+    return np.dot(x, y, like=interface)
 
 
-@multi_dispatch(argnum=[0, 1])
-def tensordot(tensor1, tensor2, axes=None, like=None):
+def tensordot(tensor1, tensor2, axes=None):
     """Returns the tensor product of two tensors.
     In general ``axes`` specifies either the set of axes for both
     tensors that are contracted (with the first/second entry of ``axes``
@@ -379,12 +376,12 @@ def tensordot(tensor1, tensor2, axes=None, like=None):
     Returns:
         tensor_like: the tensor product of the two input tensors
     """
-    x, y = np.coerce([tensor1, tensor2], like=like)
-    return np.tensordot(x, y, axes=axes, like=like)
+    interface = _multi_dispatch([tensor1, tensor2])
+    tensor1, tensor2 = np.coerce([tensor1, tensor2], like=interface)
+    return np.tensordot(tensor1, tensor2, axes=axes, like=interface)
 
 
-@multi_dispatch(argnum=[0], tensor_list=[0])
-def get_trainable_indices(values, like=None):
+def get_trainable_indices(values):
     """Returns a set containing the trainable indices of a sequence of
     values.
 
@@ -407,9 +404,10 @@ def get_trainable_indices(values, like=None):
     tensor(0.0899685, requires_grad=True)
     """
     trainable = requires_grad
+    interface = _multi_dispatch(values)
     trainable_params = set()
 
-    if like == "jax":
+    if interface == "jax":
         import jax
 
         if not any(isinstance(v, jax.core.Tracer) for v in values):
@@ -423,7 +421,7 @@ def get_trainable_indices(values, like=None):
             trainable = requires_grad
 
     for idx, p in enumerate(values):
-        if trainable(p, interface=like):
+        if trainable(p, interface=interface):
             trainable_params.add(idx)
 
     return trainable_params
@@ -462,8 +460,7 @@ def ones_like(tensor, dtype=None):
     return np.ones_like(tensor)
 
 
-@multi_dispatch(argnum=[0])
-def safe_squeeze(tensor, axis=None, exclude_axis=None, like=None):
+def safe_squeeze(tensor, axis=None, exclude_axis=None):
     """Squeeze a tensor either along all axes, specified axes or all
     but a set of excluded axes. For selective squeezing, catch errors
     and do nothing if the selected axes do not have size 1.
@@ -478,7 +475,8 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None, like=None):
         or not excluded and that have size 1. If no axes are specified or excluded,
         all axes are attempted to be squeezed.
     """
-    if like == "tensorflow":
+    interface = _multi_dispatch([tensor])
+    if interface == "tensorflow":
         from tensorflow.python.framework.errors_impl import InvalidArgumentError
 
         exception = InvalidArgumentError
@@ -511,8 +509,7 @@ def safe_squeeze(tensor, axis=None, exclude_axis=None, like=None):
     return tensor
 
 
-@multi_dispatch(argnum=[0], tensor_list=[0])
-def stack(values, axis=0, like=None):
+def stack(values, axis=0):
     """Stack a sequence of tensors along the specified axis.
 
     .. warning::
@@ -541,8 +538,9 @@ def stack(values, axis=0, like=None):
            [1.00e-01, 2.00e-01, 3.00e-01],
            [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
     """
-    values = np.coerce(values, like=like)
-    return np.stack(values, axis=axis, like=like)
+    interface = _multi_dispatch(values)
+    values = np.coerce(values, like=interface)
+    return np.stack(values, axis=axis, like=interface)
 
 
 def where(condition, x=None, y=None):
@@ -615,8 +613,7 @@ def where(condition, x=None, y=None):
     return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
 
 
-@multi_dispatch(argnum=[0, 1])
-def frobenius_inner_product(A, B, normalize=False, like=None):
+def frobenius_inner_product(A, B, normalize=False):
     r"""Frobenius inner product between two matrices.
 
     .. math::
@@ -641,7 +638,8 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
     >>> qml.math.frobenius_inner_product(A, B)
     3.091948202943376
     """
-    A, B = np.coerce([A, B], like=like)
+    interface = _multi_dispatch([A, B])
+    A, B = np.coerce([A, B], like=interface)
 
     inner_product = np.sum(A * B)
 
@@ -652,7 +650,6 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
     return inner_product
 
 
-@multi_dispatch(argnum=[0, 2])
 def scatter_element_add(tensor, index, value, like=None):
     """In-place addition of a multidimensional value over various
     indices of a tensor.
@@ -686,7 +683,8 @@ def scatter_element_add(tensor, index, value, like=None):
     if len(np.shape(tensor)) == 0 and index == ():
         return tensor + value
 
-    return np.scatter_element_add(tensor, index, value, like=like)
+    interface = like or _multi_dispatch([tensor, value])
+    return np.scatter_element_add(tensor, index, value, like=interface)
 
 
 def unwrap(values, max_depth=None):
