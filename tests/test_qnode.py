@@ -1130,3 +1130,43 @@ class TestTapeExpansion:
 
         qml.grad(circuit)(x)
         assert len(spy_expand.call_args_list) == 3
+
+    def test_expansion_multiple_qwc_observables(self, mocker):
+        """Test that the QNode correctly expands tapes that return
+        multiple measurements of commuting observables"""
+        dev = qml.device("default.qubit", wires=2)
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliY(1)]
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return [qml.expval(o) for o in obs]
+
+        spy_expand = mocker.spy(circuit.device, "expand_fn")
+        params = [0.1, 0.2]
+        res = circuit(*params)
+
+        tape = spy_expand.spy_return
+        rotations, observables = qml.grouping.diagonalize_qwc_pauli_words(obs)
+
+        assert tape.observables[0].name == observables[0].name
+        assert tape.observables[1].name == observables[1].name
+
+        assert tape.operations[-2].name == rotations[0].name
+        assert tape.operations[-2].parameters == rotations[0].parameters
+        assert tape.operations[-1].name == rotations[1].name
+        assert tape.operations[-1].parameters == rotations[1].parameters
+
+        # check output value is consistent with a Hamiltonian expectation
+        coeffs = np.array([1.0, 1.0])
+        H = qml.Hamiltonian(coeffs, obs)
+
+        @qml.qnode(dev)
+        def circuit2(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return qml.expval(H)
+
+        res_H = circuit2(*params)
+        assert np.allclose(coeffs @ res, res_H)
