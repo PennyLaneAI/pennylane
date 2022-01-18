@@ -34,7 +34,7 @@ four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class SingleExcitation(Operation):
-    r"""SingleExcitation(phi, wires)
+    r"""
     Single excitation rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -59,6 +59,9 @@ class SingleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -85,6 +88,9 @@ class SingleExcitation(Operation):
     def generator(self):
         w1, w2 = self.wires
         return 0.25 * qml.PauliX(w1) @ qml.PauliY(w2) - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -155,7 +161,7 @@ class SingleExcitation(Operation):
 
 
 class SingleExcitationMinus(Operation):
-    r"""SingleExcitationMinus(phi, wires)
+    r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
     .. math:: U_-(\phi) = \begin{bmatrix}
@@ -175,6 +181,9 @@ class SingleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     """
     num_wires = 2
@@ -188,6 +197,9 @@ class SingleExcitationMinus(Operation):
             - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
             - 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -280,7 +292,7 @@ class SingleExcitationMinus(Operation):
 
 
 class SingleExcitationPlus(Operation):
-    r"""SingleExcitationPlus(phi, wires)
+    r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
 
     .. math:: U_+(\phi) = \begin{bmatrix}
@@ -300,6 +312,9 @@ class SingleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     """
     num_wires = 2
@@ -313,6 +328,9 @@ class SingleExcitationPlus(Operation):
             - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
             + 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
         )
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -405,7 +423,7 @@ class SingleExcitationPlus(Operation):
 
 
 class DoubleExcitation(Operation):
-    r"""DoubleExcitation(phi, wires)
+    r"""
     Double excitation rotation.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -432,6 +450,9 @@ class DoubleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -469,6 +490,9 @@ class DoubleExcitation(Operation):
             qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
         ]
         return qml.Hamiltonian(coeffs, obs)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -589,7 +613,7 @@ class DoubleExcitation(Operation):
 
 
 class DoubleExcitationPlus(Operation):
-    r"""DoubleExcitationPlus(phi, wires)
+    r"""
     Double excitation rotation with positive phase-shift outside the rotation subspace.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -614,6 +638,9 @@ class DoubleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 4
     grad_method = "A"
@@ -625,6 +652,9 @@ class DoubleExcitationPlus(Operation):
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = coo_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -669,7 +699,7 @@ class DoubleExcitationPlus(Operation):
 
 
 class DoubleExcitationMinus(Operation):
-    r"""DoubleExcitationMinus(phi, wires)
+    r"""
     Double excitation rotation with negative phase-shift outside the rotation subspace.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -694,6 +724,9 @@ class DoubleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 4
     grad_method = "A"
@@ -706,6 +739,9 @@ class DoubleExcitationMinus(Operation):
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = coo_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -749,7 +785,7 @@ class DoubleExcitationMinus(Operation):
 
 
 class OrbitalRotation(Operation):
-    r"""OrbitalRotation(phi, wires)
+    r"""
     Spin-adapted spatial orbital rotation.
 
     For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
@@ -779,6 +815,9 @@ class OrbitalRotation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -810,6 +849,9 @@ class OrbitalRotation(Operation):
             + 0.25 * qml.PauliX(w1) @ qml.PauliY(w3)
             - 0.25 * qml.PauliY(w1) @ qml.PauliX(w3)
         )
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates.
@@ -33,7 +34,7 @@ INV_SQRT2 = 1 / math.sqrt(2)
 
 
 class RX(Operation):
-    r"""RX(phi, wires)
+    r"""
     The single qubit X rotation
 
     .. math:: R_x(\phi) = e^{-i\phi\sigma_x/2} = \begin{bmatrix}
@@ -51,6 +52,9 @@ class RX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "X"
@@ -58,6 +62,9 @@ class RX(Operation):
 
     def generator(self):
         return -0.5 * PauliX(wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -104,7 +111,7 @@ class RX(Operation):
 
 
 class RY(Operation):
-    r"""RY(phi, wires)
+    r"""
     The single qubit Y rotation
 
     .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
@@ -122,6 +129,9 @@ class RY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "Y"
@@ -129,6 +139,9 @@ class RY(Operation):
 
     def generator(self):
         return -0.5 * PauliY(wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -170,7 +183,7 @@ class RY(Operation):
 
 
 class RZ(Operation):
-    r"""RZ(phi, wires)
+    r"""
     The single qubit Z rotation
 
     .. math:: R_z(\phi) = e^{-i\phi\sigma_z/2} = \begin{bmatrix}
@@ -188,6 +201,9 @@ class RZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "Z"
@@ -195,6 +211,9 @@ class RZ(Operation):
 
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -258,7 +277,7 @@ class RZ(Operation):
 
 
 class PhaseShift(Operation):
-    r"""PhaseShift(phi, wires)
+    r"""
     Arbitrary single qubit local phase shift
 
     .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -276,6 +295,9 @@ class PhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     basis = "Z"
@@ -283,6 +305,9 @@ class PhaseShift(Operation):
 
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -374,7 +399,7 @@ class PhaseShift(Operation):
 
 
 class ControlledPhaseShift(Operation):
-    r"""ControlledPhaseShift(phi, wires)
+    r"""
     A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -396,6 +421,9 @@ class ControlledPhaseShift(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "Z"
@@ -403,6 +431,9 @@ class ControlledPhaseShift(Operation):
 
     def generator(self):
         return qml.Projector(np.array([1, 1]), wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -508,7 +539,7 @@ CPhase = ControlledPhaseShift
 
 
 class Rot(Operation):
-    r"""Rot(phi, theta, omega, wires)
+    r"""
     Arbitrary single qubit rotation
 
     .. math::
@@ -536,9 +567,15 @@ class Rot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Any, Wires): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+        super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -636,7 +673,7 @@ class Rot(Operation):
 
 
 class MultiRZ(Operation):
-    r"""MultiRZ(theta, wires)
+    r"""
     Arbitrary multi Z rotation.
 
     .. math::
@@ -658,14 +695,17 @@ class MultiRZ(Operation):
     Args:
         theta (tensor_like or float): rotation angle :math:`\theta`
         wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     grad_method = "A"
 
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
+    def __init__(self, theta, wires=None, do_queue=True, id=None):
         wires = Wires(wires)
         self.hyperparameters["n_wires"] = len(wires)
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -764,7 +804,7 @@ class MultiRZ(Operation):
 
 
 class PauliRot(Operation):
-    r"""PauliRot(theta, pauli_word, wires)
+    r"""
     Arbitrary Pauli word rotation.
 
     .. math::
@@ -788,6 +828,9 @@ class PauliRot(Operation):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -811,8 +854,9 @@ class PauliRot(Operation):
         "Z": np.array([[1, 0], [0, 1]]),
     }
 
-    def __init__(self, theta, pauli_word, wires=None, do_queue=True):
-        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue)
+    def __init__(self, theta, pauli_word, wires=None, do_queue=True, id=None):
+        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue, id=id)
+
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed.'
@@ -1033,7 +1077,7 @@ four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class CRX(Operation):
-    r"""CRX(phi, wires)
+    r"""
     The controlled-RX operator
 
     .. math::
@@ -1068,6 +1112,9 @@ class CRX(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "X"
@@ -1076,6 +1123,9 @@ class CRX(Operation):
 
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1174,7 +1224,7 @@ class CRX(Operation):
 
 
 class CRY(Operation):
-    r"""CRY(phi, wires)
+    r"""
     The controlled-RY operator
 
     .. math::
@@ -1209,6 +1259,9 @@ class CRY(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "Y"
@@ -1217,6 +1270,9 @@ class CRY(Operation):
 
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1304,7 +1360,7 @@ class CRY(Operation):
 
 
 class CRZ(Operation):
-    r"""CRZ(phi, wires)
+    r"""
     The controlled-RZ operator
 
     .. math::
@@ -1342,6 +1398,9 @@ class CRZ(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     basis = "Z"
@@ -1350,6 +1409,9 @@ class CRZ(Operation):
 
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1451,7 +1513,7 @@ class CRZ(Operation):
 
 
 class CRot(Operation):
-    r"""CRot(phi, theta, omega, wires)
+    r"""
     The controlled-Rot operator
 
     .. math:: CR(\phi, \theta, \omega) = \begin{bmatrix}
@@ -1486,10 +1548,16 @@ class CRot(Operation):
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
         wires (Sequence[int]): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+
+    def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
+        super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1605,7 +1673,7 @@ class CRot(Operation):
 
 
 class U1(Operation):
-    r"""U1(phi)
+    r"""
     U1 gate.
 
     .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
@@ -1627,12 +1695,18 @@ class U1(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
 
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -1692,20 +1766,20 @@ class U1(Operation):
 
 
 class U2(Operation):
-    r"""U2(phi, lambda, wires)
+    r"""
     U2 gate.
 
     .. math::
 
-        U_2(\phi, \lambda) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \lambda)
-        \\ \exp(i \phi) & \exp(i (\phi + \lambda)) \end{bmatrix}
+        U_2(\phi, \delta) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \delta)
+        \\ \exp(i \phi) & \exp(i (\phi + \delta)) \end{bmatrix}
 
     The :math:`U_2` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
     :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
 
     .. math::
 
-        U_2(\phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\pi/2,-\lambda)
+        U_2(\phi, \delta) = R_\phi(\phi+\delta) R(\delta,\pi/2,-\delta)
 
     .. note::
 
@@ -1716,29 +1790,35 @@ class U2(Operation):
 
     * Number of wires: 1
     * Number of parameters: 2
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \lambda)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \lambda)) - f(U_2(\phi-\pi/2, \lambda))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_2(\phi, \lambda)`.
-      This gradient recipe applies for each angle argument :math:`\{\phi, \lambda\}`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \delta)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \delta)) - f(U_2(\phi-\pi/2, \delta))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_2(\phi, \delta)`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \delta\}`.
 
     Args:
         phi (float): azimuthal angle :math:`\phi`
-        lambda (float): quantum phase :math:`\lambda`
+        delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, phi, delta, wires, do_queue=True, id=None):
+        super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 2
 
     @staticmethod
-    def compute_matrix(phi, lam):  # pylint: disable=arguments-differ
+    def compute_matrix(phi, delta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the U2 operator.
 
         Args:
             phi (tensor_like or float): azimuthal angle
-            lam (tensor_like or float): quantum phase
+            delta (tensor_like or float): quantum phase
 
         Returns:
             tensor_like: canonical matrix
@@ -1749,22 +1829,22 @@ class U2(Operation):
         tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
                 [ 0.7036+0.0706j,  0.6755+0.2090j]])
         """
-        interface = qml.math._multi_dispatch([phi, lam])
+        interface = qml.math._multi_dispatch([phi, delta])
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
-            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+            delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
 
         mat = [
-            [1, -qml.math.exp(1j * lam)],
-            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + lam))],
+            [1, -qml.math.exp(1j * delta)],
+            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + delta))],
         ]
 
         return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def compute_decomposition(phi, lam, wires):
+    def compute_decomposition(phi, delta, wires):
         r"""Compute the decomposition for the specified parameters and wires. The decomposition
         defines an Operator as a product of more fundamental gates:
 
@@ -1776,7 +1856,7 @@ class U2(Operation):
 
         Args:
             phi (float): azimuthal angle :math:`\phi`
-            lambda (float): quantum phase :math:`\lambda`
+            delta (float): quantum phase :math:`\delta`
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
@@ -1791,34 +1871,34 @@ class U2(Operation):
 
         """
         decomp_ops = [
-            Rot(lam, np.pi / 2, -lam, wires=wires),
-            PhaseShift(lam, wires=wires),
+            Rot(delta, np.pi / 2, -delta, wires=wires),
+            PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
 
     def adjoint(self):
-        phi, lam = self.parameters
-        new_lam = (np.pi - phi) % (2 * np.pi)
-        new_phi = (np.pi - lam) % (2 * np.pi)
-        return U2(new_phi, new_lam, wires=self.wires)
+        phi, delta = self.parameters
+        new_delta = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - delta) % (2 * np.pi)
+        return U2(new_phi, new_delta, wires=self.wires)
 
 
 class U3(Operation):
-    r"""U3(theta, phi, lambda, wires)
+    r"""
     Arbitrary single qubit unitary.
 
     .. math::
 
-        U_3(\theta, \phi, \lambda) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \lambda)\sin(\theta/2) \\
-        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \lambda))\cos(\theta/2) \end{bmatrix}
+        U_3(\theta, \phi, \delta) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \delta)\sin(\theta/2) \\
+        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \delta))\cos(\theta/2) \end{bmatrix}
 
     The :math:`U_3` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
     :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
 
     .. math::
 
-        U_3(\theta, \phi, \lambda) = R_\phi(\phi+\lambda) R(\lambda,\theta,-\lambda)
+        U_3(\theta, \phi, \delta) = R_\phi(\phi+\delta) R(\delta,\theta,-\delta)
 
     .. note::
 
@@ -1829,31 +1909,37 @@ class U3(Operation):
 
     * Number of wires: 1
     * Number of parameters: 3
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \lambda)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \lambda)) - f(U_3(\theta-\pi/2, \phi, \lambda))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \lambda)`.
-      This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \lambda\}`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \delta)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \delta)) - f(U_3(\theta-\pi/2, \phi, \delta))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \delta)`.
+      This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \delta\}`.
 
     Args:
         theta (float): polar angle :math:`\theta`
         phi (float): azimuthal angle :math:`\phi`
-        lambda (float): quantum phase :math:`\lambda`
+        delta (float): quantum phase :math:`\delta`
         wires (Sequence[int] or int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
+        super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 3
 
     @staticmethod
-    def compute_matrix(theta, phi, lam):  # pylint: disable=arguments-differ
+    def compute_matrix(theta, phi, delta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the U3 operator.
 
         Args:
             theta (tensor_like or float): polar angle
             phi (tensor_like or float): azimuthal angle
-            lambda (tensor_like or float): quantum phase
+            delta (tensor_like or float): quantum phase
 
         Returns:
             tensor_like: canonical matrix
@@ -1868,7 +1954,7 @@ class U3(Operation):
         # It might be that they are in different interfaces, e.g.,
         # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
-        interface = qml.math._multi_dispatch([theta, phi, lam])
+        interface = qml.math._multi_dispatch([theta, phi, delta])
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
@@ -1876,19 +1962,19 @@ class U3(Operation):
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
-            lam = qml.math.cast_like(qml.math.asarray(lam, like=interface), 1j)
+            delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
         mat = [
-            [c, -s * qml.math.exp(1j * lam)],
-            [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + lam))],
+            [c, -s * qml.math.exp(1j * delta)],
+            [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + delta))],
         ]
 
         return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
-    def compute_decomposition(theta, phi, lam, wires):
+    def compute_decomposition(theta, phi, delta, wires):
         r"""Compute the decomposition for the specified parameters and wires. The decomposition
         defines an Operator as a product of more fundamental gates:
 
@@ -1901,7 +1987,7 @@ class U3(Operation):
         Args:
             theta (float): polar angle :math:`\theta`
             phi (float): azimuthal angle :math:`\phi`
-            lam (float): quantum phase :math:`\lambda`
+            delta (float): quantum phase :math:`\delta`
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
@@ -1916,21 +2002,21 @@ class U3(Operation):
 
         """
         decomp_ops = [
-            Rot(lam, theta, -lam, wires=wires),
-            PhaseShift(lam, wires=wires),
+            Rot(delta, theta, -delta, wires=wires),
+            PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
         return decomp_ops
 
     def adjoint(self):
-        theta, phi, lam = self.parameters
-        new_lam = (np.pi - phi) % (2 * np.pi)
-        new_phi = (np.pi - lam) % (2 * np.pi)
-        return U3(theta, new_phi, new_lam, wires=self.wires)
+        theta, phi, delta = self.parameters
+        new_delta = (np.pi - phi) % (2 * np.pi)
+        new_phi = (np.pi - delta) % (2 * np.pi)
+        return U3(theta, new_phi, new_delta, wires=self.wires)
 
 
 class IsingXX(Operation):
-    r"""IsingXX(phi, wires)
+    r"""
     Ising XX coupling gate
 
     .. math:: XX(\phi) = \begin{bmatrix}
@@ -1950,12 +2036,18 @@ class IsingXX(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
 
     def generator(self):
         return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -2029,7 +2121,7 @@ class IsingXX(Operation):
 
 
 class IsingYY(Operation):
-    r"""IsingYY(phi, wires)
+    r"""
     Ising YY coupling gate
 
     .. math:: \mathtt{YY}(\phi) = \begin{bmatrix}
@@ -2049,12 +2141,18 @@ class IsingYY(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
 
     def generator(self):
         return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
@@ -2125,7 +2223,7 @@ class IsingYY(Operation):
 
 
 class IsingZZ(Operation):
-    r""" IsingZZ(phi, wires)
+    r"""
     Ising ZZ coupling gate
 
     .. math:: ZZ(\phi) = \begin{bmatrix}
@@ -2145,12 +2243,18 @@ class IsingZZ(Operation):
     Args:
         phi (float): the phase angle
         wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 2
     grad_method = "A"
 
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
