@@ -397,6 +397,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the QNode was not correctly diagonalizing qubit-wise
+  commuting observables.
+  [(#2097)](https://github.com/PennyLaneAI/pennylane/pull/2097)
+
 * Fixes a bug in `gradient_transform` where the hybrid differentiation
   of circuits with a single parametrized gate failed and QNode argument
   axes of size `1` where removed from the output gradient.
@@ -443,4 +447,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
