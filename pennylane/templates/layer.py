@@ -30,11 +30,8 @@ def _preprocess(args, depth):
 
     for arg in args:
 
-        if (isinstance(args[0], list) and (len(args[0]) != depth)):
-            raise ValueError(
-                f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
-            )
-        elif (shape(arg)[0] != depth):
+        # TODO: handle ragged arrays without warnings
+        if shape(arg)[0] != depth:
             raise ValueError(
                 f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"
             )
