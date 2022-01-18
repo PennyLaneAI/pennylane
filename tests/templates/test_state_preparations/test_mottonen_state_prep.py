@@ -280,6 +280,19 @@ class TestDecomposition:
 
         assert np.allclose(dev.state, dev2.state, atol=tol, rtol=0)
 
+    def test_inverse(self):
+        """Test that template can deal with .inv()."""
+        state = np.array([1 / np.sqrt(2), 0, 0, 1 / 2, 0, 1 / 2, 0, 0])
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.MottonenStatePreparation(sate, wires=range(3))
+            qml.MottonenStatePreparation(sate, wires=range(3)).inv()
+            return qml.probs(wires=0)
+
+        assert np.allclose(circuit(), [1.0, 0.0], atol=tol, rtol=0)
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
