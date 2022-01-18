@@ -551,7 +551,8 @@ class TestWireCut:
     """Tests for the WireCut operator"""
 
     def test_behaves_as_identity(self):
-        """Tests that the WireCut operator behaves as the Identity"""
+        """Tests that the WireCut operator behaves as the Identity in the
+        absence of cutting"""
 
         dev = qml.device("default.qubit", wires=1)
 
