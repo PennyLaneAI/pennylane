@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* Added a modified version of the `_simplify` function to the `hf` module.
+  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+
+  This functions combines redundant terms in a Hamiltonian and eliminates terms with a zero
+  coefficient. The new function makes construction of molecular Hamiltonians more efficient.
+  For LiH, as an example, the time to construct the Hamiltonian is reduced from ~200 s to ~10 s.
+
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
   changes*.
@@ -443,4 +450,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Soran Jahangiri,
+Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
