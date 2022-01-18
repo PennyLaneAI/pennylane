@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* The num_params property of Operations is again a static property of the class.
+  This allows to programatically know the number of parameters before an Operation
+  is instanciated, which is only possible if the number of parameters is known.
+
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
   changes*.
@@ -326,16 +330,16 @@
   inside PennyLane. We can decorate the function, indicating the arguments that are
   tensors handled by the interface:
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
-    
+
   ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
   ... def some_function(tensor1, tensor2, option, like):
   ...     # the interface string is stored in ``like``.
   ...     ...
   ```
-  
+
   Previously, this was done using the private utility function `_multi_dispatch`.
-  
+
   ```pycon
   >>> def some_function(tensor1, tensor2, option):
   ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
@@ -357,7 +361,7 @@
 
   Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
   QNode arguments, which succeeded whenever the arguments have the same shape.
-  In this case, the stacked Jacobian would also be transposed, leading to the 
+  In this case, the stacked Jacobian would also be transposed, leading to the
   output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
 
   If no stacking and transposing occurs, the output shape instead is a `tuple`
