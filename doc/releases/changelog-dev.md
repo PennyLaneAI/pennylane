@@ -249,6 +249,10 @@
 
 <h3>Improvements</h3>
 
+* The `RotosolveOptimizer` now raises an error if no trainable arguments are
+  detected, instead of silently skipping update steps for all arguments.
+  [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
+
 * The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
   for QNode argument axes of size `1`.
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)

@@ -242,6 +242,12 @@ class RotosolveOptimizer:
     With TensorFlow, a ``tf.Variable`` inside a ``tf.GradientTape`` may be used to
     mark variables as trainable.
 
+    .. warning::
+
+        ``RotosolveOptimizer`` will only update parameters that are *explicitly*
+        marked as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
+        or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
+
     Now we carry out the optimization.
     The minimized cost of the intermediate univariate reconstructions can
     be read out via ``full_output``, including the cost *after* the full Rotosolve step:
@@ -397,12 +403,6 @@ class RotosolveOptimizer:
             about each parameter that is to be trained with ``RotosolveOptimizer``.
             For each univariate reconstruction, the data in ``nums_frequency`` takes
             precedence over the information in ``spectra``.
-
-        .. warning::
-
-            ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-            marked as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
-            or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
 
         """
         # todo: does this signature call cover all cases?

@@ -92,16 +92,17 @@ def test_error_missing_frequency_info_single_par():
     with pytest.raises(ValueError, match=r"was provided for the entry \(3,\)"):
         opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
 
+
 def test_error_no_trainable_args():
     """Test that an error is raised if none of the arguments is trainable."""
 
     opt = RotosolveOptimizer()
-    fun = lambda x, y, z: 1.
+    fun = lambda x, y, z: 1.0
     x = np.arange(4, requires_grad=False)
     y = np.arange(2, requires_grad=False)
     z = [1.2, -0.4, -9.1]
-    #nums_frequency = {"x": {(0,): 1, (1,): 1}}
-    #spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
+    # nums_frequency = {"x": {(0,): 1, (1,): 1}}
+    # spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):
         opt.step(fun, x, nums_frequency=None, spectra=None)
@@ -203,12 +204,12 @@ class TestWithClassicalFunction:
             return fun(*args, **kwargs)
 
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
-        
+
         # Make only the first argument trainable
         param = (np.array(param[0], requires_grad=True),) + param[1:]
         # Only one argument is marked as trainable -> Expect only the executions for that arg
         new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
-        exp_num_calls_single_trainable = sum(2*num+1 for num in nums_freq["x"].values())
+        exp_num_calls_single_trainable = sum(2 * num + 1 for num in nums_freq["x"].values())
         assert num_calls == exp_num_calls_single_trainable
         num_calls = 0
 
