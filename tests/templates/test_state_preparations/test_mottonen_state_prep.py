@@ -287,8 +287,8 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit():
-            qml.MottonenStatePreparation(sate, wires=range(3))
-            qml.MottonenStatePreparation(sate, wires=range(3)).inv()
+            qml.MottonenStatePreparation(state, wires=range(3))
+            qml.MottonenStatePreparation(state, wires=range(3)).inv()
             return qml.probs(wires=0)
 
         assert np.allclose(circuit(), [1.0, 0.0], atol=tol, rtol=0)
