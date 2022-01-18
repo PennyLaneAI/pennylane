@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from networkx import MultiDiGraph, weakly_connected_components
-from pennylane.tape import QuantumTape
+from networkx import MultiDiGraph
+
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Tensor
+from pennylane.tape import QuantumTape
+
 
 def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     """Converts a quantum tape to a directed multigraph."""

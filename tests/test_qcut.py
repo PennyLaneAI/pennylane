@@ -14,9 +14,19 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
+import numpy as np
 
 import pennylane as qml
 from pennylane.qcut.compiler import tape_to_graph
+
+with qml.tape.QuantumTape() as tape:
+    qml.RX(0.432, wires=0)
+    qml.RY(0.543, wires="a")
+    qml.CNOT(wires=[0, "a"])
+    qml.RZ(0.240, wires=0)
+    qml.RZ(0.133, wires="a")
+    qml.expval(qml.PauliZ(wires=[0]))
+
 
 class TestTapeToGraph:
     """
@@ -24,19 +34,11 @@ class TestTapeToGraph:
     partitioning algorithms for circuit cutting
     """
 
-    def test_simple_tape_to_graph(self):
+    def test_converted_graph_nodes(self):
         """
-        Tests that the conversion of a simple tape gives a graph containing the
-        the expected nodes and edges
+        Tests that the conversion of a tape gives a graph containing the
+        expected nodes
         """
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires='a')
-            qml.CNOT(wires=[0, 'a'])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires='a')
-            qml.expval(qml.PauliZ(wires=[0]))
 
         g = tape_to_graph(tape)
         nodes = list(g.nodes)
@@ -48,18 +50,62 @@ class TestTapeToGraph:
             assert op == node
         assert tape.observables[0] == nodes[-1].obs
 
+    def test_converted_graph_edges(self):
+        """
+        Tests that the conversion of a tape gives a graph containing the
+        expected edges
+        """
+        g = tape_to_graph(tape)
         edges = list(g.edges)
+
         num_wires_connecting_gates = 5
         assert len(edges) == num_wires_connecting_gates
 
+        ops = tape.operations
         expected_edge_connections = [
-            (ops[0],ops[2]),
+            (ops[0], ops[2]),
             (ops[1], ops[2]),
             (ops[2], ops[3]),
             (ops[2], ops[4]),
-            (ops[3], tape.observables[0])
+            (ops[3], tape.observables[0]),
         ]
 
         for edge, expected_edge in zip(edges[:-1], expected_edge_connections[:-1]):
             assert (edge[0], edge[1]) == (expected_edge[0], expected_edge[1])
-        assert (edges[-1][0], edges[-1][1].obs) == (expected_edge_connections[-1][0], expected_edge_connections[-1][1])
+        assert (edges[-1][0], edges[-1][1].obs) == (
+            expected_edge_connections[-1][0],
+            expected_edge_connections[-1][1],
+        )
+
+    def test_node_order_attribute(self):
+        """
+        Tests that the converted nodes contain the correct order attirbute
+        """
+
+        g = tape_to_graph(tape)
+        node_data = list(g.nodes(data=True))
+
+        expected_node_order = [
+            {"order": 0},
+            {"order": 1},
+            {"order": 2},
+            {"order": 3},
+            {"order": 4},
+            {"order": 5},
+        ]
+
+        for data, expected_order in zip(node_data, expected_node_order):
+            assert data[-1] == expected_order
+
+    def test_edge_wire_attribute(self):
+        """
+        Tests that the converted edges contain the correct wire attirbute
+        """
+
+        g = tape_to_graph(tape)
+        edge_data = list(g.edges(data=True))
+
+        expected_edge_wires = [{"wire": 0}, {"wire": "a"}, {"wire": 0}, {"wire": "a"}, {"wire": 0}]
+
+        for data, expected_wire in zip(edge_data, expected_edge_wires):
+            assert data[-1] == expected_wire
