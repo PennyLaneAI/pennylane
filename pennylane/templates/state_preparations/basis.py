@@ -71,9 +71,6 @@ class BasisStatePreparation(Operation):
                     f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
                 )
 
-            # we can extract a list here, because embedding is not differentiable
-            state = list(qml.math.toarray(state))
-
             if not all(bit in [0, 1] for bit in state):
                 raise ValueError(
                     f"Basis states must only consist of 0s and 1s; state {i} is {basis_state}"
