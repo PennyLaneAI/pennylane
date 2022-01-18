@@ -599,7 +599,7 @@ class DefaultQubit(QubitDevice):
 
         # Return the full density matrix by using numpy tensor product
         if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), 0)
+            density_matrix = self._tensordot(state, self._conj(state), axes=0)
             density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
             return density_matrix
 

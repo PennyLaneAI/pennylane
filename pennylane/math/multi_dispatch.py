@@ -180,7 +180,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
-def block_diag(values, like):
+def block_diag(values, like=None):
     """Combine a sequence of 2D tensors to form a block diagonal tensor.
 
     Args:
@@ -209,7 +209,7 @@ def block_diag(values, like):
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
-def concatenate(values, like, axis=0):
+def concatenate(values, axis=0, like=None):
     """Concatenate a sequence of tensors along the specified axis.
 
     .. warning::
@@ -302,7 +302,7 @@ def diag(values, k=0):
 
 
 @multi_dispatch(argnum=[0, 1])
-def dot(tensor1, tensor2, like):
+def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 
     * If both tensors are 0-dimensional, elementwise multiplication
@@ -353,7 +353,7 @@ def dot(tensor1, tensor2, like):
 
 
 @multi_dispatch(argnum=[0, 1])
-def tensordot(tensor1, tensor2, like, axes=None):
+def tensordot(tensor1, tensor2, axes=None, like=None):
     """Returns the tensor product of two tensors.
     In general ``axes`` specifies either the set of axes for both
     tensors that are contracted (with the first/second entry of ``axes``
@@ -384,7 +384,7 @@ def tensordot(tensor1, tensor2, like, axes=None):
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
-def get_trainable_indices(values, like):
+def get_trainable_indices(values, like=None):
     """Returns a set containing the trainable indices of a sequence of
     values.
 
@@ -463,7 +463,7 @@ def ones_like(tensor, dtype=None):
 
 
 @multi_dispatch(argnum=[0])
-def safe_squeeze(tensor, like, axis=None, exclude_axis=None):
+def safe_squeeze(tensor, axis=None, exclude_axis=None, like=None):
     """Squeeze a tensor either along all axes, specified axes or all
     but a set of excluded axes. For selective squeezing, catch errors
     and do nothing if the selected axes do not have size 1.
@@ -512,7 +512,7 @@ def safe_squeeze(tensor, like, axis=None, exclude_axis=None):
 
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
-def stack(values, like, axis=0):
+def stack(values, axis=0, like=None):
     """Stack a sequence of tensors along the specified axis.
 
     .. warning::
@@ -616,7 +616,7 @@ def where(condition, x=None, y=None):
 
 
 @multi_dispatch(argnum=[0, 1])
-def frobenius_inner_product(A, B, like, normalize=False):
+def frobenius_inner_product(A, B, normalize=False, like=None):
     r"""Frobenius inner product between two matrices.
 
     .. math::
