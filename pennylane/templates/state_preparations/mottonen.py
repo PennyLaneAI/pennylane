@@ -368,6 +368,8 @@ class MottonenStatePreparation(Operation):
                 control = wires_reverse[k:]
                 target = wires_reverse[k - 1]
                 if len(alpha_z_k) > 0:
-                    op_list.extend(_apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target))
+                    op_list.extend(
+                        _apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
+                    )
 
         return op_list

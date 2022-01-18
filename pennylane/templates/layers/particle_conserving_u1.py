@@ -23,13 +23,13 @@ from pennylane.operation import Operation, AnyWires
 def decompose_ua(phi, wires=None):
     r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
-    
+
     .. math::
-    
+
         U_A(\phi) = \left(\begin{array}{cc} 0 & e^{-i\phi} \\ e^{-i\phi} & 0 \\ \end{array}\right)
-        
+
     in terms of the quantum operations supported by PennyLane.
-    
+
     :math:`U_A(\phi)` is used in `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_,
     to define two-qubit exchange gates required to build particle-conserving
     VQE ansatze for quantum chemistry simulations. See :func:`~.ParticleConservingU1`.
@@ -314,16 +314,14 @@ class ParticleConservingU1(Operation):
          PhaseShift(tensor(0.3000), wires=['a'])]
         """
 
-        nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
-        nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
+        nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
+        nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = qml.math.shape(weights)[0]
         op_list = [qml.BasisEmbedding(init_state, wires=wires)]
 
         for l in range(n_layers):
             for i, wires_ in enumerate(nm_wires):
-                op_list.extend(u1_ex_gate(
-                    weights[l, i, 0], weights[l, i, 1], wires=wires_
-                ))
+                op_list.extend(u1_ex_gate(weights[l, i, 0], weights[l, i, 1], wires=wires_))
 
         return op_list
 

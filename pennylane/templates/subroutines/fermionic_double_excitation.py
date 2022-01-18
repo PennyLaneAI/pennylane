@@ -97,7 +97,12 @@ def _layer2(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [RX(-np.pi / 2, wires=s), Hadamard(wires=r), RX(-np.pi / 2, wires=q), RX(-np.pi / 2, wires=p)]
+    op_list = [
+        RX(-np.pi / 2, wires=s),
+        Hadamard(wires=r),
+        RX(-np.pi / 2, wires=q),
+        RX(-np.pi / 2, wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
@@ -140,7 +145,12 @@ def _layer3(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [Hadamard(wires=s), RX(-np.pi / 2, wires=r), RX(-np.pi / 2, wires=q), RX(-np.pi / 2, wires=p)]
+    op_list = [
+        Hadamard(wires=s),
+        RX(-np.pi / 2, wires=r),
+        RX(-np.pi / 2, wires=q),
+        RX(-np.pi / 2, wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
@@ -312,7 +322,12 @@ def _layer7(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [RX(-np.pi / 2, wires=s), RX(-np.pi / 2, wires=r), RX(-np.pi / 2, wires=q), Hadamard(wires=p)]
+    op_list = [
+        RX(-np.pi / 2, wires=s),
+        RX(-np.pi / 2, wires=r),
+        RX(-np.pi / 2, wires=q),
+        Hadamard(wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:
@@ -355,7 +370,12 @@ def _layer8(weight, s, r, q, p, set_cnot_wires):
         list[.Operator]: sequence of operators defined by this function
     """
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
-    op_list = [RX(-np.pi / 2, wires=s), RX(-np.pi / 2, wires=r), Hadamard(wires=q), RX(-np.pi / 2, wires=p)]
+    op_list = [
+        RX(-np.pi / 2, wires=s),
+        RX(-np.pi / 2, wires=r),
+        Hadamard(wires=q),
+        RX(-np.pi / 2, wires=p),
+    ]
 
     # Applying CNOTs
     for cnot_wires in set_cnot_wires:

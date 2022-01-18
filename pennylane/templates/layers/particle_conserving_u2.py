@@ -42,9 +42,7 @@ def u2_ex_gate(phi, wires=None):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
-    return [qml.CNOT(wires=wires),
-               qml.CRX(2 * phi, wires=wires[::-1]),
-               qml.CNOT(wires=wires)]
+    return [qml.CNOT(wires=wires), qml.CRX(2 * phi, wires=wires[::-1]), qml.CNOT(wires=wires)]
 
 
 class ParticleConservingU2(Operation):
