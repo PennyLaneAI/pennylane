@@ -291,7 +291,7 @@ class TestDecomposition:
             qml.MottonenStatePreparation(state, wires=range(3)).inv()
             return qml.probs(wires=0)
 
-        assert np.allclose(circuit(), [1.0, 0.0], atol=tol, rtol=0)
+        assert np.allclose(circuit(), [1.0, 0.0])
 
 
 class TestInputs:
