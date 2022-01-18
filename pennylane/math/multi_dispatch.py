@@ -129,8 +129,8 @@ def multi_dispatch(argnum=None, tensor_list=None):
     arguments of more elaborate custom functions. Here is an example
     of a ``custom_function`` that
     computes :math:`c \\sum_i (v_i)^T v_i`, where :math:`v_i` are vectors in ``values`` and
-    :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first 
-    argument ``values``, how ``tensor_list=0`` indicates that said first argument is a 
+    :math:`c` is a fixed ``coefficient``. Note how ``argnum=0`` only points to the first
+    argument ``values``, how ``tensor_list=0`` indicates that said first argument is a
     list of vectors, and that ``coefficient`` is not dispatched.
 
     >>> @math.multi_dispatch(argnum=0, tensor_list=0)
@@ -177,6 +177,7 @@ def multi_dispatch(argnum=None, tensor_list=None):
         return wrapper
 
     return decorator
+
 
 @multi_dispatch(argnum=[0], tensor_list=[0])
 def block_diag(values, like):
@@ -255,8 +256,11 @@ def concatenate(values, like, axis=0):
     return np.concatenate(values, axis=axis, like=like)
 
 
-@multi_dispatch(argnum=[0], tensor_list=[0])
-def diag(values, like, k=0):
+# Note that diag is not eligible for the multi_dispatch decorator because
+# it is used sometimes with iterable `values` that need to be interpreted
+# as a list of tensors, and sometimes with a single tensor `values` that
+# might not be iterable (for example a TensorFlow `Variable`)
+def diag(values, k=0):
     """Construct a diagonal tensor from a list of scalars.
 
     Args:
@@ -290,10 +294,11 @@ def diag(values, like, k=0):
             [0.0000, 0.0000, 0.2000],
             [0.0000, 0.0000, 0.0000]])
     """
+    interface = _multi_dispatch(values)
     if isinstance(values, (list, tuple)):
-        values = np.stack(np.coerce(values, like=like), like=like)
+        values = np.stack(np.coerce(values, like=interface), like=interface)
 
-    return np.diag(values, k=k, like=like)
+    return np.diag(values, k=k, like=interface)
 
 
 @multi_dispatch(argnum=[0, 1])

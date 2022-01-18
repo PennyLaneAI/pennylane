@@ -764,6 +764,7 @@ class TestTensordotTorch:
     def test_tensordot_torch_tensor_matrix(self, M, expected, axes1, axes2):
         assert fn.allclose(fn.tensordot(self.T1, M, axes=[axes1, axes2]), expected)
 
+
 class TestTensordotDifferentiability:
 
     v0 = np.array([0.1, 5.3, -0.9, 1.1])
@@ -772,9 +773,9 @@ class TestTensordotDifferentiability:
     exp_shapes = ((len(v0), len(v2), len(v0)), (len(v0), len(v2), len(v2)))
     exp_jacs = (np.zeros(exp_shapes[0]), np.zeros(exp_shapes[1]))
     for i in range(len(v0)):
-        exp_jacs[0][i, : , i] = v2
+        exp_jacs[0][i, :, i] = v2
     for i in range(len(v2)):
-        exp_jacs[1][:, i , i] = v0
+        exp_jacs[1][:, i, i] = v0
 
     def test_autograd(self):
         """Tests differentiability of tensordot with Autograd."""
@@ -827,6 +828,7 @@ class TestTensordotDifferentiability:
 
     def test_tensorflow(self):
         """Tests differentiability of tensordot with TensorFlow."""
+
         def jac_fn(func, args):
             with tf.GradientTape() as tape:
                 out = func(*args)
@@ -844,6 +846,7 @@ class TestTensordotDifferentiability:
         jac = jac_fn(partial(fn.tensordot, axes=0), (v0, v2))
         assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
         assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
 
 # the following test data is of the form
 # [original shape, axis to expand, new shape]
