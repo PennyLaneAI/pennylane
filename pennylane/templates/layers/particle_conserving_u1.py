@@ -83,7 +83,6 @@ def u1_ex_gate(op_list, phi, theta, wires=None):
     return op_list
 
 
-
 class ParticleConservingU1(Operation):
     r"""Implements the heuristic VQE ansatz for quantum chemistry simulations using the
     particle-conserving gate :math:`U_{1,\mathrm{ex}}` proposed by Barkoutsos *et al.* in
@@ -313,14 +312,12 @@ class ParticleConservingU1(Operation):
         nm_wires = [wires[l: l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l: l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = qml.math.shape(weights)[0]
-        op_list = []
-
-        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
+        op_list = [qml.BasisEmbedding(init_state, wires=wires)]
 
         for l in range(n_layers):
             for i, wires_ in enumerate(nm_wires):
-                u1_ex_gate(
-                    weights[0][l, i, 0], weights[0][l, i, 1], wires=wires_
+                op_list = u1_ex_gate(
+                    op_list, weights[l, i, 0], weights[l, i, 1], wires=wires_
                 )
 
         return op_list

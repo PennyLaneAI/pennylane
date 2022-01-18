@@ -70,7 +70,7 @@ def _matrix_M_entry(row, col):
     return (-1) ** sum_of_ones
 
 
-def _compute_theta(alpha):
+def compute_theta(alpha):
     """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly controlled rotation
      to the rotation angles used in the Gray code implementation.
 
@@ -116,7 +116,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire, op_l
         op_list (list[~.Operation]): list of operations to append to
     """
 
-    theta = _compute_theta(alpha)
+    theta = compute_theta(alpha)
 
     gray_code_rank = len(control_wires)
 

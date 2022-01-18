@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
-def u2_ex_gate(phi, wires=None):
+def u2_ex_gate(op_list, phi, wires=None):
     r"""Implements the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build particle-conserving VQE ansatze
     for Quantum Chemistry simulations.
@@ -36,13 +36,15 @@ def u2_ex_gate(phi, wires=None):
         \end{array}\right).
 
     Args:
+        op_list (list[.Operator]): list of operators to append to
         phi (float): angle entering the controlled-RX operator :math:`CRX(2\phi)`
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
     """
 
-    qml.CNOT(wires=wires)
-    qml.CRX(2 * phi, wires=wires[::-1])
-    qml.CNOT(wires=wires)
+    op_list.append(qml.CNOT(wires=wires))
+    op_list.append(qml.CRX(2 * phi, wires=wires[::-1]))
+    op_list.append(qml.CNOT(wires=wires))
+    return op_list
 
 
 class ParticleConservingU2(Operation):
@@ -215,9 +217,7 @@ class ParticleConservingU2(Operation):
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = qml.math.shape(weights)[0]
-        op_list = []
-
-        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
+        op_list = [qml.BasisEmbedding(init_state, wires=wires)]
 
         for l in range(n_layers):
 
@@ -225,11 +225,8 @@ class ParticleConservingU2(Operation):
                 op_list.append(qml.RZ(weights[l, j], wires=wires[j]))
 
             for i, wires_ in enumerate(nm_wires):
-                phi = weights[l, len(wires) + i]
-                op_list.append(qml.CNOT(wires=wires_))
-                op_list.append(qml.CRX(2 * phi, wires=wires_[::-1]))
-                op_list.append(qml.CNOT(wires=wires_))
-
+                op_list = u2_ex_gate(op_list, weights[l, len(wires) + i], wires=wires_)
+               
         return op_list
 
     @staticmethod

@@ -51,7 +51,7 @@ def r_unitary(gate, alpha, control_wires, target_wire):
         target_wire (int): wire that acts as target
     """
 
-    theta = qml.templates.state_preparations.mottonen._compute_theta(alpha)
+    theta = qml.templates.state_preparations.mottonen.compute_theta(alpha)
 
     gray_code_rank = len(control_wires)
 

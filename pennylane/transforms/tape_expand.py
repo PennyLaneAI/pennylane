@@ -226,7 +226,7 @@ def _custom_decomp_context(custom_decomps):
         original_decomp_method = obj.decomposition
 
         try:
-            # Explicitly set the new .decomposition method
+            # Explicitly set the new compute_decomposition method
             obj.compute_decomposition = staticmethod(fn)
             yield
 

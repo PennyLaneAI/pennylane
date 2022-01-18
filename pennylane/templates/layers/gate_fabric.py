@@ -68,7 +68,7 @@ class GateFabric(Operation):
         wires (Iterable): wires that the template acts on
         init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
             in the Jordan-Wigner representation.
-        include_pi (boolean): If ``include_pi = True``\, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
+        include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
     .. UsageDetails::
