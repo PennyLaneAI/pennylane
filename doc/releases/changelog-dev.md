@@ -214,6 +214,39 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
+* A new method `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
+  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The method generates
+  parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
+  software devices. Compared to using an auto-differentiation framework to compute the Hessian
+  via parameter shifts, this method will use fewer device invocations and can be used to inspect
+  the parameter-shifted "Hessian tapes" directly. The method remains fully differentiable on all
+  supported PennyLane interfaces.
+
+  Additionally, the parameter-shift Hessian comes with a new batch transform decorator
+  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian methods.
+  [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
+
+  The following code demonstrates how to use the parameter-shift Hessian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array([0.1, 0.2], requires_grad=True)
+
+  hessian = qml.gradients.param_shift_hessian(circuit)(x)
+  ```
+  ```pycon
+  >>> hessian
+  tensor([[-0.97517033,  0.01983384],
+          [ 0.01983384, -0.97517033]], requires_grad=True)
+  ```
+
 <h3>Improvements</h3>
 
 * The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
@@ -288,6 +321,26 @@
 * The Barrier and Identity operations now support the `adjoint` method.
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
+
+* Added a new `multi_dispatch` decorator that helps ease the definition of new functions
+  inside PennyLane. We can decorate the function, indicating the arguments that are
+  tensors handled by the interface:
+  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
+    
+  ```pycon
+  >>> @qml.math.multi_dispatch(argnum=[0, 1])
+  ... def some_function(tensor1, tensor2, option, like):
+  ...     # the interface string is stored in ``like``.
+  ...     ...
+  ```
+  
+  Previously, this was done using the private utility function `_multi_dispatch`.
+  
+  ```pycon
+  >>> def some_function(tensor1, tensor2, option):
+  ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+  ...     ...
+  ```
 
 <h3>Breaking changes</h3>
 
@@ -390,4 +443,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
