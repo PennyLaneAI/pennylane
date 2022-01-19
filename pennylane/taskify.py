@@ -14,10 +14,11 @@
 """
 This module contains functionality to enable task-based workflows with devices.
 """
-from typing import Dict, List, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane.devices import TaskQubit
+
 import dask.distributed as dist
 
 
@@ -53,8 +54,8 @@ def taskify(func, futures=False):
         def client_submit_async(*args, **kwargs):
             return client.submit(func, *args, **kwargs)
 
-    except:
-        raise RuntimeError("No running Dask client detected.")
+    except Exception as e:
+        raise RuntimeError("No running Dask client detected.") from e
 
     return client_submit_sync if not futures else client_submit_async
 
@@ -67,10 +68,10 @@ def untaskify(futures):
     try:
         client = dist.get_client()
 
-        def client_gather(*args, **kwargs):
+        def client_gather():
             return client.gather(futures)
 
-    except:
-        raise RuntimeError("No running Dask client detected.")
+    except Exception as e:
+        raise RuntimeError("No running Dask client detected.") from e
 
     return client_gather

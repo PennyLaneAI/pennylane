@@ -77,9 +77,15 @@ class ProxyHybridMethod:
         self.__isabstractmethod__ = bool(getattr(fclass, "__isabstractmethod__", False))
 
     def classmethod(self, fclass):
+        """
+        Defines the decorated method as a class-method.
+        """
         return type(self)(fclass, self.finstance, None)
 
     def instancemethod(self, finstance):
+        """
+        Defines the decorated method as an instance-method.
+        """
         return type(self)(self.fclass, finstance, self.__doc__)
 
     def __get__(self, instance, cls):
@@ -88,7 +94,6 @@ class ProxyHybridMethod:
         return self.finstance.__get__(instance, cls)
 
 
-# pylint: too-few-public-methods
 class TaskQubit(DefaultQubit):
     """Proxy simulator plugin written using Dask.Distributed as a task-distribution scheduling backend.
 
@@ -108,7 +113,7 @@ class TaskQubit(DefaultQubit):
     **Example**
 
     >>> import pennylane as qml
-    >>> import qml.numpy as np
+    >>> import pennylane.numpy as np
     >>> import tensorflow as tf
     >>> import dask.distributed as dist
 
@@ -117,7 +122,7 @@ class TaskQubit(DefaultQubit):
     ...     client = dist.Client(cluster)
     ...     backend = "default.qubit"
     ...     dev = qml.device("task.qubit", wires=6, backend=backend)
-    ...     @qml.qnode(dev, cache=False, interface="tf", diff_method="parameter-shift) # caching must be disabled due to proxy interface
+    ...     @qml.qnode(dev, cache=False, interface="tf", diff_method="parameter-shift") # caching must be disabled due to proxy interface
     ...     def circuit(x):
     ...         qml.RX(x[0], wires=0)
     ...         qml.RY(x[1], wires=0)
@@ -205,7 +210,6 @@ class TaskQubit(DefaultQubit):
             [ 2.77555756e-17, -8.34873873e-01, -7.80713777e-02],
             [-9.89358247e-01, -2.22044605e-16,  1.38777878e-17]])]
 
-
     Args:
         wires (int): The number of wires to initialize the device with.
         backend (None, str): Indicates the PennyLane device type to use for offloading
@@ -237,12 +241,12 @@ class TaskQubit(DefaultQubit):
         "lightning.qubit",
     }
 
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=no-self-argument
     def __init__(
         self,
         wires,
         *,
-        shots=None,
-        analytic=None,
         backend="default.qubit",
         gen_report: Union[bool, str] = False,
         future=False,
@@ -252,6 +256,7 @@ class TaskQubit(DefaultQubit):
         self._backend_cls = qml.plugin_devices[backend].load()
         self._backend_dev = self._backend_cls(wires=0)
 
+        # pylint: disable=invalid-class-object
         self.__class__ = type(
             f"TaskQubit",
             (self._backend_cls,),
@@ -328,6 +333,7 @@ class TaskQubit(DefaultQubit):
                 res = client.gather(results)
             return res
 
+    # pylint: disable=arguments-differ
     def apply(self, operations, **kwargs):
         "The apply method of task.qubit should not be explicitly used."
         pass
