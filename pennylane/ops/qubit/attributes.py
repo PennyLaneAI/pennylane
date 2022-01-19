@@ -107,7 +107,9 @@ composable_rotations = Attribute(
         "CRY",
         "CRZ",
         "ControlledPhaseShift",
-        "Rot",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ"
     ]
 )
 """Attribute: Operations for which composing multiple copies of the operation results in an
@@ -178,6 +180,7 @@ diagonal_in_z_basis = Attribute(
         "ControlledPhaseShift",
         "MultiRZ",
         "CRZ",
+        "IsingZZ"
     ]
 )
 """Attribute: Operations that are diagonal in the computational basis.
