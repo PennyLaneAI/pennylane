@@ -1452,14 +1452,14 @@ class TestScatterElementAdd:
         x = np.array(self.x, requires_grad=True)
         y = np.array(self.y, requires_grad=True)
 
-        def cost(weights):
+        def cost(*weights):
             return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
-        res = cost([x, y])
+        res = cost(x, y)
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        grad = qml.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        grad = qml.grad(lambda *weights: cost(*weights)[self.index[0], self.index[1]])(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1582,20 +1582,20 @@ class TestScatterElementAddMultiValue:
         x = np.array(self.x, requires_grad=True)
         y = np.array(self.y, requires_grad=True)
 
-        def cost(weights):
+        def cost(*weights):
             return fn.scatter_element_add(
                 weights[0], self.indices, [fn.sin(weights[1] / 2), weights[1] ** 2]
             )
 
-        res = cost([x, y])
+        res = cost(x, y)
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
         scalar_cost = (
-            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
-            + cost(weights)[self.indices[0][1], self.indices[1][1]]
+            lambda *weights: cost(*weights)[self.indices[0][0], self.indices[1][0]]
+            + cost(*weights)[self.indices[0][1], self.indices[1][1]]
         )
-        grad = qml.grad(scalar_cost)([x, y])
+        grad = qml.grad(scalar_cost)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1961,7 +1961,7 @@ class TestBlockDiagDiffability:
             np.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
         ]
         f = lambda x, y: fn.block_diag(tensors(x, y))
-        x, y = 0.2, 1.5
+        x, y = np.array([0.2, 1.5], requires_grad=True)
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
         assert fn.allclose(res[0], exp[0])
@@ -2119,12 +2119,16 @@ class TestUnwrap:
             unwrapped_params = qml.math.unwrap(params)
             return np.sum(np.sin(params[0] * params[2])) + params[1]
 
-        values = [onp.array([0.1, 0.2]), np.tensor(0.1, dtype=np.float64), np.tensor([0.5, 0.2])]
-        grad = qml.grad(cost_fn)(*values)
+        values = [
+            onp.array([0.1, 0.2]),
+            np.tensor(0.1, dtype=np.float64, requires_grad=True),
+            np.tensor([0.5, 0.2], requires_grad=True),
+        ]
+        grad = qml.grad(cost_fn, argnum=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
-        assert all(not isinstance(a, ArrayBox) for a in unwrapped_params)
+        assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward_nested(self):
         """Test that a sequence of Autograd values is properly unwrapped
