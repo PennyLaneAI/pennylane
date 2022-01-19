@@ -327,6 +327,8 @@ The Operator class has undergone a major refactor with the following changes:
   for developers.
   [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
 
+* The ``operation.py`` file got cleaned up.
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
