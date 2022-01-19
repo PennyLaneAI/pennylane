@@ -106,7 +106,7 @@ def zyz_decomposition(U, wire):
     U = _convert_to_su2(U)
 
     if math.is_abstract(U):
-        interface = math._multi_dispatch(U)
+        interface = math.get_interface(U)
 
         if interface == "jax":
             return cond(
