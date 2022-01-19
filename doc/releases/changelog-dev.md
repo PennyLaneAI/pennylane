@@ -461,7 +461,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Josh Izaac,
 Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
 
