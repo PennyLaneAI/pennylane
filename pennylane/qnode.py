@@ -421,9 +421,9 @@ class QNode:
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
         # cannot be done here since we don't yet know the composition of the circuit.
 
-        #required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
-        #supported_device = all(hasattr(device, attr) for attr in required_attrs)
-        #supported_device = supported_device and device.capabilities().get("returns_state")
+        # required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
+        # supported_device = all(hasattr(device, attr) for attr in required_attrs)
+        # supported_device = supported_device and device.capabilities().get("returns_state")
         supported_device = device.capabilities().get("provides_adjoint_method")
 
         if not supported_device:
