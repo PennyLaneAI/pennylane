@@ -77,9 +77,7 @@ class grad:
         argnum = []
 
         for idx, arg in enumerate(args):
-            trainable = getattr(arg, "requires_grad", None)
-            if trainable is None and isinstance(arg, ArrayBox):
-                trainable = True
+            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 argnum.append(idx)
 
@@ -289,9 +287,7 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
-            trainable = getattr(arg, "requires_grad", None)
-            if trainable is None and isinstance(arg, ArrayBox):
-                trainable = True
+            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 argnum.append(idx)
 
