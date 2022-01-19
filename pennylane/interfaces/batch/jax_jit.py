@@ -109,7 +109,7 @@ def _validate_tapes(tapes):
                 )
 
 
-def _execute(
+def _jittable_execute(
     params,
     tapes=None,
     device=None,
@@ -223,7 +223,7 @@ def _execute(
 
 
 # The execute function in forward mode
-def _execute_with_fwd(
+def _jittable_execute_with_fwd(
     params,
     tapes=None,
     device=None,
