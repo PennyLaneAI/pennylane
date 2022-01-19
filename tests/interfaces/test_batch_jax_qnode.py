@@ -300,7 +300,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    #TODO
+    # TODO
     @pytest.mark.xfail
     def test_multiple_outputs_raises(self, dev_name, diff_method, mode, tol):
         """Test executing a QNode that has multiple outputs raises an error."""
@@ -321,7 +321,7 @@ class TestQNode:
         ):
             my_circuit(1)
 
-    #TODO
+    # TODO
     @pytest.mark.parametrize("ret", [qml.probs(wires=0), qml.state()])
     @pytest.mark.xfail
     def test_not_expval_or_var_raises(self, dev_name, diff_method, mode, ret, tol):

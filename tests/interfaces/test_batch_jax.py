@@ -176,7 +176,7 @@ class TestJaxExecuteUnitTests:
         jax.grad(cost)(a)
         spy_gradients.assert_called()
 
-    #TODO
+    # TODO
     @pytest.mark.xfail
     def test_max_diff_error(self):
         """Test that an error is being raised if max_diff > 1 for the JAX

@@ -16,15 +16,14 @@ This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
 
+from copy import deepcopy
+
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
 
-from copy import deepcopy
-
-import numpy as np
 import pennylane as qml
-from pennylane.operation import Variance, Expectation
+from .jax_jit import _jittable_execute, _jittable_execute_with_fwd
 
 dtype = jnp.float64
 
@@ -102,11 +101,6 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
-    total_params = np.sum([len(p) for p in params])
-
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
@@ -211,10 +205,6 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
-
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = []
