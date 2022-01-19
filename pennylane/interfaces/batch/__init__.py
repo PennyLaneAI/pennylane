@@ -409,7 +409,7 @@ def execute(
 
     for idx, s in enumerate(tape_counts):
         # apply any device specific batch transform post-processing
-        final_results.append(batch_fns[idx](res[count:count + s]))
+        final_results.append(batch_fns[idx](res[count : count + s]))
         count += s
 
     return qml.math.convert_like(final_results, res)
