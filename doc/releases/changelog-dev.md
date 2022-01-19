@@ -254,6 +254,10 @@
 
 <h3>Improvements</h3>
 
+* The `RotosolveOptimizer` now raises an error if no trainable arguments are
+  detected, instead of silently skipping update steps for all arguments.
+  [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
+
 * The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
   for QNode argument axes of size `1`.
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
@@ -328,9 +332,13 @@
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
-  inside PennyLane. We can decorate the function, indicating the arguments that are
-  tensors handled by the interface:
+  inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
+
+  [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
+
+  We can decorate a function, indicating the arguments that are
+  tensors handled by the interface:
 
   ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
