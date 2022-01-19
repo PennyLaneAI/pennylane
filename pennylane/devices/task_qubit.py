@@ -14,10 +14,11 @@
 """This module contains a proxy qubit object for spawning multiple instances of
 a given qubit type for run on a background scheduler.
 """
-from typing import List, Union, Tuple, Dict
+from typing import List, Union, Tuple, Dict, Iterable
 from contextlib import nullcontext
 import pennylane as qml
 from pennylane import QubitDevice
+from pennylane.wires import Wires
 
 from .default_qubit import DefaultQubit
 from .._version import __version__
@@ -88,13 +89,15 @@ class ProxyHybridMethod:
 
 
 # pylint: too-few-public-methods
-class TaskQubit(QubitDevice):
+class TaskQubit(DefaultQubit):
     """Proxy simulator plugin written using Dask.Distributed as a task-distribution scheduling backend.
 
     **Short name:** ``task.qubit``
 
     This device provides a pure-state qubit simulator wrapping both ``"default.qubit"`` and ``"lightning.qubit"``,
-    and written to allow batched offloading to a Dask scheduler. The ``task.qubit`` device works with the TensorFlow, PyTorch and (non-JIT) JAX interfaces. The autograd interface is not supported.
+    and written to allow batched offloading to a Dask scheduler. The ``task.qubit`` device works with the Autograd,
+    TensorFlow, PyTorch and (non-JIT) JAX interfaces. Currently, support exists for both parameter-shift and
+    backpropagation differentation methods; adjoint support is not currently enabled.
 
     To use this device, you will need to install dask and dask.distributed:
 
@@ -132,6 +135,76 @@ class TaskQubit(QubitDevice):
 
     ...     print(client.submit(f_submit, weights).result())
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
+
+    For self-encapsulated workflows, the task-based qml.taskify command can also be employed, which will allow automatic offloading using the
+    batch execute support in PennyLane devices. As an example:
+
+    >>> def my_workflow(params, backend, interface, diff_method):
+    ...     qpu = qml.device(
+    ...         "task.qubit",
+    ...         wires=3,
+    ...         backend=backend
+    ...     )
+    ...     # Caching must be disabled, as we are using a proxy device
+    ...     @qml.qnode(qpu, cache=False, interface=interface, diff_method=diff_method)
+    ...     def circuit(x):
+    ...         qml.RX(x[0], wires=0)
+    ...         qml.RY(x[0], wires=0)
+    ...         qml.RZ(x[1], wires=0)
+    ...         qml.RX(x[1], wires=1)
+    ...         qml.RY(x[2], wires=1)
+    ...         qml.RZ(x[2], wires=1)
+    ...         return [qml.expval(qml.PauliZ(i) @ qml.PauliZ((i+1)%3)) for i in range(3)]
+    ...
+    ...     # Need a local copy of data on device
+    ...     if interface == "tf":
+    ...         weights = tf.Variable(params)
+    ...         with tf.GradientTape() as tape:
+    ...             # Use the circuit to calculate the loss value
+    ...             loss = circuit(weights)
+    ...         w_grad = tape.jacobian(loss, [weights])
+    ...     elif interface == "torch":
+    ...         weights = torch.tensor(params, requires_grad=True)
+    ...         w_grad = torch.autograd.functional.jacobian(circuit, weights)
+    ...     else:
+    ...         weights = qml.numpy.array(params, requires_grad=True)
+    ...         w_grad = qml.jacobian(circuit)(weights)
+    ...     return w_grad
+
+    >>> qml.taskify(my_workflow)(np.array([1.0,2.0,3.0]), "default.qubit", "autograd", "backprop")
+    array([[-3.74614396e-01,  2.62791617e-01,  1.71438687e-02],
+       [ 1.11022302e-16,  9.00197630e-01,  5.87266449e-02],
+       [-9.09297427e-01, -1.38777878e-16, -3.46944695e-17]])
+
+    For large batches of workloads, one can use the futures interface, and submit the tasks to be run asynchronously.
+    As an example, we can modify the above example to adjust the supplied weights for circuit execution, and gather the
+    results altogether when complete.
+    >>> func = qml.taskify(my_workflow, futures=True)
+    >>> futures = [func(i*np.array([1.0,2.0,3.0]), "default.qubit", "autograd", "backprop")
+           for i in range(5)]
+    >>> futures
+    [<Future: finished, type: numpy.ndarray, key: my_workflow-238c01c1b1b88ef140d2a0404a226f9e>,
+     <Future: finished, type: numpy.ndarray, key: my_workflow-276bf61f8de5488ec4e05ae93e3d0b85>,
+     <Future: finished, type: numpy.ndarray, key: my_workflow-ccbf9977e25ec480b726b93c88cfc9e3>,
+     <Future: finished, type: numpy.ndarray, key: my_workflow-e644cd634c006efc6fc7dd14837ed639>,
+     <Future: finished, type: numpy.ndarray, key: my_workflow-ce39fdf431490ef17c836800b4a7318b>]
+    >>> qml.untaskify(futures)()
+    [array([[0., 0., 0.],
+        [0., 0., 0.],
+        [0., 0., 0.]]),
+     array([[-3.74614396e-01,  2.62791617e-01,  1.71438687e-02],
+            [ 1.11022302e-16,  9.00197630e-01,  5.87266449e-02],
+            [-9.09297427e-01, -1.38777878e-16, -3.46944695e-17]]),
+     array([[-4.74976196e-01,  1.25841537e-01, -3.16289455e-02],
+            [ 1.66533454e-16,  7.26659269e-01, -1.82638158e-01],
+            [ 7.56802495e-01,  9.71445147e-17,  6.93889390e-18]]),
+     array([[-2.44443912e-01, -2.49513914e-01, -3.87823537e-01],
+            [ 2.77555756e-17, -2.54583916e-01, -3.95703924e-01],
+            [ 2.79415498e-01,  0.00000000e+00,  0.00000000e+00]]),
+     array([[ 1.21474177e-01, -3.56699848e-01, -3.33559948e-02],
+            [ 2.77555756e-17, -8.34873873e-01, -7.80713777e-02],
+            [-9.89358247e-01, -2.22044605e-16,  1.38777878e-17]])]
+
 
     Args:
         wires (int): The number of wires to initialize the device with.
@@ -174,21 +247,36 @@ class TaskQubit(QubitDevice):
         gen_report: Union[bool, str] = False,
         future=False,
     ):
-        super().__init__(wires, shots, cache=False)
 
         self._backend = backend
         self._backend_cls = qml.plugin_devices[backend].load()
         self._backend_dev = self._backend_cls(wires=0)
-        self._wires = wires
+
+        self.__class__ = type(
+            f"TaskQubit",
+            (self._backend_cls,),
+            {
+                "execute": self.execute,
+                "batch_execute": self.batch_execute,
+                "_apply_ops": self._backend_dev._apply_ops,
+            },
+        )
+        super(self._backend_cls, self).__init__(wires)
+
+        if not isinstance(wires, Iterable):
+            # interpret wires as the number of consecutive wires
+            self._wires = range(wires)
+
+        self.num_wires = wires if isinstance(wires, int) else len(self._wires)
         self._gen_report = gen_report
-        self.num_wires = wires if isinstance(wires, int) else len(wires)
         self._future = future
 
         if backend not in TaskQubit.supported_devices:
             raise Exception("Unsupported device backend.")
 
     def __str__(self):
-        return super().__str__()+("\n"
+        return super().__str__() + (
+            "\n"
             f"Backend: {self._backend}\n"
             f"Futures: {self._future}\n"
             f"Report: {self._gen_report}"
@@ -258,6 +346,7 @@ class TaskQubit(QubitDevice):
             returns_state=False,
             returns_probs=False,
             passthru_devices={},
+            is_proxy=True,
         )
         return capabilities
 
@@ -274,3 +363,6 @@ class TaskQubit(QubitDevice):
         "This function provides a carrier function for instantiating and evaluating a tape on a given backend device."
         dev = qml.device(backend, wires=wires)
         return dev.execute(circuit)
+
+    def execute(self, circuit, **kwargs):
+        self.batch_execute([circuit])
