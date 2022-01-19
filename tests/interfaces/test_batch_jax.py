@@ -715,7 +715,9 @@ class TestJaxExecuteIntegration:
 
         res = jax.jacobian(cost, argnums=(0, 1))(x, y, dev, interface="jax", ek=execute_kwargs)
 
-        exp = qml.jacobian(cost, argnum=(0, 1))(x_, y_, dev, interface="autograd", ek=execute_kwargs)
+        exp = qml.jacobian(cost, argnum=(0, 1))(
+            x_, y_, dev, interface="autograd", ek=execute_kwargs
+        )
         for r, e in zip(res, exp):
             assert jnp.allclose(r, e, atol=1e-7)
 

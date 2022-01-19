@@ -248,7 +248,7 @@ def _execute_with_fwd(
         #             [ 0.        , -0.97517033]]
         #
         # The output produced by this function matches 2.
-        scalar_outputs = all(t._output_dim == 1 for t in tapes)
+        scalar_outputs = all(t.output_dim == 1 for t in tapes)
         if not scalar_outputs:
             raise ValueError(
                 "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
@@ -265,7 +265,9 @@ def _execute_with_fwd(
         for j in jacs:
             this_j = []
             for i in range(j.shape[1]):
-                arr = j[0, i] if j.shape[0] == 1 else jnp.array([j[k, i] for k in range(j.shape[0])])
+                arr = (
+                    j[0, i] if j.shape[0] == 1 else jnp.array([j[k, i] for k in range(j.shape[0])])
+                )
                 this_j.append(arr)
             res_jacs.append(this_j)
         return tuple([tuple(res_jacs)])

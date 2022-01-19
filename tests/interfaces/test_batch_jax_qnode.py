@@ -105,9 +105,7 @@ class TestQNode:
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
 
-    def test_jacobian_forward_mode_raises(
-        self, dev_name, diff_method, mode, mocker, tol
-    ):
+    def test_jacobian_forward_mode_raises(self, dev_name, diff_method, mode, mocker, tol):
         """Test jacobian calculation raises an error in forward mode for
         adjoint differentiation."""
         if diff_method != "adjoint" or mode != "forward":
