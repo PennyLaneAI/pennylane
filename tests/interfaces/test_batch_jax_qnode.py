@@ -68,8 +68,10 @@ class TestQNode:
 
     def test_jacobian(self, dev_name, diff_method, mode, mocker, tol):
         """Test jacobian calculation"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
+        if diff_method != "backprop" and mode == "forward":
+            pytest.skip(
+                "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+            )
 
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
@@ -103,10 +105,43 @@ class TestQNode:
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
 
+    def test_jacobian_forward_mode_raises(
+        self, dev_name, diff_method, mode, mocker, tol
+    ):
+        """Test jacobian calculation raises an error in forward mode for
+        adjoint differentiation."""
+        if diff_method != "adjoint" or mode != "forward":
+            pytest.skip("Test only applicable for forward mode adjoint differentiation.")
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+        res = circuit(a, b)
+
+        assert circuit.qtape.trainable_params == [0, 1]
+        assert res.shape == (2,)
+
+        expected = [np.cos(a), -np.cos(a) * np.sin(b)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        with pytest.raises(ValueError):
+            res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
+
     def test_jacobian_no_evaluate(self, dev_name, diff_method, mode, mocker, tol):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
+        if mode == "forward":
+            pytest.skip(
+                "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+            )
 
         if diff_method == "parameter-shift":
             spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
@@ -440,8 +475,8 @@ class TestQubitIntegration:
     def test_probability_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
@@ -464,11 +499,11 @@ class TestQubitIntegration:
         )
         assert np.allclose(res, expected.T, atol=tol, rtol=0)
 
-    def test_multiple_probability_differentiation(self, dev_name, diff_method, mode, tol):
+    def test_multi_probs_diff(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
@@ -490,26 +525,36 @@ class TestQubitIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        if diff_method in ("parameter-shift", "finite-diff"):
 
-        res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+
+            # TODO: remove the swapping of axes when custom gradient outputs
+            # have been adjusted
+            res = tuple(r.swapaxes(0, 1) for r in res)
+        else:
+            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = np.array(
             [
-                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
                 [
-                    [np.sin(x) / 2, 0],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
+                    [-np.sin(x) / 2, np.sin(x) / 2],
+                    [-np.cos(y) * np.sin(x) / 2, np.sin(x) * np.cos(y) / 2],
+                ],
+                [
+                    [0, 0],
+                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
                 ],
             ]
         )
 
-        assert np.allclose(res, expected.T, atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
@@ -543,8 +588,8 @@ class TestQubitIntegration:
     def test_ragged_differentiation_variance(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
@@ -576,11 +621,11 @@ class TestQubitIntegration:
 
     def test_sampling(self, dev_name, diff_method, mode):
         """Test sampling works as expected"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
-
         if mode == "forward":
             pytest.skip("Sampling not possible with forward mode differentiation.")
+
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint warns with finite shots")
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
@@ -850,9 +895,6 @@ class TestQubitIntegration:
 
     def test_state(self, dev_name, diff_method, mode, tol):
         """Test that the state can be returned and differentiated"""
-        if diff_method != "backprop":
-            pytest.skip("JAX interface does not support vector-valued QNodes")
-
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support states")
 

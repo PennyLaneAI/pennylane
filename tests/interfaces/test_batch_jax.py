@@ -612,3 +612,134 @@ class TestJaxExecuteIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_independent_expval(self, execute_kwargs):
+        """Tests computing an expectation value that is independent trainable
+        parameters."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0]
+
+        res = jax.jacobian(cost)(params, cache=None)
+        assert res.shape == (1, 3)
+
+    def test_multiple_expvals(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if fwd_mode:
+            pytest.skip("The forward mode is tested separately as it should raise an error.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0]
+
+        res = jax.jacobian(cost)(params, cache=None)
+        assert res.shape == (2, 3)
+
+    def test_multiple_expvals_single_par(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape with a single
+        trainable parameter."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if fwd_mode:
+            pytest.skip("The forward mode is tested separately as it should raise an error.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0]
+
+        res = jax.jacobian(cost)(params, cache=None)
+        assert res.shape == (2, 1)
+
+    def test_multi_tape_jacobian(self, execute_kwargs):
+        """Test the jacobian computation with multiple tapes."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if fwd_mode:
+            pytest.skip("The forward mode is tested separately as it should raise an error.")
+
+        def cost(x, y, device, interface, ek):
+            with qml.tape.JacobianTape() as tape1:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
+
+        dev = qml.device("default.qubit", wires=2)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        x_ = np.array(0.543)
+        y_ = np.array(-0.654)
+
+        res = jax.jacobian(cost, argnums=(0, 1))(x, y, dev, interface="jax", ek=execute_kwargs)
+
+        exp = qml.jacobian(cost, argnum=(0, 1))(x_, y_, dev, interface="autograd", ek=execute_kwargs)
+        for r, e in zip(res, exp):
+            assert jnp.allclose(r, e)
+
+    def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if not fwd_mode:
+            pytest.skip("Forward mode is not turned on.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0]
+
+        with pytest.raises(ValueError):
+            jax.jacobian(cost)(params, cache=None)
