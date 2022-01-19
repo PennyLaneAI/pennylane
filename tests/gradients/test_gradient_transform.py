@@ -147,12 +147,88 @@ class TestGradientTransformIntegration:
             qml.RZ(x[1, 0], wires=0)
             return qml.probs(wires=[0, 1])
 
+        x = np.array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
+        y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
+
+        expected = qml.jacobian(circuit)(x, y)
+        res = qml.gradients.param_shift(circuit, hybrid=True)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+
+    # TODO: Include the following test once the gradient_transform is fixed regarding the
+    # usage of qml.math.squeeze.
+    def test_multiple_tensor_arguments_old_version(self, tol):
+        """Test that a gradient transform acts on QNodes
+        correctly when multiple tensor QNode arguments are present"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x[0, 0], wires=0)
+            qml.RY(y[0, 0], wires=0)
+            qml.RZ(x[1, 0], wires=0)
+            return qml.probs(wires=[0, 1])
+
         x = np.array([[0.1], [0.2]], requires_grad=True)
         y = np.array([[0.2], [0.3]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
         res = qml.gradients.param_shift(circuit)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
+    def test_high_dimensional_single_parameter_arg(self, tol):
+        """Test that a gradient transform acts on QNodes correctly
+        when a single high-dimensional tensor QNode arguments is used"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0, 0] / 2, wires=0)
+            qml.RX(x[0, 0] / 2, wires=0)
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
+
+        expected = qml.jacobian(circuit)(x)
+        res = qml.gradients.param_shift(circuit)(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    # TODO: Include the following test once the gradient_transform is fixed regarding the
+    # usage of qml.math.squeeze.
+    def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
+        """Test that a gradient transform acts on QNodes correctly
+        when a single high-dimensional tensor QNode arguments is used"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0, 0], wires=0)
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([[0.1]], requires_grad=True)
+
+        expected = qml.jacobian(circuit)(x)
+        res = qml.gradients.param_shift(circuit)(x)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    # TODO: Include the following test once the gradient_transform is fixed regarding the
+    # usage of qml.math.squeeze.
+    def test_single_gate_arg(self, tol):
+        """Test that a gradient transform acts on QNodes correctly
+        when a single QNode argument and gate are present"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([0.1, 0.2], requires_grad=True)
+
+        expected = qml.jacobian(circuit)(x)
+        cjac = qml.transforms.classical_jacobian(circuit)(x)
+        res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_first_non_trainable_argument(self, tol):

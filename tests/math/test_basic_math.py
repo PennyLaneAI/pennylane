@@ -115,7 +115,7 @@ class TestFrobeniusInnerProduct:
 
     def test_frobenius_inner_product_gradient(self):
         """Test that the calculated gradient is correct."""
-        A = np.array([[1.0, 2.3], [-1.3, 2.4]])
+        A = onp.array([[1.0, 2.3], [-1.3, 2.4]])
         B = torch.autograd.Variable(torch.randn(2, 2).type(torch.float), requires_grad=True)
         result = fn.frobenius_inner_product(A, B)
         result.backward()
