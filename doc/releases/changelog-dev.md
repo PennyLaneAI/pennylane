@@ -348,11 +348,11 @@
 
 * The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
   an explicit `_eigvals` method was added.
-  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
   
 * The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
   the `composable_rotations` attribute. 
-  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 
 <h3>Breaking changes</h3>
 
@@ -452,7 +452,7 @@
 
 * The `Rot`, gate was removed from the `composable_rotations` attribute, since it 
   does not fulfil this property. 
-  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 * 
 <h3>Documentation</h3>
 
