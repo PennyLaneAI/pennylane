@@ -20,6 +20,8 @@ import functools
 import inspect
 import warnings
 
+import autograd
+
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
@@ -564,19 +566,8 @@ class QNode:
             **self.execute_kwargs,
         )
 
-        import autograd
-
-        if (
-            isinstance(res, (tuple, list, autograd.builtins.tuple, autograd.builtins.list))
-            and len(res) == 1
-        ):
+        if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
             res = res[0]
-
-        # try:
-        #     res = qml.math.squeeze(qml.math.stack(res))
-        # except:
-        #     pass
-        # print(res)
 
         if override_shots is not False:
             # restore the initialization gradient function

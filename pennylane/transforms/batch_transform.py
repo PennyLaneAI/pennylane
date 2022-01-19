@@ -20,6 +20,9 @@ import os
 import types
 import warnings
 
+
+import autograd
+
 import pennylane as qml
 
 
@@ -463,10 +466,8 @@ def map_batch_transform(transform, tapes):
     >>> tapes, fn = map_batch_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
     >>> dev = qml.device("default.qubit", wires=2)
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+    [0.9950041652780257, 0.8150893013179248]
     """
-    if len(tapes) == 1:
-        return transform(tapes[0])
-
     execution_tapes = []
     batch_fns = []
     tape_counts = []
@@ -486,7 +487,7 @@ def map_batch_transform(transform, tapes):
             # apply any device specific batch transform post-processing
             new_res = batch_fns[idx](res[count : count + s])
 
-            if len(new_res) == 1:
+            if autograd.isinstance(new_res, (tuple, list)) and len(new_res) == 1:
                 new_res = new_res[0]
 
             final_results.append(new_res)

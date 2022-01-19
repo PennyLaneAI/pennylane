@@ -203,6 +203,7 @@ def execute(
     override_shots=False,
     expand_fn="device",
     max_expansion=10,
+    device_batch_transform=True,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -239,6 +240,10 @@ def execute(
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
+        device_batch_transform (bool): Whether to apply any batch transforms defined by the device
+            (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
+            of the device batch transform is to expand out Hamiltonian measurements into
+            constituent terms if not supported on the device.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -300,7 +305,10 @@ def execute(
     """
     gradient_kwargs = gradient_kwargs or {}
 
-    tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+    if device_batch_transform:
+        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+    else:
+        batch_fn = lambda res: res
 
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object

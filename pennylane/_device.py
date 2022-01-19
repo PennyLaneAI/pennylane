@@ -707,7 +707,7 @@ class Device(abc.ABC):
                 ) from e
 
         # otherwise, return an identity transform
-        return [circuit], lambda res: res
+        return [circuit], lambda res: res[0]
 
     @property
     def op_queue(self):

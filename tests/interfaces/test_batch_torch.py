@@ -163,12 +163,6 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
 
-            print(
-                execute(
-                    [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="torch"
-                )
-            )
-
             return execute(
                 [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="torch"
             )[0][0, 0]
