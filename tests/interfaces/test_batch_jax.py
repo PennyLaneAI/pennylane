@@ -717,7 +717,7 @@ class TestJaxExecuteIntegration:
 
         exp = qml.jacobian(cost, argnum=(0, 1))(x_, y_, dev, interface="autograd", ek=execute_kwargs)
         for r, e in zip(res, exp):
-            assert jnp.allclose(r, e)
+            assert jnp.allclose(r, e, atol=1e-7)
 
     def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
