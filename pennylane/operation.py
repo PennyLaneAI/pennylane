@@ -403,6 +403,8 @@ class Operator(abc.ABC):
 
     """
 
+    # pylint:disable=too-many-public-methods
+
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # pylint: disable=too-many-branches
 
