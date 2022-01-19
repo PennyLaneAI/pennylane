@@ -135,11 +135,10 @@ class TaskQubit(DefaultQubit):
     ...             # Use the circuit to calculate the loss value
     ...             loss = tf.abs(circuit(weights)-0.5)**2
     ...         return tape.gradient(loss, weights)
-
     ...     print(client.submit(f_submit, weights).result())
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
 
-    For self-encapsulated workflows, the task-based qml.taskify command can also be employed, which will allow automatic offloading using the
+    For self-encapsulated workflows, the task-based ``qml.taskify`` command can also be employed, which will allow automatic offloading using the
     batch execute support in PennyLane devices. As an example:
 
     >>> def my_workflow(params, backend, interface, diff_method):
@@ -182,9 +181,9 @@ class TaskQubit(DefaultQubit):
     For large batches of workloads, one can use the futures interface, and submit the tasks to be run asynchronously.
     As an example, we can modify the above example to adjust the supplied weights for circuit execution, and gather the
     results altogether when complete.
+
     >>> func = qml.taskify(my_workflow, futures=True)
-    >>> futures = [func(i*np.array([1.0,2.0,3.0]), "default.qubit", "autograd", "backprop")
-           for i in range(5)]
+    >>> futures = [func(i*np.array([1.0,2.0,3.0]), "default.qubit", "autograd", "backprop") for i in range(5)]
     >>> futures
     [<Future: finished, type: numpy.ndarray, key: my_workflow-238c01c1b1b88ef140d2a0404a226f9e>,
      <Future: finished, type: numpy.ndarray, key: my_workflow-276bf61f8de5488ec4e05ae93e3d0b85>,
