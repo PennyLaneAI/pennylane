@@ -15,6 +15,7 @@
 Unit tests for the `pennylane.qcut` package.
 """
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.qcut.compiler import tape_to_graph
@@ -109,3 +110,33 @@ class TestTapeToGraph:
 
         for data, expected_wire in zip(edge_data, expected_edge_wires):
             assert data[-1] == expected_wire
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            qml.PauliZ(0) @ qml.PauliZ(2),  # Broken
+            qml.Projector([0, 1], wires=[0, 1]),
+            qml.Hamiltonian([1, 2], [qml.PauliZ(1), qml.PauliZ(2) @ qml.PauliX(0)]),  # Broken
+            qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0]),
+            qml.Projector([0, 1], wires=[0, 1]) @ qml.Projector([1, 0], wires=[0, 2]),  # Broken
+        ],
+    )
+    def test_observable_conversion(self, obs):
+        """
+        TODO: DocString
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.expval(obs)
+
+        g = tape_to_graph(tape)
+        nodes = list(g.nodes)
+        edges = list(g.edges)
+
+        obs_node = nodes[-1]
+        obs = tape.observables[0]
