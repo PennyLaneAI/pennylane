@@ -113,13 +113,13 @@ def _execute(
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
             r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
-            res[i] = np.tensor(r)
+            res[i] = np.tensor(r, requires_grad=True)
 
         elif isinstance(res[i], tuple):
-            res[i] = tuple(np.tensor(r) for r in res[i])
+            res[i] = tuple(np.tensor(r, requires_grad=True) for r in res[i])
 
         else:
-            res[i] = qml.math.toarray(res[i])
+            res[i] = qml.math.toarray(res[i], requires_grad=True)
 
     return res, jacs
 

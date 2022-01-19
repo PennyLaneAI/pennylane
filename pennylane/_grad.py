@@ -14,6 +14,7 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+from collections.abc import Sequence
 import warnings
 from functools import partial
 
@@ -60,11 +61,6 @@ class grad:
         self._fun = fun
         self._argnum = argnum
 
-        if self._argnum is not None:
-            # If the differentiable argnum is provided, we can construct
-            # the gradient function at once during initialization
-            self._grad_fn = self._grad_with_forward(fun, argnum=argnum)
-
     def _get_grad_fn(self, args):
         """Get the required gradient function.
 
@@ -75,9 +71,6 @@ class grad:
           inspecting as to which of the parameter arguments are marked
           as differentiable.
         """
-        if self._grad_fn is not None:
-            return self._grad_fn
-
         # Inspect the arguments for differentiability, and
         # compute the autograd gradient function with required argnums
         # dynamically.
@@ -101,7 +94,25 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
-        grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
+        if self._argnum is not None:
+            new_args = []
+
+            for idx, arg in enumerate(args):
+                if idx == self._argnum or (
+                    isinstance(self._argnum, Sequence) and idx in self._argnum
+                ):
+                    import pennylane as qml
+
+                    arg = qml.numpy.asarray(arg, requires_grad=True)
+
+                new_args.append(arg)
+
+            grad_value, ans = self._grad_with_forward(self._fun, argnum=self._argnum)(
+                *new_args, **kwargs
+            )
+        else:
+            grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
+
         self._forward = ans
         return grad_value
 
@@ -303,6 +314,18 @@ def jacobian(func, argnum=None):
             # For a single integer as argnum, unpack the Jacobian tuple
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
+
+            new_args = []
+
+            for idx, arg in enumerate(args):
+                if idx in _argnum:
+                    import pennylane as qml
+
+                    arg = qml.numpy.asarray(arg, requires_grad=True)
+
+                new_args.append(arg)
+
+            args = new_args
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 

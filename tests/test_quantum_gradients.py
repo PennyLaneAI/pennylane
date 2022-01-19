@@ -185,7 +185,7 @@ class TestCVGradient:
 
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
-        par = [0.4, -0.3, -0.7, 0.2]
+        par = anp.array([0.4, -0.3, -0.7, 0.2], requires_grad=True)
 
         def qf(r0, phi0, r1, phi1):
             qml.Squeezing(r0, phi0, wires=[0])
@@ -535,7 +535,7 @@ class TestQubitGradient:
             J = grad_method(quantum)(a, np.log(b))
             return val * np.array([J[0][0] + J[0][1], (J[1][0] + J[1][1]) / b])
 
-        param = np.array([-0.1259, 1.53])
+        param = anp.array([-0.1259, 1.53], requires_grad=True)
         y0 = classical(param)
         grad_classical = autograd.jacobian(classical)
         grad_auto = grad_classical(param)
@@ -611,38 +611,6 @@ class TestQubitGradient:
                 grad_true = grad_true0 + grad_true1  # product rule
 
                 assert grad_eval == pytest.approx(grad_true, abs=tol)
-
-    def test_autograd_positional_non_trainable_warns_grad(self):
-        """Test that a warning is raised if a positional argument without the
-        requires_grad attribute set is passed when differentiating a QNode with a
-        scalar output."""
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def test(x):
-            qml.RY(x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            UserWarning, match="inputs have to explicitly specify requires_grad=True"
-        ):
-            qml.grad(test)(0.3)
-
-    def test_autograd_positional_non_trainable_warns_jacobian(self):
-        """Test that a warning is raised if a positional argument without the
-        requires_grad attribute set is passed when differentiating a QNode with a
-        vector output."""
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def test(x):
-            qml.RY(x, wires=[0])
-            return qml.probs(wires=[0])
-
-        with pytest.warns(
-            UserWarning, match="inputs have to explicitly specify requires_grad=True"
-        ):
-            qml.jacobian(test)(0.3)
 
     def test_autograd_trainable_no_warn_grad(self, recwarn):
         """Test that no warning is raised if positional arguments are marked as
@@ -740,7 +708,7 @@ class TestFourTermParameterShifts:
         expected = -np.cos(b / 2) * np.cos(0.5 * (a + c))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = qml.grad(circuit)(a, b, c)
+        grad = qml.grad(circuit, [0, 1, 2])(a, b, c)
         expected = np.array(
             [
                 [
