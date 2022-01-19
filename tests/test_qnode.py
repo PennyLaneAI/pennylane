@@ -18,7 +18,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import QuantumFunctionError, numpy as pnp
+from pennylane import numpy as pnp
 from pennylane import qnode, QNode
 from pennylane.transforms import draw
 from pennylane.tape import JacobianTape
