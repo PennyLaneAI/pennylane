@@ -567,7 +567,7 @@ class TestWireCut:
             qml.PauliX(wires=0)
             return qml.state()
 
-        assert with_wirecut().all() == without_wirecut().all()
+        assert np.allclose(with_wirecut(), without_wirecut())
 
 
 class TestMultiControlledX:
@@ -869,6 +869,7 @@ label_data = [
     (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
     (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
     (qml.Barrier(0), "||", "||"),
+    (qml.WireCut(wires=0), "//", "//"),
 ]
 
 

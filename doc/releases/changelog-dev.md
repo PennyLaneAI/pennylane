@@ -5,7 +5,8 @@
 <h3>New features since last release</h3>
 
 * Development of a `qcut` package has begun to allow for a circuit cutting
-  compiler and a `WireCut` operator has been added for manual wire cut placement
+  compiler:
+  A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
 
