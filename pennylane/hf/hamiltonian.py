@@ -247,7 +247,8 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         for n, t in enumerate(h_ferm[1]):
 
             if len(t) == 0:
-                coeffs = np.array([h_ferm[0][n]])
+                coeffs = anp.array([0.0])
+                coeffs = coeffs + np.array([h_ferm[0][n]])
                 ops = ops + [qml.Identity(0)]
 
             elif len(t) == 2:
