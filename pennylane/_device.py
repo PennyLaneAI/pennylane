@@ -620,7 +620,11 @@ class Device(abc.ABC):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
-        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+        obs_on_same_wire &= not any(
+            isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
+        )
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
