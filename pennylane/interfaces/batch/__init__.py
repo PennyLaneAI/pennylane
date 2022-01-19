@@ -300,6 +300,19 @@ def execute(
     """
     gradient_kwargs = gradient_kwargs or {}
 
+    execution_tapes = []
+    batch_fns = []
+    tape_counts = []
+
+    for t in tapes:
+        # preprocess the tapes by applying any device-specific transforms
+        new_tapes, fn = device.batch_transform(t)
+        execution_tapes.extend(new_tapes)
+        batch_fns.append(fn)
+        tape_counts.append(len(new_tapes))
+
+    tapes = execution_tapes
+
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
@@ -391,4 +404,12 @@ def execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
     )
 
-    return res
+    count = 0
+    final_results = []
+
+    for idx, s in enumerate(tape_counts):
+        # apply any device specific batch transform post-processing
+        final_results.append(batch_fns[idx](res[count:count + s]))
+        count += s
+
+    return qml.math.convert_like(final_results, res)
