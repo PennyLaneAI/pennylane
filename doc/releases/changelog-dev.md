@@ -256,6 +256,10 @@
 
 <h3>Improvements</h3>
 
+* The `RotosolveOptimizer` now raises an error if no trainable arguments are
+  detected, instead of silently skipping update steps for all arguments.
+  [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
+
 * The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
   for QNode argument axes of size `1`.
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
@@ -330,10 +334,13 @@
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
-  inside PennyLane. We can decorate the function, indicating the arguments that are
-  tensors handled by the interface:
+  inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
-    
+  [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
+
+  We can decorate a function, indicating the arguments that are
+  tensors handled by the interface:
+   
   ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
   ... def some_function(tensor1, tensor2, option, like):
@@ -404,6 +411,10 @@
 
 <h3>Bug fixes</h3>
 
+* Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
+  Other assorted minor test warnings are fixed.
+  [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)
+
 * Fixes a bug where the QNode was not correctly diagonalizing qubit-wise
   commuting observables.
   [(#2097)](https://github.com/PennyLaneAI/pennylane/pull/2097)
@@ -454,6 +465,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Josh Izaac, 
-Soran Jahangiri, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs,
-Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, 
+Josh Izaac, Soran Jahangiri, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+David Wierichs, Shaoming Zhang
