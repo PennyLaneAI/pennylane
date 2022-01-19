@@ -1206,7 +1206,7 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def decomposition(self, wires):
+    def decompose(self):
         with qml.tape.QuantumTape() as tape:
             ...
         return tape
