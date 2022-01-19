@@ -109,7 +109,7 @@ composable_rotations = Attribute(
         "ControlledPhaseShift",
         "IsingXX",
         "IsingYY",
-        "IsingZZ"
+        "IsingZZ",
     ]
 )
 """Attribute: Operations for which composing multiple copies of the operation results in an
@@ -180,11 +180,16 @@ diagonal_in_z_basis = Attribute(
         "ControlledPhaseShift",
         "MultiRZ",
         "CRZ",
-        "IsingZZ"
+        "IsingZZ",
     ]
 )
 """Attribute: Operations that are diagonal in the computational basis.
 
 For such operations, the eigenvalues provide all necessary information to
 construct the matrix representation in the computational basis.
+
+Note: Currently, the gates with this attribute need 
+to overwrite the eigenvalue method for differentiation to work. 
+The reason is that if this method missing, eigenvalues are computed from the matrix
+representation using ``np.linalg.eigvals``, which is not differentiable.
 """

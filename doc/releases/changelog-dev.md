@@ -346,6 +346,14 @@
   ...     ...
   ```
 
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+  an explicit `_eigvals` method was added.
+  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+  
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
+  the `composable_rotations` attribute. 
+  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
@@ -442,6 +450,10 @@
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
+* The `Rot`, gate was removed from the `composable_rotations` attribute, since it 
+  does not fulfil this property. 
+  [(#XXX)](https://github.com/PennyLaneAI/pennylane/pull/XXX)
+* 
 <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
