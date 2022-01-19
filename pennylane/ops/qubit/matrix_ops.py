@@ -72,6 +72,7 @@ class QubitUnitary(Operation):
             if not qml.math.allclose(
                 qml.math.dot(U, qml.math.T(qml.math.conj(U))),
                 qml.math.eye(qml.math.shape(U)[0]),
+                atol=1e-6,
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
