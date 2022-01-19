@@ -207,7 +207,7 @@ class StronglyEntanglingLayers(Operation):
 
         for l in range(n_layers):
 
-            for i in range(len(wires)):
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(
                     qml.Rot(
                         weights[..., l, i, 0],

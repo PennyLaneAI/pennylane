@@ -189,7 +189,7 @@ class TTN(Operation):
         super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(weights, wires, block, ind_gates):  # pylint: disable=arguments-differ
+    def compute_decomposition(weights, wires, block, ind_gates):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the TTN operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

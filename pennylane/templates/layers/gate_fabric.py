@@ -261,13 +261,13 @@ class GateFabric(Operation):
         op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
         for layer in range(n_layers):
-            for idx, wires in enumerate(wire_pattern):
+            for idx, wires_ in enumerate(wire_pattern):
 
                 if include_pi:
-                    op_list.append(qml.OrbitalRotation(np.pi, wires=wires))
+                    op_list.append(qml.OrbitalRotation(np.pi, wires=wires_))
 
-                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires))
-                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires))
+                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires_))
+                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires_))
 
         return op_list
 

@@ -15,7 +15,6 @@ r"""
 Contains the Permute template.
 """
 
-import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops import SWAP
 

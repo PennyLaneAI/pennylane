@@ -367,7 +367,7 @@ class QuantumMonteCarlo(Operation):
     @staticmethod
     def compute_decomposition(
         A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the QuantumMonteCarlo operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:

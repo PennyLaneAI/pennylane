@@ -134,8 +134,8 @@ class CommutingEvolution(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *time_and_coeffs, wires, hamiltonian, frequencies, shifts
-    ):  # pylint: disable=arguments-differ
+        *time_and_coeffs, wires, hamiltonian, **kwargs
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the CommutingEvolution operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
