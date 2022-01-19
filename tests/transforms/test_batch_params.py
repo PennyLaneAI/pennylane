@@ -121,6 +121,41 @@ def test_mottonenstate_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
+def test_basis_state_preparation(mocker):
+    """Test that batching works for BasisStatePreparation"""
+    dev = qml.device("default.qubit", wires=4)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(data, weights):
+        qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
+        return qml.probs(wires=[0, 1, 2, 3])
+
+    batch_size = 5
+
+    # create random batched basis states
+    data = np.random.randint(2, size=(batch_size, 4))
+    weights = np.random.random((batch_size, 10, 4, 3))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2 ** 4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
+        return qml.probs(wires=[0, 1, 2, 3])
+
+    indiv_res = []
+    for state, weight in zip(data, weights):
+        indiv_res.append(circuit2(state, weight))
+    assert np.allclose(res, indiv_res)
+
+
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
