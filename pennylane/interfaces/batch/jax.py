@@ -57,6 +57,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         the returned list corresponds in order to the provided tapes.
     """
     # pylint: disable=unused-argument
+    if max_diff > 1:
+        raise ValueError("The JAX interface only supports first order derivatives.")
+
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
