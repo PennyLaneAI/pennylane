@@ -95,7 +95,13 @@ class TestJaxExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=param_shift, interface="None", gradient_kwargs={"jit": jit})[0]
+            return execute(
+                [tape],
+                device,
+                gradient_fn=param_shift,
+                interface="None",
+                gradient_kwargs={"jit": jit},
+            )[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
@@ -116,7 +122,11 @@ class TestJaxExecuteUnitTests:
                 dev,
                 gradient_fn="device",
                 interface="jax",
-                gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True, "jit": jit},
+                gradient_kwargs={
+                    "method": "adjoint_jacobian",
+                    "use_device_state": True,
+                    "jit": jit,
+                },
             )[0]
 
         a = jnp.array([0.1, 0.2])
@@ -198,8 +208,12 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             return execute(
-                [tape], dev, gradient_fn=param_shift, gradient_kwargs={"jit":
-                jit}, cachesize=cachesize, interface="jax"
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                gradient_kwargs={"jit": jit},
+                cachesize=cachesize,
+                interface="jax",
             )[0][0]
 
         params = jnp.array([0.1, 0.2])
@@ -221,7 +235,14 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, gradient_kwargs={"jit": jit}, cache=cache, interface="jax")[0][0]
+            return execute(
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                gradient_kwargs={"jit": jit},
+                cache=cache,
+                interface="jax",
+            )[0][0]
 
         custom_cache = {}
         params = jnp.array([0.1, 0.2])
@@ -250,7 +271,12 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             res = execute(
-                [tape1, tape2], dev, gradient_fn=param_shift, gradient_kwargs={"jit": jit}, cache=cache, interface="jax"
+                [tape1, tape2],
+                dev,
+                gradient_fn=param_shift,
+                gradient_kwargs={"jit": jit},
+                cache=cache,
+                interface="jax",
             )
             return res[0][0]
 
@@ -271,7 +297,14 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="jax", gradient_kwargs={"jit": jit})[0][0]
+            return execute(
+                [tape],
+                dev,
+                gradient_fn=param_shift,
+                cache=cache,
+                interface="jax",
+                gradient_kwargs={"jit": jit},
+            )[0][0]
 
         # Without caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
@@ -634,6 +667,7 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
+
 vv_execute_kwargs = [
     {"gradient_fn": param_shift},
     {
@@ -647,6 +681,7 @@ vv_execute_kwargs = [
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
 ]
+
 
 @pytest.mark.parametrize("execute_kwargs", vv_execute_kwargs)
 class TestVectorValued:

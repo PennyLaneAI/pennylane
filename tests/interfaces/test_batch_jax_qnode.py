@@ -205,6 +205,7 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestVectorValuedQNode:
     """Test that using vector-valued QNodes with JAX integrate with the
@@ -340,7 +341,6 @@ class TestVectorValuedQNode:
         for args in spy.call_args_list:
             assert args[1]["order"] == 2
             assert args[1]["h"] == 1e-8
-
 
 
 @pytest.mark.parametrize("jit", [False, True])
@@ -1003,7 +1003,9 @@ class TestTapeExpansion:
     with the JAX interface"""
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_gradient_expansion_trainable_only(self, dev_name, diff_method, mode, max_diff, jit, mocker):
+    def test_gradient_expansion_trainable_only(
+        self, dev_name, diff_method, mode, max_diff, jit, mocker
+    ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
         if diff_method not in ("parameter-shift", "finite-diff"):
@@ -1045,7 +1047,9 @@ class TestTapeExpansion:
         assert input_tape.operations[2].grad_method is None
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_analytic(self, dev_name, diff_method, mode, max_diff, jit, mocker):
+    def test_hamiltonian_expansion_analytic(
+        self, dev_name, diff_method, mode, max_diff, jit, mocker
+    ):
         """Test that the Hamiltonian is not expanded if there
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
@@ -1160,6 +1164,7 @@ class TestTapeExpansion:
     #             -np.sin(d[1] + w[1]),
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
+
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestJIT:
