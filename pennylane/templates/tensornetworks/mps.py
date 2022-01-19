@@ -152,7 +152,9 @@ class MPS(Operation):
         super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_decomposition(weights, wires, ind_gates, block):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(
+        weights, wires, ind_gates, block
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Compute a decomposition of the MPS operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
