@@ -401,6 +401,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where batch transformed QNodes would fail to apply batch transforms
+  provided by the underlying device.
+  [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
+
 * Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
   Other assorted minor test warnings are fixed.
   [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)
