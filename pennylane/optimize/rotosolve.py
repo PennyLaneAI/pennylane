@@ -174,6 +174,13 @@ class RotosolveOptimizer:
     and the reconstruction method used for more general operations is described in
     `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
+    .. warning::
+
+        ``RotosolveOptimizer`` will only update parameters that are *explicitly*
+        marked as trainable. This can be done via ``requires_grad`` if using Autograd
+        or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
+        manner with TensorFlow or JAX.
+
     **Example:**
 
     Initialize the optimizer and set the number of steps to optimize over.
@@ -241,12 +248,6 @@ class RotosolveOptimizer:
     gradient-based optimizers when using Autograd or Torch.
     With TensorFlow, a ``tf.Variable`` inside a ``tf.GradientTape`` may be used to
     mark variables as trainable.
-
-    .. warning::
-
-        ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-        marked as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
-        or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
 
     Now we carry out the optimization.
     The minimized cost of the intermediate univariate reconstructions can

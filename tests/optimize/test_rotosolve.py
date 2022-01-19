@@ -101,8 +101,6 @@ def test_error_no_trainable_args():
     x = np.arange(4, requires_grad=False)
     y = np.arange(2, requires_grad=False)
     z = [1.2, -0.4, -9.1]
-    # nums_frequency = {"x": {(0,): 1, (1,): 1}}
-    # spectra = {"x": {(0,): [0.0, 1.0], (2,): [0.0, 1.0]}}
 
     with pytest.raises(ValueError, match="Found no parameters to optimize."):
         opt.step(fun, x, nums_frequency=None, spectra=None)
