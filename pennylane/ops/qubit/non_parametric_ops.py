@@ -1193,7 +1193,7 @@ class Barrier(Operation):
 
 class WireCut(Operation):
     r"""WireCut(wires)
-    The wire cut operator, used to manually place qubit cut locations.
+    The wire cut operator, used to manually mark locations for wire cuts.
 
     **Details:**
 
