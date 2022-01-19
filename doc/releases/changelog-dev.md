@@ -404,6 +404,9 @@
 
 <h3>Bug fixes</h3>
 
+* An error is raised during QNode creation if backpropagation is requested on a device with
+  finite-shots specified.
+
 * Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
   Other assorted minor test warnings are fixed.
   [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)

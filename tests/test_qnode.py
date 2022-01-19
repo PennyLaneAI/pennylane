@@ -18,7 +18,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import numpy as pnp
+from pennylane import QuantumFunctionError, numpy as pnp
 from pennylane import qnode, QNode
 from pennylane.transforms import draw
 from pennylane.tape import JacobianTape
@@ -156,6 +156,14 @@ class TestValidation:
             qml.QuantumFunctionError, match=r"when using the \['something'\] interface"
         ):
             QNode._validate_backprop_method(dev, "another_interface")
+
+    @pytest.mark.parametrize('device_string', ('default.qubit', 'default.qubit.autograd') )
+    def test_validate_backprop_finite_shots(self, device_string):
+        """Test that a device with finite shots cannot be used with backpropagation."""
+        dev = qml.device(device_string, wires=1, shots=100)
+
+        with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
+            QNode._validate_backprop_method(dev, "autograd")
 
     def test_parameter_shift_qubit_device(self):
         """Test that the _validate_parameter_shift method
