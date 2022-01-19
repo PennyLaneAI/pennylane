@@ -179,7 +179,7 @@ def test_jax_jit(diff_method, tol):
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface="jax", diff_method=diff_method, jit=True)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)

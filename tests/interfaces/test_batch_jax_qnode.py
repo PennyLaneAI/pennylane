@@ -37,17 +37,18 @@ config.update("jax_enable_x64", True)
 
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+@pytest.mark.parametrize("jit", [False, True])
 class TestQNode:
     """Test that using the QNode with JAX integrates with the PennyLane stack"""
 
-    def test_execution_with_interface(self, dev_name, diff_method, mode):
+    def test_execution_with_interface(self, dev_name, diff_method, mode, jit):
         """Test execution works with the interface"""
         if diff_method == "backprop":
             pytest.skip("Test does not support backprop")
 
         dev = qml.device(dev_name, wires=1)
 
-        @qnode(dev, interface="jax", diff_method=diff_method)
+        @qnode(dev, interface="jax", diff_method=diff_method, jit=jit)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
@@ -65,6 +66,146 @@ class TestQNode:
         grad = jax.grad(circuit)(a)
         assert isinstance(grad, jnp.DeviceArray)
         assert grad.shape == tuple()
+
+    def test_changing_trainability(self, dev_name, diff_method, mode, jit, mocker, tol):
+        """Test changing the trainability of parameters changes the
+        number of differentiation requests made"""
+        if diff_method != "parameter-shift":
+            pytest.skip("Test only supports parameter-shift")
+
+        a = jnp.array(0.1)
+        b = jnp.array(0.2)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qnode(dev, interface="jax", diff_method="parameter-shift", jit=jit)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliY(1)]))
+
+        grad_fn = jax.grad(circuit, argnums=[0, 1])
+        spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
+        res = grad_fn(a, b)
+
+        # the tape has reported both arguments as trainable
+        assert circuit.qtape.trainable_params == [0, 1]
+
+        expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # The parameter-shift rule has been called for each argument
+        assert len(spy.spy_return[0]) == 4
+
+        # make the second QNode argument a constant
+        grad_fn = jax.grad(circuit, argnums=0)
+        res = grad_fn(a, b)
+
+        # the tape has reported only the first argument as trainable
+        assert circuit.qtape.trainable_params == [0]
+
+        expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # The parameter-shift rule has been called only once
+        assert len(spy.spy_return[0]) == 2
+
+        # trainability also updates on evaluation
+        a = np.array(0.54, requires_grad=False)
+        b = np.array(0.8, requires_grad=True)
+        circuit(a, b)
+        assert circuit.qtape.trainable_params == [1]
+
+    def test_classical_processing(self, dev_name, diff_method, mode, jit, tol):
+        """Test classical processing within the quantum tape"""
+        a = jnp.array(0.1)
+        b = jnp.array(0.2)
+        c = jnp.array(0.3)
+
+        dev = qml.device(dev_name, wires=1)
+
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode, jit=jit)
+        def circuit(a, b, c):
+            qml.RY(a * c, wires=0)
+            qml.RZ(b, wires=0)
+            qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
+
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == [0, 2]
+
+        assert len(res) == 2
+
+    def test_matrix_parameter(self, dev_name, diff_method, mode, jit, tol):
+        """Test that the jax interface works correctly
+        with a matrix parameter"""
+        U = jnp.array([[0, 1], [1, 0]])
+        a = jnp.array(0.1)
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode, jit=jit)
+        def circuit(U, a):
+            qml.QubitUnitary(U, wires=0)
+            qml.RY(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = jax.grad(circuit, argnums=1)(U, a)
+        assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
+
+        if diff_method == "finite-diff":
+            assert circuit.qtape.trainable_params == [1]
+
+    def test_differentiable_expand(self, dev_name, diff_method, mode, jit, tol):
+        """Test that operation and nested tape expansion
+        is differentiable"""
+
+        class U3(qml.U3):
+            def expand(self):
+                theta, phi, lam = self.data
+                wires = self.wires
+
+                with JacobianTape() as tape:
+                    qml.Rot(lam, theta, -lam, wires=wires)
+                    qml.PhaseShift(phi + lam, wires=wires)
+
+                return tape
+
+        dev = qml.device(dev_name, wires=1)
+        a = jnp.array(0.1)
+        p = jnp.array([0.1, 0.2, 0.3])
+
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode, jit=jit)
+        def circuit(a, p):
+            qml.RX(a, wires=0)
+            U3(p[0], p[1], p[2], wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = jax.grad(circuit, argnums=1)(a, p)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestQNodeJacobian:
+    """Test computing the jacobian of QNodes"""
 
     def test_jacobian(self, dev_name, diff_method, mode, mocker, tol):
         """Test jacobian calculation"""
@@ -197,141 +338,6 @@ class TestQNode:
             assert args[1]["order"] == 2
             assert args[1]["h"] == 1e-8
 
-    def test_changing_trainability(self, dev_name, diff_method, mode, mocker, tol):
-        """Test changing the trainability of parameters changes the
-        number of differentiation requests made"""
-        if diff_method != "parameter-shift":
-            pytest.skip("Test only supports parameter-shift")
-
-        a = jnp.array(0.1)
-        b = jnp.array(0.2)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, interface="jax", diff_method="parameter-shift")
-        def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Hamiltonian([1, 1], [qml.PauliZ(0), qml.PauliY(1)]))
-
-        grad_fn = jax.grad(circuit, argnums=[0, 1])
-        spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-        res = grad_fn(a, b)
-
-        # the tape has reported both arguments as trainable
-        assert circuit.qtape.trainable_params == [0, 1]
-
-        expected = [-np.sin(a) + np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # The parameter-shift rule has been called for each argument
-        assert len(spy.spy_return[0]) == 4
-
-        # make the second QNode argument a constant
-        grad_fn = jax.grad(circuit, argnums=0)
-        res = grad_fn(a, b)
-
-        # the tape has reported only the first argument as trainable
-        assert circuit.qtape.trainable_params == [0]
-
-        expected = [-np.sin(a) + np.sin(a) * np.sin(b)]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        # The parameter-shift rule has been called only once
-        assert len(spy.spy_return[0]) == 2
-
-        # trainability also updates on evaluation
-        a = np.array(0.54, requires_grad=False)
-        b = np.array(0.8, requires_grad=True)
-        circuit(a, b)
-        assert circuit.qtape.trainable_params == [1]
-
-    def test_classical_processing(self, dev_name, diff_method, mode, tol):
-        """Test classical processing within the quantum tape"""
-        a = jnp.array(0.1)
-        b = jnp.array(0.2)
-        c = jnp.array(0.3)
-
-        dev = qml.device(dev_name, wires=1)
-
-        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
-        def circuit(a, b, c):
-            qml.RY(a * c, wires=0)
-            qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [0, 2]
-
-        assert len(res) == 2
-
-    def test_matrix_parameter(self, dev_name, diff_method, mode, tol):
-        """Test that the jax interface works correctly
-        with a matrix parameter"""
-        U = jnp.array([[0, 1], [1, 0]])
-        a = jnp.array(0.1)
-
-        dev = qml.device(dev_name, wires=2)
-
-        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
-        def circuit(U, a):
-            qml.QubitUnitary(U, wires=0)
-            qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        res = jax.grad(circuit, argnums=1)(U, a)
-        assert np.allclose(res, np.sin(a), atol=tol, rtol=0)
-
-        if diff_method == "finite-diff":
-            assert circuit.qtape.trainable_params == [1]
-
-    def test_differentiable_expand(self, dev_name, diff_method, mode, tol):
-        """Test that operation and nested tape expansion
-        is differentiable"""
-
-        class U3(qml.U3):
-            def expand(self):
-                theta, phi, lam = self.data
-                wires = self.wires
-
-                with JacobianTape() as tape:
-                    qml.Rot(lam, theta, -lam, wires=wires)
-                    qml.PhaseShift(phi + lam, wires=wires)
-
-                return tape
-
-        dev = qml.device(dev_name, wires=1)
-        a = jnp.array(0.1)
-        p = jnp.array([0.1, 0.2, 0.3])
-
-        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
-        def circuit(a, p):
-            qml.RX(a, wires=0)
-            U3(p[0], p[1], p[2], wires=0)
-            return qml.expval(qml.PauliX(0))
-
-        res = circuit(a, p)
-        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = jax.grad(circuit, argnums=1)(a, p)
-        expected = np.array(
-            [
-                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                - np.sin(p[1])
-                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                np.sin(a)
-                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-            ]
-        )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
@@ -1143,3 +1149,60 @@ class TestTapeExpansion:
     #             -np.sin(d[1] + w[1]),
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
+
+@pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
+class TestJIT:
+    """Test JAX JIT integration with the QNode"""
+
+    def test_gradient(self, dev_name, diff_method, mode, tol):
+        """Test derivative calculation of a scalar valued QNode"""
+        dev = qml.device(dev_name, wires=1)
+
+        if diff_method == "adjoint":
+            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode, jit=True)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = jnp.array([1.0, 2.0])
+        res = circuit(x)
+        g = jax.grad(circuit)(x)
+
+        a, b = x
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    @pytest.mark.xfail(
+        reason="Non-trainable parameters are not being correctly unwrapped by the interface"
+    )
+    def test_gradient_subset(self, dev_name, diff_method, mode, tol):
+        """Test derivative calculation of a scalar valued QNode with respect
+        to a subset of arguments"""
+        a = jnp.array(0.1)
+        b = jnp.array(0.2)
+
+        dev = qml.device(dev_name, wires=1)
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode, jit=True)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.RZ(c, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        res = jax.grad(circuit, argnums=[0, 1])(a, b, 0.0)
+
+        expected_res = np.cos(a) * np.cos(b)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
+
+        expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
+        assert np.allclose(g, expected_g, atol=tol, rtol=0)
