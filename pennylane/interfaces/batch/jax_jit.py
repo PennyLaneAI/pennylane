@@ -39,14 +39,14 @@ def _validate_tapes(tapes):
 
         if len(t.observables) != 1:
             raise ValueError(
-                "The JAX interface currently only supports quantum nodes with a single return type."
+                "The jittable JAX interface currently only supports quantum nodes with a single return type."
             )
 
         for o in t.observables:
             return_type = o.return_type
             if return_type is not Variance and return_type is not Expectation:
                 raise ValueError(
-                    f"Only Variance and Expectation returns are supported for the JAX interface, given {return_type}."
+                    f"Only Variance and Expectation returns are supported for the jittable JAX interface, given {return_type}."
                 )
 
 
