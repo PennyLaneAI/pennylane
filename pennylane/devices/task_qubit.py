@@ -17,8 +17,6 @@ a given qubit type for run on a background scheduler.
 from typing import List, Union, Tuple, Dict, Iterable
 from contextlib import nullcontext
 import pennylane as qml
-from pennylane import QubitDevice
-from pennylane.wires import Wires
 
 from .default_qubit import DefaultQubit
 from .._version import __version__
@@ -224,6 +222,9 @@ class TaskQubit(DefaultQubit):
         gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
     """
 
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=no-self-argument
+
     operations = DefaultQubit.operations
     observables = DefaultQubit.observables
 
@@ -241,8 +242,6 @@ class TaskQubit(DefaultQubit):
         "lightning.qubit",
     }
 
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=no-self-argument
     def __init__(
         self,
         wires,
@@ -258,7 +257,7 @@ class TaskQubit(DefaultQubit):
 
         # pylint: disable=invalid-class-object
         self.__class__ = type(
-            f"TaskQubit",
+            "TaskQubit",
             (self._backend_cls,),
             {
                 "execute": self.execute,

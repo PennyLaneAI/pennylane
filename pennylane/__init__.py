@@ -72,14 +72,13 @@ from pennylane.transforms import (
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
+from pennylane.taskify import taskify, untaskify
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 from pennylane.interfaces.batch import execute  # pylint:disable=wrong-import-order
-
-from pennylane.taskify import taskify, untaskify
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
