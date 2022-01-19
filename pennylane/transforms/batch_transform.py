@@ -20,9 +20,6 @@ import os
 import types
 import warnings
 
-
-import autograd
-
 import pennylane as qml
 
 
@@ -486,10 +483,6 @@ def map_batch_transform(transform, tapes):
         for idx, s in enumerate(tape_counts):
             # apply any device specific batch transform post-processing
             new_res = batch_fns[idx](res[count : count + s])
-
-            if autograd.isinstance(new_res, (tuple, list)) and len(new_res) == 1:
-                new_res = new_res[0]
-
             final_results.append(new_res)
             count += s
 
