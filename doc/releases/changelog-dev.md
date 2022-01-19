@@ -447,6 +447,7 @@
 
 * Fixed a bug which allows using `inv()` in the `MottotenStatePreparation` template.
   [(#2104)](https://github.com/PennyLaneAI/pennylane/pull/2104)
+
 <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
