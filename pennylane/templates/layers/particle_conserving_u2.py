@@ -223,7 +223,7 @@ class ParticleConservingU2(Operation):
                 op_list.append(qml.RZ(weights[l, j], wires=wires[j]))
 
             for i, wires_ in enumerate(nm_wires):
-                op_list.extend(u2_ex_gate(op_list, weights[l, len(wires) + i], wires=wires_))
+                op_list.extend(u2_ex_gate(weights[l, len(wires) + i], wires=wires_))
 
         return op_list
 
