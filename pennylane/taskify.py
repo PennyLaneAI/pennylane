@@ -19,19 +19,59 @@ from typing import Dict, List, Union
 
 import pennylane as qml
 from pennylane.devices import TaskQubit
+import dask.distributed as dist
 
-def taskify(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
+
+def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
     """
     Returns a proxy-qubit device with the device argument as the intiantiable backend.
 
     >>> d_dev = qml.device("default.qubit", wires=["a","b",2])
-    >>> t_dev = qml.taskify(dev)
+    >>> t_dev = qml.taskify_dev(dev)
     >>> <TaskQubit device (wires=3, shots=None) at 0x7f66fcbbeee0>
     """
-    return TaskQubit(dev.wires, 
-                    shots=dev.shots, 
-                    analytic=None, 
-                    backend=dev.short_name, 
-                    gen_report=gen_report, 
-                    future=return_future
+    return TaskQubit(
+        dev.wires,
+        shots=dev.shots,
+        analytic=None,
+        backend=dev.short_name,
+        gen_report=gen_report,
+        future=return_future,
     )
+
+
+def taskify(func, futures=False):
+    """
+    Converts a callable function into a scheduled task on the running backend client.
+    """
+    # submitted from host client only
+    try:
+        client = dist.get_client()
+
+        def client_submit_sync(*args, **kwargs):
+            return client.submit(func, *args, **kwargs).result()
+
+        def client_submit_async(*args, **kwargs):
+            return client.submit(func, *args, **kwargs)
+
+    except:
+        raise RuntimeError("No running Dask client detected.")
+
+    return client_submit_sync if not futures else client_submit_async
+
+
+def untaskify(futures):
+    """
+    Gathers the results from a list of futures
+    """
+    # submitted from host client only
+    try:
+        client = dist.get_client()
+
+        def client_gather(*args, **kwargs):
+            return client.gather(futures)
+
+    except:
+        raise RuntimeError("No running Dask client detected.")
+
+    return client_gather
