@@ -29,7 +29,7 @@ from pennylane.interfaces.batch import execute
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""
 
-    def test_jacobian_options(self, mocker, tol):
+    def test_jacobian_options(self, mocker, jit, tol):
         """Test setting jacobian options"""
         spy = mocker.spy(qml.gradients, "param_shift")
 
@@ -56,7 +56,7 @@ class TestJaxExecuteUnitTests:
         for args in spy.call_args_list:
             assert args[1]["shift"] == np.pi / 4
 
-    def test_incorrect_mode(self):
+    def test_incorrect_mode(self, jit):
         """Test that an error is raised if an gradient transform
         is used with mode=forward"""
         a = jnp.array([0.1, 0.2])
@@ -73,6 +73,7 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 gradient_fn=param_shift,
+                gradient_kwargs={"jit": jit},
                 mode="forward",
                 interface="jax",
             )[0]
@@ -82,7 +83,7 @@ class TestJaxExecuteUnitTests:
         ):
             res = jax.grad(cost)(a, device=dev)
 
-    def test_unknown_interface(self):
+    def test_unknown_interface(self, jit):
         """Test that an error is raised if the interface is unknown"""
         a = jnp.array([0.1, 0.2])
 
@@ -94,12 +95,12 @@ class TestJaxExecuteUnitTests:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], device, gradient_fn=param_shift, interface="None")[0]
+            return execute([tape], device, gradient_fn=param_shift, interface="None", gradient_kwargs={"jit": jit})[0]
 
         with pytest.raises(ValueError, match="Unknown interface"):
             cost(a, device=dev)
 
-    def test_forward_mode(self, mocker):
+    def test_forward_mode(self, jit, mocker):
         """Test that forward mode uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(dev, "execute_and_gradients")
@@ -115,7 +116,7 @@ class TestJaxExecuteUnitTests:
                 dev,
                 gradient_fn="device",
                 interface="jax",
-                gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True},
+                gradient_kwargs={"method": "adjoint_jacobian", "use_device_state": True, "jit": jit},
             )[0]
 
         a = jnp.array([0.1, 0.2])
@@ -125,7 +126,7 @@ class TestJaxExecuteUnitTests:
         assert dev.num_executions == 1
         spy.assert_called()
 
-    def test_backward_mode(self, mocker):
+    def test_backward_mode(self, jit, mocker):
         """Test that backward mode uses the `device.batch_execute` and `device.gradients` pathway"""
         dev = qml.device("default.qubit", wires=1)
         spy_execute = mocker.spy(qml.devices.DefaultQubit, "batch_execute")
@@ -142,7 +143,7 @@ class TestJaxExecuteUnitTests:
                 dev,
                 gradient_fn="device",
                 mode="backward",
-                gradient_kwargs={"method": "adjoint_jacobian"},
+                gradient_kwargs={"method": "adjoint_jacobian", "jit": jit},
                 interface="jax",
             )[0][0]
 
@@ -156,7 +157,7 @@ class TestJaxExecuteUnitTests:
         jax.grad(cost)(a)
         spy_gradients.assert_called()
 
-    def test_max_diff_error(self):
+    def test_max_diff_error(self, jit):
         """Test that an error is being raised if max_diff > 1 for the JAX
         interface."""
         a = jnp.array([0.1, 0.2])
@@ -185,7 +186,7 @@ class TestJaxExecuteUnitTests:
 class TestCaching:
     """Test for caching behaviour"""
 
-    def test_cache_maxsize(self, mocker):
+    def test_cache_maxsize(self, jit, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
@@ -197,7 +198,8 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             return execute(
-                [tape], dev, gradient_fn=param_shift, cachesize=cachesize, interface="jax"
+                [tape], dev, gradient_fn=param_shift, gradient_kwargs={"jit":
+                jit}, cachesize=cachesize, interface="jax"
             )[0][0]
 
         params = jnp.array([0.1, 0.2])
@@ -208,7 +210,7 @@ class TestCaching:
         assert cache.currsize == 2
         assert len(cache) == 2
 
-    def test_custom_cache(self, mocker):
+    def test_custom_cache(self, jit, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
@@ -219,7 +221,7 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface="jax")[0][0]
+            return execute([tape], dev, gradient_fn=param_shift, gradient_kwargs={"jit": jit}, cache=cache, interface="jax")[0][0]
 
         custom_cache = {}
         params = jnp.array([0.1, 0.2])
@@ -228,7 +230,7 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
-    def test_custom_cache_multiple(self, mocker):
+    def test_custom_cache_multiple(self, jit, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit", wires=1)
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
@@ -248,7 +250,7 @@ class TestCaching:
                 qml.expval(qml.PauliZ(0))
 
             res = execute(
-                [tape1, tape2], dev, gradient_fn=param_shift, cache=cache, interface="jax"
+                [tape1, tape2], dev, gradient_fn=param_shift, gradient_kwargs={"jit": jit}, cache=cache, interface="jax"
             )
             return res[0][0]
 
@@ -258,7 +260,7 @@ class TestCaching:
         cache = spy.call_args[0][1]
         assert cache is custom_cache
 
-    def test_caching_param_shift(self, tol):
+    def test_caching_param_shift(self, jit, tol):
         """Test that, when using parameter-shift transform,
         caching produces the optimum number of evaluations."""
         dev = qml.device("default.qubit", wires=1)
@@ -346,11 +348,29 @@ execute_kwargs = [
         "mode": "backward",
         "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
+    # With jit support
+    {
+        "gradient_fn": param_shift,
+        "gradient_kwargs": {"jit": True},
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {
+            "method": "adjoint_jacobian",
+            "use_device_state": True,
+            "jit": True,
+        },
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "backward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "jit": True},
+    },
 ]
 
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
-@pytest.mark.parametrize("jit", [False, True])
 class TestJaxExecuteIntegration:
     """Test the jax interface execute function
     integrates well for both forward and backward execution"""
@@ -609,11 +629,26 @@ class TestJaxExecuteIntegration:
             res = qml.interfaces.batch.execute(
                 [tape], dev, cache=cache, interface="jax", **execute_kwargs
             )
-            return res[0]
+            return res[0][0]
 
-        res = jax.jacobian(cost)(params, cache=None)
-        assert res.shape == (1, 3)
+        res = jax.grad(cost)(params, cache=None)
+        assert res.shape == (3,)
 
+vv_execute_kwargs = [
+    {"gradient_fn": param_shift},
+    {
+        "gradient_fn": "device",
+        "mode": "forward",
+        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
+    },
+    {
+        "gradient_fn": "device",
+        "mode": "backward",
+        "gradient_kwargs": {"method": "adjoint_jacobian"},
+    },
+]
+
+@pytest.mark.parametrize("execute_kwargs", vv_execute_kwargs)
 class TestVectorValued:
     """Test vector-valued returns"""
 
