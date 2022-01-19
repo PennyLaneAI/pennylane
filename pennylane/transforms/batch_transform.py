@@ -426,11 +426,11 @@ class batch_transform:
         return lambda tape: self.construct(tape, *targs, **tkwargs)
 
 
-def map_batch_transform(batch_transform, tapes):
+def map_batch_transform(transform, tapes):
     """Map a batch transform over multiple tapes.
 
     Args:
-        batch_transform (.batch_transform): the batch transform
+        transform (.batch_transform): the batch transform
             to be mapped
         tapes (Sequence[tapes]): The sequence of tapes the batch
             transform should be applied to. Each tape in the sequence
@@ -465,7 +465,7 @@ def map_batch_transform(batch_transform, tapes):
     >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
     """
     if len(tapes) == 1:
-        return batch_transform(tapes[0])
+        return transform(tapes[0])
 
     execution_tapes = []
     batch_fns = []
@@ -473,7 +473,7 @@ def map_batch_transform(batch_transform, tapes):
 
     for t in tapes:
         # preprocess the tapes by applying any device-specific transforms
-        new_tapes, fn = batch_transform(t)
+        new_tapes, fn = transform(t)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
         tape_counts.append(len(new_tapes))
@@ -485,10 +485,13 @@ def map_batch_transform(batch_transform, tapes):
         for idx, s in enumerate(tape_counts):
             # apply any device specific batch transform post-processing
             new_res = batch_fns[idx](res[count : count + s])
-            final_results.append(new_res)
 
+            if len(new_res) == 1:
+                new_res = new_res[0]
+
+            final_results.append(new_res)
             count += s
 
-        return qml.math.squeeze(qml.math.convert_like(final_results, res[0]))
+        return final_results
 
     return execution_tapes, processing_fn
