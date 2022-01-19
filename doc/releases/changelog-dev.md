@@ -327,10 +327,13 @@
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
-  inside PennyLane. We can decorate the function, indicating the arguments that are
-  tensors handled by the interface:
+  inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
-    
+  [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
+
+  We can decorate a function, indicating the arguments that are
+  tensors handled by the interface:
+   
   ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
   ... def some_function(tensor1, tensor2, option, like):
