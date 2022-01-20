@@ -357,11 +357,15 @@ class TestCorrectness:
 
         param = np.pi / 2
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
 
         param = np.pi
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
-        assert np.allclose(qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
 
     def test_isingzz_matrix_tf(self, tol):
         """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
