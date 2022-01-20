@@ -574,6 +574,9 @@ class QNode:
             # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
             # autograd.isinstance is a 'safer' isinstance check that supports
             # autograd backwards passes.
+            #
+            # TODO: find a more explicit way of determining that a batch transform
+            # was applied.
 
             res = res[0]
 
