@@ -193,9 +193,9 @@ diagonal_in_z_basis = Attribute(
 For such operations, the eigenvalues provide all necessary information to
 construct the matrix representation in the computational basis.
 
-Note: Currently, the gates with this attribute need 
-to explicitly define an eigenvalue representation. 
+Note: Currently, the gates with this attribute need
+to explicitly define an eigenvalue representation.
 The reason is that if this method is missing, eigenvalues are computed from the matrix
-representation using ``np.linalg.eigvals``, which fails for some tensor types that the matrix 
+representation using ``np.linalg.eigvals``, which fails for some tensor types that the matrix
 may be cast in for backpropagation devices.
 """
