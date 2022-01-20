@@ -331,6 +331,9 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
+* `qml.BasisStatePreparation` now supports the `batch_params` decorator.
+  [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
+
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
   inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
@@ -464,6 +467,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Anthony Hayes, Christina Lee, Olivia Di Matteo, Diego Guala, Josh Izaac,
-Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Anthony Hayes, 
+Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
