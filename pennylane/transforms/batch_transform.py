@@ -470,7 +470,9 @@ def map_batch_transform(transform, tapes):
     tape_counts = []
 
     for t in tapes:
-        # preprocess the tapes by applying any device-specific transforms
+        # Preprocess the tapes by applying batch transforms
+        # to each tape, and storing corresponding tapes
+        # for execution, processing functions, and list of tape lengths.
         new_tapes, fn = transform(t)
         execution_tapes.extend(new_tapes)
         batch_fns.append(fn)
@@ -481,7 +483,7 @@ def map_batch_transform(transform, tapes):
         final_results = []
 
         for idx, s in enumerate(tape_counts):
-            # apply any device specific batch transform post-processing
+            # apply any batch transform post-processing
             new_res = batch_fns[idx](res[count : count + s])
             final_results.append(new_res)
             count += s
