@@ -24,7 +24,6 @@ import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.operation import Sample, Probability
-from .jax_jit import _jittable_execute, _jittable_execute_with_fwd
 
 dtype = jnp.float64
 
@@ -61,6 +60,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     if max_diff > 1:
         raise ValueError("The JAX interface only supports first order derivatives.")
 
+    _validate_tapes(tapes)
+
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
@@ -68,14 +69,8 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
-    # Copy not to mutate the original dictionary if the same dictionary is
-    # being used for multiple executions
-    gradient_kwargs = deepcopy(gradient_kwargs)
-    jit_support = gradient_kwargs.pop("jit", False)
-
     if gradient_fn is None:
-        exec_fwd = _execute_with_fwd if not jit_support else _jittable_execute_with_fwd
-        return exec_fwd(
+        return _execute_with_fwd(
             parameters,
             tapes=tapes,
             device=device,
@@ -84,8 +79,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
             _n=_n,
         )
 
-    execute_func = _execute if not jit_support else _jittable_execute
-    return execute_func(
+    return _execute(
         parameters,
         tapes=tapes,
         device=device,
@@ -133,8 +127,6 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    _validate_tapes(tapes)
 
     @jax.custom_vjp
     def wrapped_exec(params):
@@ -240,8 +232,6 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    _validate_tapes(tapes)
 
     @jax.custom_vjp
     def wrapped_exec(params):

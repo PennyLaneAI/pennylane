@@ -29,7 +29,7 @@ import pennylane as qml
 INTERFACE_NAMES = {
     "NumPy": (None,),
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
-    "JAX": ("jax", "JAX"),
+    "JAX": ("jax", "jax-jit", "jax-python", "JAX"),
     "PyTorch": ("torch", "pytorch"),
     "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
 }
@@ -373,7 +373,36 @@ def execute(
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
-            from .jax import execute as _execute
+            from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+            if interface != "jax-jit":
+
+                # Check all params in all tapes and change to jit support if
+                # needed
+                for t in tapes:
+                    for op in t._ops:
+                        for param in op.data:
+
+                            # We're within a JAX transform such as jax.jit,
+                            # change the interface to have jit support. Note:
+                            # we won't only change for jit, but for other JAX
+                            # transforms (vmap, pmap, etc.) too because JAX
+                            # doesn't have a public API for checking whether or
+                            # not we're within the jit transform.
+                            if qml.math.is_abstract(param):
+                                interface = "jax-jit"
+                                break
+
+                        if interface == "jax-jit":
+                            break
+
+                    if interface == "jax-jit":
+                        break
+
+            if interface == "jax-jit":
+                from .jax_jit import execute as _execute
+            else:
+                from .jax import execute as _execute
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "

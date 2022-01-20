@@ -27,6 +27,66 @@ from pennylane.operation import Variance, Expectation
 
 dtype = jnp.float64
 
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
+    """Execute a batch of tapes with JAX parameters on a device.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
+
+    Returns:
+        list[list[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+    """
+    # pylint: disable=unused-argument
+    if max_diff > 1:
+        raise ValueError("The JAX interface only supports first order derivatives.")
+
+    _validate_tapes(tapes)
+
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+
+    parameters = tuple(list(t.get_parameters()) for t in tapes)
+
+    if gradient_fn is None:
+        return _execute_with_fwd(
+            parameters,
+            tapes=tapes,
+            device=device,
+            execute_fn=execute_fn,
+            gradient_kwargs=gradient_kwargs,
+            _n=_n,
+        )
+
+    return _execute(
+        parameters,
+        tapes=tapes,
+        device=device,
+        execute_fn=execute_fn,
+        gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
+        _n=_n,
+    )
 
 def _validate_tapes(tapes):
     """Validates that the input tapes are compatible with JAX support.
@@ -50,7 +110,7 @@ def _validate_tapes(tapes):
                 )
 
 
-def _jittable_execute(
+def _execute(
     params,
     tapes=None,
     device=None,
@@ -59,8 +119,6 @@ def _jittable_execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    _validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
@@ -91,7 +149,6 @@ def _jittable_execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []
@@ -164,7 +221,7 @@ def _jittable_execute(
 
 
 # The execute function in forward mode
-def _jittable_execute_with_fwd(
+def _execute_with_fwd(
     params,
     tapes=None,
     device=None,
@@ -172,8 +229,6 @@ def _jittable_execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    _validate_tapes(tapes)
 
     # Only have scalar outputs
     total_size = len(tapes)
