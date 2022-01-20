@@ -1206,10 +1206,9 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def decompose(self):
-        with qml.tape.QuantumTape() as tape:
-            ...
-        return tape
+    # pylint: disable=unused-argument
+    def decomposition(self, wires):
+        return []
 
     def label(self, decimals=None):
         return "//"

@@ -74,7 +74,7 @@ def test_wirecut_adjoint():
         adjoint(qml.WireCut)(wires=0)
         return qml.state()
 
-    assert my_circuit()[0] == 1.0
+    assert np.isclose(my_circuit()[0], 1.0)
 
 
 def test_identity_adjoint():
