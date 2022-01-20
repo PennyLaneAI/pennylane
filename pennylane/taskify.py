@@ -37,6 +37,7 @@ def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[
         future=return_future,
     )
 
+
 def taskify(func, futures=False):
     """
     Converts a callable function into a scheduled task on the running backend client.
