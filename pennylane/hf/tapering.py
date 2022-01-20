@@ -546,10 +546,10 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
     The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
-    using the Jordan-Wigner (JW) encoding. This operator is then transformed using the Clifford operators :math:`U`
+    using the Jordan-Wigner encoding. This operator is then transformed using the Clifford operators :math:`U`
     obtained from the :math:`\mathbb{Z}_2` symmetries of the molecular Hamiltonian resulting in a qubit operator
-    that acts non-trivially only on a subset of qubits. A new, tapered Hartree-Fock state is built on this reduced
-    subset of qubits by putting the qubits that are acted on off-diagonally by the operator in the :math:`|1\rangle`
+    that acts non-trivially only on a subset of qubits. A new, tapered HF state is built on this reduced subset
+    of qubits by putting the qubits that are acted on off-diagonally by the operator in the :math:`|1\rangle`
     state and leaving the rest in the :math:`|0\rangle` state.
 
     Args:
@@ -563,6 +563,7 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
         array(int): tapered Hartree-Fock state
 
     **Example**
+
     >>> from pennylane import hf
     >>> symbols = ['He', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
