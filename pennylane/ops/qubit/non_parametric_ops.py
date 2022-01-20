@@ -1189,3 +1189,29 @@ class Barrier(Operation):
 
     def adjoint(self):
         return Barrier(wires=self.wires)
+
+
+class WireCut(Operation):
+    r"""WireCut(wires)
+    The wire cut operator, used to manually mark locations for wire cuts.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_wires = AnyWires
+    grad_method = None
+
+    # pylint: disable=unused-argument
+    def decomposition(self, wires):
+        return []
+
+    def label(self, decimals=None):
+        return "//"
+
+    def adjoint(self):
+        return WireCut(wires=self.wires)

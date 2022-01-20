@@ -65,6 +65,18 @@ def test_barrier_adjoint():
     assert my_circuit()[0] == 1.0
 
 
+def test_wirecut_adjoint():
+    """Check that the adjoint for the WireCut is working"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        adjoint(qml.WireCut)(wires=0)
+        return qml.state()
+
+    assert np.isclose(my_circuit()[0], 1.0)
+
+
 def test_identity_adjoint():
     """Check that the adjoint for Identity is working"""
     dev = qml.device("default.qubit", wires=2, shots=100)
