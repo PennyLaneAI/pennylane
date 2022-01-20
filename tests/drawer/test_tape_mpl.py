@@ -340,6 +340,20 @@ class TestSpecialGates:
 
         plt.close()
 
+    def test_WireCut(self):
+        """Test WireCut gets correct special call."""
+
+        with QuantumTape() as tape:
+            qml.WireCut(wires=(0, 1))
+
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        assert len(ax.lines) == 2
+        assert len(ax.collections) == 2
+
+        plt.close()
+
 
 controlled_data = [
     (qml.CY(wires=(0, 1)), "Y"),
