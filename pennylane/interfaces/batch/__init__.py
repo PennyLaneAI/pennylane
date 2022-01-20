@@ -375,7 +375,7 @@ def execute(
         elif interface in INTERFACE_NAMES["JAX"]:
             from jax.interpreters.partial_eval import DynamicJaxprTracer
 
-            if interface != "jax-jit":
+            if interface == "jax":
 
                 # Check all params in all tapes and change to jit support if
                 # needed
