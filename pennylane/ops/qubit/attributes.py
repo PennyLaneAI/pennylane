@@ -110,6 +110,7 @@ composable_rotations = Attribute(
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "Rot"
     ]
 )
 """Attribute: Operations for which composing multiple copies of the operation results in an

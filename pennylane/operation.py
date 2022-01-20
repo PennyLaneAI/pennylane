@@ -260,7 +260,7 @@ class Operator(abc.ABC):
 
     Keyword Args:
         wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
-            If not given, args[-1] is interpreted as wires.
+ assert len(ops_obtained) == len(names_expected)            If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
     """
