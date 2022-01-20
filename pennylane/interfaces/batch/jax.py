@@ -115,6 +115,15 @@ def _validate_tapes(tapes):
                 f"Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
 
+        if Probability in return_types:
+            set_len_wires = set([len(o.wires) for o in t.observables])
+            if len(set_len_wires):
+                raise ValueError(
+                    f"Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
+                )
+
+
+
 def _execute(
     params,
     tapes=None,
