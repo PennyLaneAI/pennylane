@@ -20,7 +20,6 @@ import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fourier.qnode_spectrum import qnode_spectrum, _process_ids
-from pennylane.transforms import classical_jacobian
 
 
 def circuit_0(a):
@@ -136,11 +135,11 @@ expected_spectra = [
 
 circuits_nonlinear = [circuit_6, circuit_7, circuit_8]
 
-a = 0.812
-b = -5.231
-x = np.array([0.1, -1.9, 0.7])
-y = np.array([[0.4, 5.5], [1.6, 5.1]])
-z = np.array([-1.9, -0.1, 0.49, 0.24])
+a = pnp.array(0.812, requires_grad=True)
+b = pnp.array(-5.231, requires_grad=True)
+x = pnp.array([0.1, -1.9, 0.7], requires_grad=True)
+y = pnp.array([[0.4, 5.5], [1.6, 5.1]], requires_grad=True)
+z = pnp.array([-1.9, -0.1, 0.49, 0.24], requires_grad=True)
 all_args = [(a,), (a, b), (x,), (x, y), (x, y), (x, y, z)]
 all_args_nonlinear = [(x, y, z), (a,), (a, x)]
 

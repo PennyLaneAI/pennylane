@@ -17,6 +17,7 @@ Unit tests for the GateFabric template.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class TestDecomposition:
@@ -797,8 +798,7 @@ class TestInterfaces:
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
-        weights = np.random.random(size=(1, 1, 2))
-        weights = qml.math.array(weights)
+        weights = pnp.random.random(size=(1, 1, 2), requires_grad=True)
 
         dev = qml.device("default.qubit", wires=4)
 
