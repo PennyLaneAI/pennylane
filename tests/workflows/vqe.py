@@ -131,8 +131,8 @@ def main(bucket_info=None, device_arn=None, display=False):
 
 
 if __name__ == "__main__":
-    my_bucket = "amazon-braket-jay"
-    my_prefix = "vqe-test"
+    my_bucket = "amazon-braket-Bucket-Name"
+    my_prefix = "Folder-Name"
     s3_bucket = (my_bucket, my_prefix)
 
     state_vector_sim_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
