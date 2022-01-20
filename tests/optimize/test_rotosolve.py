@@ -93,6 +93,19 @@ def test_error_missing_frequency_info_single_par():
         opt.step(fun, x, nums_frequency=nums_frequency, spectra=spectra)
 
 
+def test_error_no_trainable_args():
+    """Test that an error is raised if none of the arguments is trainable."""
+
+    opt = RotosolveOptimizer()
+    fun = lambda x, y, z: 1.0
+    x = np.arange(4, requires_grad=False)
+    y = np.arange(2, requires_grad=False)
+    z = [1.2, -0.4, -9.1]
+
+    with pytest.raises(ValueError, match="Found no parameters to optimize."):
+        opt.step(fun, x, nums_frequency=None, spectra=None)
+
+
 classical_functions = [
     lambda x: np.sin(x + 0.124) * 2.5123,
     lambda x: -np.cos(x[0] + 0.12) * 0.872 + np.sin(x[1] - 2.01) - np.cos(x[2] - 1.35) * 0.111,
@@ -190,9 +203,12 @@ class TestWithClassicalFunction:
 
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
-        # Parameters are not marked as trainable -> Expect only one execution for f0
+        # Make only the first argument trainable
+        param = (np.array(param[0], requires_grad=True),) + param[1:]
+        # Only one argument is marked as trainable -> Expect only the executions for that arg
         new_param = opt.step(_fun, *param, nums_frequency=nums_freq)
-        assert num_calls == 1
+        exp_num_calls_single_trainable = sum(2 * num + 1 for num in nums_freq["x"].values())
+        assert num_calls == exp_num_calls_single_trainable
         num_calls = 0
 
         # Parameters are now marked as trainable -> Expect full number of executions
@@ -207,7 +223,9 @@ class TestWithClassicalFunction:
         Includes testing of the parameter output shape and the old cost when using step_and_cost."""
         opt = RotosolveOptimizer(substep_optimizer, substep_kwargs)
 
-        # Without trainable parameters, param should not be changed
+        # Make only the first argument trainable
+        param = (np.array(param[0], requires_grad=True),) + param[1:]
+        # Only one argument is marked as trainable -> All other arguments have to stay fixed
         new_param_step = opt.step(
             fun,
             *param,
@@ -217,11 +235,7 @@ class TestWithClassicalFunction:
         if len(param) == 1:
             new_param_step = (new_param_step,)
 
-        assert np.allclose(
-            np.fromiter(_flatten(param), dtype=float),
-            np.fromiter(_flatten(new_param_step), dtype=float),
-            atol=1e-5,
-        )
+        assert all(np.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:]))
 
         # With trainable parameters, training should happen
         param = tuple(np.array(p, requires_grad=True) for p in param)
@@ -320,17 +334,14 @@ def test_multiple_steps(fun, x_min, param, num_freq):
 
 
 classical_functions_deact = [
-    lambda x: np.sin(x + 0.124) * 2.5123,
     lambda x, y: -np.cos(x + 0.12) * 0.872 + np.sin(y[0] - 2.01) - np.cos(y[1] - 1.35) * 0.111,
     lambda x, y, z: -np.cos(x + 0.12) * 0.872 + np.sin(y - 2.01) - np.cos(z - 1.35) * 0.111,
 ]
 classical_minima_deact = [
-    (0.24,),
     (-0.12, [0.8, 0.1]),
     (-0.12, 0.2, 1.35),
 ]
 classical_params_deact = [
-    (np.array(0.24, requires_grad=False),),
     (np.array(0.3, requires_grad=True), np.array([0.8, 0.1], requires_grad=False)),
     (
         np.array(0.1, requires_grad=True),
@@ -339,7 +350,6 @@ classical_params_deact = [
     ),
 ]
 classical_nums_frequency_deact = [
-    {"x": {(): 1}},
     {"x": {(): 1}, "y": {(0,): 1, (1,): 1}},
     {"x": {(): 1}, "y": {(): 1}, "z": {(): 1}},
 ]
