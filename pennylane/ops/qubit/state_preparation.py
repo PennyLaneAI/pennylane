@@ -70,7 +70,7 @@ class BasisState(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.BasisState.decomposition`.
+        .. seealso:: :meth:`~.BasisState.decomposition`.
 
         Args:
             n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
@@ -139,7 +139,7 @@ class QubitStateVector(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.QubitStateVector.decomposition`.
+        .. seealso:: :meth:`~.QubitStateVector.decomposition`.
 
         Args:
             state (array[complex]): a state vector of size 2**len(wires)

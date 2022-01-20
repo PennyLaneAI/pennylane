@@ -67,7 +67,7 @@ class Hadamard(Observable, Operation):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the Hadamard operator.
 
         Returns:
@@ -113,7 +113,7 @@ class Hadamard(Observable, Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.Hadamard.decomposition`.
+        .. seealso:: :meth:`~.Hadamard.decomposition`.
 
         Args:
             wires (Any, Wires): Wire that the operator acts on.
@@ -184,7 +184,7 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliX operator.
 
         Returns:
@@ -228,7 +228,7 @@ class PauliX(Observable, Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.PauliX.decomposition`.
+        .. seealso:: :meth:`~.PauliX.decomposition`.
 
         Args:
             wires (Any, Wires): Wire that the operator acts on.
@@ -302,7 +302,7 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliY operator.
 
         Returns:
@@ -352,7 +352,7 @@ class PauliY(Observable, Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.PauliY.decomposition`.
+        .. seealso:: :meth:`~.PauliY.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -426,7 +426,7 @@ class PauliZ(Observable, Operation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the PauliZ operator.
 
         Returns:
@@ -465,7 +465,7 @@ class PauliZ(Observable, Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.PauliZ.decomposition`.
+        .. seealso:: :meth:`~.PauliZ.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -532,7 +532,7 @@ class S(Operation):
         return np.array([[1, 0], [0, 1j]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the S operator.
 
         Returns:
@@ -554,7 +554,7 @@ class S(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.S.decomposition`.
+        .. seealso:: :meth:`~.S.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -618,7 +618,7 @@ class T(Operation):
         return np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the T operator.
 
         Returns:
@@ -640,7 +640,7 @@ class T(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.T.decomposition`.
+        .. seealso:: :meth:`~.T.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -704,7 +704,7 @@ class SX(Operation):
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the SX operator.
 
         Returns:
@@ -726,7 +726,7 @@ class SX(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.SX.decomposition`.
+        .. seealso:: :meth:`~.SX.decomposition`.
 
         Args:
             wires (Any, Wires): Single wire that the operator acts on.
@@ -867,7 +867,7 @@ class CZ(Operation):
         return np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the CZ operator.
 
         Returns:
@@ -953,7 +953,7 @@ class CY(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.CY.decomposition`.
+        .. seealso:: :meth:`~.CY.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
@@ -1029,7 +1029,7 @@ class SWAP(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.SWAP.decomposition`.
+        .. seealso:: :meth:`~.SWAP.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
@@ -1100,7 +1100,7 @@ class ISWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the ISWAP operator.
 
         Returns:
@@ -1122,7 +1122,7 @@ class ISWAP(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.ISWAP.decomposition`.
+        .. seealso:: :meth:`~.ISWAP.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
@@ -1206,7 +1206,7 @@ class SISWAP(Operation):
         )
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the SISWAP operator.
 
         Returns:
@@ -1228,7 +1228,7 @@ class SISWAP(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.SISWAP.decomposition`.
+        .. seealso:: :meth:`~.SISWAP.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
@@ -1352,7 +1352,7 @@ class CSWAP(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.CSWAP.decomposition`.
+        .. seealso:: :meth:`~.CSWAP.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
@@ -1458,7 +1458,7 @@ class Toffoli(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.Toffoli.decomposition`.
+        .. seealso:: :meth:`~.Toffoli.decomposition`.
 
         Args:
             wires (Iterable, Wires): Wires that the operator acts on.
@@ -1573,7 +1573,6 @@ class MultiControlledX(Operation):
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        *params,
         control_wires=None,
         wires=None,
         control_values=None,
@@ -1615,7 +1614,7 @@ class MultiControlledX(Operation):
         """Canonical matrix representation of the MultiControlledX operator.
 
         Args:
-            control_wires (Iterable): wires to place controls on
+            control_wires (Any or Iterable[Any]): wires to place controls on
             control_values (str): string of bits determining the controls
 
         Returns:
@@ -1635,7 +1634,6 @@ class MultiControlledX(Operation):
          [0. 0. 0. 1.]]
 
         """
-
         if control_values is None:
             control_values = "1" * len(control_wires)
 
@@ -1668,7 +1666,6 @@ class MultiControlledX(Operation):
             control_wires=self.wires[:-1],
             wires=self.wires[-1],
             control_values=self.hyperparameters["control_values"],
-            work_wires=self.hyperparameters["work_wires"],
         )
 
     @staticmethod
@@ -1680,11 +1677,10 @@ class MultiControlledX(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.MultiControlledX.decomposition`.
+        .. seealso:: :meth:`~.MultiControlledX.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on. Should contain both control wires
-                and target wire. Target wire is the last wire in the Iterable.
+            wires (Iterable[Any] or Wires): wires that the operation acts on
             work_wires (Wires): optional work wires used to decompose
                 the operation into a series of Toffoli gates.
             control_values (str): a string of bits representing the state of the control
@@ -1852,7 +1848,7 @@ class Barrier(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.Barrier.decomposition`.
+        .. seealso:: :meth:`~.Barrier.decomposition`.
 
         ``Barrier`` decomposes into an empty list for all arguments.
 

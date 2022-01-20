@@ -29,7 +29,7 @@ def test_work_wires():
 
     op = qml.GroverOperator(wires=wires, work_wires=work_wire)
 
-    assert op.work_wires == work_wire
+    assert op.hyperparameters["work_wires"] == work_wire
 
     ops = op.expand().operations
 
@@ -211,7 +211,7 @@ def test_findstate():
 def test_matrix(tol):
     """Test that the matrix representation is correct."""
 
-    res_static = qml.GroverOperator.compute_matrix(2)
+    res_static = qml.GroverOperator.compute_matrix(2, work_wires=None)
     res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
     res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
 

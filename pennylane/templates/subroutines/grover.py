@@ -17,7 +17,6 @@ Contains the Grover Operation template.
 import itertools
 import functools
 import numpy as np
-import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
 
@@ -106,40 +105,62 @@ class GroverOperator(Operation):
         if (not hasattr(wires, "__len__")) or (len(wires) < 2):
             raise ValueError("GroverOperator must have at least two wires provided.")
 
-        self.hyperparameters["n_wires"] = len(wires)
+        self._hyperparameters = {"n_wires": len(wires), "work_wires": work_wires}
 
-        self.work_wires = work_wires
         super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 0
 
-    def expand(self):
-        ctrl_str = "0" * (len(self.wires) - 1)
+    @staticmethod
+    def compute_decomposition(wires, work_wires, **kwargs):  # pylint: disable=arguments-differ
+        r"""Compute a decomposition of the GroverOperator operator.
 
-        with qml.tape.QuantumTape() as tape:
-            for wire in self.wires[:-1]:
-                Hadamard(wire)
+        The decomposition defines an Operator as a product of more fundamental gates:
 
-            PauliZ(self.wires[-1])
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        ``compute_decomposition`` is a static method and can provide the decomposition of a given
+        operator without creating a specific instance.
+
+        .. seealso:: :meth:`~.GroverOperator.decomposition`.
+
+        Args:
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist
+                in the decomposition of :class:`~.MultiControlledX`.
+
+        Returns:
+            list[.Operator]: decomposition of the Operator into lower-level operations
+        """
+        ctrl_str = "0" * (len(wires) - 1)
+
+        op_list = []
+
+        for wire in wires[:-1]:
+            op_list.append(Hadamard(wire))
+
+        op_list.append(PauliZ(wires[-1]))
+        op_list.append(
             MultiControlledX(
                 control_values=ctrl_str,
-                control_wires=self.wires[:-1],
-                wires=self.wires[-1],
-                work_wires=self.work_wires,
+                control_wires=wires[:-1],
+                wires=wires[-1],
+                work_wires=work_wires,
             )
+        )
 
-            PauliZ(self.wires[-1])
+        op_list.append(PauliZ(wires[-1]))
 
-            for wire in self.wires[:-1]:
-                Hadamard(wire)
+        for wire in wires[:-1]:
+            op_list.append(Hadamard(wire))
 
-        return tape
+        return op_list
 
     @staticmethod
     @functools.lru_cache()
-    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
+    def compute_matrix(n_wires, work_wires):  # pylint: disable=arguments-differ,unused-argument
 
         # s1 = H|0>, Hadamard on a single qubit in the ground state
         s1 = np.array([1, 1]) / np.sqrt(2)

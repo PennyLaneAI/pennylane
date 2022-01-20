@@ -113,7 +113,7 @@ class QubitUnitary(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.QubitUnitary.decomposition`.
+        .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
@@ -353,7 +353,7 @@ class DiagonalQubitUnitary(Operation):
         return qml.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(D):  # pylint: disable=,arguments-differ
+    def compute_eigvals(D):  # pylint: disable=arguments-differ
         """Eigenvalues of the DiagonalQubitUnitary operator.
 
         Args:
@@ -384,7 +384,7 @@ class DiagonalQubitUnitary(Operation):
 
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
-        See also :meth:`~.DiagonalQubitUnitary.decomposition`.
+        .. seealso:: :meth:`~.DiagonalQubitUnitary.decomposition`.
 
         ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, which has further
         decompositions for one and two qubit matrices.

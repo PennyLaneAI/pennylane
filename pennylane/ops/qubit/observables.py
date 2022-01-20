@@ -357,7 +357,7 @@ class Projector(Observable):
         return m
 
     @staticmethod
-    def compute_eigvals(basis_state):  # pylint: disable=,arguments-differ
+    def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
         """Eigenvalues of the Projector operator.
 
         Args:

@@ -263,6 +263,16 @@ class TestConstruction:
 
         assert tape.is_sampled
 
+    def test_repr(self):
+        """Test the string representation"""
+
+        with QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+
+        s = tape.__repr__()
+        expected = "<QuantumTape: wires=[0], params=1>"
+        assert s == expected
+
 
 class TestGraph:
     """Tests involving graph creation"""

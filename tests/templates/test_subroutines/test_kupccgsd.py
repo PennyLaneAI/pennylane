@@ -335,7 +335,10 @@ class TestDecomposition:
         ref_state = qml.math.array([1, 1, 0, 0])
 
         op = qml.kUpCCGSD(weights, wires=wires, k=1, delta_sz=delta_sz, init_state=ref_state)
-        gen_singles_wires, gen_doubles_wires = op.s_wires, op.d_wires
+        gen_singles_wires, gen_doubles_wires = (
+            op.hyperparameters["s_wires"],
+            op.hyperparameters["d_wires"],
+        )
 
         assert gen_singles_wires == generalized_singles_wires
         assert gen_doubles_wires == generalized_pair_doubles_wires

@@ -922,9 +922,10 @@ class Operator(abc.ABC):
 
         >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
         [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
-
         """
-        return self.compute_decomposition(*self.parameters, self.wires, **self.hyperparameters)
+        return self.compute_decomposition(
+            *self.parameters, wires=self.wires, **self.hyperparameters
+        )
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
@@ -937,7 +938,7 @@ class Operator(abc.ABC):
         ``compute_decomposition`` is a static method and can provide the decomposition of an
         operator without a specific instance.
 
-        See also :meth:`~.operation.Operator.decomposition`.
+        .. seealso:: :meth:`~.operation.Operator.decomposition`.
 
         .. note::
             This method gets overwritten by subclasses, and the ``decomposition`` and

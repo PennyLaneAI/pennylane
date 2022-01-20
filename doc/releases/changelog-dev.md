@@ -298,6 +298,12 @@ The Operator class has undergone a major refactor with the following changes:
   - By default, calling `op.generator()` does not take into account `op.inverse()`.
   - If the generator is a single Pauli word, it is convenient to have access to
     both the coefficient and the observable separately.
+  
+* Decompositions are now defined in `compute_decomposition`, instead of `expand`. 
+  [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
+
+* The `expand` method was moved to the main `Operator` class.
+  [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
 
 * A `sparse_matrix` method and a `compute_sparse_matrix` static method were added 
     to the `Operator` class. The sparse representation of `SparseHamiltonian`

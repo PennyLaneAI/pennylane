@@ -45,7 +45,7 @@ class Identity(CVObservable, Operation):
         return base_label or "I"
 
     @staticmethod
-    def compute_eigvals():  # pylint: disable=,arguments-differ
+    def compute_eigvals():  # pylint: disable=arguments-differ
         """Eigenvalues of the Identity operator.
 
         Returns:
@@ -104,7 +104,7 @@ class Identity(CVObservable, Operation):
         ``compute_decomposition`` is a static method and can provide the decomposition of a given
         operator without creating a specific instance.
 
-        See also :meth:`~.Identity.decomposition`.
+        .. seealso:: :meth:`~.Identity.decomposition`.
 
         Args:
             wires (Any, Wires): A single wire that the operator acts on.
