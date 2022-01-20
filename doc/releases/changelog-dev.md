@@ -462,10 +462,6 @@
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
-* The `Rot`, gate was removed from the `composable_rotations` attribute, since it 
-  does not fulfil this property. 
-  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
-* 
 <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
