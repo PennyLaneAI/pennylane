@@ -4,8 +4,14 @@
 
 <h3>New features since last release</h3>
 
-* Development of a `qcut` package has begun to allow for a circuit cutting
-  compiler and a `WireCut` operator has been added for manual wire cut placement
+
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
+  static property. This allows to programmatically know the number of parameters before an operator is 
+  instantiated without changing the user interface.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+
+* Development of circuit cutting compiler has begun:
+  A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
 
@@ -219,7 +225,44 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
+* A new method `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
+  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The method generates
+  parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
+  software devices. Compared to using an auto-differentiation framework to compute the Hessian
+  via parameter shifts, this method will use fewer device invocations and can be used to inspect
+  the parameter-shifted "Hessian tapes" directly. The method remains fully differentiable on all
+  supported PennyLane interfaces.
+
+  Additionally, the parameter-shift Hessian comes with a new batch transform decorator
+  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian methods.
+  [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
+
+  The following code demonstrates how to use the parameter-shift Hessian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x[0], wires=0)
+      qml.RY(x[1], wires=0)
+      return qml.expval(qml.PauliZ(0))
+
+  x = np.array([0.1, 0.2], requires_grad=True)
+
+  hessian = qml.gradients.param_shift_hessian(circuit)(x)
+  ```
+  ```pycon
+  >>> hessian
+  tensor([[-0.97517033,  0.01983384],
+          [ 0.01983384, -0.97517033]], requires_grad=True)
+  ```
+
 <h3>Improvements</h3>
+
+* The `RotosolveOptimizer` now raises an error if no trainable arguments are
+  detected, instead of silently skipping update steps for all arguments.
+  [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
 
 * The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
   for QNode argument axes of size `1`.
@@ -294,10 +337,17 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
+* `qml.BasisStatePreparation` now supports the `batch_params` decorator.
+  [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
+
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
-  inside PennyLane. We can decorate the function, indicating the arguments that are
-  tensors handled by the interface:
+  inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
+
+  [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
+
+  We can decorate a function, indicating the arguments that are
+  tensors handled by the interface:
 
   ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
@@ -313,6 +363,14 @@
   ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
   ...     ...
   ```
+
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+  an explicit `_eigvals` method was added.
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+  
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
+  the `composable_rotations` attribute. 
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 
 <h3>Breaking changes</h3>
 
@@ -369,6 +427,14 @@
 
 <h3>Bug fixes</h3>
 
+* Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
+  Other assorted minor test warnings are fixed.
+  [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)
+
+* Fixes a bug where the QNode was not correctly diagonalizing qubit-wise
+  commuting observables.
+  [(#2097)](https://github.com/PennyLaneAI/pennylane/pull/2097)
+
 * Fixes a bug in `gradient_transform` where the hybrid differentiation
   of circuits with a single parametrized gate failed and QNode argument
   axes of size `1` where removed from the output gradient.
@@ -415,4 +481,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Olivia Di Matteo, Diego Guala, Anthony Hayes, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+David Wierichs, Shaoming Zhang
