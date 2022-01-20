@@ -667,6 +667,35 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
+    @pytest.mark.parametrize("ret, mes", [([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], "single return type"),
+    ([qml.state()], "Only Variance and Expectation")])
+    def test_raises_for_jittable(self, execute_kwargs, ret, mes):
+        """Tests multiple measurements and unsupported measurements raise an
+        error for the jittable JAX interface."""
+        jit_support = execute_kwargs.get("gradient_kwargs", {}).get("jit", False)
+
+        # Test only applicable for the jittable interface
+        if not jit_support:
+            pytest.skip("Jit support not turned on.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.JacobianTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                [qml.apply(r) for r in ret]
+
+            res = qml.interfaces.batch.execute(
+                [tape], dev, cache=cache, interface="jax", **execute_kwargs
+            )
+            return res[0][0]
+
+        with pytest.raises(ValueError, match=mes):
+            cost(params, cache=None)
+
 
 vv_execute_kwargs = [
     {"gradient_fn": param_shift},
