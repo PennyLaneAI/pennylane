@@ -251,18 +251,18 @@ def _process_data(op):
 class Operator(abc.ABC):
     r"""Base class for quantum operators supported by a device.
 
-    The following class attributes must be defined for all Operators:
+       The following class attributes must be defined for all Operators:
 
-    * :attr:`~.Operator.num_wires`
+       * :attr:`~.Operator.num_wires`
 
-    Args:
-        params (tuple[float, int, array]): operator parameters
+       Args:
+           params (tuple[float, int, array]): operator parameters
 
-    Keyword Args:
-        wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
- assert len(ops_obtained) == len(names_expected)            If not given, args[-1] is interpreted as wires.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue.
+       Keyword Args:
+           wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
+    assert len(ops_obtained) == len(names_expected)            If not given, args[-1] is interpreted as wires.
+           do_queue (bool): Indicates whether the operator should be
+               immediately pushed into the Operator queue.
     """
 
     def __copy__(self):
