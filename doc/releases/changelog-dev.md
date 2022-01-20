@@ -45,6 +45,10 @@
     >>> print(qml.untaskify(results)())
     [<tf.Tensor: shape=(3,), dtype=float64, numpy=array([0., 0., 0.])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.16661672, -0.07170375, -0.00387164])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([ 0.94292007, -0.14209482, -0.0072056 ])>]
   ```
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
+  static property. This allows to programmatically know the number of parameters before an operator is 
+  instantiated without changing the user interface.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
 * Development of circuit cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
@@ -400,6 +404,14 @@
   ...     ...
   ```
 
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+  an explicit `_eigvals` method was added.
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+  
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
+  the `composable_rotations` attribute. 
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
@@ -509,5 +521,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Anthony Hayes, 
-Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Lee J. O'Riordan, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann,  Lee J. O'Riordan, Jay Soni, 
+Antal Száva, David Wierichs, Shaoming Zhang
