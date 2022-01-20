@@ -31,11 +31,6 @@ try:
     # Ensure tasks are scheduled on processes rather than threads
     dask.config.set(scheduler="processes")
 
-    from distributed.protocol import (
-        dask_serialize,
-        dask_deserialize,
-    )
-
 except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing Dask.distributed") from e
 
