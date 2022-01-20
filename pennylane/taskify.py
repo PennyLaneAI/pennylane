@@ -17,7 +17,7 @@ This module contains functionality to enable task-based workflows with devices.
 from typing import Union
 
 import pennylane as qml
-from pennylane.devices import TaskQubit
+from pennylane.devices.task_qubit import TaskQubit
 
 import dask.distributed as dist
 
@@ -32,13 +32,10 @@ def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[
     """
     return TaskQubit(
         dev.wires,
-        shots=dev.shots,
-        analytic=None,
         backend=dev.short_name,
         gen_report=gen_report,
         future=return_future,
     )
-
 
 def taskify(func, futures=False):
     """

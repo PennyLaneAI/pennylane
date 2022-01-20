@@ -17,6 +17,7 @@ a given qubit type for run on a background scheduler.
 from typing import List, Union, Tuple, Dict, Iterable
 from contextlib import nullcontext
 import pennylane as qml
+from pennylane import DeviceError
 
 from .default_qubit import DefaultQubit
 from .._version import __version__
@@ -36,7 +37,7 @@ try:
     )
 
 except ImportError as e:  # pragma: no cover
-    raise ImportError("task.qubit requires installing dask and dask.distributed") from e
+    raise ImportError("task.qubit requires installing Dask.distributed") from e
 
 
 @dask_serialize.register(qml.numpy.tensor)
@@ -87,6 +88,9 @@ class ProxyHybridMethod:
         return type(self)(self.fclass, finstance, self.__doc__)
 
     def __get__(self, instance, cls):
+        """
+        This allows the return of class variables and supported methods to be determined by the chosen backend, or native to the `task.qubit` class itself if not an instance.
+        """
         if instance is None or self.finstance is None:
             return self.fclass.__get__(cls, None)
         return self.finstance.__get__(instance, cls)
@@ -102,78 +106,91 @@ class TaskQubit(DefaultQubit):
     TensorFlow, PyTorch and (non-JIT) JAX interfaces. Currently, support exists for both parameter-shift and
     backpropagation differentation methods; adjoint support is not currently enabled.
 
-    To use this device, you will need to install dask and dask.distributed:
+    To use this device, you will need to install Dask.distributed:
 
     .. code-block:: console
 
         pip install dask distributed
 
+    Args:
+        wires (int): The number of wires to initialize the device with.
+        backend (str): Indicates the PennyLane device type to use for offloading
+            computation tasks. This is restricted to `default.qubit`, and its subclasses.
+        future (bool): Indicates whether the internal circuit evaluation returns a future
+            to a result. This allows building of dependent workflows, but currently only works with
+            explicit calls to `device.batch_execute` with a PennyLane native device type such as
+            (`default.qubit`, `lightning.qubit`).
+        gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
+
     **Example**
 
-    >>> import pennylane as qml
-    >>> import pennylane.numpy as np
-    >>> import tensorflow as tf
-    >>> import dask.distributed as dist
+    .. code-block:: python3
+        import pennylane as qml
+        import pennylane.numpy as np
+        import tensorflow as tf
+        import dask.distributed as dist
 
-    >>> if __name__ == '__main__': # Required for LocalCluster
-    ...     cluster = dist.LocalCluster(n_workers=4, threads_per_worker=1)
-    ...     client = dist.Client(cluster)
-    ...     backend = "default.qubit"
-    ...     dev = qml.device("task.qubit", wires=6, backend=backend)
-    ...     @qml.qnode(dev, cache=False, interface="tf", diff_method="parameter-shift") # caching must be disabled due to proxy interface
-    ...     def circuit(x):
-    ...         qml.RX(x[0], wires=0)
-    ...         qml.RY(x[1], wires=0)
-    ...         qml.RZ(x[2], wires=0)
-    ...         qml.RZ(x[0], wires=1)
-    ...         qml.RX(x[1], wires=1)
-    ...         qml.RY(x[2], wires=1)
-    ...         return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-    ...     weights = tf.Variable(np.random.rand(3))
-    ...     def f_submit(weights):
-    ...         with tf.GradientTape() as tape:
-    ...             # Use the circuit to calculate the loss value
-    ...             loss = tf.abs(circuit(weights)-0.5)**2
-    ...         return tape.gradient(loss, weights)
-    ...     print(client.submit(f_submit, weights).result())
+        if __name__ == '__main__':
+            cluster = dist.LocalCluster(n_workers=4, threads_per_worker=1)
+            client = dist.Client(cluster)
+            backend = "default.qubit"
+            dev = qml.device("task.qubit", wires=6, backend=backend)
+            @qml.qnode(dev, cache=False, interface="tf", diff_method="parameter-shift") # caching must be disabled due to proxy interface
+            def circuit(x):
+                qml.RX(x[0], wires=0)
+                qml.RY(x[1], wires=0)
+                qml.RZ(x[2], wires=0)
+                qml.RZ(x[0], wires=1)
+                qml.RX(x[1], wires=1)
+                qml.RY(x[2], wires=1)
+                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+            weights = tf.Variable(np.random.rand(3))
+            def f_submit(weights):
+                with tf.GradientTape() as tape:
+                    # Use the circuit to calculate the loss value
+                    loss = tf.abs(circuit(weights)-0.5)**2
+                return tape.gradient(loss, weights)
+
+    >>> print(client.submit(f_submit, weights).result())
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
 
-    For self-encapsulated workflows, the task-based ``qml.taskify`` command can also be employed, which will allow automatic offloading using the
+    For self-encapsulated workflows, the task-based `:func:`qml.taskify <pennylane.taskify>` command can also be employed, which will allow automatic offloading using the
     batch execute support in PennyLane devices. As an example:
 
-    >>> def my_workflow(params, backend, interface, diff_method):
-    ...     qpu = qml.device(
-    ...         "task.qubit",
-    ...         wires=3,
-    ...         backend=backend
-    ...     )
-    ...     # Caching must be disabled, as we are using a proxy device
-    ...     @qml.qnode(qpu, cache=False, interface=interface, diff_method=diff_method)
-    ...     def circuit(x):
-    ...         qml.RX(x[0], wires=0)
-    ...         qml.RY(x[0], wires=0)
-    ...         qml.RZ(x[1], wires=0)
-    ...         qml.RX(x[1], wires=1)
-    ...         qml.RY(x[2], wires=1)
-    ...         qml.RZ(x[2], wires=1)
-    ...         return [qml.expval(qml.PauliZ(i) @ qml.PauliZ((i+1)%3)) for i in range(3)]
-    ...
-    ...     # Need a local copy of data on device
-    ...     if interface == "tf":
-    ...         weights = tf.Variable(params)
-    ...         with tf.GradientTape() as tape:
-    ...             # Use the circuit to calculate the loss value
-    ...             loss = circuit(weights)
-    ...         w_grad = tape.jacobian(loss, [weights])
-    ...     elif interface == "torch":
-    ...         weights = torch.tensor(params, requires_grad=True)
-    ...         w_grad = torch.autograd.functional.jacobian(circuit, weights)
-    ...     else:
-    ...         weights = qml.numpy.array(params, requires_grad=True)
-    ...         w_grad = qml.jacobian(circuit)(weights)
-    ...     return w_grad
+    .. code-block:: python3
+        def my_workflow(params, backend, interface, diff_method):
+            qpu = qml.device(
+                "task.qubit",
+                wires=3,
+                backend=backend
+            )
+            # Caching must be disabled, as we are using a proxy device
+            @qml.qnode(qpu, cache=False, interface=interface, diff_method=diff_method)
+            def circuit(x):
+                qml.RX(x[0], wires=0)
+                qml.RY(x[0], wires=0)
+                qml.RZ(x[1], wires=0)
+                qml.RX(x[1], wires=1)
+                qml.RY(x[2], wires=1)
+                qml.RZ(x[2], wires=1)
+                return [qml.expval(qml.PauliZ(i) @ qml.PauliZ((i+1)%3)) for i in range(3)]
 
-    >>> qml.taskify(my_workflow)(np.array([1.0,2.0,3.0]), "default.qubit", "autograd", "backprop")
+            # Need a local copy of data on device
+            if interface == "tf":
+                weights = tf.Variable(params)
+                with tf.GradientTape() as tape:
+                    # Use the circuit to calculate the loss value
+                    loss = circuit(weights)
+                w_grad = tape.jacobian(loss, [weights])
+            elif interface == "torch":
+                weights = torch.tensor(params, requires_grad=True)
+                w_grad = torch.autograd.functional.jacobian(circuit, weights)
+            else:
+                weights = qml.numpy.array(params, requires_grad=True)
+                w_grad = qml.jacobian(circuit)(weights)
+            return w_grad
+
+    >>> qml.taskify(my_workflow)(np.array([1.0, 2.0, 3.0]), "default.qubit", "autograd", "backprop")
     array([[-3.74614396e-01,  2.62791617e-01,  1.71438687e-02],
        [ 1.11022302e-16,  9.00197630e-01,  5.87266449e-02],
        [-9.09297427e-01, -1.38777878e-16, -3.46944695e-17]])
@@ -183,7 +200,7 @@ class TaskQubit(DefaultQubit):
     results altogether when complete.
 
     >>> func = qml.taskify(my_workflow, futures=True)
-    >>> futures = [func(i*np.array([1.0,2.0,3.0]), "default.qubit", "autograd", "backprop") for i in range(5)]
+    >>> futures = [func(i*np.array([1.0, 2.0, 3.0]), "default.qubit", "autograd", "backprop") for i in range(5)]
     >>> futures
     [<Future: finished, type: numpy.ndarray, key: my_workflow-238c01c1b1b88ef140d2a0404a226f9e>,
      <Future: finished, type: numpy.ndarray, key: my_workflow-276bf61f8de5488ec4e05ae93e3d0b85>,
@@ -207,25 +224,22 @@ class TaskQubit(DefaultQubit):
             [ 2.77555756e-17, -8.34873873e-01, -7.80713777e-02],
             [-9.89358247e-01, -2.22044605e-16,  1.38777878e-17]])]
 
-    Args:
-        wires (int): The number of wires to initialize the device with.
-        backend (None, str): Indicates the PennyLane device type to use for offloading
-            computation tasks. This can be `default.qubit`, one of its subclasses or
-            `lightning.qubit`. The TensorFlow, PyTorch or JAX interfaces are the preferred types
-            for gradient computations. This is due to existing support in Dask for
-            TF and Torch datatypes, and natural support for JAX via numpy.
-        future (None, bool): Indicates whether the internal circuit evaluation returns a future
-            to a result. This allows building of dependent workflows, but currently only works with
-            explicit calls to `device.batch_execute` with a PennyLane native device type such as
-            (`default.qubit`, `lightning.qubit`).
-        gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
+    .. UsageDetails:
+
+    The Dask-based backend here can be used to distribute tasks, within the following list of constraints:
+
+    * Simply evaluating multiple circuits using the `batch_execute` pipeline for forward mode.
+    * Allowing circuit executions that spawn multiple additional tapes to the `batch_execute` pipeline (such as parameter-shift).
+    * Gradient methods such as backprop becomes trickier: in this instance, we are simply queueing the entire end-to-end pipeline on the worker in a data-parallel manner. There is no automatic inherent distribution in this instance, as we are simply relying on the task-based executor to run our job on the available workers.
+    * For mixed client-worker computations, validated depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit the a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the data locality rules of the Dask.distributed runtime http://distributed.dask.org/en/stable/locality.html
+
     """
 
     # pylint: disable=too-many-instance-attributes
     # pylint: disable=no-self-argument
 
-    operations = DefaultQubit.operations
-    observables = DefaultQubit.observables
+    # operations = DefaultQubit.operations
+    # observables = DefaultQubit.observables
 
     name = "Task-based proxy PennyLane plugin"
     short_name = "task.qubit"
@@ -235,6 +249,7 @@ class TaskQubit(DefaultQubit):
 
     supported_devices = {
         "default.qubit",
+        "default.qubit.autograd",
         "default.qubit.tf",
         "default.qubit.jax",
         "default.qubit.torch",
@@ -254,6 +269,11 @@ class TaskQubit(DefaultQubit):
         self._backend_cls = qml.plugin_devices[backend].load()
         self._backend_dev = self._backend_cls(wires=0)
 
+        # The following allows dynamic definition of the class inheritence
+        # structure at instantiation time, and enables the batch_execute
+        # functionality to remain part of the subclass. This is important
+        # for situations involving interface-class instantiation.
+
         # pylint: disable=invalid-class-object
         self.__class__ = type(
             "TaskQubit",
@@ -264,10 +284,10 @@ class TaskQubit(DefaultQubit):
                 "_apply_ops": self._backend_dev._apply_ops,
             },
         )
+        # With the dynamically loaded parent-class, we can now call init.
         super(self._backend_cls, self).__init__(wires)
 
         if not isinstance(wires, Iterable):
-            # interpret wires as the number of consecutive wires
             self._wires = range(wires)
 
         self.num_wires = wires if isinstance(wires, int) else len(self._wires)
@@ -275,7 +295,9 @@ class TaskQubit(DefaultQubit):
         self._future = future
 
         if backend not in TaskQubit.supported_devices:
-            raise Exception("Unsupported device backend.")
+            raise DeviceError(
+                f"Unsupported device backend: {backend}. The supported devices are: {supported_devices}"
+            )
 
     def __str__(self):
         return super().__str__() + (

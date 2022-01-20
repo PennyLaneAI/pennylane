@@ -72,7 +72,7 @@ from pennylane.transforms import (
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
-from pennylane.taskify import taskify, untaskify
+from pennylane.taskify import taskify, taskify_dev, untaskify
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
