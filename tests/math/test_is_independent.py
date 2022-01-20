@@ -56,8 +56,8 @@ dependent_lambdas = [
     lambda x: x if abs(x) < 1e-5 else 0.0,  # x*delta for x=0 is okay
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
     lambda x: 1.0 if x > 0 else 0.0,  # Heaviside is okay numerically
-    lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
-    lambda x: qml.math.log(1 + qml.math.exp(1000.0 * x)) / 1000.0,  # Softplus is okay
+    lambda x: qml.math.log(1 + qml.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
+    lambda x: qml.math.log(1 + qml.math.exp(100.0 * x)) / 100.0,  # Softplus is okay
 ]
 
 args_dependent_lambdas = [
@@ -167,7 +167,7 @@ class TestIsIndependentAutograd:
         dependent_circuit,
         np.array,
         lambda x: np.array(x * 0.0),
-        lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
+        lambda x: (1 + qml.math.tanh(100 * x)) / 2,
         *dependent_lambdas,
     ]
 
@@ -519,7 +519,7 @@ if have_torch:
 
         dependent_functions = [
             dependent_circuit,
-            torch.tensor,
+            torch.as_tensor,
             lambda x: (1 + qml.math.tanh(1000 * x)) / 2,
             *dependent_lambdas,
         ]
