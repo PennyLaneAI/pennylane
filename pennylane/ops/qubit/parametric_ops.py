@@ -1585,6 +1585,18 @@ class IsingZZ(Operation):
 
         return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
 
+    @classmethod
+    def _eigvals(cls, *params):
+        phi = params[0]
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.stack([neg_phase, pos_phase, pos_phase, neg_phase])
+
     def adjoint(self):
         (phi,) = self.parameters
         return IsingZZ(-phi, wires=self.wires)

@@ -358,6 +358,14 @@
   ...     ...
   ```
 
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+  an explicit `_eigvals` method was added.
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+  
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
+  the `composable_rotations` attribute. 
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
