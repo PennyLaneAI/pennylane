@@ -14,7 +14,6 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
-import warnings
 from functools import partial
 
 import numpy as onp
@@ -75,7 +74,7 @@ class grad:
           inspecting as to which of the parameter arguments are marked
           as differentiable.
         """
-        if self._grad_fn is not None:
+        if self._grad_fn:
             return self._grad_fn
 
         # Inspect the arguments for differentiability, and
@@ -84,23 +83,7 @@ class grad:
         argnum = []
 
         for idx, arg in enumerate(args):
-
-            trainable = getattr(arg, "requires_grad", None)
-            array_box = isinstance(arg, ArrayBox)
-
-            if trainable is None and not array_box:
-
-                warnings.warn(
-                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
-                    "have to explicitly specify requires_grad=True (or the "
-                    "argnum argument must be passed) in order for trainable parameters to be "
-                    "identified.",
-                    UserWarning,
-                )
-
-            if trainable is None:
-                trainable = True
-
+            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 argnum.append(idx)
 
@@ -115,6 +98,12 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
+        # Make sure to override arguments specified in argnum with requires_grad=True.
+        if self._argnum is not None:
+            for idx in [self._argnum] if isinstance(self._argnum, int) else self._argnum:
+                if hasattr(args[idx], "requires_grad"):
+                    args[idx].requires_grad = True
+
         grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
         self._forward = ans
         return grad_value
@@ -292,23 +281,7 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
-
-            trainable = getattr(arg, "requires_grad", None)
-            is_array_box = isinstance(arg, ArrayBox)
-
-            if trainable is None and not is_array_box:
-
-                warnings.warn(
-                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
-                    "have to explicitly specify requires_grad=True (or the "
-                    "argnum argument must be passed) in order for trainable parameters to be "
-                    "identified.",
-                    UserWarning,
-                )
-
-            if trainable is None:
-                trainable = True
-
+            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 argnum.append(idx)
 
@@ -331,6 +304,11 @@ def jacobian(func, argnum=None):
             # For a single integer as argnum, unpack the Jacobian tuple
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
+
+            # Make sure to override arguments specified in argnum with requires_grad=True.
+            for idx in _argnum:
+                if hasattr(args[idx], "requires_grad"):
+                    args[idx].requires_grad = True
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 
