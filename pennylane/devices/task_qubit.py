@@ -40,22 +40,6 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing Dask.distributed") from e
 
 
-@dask_serialize.register(qml.numpy.tensor)
-def serialize(tensor: qml.numpy.tensor) -> Tuple[Dict, List[bytes]]:
-    "Defines a serializer for the Dask backend"
-    header, frames = dist.protocol.numpy.serialize_numpy_ndarray(tensor)
-    header["type"] = "qml.numpy.tensor"
-    header["requires_grad"] = tensor.requires_grad
-    frames = [tensor.data]
-    return header, frames
-
-
-@dask_deserialize.register(qml.numpy.tensor)
-def deserialize(header: Dict, frames: List[bytes]) -> qml.numpy.tensor:
-    "Defines a deserializer for the Dask backend"
-    return qml.numpy.tensor(frames[0], requires_grad=header["requires_grad"])
-
-
 class ProxyHybridMethod:
     """
     This utility class allows the use of both an instance
@@ -151,7 +135,7 @@ class TaskQubit(DefaultQubit):
                     loss = tf.abs(circuit(weights)-0.5)**2
                 return tape.gradient(loss, weights)
 
-    >>> print(client.submit(f_submit, weights).result())
+    >>> print(qml.taskify(f_submit)(weights))
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
 
     For self-encapsulated workflows, the task-based `:func:`qml.taskify <pennylane.taskify>` command can also be employed, which will allow automatic offloading using the
