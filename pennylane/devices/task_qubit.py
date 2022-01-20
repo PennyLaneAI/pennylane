@@ -14,7 +14,7 @@
 """This module contains a proxy qubit object for spawning multiple instances of
 a given qubit type for run on a background scheduler.
 """
-from typing import List, Union, Tuple, Dict, Iterable
+from typing import List, Union, Iterable
 from contextlib import nullcontext
 import pennylane as qml
 from pennylane import DeviceError
@@ -24,7 +24,6 @@ from .._version import __version__
 
 try:
     import dask
-    import dask.distributed as dist
     from dask.distributed import worker_client, performance_report
     import dask
 
@@ -275,7 +274,7 @@ class TaskQubit(DefaultQubit):
 
         if backend not in TaskQubit.supported_devices:
             raise DeviceError(
-                f"Unsupported device backend: {backend}. The supported devices are: {supported_devices}"
+                f"Unsupported device backend: {backend}. The supported devices are: {TaskQubit.supported_devices}"
             )
 
     def __str__(self):
