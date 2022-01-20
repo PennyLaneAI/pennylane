@@ -43,6 +43,7 @@ dist = pytest.importorskip("dask.distributed")
         ("tf", lambda x: tf.Variable(x)),
         ("torch", lambda x: torch.tensor(x, requires_grad=True)),
         ("jax", lambda x: jax.numpy.array(x)),
+        ("autograd", lambda x: qml.numpy.array(x, requires_grad=True)),
     ],
 )
 def test_taskify_func(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
