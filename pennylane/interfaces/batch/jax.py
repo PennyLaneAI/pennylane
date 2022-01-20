@@ -117,7 +117,7 @@ def _validate_tapes(tapes):
 
         if Probability in return_types:
             set_len_wires = set([len(o.wires) for o in t.observables])
-            if len(set_len_wires):
+            if len(set_len_wires) > 1:
                 raise ValueError(
                     f"Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
                 )

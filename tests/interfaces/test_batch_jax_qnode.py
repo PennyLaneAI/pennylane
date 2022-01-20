@@ -466,7 +466,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
 
-        dev = qml.device(dev_name, wires=3, shots=10)
+        dev = qml.device(dev_name, wires=3)
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 
@@ -475,7 +475,7 @@ class TestQubitIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.PauliZ(0)), qml.probs(wires=[1, 2])
+            return qml.probs(wires=[0]), qml.probs(wires=[1])
 
         res = circuit(x, y)
 
@@ -512,8 +512,8 @@ class TestQubitIntegration:
 
     @pytest.mark.parametrize("ret", [qml.sample(qml.PauliZ(0)), qml.probs(wires=[1, 2])])
     def test_sample_probs_raises(self, dev_name, diff_method, mode, ret, tol):
-        """Tests correct output shape and evaluation for a tape
-        with multiple prob outputs"""
+        """Tests qml.sample and qml.probs cannot be used as multiple
+        measurements with other measurement types."""
         if diff_method == "backprop":
             pytest.skip("Backprop does not apply to this test")
 
@@ -539,6 +539,30 @@ class TestQubitIntegration:
             return qml.expval(qml.PauliZ(0)), qml.apply(ret)
 
         with pytest.raises(ValueError, match="sample and probability measurements"):
+            circuit(x, y)
+
+    def test_probs_diff_len_wires_raises(self, dev_name, diff_method, mode, tol):
+        """Tests multiple probs raise an error if the number of wires do not
+        match"""
+        if diff_method == "backprop":
+            pytest.skip("Backprop does not apply to this test")
+
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+
+        dev = qml.device(dev_name, wires=3)
+
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(0), qml.probs([1,2])
+
+        with pytest.raises(ValueError, match="multiple probability measurements need to have the same number of wires specified"):
             circuit(x, y)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
