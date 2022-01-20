@@ -5,9 +5,9 @@
 <h3>New features since last release</h3>
 
 * For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
-   static property. This allows to programmatically know the number of parameters before an operator is 
-   instantiated without changing the user interface.
-   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+  static property. This allows to programmatically know the number of parameters before an operator is 
+  instantiated without changing the user interface.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
 * Development of circuit cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
