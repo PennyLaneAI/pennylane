@@ -466,7 +466,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device(dev_name, wires=3, shots=10)
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
 
@@ -475,7 +475,7 @@ class TestQubitIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=[0]), qml.probs(wires=[1])
+            return qml.sample(qml.PauliZ(0)), qml.probs(wires=[1, 2])
 
         res = circuit(x, y)
 

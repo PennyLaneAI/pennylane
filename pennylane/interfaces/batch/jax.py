@@ -23,6 +23,7 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
+from pennylane.operation import Sample, Probability
 from .jax_jit import _jittable_execute, _jittable_execute_with_fwd
 
 dtype = jnp.float64
@@ -94,6 +95,25 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         _n=_n,
     )
 
+def _validate_tapes(tapes):
+    """Validates that the input tapes are compatible with JAX support.
+
+    Note: the goal of this validation is to filter out cases where ragged
+    outputs for QNodes may arise. Such QNodes involve creating arrays from
+    ragged nested sequences that can not be handled by JAX.
+
+    Raises:
+        ValueError: if tapes that produce ragged outputs were provided
+    """
+    for t in tapes:
+
+        return_types = [o.return_type for o in t.observables]
+        set_of_return_types = set(return_types)
+        probs_or_sample_measure = Sample in return_types or Probability in return_types
+        if probs_or_sample_measure and len(set_of_return_types) > 1:
+            raise ValueError(
+                f"Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
+            )
 
 def _execute(
     params,
@@ -104,6 +124,9 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
+    _validate_tapes(tapes)
+
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
@@ -208,6 +231,9 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+
+    _validate_tapes(tapes)
+
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = []
