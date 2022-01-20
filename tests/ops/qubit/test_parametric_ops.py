@@ -363,6 +363,22 @@ class TestCorrectness:
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
         assert np.allclose(qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0)
 
+    def test_isingzz_matrix_tf(self, tol):
+        """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
+        different logic for this framework"""
+        tf = pytest.importorskip("tensorflow")
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = tf.Variable(np.pi)
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(np.pi), atol=tol, rtol=0)
+
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
 
