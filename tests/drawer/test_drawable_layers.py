@@ -98,6 +98,13 @@ class TestDrawableLayers:
         layers = drawable_layers(ops)
         assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
 
+    def test_wirecut_block(self):
+        """Test the wirecut blocking operators"""
+
+        ops = [qml.PauliX(0), qml.WireCut(wires=[0, 1]), qml.PauliX(1)]
+        layers = drawable_layers(ops)
+        assert layers == [{ops[0]}, {ops[1]}, {ops[2]}]
+
     @pytest.mark.parametrize(
         "multiwire_gate",
         (
