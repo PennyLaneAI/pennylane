@@ -649,7 +649,7 @@ class TestQNode:
 
         weights = [
             np.random.random(w1, requires_grad=True),
-            np.random.random(w2, requires_grad=True)
+            np.random.random(w2, requires_grad=True),
         ]
 
         grad_fn = qml.grad(cost)

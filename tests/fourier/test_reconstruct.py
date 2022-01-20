@@ -891,11 +891,11 @@ class TestReconstruct:
                     # Dirichlet reconstruction
                     assert np.isclose(
                         grad(pnp.array(x0, requires_grad=True)),
-                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key]
+                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
                     )
                 assert np.isclose(
                     grad(pnp.array(x0 + 0.1, requires_grad=True)),
-                    exp_grad(pnp.array(x0 + 0.1, requires_grad=True))
+                    exp_grad(pnp.array(x0 + 0.1, requires_grad=True)),
                 )
                 assert fun_close(grad, exp_grad, pnp.array(10, requires_grad=True))
 
