@@ -909,6 +909,7 @@ class MultiControlledX(Operation):
     >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
     """
+    is_self_inverse = True
     num_wires = AnyWires
     num_params = 0
     grad_method = None
