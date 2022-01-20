@@ -4,6 +4,48 @@
 
 <h3>New features since last release</h3>
 
+* A new task-based device, `task.qubit` has been released. This allows offloading of multiple quantum circuits and workflows over all available cores. The following example demonstrates fow to create task-based circuit evaluations, submitting them to the available queue:
+
+  ```python 
+    import pennylane as qml
+    import pennylane.numpy as np
+    import tensorflow as tf
+    import dask.distributed as dist
+
+    if __name__ == '__main__':
+        cluster = dist.LocalCluster(n_workers=4, threads_per_worker=1)
+        client = dist.Client(cluster)
+        backend = "default.qubit"
+        dev = qml.device("task.qubit", wires=6, backend=backend)
+        @qml.qnode(dev, cache=False, interface="tf", diff_method="parameter-shift") # caching must be disabled due to proxy interface
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            qml.RZ(x[2], wires=0)
+            qml.RZ(x[0], wires=1)
+            qml.RX(x[1], wires=1)
+            qml.RY(x[2], wires=1)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+        weights = tf.Variable(np.random.rand(3))
+        def f_submit(weights):
+            with tf.GradientTape() as tape:
+                # Use the circuit to calculate the loss value
+                loss = tf.abs(circuit(weights)-0.5)**2
+            return tape.gradient(loss, weights)
+
+    >>> print(qml.taskify(f_submit)(weights))
+    tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
+  ```
+
+  A user can also spawn tasks asynchronously, and gather the final results after completion. For the above example, we will asynchronously submit the execution with different weights, and await on the results:
+
+  ```python
+    # Submit 10 separate tasks with the weights scaled, and collect returned futures
+    >>> results = [qml.taskify(f_submit, futures=True)(tf.Variable(weights*i)) for i in range(3)]
+    >>> print(qml.untaskify(results)())
+    [<tf.Tensor: shape=(3,), dtype=float64, numpy=array([0., 0., 0.])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.16661672, -0.07170375, -0.00387164])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([ 0.94292007, -0.14209482, -0.0072056 ])>]
+  ```
+
 * Development of circuit cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
@@ -468,4 +510,4 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Anthony Hayes, 
-Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Lee J. O'Riordan, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
