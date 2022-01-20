@@ -432,7 +432,7 @@ def map_batch_transform(transform, tapes):
     Args:
         transform (.batch_transform): the batch transform
             to be mapped
-        tapes (Sequence[tapes]): The sequence of tapes the batch
+        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
             transform should be applied to. Each tape in the sequence
             is transformed by the batch transform.
 

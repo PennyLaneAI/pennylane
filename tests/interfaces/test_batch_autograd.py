@@ -172,7 +172,7 @@ class TestBatchTransformExecution:
     via qml.execute and map_batch_transform"""
 
     def test_no_batch_transform(self, mocker):
-        """Test that batch transforms can be disabled"""
+        """Test that batch transforms can be disabled and enabled"""
         dev = qml.device("default.qubit", wires=2, shots=100000)
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
