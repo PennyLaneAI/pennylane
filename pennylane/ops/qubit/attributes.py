@@ -194,7 +194,8 @@ For such operations, the eigenvalues provide all necessary information to
 construct the matrix representation in the computational basis.
 
 Note: Currently, the gates with this attribute need 
-to overwrite the eigenvalue method for differentiation to work. 
-The reason is that if this method missing, eigenvalues are computed from the matrix
-representation using ``np.linalg.eigvals``, which is not differentiable.
+to explicitly define an eigenvalue representation. 
+The reason is that if this method is missing, eigenvalues are computed from the matrix
+representation using ``np.linalg.eigvals``, which fails for some tensor types that the matrix 
+may be cast in for backpropagation devices.
 """
