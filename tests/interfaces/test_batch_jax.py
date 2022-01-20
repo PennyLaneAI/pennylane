@@ -231,13 +231,9 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute(
-                [tape],
-                dev,
-                gradient_fn=param_shift,
-                cache=cache,
-                interface=interface,
-            )[0][0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+                0
+            ][0]
 
         custom_cache = {}
         params = jnp.array([0.1, 0.2])
@@ -291,13 +287,9 @@ class TestCaching:
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            return execute(
-                [tape],
-                dev,
-                gradient_fn=param_shift,
-                cache=cache,
-                interface=interface,
-            )[0][0]
+            return execute([tape], dev, gradient_fn=param_shift, cache=cache, interface=interface,)[
+                0
+            ][0]
 
         # Without caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + 2 (backward pass) * (2 shifts * 2 params)
@@ -516,7 +508,9 @@ class TestJaxExecuteIntegration:
                 qml.RX(2 * x[1], wires=[1])
                 qml.expval(qml.PauliZ(0))
 
-            result = execute(tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs)
+            result = execute(
+                tapes=[tape1, tape2], device=dev, interface=interface, **execute_kwargs
+            )
             return (result[0] + result[1] - 7 * result[1])[0]
 
         res = jax.grad(cost_fn)(params)
@@ -642,8 +636,13 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
-    @pytest.mark.parametrize("ret, mes", [([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], "single return type"),
-    ([qml.state()], "Only Variance and Expectation")])
+    @pytest.mark.parametrize(
+        "ret, mes",
+        [
+            ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], "single return type"),
+            ([qml.state()], "Only Variance and Expectation"),
+        ],
+    )
     def test_raises_for_jax_jit(self, execute_kwargs, interface, ret, mes):
         """Tests multiple measurements and unsupported measurements raise an
         error for the jit JAX interface."""
@@ -659,7 +658,11 @@ class TestJaxExecuteIntegration:
 
             res = qml.interfaces.batch.execute(
                 # Test only applicable for the jax jit interface
-                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+                [tape],
+                dev,
+                cache=cache,
+                interface="jax-jit",
+                **execute_kwargs
             )
             return res[0][0]
 
@@ -750,7 +753,9 @@ class TestVectorValued:
         x_ = np.array(0.543)
         y_ = np.array(-0.654)
 
-        res = jax.jacobian(cost, argnums=(0, 1))(x, y, dev, interface="jax-python", ek=execute_kwargs)
+        res = jax.jacobian(cost, argnums=(0, 1))(
+            x, y, dev, interface="jax-python", ek=execute_kwargs
+        )
 
         exp = qml.jacobian(cost, argnum=(0, 1))(
             x_, y_, dev, interface="autograd", ek=execute_kwargs

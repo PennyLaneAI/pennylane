@@ -22,13 +22,11 @@ from pennylane.tape import JacobianTape
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
-
     # Python
     ["default.qubit", "finite-diff", "backward", "jax-python"],
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
-
     # Jit
     ["default.qubit", "finite-diff", "backward", "jax-jit"],
     ["default.qubit", "parameter-shift", "backward", "jax-jit"],
@@ -212,15 +210,16 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 vv_qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
-
     # Python
     ["default.qubit", "finite-diff", "backward", "jax-python"],
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
 ]
+
 
 @pytest.mark.parametrize("dev_name,diff_method,mode,interface", vv_qubit_device_and_diff_method)
 class TestVectorValuedQNode:
@@ -266,7 +265,9 @@ class TestVectorValuedQNode:
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
 
-    def test_jacobian_forward_mode_raises(self, dev_name, diff_method, mode, interface, mocker, tol):
+    def test_jacobian_forward_mode_raises(
+        self, dev_name, diff_method, mode, interface, mocker, tol
+    ):
         """Test jacobian calculation raises an error in forward mode for
         adjoint differentiation."""
         if diff_method != "adjoint" or mode != "forward":
@@ -458,7 +459,9 @@ class TestQubitIntegration:
             pytest.skip("Adjoint does not support probs")
 
         if interface == "jax-jit":
-            pytest.skip("Only Variance and Expectation returns are supported for the jittable JAX interface.")
+            pytest.skip(
+                "Only Variance and Expectation returns are supported for the jittable JAX interface."
+            )
 
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
@@ -488,7 +491,9 @@ class TestQubitIntegration:
             pytest.skip("Adjoint does not support probs")
 
         if interface == "jax-jit":
-            pytest.skip("Only Variance and Expectation returns are supported for the jittable JAX interface.")
+            pytest.skip(
+                "Only Variance and Expectation returns are supported for the jittable JAX interface."
+            )
 
         dev = qml.device(dev_name, wires=3)
         x = jnp.array(0.543)
@@ -585,9 +590,12 @@ class TestQubitIntegration:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
-            return qml.probs(0), qml.probs([1,2])
+            return qml.probs(0), qml.probs([1, 2])
 
-        with pytest.raises(ValueError, match="multiple probability measurements need to have the same number of wires specified"):
+        with pytest.raises(
+            ValueError,
+            match="multiple probability measurements need to have the same number of wires specified",
+        ):
             circuit(x, y)
 
     @pytest.mark.xfail(reason="Line 230 in QubitDevice: results = self._asarray(results) fails")
@@ -669,7 +677,9 @@ class TestQubitIntegration:
             pytest.skip("Adjoint warns with finite shots")
 
         if interface == "jax-jit":
-            pytest.skip("Only Variance and Expectation returns are supported for the jittable JAX interface.")
+            pytest.skip(
+                "Only Variance and Expectation returns are supported for the jittable JAX interface."
+            )
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
@@ -835,7 +845,9 @@ class TestQubitIntegration:
         ]
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
-    def test_hessian_vector_valued_postprocessing(self, dev_name, diff_method, interface, mode, tol):
+    def test_hessian_vector_valued_postprocessing(
+        self, dev_name, diff_method, interface, mode, tol
+    ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         if diff_method not in {"backprop"}:
             pytest.skip("Test only supports backprop")
@@ -885,7 +897,9 @@ class TestQubitIntegration:
 
         assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
-    def test_hessian_vector_valued_separate_args(self, dev_name, diff_method, mode, interface, mocker, tol):
+    def test_hessian_vector_valued_separate_args(
+        self, dev_name, diff_method, mode, interface, mocker, tol
+    ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         if diff_method not in {"backprop"}:
             pytest.skip("Test only supports backprop")
@@ -944,7 +958,9 @@ class TestQubitIntegration:
             pytest.skip("Adjoint does not support states")
 
         if interface == "jax-jit":
-            pytest.skip("Only Variance and Expectation returns are supported for the jittable JAX interface.")
+            pytest.skip(
+                "Only Variance and Expectation returns are supported for the jittable JAX interface."
+            )
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1247,15 +1263,16 @@ class TestTapeExpansion:
     #         ]
     #         assert np.allclose(grad2_w_c, expected, atol=0.1)
 
+
 jit_qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward"],
-
     # Jit
     ["default.qubit", "finite-diff", "backward"],
     ["default.qubit", "parameter-shift", "backward"],
     ["default.qubit", "adjoint", "forward"],
     ["default.qubit", "adjoint", "backward"],
 ]
+
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", jit_qubit_device_and_diff_method)
 class TestJIT:

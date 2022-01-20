@@ -27,6 +27,7 @@ from pennylane.operation import Variance, Expectation
 
 dtype = jnp.float64
 
+
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
     """Execute a batch of tapes with JAX parameters on a device.
 
@@ -64,7 +65,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qml.math.get_trainable_indices(params) # pylint: disable=no-member
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -87,6 +88,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         gradient_kwargs=gradient_kwargs,
         _n=_n,
     )
+
 
 def _validate_tapes(tapes):
     """Validates that the input tapes are compatible with JAX support.
@@ -149,6 +151,7 @@ def _execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
+
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
                 new_tapes = []

@@ -15,9 +15,6 @@
 This module contains functions for adding the JAX interface
 to a PennyLane Device class.
 """
-
-from copy import deepcopy
-
 # pylint: disable=too-many-arguments
 import jax
 import jax.numpy as jnp
@@ -65,7 +62,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)
+        tape.trainable_params = qml.math.get_trainable_indices(params) # pylint: disable=no-member
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -89,6 +86,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         _n=_n,
     )
 
+
 def _validate_tapes(tapes):
     """Validates that the input tapes are compatible with JAX support.
 
@@ -106,16 +104,15 @@ def _validate_tapes(tapes):
         probs_or_sample_measure = Sample in return_types or Probability in return_types
         if probs_or_sample_measure and len(set_of_return_types) > 1:
             raise ValueError(
-                f"Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
+                "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
 
         if Probability in return_types:
-            set_len_wires = set([len(o.wires) for o in t.observables])
+            set_len_wires = set(len(o.wires) for o in t.observables)
             if len(set_len_wires) > 1:
                 raise ValueError(
-                    f"Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
+                    "Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
                 )
-
 
 
 def _execute(
@@ -127,7 +124,6 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
@@ -232,7 +228,6 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = []
