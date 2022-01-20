@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* The num_params property of Operations is again a static property of the class.
-  This allows to programatically know the number of parameters before an Operation
-  is instanciated, which is only possible if the number of parameters is known.
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
+   static property. This allows to programmatically know the number of parameters before an operator is 
+   instantiated without changing the user interface.
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
