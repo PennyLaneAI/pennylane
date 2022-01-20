@@ -157,7 +157,7 @@ class TestValidation:
         ):
             QNode._validate_backprop_method(dev, "another_interface")
 
-    @pytest.mark.parametrize('device_string', ('default.qubit', 'default.qubit.autograd') )
+    @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
     def test_validate_backprop_finite_shots(self, device_string):
         """Test that a device with finite shots cannot be used with backpropagation."""
         dev = qml.device(device_string, wires=1, shots=100)
