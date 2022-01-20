@@ -738,6 +738,7 @@ class CSWAP(Operation):
     Args:
         wires (Sequence[int]): the wires the operation acts on
     """
+    is_self_inverse = True
     num_wires = 3
     num_params = 0
     matrix = np.array(
