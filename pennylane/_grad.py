@@ -98,12 +98,6 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
-        # Make sure to override arguments specified in argnum with requires_grad=True.
-        if self._argnum is not None:
-            for idx in [self._argnum] if isinstance(self._argnum, int) else self._argnum:
-                if hasattr(args[idx], "requires_grad"):
-                    args[idx].requires_grad = True
-
         grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
         self._forward = ans
         return grad_value
@@ -304,11 +298,6 @@ def jacobian(func, argnum=None):
             # For a single integer as argnum, unpack the Jacobian tuple
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
-
-            # Make sure to override arguments specified in argnum with requires_grad=True.
-            for idx in _argnum:
-                if hasattr(args[idx], "requires_grad"):
-                    args[idx].requires_grad = True
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 
