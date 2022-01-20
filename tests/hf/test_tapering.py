@@ -89,6 +89,17 @@ from pennylane.hf.tapering import (
                 ]
             ),
         ),
+        (
+            [
+                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
+                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
+                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
+            ],
+            4,
+            np.array(
+                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
+            ),
+        ),
     ],
 )
 def test_binary_matrix(terms, num_qubits, result):
@@ -618,7 +629,6 @@ def test_transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_
         num_electrons,
         num_wires,
     )
-    print(tapered_hf_state, result)
     assert np.all(tapered_hf_state == result)
 
 

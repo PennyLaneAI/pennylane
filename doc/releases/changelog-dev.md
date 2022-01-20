@@ -141,26 +141,37 @@
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
-  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respecitvely.
+  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
 
   ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-  mol = qml.hf.Molecule(symbols, geometry)
-  H = qml.hf.generate_hamiltonian(mol)(geometry)
-  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  opt_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
-  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
-  hf_tapered = qml.hf.transform_hf(generators, pauli_x_ops, paulix_sector,
-                                    mol.n_electrons, len(H.wires))      
+  from pennylane import hf
+  from pennylane import numpy as np
+
+  symbols = ["He", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+  mol = hf.Molecule(symbols, geometry, charge=1)
+  H = hf.generate_hamiltonian(mol)(geometry)
+  n_qubits, n_elec = len(H.wires), mol.n_electrons
+
+  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+  opt_sector = hf.optimal_sector(H, generators, n_elec)
+  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
+                                    n_elec, n_qubits)
   ```
   ```pycon
   >>> print(H_tapered)
-    ((-0.321034397355719+0j)) [I0]
-  + ((0.1809270275619743+0j)) [X0]
-  + ((0.7959678503870796+0j)) [Z0]
+    ((-1.7997297644914574+0j)) [I0]
+  + ((-0.10492941956079854+0j)) [X0]
+  + ((0.10492941956079856+0j)) [X1]
+  + ((0.5675134088336165+0j)) [Z1]
+  + ((0.5675134088336168+0j)) [Z0]
+  + ((-0.14563730440190722+0j)) [Y0 Y1]
+  + ((-0.10492941933657857+0j)) [X0 Z1]
+  + ((0.09337410512815508+0j)) [Z0 Z1]
+  + ((0.10492941933657857+0j)) [Z0 X1]
   >>> print(hf_tapered)
-    [1]
+  tensor([1, 1], requires_grad=True)
   ```
   
 
@@ -454,6 +465,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Josh Izaac,
-Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Josh Izaac,
+Soran Jahangiri, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
 

@@ -40,10 +40,11 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
 
     **Example**
 
-    >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
-    ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
-    ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
-    >>> _binary_matrix(terms, 4)
+    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
+    >>> terms = [qml.PauliZ(wires=['a']) @ qml.PauliX(wires=['b']),
+    ...          qml.PauliZ(wires=['a']) @ qml.PauliY(wires=['c']),
+    ...          qml.PauliX(wires=['a']) @ qml.PauliY(wires=['d'])]
+    >>> _binary_matrix(terms, 4, wire_map=wire_map)
     array([[1, 0, 0, 0, 0, 1, 0, 0],
            [1, 0, 1, 0, 0, 0, 1, 0],
            [0, 0, 0, 1, 1, 0, 0, 1]])
@@ -225,7 +226,8 @@ def generate_paulis(generators, num_qubits):
     for row in range(bmat.shape[0]):
         bmatrow = bmat[row]
         bmatrest = np.delete(bmat, row, axis=0)
-        for col in range(bmat.shape[1] // 2):
+        # reversing the order to priortize removing higher index wires first
+        for col in range(bmat.shape[1] // 2)[::-1]:
             # Anti-commutes with the (row) and commutes with all other symmetries.
             if bmatrow[col] and np.array_equal(
                 bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
@@ -543,19 +545,16 @@ def optimal_sector(qubit_op, generators, active_electrons):
 def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
     r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
-    The Hartree-Fock (HF) state for a molecule is transformed to a qubit observable under Jordan-Wigner (JW)
-    transform. To do this, each occupied orbital in the original HF state is assigned with a fermionic creation
-    operator and each unoccupied orbital is replaced with an identity operator. The JW transform is then applied to
-    map the resulting fermionic operator to a qubit basis.
-
-    This observable is tapered using the same Cliffords :math:`U` that are obtained from the symmetries of the
-    molecular Hamiltonian. A new, tapered Hartree-Fock state is built by placing all the qubits (wires) which are
-    acted on by a Pauli-X or Pauli-Y operator in the :math:`|1\rangle` state, while leaving the rest of them in
-    the :math:`|0\rangle` state.
+    The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
+    using the Jordan-Wigner (JW) encoding. This operator is then transformed using the Clifford operators :math:`U`
+    obtained from the :math:`\mathbb{Z}_2` symmetries of the molecular Hamiltonian resulting in a qubit operator
+    that acts non-trivially only on a subset of qubits. A new, tapered Hartree-Fock state is built on this reduced
+    subset of qubits by putting the qubits that are acted on off-diagonally by the operator in the :math:`|1\rangle`
+    state and leaving the rest in the :math:`|0\rangle` state.
 
     Args:
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
-        paulix_ops (list[Operation]):  list of single-qubit Pauli X operators
+        paulix_ops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
         num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
@@ -564,16 +563,17 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
         array(int): tapered Hartree-Fock state
 
     **Example**
-
-    >>> symbols = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-    >>> mol = qml.hf.Molecule(symbols, geometry)
-    >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
-    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-    >>> paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
-    >>> qml.hf.transform_hf(generators, pauli_x_ops, paulix_sector,
-                            mol.n_electrons, len(H.wires))
-        [1]
+    >>> from pennylane import hf
+    >>> symbols = ['He', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+    >>> mol = hf.Molecule(symbols, geometry, charge=1)
+    >>> H = hf.generate_hamiltonian(mol)(geometry)
+    >>> n_qubits, n_elec = len(H.wires), mol.n_electrons
+    >>> generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+    >>> paulix_sector = hf.optimal_sector(H, generators, n_elec)
+    >>> hf.transform_hf(generators, paulix_ops, paulix_sector,
+    ...                 n_elec, n_qubits)
+    tensor([1, 1], requires_grad=True)
     """
 
     pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
