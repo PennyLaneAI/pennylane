@@ -116,12 +116,12 @@ composable_rotations = Attribute(
 """Attribute: Operations for which composing multiple copies of the operation results in an
 addition (or alternative accumulation) of parameters.
 
-For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
-wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
+For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1, wires=0)`` 
+followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
 a single rotation ``qml.RZ(0.3, wires=0)``.
 
-An example for an alternative accumulation is the ``qml.Rot`` gate: although the three 
-angles it takes do not fulfil the composable property, the gate implements a rotation around an 
+An example for an alternative accumulation is the ``qml.Rot`` gate: although the three
+angles it takes do not fulfil the composable property, the gate implements a rotation around an
 axis by an effective angle which does.
 """
 
