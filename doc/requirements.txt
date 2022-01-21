@@ -3,12 +3,15 @@ pip
 appdirs
 autograd
 autoray
+dask[complete]
 jax==0.2.19
 jaxlib==0.1.71
 mistune==0.8.4
 m2r2
+networkx
 numpy
 pygments-github-lexers
+retworkx
 semantic_version==2.6
 scipy
 docutils==0.16
