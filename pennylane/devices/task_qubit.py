@@ -65,7 +65,7 @@ class ProxyHybridMethod:
         """
         return type(self)(self.fclass, finstance, self.__doc__)
 
-    def __get__(self, instance, cls):
+    def __get__(self, instance, cls):  # pragma: no cover
         """
         This allows the return of class variables and supported methods to be determined by the chosen backend, or native to the `task.qubit` class itself if not an instance.
         """
@@ -291,12 +291,7 @@ class TaskQubit(DefaultQubit):
 
         self.num_wires = wires if isinstance(wires, int) else len(self._wires)
 
-    def __get__(self, obj, objtype=None):
-        if obj not in self.__dict__:
-            return self._backend_cls.obj
-        return self.__dict__[obj]
-
-    def batch_execute(self, circuits: List[qml.tape.QuantumTape]):
+    def batch_execute(self, circuits: List[qml.tape.QuantumTape]):  # pragma: no cover
         # This overloads the batch_execute functionality of QubitDevice to offload
         # computations to a user-chosen backend device. This allows scaling of the
         # available workers to instantiate a given number of backends for concurrent
