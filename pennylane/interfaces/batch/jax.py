@@ -35,7 +35,7 @@ def _get_jax_interface_name(tapes):
 
     Note that determining if jit support should be turned on is done by
     checking if parameters are abstract. Parameters can be abstract not just
-    for jax.jit, but for other JAX transforms (vmap, pmap, etc.) too. The
+    for ``jax.jit``, but for other JAX transforms (vmap, pmap, etc.) too. The
     reason is that JAX doesn't have a public API for checking whether or not
     the execution is within the jit transform.
 
