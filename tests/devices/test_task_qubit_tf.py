@@ -82,3 +82,44 @@ def test_integration_tf(dask_setup_teardown, BACKEND, tol=1e-5):
 
     assert np.allclose(res_tf, res_task, atol=tol, rtol=0)
     assert np.allclose(gres_tf, gres_task, atol=tol, rtol=0)
+
+
+def test_instance_vs_class_method(dask_setup_teardown):
+    "Test the ability to have different return results for class and instance methods with the same name"
+    client = dist.Client(address=dask_setup_teardown)
+    expected_cap_instance = {
+        "model": "qubit",
+        "supports_finite_shots": True,
+        "supports_tensor_observables": True,
+        "returns_probs": True,
+        "provides_adjoint_method": True,
+        "supports_reversible_diff": False,
+        "supports_inverse_operations": True,
+        "supports_analytic_computation": True,
+        "returns_state": True,
+        "passthru_devices": {
+            "tf": "default.qubit.tf",
+            "torch": "default.qubit.torch",
+            "autograd": "default.qubit.autograd",
+            "jax": "default.qubit.jax",
+        },
+        "passthru_interface": "tf",
+    }
+
+    expected_cap_cls = {
+        "model": "qubit",
+        "supports_finite_shots": False,
+        "supports_tensor_observables": True,
+        "returns_probs": False,
+        "provides_adjoint_method": True,
+        "supports_reversible_diff": False,
+        "supports_inverse_operations": False,
+        "supports_analytic_computation": False,
+        "returns_state": False,
+        "passthru_devices": {},
+        "is_proxy": True,
+    }
+    dev_task = qml.device("task.qubit", wires=1, backend="default.qubit.tf")
+    assert qml.devices.task_qubit.TaskQubit.capabilities() == expected_cap_cls
+    assert dev_task.capabilities() == expected_cap_instance
+    assert dev_task.capabilities() != qml.devices.task_qubit.TaskQubit.capabilities()

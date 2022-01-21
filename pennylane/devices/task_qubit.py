@@ -243,9 +243,16 @@ class TaskQubit(DefaultQubit):
         future=False,
     ):
 
+        if backend not in TaskQubit.supported_devices:
+            raise DeviceError(
+                f"Unsupported device backend: {backend}. The supported devices are: {TaskQubit.supported_devices}"
+            )
+
         self._backend = backend
         self._backend_cls = qml.plugin_devices[backend].load()
         self._backend_dev = self._backend_cls(wires=0)
+        self._gen_report = gen_report
+        self._future = future
 
         # The following allows dynamic definition of the class inheritence
         # structure at instantiation time, and enables the batch_execute
@@ -257,9 +264,21 @@ class TaskQubit(DefaultQubit):
             "TaskQubit",
             (self._backend_cls,),
             {
+                **self._backend_dev.__dict__,
                 "execute": self.execute,
                 "batch_execute": self.batch_execute,
                 "_apply_ops": self._backend_dev._apply_ops,
+                "name": "Task-based proxy PennyLane plugin",
+                "short_name": "task.qubit",
+                "backend": backend,
+                "futures": future,
+                "report": gen_report,
+                "__str__": lambda _: TaskQubit._str_dynamic(
+                    self._backend_dev, Backend=backend, Futures=future, Reporting=gen_report
+                ),
+                "__repr__": lambda _: TaskQubit._repr_dynamic(
+                    self._backend_dev, Backend=backend, Futures=future, Reporting=gen_report
+                ),
             },
         )
         # With the dynamically loaded parent-class, we can now call init.
@@ -269,21 +288,6 @@ class TaskQubit(DefaultQubit):
             self._wires = range(wires)
 
         self.num_wires = wires if isinstance(wires, int) else len(self._wires)
-        self._gen_report = gen_report
-        self._future = future
-
-        if backend not in TaskQubit.supported_devices:
-            raise DeviceError(
-                f"Unsupported device backend: {backend}. The supported devices are: {TaskQubit.supported_devices}"
-            )
-
-    def __str__(self):
-        return super().__str__() + (
-            "\n"
-            f"Backend: {self._backend}\n"
-            f"Futures: {self._future}\n"
-            f"Report: {self._gen_report}"
-        )
 
     def __get__(self, obj, objtype=None):
         if obj not in self.__dict__:
@@ -370,6 +374,25 @@ class TaskQubit(DefaultQubit):
 
     def execute(self, circuit, **kwargs):
         self.batch_execute([circuit])
+
+    @staticmethod
+    def _str_dynamic(base_dev, **kwargs):
+        "Utility function to dynamically define the __str__ attribute of a class"
+        s = base_dev.__str__() + "\n"
+        for k, v in kwargs.items():
+            s += f"{k}: {v}\n"
+        s.rstrip("\n")
+        return s
+
+    @staticmethod
+    def _repr_dynamic(base_dev, **kwargs):
+        "Utility function to dynamically define the __repr__ attribute of a class"
+        s = "TaskQubit proxy device interface\n"
+        s += base_dev.__str__() + "\n"
+        for k, v in kwargs.items():
+            s += f"{k}: {v}\n"
+        s.rstrip("\n")
+        return s
 
 
 def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
