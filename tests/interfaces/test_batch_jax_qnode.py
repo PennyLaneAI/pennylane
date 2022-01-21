@@ -1195,51 +1195,56 @@ class TestTapeExpansion:
             assert np.allclose(grad2_w_c, expected)
 
     # @pytest.mark.xfail(reason="Will fail since expval(H) expands to a vector valued return for finite-shots")
-    # @pytest.mark.parametrize("max_diff", [1, 2])
-    # def test_hamiltonian_expansion_finite_shots(
-    #     self, dev_name, diff_method, mode, max_diff, mocker
-    # ):
-    #     """Test that the Hamiltonian is expanded if there
-    #     are non-commuting groups and the number of shots is finite
-    #     and the first and second order gradients are correctly evaluated"""
-    #     if diff_method in ("adjoint", "backprop", "finite-diff"):
-    #         pytest.skip("The adjoint and backprop methods do not yet support sampling")
+    @pytest.mark.parametrize("max_diff", [1, 2])
+    def test_hamiltonian_expansion_finite_shots(
+        self, dev_name, diff_method, mode, interface, max_diff, mocker
+    ):
+        """Test that the Hamiltonian is expanded if there
+        are non-commuting groups and the number of shots is finite
+        and the first and second order gradients are correctly evaluated"""
+        if diff_method in ("adjoint", "backprop", "finite-diff"):
+            pytest.skip("The adjoint and backprop methods do not yet support sampling")
 
-    #     if max_diff > 1:
-    #         pytest.skip("JAX only supports first derivatives")
+        if interface == "jax-jit":
+            pytest.skip(
+                "Only Variance and Expectation returns are supported for the jittable JAX interface."
+            )
 
-    #     dev = qml.device(dev_name, wires=3, shots=50000)
-    #     spy = mocker.spy(qml.transforms, "hamiltonian_expand")
-    #     obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
+        if max_diff > 1:
+            pytest.skip("JAX only supports first derivatives")
 
-    #     @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)
-    #     def circuit(data, weights, coeffs):
-    #         weights = weights.reshape(1, -1)
-    #         qml.templates.AngleEmbedding(data, wires=[0, 1])
-    #         qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
-    #         H = qml.Hamiltonian(coeffs, obs)
-    #         H.compute_grouping()
-    #         return qml.expval(H)
+        dev = qml.device(dev_name, wires=3, shots=50000)
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-    #     d = jnp.array([0.1, 0.2])
-    #     w = jnp.array([0.654, -0.734])
-    #     c = jnp.array([-0.6543, 0.24, 0.54])
+        @qnode(dev, interface=interface, diff_method=diff_method, mode=mode, max_diff=max_diff)
+        def circuit(data, weights, coeffs):
+            weights = weights.reshape(1, -1)
+            qml.templates.AngleEmbedding(data, wires=[0, 1])
+            qml.templates.BasicEntanglerLayers(weights, wires=[0, 1])
+            H = qml.Hamiltonian(coeffs, obs)
+            H.compute_grouping()
+            return qml.expval(H)
 
-    #     # test output
-    #     res = circuit(d, w, c)
-    #     expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
-    #     assert np.allclose(res, expected, atol=0.1)
-    #     spy.assert_called()
+        d = jnp.array([0.1, 0.2])
+        w = jnp.array([0.654, -0.734])
+        c = jnp.array([-0.6543, 0.24, 0.54])
 
-    #     # test gradients
-    #     grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
-    #     expected_w = [
-    #         -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
-    #         -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
-    #     ]
-    #     expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
-    #     assert np.allclose(grad[0], expected_w, atol=0.1)
-    #     assert np.allclose(grad[1], expected_c, atol=0.1)
+        # test output
+        res = circuit(d, w, c)
+        expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
+        assert np.allclose(res, expected, atol=0.1)
+        spy.assert_called()
+
+        # test gradients
+        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
+        expected_w = [
+            -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
+            -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
+        ]
+        expected_c = [0, -np.sin(d[0] + w[0]) * np.sin(d[1] + w[1]), np.cos(d[1] + w[1])]
+        assert np.allclose(grad[0], expected_w, atol=0.1)
+        assert np.allclose(grad[1], expected_c, atol=0.1)
 
     #     # test second-order derivatives
     #     if diff_method == "parameter-shift" and max_diff == 2:
