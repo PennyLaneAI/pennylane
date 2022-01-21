@@ -167,20 +167,20 @@ class TestQNodeIntegration:
 
     def test_probs_jax(self, tol):
         """Test that returning probs works with jax"""
-        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        dev = qml.device("default.qubit.jax", wires=1)
         expected = jnp.array([0.0, 1.0])
 
         @qml.qnode(dev, interface="jax")
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
 
     def test_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit"""
-        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        dev = qml.device("default.qubit.jax", wires=1)
         expected = jnp.array([0.0, 1.0])
 
         @jax.jit
@@ -198,10 +198,10 @@ class TestQNodeIntegration:
         expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, diff_method=None, interface="jax")
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
