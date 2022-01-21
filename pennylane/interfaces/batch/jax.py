@@ -25,6 +25,36 @@ from pennylane.operation import Sample, Probability
 dtype = jnp.float64
 
 
+def _get_jax_interface_name(tapes):
+    """Check all parameters in each tape and output the name of the suitable
+    JAX interface.
+
+    This function checks each tape and determines looks if any of the gate
+    parameters was transformed by a JAX transform such as jax.jit. If so, it
+    outputs the name of the JAX interface with jit support.
+
+    Note that determining if jit support should be turned on is done by
+    checking if parameters are abstract. Parameters can be abstract not just
+    for jax.jit, but for other JAX transforms (vmap, pmap, etc.) too. The
+    reason is that JAX doesn't have a public API for checking whether or not
+    the execution is within the jit transform.
+
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+
+    Returns:
+        str: name of JAX interface that fits the tape parameters, "jax" or
+        "jax-jit"
+    """
+    for t in tapes:
+        for op in t.operations:
+            for param in op.data:
+                if qml.math.is_abstract(param):
+                    return "jax-jit"
+
+    return "jax"
+
+
 def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=1, mode=None):
     """Execute a batch of tapes with JAX parameters on a device.
 
@@ -62,7 +92,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
-        tape.trainable_params = qml.math.get_trainable_indices(params)  # pylint: disable=no-member
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
     parameters = tuple(list(t.get_parameters()) for t in tapes)
 
@@ -126,24 +156,21 @@ def _execute(
 ):  # pylint: disable=dangerous-default-value,unused-argument
     @jax.custom_vjp
     def wrapped_exec(params):
-        def wrapper(p):
-            """Compute the forward pass."""
-            new_tapes = []
+        new_tapes = []
 
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
+        for t, a in zip(tapes, params):
+            new_tapes.append(t.copy(copy_operations=True))
+            new_tapes[-1].set_parameters(a)
 
-            with qml.tape.Unwrap(*new_tapes):
-                res, _ = execute_fn(new_tapes, **gradient_kwargs)
+        with qml.tape.Unwrap(*new_tapes):
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-            if len(res) > 1:
-                res = [jnp.array(r) for r in res]
-            else:
-                res = jnp.array(res)
-            return res
+        if len(res) > 1:
+            res = [jnp.array(r) for r in res]
+        else:
+            res = jnp.array(res)
 
-        return wrapper(params)
+        return res
 
     def wrapped_exec_fwd(params):
         return wrapped_exec(params), params
@@ -152,31 +179,27 @@ def _execute(
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
 
-            def non_diff_wrapper(args):
-                """Compute the VJP in a non-differentiable manner."""
-                new_tapes = []
-                p = args[:-1]
-                dy = args[-1]
-
-                for t, a in zip(tapes, p):
-                    new_tapes.append(t.copy(copy_operations=True))
-                    new_tapes[-1].set_parameters(a)
-                    new_tapes[-1].trainable_params = t.trainable_params
-
-                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                    new_tapes,
-                    dy,
-                    gradient_fn,
-                    reduction="append",
-                    gradient_kwargs=gradient_kwargs,
-                )
-
-                partial_res = execute_fn(vjp_tapes)[0]
-                res = processing_fn(partial_res)
-                return jnp.concatenate(res)
-
             args = tuple(params) + (g,)
-            vjps = non_diff_wrapper(args)
+            new_tapes = []
+            p = args[:-1]
+            dy = args[-1]
+
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
+                new_tapes[-1].trainable_params = t.trainable_params
+
+            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                new_tapes,
+                dy,
+                gradient_fn,
+                reduction="append",
+                gradient_kwargs=gradient_kwargs,
+            )
+
+            partial_res = execute_fn(vjp_tapes)[0]
+            res = processing_fn(partial_res)
+            vjps = jnp.concatenate(res)
 
             param_idx = 0
             res = []

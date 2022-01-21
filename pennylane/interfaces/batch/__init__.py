@@ -373,31 +373,12 @@ def execute(
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
-            from jax.interpreters.partial_eval import DynamicJaxprTracer
 
+            # Resolve to support jitting if need be
             if interface == "jax":
+                from .jax import _get_jax_interface_name
 
-                # Check all params in all tapes and change to jit support if
-                # needed
-                for t in tapes:
-                    for op in t._ops:
-                        for param in op.data:
-
-                            # We're within a JAX transform such as jax.jit,
-                            # change the interface to have jit support. Note:
-                            # we won't only change for jit, but for other JAX
-                            # transforms (vmap, pmap, etc.) too because JAX
-                            # doesn't have a public API for checking whether or
-                            # not we're within the jit transform.
-                            if qml.math.is_abstract(param):
-                                interface = "jax-jit"
-                                break
-
-                        if interface == "jax-jit":
-                            break
-
-                    if interface == "jax-jit":
-                        break
+                interface = _get_jax_interface_name(tapes)
 
             if interface == "jax-jit":
                 from .jax_jit import execute as _execute
