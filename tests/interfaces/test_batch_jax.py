@@ -616,7 +616,7 @@ class TestJaxExecuteIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_independent_expval(self, execute_kwargs, interface):
-        """Tests computing an expectation value that is independent trainable
+        """Tests computing an expectation value that is independent of trainable
         parameters."""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
