@@ -199,7 +199,7 @@ def _execute(
             # is mapped to
             # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
             # dtype=float32), DeviceArray(0., dtype=float32)]].
-            need_unstacking= any(r.ndim != 0 for r in res)
+            need_unstacking = any(r.ndim != 0 for r in res)
             if need_unstacking:
                 res = [qml.math.unstack(x) for x in res]
 

@@ -202,7 +202,9 @@ def _execute(
 
             partial_res = execute_fn(vjp_tapes)[0]
 
-            multi_probs = any(o.return_type is Probability for o in t.observables) and len(t.observables) > 1
+            multi_probs = (
+                any(o.return_type is Probability for o in t.observables) and len(t.observables) > 1
+            )
             if multi_probs:
                 # For multiple probability measurements, adjust the
                 # rows/columns in the result to match other interfaces
@@ -228,7 +230,7 @@ def _execute(
             # is mapped to
             # [[DeviceArray(-0.9553365, dtype=float32)], [DeviceArray(0.,
             # dtype=float32), DeviceArray(0., dtype=float32)]].
-            need_unstacking= any(r.ndim != 0 for r in res)
+            need_unstacking = any(r.ndim != 0 for r in res)
             if need_unstacking:
                 res = [qml.math.unstack(x) for x in res]
 
