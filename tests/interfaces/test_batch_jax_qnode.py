@@ -515,15 +515,7 @@ class TestQubitIntegration:
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
-        if diff_method in ("parameter-shift", "finite-diff"):
-
-            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
-
-            # TODO: remove the swapping of axes when custom gradient outputs
-            # have been adjusted
-            res = tuple(r.swapaxes(0, 1) for r in res)
-        else:
-            res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
+        res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
         expected = np.array(
             [
                 [

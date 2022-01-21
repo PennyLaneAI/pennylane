@@ -201,6 +201,13 @@ def _execute(
             )
 
             partial_res = execute_fn(vjp_tapes)[0]
+
+            multi_probs = any(o.return_type is Probability for o in t.observables) and len(t.observables) > 1
+            if multi_probs:
+                # For multiple probability measurements, adjust the
+                # rows/columns in the result to match other interfaces
+                partial_res = [r.swapaxes(0, 1) for r in partial_res]
+
             res = processing_fn(partial_res)
             vjps = jnp.concatenate(res)
 
