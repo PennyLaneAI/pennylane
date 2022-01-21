@@ -204,7 +204,8 @@ def _execute(
 
             for idx, t in enumerate(tapes):
                 multi_probs = (
-                    any(o.return_type is Probability for o in t.observables) and len(t.observables) > 1
+                    any(o.return_type is Probability for o in t.observables)
+                    and len(t.observables) > 1
                 )
 
             if multi_probs:
