@@ -187,7 +187,7 @@ class TestQNodeIntegration:
         @qml.qnode(dev, interface="jax")
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
