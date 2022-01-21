@@ -19,8 +19,22 @@ circuits to be distributed across multiple devices
 from networkx import MultiDiGraph
 
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import Tensor
+from pennylane.operation import Observable, Tensor
 from pennylane.tape import QuantumTape
+
+
+def add_operator_node(
+    graph: MultiDiGraph, op: Observable, order: int, wire_latest_node: dict
+) -> None:
+    """
+    Helper function to add operators as nodes during tape to graph connversion
+    """
+    graph.add_node(op, order=order)
+    for wire in op.wires:
+        if wire_latest_node[wire] is not None:
+            parent_op = wire_latest_node[wire]
+            graph.add_edge(parent_op, op, wire=wire)
+        wire_latest_node[wire] = op
 
 
 def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
@@ -33,22 +47,11 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     for order, op in enumerate(tape.operations):
         if op.name in state_preps:
             sub_ops = op.expand().expand(depth=1).operations
-            for op in sub_ops:
-                graph.add_node(op, order=order)
-                for wire in op.wires:
-                    if wire_latest_node[wire] is not None:
-                        parent_op = wire_latest_node[wire]
-                        graph.add_edge(parent_op, op, wire=wire)
-                    wire_latest_node[wire] = op
+            for sub_op in sub_ops:
+                add_operator_node(graph, sub_op, order, wire_latest_node)
             order += 1
         else:
-            graph.add_node(op, order=order)
-            for wire in op.wires:
-                if wire_latest_node[wire] is not None:
-                    parent_op = wire_latest_node[wire]
-                    graph.add_edge(parent_op, op, wire=wire)
-                wire_latest_node[wire] = op
-
+            add_operator_node(graph, op, order, wire_latest_node)
             order += 1
 
     for m in tape.measurements:
