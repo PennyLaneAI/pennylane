@@ -376,9 +376,9 @@ def execute(
 
             # Resolve to support jitting if need be
             if interface == "jax":
-                from .jax import _get_jax_interface_name
+                from .jax import get_jax_interface_name
 
-                interface = _get_jax_interface_name(tapes)
+                interface = get_jax_interface_name(tapes)
 
             if interface == "jax-jit":
                 from .jax_jit import execute as _execute

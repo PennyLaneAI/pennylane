@@ -25,7 +25,7 @@ from pennylane.operation import Sample, Probability
 dtype = jnp.float64
 
 
-def _get_jax_interface_name(tapes):
+def get_jax_interface_name(tapes):
     """Check all parameters in each tape and output the name of the suitable
     JAX interface.
 
