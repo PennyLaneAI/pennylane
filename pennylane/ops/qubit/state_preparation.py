@@ -55,11 +55,8 @@ class BasisState(Operation):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def decomposition(n, wires):
@@ -101,11 +98,8 @@ class QubitStateVector(Operation):
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def decomposition(state, wires):
@@ -163,11 +157,8 @@ class QubitDensityMatrix(Operation):
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")
