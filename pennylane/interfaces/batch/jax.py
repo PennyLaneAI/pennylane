@@ -202,7 +202,7 @@ def _execute(
 
             partial_res = execute_fn(vjp_tapes)[0]
 
-            for idx, t in enumerate(tapes):
+            for t in tapes:
                 multi_probs = (
                     any(o.return_type is Probability for o in t.observables)
                     and len(t.observables) > 1
