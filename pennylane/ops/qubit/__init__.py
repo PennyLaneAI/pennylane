@@ -92,6 +92,7 @@ ops = {
     "QubitSum",
     "OrbitalRotation",
     "Barrier",
+    "WireCut",
 }
 
 
