@@ -1,5 +1,8 @@
-import networkx as nx
+"""
+Contains the transpiler transform.
+"""
 from typing import Union, List
+import networkx as nx
 
 from pennylane import apply
 from pennylane.ops.qubit import SWAP
@@ -79,8 +82,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
         _params = _op.parameters
         if len(_params) == 0:
             return type(_op)(wires=_new_wires)
-        else:
-            return type(_op)(*_params, wires=_new_wires)
+        return type(_op)(*_params, wires=_new_wires)
 
     def _adjust_mmt_indices(_m, _map_wires):
         """ helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
@@ -103,7 +105,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     # or newly applied swap gates
     with stop_recording():
         # this unrolls everything in the current tape (in particular templates)
-        def stop_at(obj): return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+        stop_at = lambda obj: (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
         expanded_tape = tape.expand(stop_at=stop_at)
 
         # make copy of ops
@@ -132,7 +134,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             # for the shortest path between the two qubits in the connectivity graph. We then move the q2 into the
             # neighbourhood of q1 via swap operations.
             source_wire, dest_wire = op.wires
-            shortest_path = nx.algorithms.shortest_path(coupling_graph, source=source_wire, target=dest_wire)
+            shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
             path_length = len(shortest_path) - 1
             wires_to_swap = [shortest_path[(i - 1):(i + 1)] for i in range(path_length, 1, -1)]
 

@@ -152,3 +152,4 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
+from .transpile import transpile
