@@ -154,6 +154,9 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+    """The main interface execution function where jacobians of the execute
+    function are computed by the registered backward function."""
+
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = []
@@ -236,7 +239,6 @@ def _execute(
     return wrapped_exec(params)
 
 
-# The execute function in forward mode
 def _execute_with_fwd(
     params,
     tapes=None,
@@ -245,6 +247,10 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
+    """The auxiliary execute function for cases when the user requested
+    jacobians to be computed in forward mode or when no gradient function was
+    provided."""
+
     @jax.custom_vjp
     def wrapped_exec(params):
         new_tapes = []
