@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
+  static property. This allows to programmatically know the number of parameters before an operator is 
+  instantiated without changing the user interface.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+
+* Development of circuit cutting compiler has begun:
+  A `WireCut` operator has been added for manual wire cut placement
+  when constructing a QNode.
+  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
+
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
   changes*.
@@ -326,28 +336,40 @@
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
   [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
 
+* `qml.BasisStatePreparation` now supports the `batch_params` decorator.
+  [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
+
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
   inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
+
   [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
 
   We can decorate a function, indicating the arguments that are
   tensors handled by the interface:
-   
+
   ```pycon
   >>> @qml.math.multi_dispatch(argnum=[0, 1])
   ... def some_function(tensor1, tensor2, option, like):
   ...     # the interface string is stored in ``like``.
   ...     ...
   ```
-  
+
   Previously, this was done using the private utility function `_multi_dispatch`.
-  
+
   ```pycon
   >>> def some_function(tensor1, tensor2, option):
   ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
   ...     ...
   ```
+
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+  an explicit `_eigvals` method was added.
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+  
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
+  the `composable_rotations` attribute. 
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 
 <h3>Breaking changes</h3>
 
@@ -364,7 +386,7 @@
 
   Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
   QNode arguments, which succeeded whenever the arguments have the same shape.
-  In this case, the stacked Jacobian would also be transposed, leading to the 
+  In this case, the stacked Jacobian would also be transposed, leading to the
   output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
 
   If no stacking and transposing occurs, the output shape instead is a `tuple`
@@ -462,6 +484,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Josh Izaac,
-Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
-
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+David Wierichs, Shaoming Zhang
