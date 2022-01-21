@@ -269,7 +269,7 @@ class TestCircuits:
             qml.RY(3 * y, wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        x, y = [0.2, 0.1]
+        x, y = pnp.array([0.2, 0.1], requires_grad=True)
         y_freq = [-3.2, -3.0, -2.8, -0.2, 0.0, 0.2, 2.8, 3.0, 3.2]
 
         res = qnode_spectrum(circuit, argnum=[0])(x, y)
@@ -294,8 +294,10 @@ class TestCircuits:
             qml.RY(3 * Y[0, 0, 0], wires=1)
             return qml.expval(qml.PauliZ(wires=0))
 
-        x = -1.5
-        Y = np.array([0.2, -1.2, 9.2, -0.2, 1.1, 4, -0.201, 0.8]).reshape((2, 2, 2))
+        x = pnp.array(-1.5, requires_grad=True)
+        Y = pnp.array([0.2, -1.2, 9.2, -0.2, 1.1, 4, -0.201, 0.8], requires_grad=True).reshape(
+            (2, 2, 2)
+        )
         z = 1.2
 
         res = qnode_spectrum(circuit, encoding_args={"x"})(x, Y, z=z)
