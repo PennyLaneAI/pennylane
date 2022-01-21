@@ -230,7 +230,13 @@ single_op_tests_data = [
     (qml.var(qml.PauliZ(0)), "0: ───┤  Var[Z]"),
     (qml.probs(wires=0), "0: ───┤  Probs"),
     (qml.sample(wires=0), "0: ───┤  Sample"),
-    (qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)), "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>"),
+    (qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)), "0: ───┤ ╭<𝓗(0.10)>\n1: ───┤ ╰<𝓗(0.10)>"),
+    (
+        qml.expval(
+            0.1 * qml.PauliX(0) + 0.2 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) + 0.4 * qml.PauliZ(1)
+        ),
+        "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
+    ),
 ]
 
 

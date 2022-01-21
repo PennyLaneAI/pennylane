@@ -249,6 +249,11 @@
 
 <h3>Improvements</h3>
 
+* The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
+  differs in implementation and minor stylistic details from the old string circuit drawing
+  infrastructure.
+  [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
+
 * The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
   for QNode argument axes of size `1`.
   [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)

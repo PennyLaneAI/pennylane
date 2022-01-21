@@ -553,11 +553,16 @@ class TestHamiltonian:
         """Tests the label method of Hamiltonian when <=3 coefficients."""
         H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
         assert H.label() == "𝓗"
-        assert H.label(decimals=2) == '𝓗\n(-0.80)'
+        assert H.label(decimals=2) == "𝓗\n(-0.80)"
 
     def test_label_many_coefficients(self):
         """Tests the label method of Hamiltonian when >3 coefficients."""
-        H = 0.1 * qml.PauliX(0) + 0.1 * qml.PauliY(1) + 0.3 * qml.PauliZ(0) @ qml.PauliX(1) + 0.4 * qml.PauliX(3)
+        H = (
+            0.1 * qml.PauliX(0)
+            + 0.1 * qml.PauliY(1)
+            + 0.3 * qml.PauliZ(0) @ qml.PauliX(1)
+            + 0.4 * qml.PauliX(3)
+        )
         assert H.label() == "𝓗"
         assert H.label() == "𝓗"
 

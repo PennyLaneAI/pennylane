@@ -112,7 +112,7 @@ def tape_text(
 
             qml.expval(qml.PauliZ("aux"))
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
-            qml.probs()
+            qml.probs(wires=(0,1,2,"aux"))
 
     >>> print(draw_text(tape))
       0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z]  Probs
@@ -163,12 +163,12 @@ def tape_text(
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
     >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0,1,2], show_all_wires=True))
-      a: ─────────────┤            Probs
-      b: ─────────────┤            Probs
-    aux: ──────────╭X─┤  <Z>       Probs
-      0: ─╭QFT──RX─├C─┤ ╭Var[Z@Z]  Probs
-      1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z]  Probs
-      2: ─╰QFT──RZ────┤            Probs
+      a: ─────────────┤
+      b: ─────────────┤
+    aux: ──────────╭X─┤  <Z>      ╭Probs
+      0: ─╭QFT──RX─├C─┤ ╭Var[Z@Z] ├Probs
+      1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z] ├Probs
+      2: ─╰QFT──RZ────┤           ╰Probs
 
     """
     if tape_offset is None:
