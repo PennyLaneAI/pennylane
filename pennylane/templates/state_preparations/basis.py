@@ -52,20 +52,29 @@ class BasisStatePreparation(Operation):
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
 
-        shape = qml.math.shape(basis_state)
+        # check if the `basis_state` param is batched
+        batched = len(qml.math.shape(basis_state)) > 1
 
-        if len(shape) != 1:
-            raise ValueError(f"Basis state must be one-dimensional; got shape {shape}.")
+        state_batch = basis_state if batched else [basis_state]
 
-        n_bits = shape[0]
-        if n_bits != len(wires):
-            raise ValueError(f"Basis state must be of length {len(wires)}; got length {n_bits}.")
+        for i, state in enumerate(state_batch):
+            shape = qml.math.shape(state)
 
-        # we can extract a list here, because embedding is not differentiable
-        basis_state = list(qml.math.toarray(basis_state))
+            if len(shape) != 1:
+                raise ValueError(
+                    f"Basis states must be one-dimensional; state {i} has shape {shape}."
+                )
 
-        if not all(bit in [0, 1] for bit in basis_state):
-            raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
+            n_bits = shape[0]
+            if n_bits != len(wires):
+                raise ValueError(
+                    f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
+                )
+
+            if not all(bit in [0, 1] for bit in state):
+                raise ValueError(
+                    f"Basis states must only consist of 0s and 1s; state {i} is {basis_state}"
+                )
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 

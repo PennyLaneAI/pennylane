@@ -46,6 +46,31 @@ def _shgo_optimizer(fun, **kwargs):
     return opt_res.x[0], opt_res.fun
 
 
+def _validate_inputs(requires_grad, args, nums_frequency, spectra):
+    """Checks that for each trainable argument either the number of
+    frequencies or the frequency spectrum is given."""
+
+    if not any(requires_grad.values()):
+        raise ValueError(
+            "Found no parameters to optimize. The parameters to optimize "
+            "have to be marked as trainable."
+        )
+    for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
+        if _requires_grad:
+            _nums_frequency = nums_frequency.get(arg_name, {})
+            _spectra = spectra.get(arg_name, {})
+            all_keys = set(_nums_frequency) | set(_spectra)
+
+            shape = qml.math.shape(arg)
+            indices = np.ndindex(shape) if len(shape) > 0 else [()]
+            for par_idx in indices:
+                if par_idx not in all_keys:
+                    raise ValueError(
+                        "Neither the number of frequencies nor the frequency spectrum "
+                        f"was provided for the entry {par_idx} of argument {arg_name}."
+                    )
+
+
 def _restrict_to_univariate(fn, arg_idx, par_idx, args, kwargs):
     r"""Restrict a function to a univariate function for given argument
     and parameter indices.
@@ -148,6 +173,13 @@ class RotosolveOptimizer:
     `Ostaszewski et al. (2019) <https://quantum-journal.org/papers/q-2021-01-28-391/>`_,
     and the reconstruction method used for more general operations is described in
     `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
+
+    .. warning::
+
+        ``RotosolveOptimizer`` will only update parameters that are *explicitly*
+        marked as trainable. This can be done via ``requires_grad`` if using Autograd
+        or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
+        manner with TensorFlow or JAX.
 
     **Example:**
 
@@ -300,25 +332,6 @@ class RotosolveOptimizer:
         else:
             self.substep_optimizer = substep_optimizer
 
-    def _validate_inputs(self, requires_grad, args, nums_frequency, spectra):
-        """Checks that for each trainable argument either the number of
-        frequencies or the frequency spectrum is given."""
-
-        for arg, (arg_name, _requires_grad) in zip(args, requires_grad.items()):
-            if _requires_grad:
-                _nums_frequency = nums_frequency.get(arg_name, {})
-                _spectra = spectra.get(arg_name, {})
-                all_keys = set(_nums_frequency) | set(_spectra)
-
-                shape = qml.math.shape(arg)
-                indices = np.ndindex(shape) if len(shape) > 0 else [()]
-                for par_idx in indices:
-                    if par_idx not in all_keys:
-                        raise ValueError(
-                            "Neither the number of frequencies nor the frequency spectrum "
-                            f"was provided for the entry {par_idx} of argument {arg_name}."
-                        )
-
     def step_and_cost(
         self,
         objective_fn,
@@ -392,12 +405,6 @@ class RotosolveOptimizer:
             For each univariate reconstruction, the data in ``nums_frequency`` takes
             precedence over the information in ``spectra``.
 
-        .. warning::
-
-            ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-            markes as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
-            or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
-
         """
         # todo: does this signature call cover all cases?
         sign_fn = objective_fn.func if isinstance(objective_fn, qml.QNode) else objective_fn
@@ -407,7 +414,7 @@ class RotosolveOptimizer:
         }
         nums_frequency = nums_frequency or {}
         spectra = spectra or {}
-        self._validate_inputs(requires_grad, args, nums_frequency, spectra)
+        _validate_inputs(requires_grad, args, nums_frequency, spectra)
 
         # we will single out one arg to change at a time
         # the following hold the arguments not getting updated
@@ -557,11 +564,6 @@ class RotosolveOptimizer:
             For each univariate reconstruction, the data in ``nums_frequency`` takes
             precedence over the information in ``spectra``.
 
-        .. warning::
-
-            ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-            markes as trainable. Either via ``requires_grad`` if using Autograd or PyTorch,
-            or by using `tf.Variable` tensors inside a `GradientTape` if using TensorFlow.
         """
         x_new, _, *y_output = self.step_and_cost(
             objective_fn,

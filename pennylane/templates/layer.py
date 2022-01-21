@@ -30,6 +30,7 @@ def _preprocess(args, depth):
 
     for arg in args:
 
+        # TODO: handle ragged arrays without warnings
         if shape(arg)[0] != depth:
             raise ValueError(
                 f"Each positional argument must have length matching 'depth'; expected {depth} got {len(arg)}"

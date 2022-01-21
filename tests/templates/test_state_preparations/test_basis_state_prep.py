@@ -112,7 +112,7 @@ class TestInputs:
         """Tests that the correct error message is raised when the number
         of qubits does not match the number of wires."""
 
-        with pytest.raises(ValueError, match="Basis state must be of (shape|length)"):
+        with pytest.raises(ValueError, match="Basis states must be of (shape|length)"):
             qml.BasisStatePreparation(basis_state, wires)
 
     # fmt: off
@@ -125,7 +125,7 @@ class TestInputs:
         """Tests that the correct error messages is raised when
         the basis state contains numbers different from 0 and 1."""
 
-        with pytest.raises(ValueError, match="Basis state must only (contain|consist)"):
+        with pytest.raises(ValueError, match="Basis states must only (contain|consist)"):
             qml.BasisStatePreparation(basis_state, wires)
 
     def test_exception_wrong_dim(self):
@@ -138,15 +138,15 @@ class TestInputs:
             qml.BasisStatePreparation(basis_state, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Basis state must be one-dimensional"):
-            basis_state = np.array([[0, 1]])
+        with pytest.raises(ValueError, match="Basis states must be one-dimensional"):
+            basis_state = np.array([[[0, 1]]])
             circuit(basis_state)
 
-        with pytest.raises(ValueError, match="Basis state must be of length"):
+        with pytest.raises(ValueError, match="Basis states must be of length"):
             basis_state = np.array([0, 1, 0])
             circuit(basis_state)
 
-        with pytest.raises(ValueError, match="Basis state must only consist of"):
+        with pytest.raises(ValueError, match="Basis states must only consist of"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
 

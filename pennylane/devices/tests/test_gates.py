@@ -70,6 +70,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
+    "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
