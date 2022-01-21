@@ -165,7 +165,7 @@ def _execute(
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
-        if len(res) > 1:
+        if len(tapes) > 1:
             res = [jnp.array(r) for r in res]
         else:
             res = jnp.array(res)
@@ -262,7 +262,7 @@ def _execute_with_fwd(
         with qml.tape.Unwrap(*new_tapes):
             res, jacs = execute_fn(new_tapes, **gradient_kwargs)
 
-        if len(res) > 1:
+        if len(tapes) > 1:
             res, jacs = [jnp.array(r) for r in res], [jnp.array(j) for j in jacs]
         else:
             res, jacs = jnp.array(res), jnp.array(jacs)
