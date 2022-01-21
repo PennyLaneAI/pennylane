@@ -103,6 +103,7 @@ class TaskQubit(DefaultQubit):
     **Example**
 
     .. code-block:: python3
+
         import pennylane as qml
         import pennylane.numpy as np
         import tensorflow as tf
@@ -136,6 +137,7 @@ class TaskQubit(DefaultQubit):
     batch execute support in PennyLane devices. As an example:
 
     .. code-block:: python3
+    
         def my_workflow(params, backend, interface, diff_method):
             qpu = qml.device(
                 "task.qubit",
