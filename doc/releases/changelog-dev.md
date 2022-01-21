@@ -426,6 +426,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
+  to NumPy arrays before executing gradient tapes on devices.
+  [(#2117)](https://github.com/PennyLaneAI/pennylane/pull/2117)
+
 * Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
   Other assorted minor test warnings are fixed.
   [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)
