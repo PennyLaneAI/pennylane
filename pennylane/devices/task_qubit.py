@@ -415,7 +415,7 @@ def taskify(func, futures=False):
     """
     # submitted from host client only
     try:
-        client = dask.distributed.get_client()
+        client = dask.distributed.get_client(timeout="10s")
 
         def client_submit_sync(*args, **kwargs):
             return client.submit(func, *args, **kwargs).result()
@@ -435,7 +435,7 @@ def untaskify(futures):
     """
     # submitted from host client only
     try:
-        client = dask.distributed.get_client()
+        client = dask.distributed.get_client(timeout="10s")
 
         def client_gather():
             return client.gather(futures)
