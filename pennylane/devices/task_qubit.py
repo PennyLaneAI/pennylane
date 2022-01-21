@@ -34,7 +34,7 @@ except ImportError as e:  # pragma: no cover
     raise ImportError("task.qubit requires installing Dask.distributed") from e
 
 
-class ProxyHybridMethod:
+class ProxyHybridMethod:  # pragma: no cover
     """
     This utility class allows the use of both an instance
     as well as class method types. For situations where

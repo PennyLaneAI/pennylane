@@ -129,9 +129,6 @@ def test_instance_vs_class_method():
         def instance_or_class(self):
             return False
 
-        def __get__(self, instance, cls):
-            return "Called __get__"
-
     d = DummyClass()
     assert d.instance_or_class() == False
     assert DummyClass.instance_or_class() == True

@@ -196,3 +196,13 @@ def test_untaskify_result(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
         assert np.allclose(res.detach(), qml.untaskify(res_task_f)().detach(), atol=tol, rtol=0)
     else:
         assert np.allclose(res, qml.untaskify(res_task_f)(), atol=tol, rtol=0)
+
+
+def test_taskify_result_noclient():
+    """Test untaskify exception throwing"""
+    with pytest.raises(RuntimeError) as excinfo1:
+        f = qml.taskify(lambda _: "This will fail")()
+    with pytest.raises(RuntimeError) as excinfo2:
+        f = qml.untaskify(lambda _: "This will fail")()
+    assert "No running Dask client" in str(excinfo1.value)
+    assert "No running Dask client" in str(excinfo2.value)
