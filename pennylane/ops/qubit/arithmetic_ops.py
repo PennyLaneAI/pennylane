@@ -88,6 +88,7 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
+    num_params = 0
     _mat = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -108,10 +109,6 @@ class QubitCarry(Operation):
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -185,6 +182,7 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
+    num_params = 0
     _mat = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -197,10 +195,6 @@ class QubitSum(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")

@@ -1036,7 +1036,7 @@ class Observable(Operator):
         tensor = set()
 
         for ob in obs:
-            parameters = tuple(param.tostring() for param in ob.parameters)
+            parameters = tuple(param.tobytes() for param in ob.parameters)
             tensor.add((ob.name, ob.wires, parameters))
 
         return tensor
