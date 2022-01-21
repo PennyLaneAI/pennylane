@@ -30,7 +30,7 @@ def _get_jax_interface_name(tapes):
     JAX interface.
 
     This function checks each tape and determines looks if any of the gate
-    parameters was transformed by a JAX transform such as jax.jit. If so, it
+    parameters was transformed by a JAX transform such as ``jax.jit``. If so, it
     outputs the name of the JAX interface with jit support.
 
     Note that determining if jit support should be turned on is done by
