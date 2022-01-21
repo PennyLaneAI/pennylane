@@ -5,8 +5,8 @@
 <h3>New features since last release</h3>
 
 
-* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
-  static property. This allows to programmatically know the number of parameters before an operator is 
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
+  static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
@@ -14,6 +14,9 @@
   A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
+  A method for converting a quantum tape to a `MultiDiGraph` that is amenable
+  to graph partitioning algorithms for circuit cutting has been added
+  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
@@ -364,12 +367,12 @@
   ...     ...
   ```
 
-* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this
   an explicit `_eigvals` method was added.
   [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
-  
-* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
-  the `composable_rotations` attribute. 
+
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to
+  the `composable_rotations` attribute.
   [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 
 <h3>Breaking changes</h3>

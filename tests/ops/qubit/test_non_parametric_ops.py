@@ -570,7 +570,6 @@ class TestWireCut:
         assert np.allclose(with_wirecut(), without_wirecut())
 
 
-
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""
 
