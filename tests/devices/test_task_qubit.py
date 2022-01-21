@@ -72,6 +72,48 @@ def test_perf_report(dask_setup_teardown, PERF_REPORT):
     assert rep_exists
 
 
+def test_return_future(dask_setup_teardown):
+    """Test return of futures from device"""
+    wires = 2
+    client = dist.Client(address=dask_setup_teardown)
+    dev_task = qml.device("task.qubit", wires=wires, backend="default.qubit", future=True)
+
+    @qml.qnode(
+        dev_task, cache=False, interface="autograd", diff_method="backprop"
+    )  # caching must be disabled due to proxy interface
+    def circuit(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=0)
+        qml.RZ(x[2], wires=0)
+        qml.RZ(x[0], wires=1)
+        qml.RX(x[1], wires=1)
+        qml.RY(x[2], wires=1)
+        return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+    arr = qml.numpy.random.rand(3, requires_grad=True)
+    res = circuit(arr)
+    future = dev_task.batch_execute([circuit.tape])
+    assert isinstance(future[0], dist.client.Future)
+    assert qml.numpy.allclose(future[0].result(), res)
+
+
+def test_str_repr_output():
+    "Test device string representation"
+    d_path = qml.devices.task_qubit
+    wires = 1
+    dev_task = qml.device(
+        "task.qubit",
+        wires=wires,
+        backend="default.qubit",
+    )
+    dev = qml.device("default.qubit", wires=wires)
+
+    assert "Backend: default.qubit" in str(dev_task)
+    assert "Backend: default.qubit" in d_path.TaskQubit._str_dynamic(dev, Backend="default.qubit")
+    assert "Backend: default.qubit" in repr(dev_task)
+    assert "Backend: default.qubit" in d_path.TaskQubit._repr_dynamic(dev, Backend="default.qubit")
+
+
 def test_instance_vs_class_method():
     "Test the ability to have different return results for class and instance methods with the same name"
 

@@ -304,17 +304,7 @@ class TaskQubit(DefaultQubit):
 
         with cm:
             results = []
-            if isinstance(circuits, dask.distributed.client.Future):
-                with worker_client() as client:
-                    results = client.submit(
-                        lambda backend, wires, tapes: [
-                            TaskQubit._execute_wrapper(backend, wires, i) for i in tapes
-                        ],
-                        self._backend,
-                        self._wires,
-                        circuits,
-                    )
-            else:
+            try:
                 with worker_client() as client:
                     for circuit in circuits:
                         results.append(
@@ -325,17 +315,27 @@ class TaskQubit(DefaultQubit):
                                 circuit,
                             )
                         )
+            except:
+                client = dask.distributed.get_client()
+                for circuit in circuits:
+                    results.append(
+                        client.submit(
+                            TaskQubit._execute_wrapper,
+                            self._backend,
+                            self._wires,
+                            circuit,
+                        )
+                    )
 
             if self._future:
                 return results
-            with worker_client() as client:
+            try:
+                with worker_client() as client:
+                    res = client.gather(results)
+            except:
+                client = dask.distributed.get_client()
                 res = client.gather(results)
             return res
-
-    # pylint: disable=arguments-differ
-    def apply(self, operations, **kwargs):
-        "The apply method of task.qubit should not be explicitly used."
-        pass
 
     @ProxyHybridMethod
     def capabilities(cls):
@@ -375,7 +375,8 @@ class TaskQubit(DefaultQubit):
     @staticmethod
     def _str_dynamic(base_dev, **kwargs):
         "Utility function to dynamically define the __str__ attribute of a class"
-        s = base_dev.__str__() + "\n"
+        s = "TaskQubit proxy device interface\n"
+        s += base_dev.__str__() + "\n"
         for k, v in kwargs.items():
             s += f"{k}: {v}\n"
         s.rstrip("\n")
@@ -385,7 +386,7 @@ class TaskQubit(DefaultQubit):
     def _repr_dynamic(base_dev, **kwargs):
         "Utility function to dynamically define the __repr__ attribute of a class"
         s = "TaskQubit proxy device interface\n"
-        s += base_dev.__str__() + "\n"
+        s += base_dev.__repr__() + "\n"
         for k, v in kwargs.items():
             s += f"{k}: {v}\n"
         s.rstrip("\n")
