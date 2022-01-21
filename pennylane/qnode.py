@@ -372,6 +372,9 @@ class QNode:
                 "Device caching is incompatible with the backprop diff_method"
             )
 
+        if device.shots is not None:
+            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+
         if backprop_interface is not None:
             # device supports backpropagation natively
 
@@ -384,30 +387,27 @@ class QNode:
             )
 
         if backprop_devices is not None:
-            if device.shots is None:
-                # device is analytic and has child devices that support backpropagation natively
+            # device is analytic and has child devices that support backpropagation natively
 
-                if interface in backprop_devices:
-                    # TODO: need a better way of passing existing device init options
-                    # to a new device?
-                    expand_fn = device.expand_fn
-                    batch_transform = device.batch_transform
+            if interface in backprop_devices:
+                # TODO: need a better way of passing existing device init options
+                # to a new device?
+                expand_fn = device.expand_fn
+                batch_transform = device.batch_transform
 
-                    device = qml.device(
-                        backprop_devices[interface],
-                        wires=device.wires,
-                        shots=device.shots,
-                    )
-                    device.expand_fn = expand_fn
-                    device.batch_transform = batch_transform
-                    return "backprop", {}, device
-
-                raise qml.QuantumFunctionError(
-                    f"Device {device.short_name} only supports diff_method='backprop' when using the "
-                    f"{list(backprop_devices.keys())} interfaces."
+                device = qml.device(
+                    backprop_devices[interface],
+                    wires=device.wires,
+                    shots=device.shots,
                 )
+                device.expand_fn = expand_fn
+                device.batch_transform = batch_transform
+                return "backprop", {}, device
 
-            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+            raise qml.QuantumFunctionError(
+                f"Device {device.short_name} only supports diff_method='backprop' when using the "
+                f"{list(backprop_devices.keys())} interfaces."
+            )
 
         raise qml.QuantumFunctionError(
             f"The {device.short_name} device does not support native computations with "
