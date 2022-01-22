@@ -45,7 +45,7 @@ def compute_vjp(dy, jac, num=None):
         num = math.shape(dy_row)[0]
 
     if not isinstance(dy_row, np.ndarray):
-        jac = math.convert_like(jac, dy_row)
+        jac = math.cast_like(jac, dy_row)
 
     jac = math.reshape(jac, [num, -1])
 
@@ -54,7 +54,7 @@ def compute_vjp(dy, jac, num=None):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero.
             num_params = jac.shape[1]
-            return math.convert_like(np.zeros([num_params]), dy)
+            return math.cast_like(np.zeros([num_params]), dy)
     except (AttributeError, TypeError):
         pass
 
@@ -169,7 +169,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
-            return [], lambda _, num=None: math.convert_like(np.zeros([num_params]), dy)
+            return [], lambda _, num=None: math.cast_like(np.zeros([num_params]), dy)
     except (AttributeError, TypeError):
         pass
 

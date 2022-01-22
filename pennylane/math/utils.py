@@ -135,7 +135,16 @@ def cast_like(tensor1, tensor2):
     >>> cast_like(x, y)
     tensor([1., 2.])
     """
-    dtype = ar.to_numpy(tensor2).dtype.type
+    try:
+        dtype = ar.to_numpy(tensor2).dtype.type
+    except AttributeError:
+
+        interface = get_interface(tensor2)
+        if interface == "tensorflow":
+            # If the attribute error was raised than tf.function was turned on
+            # and converting to NumPy is not an option
+            dtype = tensor2.dtype
+
     return cast(tensor1, dtype)
 
 
