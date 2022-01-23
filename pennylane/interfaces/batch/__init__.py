@@ -203,6 +203,7 @@ def execute(
     override_shots=False,
     expand_fn="device",
     max_expansion=10,
+    device_batch_transform=True,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -239,6 +240,10 @@ def execute(
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
+        device_batch_transform (bool): Whether to apply any batch transforms defined by the device
+            (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
+            of the device batch transform is to expand out Hamiltonian measurements into
+            constituent terms if not supported on the device.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -300,6 +305,11 @@ def execute(
     """
     gradient_kwargs = gradient_kwargs or {}
 
+    if device_batch_transform:
+        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+    else:
+        batch_fn = lambda res: res
+
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
@@ -315,10 +325,12 @@ def execute(
                 tapes
             )
 
-        return res
+        return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
-        return cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+        return batch_fn(
+            cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+        )
 
     # the default execution function is batch_execute
     execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
@@ -391,4 +403,4 @@ def execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
     )
 
-    return res
+    return batch_fn(res)
