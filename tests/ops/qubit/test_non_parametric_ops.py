@@ -578,15 +578,13 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values,expected_error_message",
         [
+            (None, [0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
+            (None, [0, 1, 2], "011", "Length of control bit string must equal number of control wires."),
+            (None, [0, 1, 2], [0, 1], "Alternative control values must be passed as a binary string."),
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
             ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
-            (
-                [0, 1],
-                [2, 3],
-                "10",
-                "MultiControlledX accepts a single target wire.",
-            ),
+            ([0, 1],[2, 3],"10", "MultiControlledX accepts a single target wire."),
         ],
     )
     def test_invalid_mixed_polarity_controls(
@@ -613,12 +611,31 @@ class TestMultiControlledX:
             ([1, 2, 0], 3, "100"),
             ([1, 0, 2, 4], 3, "1001"),
             ([0, 1, 2, 5, 3, 6], 4, "100001"),
+            (None,[0, 1], "0"),
+            (None,[0, 1, 2], "00"),
+            (None,[0, 1, 2], "10"),
+            (None,[1, 0, 2], "10"),
+            (None,[0, 1, 2], "11"),
+            (None,[0, 2, 1], "10"),
+            (None,[1, 2, 0, 3], "100"),
+            (None,[1, 0, 2, 4, 3], "1001"),
+            (None,[0, 1, 2, 5, 3, 6, 4], "100001"),
         ],
     )
     def test_mixed_polarity_controls(self, control_wires, wires, control_values):
         """Test if MultiControlledX properly applies mixed-polarity
         control values."""
-        target_wires = Wires(wires)
+        
+        if control_wires == None and wires != None:
+            if len(wires) > 1:
+                control_wires = Wires(wires[:-1])
+                target_wires = Wires(wires[-1])
+            elif len(wires) == 1:
+                target_wires = Wires(wires)
+                control_wires = None
+            
+        else:
+            target_wires = Wires(wires)
 
         dev = qml.device("default.qubit", wires=len(control_wires + target_wires))
 
@@ -868,6 +885,7 @@ label_data = [
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
     (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
+    (qml.MultiControlledX(wires=(0, 1, 2, 3)), "⊕", "⊕"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
 ]
@@ -899,6 +917,7 @@ control_data = [
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
     (qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4), Wires([0, 1, 2, 3])),
+    (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
 

@@ -17,6 +17,7 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import cmath
+import warnings
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -924,12 +925,25 @@ class MultiControlledX(Operation):
         work_wires=None,
         do_queue=True,
     ):
-        wires = Wires(wires)
-        control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
-        if len(wires) != 1:
-            raise ValueError("MultiControlledX accepts a single target wire.")
+        if control_wires == None and wires != None:
+            if len(wires) > 1:
+                control_wires = Wires(wires[:-1])
+                wires = Wires(wires[-1])
+            elif len(wires) == 1:
+                wires = Wires(wires)
+                control_wires = None
+
+        else:
+            wires = Wires(wires)
+            control_wires = Wires(control_wires)
+
+            warnings.warn("Mi warning")
+
+            if len(wires) != 1:
+                raise ValueError("MultiControlledX accepts a single target wire.")
+        
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)   
 
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
@@ -974,6 +988,9 @@ class MultiControlledX(Operation):
         """Ensure any user-specified control strings have the right format."""
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
+                print('   ')
+                print('   ')
+                print(len(control_values),len(control_wires))
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
