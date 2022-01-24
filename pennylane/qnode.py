@@ -20,6 +20,8 @@ import functools
 import inspect
 import warnings
 
+import autograd
+
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
@@ -554,11 +556,8 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
-        # preprocess the tapes by applying any device-specific transforms
-        tapes, processing_fn = self.device.batch_transform(self.tape)
-
         res = qml.execute(
-            tapes,
+            [self.tape],
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
@@ -567,7 +566,19 @@ class QNode:
             **self.execute_kwargs,
         )
 
-        res = processing_fn(res)
+        if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
+            # If a device batch transform was applied, we need to 'unpack'
+            # the returned tuple/list to a float.
+            #
+            # Note that we use autograd.isinstance, because on the backwards pass
+            # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
+            # autograd.isinstance is a 'safer' isinstance check that supports
+            # autograd backwards passes.
+            #
+            # TODO: find a more explicit way of determining that a batch transform
+            # was applied.
+
+            res = res[0]
 
         if override_shots is not False:
             # restore the initialization gradient function
