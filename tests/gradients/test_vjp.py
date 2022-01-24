@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
+import numpy as vanilla_numpy
 
 
 class TestComputeVJP:
@@ -281,6 +282,40 @@ class TestVJPGradients:
 
         res = t.jacobian(vjp, params)
         assert np.allclose(res, qml.jacobian(expected)(params.numpy()), atol=tol, rtol=0)
+
+    def test_tf_custom_loss(self):
+        """Tests that the gradient pipeline using the TensorFlow interface with
+        a custom TF loss and lightning.qubit with a custom dtype does not raise
+        any errors."""
+        tf = pytest.importorskip("tensorflow")
+
+        nwires = 5
+        dev = qml.device("lightning.qubit", wires=nwires)
+        dev.C_DTYPE = vanilla_numpy.complex64
+        dev.R_DTYPE = vanilla_numpy.float32
+
+        @qml.qnode(dev, interface='tf', diff_method='adjoint')
+        def circuit(weights, features):
+            for i in range(nwires):
+                qml.RX(features[i], wires=i)
+                qml.RX(weights[i], wires=i)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+        vanilla_numpy.random.seed(42)
+
+        ndata = 100
+        data = [vanilla_numpy.random.randn(nwires).astype('float32') for _ in range(ndata)]
+        label = [vanilla_numpy.random.choice([1, 0]).astype('int') for _ in range(ndata)]
+
+        loss = tf.losses.SparseCategoricalCrossentropy()
+
+        params = tf.Variable(vanilla_numpy.random.randn(nwires).astype('float32'), trainable=True)
+        with tf.GradientTape() as tape:
+            probs = [circuit(params, d) for d in data]
+            loss_value = loss(label, probs)
+
+        grads = tape.gradient(loss_value, [params])
+        assert len(grads) == 1
 
     @pytest.mark.slow
     def test_jax(self, tol):
