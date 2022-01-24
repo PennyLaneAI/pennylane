@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the ``draw_text`` function
+This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
 
 import pennylane as qml
