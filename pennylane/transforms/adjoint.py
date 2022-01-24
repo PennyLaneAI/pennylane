@@ -108,6 +108,12 @@ def adjoint(fn):
         >>> print(qml.draw(circuit)())
         0: --RX(0.123)--RX(-0.123)--| <Z>
     """
+    if not callable(fn):
+        raise ValueError(
+            f"The object {fn} of type {type(fn)} is not callable. "
+            "This error might occur if you apply adjoint to a list "
+            "of operations instead of a function or template."
+        )
 
     @wraps(fn)
     def wrapper(*args, **kwargs):

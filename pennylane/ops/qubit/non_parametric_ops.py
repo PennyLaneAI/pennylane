@@ -43,12 +43,9 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
@@ -109,13 +106,10 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
@@ -177,13 +171,10 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
@@ -251,13 +242,10 @@ class PauliZ(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
@@ -307,13 +295,10 @@ class S(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
     op_eigvals = np.array([1, 1j])
     op_matrix = np.array([[1, 0], [0, 1j]])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -354,13 +339,10 @@ class T(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
     op_matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
     op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -401,13 +383,10 @@ class SX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "X"
     op_matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
     op_eigvals = np.array([1, 1j])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -459,12 +438,9 @@ class CNOT(Operation):
     num_wires = 2
 
     is_controlled = "PauliX"
+    num_params = 0
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
@@ -511,13 +487,10 @@ class CZ(Operation):
     """
     num_wires = 2
     is_controlled = "PauliZ"
+    num_params = 0
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
@@ -565,6 +538,7 @@ class CY(Operation):
     """
     num_wires = 2
     is_controlled = "PauliY"
+    num_params = 0
     basis = "Y"
     matrix = np.array(
         [
@@ -574,10 +548,6 @@ class CY(Operation):
             [0, 0, 1j, 0],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
@@ -623,13 +593,10 @@ class SWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "X"
 
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -671,12 +638,9 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
     op_eigvals = np.array([1j, -1j, 1, 1])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -722,6 +686,7 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     op_matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -731,10 +696,6 @@ class SISWAP(Operation):
         ]
     )
     op_eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -798,6 +759,7 @@ class CSWAP(Operation):
     num_wires = 3
     is_controlled = "SWAP"
 
+    num_params = 0
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -810,10 +772,6 @@ class CSWAP(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
@@ -871,6 +829,7 @@ class Toffoli(Operation):
     """
     num_wires = 3
     is_controlled = "PauliX"
+    num_params = 0
     basis = "X"
     matrix = np.array(
         [
@@ -884,10 +843,6 @@ class Toffoli(Operation):
             [0, 0, 0, 0, 0, 0, 1, 0],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "⊕"
@@ -985,6 +940,7 @@ class MultiControlledX(Operation):
     is_self_inverse = True
     num_wires = AnyWires
     is_controlled = "PauliX"
+    num_params = 0
     grad_method = None
 
     # pylint: disable=too-many-arguments
@@ -1026,10 +982,6 @@ class MultiControlledX(Operation):
         self._CX = None
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
-
-    @property
-    def num_params(self):
-        return 0
 
     def _matrix(self, *params):
         if self._CX is None:
@@ -1219,3 +1171,32 @@ class Barrier(Operation):
 
     def label(self, decimals=None):
         return "||"
+
+    def adjoint(self):
+        return Barrier(wires=self.wires)
+
+
+class WireCut(Operation):
+    r"""WireCut(wires)
+    The wire cut operator, used to manually mark locations for wire cuts.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_wires = AnyWires
+    grad_method = None
+
+    # pylint: disable=unused-argument
+    def decomposition(self, wires):
+        return []
+
+    def label(self, decimals=None):
+        return "//"
+
+    def adjoint(self):
+        return WireCut(wires=self.wires)

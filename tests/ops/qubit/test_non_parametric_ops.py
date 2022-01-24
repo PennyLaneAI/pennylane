@@ -525,6 +525,50 @@ class TestBarrier:
 
         assert optimized_gates == 2
 
+    def test_barrier_adjoint(self):
+        """Test if Barrier is correctly included in queue after adjoint"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            barrier()
+            qml.adjoint(barrier)()
+            return qml.state()
+
+        def barrier():
+            qml.PauliX(wires=0)
+            qml.Barrier(wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+
+        circuit()
+        queue = circuit.tape.queue
+
+        assert queue[1].name == "Barrier"
+        assert queue[4].name == "Barrier"
+
+
+class TestWireCut:
+    """Tests for the WireCut operator"""
+
+    def test_behaves_as_identity(self):
+        """Tests that the WireCut operator behaves as the Identity in the
+        absence of cutting"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def with_wirecut():
+            qml.PauliX(wires=0)
+            qml.WireCut(wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def without_wirecut():
+            qml.PauliX(wires=0)
+            return qml.state()
+
+        assert np.allclose(with_wirecut(), without_wirecut())
+
 
 class TestMultiControlledX:
     """Tests for the MultiControlledX"""
@@ -825,6 +869,7 @@ label_data = [
     (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
     (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
     (qml.Barrier(0), "||", "||"),
+    (qml.WireCut(wires=0), "//", "//"),
 ]
 
 

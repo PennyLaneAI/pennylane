@@ -20,6 +20,8 @@ import functools
 import inspect
 import warnings
 
+import autograd
+
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
@@ -313,7 +315,7 @@ class QNode:
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
-                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
+                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
             )
 
         if isinstance(diff_method, qml.gradients.gradient_transform):
@@ -372,6 +374,9 @@ class QNode:
                 "Device caching is incompatible with the backprop diff_method"
             )
 
+        if device.shots is not None:
+            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+
         if backprop_interface is not None:
             # device supports backpropagation natively
 
@@ -384,30 +389,27 @@ class QNode:
             )
 
         if backprop_devices is not None:
-            if device.shots is None:
-                # device is analytic and has child devices that support backpropagation natively
+            # device is analytic and has child devices that support backpropagation natively
 
-                if interface in backprop_devices:
-                    # TODO: need a better way of passing existing device init options
-                    # to a new device?
-                    expand_fn = device.expand_fn
-                    batch_transform = device.batch_transform
+            if interface in backprop_devices:
+                # TODO: need a better way of passing existing device init options
+                # to a new device?
+                expand_fn = device.expand_fn
+                batch_transform = device.batch_transform
 
-                    device = qml.device(
-                        backprop_devices[interface],
-                        wires=device.wires,
-                        shots=device.shots,
-                    )
-                    device.expand_fn = expand_fn
-                    device.batch_transform = batch_transform
-                    return "backprop", {}, device
-
-                raise qml.QuantumFunctionError(
-                    f"Device {device.short_name} only supports diff_method='backprop' when using the "
-                    f"{list(backprop_devices.keys())} interfaces."
+                device = qml.device(
+                    backprop_devices[interface],
+                    wires=device.wires,
+                    shots=device.shots,
                 )
+                device.expand_fn = expand_fn
+                device.batch_transform = batch_transform
+                return "backprop", {}, device
 
-            raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+            raise qml.QuantumFunctionError(
+                f"Device {device.short_name} only supports diff_method='backprop' when using the "
+                f"{list(backprop_devices.keys())} interfaces."
+            )
 
         raise qml.QuantumFunctionError(
             f"The {device.short_name} device does not support native computations with "
@@ -421,10 +423,9 @@ class QNode:
         # need to inspect the circuit measurements to ensure only expectation values are taken. This
         # cannot be done here since we don't yet know the composition of the circuit.
 
-        supported_device = hasattr(device, "_apply_operation")
-        supported_device = supported_device and hasattr(device, "_apply_unitary")
+        required_attrs = ["_apply_operation", "_apply_unitary", "adjoint_jacobian"]
+        supported_device = all(hasattr(device, attr) for attr in required_attrs)
         supported_device = supported_device and device.capabilities().get("returns_state")
-        supported_device = supported_device and hasattr(device, "adjoint_jacobian")
 
         if not supported_device:
             raise ValueError(
@@ -555,11 +556,8 @@ class QNode:
         # construct the tape
         self.construct(args, kwargs)
 
-        # preprocess the tapes by applying any device-specific transforms
-        tapes, processing_fn = self.device.batch_transform(self.tape)
-
         res = qml.execute(
-            tapes,
+            [self.tape],
             device=self.device,
             gradient_fn=self.gradient_fn,
             interface=self.interface,
@@ -568,7 +566,19 @@ class QNode:
             **self.execute_kwargs,
         )
 
-        res = processing_fn(res)
+        if autograd.isinstance(res, (tuple, list)) and len(res) == 1:
+            # If a device batch transform was applied, we need to 'unpack'
+            # the returned tuple/list to a float.
+            #
+            # Note that we use autograd.isinstance, because on the backwards pass
+            # with Autograd, lists and tuples are converted to autograd.box.SequenceBox.
+            # autograd.isinstance is a 'safer' isinstance check that supports
+            # autograd backwards passes.
+            #
+            # TODO: find a more explicit way of determining that a batch transform
+            # was applied.
+
+            res = res[0]
 
         if override_shots is not False:
             # restore the initialization gradient function

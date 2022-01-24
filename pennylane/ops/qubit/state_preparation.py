@@ -55,11 +55,8 @@ class BasisState(Operation):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def decomposition(n, wires):
@@ -101,11 +98,8 @@ class QubitStateVector(Operation):
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def decomposition(state, wires):
@@ -134,7 +128,7 @@ class QubitDensityMatrix(Operation):
         target device.
 
     Args:
-        state (array[complex]): a density matrix of size (2**len(wires), 2**len(wires))
+        state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
     .. UsageDetails::
@@ -151,8 +145,8 @@ class QubitDensityMatrix(Operation):
             dev = qml.device("default.mixed", wires=2)
             @qml.qnode(dev)
             def circuit():
-                qml.QubitDensityMatrix(initialize_state, wires=[0, 1])
-                 return qml.state()
+                qml.QubitDensityMatrix(rho, wires=[0, 1])
+                return qml.state()
 
         Running this circuit:
 
@@ -163,11 +157,8 @@ class QubitDensityMatrix(Operation):
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")

@@ -162,12 +162,12 @@ class TestToQasmUnitTests:
         with qml.tape.QuantumTape() as circuit1:
             qml.QubitStateVector(psi, wires=[0, 1])
 
-        qasm1 = circuit1.to_openqasm()
+        qasm1 = circuit1.to_openqasm(precision=11)
 
         with qml.tape.QuantumTape() as circuit2:
             qml.QubitStateVector.decomposition(psi, wires=[0, 1])
 
-        qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
+        qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]), precision=11)
 
         expected = dedent(
             """\
@@ -175,18 +175,19 @@ class TestToQasmUnitTests:
             include "qelib1.inc";
             qreg q[2];
             creg c[2];
-            ry(1.5707963267948968) q[0];
-            ry(1.5707963267948968) q[1];
+            ry(1.5707963268) q[0];
+            ry(1.5707963268) q[1];
             cx q[0],q[1];
             cx q[0],q[1];
             cx q[0],q[1];
-            rz(3.141592653589793) q[1];
+            rz(3.1415926536) q[1];
             cx q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             """
         )
 
+        # different
         assert qasm1 == expected
         assert qasm1 == qasm2
 
@@ -557,7 +558,7 @@ class TestQNodeQasmIntegrationTests:
 
         # construct the qnode circuit
         qnode(state=np.array([1, -1, -1, 1]) / np.sqrt(4))
-        res = qnode.qtape.to_openqasm()
+        res = qnode.qtape.to_openqasm(precision=11)
 
         expected = dedent(
             """\
@@ -565,12 +566,12 @@ class TestQNodeQasmIntegrationTests:
             include "qelib1.inc";
             qreg q[2];
             creg c[2];
-            ry(1.5707963267948968) q[0];
-            ry(1.5707963267948968) q[1];
+            ry(1.5707963268) q[0];
+            ry(1.5707963268) q[1];
             cx q[0],q[1];
             cx q[0],q[1];
             cx q[0],q[1];
-            rz(3.141592653589793) q[1];
+            rz(3.1415926536) q[1];
             cx q[0],q[1];
             measure q[0] -> c[0];
             measure q[1] -> c[1];
@@ -694,6 +695,31 @@ class TestQNodeQasmIntegrationTests:
             measure q[0] -> c[0];
             measure q[1] -> c[1];
             measure q[2] -> c[2];
+            """
+        )
+
+        assert res == expected
+
+    def test_precision(self):
+        """Test that the QASM serializer takes into account the desired precision."""
+        dev = qml.device("default.qubit", wires=["a"])
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.RX(np.pi, wires="a")
+            return qml.expval(qml.PauliZ("a"))
+
+        qnode()
+        res = qnode.qtape.to_openqasm(precision=4)
+
+        expected = dedent(
+            """\
+            OPENQASM 2.0;
+            include "qelib1.inc";
+            qreg q[1];
+            creg c[1];
+            rx(3.142) q[0];
+            measure q[0] -> c[0];
             """
         )
 

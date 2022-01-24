@@ -70,6 +70,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
+    "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
@@ -421,6 +422,8 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
+        if not dev.supports_operation(op):
+            pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
 
