@@ -175,9 +175,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
                 res = qml.math.stack(res)
                 hess = qml.math.convert_like(hessian_coeffs[k], res)
                 hess = qml.math.cast(hess, res.dtype)
-                g = qml.math.tensordot(
-                    res, hess, [[0], [0]]
-                )
+                g = qml.math.tensordot(res, hess, [[0], [0]])
                 if (i, j) in unshifted_coeffs:
                     g += unshifted_coeffs[(i, j)] * r0
 
