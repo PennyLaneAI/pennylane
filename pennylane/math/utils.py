@@ -136,7 +136,6 @@ def cast_like(tensor1, tensor2):
     tensor([1., 2.])
     """
     dtype = ar.to_numpy(tensor2).dtype.type
-
     return cast(tensor1, dtype)
 
 
