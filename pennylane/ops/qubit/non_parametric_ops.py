@@ -958,7 +958,7 @@ class MultiControlledX(Operation):
             if len(wires) != 1:
                 raise ValueError("MultiControlledX accepts a single target wire.")
         
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)   
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
