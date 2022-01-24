@@ -74,7 +74,7 @@ class grad:
           inspecting as to which of the parameter arguments are marked
           as differentiable.
         """
-        if self._grad_fn:
+        if self._grad_fn is not None:
             return self._grad_fn
 
         # Inspect the arguments for differentiability, and
