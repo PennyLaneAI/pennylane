@@ -1003,9 +1003,6 @@ class MultiControlledX(Operation):
         """Ensure any user-specified control strings have the right format."""
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                print('   ')
-                print('   ')
-                print(len(control_values),len(control_wires))
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
