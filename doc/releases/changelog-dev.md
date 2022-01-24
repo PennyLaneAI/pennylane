@@ -4,6 +4,11 @@
 
 <h3>New features since last release</h3>
 
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
+  static property. This allows to programmatically know the number of parameters before an operator is 
+  instantiated without changing the user interface.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+
 * Development of circuit cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
@@ -421,6 +426,14 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where batch transformed QNodes would fail to apply batch transforms
+  provided by the underlying device.
+  [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
+
+* An error is raised during QNode creation if backpropagation is requested on a device with
+  finite-shots specified.
+  [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
+
 * Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
   Other assorted minor test warnings are fixed.
   [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)
@@ -475,5 +488,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christina Lee, Olivia Di Matteo, Diego Guala, Anthony Hayes, 
-Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+David Wierichs, Shaoming Zhang

@@ -167,6 +167,36 @@ class TestAutogradExecuteUnitTests:
         spy_gradients.assert_called()
 
 
+class TestBatchTransformExecution:
+    """Tests to ensure batch transforms can be correctly executed
+    via qml.execute and map_batch_transform"""
+
+    def test_no_batch_transform(self, mocker):
+        """Test that batch transforms can be disabled and enabled"""
+        dev = qml.device("default.qubit", wires=2, shots=100000)
+
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        x = 0.6
+        y = 0.2
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        spy = mocker.spy(dev, "batch_transform")
+
+        with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+            qml.execute([tape], dev, None, device_batch_transform=False)
+
+        spy.assert_not_called()
+
+        res = qml.execute([tape], dev, None, device_batch_transform=True)
+        spy.assert_called()
+        assert np.allclose(res[0], np.cos(y), atol=0.1)
+
+
 class TestCaching:
     """Test for caching behaviour"""
 
