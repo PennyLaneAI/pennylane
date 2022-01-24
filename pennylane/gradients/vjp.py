@@ -172,7 +172,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
 
-            def func(_, num=None):
+            def func(_, num=None): # pylint: disable=unused-argument
                 res = math.convert_like(np.zeros([num_params]), dy)
                 return math.cast(res, dy.dtype)
 
