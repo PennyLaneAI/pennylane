@@ -294,7 +294,7 @@ class TestVJPGradients:
         dev.C_DTYPE = vanilla_numpy.complex64
         dev.R_DTYPE = vanilla_numpy.float32
 
-        @qml.qnode(dev, interface='tf', diff_method='adjoint')
+        @qml.qnode(dev, interface="tf", diff_method="adjoint")
         def circuit(weights, features):
             for i in range(nwires):
                 qml.RX(features[i], wires=i)
@@ -304,12 +304,12 @@ class TestVJPGradients:
         vanilla_numpy.random.seed(42)
 
         ndata = 100
-        data = [vanilla_numpy.random.randn(nwires).astype('float32') for _ in range(ndata)]
-        label = [vanilla_numpy.random.choice([1, 0]).astype('int') for _ in range(ndata)]
+        data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
+        label = [vanilla_numpy.random.choice([1, 0]).astype("int") for _ in range(ndata)]
 
         loss = tf.losses.SparseCategoricalCrossentropy()
 
-        params = tf.Variable(vanilla_numpy.random.randn(nwires).astype('float32'), trainable=True)
+        params = tf.Variable(vanilla_numpy.random.randn(nwires).astype("float32"), trainable=True)
         with tf.GradientTape() as tape:
             probs = [circuit(params, d) for d in data]
             loss_value = loss(label, probs)
