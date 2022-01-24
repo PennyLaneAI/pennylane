@@ -868,9 +868,9 @@ class MultiControlledX(Operation):
     * Gradient recipe: None
 
     Args:
-        New args: 
+        New args:
 
-        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where 
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
             the operation acts on
         control_values (str): a string of bits representing the state of the control
             qubits to control on (default is the all 1s state)
@@ -878,7 +878,7 @@ class MultiControlledX(Operation):
             the operation into a series of Toffoli gates
 
         Old args:
-        
+
         control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
         wires (Union[Wires or int]): a single target wire the operation acts on
         control_values (str): a string of bits representing the state of the control
@@ -920,7 +920,7 @@ class MultiControlledX(Operation):
 
     >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
 
-    Also it can be done with a single set of wires, without the keyword control_wires: 
+    Also it can be done with a single set of wires, without the keyword control_wires:
 
     >>> qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values='1110')
 
