@@ -687,7 +687,9 @@ class TestMultiControlledX:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
-        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     @pytest.mark.parametrize("n_ctrl_wires", range(3, 6))
@@ -718,7 +720,9 @@ class TestMultiControlledX:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
-        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
     def test_not_enough_workers(self):
@@ -780,7 +784,9 @@ class TestMultiControlledX:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
 
-        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
         spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
@@ -812,7 +818,9 @@ class TestMultiControlledX:
                 op.queue()
             return qml.probs(wires=control_wires + target_wire)
 
-        u = np.array([f(b) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]).T
+        u = np.array(
+            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
+        ).T
         spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
