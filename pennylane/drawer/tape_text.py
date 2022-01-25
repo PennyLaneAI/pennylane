@@ -115,10 +115,10 @@ def tape_text(
             qml.probs(wires=(0,1,2,"aux"))
 
     >>> print(tape_text(tape))
-      0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z]  Probs
-      1: ─├QFT──RY─├C─┤ ╰Var[Z@Z]  Probs
-      2: ─╰QFT──RZ─│──┤            Probs
-    aux: ──────────╰X─┤  <Z>       Probs
+      0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z] ╭Probs
+      1: ─├QFT──RY─├C─┤ ╰Var[Z@Z] ├Probs
+      2: ─╰QFT──RZ─│──┤           ├Probs
+    aux: ──────────╰X─┤  <Z>      ╰Probs
 
     .. UsageDetails::
 
@@ -126,39 +126,44 @@ def tape_text(
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
     >>> print(tape_text(tape, decimals=2))
-      0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z]  Probs
-      1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z]  Probs
-      2: ─╰QFT──RZ(1.23)─│──┤            Probs
-    aux: ────────────────╰X─┤  <Z>       Probs
+      0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z] ╭Probs
+      1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z] ├Probs
+      2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
+    aux: ────────────────╰X─┤  <Z>      ╰Probs
 
 
     The ``max_length`` keyword wraps long circuits:
 
-    >>> rng = np.random.default_rng(seed=42)
-    >>> shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
-    >>> params = rng.random(shape)
-    >>> tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
-    >>> print(tape_text(tape2, max_length=60))
-    0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
-    1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
-    2: ──Rot────╰X─╭C────│───Rot─╰X─│──╭C─│──│─────Rot─│──│──╰C
-    3: ──Rot───────╰X─╭C─│───Rot────╰X─│──╰C─│─────Rot─╰X─│────
-    4: ──Rot──────────╰X─╰C──Rot───────╰X────╰C────Rot────╰X───
+    .. code-block:: python
 
-    ───Rot───────────╭C─╭X──Rot──────╭C──────────────╭X─┤
-    ──╭X────Rot──────│──╰C─╭X────Rot─╰X───╭C─────────│──┤
-    ──│────╭X────Rot─│─────╰C───╭X────Rot─╰X───╭C────│──┤
-    ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤
-    ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤
+        rng = np.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
+        params = rng.random(shape)
+        tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
+        print(tape_text(tape2, max_length=60))
+
+    .. code-block::
+
+        0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
+        1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
+        2: ──Rot────╰X─╭C────│───Rot─╰X─│──╭C─│──│─────Rot─│──│──╰C
+        3: ──Rot───────╰X─╭C─│───Rot────╰X─│──╰C─│─────Rot─╰X─│────
+        4: ──Rot──────────╰X─╰C──Rot───────╰X────╰C────Rot────╰X───
+
+        ───Rot───────────╭C─╭X──Rot──────╭C──────────────╭X─┤
+        ──╭X────Rot──────│──╰C─╭X────Rot─╰X───╭C─────────│──┤
+        ──│────╭X────Rot─│─────╰C───╭X────Rot─╰X───╭C────│──┤
+        ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤
+        ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤
 
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
 
     >>> print(tape_text(tape, wire_order=["aux", 2, 1, 0]))
-    aux: ──────────╭X─┤  <Z>       Probs
-      2: ─╭QFT──RZ─│──┤            Probs
-      1: ─├QFT──RY─├C─┤ ╭Var[Z@Z]  Probs
-      0: ─╰QFT──RX─╰C─┤ ╰Var[Z@Z]  Probs
+    aux: ──────────╭X─┤  <Z>      ╭Probs
+      2: ─╭QFT──RZ─│──┤           ├Probs
+      1: ─├QFT──RY─├C─┤ ╭Var[Z@Z] ├Probs
+      0: ─╰QFT──RX─╰C─┤ ╰Var[Z@Z] ╰Probs
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
@@ -172,15 +177,18 @@ def tape_text(
 
     When the provided tape has nested tapes inside, this function is called recursively.
     To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
-    uses the ``"tape_offset"`` value to determine numbering.
+    uses the ``"tape_offset"`` value to determine numbering. Note that the value is updated
+    during the call.
 
     .. code-block:: python
 
-        with QuantumTape() as tape:
-            with QuantumTape() as tape_inner:
+        with qml.tape.QuantumTape() as tape:
+            with qml.tape.QuantumTape() as tape_inner:
                 qml.PauliX(0)
 
-       print(tape_text(tape, cache={'tape_offset': 3}))
+        cache = {'tape_offset': 3}
+        print(tape_text(tape, cache=cache))
+        print("\nNew tape offset: ", cache['tape_offset'])
 
     .. code-block::
 
@@ -188,6 +196,8 @@ def tape_text(
 
         Tape:3
         0: ──X─┤
+
+        New tape offset:  4
 
     """
     if cache is None:
