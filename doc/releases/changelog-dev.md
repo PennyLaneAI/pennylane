@@ -426,6 +426,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug for the TensorFlow interface where the dtype of input tensors was
+  not cast.
+  [(#2120)](https://github.com/PennyLaneAI/pennylane/pull/2120)
+
 * Fixes a bug where batch transformed QNodes would fail to apply batch transforms
   provided by the underlying device.
   [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
