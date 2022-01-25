@@ -52,7 +52,7 @@ class TestComputeVJP:
         vjp = qml.gradients.compute_vjp(dy, jac)
         assert np.all(vjp == np.zeros([3]))
 
-    @pytest.mark.parametrize("dtype1,dtype2", [("float32","float64"), ("float64","float32")])
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_torch(self, dtype1, dtype2):
         """Test that using the Torch interface the dtype of the result is
         determined by the dtype of the dy."""
@@ -62,11 +62,11 @@ class TestComputeVJP:
         dtype2 = getattr(torch, dtype2)
 
         dy = torch.ones(4, dtype=dtype1)
-        jac = torch.ones((4,4), dtype=dtype2)
+        jac = torch.ones((4, 4), dtype=dtype2)
 
         assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
 
-    @pytest.mark.parametrize("dtype1,dtype2", [("float32","float64"), ("float64","float32")])
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_tf(self, dtype1, dtype2):
         """Test that using the TensorFlow interface the dtype of the result is
         determined by the dtype of the dy."""
@@ -76,11 +76,11 @@ class TestComputeVJP:
         dtype2 = getattr(tf, dtype2)
 
         dy = tf.ones(4, dtype=dtype1)
-        jac = tf.ones((4,4), dtype=dtype2)
+        jac = tf.ones((4, 4), dtype=dtype2)
 
         assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
 
-    @pytest.mark.parametrize("dtype1,dtype2", [("float32","float64"), ("float64","float32")])
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
     def test_dtype_jax(self, dtype1, dtype2):
         """Test that using the JAX interface the dtype of the result is
         determined by the dtype of the dy."""
@@ -93,10 +93,11 @@ class TestComputeVJP:
         dtype1 = getattr(jax.numpy, dtype1)
         dtype2 = getattr(jax.numpy, dtype2)
 
-        dy = jax.numpy.array([0,1], dtype=dtype1)
-        jac = jax.numpy.array([[0,1],[2,3]], dtype=dtype2)
+        dy = jax.numpy.array([0, 1], dtype=dtype1)
+        jac = jax.numpy.array([[0, 1], [2, 3]], dtype=dtype2)
 
         assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+
 
 class TestVJP:
     """Tests for the vjp function"""
@@ -232,6 +233,21 @@ class TestVJP:
         )
 
         assert np.allclose(res, dy @ expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    def test_dtype_matches_dy(self, dtype):
+        """Tests that the vjp function matches the dtype of dy when dy is
+        zero-like."""
+        x = np.array([0.1], dtype=np.float64)
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x[0], wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        dy = np.zeros(3, dtype=dtype)
+        _, func = qml.gradients.vjp(tape, dy, qml.gradients.param_shift)
+
+        assert func([]).dtype == dtype
 
 
 def expected(params):
