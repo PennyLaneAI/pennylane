@@ -52,6 +52,51 @@ class TestComputeVJP:
         vjp = qml.gradients.compute_vjp(dy, jac)
         assert np.all(vjp == np.zeros([3]))
 
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32","float64"), ("float64","float32")])
+    def test_dtype_torch(self, dtype1, dtype2):
+        """Test that using the Torch interface the dtype of the result is
+        determined by the dtype of the dy."""
+        torch = pytest.importorskip("torch")
+
+        dtype1 = getattr(torch, dtype1)
+        dtype2 = getattr(torch, dtype2)
+
+        dy = torch.ones(4, dtype=dtype1)
+        jac = torch.ones((4,4), dtype=dtype2)
+
+        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32","float64"), ("float64","float32")])
+    def test_dtype_tf(self, dtype1, dtype2):
+        """Test that using the TensorFlow interface the dtype of the result is
+        determined by the dtype of the dy."""
+        tf = pytest.importorskip("tensorflow")
+
+        dtype1 = getattr(tf, dtype1)
+        dtype2 = getattr(tf, dtype2)
+
+        dy = tf.ones(4, dtype=dtype1)
+        jac = tf.ones((4,4), dtype=dtype2)
+
+        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32","float64"), ("float64","float32")])
+    def test_dtype_jax(self, dtype1, dtype2):
+        """Test that using the JAX interface the dtype of the result is
+        determined by the dtype of the dy."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dtype1 = getattr(jax.numpy, dtype1)
+        dtype2 = getattr(jax.numpy, dtype2)
+
+        dy = jax.numpy.array([0,1], dtype=dtype1)
+        jac = jax.numpy.array([[0,1],[2,3]], dtype=dtype2)
+
+        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
 
 class TestVJP:
     """Tests for the vjp function"""
