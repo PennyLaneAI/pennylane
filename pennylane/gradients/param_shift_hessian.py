@@ -60,7 +60,9 @@ def generate_multishifted_tapes(tape, idx, shifts):
         shifted_tape = tape.copy(copy_operations=True)
 
         for id_, s in zip(idx, shift):
+            dtype = new_params[id_].dtype
             new_params[id_] = new_params[id_] + qml.math.convert_like(s, new_params[id_])
+            new_params[id_] = qml.math.cast(new_params[id_], dtype)
 
         shifted_tape.set_parameters(new_params)
         tapes.append(shifted_tape)
@@ -171,9 +173,9 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
                 g = qml.math.zeros(out_dim)
             else:
                 res = qml.math.stack(res)
-                g = qml.math.tensordot(
-                    res, qml.math.convert_like(hessian_coeffs[k], res), [[0], [0]]
-                )
+                hess = qml.math.convert_like(hessian_coeffs[k], res)
+                hess = qml.math.cast(hess, res.dtype)
+                g = qml.math.tensordot(res, hess, [[0], [0]])
                 if (i, j) in unshifted_coeffs:
                     g += unshifted_coeffs[(i, j)] * r0
 

@@ -424,3 +424,70 @@ class batch_transform:
 
     def _tape_wrapper(self, *targs, **tkwargs):
         return lambda tape: self.construct(tape, *targs, **tkwargs)
+
+
+def map_batch_transform(transform, tapes):
+    """Map a batch transform over multiple tapes.
+
+    Args:
+        transform (.batch_transform): the batch transform
+            to be mapped
+        tapes (Sequence[QuantumTape]): The sequence of tapes the batch
+            transform should be applied to. Each tape in the sequence
+            is transformed by the batch transform.
+
+    **Example**
+
+    Consider the following tapes:
+
+    .. code-block:: python
+
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+
+        with qml.tape.QuantumTape() as tape1:
+            qml.RX(0.5, wires=0)
+            qml.RY(0.1, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        with qml.tape.QuantumTape() as tape2:
+            qml.Hadamard(wires=0)
+            qml.CRX(0.5, wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H + 0.5 * qml.PauliY(0))
+
+    We can use ``map_batch_transform`` to map a single
+    batch transform across both of the these tapes in such a way
+    that allows us to submit a single job for execution:
+
+    >>> tapes, fn = map_batch_transform(qml.transforms.hamiltonian_expand, [tape1, tape2])
+    >>> dev = qml.device("default.qubit", wires=2)
+    >>> fn(qml.execute(tapes, dev, qml.gradients.param_shift))
+    [0.9950041652780257, 0.8150893013179248]
+    """
+    execution_tapes = []
+    batch_fns = []
+    tape_counts = []
+
+    for t in tapes:
+        # Preprocess the tapes by applying batch transforms
+        # to each tape, and storing corresponding tapes
+        # for execution, processing functions, and list of tape lengths.
+        new_tapes, fn = transform(t)
+        execution_tapes.extend(new_tapes)
+        batch_fns.append(fn)
+        tape_counts.append(len(new_tapes))
+
+    def processing_fn(res):
+        count = 0
+        final_results = []
+
+        for idx, s in enumerate(tape_counts):
+            # apply any batch transform post-processing
+            new_res = batch_fns[idx](res[count : count + s])
+            final_results.append(new_res)
+            count += s
+
+        return final_results
+
+    return execution_tapes, processing_fn
