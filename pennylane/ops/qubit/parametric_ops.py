@@ -753,8 +753,12 @@ class PauliRot(Operation):
                     Hadamard(wires=[wire])
                 elif gate == "Y":
                     RX(np.pi / 2, wires=[wire])
-
-            MultiRZ(theta, wires=list(active_wires))
+            if len(active_wires) == 1:
+                RZ(theta, wires = active_wires[0])
+            elif len(active_wires) == 2:
+                IsingZZ(theta, wires = list(active_wires))
+            else:
+                MultiRZ(theta, wires=list(active_wires))
 
             for wire, gate in zip(active_wires, active_gates):
                 if gate == "X":
