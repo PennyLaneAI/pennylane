@@ -249,7 +249,7 @@ def test_draw_batch_transform(transform):
 
     # the parameter-shift transform will create two circuits; one with x+0.2
     # and one with x-0.2.
-    res = qml.draw(circuit)(0.6)
+    res = qml.draw(circuit)(np.array(0.6, requires_grad=True))
     expected = [" 0: ──H──RX(0.8)──┤ ⟨Z⟩ ", "", " 0: ──H──RX(0.4)──┤ ⟨Z⟩ ", ""]
     assert res == "\n".join(expected)
 
