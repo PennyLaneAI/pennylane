@@ -125,13 +125,17 @@ class TestLabeling:
 
 
 class TestDecimals:
-    def test_decimals(self):
+    """Test the decimals keyword argument."""
 
-        expected = "    0: ──RX(1.23)─┤  \n" "    a: ──RY(2.35)─┤  \n" "1.234: ──RZ(3.46)─┤  "
+    def test_decimals(self):
+        """Test that the decimals keyword makes the operation parameters included."""
+
+        expected = "    0: ──RX(1.23)─┤  \n    a: ──RY(2.35)─┤  \n1.234: ──RZ(3.46)─┤  "
 
         assert tape_text(tape, decimals=2) == expected
 
     def test_decimals_multiparameters(self):
+        """Tests decimals also displays parameters when the operation has multiple parameters."""
 
         with QuantumTape() as tape_rot:
             qml.Rot(1.2345, 2.3456, 3.4566, wires=0)
@@ -176,6 +180,8 @@ class TestDecimals:
 
 
 class TestMaxLength:
+    """Test the max_length keyword."""
+
     def test_max_length_default(self):
         """Test max length defaults to 100."""
         with QuantumTape() as tape_ml:
@@ -191,6 +197,7 @@ class TestMaxLength:
 
     @pytest.mark.parametrize("ml", [10, 15, 20])
     def test_setting_max_length(self, ml):
+        """Test several custom max_length parameters change the wrapping length."""
 
         with QuantumTape() as tape_ml:
             for _ in range(10):
@@ -229,7 +236,9 @@ single_op_tests_data = [
     (qml.expval(qml.PauliZ(0)), "0: ───┤  <Z>"),
     (qml.var(qml.PauliZ(0)), "0: ───┤  Var[Z]"),
     (qml.probs(wires=0), "0: ───┤  Probs"),
+    (qml.probs(op=qml.PauliZ(0)), "0: ───┤  Probs[Z]"),
     (qml.sample(wires=0), "0: ───┤  Sample"),
+    (qml.sample(op=qml.PauliX(0)), "0: ───┤  Sample[X]"),
     (qml.expval(0.1 * qml.PauliX(0) @ qml.PauliY(1)), "0: ───┤ ╭<𝓗(0.10)>\n1: ───┤ ╰<𝓗(0.10)>"),
     (
         qml.expval(
@@ -251,6 +260,8 @@ def test_single_ops(op, expected):
 
 
 class TestLayering:
+    """Test operations are placed in the correct locations."""
+
     def test_adjacent_ops(self):
         """Test non-blocking gates end up on same layer."""
 
@@ -279,13 +290,24 @@ class TestLayering:
             qml.IsingXX(1.2345, wires=(0, 2))
             qml.PauliX(1)
 
-        expected = "0: ──X─╭IsingXX────┤  \n" "1: ────│─────────X─┤  \n" "2: ────╰IsingXX────┤  "
+        expected = "0: ──X─╭IsingXX────┤  \n1: ────│─────────X─┤  \n2: ────╰IsingXX────┤  "
 
         assert tape_text(tape, wire_order=[0, 1, 2]) == expected
 
 
 class TestNestedTapes:
     """Test situations with nested tapes."""
+
+    def test_cache_keyword_tape_offset(self):
+        """Test that tape numbering is determined by the `tape_offset` keyword of the cache."""
+
+        with QuantumTape() as tape:
+            with QuantumTape() as tape_inner:
+                qml.PauliX(0)
+
+        expected = "0: ──Tape:3─┤  \n" "\nTape:3\n" "0: ──X─┤  "
+
+        assert tape_text(tape, cache={"tape_offset": 3}) == expected
 
     def test_multiple_nested_tapes(self):
         """Test numbers consistent with multiple nested tapes and

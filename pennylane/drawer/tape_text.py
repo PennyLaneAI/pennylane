@@ -22,15 +22,6 @@ from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
 
 
-measurement_label_map = {
-    Expectation: lambda label: f"<{label}>",
-    Probability: lambda label: "Probs",
-    Sample: lambda label: "Sample",
-    Variance: lambda label: f"Var[{label}]",
-    State: lambda label: "State",
-}
-
-
 def _add_grouping_symbols(op, layer_str, wire_map):
     """Adds symbols indicating the extent of a given object."""
     if len(op.wires) > 1:
@@ -61,11 +52,20 @@ def _add_op(op, layer_str, wire_map, decimals):
     return layer_str
 
 
+measurement_label_map = {
+    Expectation: lambda label: f"<{label}>",
+    Probability: lambda label: f"Probs[{label}]" if label else "Probs",
+    Sample: lambda label: f"Sample[{label}]" if label else "Sample",
+    Variance: lambda label: f"Var[{label}]",
+    State: lambda label: "State",
+}
+
+
 def _add_measurement(m, layer_str, wire_map, decimals):
     """Updates ``layer_str`` with the ``m`` measurement."""
     layer_str = _add_grouping_symbols(m, layer_str, wire_map)
 
-    obs_label = "" if m.obs is None else m.obs.label(decimals=decimals).replace("\n", "")
+    obs_label = None if m.obs is None else m.obs.label(decimals=decimals).replace("\n", "")
     meas_label = measurement_label_map[m.return_type](obs_label)
 
     if len(m.wires) == 0:  # state or probability across all wires
@@ -79,7 +79,7 @@ def _add_measurement(m, layer_str, wire_map, decimals):
 
 # pylint: disable=too-many-arguments
 def tape_text(
-    tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100, tape_offset=None
+    tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100, cache=None
 ):
     """Text based diagram for a Quantum Tape.
 
@@ -93,8 +93,8 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        tape_offset (list[Int]): Used to offset numbering when labelling nested tapes. Used internally for
-            recursive calls.
+        cache (dict): Used to store information between recursive calls. Currently only used for
+            numbering nested tapes.
 
     Returns:
         str : String based graphic of the circuit.
@@ -114,7 +114,7 @@ def tape_text(
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.probs(wires=(0,1,2,"aux"))
 
-    >>> print(draw_text(tape))
+    >>> print(tape_text(tape))
       0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z]  Probs
       1: ─├QFT──RY─├C─┤ ╰Var[Z@Z]  Probs
       2: ─╰QFT──RZ─│──┤            Probs
@@ -125,7 +125,7 @@ def tape_text(
     By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
-    >>> print(draw_text(tape, decimals=2))
+    >>> print(tape_text(tape, decimals=2))
       0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z]  Probs
       1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z]  Probs
       2: ─╰QFT──RZ(1.23)─│──┤            Probs
@@ -170,9 +170,28 @@ def tape_text(
       1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ────┤           ╰Probs
 
+    When the provided tape has nested tapes inside, this function is called recursively.
+    To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
+    uses the ``"tape_offset"`` value to determine numbering.
+
+    .. code-block:: python
+
+        with QuantumTape() as tape:
+            with QuantumTape() as tape_inner:
+                qml.PauliX(0)
+
+       print(tape_text(tape, cache={'tape_offset': 3}))
+
+    .. code-block::
+
+        0: ──Tape:3─┤
+
+        Tape:3
+        0: ──X─┤
+
     """
-    if tape_offset is None:
-        tape_offset = [0]  # use a list so it's a mutable data structure
+    if cache is None:
+        cache = {"tape_offset": 0}
     tape_cache = []
 
     wire_map = convert_wire_order(
@@ -203,10 +222,9 @@ def tape_text(
             layer_str = [filler] * n_wires
 
             for op in layer:
-                # Currently can't use `isinstance(op, QuantumTape)` due to circular imports
-                if isinstance(op, qml.tape.QuantumTape):  # isa tape
+                if isinstance(op, qml.tape.QuantumTape):
                     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
-                    label = f"Tape:{tape_offset[0]+len(tape_cache)}"
+                    label = f"Tape:{cache['tape_offset']+len(tape_cache)}"
                     for w in op.wires:
                         layer_str[wire_map[w]] += label
                     tape_cache.append(op)
@@ -230,13 +248,11 @@ def tape_text(
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(finished_lines + totals)
-    current_tape_offset = tape_offset[0]
-    tape_offset[0] += len(tape_cache)
+    current_tape_offset = cache["tape_offset"]
+    cache["tape_offset"] += len(tape_cache)
     for i, nested_tape in enumerate(tape_cache):
         label = f"\nTape:{i+current_tape_offset}"
-        tape_str = tape_text(
-            nested_tape, wire_order, show_all_wires, decimals, max_length, tape_offset
-        )
+        tape_str = tape_text(nested_tape, wire_order, show_all_wires, decimals, max_length, cache)
         tape_totals = "\n".join([tape_totals, label, tape_str])
 
     return tape_totals
