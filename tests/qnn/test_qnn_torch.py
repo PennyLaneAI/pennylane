@@ -469,6 +469,7 @@ class TestTorchLayerIntegration:
         assert dict_keys == all_params
         assert len(dict_keys) == len(all_params)
 
+
 def test_vjp_is_unwrapped_for_param_shift():
     """Test that the intermediate vjps used by the batch Torch interface
     are unwrapped and no error is raised for a custom operation.
@@ -480,12 +481,11 @@ def test_vjp_is_unwrapped_for_param_shift():
     nqubits = 2
     cutoff_dim = 4
 
-    device = qml.device('default.qubit', wires=nqubits)
+    device = qml.device("default.qubit", wires=nqubits)
 
     class DummyOp(qml.operation.Operation):
         num_wires = 1
         num_params = 1
-
 
         @classmethod
         def _matrix(cls, *params):
@@ -493,11 +493,11 @@ def test_vjp_is_unwrapped_for_param_shift():
 
             if np.all(z == 0):
                 return
-            return np.diag([z,z])
+            return np.diag([z, z])
 
     device.operations.add("DummyOp")
 
-    @qml.qnode(device=device, interface='torch', diff_method="parameter-shift")
+    @qml.qnode(device=device, interface="torch", diff_method="parameter-shift")
     def circ(inputs, w0):
         DummyOp(inputs[0], wires=0)
         return qml.expval(qml.PauliZ(0))
@@ -511,11 +511,12 @@ def test_vjp_is_unwrapped_for_param_shift():
     u = qlayers(x)
 
     u_x = torch.autograd.grad(
-         u, x,
-         grad_outputs=torch.ones_like(u, requires_grad=True),
-         retain_graph=True,
+        u,
+        x,
+        grad_outputs=torch.ones_like(u, requires_grad=True),
+        retain_graph=True,
         create_graph=True,
-        allow_unused=True
-        )[0]
+        allow_unused=True,
+    )[0]
 
     assert isinstance(u_x, torch.Tensor)
