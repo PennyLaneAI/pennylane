@@ -690,8 +690,7 @@ class TestQubitIntegration:
             Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        def cost(weights):
-            w1, w2 = weights
+        def cost(w1, w2):
             c1 = circuit1(w1)
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
@@ -700,12 +699,12 @@ class TestQubitIntegration:
         w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
         weights = [
-            np.random.random(w1),
-            np.random.random(w2),
+            np.random.random(w1, requires_grad=True),
+            np.random.random(w2, requires_grad=True),
         ]
 
         grad_fn = qml.grad(cost)
-        res = grad_fn(weights)
+        res = grad_fn(*weights)
 
         assert len(res) == 2
 
@@ -744,9 +743,9 @@ class TestQubitIntegration:
         a = np.array(0.4, requires_grad=False)
 
         # The remaining free parameters are all differentiable.
-        b = 0.5
-        c = 0.1
-        weights = np.array([0.2, 0.3])
+        b = np.array(0.5, requires_grad=True)
+        c = np.array(0.1, requires_grad=True)
+        weights = np.array([0.2, 0.3], requires_grad=True)
 
         res = grad_fn(a, b, c, weights)
 
@@ -1136,7 +1135,7 @@ class TestQubitIntegration:
 
         dev = qml.device(dev_name, wires=2)
         P = np.array([1], requires_grad=False)
-        x, y = 0.765, -0.654
+        x, y = np.array([0.765, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
         def circuit(x, y):
@@ -1172,8 +1171,8 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
 
-        r = 0.543
-        phi = -0.654
+        r = np.array(0.543, requires_grad=True)
+        phi = np.array(-0.654, requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(r, phi):
@@ -1201,8 +1200,8 @@ class TestCV:
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
 
-        n = 0.12
-        a = 0.765
+        n = np.array(0.12, requires_grad=True)
+        a = np.array(0.765, requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(n, a):

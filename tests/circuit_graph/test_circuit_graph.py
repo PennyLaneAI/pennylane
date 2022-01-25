@@ -20,6 +20,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 
@@ -241,11 +242,11 @@ class TestCircuitGraph:
 
     @pytest.mark.parametrize("wires", [["a", "q1", 3]])
     def test_layers(self, parameterized_circuit, wires):
-        """A test of a simple circuit with 3 layers and 6 parameters"""
+        """A test of a simple circuit with 3 layers and 6 trainable parameters"""
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         layers = circuit.parametrized_layers
         ops = circuit.operations
@@ -264,7 +265,7 @@ class TestCircuitGraph:
 
         dev = qml.device("default.gaussian", wires=wires)
         qnode = qml.QNode(parameterized_circuit, dev)
-        qnode(0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        qnode(*pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6], requires_grad=True))
         circuit = qnode.qtape.graph
         result = list(circuit.iterate_parametrized_layers())
 
