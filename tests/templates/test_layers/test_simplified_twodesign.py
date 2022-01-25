@@ -105,7 +105,7 @@ class TestDecomposition:
             )
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        expectations = circuit(initial_layer_weights, weights)
+        expectations = circuit(np.array(initial_layer_weights), np.array(weights))
         for exp, target_exp in zip(expectations, target):
             assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
@@ -211,27 +211,6 @@ def circuit_decomposed(initial_weights, weights):
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
-
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[[0.1, -1.1], [0.2, 0.1]]]
-        initial_weights = [0.1, 0.2, 0.3]
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(initial_weights, weights)
-        res2 = circuit2(initial_weights, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [[tuple(weights[0][0]), tuple(weights[0][1])]]
-        init_weights_tuple = tuple(initial_weights)
-        res = circuit(init_weights_tuple, weights_tuple)
-        res2 = circuit2(init_weights_tuple, weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""

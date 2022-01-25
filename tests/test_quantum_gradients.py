@@ -185,7 +185,7 @@ class TestCVGradient:
 
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
-        par = [0.4, -0.3, -0.7, 0.2]
+        par = anp.array([0.4, -0.3, -0.7, 0.2], requires_grad=True)
 
         def qf(r0, phi0, r1, phi1):
             qml.Squeezing(r0, phi0, wires=[0])
@@ -535,7 +535,7 @@ class TestQubitGradient:
             J = grad_method(quantum)(a, np.log(b))
             return val * np.array([J[0][0] + J[0][1], (J[1][0] + J[1][1]) / b])
 
-        param = np.array([-0.1259, 1.53])
+        param = anp.array([-0.1259, 1.53], requires_grad=True)
         y0 = classical(param)
         grad_classical = autograd.jacobian(classical)
         grad_auto = grad_classical(param)
@@ -611,38 +611,6 @@ class TestQubitGradient:
                 grad_true = grad_true0 + grad_true1  # product rule
 
                 assert grad_eval == pytest.approx(grad_true, abs=tol)
-
-    def test_autograd_positional_non_trainable_warns_grad(self):
-        """Test that a warning is raised if a positional argument without the
-        requires_grad attribute set is passed when differentiating a QNode with a
-        scalar output."""
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def test(x):
-            qml.RY(x, wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(
-            UserWarning, match="inputs have to explicitly specify requires_grad=True"
-        ):
-            qml.grad(test)(0.3)
-
-    def test_autograd_positional_non_trainable_warns_jacobian(self):
-        """Test that a warning is raised if a positional argument without the
-        requires_grad attribute set is passed when differentiating a QNode with a
-        vector output."""
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def test(x):
-            qml.RY(x, wires=[0])
-            return qml.probs(wires=[0])
-
-        with pytest.warns(
-            UserWarning, match="inputs have to explicitly specify requires_grad=True"
-        ):
-            qml.jacobian(test)(0.3)
 
     def test_autograd_trainable_no_warn_grad(self, recwarn):
         """Test that no warning is raised if positional arguments are marked as
@@ -728,7 +696,7 @@ class TestFourTermParameterShifts:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = anp.array([theta, theta ** 3, np.sqrt(2) * theta], requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
@@ -751,3 +719,71 @@ class TestFourTermParameterShifts:
             ]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+@pytest.mark.parametrize("argnum", [0, 2, [1], [0, 2], [0, 1, 2]])
+class TestArgnum:
+    """Test various argnum scenarios for qml.grad and qml.jacobian and compare output
+    to equivalent requires_grad configuration of the inputs."""
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            ((0.1, 0.2), (0.1, 0.2)),
+            [[0.1, 0.2], [0.1, 0.2]],
+            np.array([[0.1, 0.2], [0.1, 0.2]]),
+            qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]]),
+        ],
+    )
+    def test_grad(self, diff_method, input, argnum):
+        """Test qml.grad with various argnums"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x, y, z):
+            qml.RX(z[0][1], wires=0)
+            qml.RZ(x[0][1], wires=0)
+            qml.RY(y[0][1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = qml.grad(circuit, argnum=argnum)(input, input, input)
+
+        params = [input, input, input]
+        for i in range(3):
+            if i in ([argnum] if isinstance(argnum, int) else argnum):
+                params[i] = qml.numpy.tensor(params[i], requires_grad=True)
+            else:
+                params[i] = qml.numpy.tensor(params[i], requires_grad=False)
+
+        expected = qml.grad(circuit)(*params)
+
+        assert np.allclose(result, expected)
+
+    @pytest.mark.parametrize(
+        "input",
+        [np.array([[0.1, 0.2], [0.1, 0.2]]), qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]])],
+    )
+    def test_jacobian(self, diff_method, input, argnum):
+        """Test qml.jacobian with various argnums (no support for lists/tuples)"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x, y, z):
+            qml.RX(z[0][1], wires=0)
+            qml.RZ(x[0][1], wires=0)
+            qml.RY(y[0][1], wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        result = qml.jacobian(circuit, argnum=argnum)(input, input, input)
+
+        params = [input, input, input]
+        for i in range(3):
+            if i in ([argnum] if isinstance(argnum, int) else argnum):
+                params[i] = qml.numpy.tensor(params[i], requires_grad=True)
+            else:
+                params[i] = qml.numpy.tensor(params[i], requires_grad=False)
+
+        expected = qml.jacobian(circuit)(*params)
+
+        assert np.allclose(result, expected)
