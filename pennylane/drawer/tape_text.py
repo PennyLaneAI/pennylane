@@ -142,7 +142,8 @@ def tape_text(
         tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
         print(tape_text(tape2, max_length=60))
 
-    .. code-block::
+
+    .. code-block:: none
 
         0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
         1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
@@ -155,6 +156,7 @@ def tape_text(
         ──│────╭X────Rot─│─────╰C───╭X────Rot─╰X───╭C────│──┤
         ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤
         ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤
+
 
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
@@ -190,7 +192,8 @@ def tape_text(
         print(tape_text(tape, cache=cache))
         print("\nNew tape offset: ", cache['tape_offset'])
 
-    .. code-block::
+
+    .. code-block:: none
 
         0: ──Tape:3─┤
 
@@ -198,6 +201,7 @@ def tape_text(
         0: ──X─┤
 
         New tape offset:  4
+
 
     """
     if cache is None:
