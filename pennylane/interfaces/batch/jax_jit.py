@@ -90,6 +90,11 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     )
 
 
+class JittableJAXMeasurementError(ValueError):
+    """Exception raised when unsupported measurements are being used with the
+    jittable JAX interface."""
+
+
 def _validate_tapes(tapes):
     """Validates that the input tapes are compatible with JAX support.
 
@@ -100,14 +105,14 @@ def _validate_tapes(tapes):
     for t in tapes:
 
         if len(t.observables) != 1:
-            raise ValueError(
+            raise JittableJAXMeasurementError(
                 "The jittable JAX interface currently only supports quantum nodes with a single return type."
             )
 
         for o in t.observables:
             return_type = o.return_type
             if return_type is not Variance and return_type is not Expectation:
-                raise ValueError(
+                raise JittableJAXMeasurementError(
                     f"Only Variance and Expectation returns are supported for the jittable JAX interface, given {return_type}."
                 )
 

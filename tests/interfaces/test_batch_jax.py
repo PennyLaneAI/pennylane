@@ -23,6 +23,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces.batch import execute
+from pennylane.interfaces.batch.jax import JAXForwardModeError
+from pennylane.interfaces.batch.jax_jit import JittableJAXMeasurementError
 
 
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
@@ -666,7 +668,7 @@ class TestJaxExecuteIntegration:
             )
             return res[0][0]
 
-        with pytest.raises(ValueError, match=mes):
+        with pytest.raises(JittableJAXMeasurementError, match=mes):
             cost(params, cache=None)
 
 
@@ -831,5 +833,5 @@ class TestVectorValued:
             )
             return res[0]
 
-        with pytest.raises(ValueError):
+        with pytest.raises(JAXForwardModeError):
             jax.jacobian(cost)(params, cache=None)
