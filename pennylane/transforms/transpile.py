@@ -4,8 +4,9 @@ Contains the transpiler transform.
 from typing import Union, List
 import networkx as nx
 
-from pennylane import apply
+from pennylane import apply, Hamiltonian
 from pennylane.ops.qubit import SWAP
+from pennylane.operation import Tensor
 from pennylane.ops import __all__ as all_ops
 from pennylane.tape import QuantumTape
 from pennylane.transforms import qfunc_transform
@@ -15,12 +16,18 @@ from pennylane.wires import Wires
 
 @qfunc_transform
 def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
-    """ Transpile a circuit according to a desired coupling map
+    """Transpile a circuit according to a desired coupling map
+
+    .. warning::
+
+        This transform does not yet support measurements of Hamiltonians or tensor products of observables. If a circuit
+        is passed which contains these types of measurements, a NotImplementedError will be raised.
 
     Args:
         tape (function): A quantum function.
         coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
             networkx.Graph specifying the couplings between different qubits.
+
     Returns:
         function: the transformed quantum function
 
@@ -41,6 +48,8 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     which, before transpiling it looks like this:
 
+    .. code-block:: text
+
         0: ──╭C──────────────╭C──╭┤ Probs
         1: ──╰X──╭C──╭C──────│───├┤ Probs
         2: ──╭C──│───╰X──╭C──│───├┤ Probs
@@ -48,22 +57,23 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     Suppose we have a device which has connectivity constraints according to the graph:
 
+    .. code-block:: text
+
         0 --- 1
         |     |
         2 --- 3
 
     We encode this in a coupling map as a list of the edges which are present in the graph, and then pass this, together
-    with the circuit, to the transpile function to get a circuit which can be executed for the specified coupling map
+    with the circuit, to the transpile function to get a circuit which can be executed for the specified coupling map:
 
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2, 3])
     >>> transpiled_circuit = qml.transforms.transpile(coupling_map=[(0, 1), (1, 3), (3, 2), (2, 0)])(circuit)
     >>> transpiled_qnode = qml.QNode(circuit, dev)
     >>> print(qml.draw(transpiled_qnode))
-
-     0: ──╭C─────────────────────╭C──╭┤ Probs
-     1: ──╰X──╭C─────────╭C──────│───├┤ Probs
-     2: ──╭C──│───╭SWAP──│───╭X──╰X──├┤ Probs
-     3: ──╰X──╰X──╰SWAP──╰X──╰C──────╰┤ Probs
+    0: ──╭C─────────────────────╭C──╭┤ Probs
+    1: ──╰X──╭C─────────╭C──────│───├┤ Probs
+    2: ──╭C──│───╭SWAP──│───╭X──╰X──├┤ Probs
+    3: ──╰X──╰X──╰SWAP──╰X──╰C──────╰┤ Probs
 
     A swap gate has been applied to wires 2 and 3, and the remaining gates have been adapted accordingly
 
@@ -72,36 +82,17 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     coupling_graph = nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map
 
     # make sure every wire is present in coupling map
-    if any([wire not in coupling_graph.nodes for wire in tape.wires]):
+    if any(wire not in coupling_graph.nodes for wire in tape.wires):
         raise ValueError(
-            f'not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}')
+            f'Not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}')
 
-    def _adjust_op_indices(_op, _map_wires):
-        """ helper function which adjusts wires in Operation according to the map _map_wires"""
-        _new_wires = Wires([_map_wires[w] for w in _op.wires])
-        _params = _op.parameters
-        if len(_params) == 0:
-            return type(_op)(wires=_new_wires)
-        return type(_op)(*_params, wires=_new_wires)
-
-    def _adjust_mmt_indices(_m, _map_wires):
-        """ helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
-        _new_wires = Wires([_map_wires[w] for w in _m.wires])
-
-        if _m.obs is None:
-            return type(_m)(return_type=_m.return_type, eigvals=_m.eigvals, wires=_new_wires)
-
-        # change wires of observable
-        _params = _m.obs.parameters
-        if len(_params) == 0:
-            _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
-        else:
-            _new_obs = type(_m.obs)(_params, wires=_new_wires, id=_m.obs.id)
-        return type(_m)(return_type=_m.return_type, obs=_new_obs)
+    if any(isinstance(m.obs, (Hamiltonian, Tensor)) for m in tape.measurements):
+        raise NotImplementedError(
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported")
 
     gates = []
 
-    # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of of templates
+    # we wrap all manipulations inside stop_recording() so that we don't queue anything due to unrolling of templates
     # or newly applied swap gates
     with stop_recording():
         # this unrolls everything in the current tape (in particular templates)
@@ -154,3 +145,30 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     for op in gates + measurements:
         apply(op)
+
+
+def _adjust_op_indices(_op, _map_wires):
+    """ helper function which adjusts wires in Operation according to the map _map_wires"""
+    _new_wires = Wires([_map_wires[w] for w in _op.wires])
+    _params = _op.parameters
+    if len(_params) == 0:
+        return type(_op)(wires=_new_wires)
+    return type(_op)(*_params, wires=_new_wires)
+
+
+def _adjust_mmt_indices(_m, _map_wires):
+    """ helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
+    _new_wires = Wires([_map_wires[w] for w in _m.wires])
+
+    if isinstance(_m.obs, (Hamiltonian, Tensor)):
+        # TODO: implement adjusting wires for measurement which involve the expectation value of Hamiltonians and/or
+        # tensor products of observables
+        raise NotImplementedError(
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported")
+
+    # change wires of observable
+    if _m.obs is None:
+        return type(_m)(return_type=_m.return_type, eigvals=_m.eigvals, wires=_new_wires)
+
+    _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
+    return type(_m)(return_type=_m.return_type, obs=_new_obs)

@@ -71,6 +71,7 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_amplitude_embedding
     ~transforms.remove_barrier
     ~transforms.undo_swaps
+    ~transforms.transpile
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
