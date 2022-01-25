@@ -15,9 +15,8 @@
 Unit tests for the `pennylane.qcut` package.
 """
 import numpy as np
-import pytest
-
 import pennylane as qml
+import pytest
 from pennylane.transforms import qcut
 
 with qml.tape.QuantumTape() as tape:
@@ -280,3 +279,84 @@ class TestReplaceWireCut:
             elif op.name == "PrepareNode":
                 assert op.wires.tolist() == [wire_cut_num]
                 assert order["order"] == wire_cut_order["order"] + 0.5
+
+    def test_multiple_wire_cuts_replaced(self):
+        """
+        Tests that all WireCut operators are replaced with MeasureNodes and
+        PrepareNodes with the correct order
+        """
+
+        wire_cut_1 = 0
+        wire_cut_2 = "a"
+        wire_cut_3 = 2
+        wire_cut_num = [wire_cut_1, wire_cut_2, wire_cut_3]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires=wire_cut_1)
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.WireCut(wires=wire_cut_2)
+            qml.CNOT(wires=["a", 2])
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires=wire_cut_3)
+            qml.CNOT(wires=[2, 3])
+            qml.RY(0.543, wires=2)
+            qml.RZ(0.876, wires=3)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        node_data = list(g.nodes(data=True))
+
+        wire_cut_order = [order for op, order in node_data if op.name == "WireCut"]
+
+        qcut.replace_wire_cut_nodes(g)
+        new_node_data = list(g.nodes(data=True))
+        op_names = [op.name for op, order in new_node_data]
+
+        assert "WireCut" not in op_names
+        assert op_names.count("MeasureNode") == 3
+        assert op_names.count("PrepareNode") == 3
+
+        measure_counter = prepare_counter = 0
+
+        for op, order in new_node_data:
+            if op.name == "MeasureNode":
+                assert op.wires.tolist() == [wire_cut_num[measure_counter]]
+                assert order == wire_cut_order[measure_counter]
+                measure_counter += 1
+            elif op.name == "PrepareNode":
+                assert op.wires.tolist() == [wire_cut_num[prepare_counter]]
+                assert order["order"] == wire_cut_order[prepare_counter]["order"] + 0.5
+                prepare_counter += 1
+
+    def test_successor_and_predecessor(self):
+        """
+        Tests the successor of the MeasureNode is the PrepareNode and the
+        predecessor of the PrepareNode is the MeasureNode
+        """
+        wire_cut_num = 1
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=wire_cut_num)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+
+        nodes = list(g.nodes)
+
+        for node in nodes:
+            if node.name == "MeasureNode":
+                succ = list(g.succ[node])[0]
+                assert succ.name == "PrepareNode"
+            if node.name == "PrepareNode":
+                pred = list(g.pred[node])[0]
+                assert pred.name == "MeasureNode"

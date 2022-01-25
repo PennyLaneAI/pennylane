@@ -17,7 +17,6 @@ circuits to be distributed across multiple devices
 """
 
 from networkx import MultiDiGraph
-
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -25,11 +24,15 @@ from pennylane.tape import QuantumTape
 
 
 class MeasureNode(Operation):
+    """Placeholder node for measurement operations"""
+
     num_wires = 1
     grad_method = None
 
 
 class PrepareNode(Operation):
+    """Placeholder node for state preparations"""
+
     num_wires = 1
     grad_method = None
 
