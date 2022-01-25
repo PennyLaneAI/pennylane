@@ -300,7 +300,7 @@ class TestQNode:
         assert len(spy.call_args_list) == 2
 
         # make the second QNode argument a constant
-        a = 0.54  # the QNode will treat a scalar as differentiable
+        a = np.array(0.54, requires_grad=True)
         b = np.array(0.8, requires_grad=False)
 
         spy.call_args_list = []
@@ -639,19 +639,21 @@ class TestQNode:
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        def cost(weights):
-            w1, w2 = weights
+        def cost(w1, w2):
             c1 = circuit1(w1)
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
 
-        w1 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2))
-        w2 = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=2))
+        w1 = qml.templates.StronglyEntanglingLayers.shape(n_layers=3, n_wires=2)
+        w2 = qml.templates.StronglyEntanglingLayers.shape(n_layers=4, n_wires=2)
 
-        weights = [w1, w2]
+        weights = [
+            np.random.random(w1, requires_grad=True),
+            np.random.random(w2, requires_grad=True),
+        ]
 
         grad_fn = qml.grad(cost)
-        res = grad_fn(weights)
+        res = grad_fn(*weights)
 
         assert len(res) == 2
 
@@ -690,9 +692,9 @@ class TestQNode:
         a = np.array(0.4, requires_grad=False)
 
         # The remaining free parameters are all differentiable.
-        b = 0.5
-        c = 0.1
-        weights = np.array([0.2, 0.3])
+        b = np.array(0.5, requires_grad=True)
+        c = np.array(0.1, requires_grad=True)
+        weights = np.array([0.2, 0.3], requires_grad=True)
 
         res = grad_fn(a, b, c, weights)
 
@@ -1140,7 +1142,7 @@ def test_adjoint_reuse_device_state(mocker):
 
     spy = mocker.spy(dev, "adjoint_jacobian")
 
-    grad = qml.grad(circ)(1.0)
+    grad = qml.grad(circ)(np.array(1.0, requires_grad=True))
     assert circ.device.num_executions == 1
 
     spy.assert_called_with(mocker.ANY, use_device_state=True)
