@@ -1151,7 +1151,7 @@ class TestPauliRot:
         assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].data[0] == -np.pi / 2
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -1356,7 +1356,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 

@@ -402,6 +402,10 @@
   with respect to which the differentiation takes place, or if an integer
   is provided as `argnum`.
 
+  A workaround that allowed `qml.jacobian` to differentiate multiple QNode arguments
+  will no longer support higher-order derivatives. In such cases, combining multiple
+  arguments into a single array is recommended.
+
 * The behaviour of `RotosolveOptimizer` has been changed regarding
   its keyword arguments.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
@@ -423,6 +427,37 @@
 
   For more details, see the
   [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
+
+* QNode arguments will no longer be considered trainable by default when using
+  the Autograd interface. In order to obtain derivatives with respect to a parameter,
+  it should be instantiated via PennyLane's NumPy wrapper using the `requires_grad=True`
+  attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
+  [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
+
+  ```python
+  from pennylane import numpy as np
+
+  @qml.qnode(qml.device("default.qubit", wires=2))
+  def circuit(x):
+    ...
+
+  x = np.array([0.1, 0.2], requires_grad=True)
+  qml.grad(circuit)(x)
+  ```
+
+  For the `qml.grad` and `qml.jacobian` functions, trainability can alternatively be
+  indicated via the `argnum` keyword:
+
+  ```python
+  import numpy as np
+
+  @qml.qnode(qml.device("default.qubit", wires=2))
+  def circuit(hyperparam, param):
+    ...
+
+  x = np.array([0.1, 0.2])
+  qml.grad(circuit, argnum=1)(0.5, x)
+  ```
 
 <h3>Bug fixes</h3>
 

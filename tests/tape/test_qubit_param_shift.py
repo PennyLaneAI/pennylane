@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.tape import QubitParamShiftTape
-from pennylane.measure import MeasurementProcess
 
 
 class TestGradMethod:
@@ -710,7 +710,7 @@ class TestHessian:
             G(b, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        b = 0.123
+        b = pnp.array(0.123, requires_grad=True)
 
         res = circuit(b)
         assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)
