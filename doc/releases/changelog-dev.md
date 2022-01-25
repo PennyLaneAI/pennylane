@@ -403,7 +403,7 @@
   is provided as `argnum`.
 
   A workaround that allowed `qml.jacobian` to differentiate multiple QNode arguments
-  will no longer be support higher-order derivatives. In such cases, combining multiple
+  will no longer support higher-order derivatives. In such cases, combining multiple
   arguments into a single array is recommended.
 
 * The behaviour of `RotosolveOptimizer` has been changed regarding
