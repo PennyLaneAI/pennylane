@@ -229,3 +229,54 @@ class TestTapeToGraph:
         for node_prep, expected_prep in zip(node_preps, expected_prep):
             assert node_prep.wires == expected_prep.wires
             assert node_prep.name == expected_prep.name
+
+
+class TestReplaceWireCut:
+    """
+    Tests that the replacement of WireCut operation with MeasureNode and
+    PrepareNode
+    """
+
+    def test_single_wire_cut_replaced(self):
+        """
+        Tests that a single WireCut operator is replaced with a MeasureNode and
+        a PrepareNode with the correct order
+        """
+
+        wire_cut_num = 1
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=wire_cut_num)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        node_data = list(g.nodes(data=True))
+
+        wire_cut_order = None
+        for op, order in node_data:
+            if op.name == "WireCut":
+                wire_cut_order = order
+
+        qcut.replace_wire_cut_nodes(g)
+        new_node_data = list(g.nodes(data=True))
+        op_names = [op.name for op, order in new_node_data]
+
+        assert "WireCut" not in op_names
+        assert "MeasureNode" in op_names
+        assert "PrepareNode" in op_names
+
+        for op, order in new_node_data:
+            if op.name == "MeasureNode":
+                assert op.wires.tolist() == [wire_cut_num]
+                assert order == wire_cut_order
+            elif op.name == "PrepareNode":
+                assert op.wires.tolist() == [wire_cut_num]
+                assert order["order"] == wire_cut_order["order"] + 0.5
