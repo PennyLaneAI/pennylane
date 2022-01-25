@@ -426,6 +426,18 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug for the TensorFlow interface where the dtype of input tensors was
+  not cast.
+  [(#2120)](https://github.com/PennyLaneAI/pennylane/pull/2120)
+
+* Fixes a bug where batch transformed QNodes would fail to apply batch transforms
+  provided by the underlying device.
+  [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
+
+* An error is raised during QNode creation if backpropagation is requested on a device with
+  finite-shots specified.
+  [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
+
 * Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
   Other assorted minor test warnings are fixed.
   [(#2007)](https://github.com/PennyLaneAI/pennylane/pull/2007)
