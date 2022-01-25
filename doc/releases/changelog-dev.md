@@ -9,7 +9,7 @@
 
   This functions combines redundant terms in a Hamiltonian and eliminates terms with a zero
   coefficient. The new function makes construction of molecular Hamiltonians more efficient.
-  For LiH, as an example, the time to construct the Hamiltonian is reduced from ~200 s to ~10 s.
+  For LiH, as an example, the time to construct the Hamiltonian is reduced roughly by a factor of 20.
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
