@@ -19,7 +19,6 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
-from pennylane.interfaces.batch.jax import JAXMeasurementError, JAXForwardModeError
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
@@ -37,6 +36,7 @@ qubit_device_and_diff_method = [
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+from pennylane.interfaces.batch.jax import JAXMeasurementError, JAXForwardModeError
 
 
 from jax.config import config
