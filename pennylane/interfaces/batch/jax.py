@@ -262,7 +262,7 @@ def _execute(
     return wrapped_exec(params)
 
 
-class JAXForwardModeError(ValueError):
+class JAXForwardModeError(NotImplementedError):
     """Exception raised when an error is raised in forward mode with the JAX
     interface."""
 
