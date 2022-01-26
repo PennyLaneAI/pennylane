@@ -889,9 +889,15 @@ class TestReconstruct:
                 if nums_frequency is None:
                     # Gradient evaluation at reconstruction point not supported for
                     # Dirichlet reconstruction
-                    assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
-                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, 10)
+                    assert np.isclose(
+                        grad(pnp.array(x0, requires_grad=True)),
+                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
+                    )
+                assert np.isclose(
+                    grad(pnp.array(x0 + 0.1, requires_grad=True)),
+                    exp_grad(pnp.array(x0 + 0.1, requires_grad=True)),
+                )
+                assert fun_close(grad, exp_grad, pnp.array(10, requires_grad=True))
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",

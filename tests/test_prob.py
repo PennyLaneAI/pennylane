@@ -18,6 +18,7 @@ import pytest
 
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 # make the test deterministic
@@ -142,7 +143,7 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
         return qml.probs(wires=[1, 3])
 
-    params = [0.543, -0.765, -0.3]
+    params = pnp.array([0.543, -0.765, -0.3], requires_grad=True)
 
     circuit_F = qml.QNode(circuit, dev, diff_method="finite-diff")
     circuit_A = qml.QNode(circuit, dev, diff_method="parameter-shift")

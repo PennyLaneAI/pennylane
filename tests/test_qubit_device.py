@@ -19,6 +19,7 @@ import numpy as np
 from random import random
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane import QubitDevice, DeviceError, QuantumFunctionError
 from pennylane.operation import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
@@ -923,7 +924,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit)(*pnp.array([0.5, 0.1], requires_grad=True))
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == expected_shape
         assert res[1].shape == expected_shape
