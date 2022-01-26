@@ -1436,10 +1436,10 @@ label_data = [
     (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
     (
         qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
-        "R(XYZ)",
-        "R(XYZ)\n(1.23)",
-        "R(XYZ)\n(1)",
-        "R(XYZ)⁻¹\n(1)",
+        "RXYZ",
+        "RXYZ\n(1.23)",
+        "RXYZ\n(1)",
+        "RXYZ⁻¹\n(1)",
     ),
     (
         qml.PhaseShift(1.2345, wires=0),
