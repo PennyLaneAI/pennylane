@@ -879,39 +879,47 @@ class QuantumTape(AnnotatedQueue):
         Note: these shapes and dtypes are specific to tapes and may differ from
         QNode outputs.
         """
-
         shape = tuple()
 
-        output_domain = "real"
         ret_type = measurement_process.return_type
-        if ret_type.shape is not None:
+        if device._shot_vector is None:
+            if measurement_process.shape is not None:
 
-            shape = ret_type.shape
+                shape = measurement_process.shape
 
-        elif ret_type == qml.operation.Probability:
+            elif ret_type == qml.operation.Probability:
 
-            dim = 2 ** len(measurement_process.wires)
-            shape = (1, dim)
+                dim = 2 ** len(measurement_process.wires)
+                shape = (dim, )
 
-        elif ret_type == qml.operation.State:
-            output_domain = "complex"
+            elif ret_type == qml.operation.State:
 
-            # Note: qml.density_matrix has its shape defined, so we're handling
-            # the qml.state case; acts on all device wires
-            dim = 2 ** len(device.wires)
-            shape = (1, dim,)
+                # Note: qml.density_matrix has its shape defined, so we're handling
+                # the qml.state case; acts on all device wires
+                dim = 2 ** len(device.wires)
+                shape = (dim,)
 
-        elif ret_type == qml.operation.Sample:
+            elif ret_type == qml.operation.Sample:
 
-            output_domain = "integer"
-            if not isinstance(device.shots, tuple):
-                shape = (1, device.shots)
+                #TODO: measurement_process.observable is None
+                    shape = (device.shots,) if device.shots !=1 else 1
 
-            else:
-                shot_vector = device.shots
-                shape = shape = tuple((shot_val,) if shot_val!=1 else tuple() for shot_val in shot_vector)
+        else:
+            shot_vector = device._shot_vector
+            num_shot_elements = sum([s.copies for s in shot_vector])
+            if measurement_process.shape is not None:
 
-        return shape, output_domain
+                shape = (num_shot_elements,)
+
+            elif ret_type == qml.operation.Probability:
+
+                wire_dim = 2 ** len(measurement_process.wires)
+                shape = (num_shot_elements,wire_dim)
+
+            elif ret_type == qml.operation.Sample:
+                shape = tuple((shot_val,) if shot_val !=1 else tuple() for shot_val in device._raw_shot_sequence)
+
+        return shape
 
     @staticmethod
     def _multi_same_measurement_shape(mps, device):
@@ -922,8 +930,6 @@ class QuantumTape(AnnotatedQueue):
         """
 
         shape = tuple()
-
-        output_domain = "real"
 
         # We know that there's one type of return_type, gather it from the
         # first one
@@ -960,7 +966,6 @@ class QuantumTape(AnnotatedQueue):
 
             elif ret_type == qml.operation.Sample:
 
-                output_domain = "integer"
                 shape = (len(mps), device.shots)
 
         else:
@@ -971,7 +976,6 @@ class QuantumTape(AnnotatedQueue):
             elif ret_type == qml.operation.Probability:
                 pass
             elif ret_type == qml.operation.Sample:
-                output_domain = "integer"
                 shape = []
                 for shot_val in device.shot_vector:
                     for _ in range(shot_val.copies):
@@ -981,9 +985,9 @@ class QuantumTape(AnnotatedQueue):
                         else:
                             shape.append((len(mps),))
 
-        return shape, output_domain
+        return shape
 
-    def get_output_shape_and_domain(self, device):
+    def get_output_shape(self, device):
 
         # TODO: cache result and return first if avail?
 
@@ -993,19 +997,38 @@ class QuantumTape(AnnotatedQueue):
         # TODO: and dtype
         #dtype = jnp.float64
 
-        output_shape, out_domain = tuple(), "real"
+        output_shape = tuple()
 
         if len(self._measurements) == 1:
-            output_shape, out_domain = self._single_measurement_shape(self._measurements[0], device)
+            output_shape = self._single_measurement_shape(self._measurements[0], device)
         else:
             num_measurements = len(set(meas.return_type for meas in self._measurements))
             if num_measurements == 1:
-                output_shape, out_domain = self._multi_same_measurement_shape(self._measurements, device)
+                output_shape = self._multi_same_measurement_shape(self._measurements, device)
             else:
-                pass
-                # TODO: this is madness
+                raise ValueError("Getting the output shape of a tape that contains multiple types of measurements is unsupported.")
 
-        return output_shape, out_domain
+        return output_shape
+
+    def get_output_domain(self, device, observable):
+        output_domain = "real"
+        ret_type = measurement_process.return_type
+        if ret_type == qml.operation.State:
+            output_domain = "complex"
+
+        elif ret_type == qml.operation.Sample:
+
+            # TODO: what if we have floating point eigenvalues of an observable?
+            output_domain = "integer" if any(not np.issubdtype(e, int) for e in observable.eigvals) else "float"
+            if not isinstance(device.shots, tuple):
+                shape = (1, device.shots)
+
+            else:
+                shot_vector = device.shots
+                shape = shape = tuple((shot_val,) if shot_val!=1 else tuple() for shot_val in shot_vector)
+
+        return output_domain
+
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
@@ -1522,29 +1545,6 @@ class QuantumTape(AnnotatedQueue):
         self.set_parameters(saved_parameters)
 
         return res
-
-    def get_output_domain(self):
-        output_domain = "real"
-        ret_type = measurement_process.return_type
-        if ret_type == qml.operation.State:
-            output_domain = "complex"
-
-            # Note: qml.density_matrix has its shape defined, so we're handling
-            # the qml.state case; acts on all device wires
-            dim = 2 ** len(device.wires)
-            shape = (1, dim,)
-
-        elif ret_type == qml.operation.Sample:
-
-            output_domain = "integer"
-            if not isinstance(device.shots, tuple):
-                shape = (1, device.shots)
-
-            else:
-                shot_vector = device.shots
-                shape = shape = tuple((shot_val,) if shot_val!=1 else tuple() for shot_val in shot_vector)
-
-        return shape, output_domain
 
 
     # interfaces can optionally override the _execute method

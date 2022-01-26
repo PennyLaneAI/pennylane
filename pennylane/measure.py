@@ -558,6 +558,7 @@ def density_matrix(wires):
         with a compatible device.
     """
     # pylint: disable=protected-access
+    wires = qml.wires.Wires(wires)
     dim = 2 ** len(wires)
     shape = (1, dim, dim)
-    return MeasurementProcess(State, wires=qml.wires.Wires(wires), shape=shape)
+    return MeasurementProcess(State, wires=wires, shape=shape)

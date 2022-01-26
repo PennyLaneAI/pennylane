@@ -1694,9 +1694,97 @@ class TestHashing:
 def cost(tape, dev):
     return qml.execute([tape], dev, interface="autograd", gradient_fn = qml.gradients.param_shift)
 
+measures = [
+
+(
+    qml.expval(qml.PauliZ(0)),
+    1
+),
+(
+    qml.var(qml.PauliZ(0)),
+    1
+),
+(
+    qml.probs(wires=[0]),
+    (2,)
+),
+(
+    qml.probs(wires=[0, 1]),
+    (4,)
+),
+(
+    qml.state(),
+    (8,)
+),
+(
+    qml.sample(qml.PauliZ(0)),
+    None
+),
+#(
+#    qml.sample(),
+#    None
+#),
+]
+
 class TestOutputShapeSingle:
-    """Tests for determining the tape output shape"""
-    pass
+    """Tests for determining the tape output shape of tapes with exactly one
+    measurement."""
+
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [1, 10, (1,1,5,1)])
+    def test_output_shapes(self, measurement, expected_shape, shots):
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        print(shots, measurement)
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        shot_dim = shots if not isinstance(shots, tuple) else sum(shots)
+        if expected_shape is None:
+            expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
+        assert tape.get_output_shape(dev) == expected_shape
+
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10, (1,1,5,1)])
+    def test_output_shapes_qnode_check(self, measurement, expected_shape, shots):
+
+
+        if shots is None and measurement.return_type is qml.operation.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if shots is not None and measurement.return_type is qml.operation.State:
+            pytest.skip("State only supports analytic computations.")
+
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(a, b)
+
+        if isinstance(res, tuple):
+            res_shape = tuple([r.shape for r in res])
+        else:
+            res_shape = circuit(a, b).shape
+
+        res_shape = res_shape if res_shape != tuple() else 1
+        assert tape.get_output_shape(dev) == res_shape
 
 measures = [
 
@@ -1749,7 +1837,6 @@ class TestOutputShapeMultiOneType:
         execution_results = cost(tape, dev)
         res, dom = tape.get_output_shape_and_domain(dev)
 
-        print(execution_results)
         expected = execution_results[0].shape
         assert res == expected
         assert dom == domain
