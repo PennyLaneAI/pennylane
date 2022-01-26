@@ -277,7 +277,7 @@ class TestValidation:
 
         assert circuit.gradient_fn is qml.gradients.finite_diff
 
-        qml.grad(circuit)(0.5)
+        qml.grad(circuit)(pnp.array(0.5, requires_grad=True))
         spy.assert_called()
 
     def test_unknown_diff_method_string(self):
@@ -403,8 +403,8 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        x = 0.12
-        y = 0.54
+        x = pnp.array(0.12, requires_grad=True)
+        y = pnp.array(0.54, requires_grad=True)
 
         res = qn(x, y)
 
@@ -437,7 +437,9 @@ class TestTapeConstruction:
         assert qn.gradient_kwargs["h"] == 1e-8
         assert qn.gradient_kwargs["approx_order"] == 2
 
-        jac = qn.gradient_fn(qn)(0.45, 0.1)
+        jac = qn.gradient_fn(qn)(
+            pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
+        )
         assert isinstance(jac, tuple) and len(jac) == 2
         assert jac[0].shape == (2, 2)
         assert jac[1].shape == (2, 2)
@@ -607,8 +609,8 @@ class TestDecorator:
         assert isinstance(func, QNode)
         assert func.__doc__ == "My function docstring"
 
-        x = 0.12
-        y = 0.54
+        x = pnp.array(0.12, requires_grad=True)
+        y = pnp.array(0.54, requires_grad=True)
 
         res = func(x, y)
 
@@ -812,13 +814,11 @@ class TestShots:
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-
-        # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
-        dev = qml.device("default.qubit", wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
+        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
 
         def circuit(a, shots):
             qml.RX(a, wires=shots)
-            return qml.sample(qml.PauliZ(wires=qml.numpy.array(0)))
+            return qml.sample(qml.PauliZ(wires=0))
 
         # assert that warning is still raised
         with pytest.warns(
@@ -980,7 +980,7 @@ class TestTapeExpansion:
             UnsupportedOp(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array(0.5)
+        x = pnp.array(0.5, requires_grad=True)
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         qml.grad(circuit)(x)
 
@@ -1022,7 +1022,7 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliX(0))
 
         spy = mocker.spy(circuit.device, "batch_execute")
-        x = np.array(0.5)
+        x = pnp.array(0.5, requires_grad=True)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
