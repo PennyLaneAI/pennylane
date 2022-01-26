@@ -73,7 +73,7 @@ class RX(Operation):
 
         Args:
             theta (tensor_like or float): rotation angle
-            
+
         Returns:
             tensor_like: canonical matrix
 
@@ -209,7 +209,7 @@ class RZ(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-        
+
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the RZ operator.

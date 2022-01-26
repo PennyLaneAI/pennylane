@@ -45,7 +45,6 @@ class Hadamard(Observable, Operation):
     num_wires = 1
     num_params = 0
 
-
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
@@ -987,7 +986,7 @@ class SWAP(Operation):
          [0 0 0 1]]
         """
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-      
+
     @staticmethod
     def compute_decomposition(wires):
         r"""Compute the decomposition for the specified wires. The decomposition defines an Operator

@@ -60,7 +60,6 @@ class BasisStatePreparation(Operation):
         for i, state in enumerate(state_batch):
             shape = qml.math.shape(state)
 
-
             if len(shape) != 1:
                 raise ValueError(
                     f"Basis states must be one-dimensional; state {i} has shape {shape}."
@@ -76,7 +75,6 @@ class BasisStatePreparation(Operation):
                 raise ValueError(
                     f"Basis states must only consist of 0s and 1s; state {i} is {state}"
                 )
-
 
         self._hyperparameters = {"basis_state": list(qml.math.toarray(basis_state))}
 
