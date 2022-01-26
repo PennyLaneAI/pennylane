@@ -35,6 +35,7 @@ import autoray as ar
 
 from .multi_dispatch import (
     _multi_dispatch,
+    multi_dispatch,
     block_diag,
     concatenate,
     diag,
@@ -42,6 +43,7 @@ from .multi_dispatch import (
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
+    safe_squeeze,
     scatter_element_add,
     stack,
     tensordot,
@@ -75,6 +77,7 @@ def __getattr__(name):
 
 __all__ = [
     "_multi_dispatch",
+    "multi_dispatch",
     "allclose",
     "allequal",
     "block_diag",
@@ -93,6 +96,7 @@ __all__ = [
     "marginal_prob",
     "ones_like",
     "requires_grad",
+    "safe_squeeze",
     "scatter_element_add",
     "stack",
     "tensordot",

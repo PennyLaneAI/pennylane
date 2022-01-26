@@ -164,8 +164,10 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(a, b)
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert isinstance(res, tuple) and len(res) == 2
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
@@ -191,8 +193,9 @@ class TestQNode:
 
         jac_fn = qml.jacobian(circuit)
         res = jac_fn(a, b)
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         if diff_method in ("parameter-shift", "finite-diff"):
             spy.assert_called()
@@ -202,8 +205,10 @@ class TestQNode:
         b = np.array(0.832, requires_grad=True)
 
         res = jac_fn(a, b)
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_jacobian_options(self, dev_name, diff_method, mode, mocker, tol):
         """Test setting jacobian options"""
@@ -305,7 +310,9 @@ class TestQNode:
             tape_params = np.array(circuit.qtape.get_parameters())
             assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
 
-        assert res.shape == (2,)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == ()
+        assert res[1].shape == ()
 
     def test_no_trainable_parameters(self, dev_name, diff_method, mode, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -472,10 +479,13 @@ class TestShotsIntegration:
 
         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
         assert dev.shots is None
-        assert len(res) == 3
+        assert isinstance(res, tuple) and len(res) == 2
+        assert all(r.shape == (3,) for r in res)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(np.mean(res, axis=0), expected, atol=0.1, rtol=0)
+        assert all(
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+        )
 
     def test_update_diff_method(self, mocker, tol):
         """Test that temporarily setting the shots updates the diff method"""
@@ -531,14 +541,13 @@ class TestQubitIntegration:
             return qml.probs(wires=[1])
 
         res = qml.jacobian(circuit)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
 
-        expected = np.array(
-            [
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        expected = (
+            np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
+            np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
     def test_multiple_probability_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
@@ -569,17 +578,26 @@ class TestQubitIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        expected = np.array(
-            [
-                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (2, 2)
+        assert res[1].shape == (2, 2)
+
+        expected = (
+            np.array(
                 [
-                    [np.sin(x) / 2, 0],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
+                    [-np.sin(x) / 2, np.sin(x) / 2],
+                    [-np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0],
+                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                ]
+            ),
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
@@ -606,14 +624,16 @@ class TestQubitIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        expected = np.array(
-            [
-                [-np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
+
+        expected = (
+            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation_variance(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
@@ -640,14 +660,14 @@ class TestQubitIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(x, y)
-        expected = np.array(
-            [
-                [2 * np.cos(x) * np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        assert isinstance(res, tuple) and len(res) == 2
+
+        expected = (
+            np.array([np.sin(2 * x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_chained_qnodes(self, dev_name, diff_method, mode):
         """Test that the gradient of chained QNodes works without error"""
@@ -670,8 +690,7 @@ class TestQubitIntegration:
             Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        def cost(weights):
-            w1, w2 = weights
+        def cost(w1, w2):
             c1 = circuit1(w1)
             c2 = circuit2(c1, w2)
             return np.sum(c2) ** 2
@@ -680,12 +699,12 @@ class TestQubitIntegration:
         w2 = qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=4)
 
         weights = [
-            np.random.random(w1),
-            np.random.random(w2),
+            np.random.random(w1, requires_grad=True),
+            np.random.random(w2, requires_grad=True),
         ]
 
         grad_fn = qml.grad(cost)
-        res = grad_fn(weights)
+        res = grad_fn(*weights)
 
         assert len(res) == 2
 
@@ -724,9 +743,9 @@ class TestQubitIntegration:
         a = np.array(0.4, requires_grad=False)
 
         # The remaining free parameters are all differentiable.
-        b = 0.5
-        c = 0.1
-        weights = np.array([0.2, 0.3])
+        b = np.array(0.5, requires_grad=True)
+        c = np.array(0.1, requires_grad=True)
+        weights = np.array([0.2, 0.3], requires_grad=True)
 
         res = grad_fn(a, b, c, weights)
 
@@ -898,13 +917,13 @@ class TestQubitIntegration:
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qml.jacobian(circuit)
-        g = jac_fn(x)
+        res = jac_fn(x)
 
-        expected_g = [
+        expected_res = [
             [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
             [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
         ]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         hess = qml.jacobian(jac_fn)(x)
 
@@ -989,32 +1008,39 @@ class TestQubitIntegration:
 
         jac_fn = qml.jacobian(circuit)
         g = jac_fn(a, b)
+        assert isinstance(g, tuple) and len(g) == 2
 
-        expected_g = [
-            [-0.5 * np.sin(a) * np.cos(b), -0.5 * np.cos(a) * np.sin(b)],
-            [0.5 * np.sin(a) * np.cos(b), 0.5 * np.cos(a) * np.sin(b)],
-        ]
-        assert np.allclose(g, expected_g, atol=tol, rtol=0)
+        expected_g = (
+            [-0.5 * np.sin(a) * np.cos(b), 0.5 * np.sin(a) * np.cos(b)],
+            [-0.5 * np.cos(a) * np.sin(b), 0.5 * np.cos(a) * np.sin(b)],
+        )
+        assert np.allclose(g[0], expected_g[0], atol=tol, rtol=0)
+        assert np.allclose(g[1], expected_g[1], atol=tol, rtol=0)
 
         spy = mocker.spy(qml.gradients.param_shift, "transform_fn")
-        hess = qml.jacobian(jac_fn)(a, b)
+        jac_fn_a = lambda *args: jac_fn(*args)[0]
+        jac_fn_b = lambda *args: jac_fn(*args)[1]
+        hess_a = qml.jacobian(jac_fn_a)(a, b)
+        hess_b = qml.jacobian(jac_fn_b)(a, b)
+        assert isinstance(hess_a, tuple) and len(hess_a) == 2
+        assert isinstance(hess_b, tuple) and len(hess_b) == 2
 
         if diff_method == "backprop":
             spy.assert_not_called()
         elif diff_method == "parameter-shift":
             spy.assert_called()
 
-        expected_hess = [
-            [
-                [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.sin(a) * np.sin(b)],
-                [0.5 * np.cos(a) * np.cos(b), -0.5 * np.sin(a) * np.sin(b)],
-            ],
-            [
-                [0.5 * np.sin(a) * np.sin(b), -0.5 * np.cos(a) * np.cos(b)],
-                [-0.5 * np.sin(a) * np.sin(b), 0.5 * np.cos(a) * np.cos(b)],
-            ],
-        ]
-        assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
+        exp_hess_a = (
+            [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+            [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+        )
+        exp_hess_b = (
+            [0.5 * np.sin(a) * np.sin(b), -0.5 * np.sin(a) * np.sin(b)],
+            [-0.5 * np.cos(a) * np.cos(b), 0.5 * np.cos(a) * np.cos(b)],
+        )
+        for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b]):
+            assert np.allclose(hess[0], exp_hess[0], atol=tol, rtol=0)
+            assert np.allclose(hess[1], exp_hess[1], atol=tol, rtol=0)
 
     def test_hessian_ragged(self, dev_name, diff_method, mode, tol):
         """Test hessian calculation of a ragged QNode"""
@@ -1109,7 +1135,7 @@ class TestQubitIntegration:
 
         dev = qml.device(dev_name, wires=2)
         P = np.array([1], requires_grad=False)
-        x, y = 0.765, -0.654
+        x, y = np.array([0.765, -0.654], requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
         def circuit(x, y):
@@ -1145,8 +1171,8 @@ class TestCV:
         """Test variance of a first order CV observable"""
         dev = qml.device("default.gaussian", wires=1)
 
-        r = 0.543
-        phi = -0.654
+        r = np.array(0.543, requires_grad=True)
+        phi = np.array(-0.654, requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(r, phi):
@@ -1174,8 +1200,8 @@ class TestCV:
         """Test variance of a second order CV expectation value"""
         dev = qml.device("default.gaussian", wires=1)
 
-        n = 0.12
-        a = 0.765
+        n = np.array(0.12, requires_grad=True)
+        a = np.array(0.765, requires_grad=True)
 
         @qnode(dev, diff_method=diff_method, **kwargs)
         def circuit(n, a):

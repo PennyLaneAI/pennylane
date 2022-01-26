@@ -303,6 +303,6 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
 
         cjac = cjac_fn(*args, **kwargs)
 
-        return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
+        return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper

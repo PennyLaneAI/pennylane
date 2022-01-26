@@ -170,10 +170,10 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([0.0, 1.0])
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
@@ -184,29 +184,27 @@ class TestQNodeIntegration:
         expected = jnp.array([0.0, 1.0])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
 
-    def test_probs_jax_jit(self, tol):
-        """Test that returning probs works with jax and jit"""
+    def test_custom_shots_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit when using custom shot vector"""
         dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
-        expected = jnp.array([0.0, 1.0])
+        expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, diff_method=None, interface="jax")
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
-        with pytest.raises(
-            ValueError, match="doesn't support getting probabilities when using a shot vector"
-        ):
-            result = circuit()
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
@@ -542,6 +540,22 @@ class TestPassthruIntegration:
         )
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(jax.grad(circuit)(x), 0.0)
+        assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])

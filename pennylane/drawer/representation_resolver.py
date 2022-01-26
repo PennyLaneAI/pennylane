@@ -73,6 +73,7 @@ class RepresentationResolver:
         "X": "x",
         "P": "p",
         "Barrier": "||",
+        "WireCut": "//",
     }
     """Symbol used for uncontrolled wires."""
 
