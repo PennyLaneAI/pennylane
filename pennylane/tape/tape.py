@@ -874,10 +874,8 @@ class QuantumTape(AnnotatedQueue):
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
-        """
-
-        Note: these shapes and dtypes are specific to tapes and may differ from
-        QNode outputs.
+        """Auxiliary function that determines the output shape of a tape with
+        a single measurement.
         """
         shape = tuple()
 
@@ -901,10 +899,11 @@ class QuantumTape(AnnotatedQueue):
 
             elif ret_type == qml.operation.Sample:
 
-                # TODO: measurement_process.observable is None
                 if measurement_process.obs is not None:
+                    # qml.sample(some_observable) case
                     shape = (device.shots,) if device.shots != 1 else 1
                 else:
+                    # qml.sample() case
                     if device.shots is None or device.shots == 1:
                         shape = (len(device.wires),)
                     else:
@@ -935,13 +934,26 @@ class QuantumTape(AnnotatedQueue):
         return shape
 
     @staticmethod
-    def _multi_same_measurement_shape(mps, device):
-        """
+    def _multi_homogenous_measurement_shape(mps, device):
+        """Auxiliary function that determines the output shape of a tape with
+        multiple homogenous measurements.
 
-        Note: these shapes and dtypes are specific to tapes and may differ from
-        QNode outputs.
-        """
+        .. note::
 
+            Assuming multiple probability measurements where not all
+            probability measurements have the same number of wires specified,
+            the output shape of the tape is a sum of the output shapes produced
+            by each probability measurement.
+
+            Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
+            multiple probability measurement as an example.
+
+            The output shape will be a one element tuple `(6,)`, where the
+            element `6` is equal to `2 ** 1 + 2 ** 2 = 6`. The base of each
+            term is determined by the number of basis states and the exponent
+            of each term comes from the length of the wires specified for the
+            probability measurements: `1 == len([0]) and 2 == len([1, 2])`.
+        """
         shape = tuple()
 
         # We know that there's one type of return_type, gather it from the
@@ -961,21 +973,14 @@ class QuantumTape(AnnotatedQueue):
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
-                    # We know that all probability meas processes have the same
-                    # number of wires, gather the length from the first one
+                    # All probability measurements have the same number of
+                    # wires, gather the length from the first one
                     dim = 2 ** len(mps[0].wires)
                     shape = (len(mps), dim)
 
                 else:
-                    # There are varying number of wires that the probability
-                    # measurement processes act on; the output shape is a sum
-                    #
-                    # E.g., for
-                    # return qml.probs(wires=[0]), qml.probs(wires=[1,2])
-                    #
-                    # We'll have a shape of 2 ** 1 + 2 ** 2, where the exponents
-                    # come from the length of the wires specified: 1 == len([0])
-                    # and 2 == len([1, 2])
+                    # There are a varying number of wires that the probability
+                    # measurement processes act on
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif ret_type == qml.operation.Sample:
@@ -992,22 +997,15 @@ class QuantumTape(AnnotatedQueue):
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
                 if same_num_wires:
-                    # We know that all probability meas processes have the same
-                    # number of wires, gather the length from the first one
+                    # All probability measurements have the same number of
+                    # wires, gather the length from the first one
                     dim = 2 ** len(mps[0].wires)
                     shot_copies_sum = sum(s.copies for s in shot_vector)
                     shape = (shot_copies_sum, len(mps), dim)
 
                 else:
-                    # There are varying number of wires that the probability
-                    # measurement processes act on; the output shape is a sum
-                    #
-                    # E.g., for
-                    # return qml.probs(wires=[0]), qml.probs(wires=[1,2])
-                    #
-                    # We'll have a shape of 2 ** 1 + 2 ** 2, where the exponents
-                    # come from the length of the wires specified: 1 == len([0])
-                    # and 2 == len([1, 2])
+                    # There are a varying number of wires that the probability
+                    # measurement processes act on
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
             elif ret_type == qml.operation.Sample:
@@ -1023,14 +1021,21 @@ class QuantumTape(AnnotatedQueue):
         return shape
 
     def get_output_shape(self, device):
+        """Produces the output shape of the tape by inspecting its measurements
+        and the device used for execution.
 
-        # TODO: cache result and return first if avail?
+        Note: as the output shape may be dependent on the device used for
+        execution, tapes do not store the computed shape.
 
+        Args:
+            device (~.Device): the device that will be used for the tape execution
+
+        Returns:
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
+            tape result
+        """
         if not self._measurements:
             self._process_queue()
-
-        # TODO: and dtype
-        # dtype = jnp.float64
 
         output_shape = tuple()
 
@@ -1044,10 +1049,21 @@ class QuantumTape(AnnotatedQueue):
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
-
         return output_shape
 
     def get_output_domain(self, device, observable):
+        """Produces the output domain of the tape by inspecting its measurements.
+
+        Note: as the output shape may be dependent on the device used for
+        execution, tapes do not store the computed shape.
+
+        Args:
+            device (~.Device): the device that will be used for the tape execution
+
+        Returns:
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
+            tape result
+        """
         output_domain = "real"
         ret_type = measurement_process.return_type
         if ret_type == qml.operation.State:
