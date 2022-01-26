@@ -389,16 +389,19 @@ class TestQFuncTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-        a = torch.tensor(0.5, requires_grad=True)
-        b = torch.tensor([0.1, 0.2], requires_grad=True)
-        x = torch.tensor(0.543, requires_grad=True)
+        a_np = np.array(0.5, requires_grad=True)
+        b_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = np.array(0.543, requires_grad=True)
+        a = torch.tensor(a_np, requires_grad=True)
+        b = torch.tensor(b_np, requires_grad=True)
+        x = torch.tensor(x_np, requires_grad=True)
 
         res = qnode(x, a, b)
-        expected = self.expval(x.detach().numpy(), a.detach().numpy(), b.detach().numpy())
+        expected = self.expval(x_np, a_np, b_np)
         assert np.allclose(res.detach().numpy(), expected)
 
         res.backward()
-        expected = qml.grad(self.expval)(x.detach().numpy(), a.detach().numpy(), b.detach().numpy())
+        expected = qml.grad(self.expval)(x_np, a_np, b_np)
         assert np.allclose(x.grad, expected[0])
         assert np.allclose(a.grad, expected[1])
         assert np.allclose(b.grad, expected[2])
@@ -419,5 +422,4 @@ class TestQFuncTransformGradients:
 
         grad = jax.grad(qnode, argnums=[0, 1, 2])(x, a, b)
         expected = qml.grad(self.expval)(np.array(x), np.array(a), np.array(b))
-        print(grad, expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))

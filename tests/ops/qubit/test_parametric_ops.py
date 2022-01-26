@@ -475,6 +475,7 @@ class TestMatrix:
         """Test that the IsingZZ operation is correct"""
         assert np.allclose(qml.IsingZZ.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
         assert np.allclose(qml.IsingZZ(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingZZ.compute__eigvals(0), np.diagonal(np.identity(4)), atol=tol, rtol=0)
 
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
@@ -489,12 +490,35 @@ class TestMatrix:
         assert np.allclose(
             qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.IsingZZ.compute__eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
 
         param = np.pi
         assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
         assert np.allclose(
             qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
+        assert np.allclose(
+            qml.IsingZZ.compute__eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
+
+    def test_isingzz_matrix_tf(self, tol):
+        """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
+        different logic for this framework"""
+        tf = pytest.importorskip("tensorflow")
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = tf.Variable(np.pi)
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(np.pi), atol=tol, rtol=0)
+
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -1280,7 +1304,7 @@ class TestPauliRot:
         assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].data[0] == -np.pi / 2
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -1497,7 +1521,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 

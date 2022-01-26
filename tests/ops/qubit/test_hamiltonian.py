@@ -1248,8 +1248,8 @@ class TestHamiltonianDifferentiation:
     def test_trainable_coeffs_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
+        param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -1656,31 +1656,5 @@ class TestHamiltonianDifferentiation:
         with pytest.raises(
             qml.QuantumFunctionError,
             match="Adjoint differentiation method does not support Hamiltonian observables",
-        ):
-            grad_fn(coeffs, param)
-
-    @pytest.mark.xfail
-    def test_not_supported_by_reverse_differentiation(self):
-        """Test that error is raised when attempting the reverse differentiation method."""
-        dev = qml.device("default.qubit", wires=2)
-
-        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
-        param = pnp.array(1.7, requires_grad=True)
-
-        @qml.qnode(dev, diff_method="reversible")
-        def circuit(coeffs, param):
-            qml.RX(param, wires=0)
-            qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
-
-        grad_fn = qml.grad(circuit)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Reverse differentiation method does not support Hamiltonian observables",
         ):
             grad_fn(coeffs, param)
