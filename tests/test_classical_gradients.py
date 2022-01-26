@@ -57,17 +57,6 @@ class TestGradientUnivar:
 
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
 
-    def test_sin_warns_grad(self, tol):
-        """Test that a warning is raised if a positional argument without the
-        requires_grad attribute set is passed when differentiating a classical
-        scalar valued function."""
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
-
-        with pytest.warns(
-            UserWarning, match="inputs have to explicitly specify requires_grad=True"
-        ):
-            qml.grad(np.sin)(0.0)
-
 
 class TestGradientMultiVar:
     """Tests gradients of multivariate unidimensional functions."""
@@ -110,16 +99,6 @@ class TestGradientMultiVar:
         correct_grad = grad_multi_var(x_vec)
 
         assert np.allclose(auto_grad, correct_grad, atol=tol, rtol=0)
-
-    def test_sin_warns_jacobian(self, tol):
-        """Test that a warning is raised if a positional argument without the
-        requires_grad attribute set is passed when differentiating a classical
-        vector valued function."""
-        arr = onp.array([0.1, 0.2, 0.3])
-        with pytest.warns(
-            UserWarning, match="inputs have to explicitly specify requires_grad=True"
-        ):
-            qml.jacobian(np.sin)(arr)
 
 
 class TestGradientMultiargs:
@@ -355,8 +334,11 @@ class TestJacobian:
 
         jac_fn = qml.jacobian(cost_fn, argnum=[0, 1])
         res = jac_fn(x, y)
-        expected = np.array([[np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)], [y ** 2, 2 * x * y]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = (
+            np.array([np.cos(x) * np.cos(y), y ** 2]),
+            np.array([-np.sin(x) * np.sin(y), 2 * x * y]),
+        )
+        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_no_argnum_jacobian(self, tol):
         """Test the qml.jacobian function for inferred argnums"""
@@ -367,12 +349,14 @@ class TestJacobian:
 
         jac_fn = qml.jacobian(cost_fn)
         res = jac_fn(x, y)
-        expected = np.array([[np.cos(x) * np.cos(y), -np.sin(x) * np.sin(y)], [y ** 2, 2 * x * y]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = (
+            np.array([np.cos(x) * np.cos(y), y ** 2]),
+            np.array([-np.sin(x) * np.sin(y), 2 * x * y]),
+        )
+        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-        x = np.array(0.5, requires_grad=True)
-        y = np.array(0.2, requires_grad=False)
+        x = np.array(0.5, requires_grad=False)
+        y = np.array(0.2, requires_grad=True)
 
         res = jac_fn(x, y)
-        expected = np.array([np.cos(x) * np.cos(y), y ** 2])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res, expected[1], atol=tol, rtol=0)

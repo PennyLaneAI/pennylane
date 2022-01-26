@@ -14,10 +14,10 @@
 """
 Unit tests for the available built-in quantum channels.
 """
-import functools
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.ops import channel
 from pennylane.wires import WireError
 
@@ -161,7 +161,7 @@ class TestBitFlip:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        prob = 0.5
+        prob = pnp.array(0.5, requires_grad=True)
 
         @qml.qnode(dev)
         def circuit(p):
@@ -198,7 +198,7 @@ class TestPhaseFlip:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        prob = 0.5
+        prob = pnp.array(0.5, requires_grad=True)
 
         @qml.qnode(dev)
         def circuit(p):
@@ -237,7 +237,7 @@ class TestDepolarizingChannel:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        prob = 0.5
+        prob = pnp.array(0.5, requires_grad=True)
 
         @qml.qnode(dev)
         def circuit(p):
@@ -295,7 +295,7 @@ class TestResetError:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        p_0, p_1 = 0.0, 0.5
+        p_0, p_1 = pnp.array([0.0, 0.5], requires_grad=True)
 
         @qml.qnode(dev)
         def circuit(p_0, p_1):

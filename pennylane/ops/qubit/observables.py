@@ -54,15 +54,12 @@ class Hermitian(Observable):
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = "F"
     _eigs = {}
 
     def __init__(self, A, wires, do_queue=True, id=None):
         super().__init__(A, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -187,16 +184,13 @@ class SparseHamiltonian(Observable):
         id (str or None): String representing the operation (optional)
     """
     num_wires = AllWires
+    num_params = 1
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
         if not isinstance(H, coo_matrix):
             raise TypeError("Observable must be a scipy sparse coo_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -285,6 +279,7 @@ class Projector(Observable):
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
+    num_params = 1
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
         wires = Wires(wires)
@@ -305,10 +300,6 @@ class Projector(Observable):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.

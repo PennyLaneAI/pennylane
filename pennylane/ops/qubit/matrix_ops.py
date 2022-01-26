@@ -50,6 +50,7 @@ class QubitUnitary(Operation):
     0.0
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
 
     def __init__(self, *params, wires, do_queue=True):
@@ -72,6 +73,7 @@ class QubitUnitary(Operation):
             if not qml.math.allclose(
                 qml.math.dot(U, qml.math.T(qml.math.conj(U))),
                 qml.math.eye(qml.math.shape(U)[0]),
+                atol=1e-6,
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
@@ -80,10 +82,6 @@ class QubitUnitary(Operation):
                 )
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -200,6 +198,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
 
     def __init__(
@@ -272,7 +271,6 @@ class ControlledQubitUnitary(QubitUnitary):
         # to the left and right with the correct amount of identity blocks.
 
         total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(u_wires)
-
         # if control values unspecified, we control on the all-ones string
         if not control_values:
             control_values = "1" * len(control_wires)
@@ -323,11 +321,8 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(D):  # pylint: disable=arguments-differ

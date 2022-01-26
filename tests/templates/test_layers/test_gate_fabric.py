@@ -17,6 +17,7 @@ Unit tests for the GateFabric template.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 class TestDecomposition:
@@ -775,30 +776,10 @@ class TestInterfaces:
     """Tests that the GateFabric template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[[0.1, -1.1]]]
-
-        dev = qml.device("default.qubit", wires=4)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [tuple(weights[0])]
-        res = circuit(weights_tuple)
-        res2 = circuit2(weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
-        weights = np.random.random(size=(1, 1, 2))
-        weights = qml.math.array(weights)
+        weights = pnp.random.random(size=(1, 1, 2), requires_grad=True)
 
         dev = qml.device("default.qubit", wires=4)
 

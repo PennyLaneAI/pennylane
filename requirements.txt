@@ -1,7 +1,7 @@
 numpy==1.21
 scipy==1.7
 cvxpy==1.1
-cvxopt==1.2
+cvxopt==1.2.7
 cachetools==4.2.2
 networkx==2.6
 retworkx==0.10.2
@@ -13,3 +13,4 @@ semantic_version==2.6
 dask[delayed]==2021.10
 autoray>=0.2.5
 matplotlib==3.4
+black>=21

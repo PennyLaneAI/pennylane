@@ -15,8 +15,9 @@
 This module contains the functions needed for tapering qubits using symmetries.
 """
 # pylint: disable=unnecessary-lambda
-import functools
 
+import functools
+import numpy
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
@@ -246,7 +247,7 @@ def generate_symmetries(qubit_op, num_qubits):
         num_qubits (int): number of wires required to define the Hamiltonian
 
     Returns:
-        tuple (list[Hamiltonian], list[Observable]):
+        tuple (list[Hamiltonian], list[Operation]):
 
             * list[Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
               for the Hamiltonian.
@@ -464,3 +465,64 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     c = qml.math.stack(c)
 
     return _simplify(qml.Hamiltonian(c, o))
+
+
+def optimal_sector(qubit_op, generators, active_electrons):
+    r"""Get the optimal sector which contains the ground state.
+
+    To obtain the optimal sector, we need to choose the right eigenvalues for the symmetry generators :math:`\bm{\tau}`.
+    We can do so by using the following relation between the Pauli-Z qubit operator and the occupation number under a
+    Jordan-Wigner transform.
+
+    .. math::
+
+        \sigma_{i}^{z} = I - 2a_{i}^{\dagger}a_{i}
+
+    According to this relation, the occupied and unoccupied fermionic modes correspond to the -1 and +1 eigenvalues of
+    the Pauli-Z operator, respectively. Since all of the generators :math:`\bm{\tau}` consist only of :math:`I` and
+    Pauli-Z operators, the correct eigenvalue for each :math:`\tau` operator can be simply obtained by applying it on
+    the reference Hartree-Fock (HF) state, and looking at the overlap between the wires on which the Pauli-Z operators
+    act and the wires that correspond to occupied orbitals in the HF state.
+
+    Args:
+        qubit_op (Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
+        generators (list[Hamiltonian]): list of symmetry generators for the Hamiltonian
+        active_electrons (int): The number of active electrons in the system for generating the Hartree-Fock bitstring
+
+    Returns:
+        list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
+
+    **Example**
+
+    >>> symbols = ['H', 'H']
+    >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
+    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> qml.hf.optimal_sector(H, generators, 2)
+        [1, -1, -1]
+    """
+
+    if active_electrons < 1:
+        raise ValueError(
+            f"The number of active electrons must be greater than zero;"
+            f"got 'electrons'={active_electrons}"
+        )
+
+    num_orbitals = len(qubit_op.wires)
+
+    if active_electrons > num_orbitals:
+        raise ValueError(
+            f"Number of active orbitals cannot be smaller than number of active electrons;"
+            f" got 'orbitals'={num_orbitals} < 'electrons'={active_electrons}."
+        )
+
+    hf_str = np.where(np.arange(num_orbitals) < active_electrons, 1, 0)
+
+    perm = []
+    for tau in generators:
+        symmstr = np.array([1 if wire in tau.ops[0].wires else 0 for wire in qubit_op.wires])
+        coeff = -1 if numpy.logical_xor.reduce(numpy.logical_and(symmstr, hf_str)) else 1
+        perm.append(coeff)
+
+    return perm

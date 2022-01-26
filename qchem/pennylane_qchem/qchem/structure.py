@@ -307,7 +307,7 @@ def meanfield(
     path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
-        [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
         for i, symbol in enumerate(symbols)
     ]
 

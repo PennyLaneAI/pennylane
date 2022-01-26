@@ -280,7 +280,10 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    @pytest.mark.parametrize(
+        "x, shift",
+        [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
+    )
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
