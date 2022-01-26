@@ -386,16 +386,7 @@ def execute(
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
 
-            # Resolve to support jitting if need be
-            if interface == "jax":
-                from .jax import get_jax_interface_name
-
-                interface = get_jax_interface_name(tapes)
-
-            if interface == "jax-jit":
-                from .jax_jit import execute as _execute
-            else:
-                from .jax import execute as _execute
+            _execute = _get_jax_execute_fn(interface, tapes)
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "
@@ -414,3 +405,21 @@ def execute(
     )
 
     return batch_fn(res)
+
+
+def _get_jax_execute_fn(interface, tapes):
+    """Auxiliary function to determine the execute function to use with the JAX
+    interface."""
+
+    # The most general JAX interface was sepcified, determine if support for
+    # jitting is needed
+    if interface == "jax":
+        from .jax import get_jax_interface_name
+
+        interface = get_jax_interface_name(tapes)
+
+    if interface == "jax-jit":
+        from .jax_jit import execute as _execute
+    else:
+        from .jax import execute as _execute
+    return _execute
