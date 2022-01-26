@@ -890,7 +890,7 @@ class QuantumTape(AnnotatedQueue):
             elif ret_type == qml.operation.Probability:
 
                 dim = 2 ** len(measurement_process.wires)
-                shape = (dim, )
+                shape = (dim,)
 
             elif ret_type == qml.operation.State:
 
@@ -901,14 +901,14 @@ class QuantumTape(AnnotatedQueue):
 
             elif ret_type == qml.operation.Sample:
 
-                #TODO: measurement_process.observable is None
+                # TODO: measurement_process.observable is None
                 if measurement_process.obs is not None:
-                    shape = (device.shots,) if device.shots !=1 else 1
+                    shape = (device.shots,) if device.shots != 1 else 1
                 else:
                     if device.shots is None or device.shots == 1:
                         shape = (len(device.wires),)
                     else:
-                        shape = (device.shots, len(device.wires)) 
+                        shape = (device.shots, len(device.wires))
 
         else:
             shot_vector = device._shot_vector
@@ -920,11 +920,14 @@ class QuantumTape(AnnotatedQueue):
             elif ret_type == qml.operation.Probability:
 
                 wire_dim = 2 ** len(measurement_process.wires)
-                shape = (num_shot_elements,wire_dim)
+                shape = (num_shot_elements, wire_dim)
 
             elif ret_type == qml.operation.Sample:
                 if measurement_process.obs is not None:
-                    shape = tuple((shot_val,) if shot_val !=1 else tuple() for shot_val in device._raw_shot_sequence)
+                    shape = tuple(
+                        (shot_val,) if shot_val != 1 else tuple()
+                        for shot_val in device._raw_shot_sequence
+                    )
                 else:
                     # TODO: revisit when qml.sample without an observable fully supports shot vectors
                     return None
@@ -1012,8 +1015,8 @@ class QuantumTape(AnnotatedQueue):
                 for shot_val in device.shot_vector:
                     for _ in range(shot_val.copies):
                         shots = shot_val.shots
-                        if shots!=1:
-                            shape.append(tuple([shots,len(mps)]))
+                        if shots != 1:
+                            shape.append(tuple([shots, len(mps)]))
                         else:
                             shape.append((len(mps),))
 
@@ -1027,7 +1030,7 @@ class QuantumTape(AnnotatedQueue):
             self._process_queue()
 
         # TODO: and dtype
-        #dtype = jnp.float64
+        # dtype = jnp.float64
 
         output_shape = tuple()
 
@@ -1038,7 +1041,9 @@ class QuantumTape(AnnotatedQueue):
             if num_measurements == 1:
                 output_shape = self._multi_same_measurement_shape(self._measurements, device)
             else:
-                raise ValueError("Getting the output shape of a tape that contains multiple types of measurements is unsupported.")
+                raise ValueError(
+                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
+                )
 
         return output_shape
 
@@ -1051,16 +1056,19 @@ class QuantumTape(AnnotatedQueue):
         elif ret_type == qml.operation.Sample:
 
             # TODO: what if we have floating point eigenvalues of an observable?
-            output_domain = "integer" if any(not np.issubdtype(e, int) for e in observable.eigvals) else "float"
+            output_domain = (
+                "integer" if any(not np.issubdtype(e, int) for e in observable.eigvals) else "float"
+            )
             if not isinstance(device.shots, tuple):
                 shape = (1, device.shots)
 
             else:
                 shot_vector = device.shots
-                shape = shape = tuple((shot_val,) if shot_val!=1 else tuple() for shot_val in shot_vector)
+                shape = shape = tuple(
+                    (shot_val,) if shot_val != 1 else tuple() for shot_val in shot_vector
+                )
 
         return output_domain
-
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
@@ -1577,7 +1585,6 @@ class QuantumTape(AnnotatedQueue):
         self.set_parameters(saved_parameters)
 
         return res
-
 
     # interfaces can optionally override the _execute method
     # if they need to perform any logic in between the user's

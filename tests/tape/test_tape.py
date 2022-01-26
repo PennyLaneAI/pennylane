@@ -1691,65 +1691,32 @@ class TestHashing:
 
         assert tape1.hash == tape2.hash
 
+
 def cost(tape, dev):
-    return qml.execute([tape], dev, interface="autograd", gradient_fn = qml.gradients.param_shift)
+    return qml.execute([tape], dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+
 
 measures = [
-
-(
-    qml.expval(qml.PauliZ(0)),
-    1
-),
-(
-    qml.var(qml.PauliZ(0)),
-    1
-),
-(
-    qml.probs(wires=[0]),
-    (2,)
-),
-(
-    qml.probs(wires=[0, 1]),
-    (4,)
-),
-(
-    qml.state(),
-    (8,)
-),
-(
-    qml.sample(qml.PauliZ(0)),
-    None
-),
-(
-    qml.sample(),
-    None
-),
+    (qml.expval(qml.PauliZ(0)), 1),
+    (qml.var(qml.PauliZ(0)), 1),
+    (qml.probs(wires=[0]), (2,)),
+    (qml.probs(wires=[0, 1]), (4,)),
+    (qml.state(), (8,)),
+    (qml.sample(qml.PauliZ(0)), None),
+    (qml.sample(), None),
 ]
 
 multi_measurements = [
-
-([
-    qml.expval(qml.PauliZ(0)),
-    qml.expval(qml.PauliZ(1))
-], (2,)),
-([
-    qml.probs(wires=[0]),
-    qml.probs(wires=[1])
-], (2, 2)),
-([
-    qml.probs(wires=[0]),
-    qml.probs(wires=[1, 2])
-], (2 ** 1 + 2 ** 2,)),
-([
-    qml.probs(wires=[0, 2]),
-    qml.probs(wires=[1])
-], (2 ** 2 + 2 ** 1,)),
-([
-    qml.probs(wires=[0]),
-    qml.probs(wires=[1,2]),
-    qml.probs(wires=[0,1,2])
-], (2 ** 1 + 2 ** 2 + 2 ** 3,)),
+    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+    ([qml.probs(wires=[0]), qml.probs(wires=[1])], (2, 2)),
+    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], (2 ** 1 + 2 ** 2,)),
+    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], (2 ** 2 + 2 ** 1,)),
+    (
+        [qml.probs(wires=[0]), qml.probs(wires=[1, 2]), qml.probs(wires=[0, 1, 2])],
+        (2 ** 1 + 2 ** 2 + 2 ** 3,),
+    ),
 ]
+
 
 class TestOutputShape:
     """Tests for determining the tape output shape of tapes."""
@@ -1779,7 +1746,7 @@ class TestOutputShape:
         assert tape.get_output_shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
-    @pytest.mark.parametrize("shots", [None, 1, 10, (1,1,5,1)])
+    @pytest.mark.parametrize("shots", [None, 1, 10, (1, 1, 5, 1)])
     def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
@@ -1791,7 +1758,11 @@ class TestOutputShape:
 
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors
-        if isinstance(shots, tuple) and measurement.return_type is qml.operation.Sample and not measurement.obs:
+        if (
+            isinstance(shots, tuple)
+            and measurement.return_type is qml.operation.Sample
+            and not measurement.obs
+        ):
             pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
@@ -1855,9 +1826,11 @@ class TestOutputShape:
         if measurements[0].return_type is qml.operation.Probability:
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
-                pytest.skip("Multi-probs with varying number of varies when using a shot vecto is to be updated in PennyLane.")
+                pytest.skip(
+                    "Multi-probs with varying number of varies when using a shot vecto is to be updated in PennyLane."
+                )
 
-        shots = (1,1,5,1)
+        shots = (1, 1, 5, 1)
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         a = np.array(0.1)
@@ -1910,7 +1883,7 @@ class TestOutputShape:
     def test_multi_measure_sample_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with a shot vector."""
-        shots = (1,1,5,1)
+        shots = (1, 1, 5, 1)
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         a = np.array(0.1)
@@ -1925,7 +1898,7 @@ class TestOutputShape:
 
         expected = []
         for s in shots:
-            shape = (num_samples,) if s == 1 else (s,num_samples)
+            shape = (num_samples,) if s == 1 else (s, num_samples)
             expected.append(shape)
 
         res = tape.get_output_shape(dev)
