@@ -190,7 +190,7 @@ def tape_text(
 
         cache = {'tape_offset': 3}
         print(tape_text(tape, cache=cache))
-        print("\nNew tape offset: ", cache['tape_offset'])
+        print("New tape offset: ", cache['tape_offset'])
 
 
     .. code-block:: none
@@ -199,9 +199,7 @@ def tape_text(
 
         Tape:3
         0: ──X─┤
-
         New tape offset:  4
-
 
     """
     if cache is None:
