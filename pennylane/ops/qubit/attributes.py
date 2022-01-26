@@ -107,6 +107,9 @@ composable_rotations = Attribute(
         "CRY",
         "CRZ",
         "ControlledPhaseShift",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
         "Rot",
     ]
 )
@@ -116,6 +119,10 @@ addition (or alternative accumulation) of parameters.
 For example, ``qml.RZ`` is a composable rotation. Applying ``qml.RZ(0.1,
 wires=0)`` followed by ``qml.RZ(0.2, wires=0)`` is equivalent to performing
 a single rotation ``qml.RZ(0.3, wires=0)``.
+
+An example for an alternative accumulation is the ``qml.Rot`` gate: although the three
+angles it takes do not fulfil the composable property, the gate implements a rotation around an
+axis by an effective angle which does.
 """
 
 has_unitary_generator = Attribute(
@@ -178,10 +185,17 @@ diagonal_in_z_basis = Attribute(
         "ControlledPhaseShift",
         "MultiRZ",
         "CRZ",
+        "IsingZZ",
     ]
 )
 """Attribute: Operations that are diagonal in the computational basis.
 
 For such operations, the eigenvalues provide all necessary information to
 construct the matrix representation in the computational basis.
+
+Note: Currently all gates with this attribute need
+to explicitly define an eigenvalue representation.
+The reason is that if this method is missing, eigenvalues are computed from the matrix
+representation using ``np.linalg.eigvals``, which fails for some tensor types that the matrix
+may be cast in on backpropagation devices.
 """

@@ -403,7 +403,7 @@ fubini_params = [
 ]
 
 
-def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
+def autodiff_metric_tensor(ansatz, num_wires):
     """Compute the metric tensor by full state vector
     differentiation via autograd."""
     dev = qml.device("default.qubit", wires=num_wires)
@@ -420,13 +420,6 @@ def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
 
-        if not mimic_autograd:
-            if len(params) > 1 and all(
-                qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
-            ):
-                rjac = tuple(qml.math.transpose(rjac))
-                ijac = tuple(qml.math.transpose(ijac))
-
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
@@ -440,18 +433,10 @@ def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
                 )
             return tuple(out)
 
-        if (
-            mimic_autograd
-            and len(params) > 1
-            and all(qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:])
-        ):
-            jac_contract = [-2]
-        else:
-            jac_contract = [0]
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], jac_contract))
+        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
         return np.real(
-            np.tensordot(np.conj(jac), jac, axes=(jac_contract, jac_contract))
+            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
             - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
         )
 
@@ -469,7 +454,7 @@ class TestAdjointMetricTensorTape:
     def test_correct_output_tape_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor directly on a tape."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires, True)(*params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires)
 
         @qml.qnode(dev, interface="autograd")
@@ -577,7 +562,7 @@ class TestAdjointMetricTensorQNode:
     def test_correct_output_qnode_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires, True)(*params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface="autograd")
@@ -588,8 +573,6 @@ class TestAdjointMetricTensorQNode:
 
         mt = qml.adjoint_metric_tensor(circuit)(*params)
 
-        print(mt)
-        print(expected)
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
         else:
@@ -642,8 +625,6 @@ class TestAdjointMetricTensorQNode:
 
         mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
-        print(mt)
-        print(expected)
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
         else:
@@ -679,7 +660,7 @@ class TestAdjointMetricTensorQNode:
         ansatz = fubini_ansatz2
         params = fubini_params[2]
 
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires, True)
+        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
         dev2 = qml.device("default.qubit.autograd", wires=self.num_wires)
@@ -722,7 +703,7 @@ class TestAdjointMetricTensorDifferentiability:
     def test_autograd(self, ansatz, params):
         """Test that the derivative is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires, True)
+        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
