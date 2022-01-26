@@ -902,7 +902,13 @@ class QuantumTape(AnnotatedQueue):
             elif ret_type == qml.operation.Sample:
 
                 #TODO: measurement_process.observable is None
+                if measurement_process.obs is not None:
                     shape = (device.shots,) if device.shots !=1 else 1
+                else:
+                    if device.shots is None or device.shots == 1:
+                        shape = (len(device.wires),)
+                    else:
+                        shape = (device.shots, len(device.wires)) 
 
         else:
             shot_vector = device._shot_vector
@@ -917,7 +923,11 @@ class QuantumTape(AnnotatedQueue):
                 shape = (num_shot_elements,wire_dim)
 
             elif ret_type == qml.operation.Sample:
-                shape = tuple((shot_val,) if shot_val !=1 else tuple() for shot_val in device._raw_shot_sequence)
+                if measurement_process.obs is not None:
+                    shape = tuple((shot_val,) if shot_val !=1 else tuple() for shot_val in device._raw_shot_sequence)
+                else:
+                    # TODO: revisit when qml.sample without an observable fully supports shot vectors
+                    return None
 
         return shape
 

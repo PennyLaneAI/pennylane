@@ -1720,10 +1720,10 @@ measures = [
     qml.sample(qml.PauliZ(0)),
     None
 ),
-#(
-#    qml.sample(),
-#    None
-#),
+(
+    qml.sample(),
+    None
+),
 ]
 
 class TestOutputShapeSingle:
@@ -1731,34 +1731,40 @@ class TestOutputShapeSingle:
     measurement."""
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
-    @pytest.mark.parametrize("shots", [1, 10, (1,1,5,1)])
+    @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_output_shapes(self, measurement, expected_shape, shots):
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
 
         a = np.array(0.1)
         b = np.array(0.2)
 
-        print(shots, measurement)
         with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
-        shot_dim = shots if not isinstance(shots, tuple) else sum(shots)
+        shot_dim = shots if not isinstance(shots, tuple) else len(shots)
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
+
+        if measurement.return_type is qml.operation.Sample and measurement.obs is None:
+            expected_shape = (num_wires,) if shots is None or dev.shots == 1 else (shots, num_wires)
         assert tape.get_output_shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
     @pytest.mark.parametrize("shots", [None, 1, 10, (1,1,5,1)])
     def test_output_shapes_qnode_check(self, measurement, expected_shape, shots):
 
-
         if shots is None and measurement.return_type is qml.operation.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if shots is not None and measurement.return_type is qml.operation.State:
             pytest.skip("State only supports analytic computations.")
+
+        # TODO: revisit when qml.sample without an observable fully supports shot vectors
+        if isinstance(shots, tuple) and measurement.return_type is qml.operation.Sample and not measurement.obs:
+            pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
 
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
