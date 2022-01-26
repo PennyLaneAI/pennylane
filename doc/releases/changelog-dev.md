@@ -433,6 +433,7 @@
   it should be instantiated via PennyLane's NumPy wrapper using the `requires_grad=True`
   attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
+  [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
 
   ```python
   from pennylane import numpy as np
