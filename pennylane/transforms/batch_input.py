@@ -10,8 +10,8 @@ from pennylane.transforms.batch_transform import batch_transform
 
 @batch_transform
 def batch_input(
-        tape: Union[qml.tape.JacobianTape, qml.QNode],
-        argnum: Union[Sequence[int], int] = None,
+    tape: Union[qml.tape.JacobianTape, qml.QNode],
+    argnum: Union[Sequence[int], int] = None,
 ) -> Tuple[Sequence[qml.tape.JacobianTape], Callable]:
     """
     In a classical ML application one needs to batch the non-trainable inputs of the network.
@@ -57,7 +57,7 @@ def batch_input(
         list of tapes arranged according to unbatched inputs and a callable function
         to batch the results.
     """
-    parameters = tape.get_parameters(trainable_only = False)
+    parameters = tape.get_parameters(trainable_only=False)
 
     if argnum is None:
         return parameters, lambda x: x
@@ -71,8 +71,9 @@ def batch_input(
         else:
             trainable.append(param)
 
-    assert len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) == 1, \
-        "Batch dimension for all non-trainable inputs must be the same."
+    assert (
+        len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) == 1
+    ), "Batch dimension for all non-trainable inputs must be the same."
 
     outputs = []
     for inputs in zip(*non_trainable):
@@ -81,8 +82,8 @@ def batch_input(
     # Construct new output tape with unstacked inputs
     output_tapes = []
     for params in outputs:
-        new_tape = tape.copy(copy_operations = True)
-        new_tape.set_parameters(params, trainable_only = False)
+        new_tape = tape.copy(copy_operations=True)
+        new_tape.set_parameters(params, trainable_only=False)
         output_tapes.append(new_tape)
 
     return output_tapes, lambda x: qml.math.squeeze(qml.math.stack(x))
