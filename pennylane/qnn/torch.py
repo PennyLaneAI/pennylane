@@ -217,7 +217,7 @@ class TorchLayer(Module):
         self.qnode = qnode
 
         try:
-            # TODO: remove once the beta QNode is default
+            # TODO: remove when the old QNode is removed
             self.qnode.to_torch()
         except AttributeError:
             self.qnode.interface = "torch"
