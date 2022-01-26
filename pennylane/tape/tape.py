@@ -947,7 +947,8 @@ class QuantumTape(AnnotatedQueue):
         if ret_type == qml.operation.State:
             raise ValueError("Multiple state measurements are not supported.")
 
-        if device.shot_vector is None:
+        shot_vector = device._shot_vector
+        if shot_vector is None:
             if ret_type in (qml.operation.Expectation, qml.operation.Variance):
 
                 shape = (len(mps),)
@@ -980,11 +981,32 @@ class QuantumTape(AnnotatedQueue):
 
         else:
             if ret_type in (qml.operation.Expectation, qml.operation.Variance):
-                num = sum(shottup.copies for shottup in device.shot_vector)
+                num = sum(shottup.copies for shottup in shot_vector)
                 shape = (num, len(mps))
 
             elif ret_type == qml.operation.Probability:
-                pass
+
+                wires_num_set = {len(meas.wires) for meas in mps}
+                same_num_wires = len(wires_num_set) == 1
+                if same_num_wires:
+                    # We know that all probability meas processes have the same
+                    # number of wires, gather the length from the first one
+                    dim = 2 ** len(mps[0].wires)
+                    shot_copies_sum = sum(s.copies for s in shot_vector)
+                    shape = (shot_copies_sum, len(mps), dim)
+
+                else:
+                    # There are varying number of wires that the probability
+                    # measurement processes act on; the output shape is a sum
+                    #
+                    # E.g., for
+                    # return qml.probs(wires=[0]), qml.probs(wires=[1,2])
+                    #
+                    # We'll have a shape of 2 ** 1 + 2 ** 2, where the exponents
+                    # come from the length of the wires specified: 1 == len([0])
+                    # and 2 == len([1, 2])
+                    shape = (sum(2 ** len(m.wires) for m in mps),)
+
             elif ret_type == qml.operation.Sample:
                 shape = []
                 for shot_val in device.shot_vector:

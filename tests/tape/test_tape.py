@@ -1726,13 +1726,39 @@ measures = [
 ),
 ]
 
-class TestOutputShapeSingle:
-    """Tests for determining the tape output shape of tapes with exactly one
-    measurement."""
+multi_measurements = [
+
+([
+    qml.expval(qml.PauliZ(0)),
+    qml.expval(qml.PauliZ(1))
+], (2,)),
+([
+    qml.probs(wires=[0]),
+    qml.probs(wires=[1])
+], (2, 2)),
+([
+    qml.probs(wires=[0]),
+    qml.probs(wires=[1, 2])
+], (2 ** 1 + 2 ** 2,)),
+([
+    qml.probs(wires=[0, 2]),
+    qml.probs(wires=[1])
+], (2 ** 2 + 2 ** 1,)),
+([
+    qml.probs(wires=[0]),
+    qml.probs(wires=[1,2]),
+    qml.probs(wires=[0,1,2])
+], (2 ** 1 + 2 ** 2 + 2 ** 3,)),
+]
+
+class TestOutputShape:
+    """Tests for determining the tape output shape of tapes."""
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
     @pytest.mark.parametrize("shots", [None, 1, 10])
-    def test_output_shapes(self, measurement, expected_shape, shots):
+    def test_output_shapes_single(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape."""
         num_wires = 3
         dev = qml.device("default.qubit", wires=num_wires, shots=shots)
 
@@ -1754,15 +1780,17 @@ class TestOutputShapeSingle:
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
     @pytest.mark.parametrize("shots", [None, 1, 10, (1,1,5,1)])
-    def test_output_shapes_qnode_check(self, measurement, expected_shape, shots):
-
+    def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the output
+        shape of a QNode for a single measurement."""
         if shots is None and measurement.return_type is qml.operation.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
         if shots is not None and measurement.return_type is qml.operation.State:
             pytest.skip("State only supports analytic computations.")
 
-        # TODO: revisit when qml.sample without an observable fully supports shot vectors
+        # TODO: revisit when qml.sample without an observable has been updated
+        # with shot vectors
         if isinstance(shots, tuple) and measurement.return_type is qml.operation.Sample and not measurement.obs:
             pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
 
@@ -1792,43 +1820,11 @@ class TestOutputShapeSingle:
         res_shape = res_shape if res_shape != tuple() else 1
         assert tape.get_output_shape(dev) == res_shape
 
-measures = [
-
-([
-    qml.expval(qml.PauliZ(0)),
-    qml.expval(qml.PauliZ(1))
-], "real"),
-([
-    qml.probs(wires=[0]),
-    qml.probs(wires=[1])
-], "real"),
-([
-    qml.probs(wires=[0]),
-    qml.probs(wires=[1, 2])
-], "real"),
-([
-    qml.probs(wires=[0, 2]),
-    qml.probs(wires=[1])
-], "real"),
-([
-    qml.probs(wires=[0]),
-    qml.probs(wires=[1,2]),
-    qml.probs(wires=[0,1,2])
-], "real"),
-
-([
-    qml.sample(qml.PauliZ(0)),
-    qml.sample(qml.PauliZ(1)),
-    qml.sample(qml.PauliZ(2))
-], "integer")
-]
-
-class TestOutputShapeMultiOneType:
-    """Tests for determining the tape output shape"""
-
-    @pytest.mark.parametrize("measures, domain", measures)
-    @pytest.mark.parametrize("shots", [1, 10, (1,1,5,1)])
-    def test_sample(self, measures, domain, shots):
+    @pytest.mark.parametrize("measurements, expected", multi_measurements)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_multi_measure(self, measurements, expected, shots):
+        """Test that the expected output shape is obtained when using multiple
+        expectation value, variance and probability measurements."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
         a = np.array(0.1)
@@ -1837,12 +1833,105 @@ class TestOutputShapeMultiOneType:
         with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
-            for m in measures:
+            for m in measurements:
                 qml.apply(m)
 
-        execution_results = cost(tape, dev)
-        res, dom = tape.get_output_shape_and_domain(dev)
+        if measurements[0].return_type is qml.operation.Sample:
+            expected[1] = shots
+            expected = tuple(expected)
 
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
         expected = execution_results[0].shape
         assert res == expected
-        assert dom == domain
+
+    @pytest.mark.parametrize("measurements, expected", multi_measurements)
+    def test_multi_measure_shot_vector(self, measurements, expected):
+        """Test that the expected output shape is obtained when using multiple
+        expectation value, variance and probability measurements with a shot
+        vector."""
+        if measurements[0].return_type is qml.operation.Probability:
+            num_wires = set(len(m.wires) for m in measurements)
+            if len(num_wires) > 1:
+                pytest.skip("Multi-probs with varying number of varies when using a shot vecto is to be updated in PennyLane.")
+
+        shots = (1,1,5,1)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for m in measurements:
+                qml.apply(m)
+
+        if measurements[0].return_type is qml.operation.Sample:
+            expected[1] = shots
+            expected = tuple(expected)
+
+        # Update expected as we're using a shotvector
+        expected = (len(shots),) + expected
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
+        expected = execution_results[0].shape
+        assert res == expected
+
+    @pytest.mark.parametrize("shots", [1, 10])
+    def test_multi_measure_sample(self, shots):
+        """Test that the expected output shape is obtained when using multiple
+        qml.sample measurements."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        num_samples = 3
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for i in range(num_samples):
+                qml.sample(qml.PauliZ(i))
+
+        expected = (num_samples, shots)
+
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
+        expected = execution_results[0].shape
+        assert res == expected
+
+    def test_multi_measure_sample_shot_vector(self):
+        """Test that the expected output shape is obtained when using multiple
+        qml.sample measurements with a shot vector."""
+        shots = (1,1,5,1)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        num_samples = 3
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for i in range(num_samples):
+                qml.sample(qml.PauliZ(i))
+
+        expected = []
+        for s in shots:
+            shape = (num_samples,) if s == 1 else (s,num_samples)
+            expected.append(shape)
+
+        res = tape.get_output_shape(dev)
+        for r, e in zip(res, expected):
+            assert r == e
+
+        execution_results = cost(tape, dev)[0]
+        for r, e in zip(res, execution_results):
+            assert r == e.shape
