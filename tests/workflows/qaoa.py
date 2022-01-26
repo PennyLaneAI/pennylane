@@ -1,7 +1,6 @@
 import pennylane as qml
 from pennylane import qaoa
 from pennylane import numpy as np
-from matplotlib import pyplot as plt
 import networkx as nx
 
 def main(bucket_info=None, device_arn=None, display=False):
@@ -12,8 +11,9 @@ def main(bucket_info=None, device_arn=None, display=False):
 
     cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=False)
 
-    print("Cost Hamiltonian", cost_h)
-    print("Mixer Hamiltonian", mixer_h)
+    if display:
+        print("Cost Hamiltonian", cost_h)
+        print("Mixer Hamiltonian", mixer_h)
 
     def qaoa_layer(gamma, alpha):
         qaoa.cost_layer(gamma, cost_h)
@@ -53,8 +53,9 @@ def main(bucket_info=None, device_arn=None, display=False):
     for i in range(steps):
         params = optimizer.step(cost_function, params)
 
-    print("Optimal Parameters")
-    print(params)
+    if display:
+        print("Optimal Parameters")
+        print(params)
 
 
     @qml.qnode(dev)
@@ -65,9 +66,13 @@ def main(bucket_info=None, device_arn=None, display=False):
 
     probs = probability_circuit(params[0], params[1])
 
-    plt.style.use("seaborn")
-    plt.bar(range(2 ** len(wires)), probs)
-    plt.show()
+    max_values = [i for i, x in enumerate(probs) if x == max(probs)]
+
+    assert max_values == [6, 10]
+
+    if display:
+        print("probs", probs)
+        print("max_values", max_values)
 
 if __name__ == "__main__":
     my_bucket = "amazon-braket-Bucket-Name"
@@ -76,5 +81,5 @@ if __name__ == "__main__":
 
     state_vector_sim_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
 
-    main(display=True)
+    main(display=False)
     # main(s3_bucket, state_vector_sim_device_arn, display=True)
