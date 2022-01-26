@@ -90,7 +90,7 @@ class TestMetricTensor:
             return qml.expval(qml.PauliX(0))
 
         circuit = qml.QNode(circuit, dev, diff_method=diff_method)
-        params = [0.1]
+        params = np.array([0.1], requires_grad=True)
         result = qml.metric_tensor(circuit, hybrid=False, approx="block-diag")(*params)
         assert result.shape == (2, 2)
 
@@ -269,8 +269,8 @@ class TestMetricTensor:
 
         circuit = qml.QNode(circuit, dev)
 
-        a = np.array([0.432, 0.1])
-        b = 0.12
+        a = np.array([0.432, 0.1], requires_grad=True)
+        b = np.array(0.12, requires_grad=True)
 
         # evaluate metric tensor
         g = qml.metric_tensor(circuit, approx="block-diag")(a, b)

@@ -696,7 +696,7 @@ class TestFourTermParameterShifts:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = anp.array([theta, theta ** 3, np.sqrt(2) * theta], requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
@@ -719,3 +719,71 @@ class TestFourTermParameterShifts:
             ]
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+@pytest.mark.parametrize("argnum", [0, 2, [1], [0, 2], [0, 1, 2]])
+class TestArgnum:
+    """Test various argnum scenarios for qml.grad and qml.jacobian and compare output
+    to equivalent requires_grad configuration of the inputs."""
+
+    @pytest.mark.parametrize(
+        "input",
+        [
+            ((0.1, 0.2), (0.1, 0.2)),
+            [[0.1, 0.2], [0.1, 0.2]],
+            np.array([[0.1, 0.2], [0.1, 0.2]]),
+            qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]]),
+        ],
+    )
+    def test_grad(self, diff_method, input, argnum):
+        """Test qml.grad with various argnums"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x, y, z):
+            qml.RX(z[0][1], wires=0)
+            qml.RZ(x[0][1], wires=0)
+            qml.RY(y[0][1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = qml.grad(circuit, argnum=argnum)(input, input, input)
+
+        params = [input, input, input]
+        for i in range(3):
+            if i in ([argnum] if isinstance(argnum, int) else argnum):
+                params[i] = qml.numpy.tensor(params[i], requires_grad=True)
+            else:
+                params[i] = qml.numpy.tensor(params[i], requires_grad=False)
+
+        expected = qml.grad(circuit)(*params)
+
+        assert np.allclose(result, expected)
+
+    @pytest.mark.parametrize(
+        "input",
+        [np.array([[0.1, 0.2], [0.1, 0.2]]), qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]])],
+    )
+    def test_jacobian(self, diff_method, input, argnum):
+        """Test qml.jacobian with various argnums (no support for lists/tuples)"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(x, y, z):
+            qml.RX(z[0][1], wires=0)
+            qml.RZ(x[0][1], wires=0)
+            qml.RY(y[0][1], wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        result = qml.jacobian(circuit, argnum=argnum)(input, input, input)
+
+        params = [input, input, input]
+        for i in range(3):
+            if i in ([argnum] if isinstance(argnum, int) else argnum):
+                params[i] = qml.numpy.tensor(params[i], requires_grad=True)
+            else:
+                params[i] = qml.numpy.tensor(params[i], requires_grad=False)
+
+        expected = qml.jacobian(circuit)(*params)
+
+        assert np.allclose(result, expected)
