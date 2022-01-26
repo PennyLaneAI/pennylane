@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 
 from pennylane.queuing import AnnotatedQueue
@@ -695,7 +696,7 @@ class TestState:
             ValueError,
             match="Computing the gradient of circuits that return the state is not supported",
         ):
-            d_func(0.1)
+            d_func(pnp.array(0.1, requires_grad=True))
 
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.
