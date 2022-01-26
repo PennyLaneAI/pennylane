@@ -18,11 +18,11 @@ Contains the drawing function.
 """
 from functools import wraps
 
-from pennylane.drawer import tape_mpl
+from pennylane.drawer import tape_mpl, tape_text
 from pennylane.wires import Wires
 
 
-def draw(
+def draw_old(
     qnode,
     charset="unicode",
     wire_order=None,
@@ -148,6 +148,84 @@ def draw(
             show_all_wires=show_all_wires,
             max_length=max_length,
         )
+
+    return wrapper
+
+
+def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
+    max_length=100, expansion_strategy=None):
+    """Create a function that draws the given qnode.
+
+    Args:
+        qnode (.QNode): the input QNode that is to be drawn.
+        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        show_all_wires (bool): If True, all wires, including empty wires, are printed.
+        decimals (int): How many decimal points to include when formatting operation parameters.
+            Default ``None`` will omit parameters from operation labels.
+        max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
+
+
+    Returns:
+        A function that has the same argument signature as ``qnode``. When called,
+        the function will draw the QNode.
+
+    **Example**
+
+    Given the following definition of a QNode,
+
+    .. code-block:: python3
+
+        @qml.qnode(qml.device('lightning.qubit', wires=2))
+        def circuit(a, w):
+            qml.Hadamard(0)
+            qml.CRX(a, wires=[0, 1])
+            qml.Rot(*w, wires=[1])
+            qml.CRX(-a, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
+    0: ──H─╭C───────╭C──┤ ╭<Z@Z>
+    1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
+
+    """
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            tapes = qnode.construct(args, kwargs)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
+
+        _wire_order = wire_order or qnode.device.wires
+
+        if tapes is not None:
+            cache = {'tape_offset': 0}
+            res = [tape_text(t,
+                        wire_order=_wire_order,
+                        show_all_wires=show_all_wires,
+                        decimals=decimals,
+                        max_length=max_length,
+                        cache=cache
+                    )
+                    for t in tapes[0]]
+            return "\n".join(res)
+        
+        return tape_text(qnode.tape, wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            max_length=max_length)
 
     return wrapper
 
