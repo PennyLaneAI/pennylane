@@ -128,7 +128,7 @@ PennyLane consider them when computing gradients.
 Regular positional arguments provided to the QNode are not assumed to be differentiable
 by default. This includes arguments in the form of built-in Python data types, and arrays from
 the original NumPy module. Thus, arguments need to be explicitly marked as trainable or selected
-using the `argnum` keyword. To mark an argument as trainable, a special flag ``requires_grad``
+using the ``argnum`` keyword. To mark an argument as trainable, a special flag ``requires_grad``
 has been added to arrays from PennyLane's NumPy module:
 
 >>> from pennylane import numpy as np
@@ -167,7 +167,7 @@ the following QNode that accepts two arguments ``data`` and ``weights``:
         return qml.expval(qml.PauliZ(0))
 
     rng = np.random.default_rng(seed=42)  # make the results reproducable
-    data = rng.random([2**3], requires_grad=True)
+    data = rng.random([2 ** 3], requires_grad=True)
     weights = np.array([0.1, 0.2, 0.3], requires_grad=False)
 
 When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments
