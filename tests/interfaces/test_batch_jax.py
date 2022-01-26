@@ -807,7 +807,6 @@ class TestVectorValued:
         exp = qml.jacobian(cost, argnum=(0, 1))(
             x_, y_, dev, interface="autograd", ek=execute_kwargs
         )
-        print(res, "\n\n", exp)
         for r, e in zip(res, exp):
             assert jnp.allclose(r, e, atol=1e-7)
 
