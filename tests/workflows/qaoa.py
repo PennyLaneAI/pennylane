@@ -27,7 +27,19 @@ def main(bucket_info=None, device_arn=None, display=False):
             qml.Hadamard(wires=w)
         qml.layer(qaoa_layer, depth, params[0], params[1])
 
-    dev = qml.device("default.qubit", wires=wires)
+    if bucket_info is None or device_arn is None:
+        dev = qml.device(
+            "default.qubit",
+            wires=wires
+        )
+    else:
+        dev = qml.device(
+            "braket.aws.qubit",
+            device_arn=device_arn,
+            wires=wires,
+            s3_destination_folder=s3_bucket,
+            parallel=True
+        )
 
     @qml.qnode(dev)
     def cost_function(params):
