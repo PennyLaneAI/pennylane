@@ -1044,7 +1044,7 @@ class QuantumTape(AnnotatedQueue):
         else:
             num_measurements = len(set(meas.return_type for meas in self._measurements))
             if num_measurements == 1:
-                output_shape = self._multi_same_measurement_shape(self._measurements, device)
+                output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
                 raise ValueError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
