@@ -19,6 +19,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import JacobianTape
+from pennylane.interfaces.batch import InterfaceUnsupportedError
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],
@@ -36,7 +37,6 @@ qubit_device_and_diff_method = [
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-from pennylane.interfaces.batch.jax import JAXMeasurementError, JAXForwardModeError
 
 
 from jax.config import config
@@ -294,7 +294,7 @@ class TestVectorValuedQNode:
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        with pytest.raises(JAXForwardModeError):
+        with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(circuit, argnums=[0, 1])(a, b)
 
     def test_jacobian_no_evaluate(self, dev_name, diff_method, mode, interface, mocker, tol):
@@ -561,7 +561,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.apply(ret)
 
-        with pytest.raises(JAXMeasurementError, match="sample and probability measurements"):
+        with pytest.raises(InterfaceUnsupportedError, match="sample and probability measurements"):
             circuit(x, y)
 
     def test_probs_diff_len_wires_raises(self, dev_name, diff_method, mode, interface, tol):
@@ -586,7 +586,7 @@ class TestQubitIntegration:
             return qml.probs(0), qml.probs([1, 2])
 
         with pytest.raises(
-            JAXMeasurementError,
+            InterfaceUnsupportedError,
             match="multiple probability measurements need to have the same number of wires specified",
         ):
             circuit(x, y)

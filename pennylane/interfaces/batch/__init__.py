@@ -38,6 +38,11 @@ INTERFACE_NAMES = {
 SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
 
 
+class InterfaceUnsupportedError(NotImplementedError):
+    """Exception raised when features not supported by an interface are
+    attempted to be used."""
+
+
 @contextlib.contextmanager
 def set_shots(device, shots):
     """Context manager to temporarily change the shots

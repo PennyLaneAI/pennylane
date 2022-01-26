@@ -23,8 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces.batch import execute
-from pennylane.interfaces.batch.jax import JAXForwardModeError
-from pennylane.interfaces.batch.jax_jit import JittableJAXMeasurementError
+from pennylane.interfaces.batch import InterfaceUnsupportedError
 
 
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
@@ -174,7 +173,8 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         with pytest.raises(
-            ValueError, match="The JAX interface only supports first order derivatives."
+            InterfaceUnsupportedError,
+            match="The JAX interface only supports first order derivatives.",
         ):
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a[0], wires=0)
@@ -668,7 +668,7 @@ class TestJaxExecuteIntegration:
             )
             return res[0][0]
 
-        with pytest.raises(JittableJAXMeasurementError, match=mes):
+        with pytest.raises(InterfaceUnsupportedError, match=mes):
             cost(params, cache=None)
 
 
@@ -832,5 +832,5 @@ class TestVectorValued:
             )
             return res[0]
 
-        with pytest.raises(JAXForwardModeError):
+        with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(cost)(params, cache=None)

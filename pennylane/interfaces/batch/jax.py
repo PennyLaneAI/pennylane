@@ -21,6 +21,7 @@ import jax.numpy as jnp
 
 import pennylane as qml
 from pennylane.operation import Sample, Probability
+from pennylane.interfaces.batch import InterfaceUnsupportedError
 
 dtype = jnp.float64
 
@@ -85,7 +86,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     """
     # pylint: disable=unused-argument
     if max_diff > 1:
-        raise ValueError("The JAX interface only supports first order derivatives.")
+        raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
     _validate_tapes(tapes)
 
@@ -117,11 +118,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     )
 
 
-class JAXMeasurementError(ValueError):
-    """Exception raised when unsupported measurements are being used with the
-    JAX interface."""
-
-
 def _validate_tapes(tapes):
     """Validates that the input tapes are compatible with JAX support.
 
@@ -130,7 +126,7 @@ def _validate_tapes(tapes):
     ragged nested sequences that can not be handled by JAX.
 
     Raises:
-        ValueError: if tapes that produce ragged outputs were provided
+        InterfaceUnsupportedError: if tapes that produce ragged outputs were provided
     """
     for t in tapes:
 
@@ -138,14 +134,14 @@ def _validate_tapes(tapes):
         set_of_return_types = set(return_types)
         probs_or_sample_measure = Sample in return_types or Probability in return_types
         if probs_or_sample_measure and len(set_of_return_types) > 1:
-            raise JAXMeasurementError(
+            raise InterfaceUnsupportedError(
                 "Using the JAX interface, sample and probability measurements cannot be mixed with other measurement types."
             )
 
         if Probability in return_types:
             set_len_wires = set(len(o.wires) for o in t.observables)
             if len(set_len_wires) > 1:
-                raise JAXMeasurementError(
+                raise InterfaceUnsupportedError(
                     "Using the JAX interface, multiple probability measurements need to have the same number of wires specified."
                 )
 
@@ -262,11 +258,6 @@ def _execute(
     return wrapped_exec(params)
 
 
-class JAXForwardModeError(NotImplementedError):
-    """Exception raised when an error is raised in forward mode with the JAX
-    interface."""
-
-
 def _execute_with_fwd(
     params,
     tapes=None,
@@ -324,7 +315,7 @@ def _execute_with_fwd(
         # The output produced by this function matches 2.
         scalar_outputs = all(t.output_dim == 1 for t in tapes)
         if not scalar_outputs:
-            raise JAXForwardModeError(
+            raise InterfaceUnsupportedError(
                 "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
             )
 
