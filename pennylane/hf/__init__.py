@@ -49,6 +49,7 @@ from .tapering import (
     generate_paulis,
     generate_symmetries,
     get_generators,
-    transform_hamiltonian,
     optimal_sector,
+    transform_hamiltonian,
+    transform_hf,
 )
