@@ -461,6 +461,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
+  to NumPy arrays before executing gradient tapes on devices.
+  [(#2117)](https://github.com/PennyLaneAI/pennylane/pull/2117)
+
 * Fixes a bug for the TensorFlow interface where the dtype of input tensors was
   not cast.
   [(#2120)](https://github.com/PennyLaneAI/pennylane/pull/2120)
