@@ -1051,7 +1051,7 @@ class QuantumTape(AnnotatedQueue):
                 )
         return output_shape
 
-    def get_output_domain(self, device, observable):
+    def get_output_domain(self):
         """Produces the output domain of the tape by inspecting its measurements.
 
         Note: as the output shape may be dependent on the device used for
@@ -1064,24 +1064,18 @@ class QuantumTape(AnnotatedQueue):
             Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
             tape result
         """
+        # TODO: only have real or float not both
         output_domain = "real"
-        ret_type = observable.return_type
-        if ret_type == qml.operation.State:
-            output_domain = "complex"
+        for observable in self._measurements:
+            ret_type = observable.return_type
+            if ret_type == qml.operation.State:
+                output_domain = "complex"
 
-        elif ret_type == qml.operation.Sample:
+            elif ret_type == qml.operation.Sample:
 
-            # TODO: what if we have floating point eigenvalues of an observable?
-            output_domain = (
-                "integer" if any(not np.issubdtype(e, int) for e in observable.eigvals) else "float"
-            )
-            if not isinstance(device.shots, tuple):
-                shape = (1, device.shots)
-
-            else:
-                shot_vector = device.shots
-                shape = shape = tuple(
-                    (shot_val,) if shot_val != 1 else tuple() for shot_val in shot_vector
+                # TODO: what if we have floating point eigenvalues of an observable?
+                output_domain = (
+                    "integer" if any(not np.issubdtype(e, int) for e in observable.eigvals) else "float"
                 )
 
         return output_domain
