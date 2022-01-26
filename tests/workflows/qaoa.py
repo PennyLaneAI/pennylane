@@ -28,7 +28,7 @@ def circuit(params, **kwargs):
         qml.Hadamard(wires=w)
     qml.layer(qaoa_layer, depth, params[0], params[1])
 
-dev = qml.device("qulacs.simulator", wires=wires)
+dev = qml.device("default.qubit", wires=wires)
 
 @qml.qnode(dev)
 def cost_function(params):
@@ -57,3 +57,13 @@ probs = probability_circuit(params[0], params[1])
 plt.style.use("seaborn")
 plt.bar(range(2 ** len(wires)), probs)
 plt.show()
+
+if __name__ == "__main__":
+    my_bucket = "amazon-braket-Bucket-Name"
+    my_prefix = "Folder-Name"
+    s3_bucket = (my_bucket, my_prefix)
+
+    state_vector_sim_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+
+    main(display=True)
+    # main(s3_bucket, state_vector_sim_device_arn, display=True)
