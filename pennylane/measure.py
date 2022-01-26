@@ -44,7 +44,10 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None, shape=None):
+    def __init__(self, return_type, **kwargs, wires=None, eigvals=None, shape=None):
+        obs = kwargs.get("obs", None)
+        wires = kwargs.get("wires", None)
+
         self.return_type = return_type
         self.obs = obs
 
@@ -52,8 +55,8 @@ class MeasurementProcess:
             raise ValueError("Cannot set the wires if an observable is provided.")
 
         self._wires = wires or Wires([])
-        self._eigvals = None
-        self.shape = shape
+        self._eigvals = kwargs.get("eigvals", None)
+        self.shape = kwargs.get("shape", None)
         """The output shape of the measurement proccess. Some shapes may depend
         on device options, in such cases shape=None."""
 

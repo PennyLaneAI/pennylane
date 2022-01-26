@@ -1065,7 +1065,7 @@ class QuantumTape(AnnotatedQueue):
             tape result
         """
         output_domain = "real"
-        ret_type = measurement_process.return_type
+        ret_type = observable.return_type
         if ret_type == qml.operation.State:
             output_domain = "complex"
 
