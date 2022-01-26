@@ -884,9 +884,9 @@ class QuantumTape(AnnotatedQueue):
 
         output_domain = "real"
         ret_type = measurement_process.return_type
-        if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+        if ret_type.shape is not None:
 
-            shape = (1,)
+            shape = ret_type.shape
 
         elif ret_type == qml.operation.Probability:
 
@@ -896,14 +896,10 @@ class QuantumTape(AnnotatedQueue):
         elif ret_type == qml.operation.State:
             output_domain = "complex"
 
-            if obs.wires:
-                # qml.density_matrix, acts on wires specified in the meas process
-                dim = 2 ** len(measurement_process.wires)
-                shape = (1, dim, dim)
-            else:
-                # qml.state, acts on all device wires
-                dim = 2 ** len(device.wires)
-                shape = (1, dim,)
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            shape = (1, dim,)
 
         elif ret_type == qml.operation.Sample:
 
@@ -1526,6 +1522,30 @@ class QuantumTape(AnnotatedQueue):
         self.set_parameters(saved_parameters)
 
         return res
+
+    def get_output_domain(self):
+        output_domain = "real"
+        ret_type = measurement_process.return_type
+        if ret_type == qml.operation.State:
+            output_domain = "complex"
+
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            shape = (1, dim,)
+
+        elif ret_type == qml.operation.Sample:
+
+            output_domain = "integer"
+            if not isinstance(device.shots, tuple):
+                shape = (1, device.shots)
+
+            else:
+                shot_vector = device.shots
+                shape = shape = tuple((shot_val,) if shot_val!=1 else tuple() for shot_val in shot_vector)
+
+        return shape, output_domain
+
 
     # interfaces can optionally override the _execute method
     # if they need to perform any logic in between the user's

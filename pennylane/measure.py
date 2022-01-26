@@ -44,7 +44,7 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, shape=None):
         self.return_type = return_type
         self.obs = obs
 
@@ -53,6 +53,9 @@ class MeasurementProcess:
 
         self._wires = wires or Wires([])
         self._eigvals = None
+        self.shape = shape
+        """The output shape of the measurement proccess. Some shapes may depend
+        on device options, in such cases shape=None."""
 
         if eigvals is not None:
             if obs is not None:
@@ -255,7 +258,7 @@ def expval(op):
             f"{op.name} is not an observable: cannot be used with expval"
         )
 
-    return MeasurementProcess(Expectation, obs=op)
+    return MeasurementProcess(Expectation, obs=op, shape=1)
 
 
 def var(op):
@@ -288,7 +291,7 @@ def var(op):
     if not isinstance(op, Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
-    return MeasurementProcess(Variance, obs=op)
+    return MeasurementProcess(Variance, obs=op, shape=1)
 
 
 def sample(op=None, wires=None):
@@ -296,6 +299,9 @@ def sample(op=None, wires=None):
     determined from the ``dev.shots`` attribute of the corresponding device.
     If no observable is provided then basis state samples are returned directly
     from the device.
+
+    Note that the output shape of this measurement process depends on the shots
+    specified on the device.
 
     Args:
         op (Observable or None): a quantum observable object
@@ -431,6 +437,9 @@ def probs(wires=None, op=None):
     to a :math:`14.6\%` chance of measuring the rotated :math:`|0\rangle` state
     and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
 
+    Note that the output shape of this measurement process depends on whether
+    the device simulates a qubit or a continuous variable quantum system.
+
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
         op (Observable): Observable (with a diagonalzing_gates attribute) that rotates
@@ -461,6 +470,9 @@ def state():
     This function accepts no observables and instead instructs the QNode to return its state. A
     ``wires`` argument should *not* be provided since ``state()`` always returns a pure state
     describing all wires in the device.
+
+    Note that the output shape of this measurement process depends on the
+    number of wires defined for the device.
 
     **Example:**
 
@@ -546,4 +558,6 @@ def density_matrix(wires):
         with a compatible device.
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(State, wires=qml.wires.Wires(wires))
+    dim = 2 ** len(wires)
+    shape = (1, dim, dim)
+    return MeasurementProcess(State, wires=qml.wires.Wires(wires), shape=shape)
