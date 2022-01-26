@@ -44,8 +44,9 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, **kwargs, wires=None, eigvals=None, shape=None):
+    def __init__(self, return_type, **kwargs):
         obs = kwargs.get("obs", None)
+        eigvals = kwargs.get("eigvals", None)
         wires = kwargs.get("wires", None)
 
         self.return_type = return_type
