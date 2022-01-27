@@ -18,6 +18,7 @@ This module contains the functions needed for tapering qubits using symmetries.
 
 import functools
 import numpy
+import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import _generate_qubit_operator
