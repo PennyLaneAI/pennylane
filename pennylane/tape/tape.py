@@ -1068,7 +1068,7 @@ class QuantumTape(AnnotatedQueue):
                 "Getting the output domain of a tape that contains multiple types of measurements is unsupported."
             )
 
-        output_domain = int
+        output_domain = float
 
         for observable in self._measurements:
             ret_type = observable.return_type

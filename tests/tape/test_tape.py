@@ -1918,20 +1918,64 @@ class TestOutputShape:
         for r, e in zip(res, execution_results):
             assert r == e.shape
 
+
 class TestOutputDomain:
     """Tests for determining the tape output shape of tapes."""
 
-    #TODO: need to test every interface
+    @pytest.mark.parametrize("ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])])
+    @pytest.mark.parametrize("shots", [None, 1, (1,2,3)])
+    def test_float_measures(self, ret, shots):
+        """Test that most measurements output floating point values and that
+        the tape output domain correctly identifies this."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(a, wires=[0])
+            qml.RZ(b, wires=[0])
+            return qml.apply(ret)
+
+        result = circuit(0.3, 0.2)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, float)
+        assert circuit.qtape.get_output_domain() is float
+
+    def test_complex_state(self):
+        """Test that a tape with qml.state correctly determines that the output
+        domain will be complex."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(a, wires=[0])
+            qml.RZ(b, wires=[0])
+            return qml.state()
+
+        result = circuit(0.3, 0.2)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, complex)
+        assert circuit.qtape.get_output_domain() is complex
+
+    # TODO: add cases for each interface once qml.Hermitian supports other
+    # interfaces
     def test_sample_real_eigvals(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with a shot vector."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
-        arr = np.array([1.32, 2.312,])
+        arr = np.array(
+            [
+                1.32,
+                2.312,
+            ]
+        )
         herm = np.outer(arr, arr)
 
         @qml.qnode(dev)
         def circuit(a, b):
+            qml.RY(0.4, wires=[0])
             return qml.sample(qml.Hermitian(herm, wires=0))
 
         result = circuit(0.3, 0.2)
@@ -1945,17 +1989,22 @@ class TestOutputDomain:
         qml.sample measurements with a shot vector."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
-        arr = np.array([1.32, 2.312,])
+        arr = np.array(
+            [
+                1.32,
+                2.312,
+            ]
+        )
         herm = np.outer(arr, arr)
 
-        @qml.qnode(dev,interface='autograd')
+        @qml.qnode(dev, interface="autograd")
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))
 
+        result = circuit(0, 3)
 
-        print(circuit(0,3))
-        res = circuit(0,3)
-
-        [r.shape for r in res]
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, float)
+        assert circuit.qtape.get_output_domain() is float
