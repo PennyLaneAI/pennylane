@@ -24,10 +24,10 @@ from pennylane.tape import QuantumTape
 
 
 def add_operator_node(
-    graph: MultiDiGraph, op: Observable, order: int, wire_latest_node: dict
+    graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict
 ) -> None:
     """
-    Helper function to add operators as nodes during tape to graph connversion
+    Helper function to add operators as nodes during tape to graph conversion
     """
     graph.add_node(op, order=order)
     for wire in op.wires:

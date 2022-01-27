@@ -4,7 +4,6 @@
 
 <h3>New features since last release</h3>
 
-
 * For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
   static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface.
@@ -14,7 +13,7 @@
   A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
-  A method for converting a quantum tape to a `MultiDiGraph` that is amenable
+  A method for converting a quantum tape to a directed multigraph that is amenable
   to graph partitioning algorithms for circuit cutting has been added
   [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
 
@@ -495,7 +494,6 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
-
 
 Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
 Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,

@@ -24,6 +24,7 @@ with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
     qml.CNOT(wires=[0, "a"])
+    qml.CRZ(wires=["a", 0])
     qml.RZ(0.240, wires=0)
     qml.RZ(0.133, wires="a")
     qml.expval(qml.PauliZ(wires=[0]))
@@ -80,7 +81,7 @@ class TestTapeToGraph:
 
     def test_node_order_attribute(self):
         """
-        Tests that the converted nodes contain the correct order attirbute
+        Tests that the converted nodes contain the correct order attribute
         """
 
         g = qcut.tape_to_graph(tape)
@@ -100,7 +101,7 @@ class TestTapeToGraph:
 
     def test_edge_wire_attribute(self):
         """
-        Tests that the converted edges contain the correct wire attirbute
+        Tests that the converted edges contain the correct wire attribute
         """
 
         g = qcut.tape_to_graph(tape)
