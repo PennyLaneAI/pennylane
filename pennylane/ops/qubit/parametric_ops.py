@@ -2262,10 +2262,21 @@ class IsingZZ(Operation):
 
         return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
 
-    @classmethod
-    def _eigvals(cls, *params):
-        phi = params[0]
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        """Eigenvalues of the IsingZZ operator.
 
+        Args:
+            phi (tensor_like or float): phase angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
+        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
+        """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
