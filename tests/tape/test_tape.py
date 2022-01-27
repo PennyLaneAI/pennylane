@@ -1711,7 +1711,7 @@ measures = [
     (qml.probs(wires=[0]), (2,)),
     (qml.probs(wires=[0, 1]), (4,)),
     (qml.state(), (8,)),
-    (qml.density_matrix(wires=[0,1]), (4,4)),
+    (qml.density_matrix(wires=[0, 1]), (4, 4)),
     (qml.sample(qml.PauliZ(0)), None),
     (qml.sample(), None),
 ]

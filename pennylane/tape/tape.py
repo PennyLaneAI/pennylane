@@ -963,7 +963,7 @@ class QuantumTape(AnnotatedQueue):
                     # TODO: revisit when qml.sample without an observable fully
                     # supports shot vectors
                     raise UnsupportedTapeOperationError(
-                        "Getting the output shape of a tape returning samples along with "\
+                        "Getting the output shape of a tape returning samples along with "
                         "a device with a shot vector is not supported."
                     )
 
