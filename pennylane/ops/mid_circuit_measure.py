@@ -248,7 +248,7 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
         num_wires = then_op.num_wires
         op: Type[Operation] = then_op
         branches = expr.branches
-        required_measurements = expr.measurements
+        dependant_measurements = expr.measurements
 
         def __init__(self, *args, **kwargs):
             self.then_op = then_op(*args, do_queue=False, **kwargs)

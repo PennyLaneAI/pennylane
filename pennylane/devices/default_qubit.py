@@ -269,7 +269,7 @@ class DefaultQubit(QubitDevice):
         mask = np.zeros(state.shape, dtype=bool)
         for branch in op_object.branches.keys():
             if op_object.branches[branch]:
-                for i, m in enumerate(op_object.required_measurements):
+                for i, m in enumerate(op_object.dependant_measurements):
                     slicer = [slice(None)] * self.num_wires
                     slicer[m] = branch[i]
                     mask[tuple(slicer)] = True
