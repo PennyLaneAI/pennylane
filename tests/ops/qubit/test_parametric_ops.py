@@ -476,7 +476,7 @@ class TestMatrix:
         assert np.allclose(qml.IsingZZ.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
         assert np.allclose(qml.IsingZZ(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
         assert np.allclose(
-            qml.IsingZZ.compute__eigvals(0), np.diagonal(np.identity(4)), atol=tol, rtol=0
+            qml.IsingZZ.compute_eigvals(0), np.diagonal(np.identity(4)), atol=tol, rtol=0
         )
 
         def get_expected(theta):
@@ -519,7 +519,7 @@ class TestMatrix:
             return expected
 
         param = tf.Variable(np.pi)
-        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(np.pi), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(np.pi), atol=tol, rtol=0)
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
