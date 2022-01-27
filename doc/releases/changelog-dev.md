@@ -159,25 +159,39 @@
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
-  With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
-  on a reduced number of qubits.
+  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
 
   ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-  mol = qml.hf.Molecule(symbols, geometry)
-  H = qml.hf.generate_hamiltonian(mol)(geometry)
-  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
-  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
-  ```
+  from pennylane import hf
+  from pennylane import numpy as np
 
+  symbols = ["He", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+  mol = hf.Molecule(symbols, geometry, charge=1)
+  H = hf.generate_hamiltonian(mol)(geometry)
+  n_qubits, n_elec = len(H.wires), mol.n_electrons
+
+  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+  opt_sector = hf.optimal_sector(H, generators, n_elec)
+  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
+                                    n_elec, n_qubits)
+  ```
   ```pycon
   >>> print(H_tapered)
-    ((-0.321034397355719+0j)) [I0]
-  + ((0.1809270275619743+0j)) [X0]
-  + ((0.7959678503870796+0j)) [Z0]
+    ((-1.7997297644914574+0j)) [I0]
+  + ((-0.10492941956079854+0j)) [X0]
+  + ((0.10492941956079856+0j)) [X1]
+  + ((0.5675134088336165+0j)) [Z1]
+  + ((0.5675134088336168+0j)) [Z0]
+  + ((-0.14563730440190722+0j)) [Y0 Y1]
+  + ((-0.10492941933657857+0j)) [X0 Z1]
+  + ((0.09337410512815508+0j)) [Z0 Z1]
+  + ((0.10492941933657857+0j)) [Z0 X1]
+  >>> print(hf_tapered)
+  tensor([1, 1], requires_grad=True)
   ```
+  
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
@@ -266,6 +280,11 @@
   ```
 
 <h3>Improvements</h3>
+
+* The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
+  differs in implementation and minor stylistic details from the old string circuit drawing
+  infrastructure.
+  [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
 
 * The `RotosolveOptimizer` now raises an error if no trainable arguments are
   detected, instead of silently skipping update steps for all arguments.
@@ -410,6 +429,10 @@
   with respect to which the differentiation takes place, or if an integer
   is provided as `argnum`.
 
+  A workaround that allowed `qml.jacobian` to differentiate multiple QNode arguments
+  will no longer support higher-order derivatives. In such cases, combining multiple
+  arguments into a single array is recommended.
+
 * The behaviour of `RotosolveOptimizer` has been changed regarding
   its keyword arguments.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
@@ -432,7 +455,43 @@
   For more details, see the
   [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
 
+* QNode arguments will no longer be considered trainable by default when using
+  the Autograd interface. In order to obtain derivatives with respect to a parameter,
+  it should be instantiated via PennyLane's NumPy wrapper using the `requires_grad=True`
+  attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
+  [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
+  [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
+
+  ```python
+  from pennylane import numpy as np
+
+  @qml.qnode(qml.device("default.qubit", wires=2))
+  def circuit(x):
+    ...
+
+  x = np.array([0.1, 0.2], requires_grad=True)
+  qml.grad(circuit)(x)
+  ```
+
+  For the `qml.grad` and `qml.jacobian` functions, trainability can alternatively be
+  indicated via the `argnum` keyword:
+
+  ```python
+  import numpy as np
+
+  @qml.qnode(qml.device("default.qubit", wires=2))
+  def circuit(hyperparam, param):
+    ...
+
+  x = np.array([0.1, 0.2])
+  qml.grad(circuit, argnum=1)(0.5, x)
+  ```
+
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
+  to NumPy arrays before executing gradient tapes on devices.
+  [(#2117)](https://github.com/PennyLaneAI/pennylane/pull/2117)
 
 * Fixes a bug for the TensorFlow interface where the dtype of input tensors was
   not cast.
@@ -500,6 +559,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo,
-Diego Guala, Anthony Hayes, Edward Jiang, Josh Izaac, Soran Jahangiri, Ankit Khandelwal,
-Korbinian Kottmann, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+David Wierichs, Shaoming Zhang
