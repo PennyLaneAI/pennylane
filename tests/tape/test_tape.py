@@ -1813,11 +1813,12 @@ class TestOutputShape:
             dependency of PennyLane core and there are no CV device in
             PennyLane core using a cutoff value.
             """
-            name = 'Device with cutoff'
-            short_name = 'dummy.device'
-            pennylane_requires = '0.1.0'
-            version = '0.0.1'
-            author = 'CV quantum'
+
+            name = "Device with cutoff"
+            short_name = "dummy.device"
+            pennylane_requires = "0.1.0"
+            version = "0.0.1"
+            author = "CV quantum"
 
             operations = {}
             observables = {"Identity"}
@@ -1837,7 +1838,7 @@ class TestOutputShape:
         dev = CustomDevice(wires=2, cutoff=13)
 
         # If PennyLane-SF is installed, the following can be checked e.g., locally:
-        #dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=13)
+        # dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=13)
 
         a = np.array(0.1)
         b = np.array(0.2)
@@ -1981,7 +1982,10 @@ class TestOutputShape:
             qml.expval(qml.PauliZ(0))
             qml.sample(qml.PauliZ(0))
 
-        with pytest.raises(UnsupportedTapeOperationError, match="contains multiple types of measurements is unsupported"):
+        with pytest.raises(
+            UnsupportedTapeOperationError,
+            match="contains multiple types of measurements is unsupported",
+        ):
             tape.get_output_shape(dev)
 
     def test_raises_multi_state(self):
@@ -1995,41 +1999,51 @@ class TestOutputShape:
             qml.state()
             qml.density_matrix(wires=0)
 
-        with pytest.raises(UnsupportedTapeOperationError, match="multiple state measurements is not supported"):
+        with pytest.raises(
+            UnsupportedTapeOperationError, match="multiple state measurements is not supported"
+        ):
             tape.get_output_shape(dev)
 
     def test_raises_sample_shot_vector(self):
         """Test that getting the output shape of a tape that returns samples
         along with a device with a shot vector raises an error."""
-        dev = qml.device("default.qubit", wires=3, shots=(1,2,3))
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
         with qml.tape.QuantumTape() as tape:
             qml.RY(0.3, wires=0)
             qml.RX(0.2, wires=0)
             qml.sample()
 
-        with pytest.raises(UnsupportedTapeOperationError, match="returning samples along with a device with a shot vector"):
+        with pytest.raises(
+            UnsupportedTapeOperationError,
+            match="returning samples along with a device with a shot vector",
+        ):
             tape.get_output_shape(dev)
 
     def test_raises_sample_shot_vector(self):
         """Test that getting the output shape of a tape that returns samples
         along with a device with a shot vector raises an error."""
-        dev = qml.device("default.qubit", wires=3, shots=(1,2,3))
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
         with qml.tape.QuantumTape() as tape:
             qml.RY(0.3, wires=0)
             qml.RX(0.2, wires=0)
             qml.sample()
 
-        with pytest.raises(UnsupportedTapeOperationError, match="returning samples along with a device with a shot vector"):
+        with pytest.raises(
+            UnsupportedTapeOperationError,
+            match="returning samples along with a device with a shot vector",
+        ):
             tape.get_output_shape(dev)
 
 
 class TestOutputDomain:
     """Tests for determining the tape output shape of tapes."""
 
-    @pytest.mark.parametrize("ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])])
-    @pytest.mark.parametrize("shots", [None, 1, (1,2,3)])
+    @pytest.mark.parametrize(
+        "ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])]
+    )
+    @pytest.mark.parametrize("shots", [None, 1, (1, 2, 3)])
     def test_float_measures(self, ret, shots):
         """Test that most measurements output floating point values and that
         the tape output domain correctly identifies this."""

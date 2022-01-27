@@ -82,9 +82,11 @@ All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
+
 class UnsupportedTapeOperationError(ValueError):
     """An error raised when an unsupported operation is attempted using a
     quantum tape."""
+
 
 def get_active_tape():
     """Returns the currently recording tape.
@@ -912,7 +914,7 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = measurement_process.shape
 
-            #TODO: consider CV cutoff
+            # TODO: consider CV cutoff
             elif ret_type == qml.operation.Probability:
                 len_wires = len(measurement_process.wires)
                 dim = QuantumTape._get_num_basis_states(len_wires, device)
@@ -958,7 +960,9 @@ class QuantumTape(AnnotatedQueue):
                     )
                 else:
                     # TODO: revisit when qml.sample without an observable fully supports shot vectors
-                    raise UnsupportedTapeOperationError("Getting the output shape of a tape returning samples along with a device with a shot vector is not supported.")
+                    raise UnsupportedTapeOperationError(
+                        "Getting the output shape of a tape returning samples along with a device with a shot vector is not supported."
+                    )
 
         return shape
 
@@ -989,7 +993,9 @@ class QuantumTape(AnnotatedQueue):
         # first one
         ret_type = mps[0].return_type
         if ret_type == qml.operation.State:
-            raise UnsupportedTapeOperationError("Getting the output shape of a tape with multiple state measurements is not supported.")
+            raise UnsupportedTapeOperationError(
+                "Getting the output shape of a tape with multiple state measurements is not supported."
+            )
 
         shot_vector = device._shot_vector
         if shot_vector is None:
@@ -1112,7 +1118,9 @@ class QuantumTape(AnnotatedQueue):
 
             if ret_type == qml.operation.Sample:
 
-                if observable.obs is None or all(np.issubdtype(e.dtype, int) for e in observable.eigvals):
+                if observable.obs is None or all(
+                    np.issubdtype(e.dtype, int) for e in observable.eigvals
+                ):
                     # qml.sample() or integer eigvals
                     output_domain = int
                 else:
