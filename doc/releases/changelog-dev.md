@@ -4,8 +4,39 @@
 
 <h3>New features since last release</h3>
 
-* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
-  static property. This allows to programmatically know the number of parameters before an operator is 
+* The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
+  QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a QNode that returns basis state probabilities:
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
+  ```
+  The QNode can be evaluated and its jacobian can be computed:
+  ```pycon
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
+   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
+  ```
+  Note that `jax.jit` is not supported for vector-valued QNodes.
+  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
+
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
+  static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
@@ -382,12 +413,12 @@
   ...     ...
   ```
 
-* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this
   an explicit `_eigvals` method was added.
   [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
-  
-* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
-  the `composable_rotations` attribute. 
+
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to
+  the `composable_rotations` attribute.
   [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 
 <h3>Breaking changes</h3>
