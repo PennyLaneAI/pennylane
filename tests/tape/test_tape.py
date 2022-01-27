@@ -1857,13 +1857,15 @@ class TestOutputShape:
         """Test that getting the output shape of a tape containing multiple
         probability measurements with different number of wires errors when
         using a device with a shot vector."""
-        dev = qml.device("default.qubit", wires=3, shots=(1,2,3))
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
 
         with qml.tape.QuantumTape() as tape:
             qml.probs(wires=[0])
-            qml.probs(wires=[1,2])
+            qml.probs(wires=[1, 2])
 
-        with pytest.raises(UnsupportedTapeOperationError, match="multiple probability measurements"):
+        with pytest.raises(
+            UnsupportedTapeOperationError, match="multiple probability measurements"
+        ):
             tape.get_output_shape(dev)
 
     @pytest.mark.parametrize("measurements, expected", multi_measurements)

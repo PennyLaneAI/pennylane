@@ -1047,7 +1047,7 @@ class QuantumTape(AnnotatedQueue):
                     # measurement processes act on
                     # TODO: revisit when issues with this case are resolved
                     raise UnsupportedTapeOperationError(
-                        "Getting the output shape of a tape with multiple probability measurements "\
+                        "Getting the output shape of a tape with multiple probability measurements "
                         "along with a device that defines a shot vector is not supported."
                     )
 
