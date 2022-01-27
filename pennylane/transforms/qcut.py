@@ -84,7 +84,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
         if isinstance(op, WireCut):
             replace_wire_cut_node(op, graph)
 
-            
+
 def _add_operator_node(
     graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict
 ) -> None:
