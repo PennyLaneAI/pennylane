@@ -270,12 +270,19 @@ class DefaultQubit(QubitDevice):
         """
         Given the measured values, retrieve the op with the correct parameters and run it.
         """
-        branches = op_object.branches
-        required_measurements = op_object.dependant_measurements
-        op = branches[tuple(
-            self._measured[measurement_id] for measurement_id in required_measurements
-        )]
-        return self._apply_operation(state, op)
+        sum_state = None
+        for branch in op_object.branches.keys():
+            mask = np.zeros(state.shape, dtype=bool)
+            for i, m in enumerate(op_object.required_measurements):
+                slicer = [slice(None)] * self.num_wires
+                slicer[m] = branch[i]
+                mask[tuple(slicer)] = True
+            partial_state = self._apply_operation(state * mask.astype(int), op_object.branches[branch])
+            if sum_state is None:
+                sum_state = partial_state
+            else:
+                sum_state += partial_state
+        return sum_state
 
     def _get_projection_from_branch(self, state, branches, r_measurements):
         mask = np.zeros(state.shape, dtype=bool)
