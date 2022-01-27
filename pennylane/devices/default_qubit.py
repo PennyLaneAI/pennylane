@@ -266,9 +266,15 @@ class DefaultQubit(QubitDevice):
         """
         Evaluate the MeasurementDependantValue[bool] value and then conditionally apply the operation.
         """
-        branches = op_object.branches
-        required_measurements = op_object.required_measurements
-        true_state, false_state = self._get_projection_from_branch(state, branches, required_measurements)
+        mask = np.zeros(state.shape, dtype=bool)
+        for branch in op_object.branches.keys():
+            if op_object.branches[branch]:
+                for i, m in enumerate(op_object.required_measurements):
+                    slicer = [slice(None)] * self.num_wires
+                    slicer[m] = branch[i]
+                    mask[tuple(slicer)] = True
+        true_state = state * mask.astype(int)
+        false_state = state * np.logical_not(mask).astype(int)
         return self._apply_operation(true_state, op_object.then_op) + false_state
 
     def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
@@ -289,21 +295,13 @@ class DefaultQubit(QubitDevice):
                 sum_state += partial_state
         return sum_state
 
-    def _get_projection_from_branch(self, state, branches, r_measurements):
-        mask = np.zeros(state.shape, dtype=bool)
-        for branch in branches.keys():
-            if branches[branch]:
-                for i, m in enumerate(r_measurements):
-                    slicer = [slice(None)] * self.num_wires
-                    slicer[m] = branch[i]
-                    mask[tuple(slicer)] = True
-        return state * mask.astype(int), state * np.logical_not(mask).astype(int)
-
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
         """
         Slice the state along the qubit axes, make a random choice about which half of the state to keep, and reset
         the qubit to |0\
         """
+
+        # don't actually change the state (deferred measurement principle)
         self._measured.append(op_object.measure_var)
         return state
 
