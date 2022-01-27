@@ -941,20 +941,20 @@ all_ops = [
 ]
 
 idempotent_ops = [
-    qml.Identity(0),
-    qml.Hadamard(0),
-    qml.PauliX(0),
-    qml.PauliY(0),
-    qml.PauliZ(0),
-    qml.CNOT(wires=(0, 1)),
-    qml.CZ(wires=(0, 1)),
-    qml.CY(wires=(0, 1)),
-    qml.SWAP(wires=(0, 1)),
-    qml.CSWAP(wires=(0, 1, 2)),
-    qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)),
-    qml.Barrier(0),
-    qml.WireCut(wires=0),
+    qml.Identity,
+    qml.Hadamard,
+    qml.PauliX,
+    qml.PauliY,
+    qml.PauliZ,
+    qml.CNOT,
+    qml.CZ,
+    qml.CY,
+    qml.SWAP,
+    qml.CSWAP,
+    qml.Toffoli,
+    qml.MultiControlledX,
+    qml.Barrier,
+    qml.WireCut,
 ]
 
 
@@ -965,7 +965,7 @@ def test_adjoint_method(op, num_adjoint_calls, tol):
     for i in range(num_adjoint_calls):
         adj_op = adj_op.adjoint()
 
-    if (op in idempotent_ops) or (num_adjoint_calls % 2 == 0):
+    if (type(op) in idempotent_ops) or (num_adjoint_calls % 2 == 0):
         expected_adj_op = copy.copy(op)
 
     else:
@@ -973,9 +973,9 @@ def test_adjoint_method(op, num_adjoint_calls, tol):
         expected_adj_op.inverse = not expected_adj_op.inverse
 
     assert adj_op.name == expected_adj_op.name
-    assert adj_op.label() == expected_adj_op.label()
+    assert adj_op.label() == expected_adj_op.label()  # check that the name and labels are the same
 
     try:
-        assert np.testing.assert_allclose(adj_op.matrix, expected_adj_op.matrix, atol=tol)
+        np.testing.assert_allclose(adj_op.matrix, expected_adj_op.matrix, atol=tol)  # compare matrix if its defined
     except NotImplementedError:
         pass
