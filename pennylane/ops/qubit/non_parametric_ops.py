@@ -1840,8 +1840,24 @@ class WireCut(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    # pylint: disable=unused-argument
-    def decomposition(self, wires):
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the WireCut operator.
+
+        Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
+
+        Args:
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.WireCut.compute_decomposition(0)
+        []
+
+        """
         return []
 
     def label(self, decimals=None):
