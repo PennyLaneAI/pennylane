@@ -83,6 +83,11 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
+class UnsupportedTapeOperationError(ValueError):
+    """An error raised when an unsupported operation is attempted using a
+    quantum tape."""
+
+
 def get_active_tape():
     """Returns the currently recording tape.
     If no tape is currently recording, ``None`` is returned.
@@ -440,6 +445,8 @@ class QuantumTape(AnnotatedQueue):
 
                 # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
+                    # TODO: what if we had a CV device here? Having the base as
+                    # 2 would have to be swapped to the cutoff value
                     self._output_dim += 2 ** len(obj.wires)
                 elif obj.return_type is qml.operation.State:
                     continue  # the output_dim is worked out automatically
@@ -872,6 +879,260 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
 
+    @staticmethod
+    def _get_num_basis_states(num_systems, device):
+        """Auxiliary function to determine the number of basis states given the
+        number of systems and a quantum device.
+
+        This function is meant to be used with the Probability measurement to
+        determine how many outcomes there will be. With qubit based devices
+        we'll have two outcomes for each subsystem, with continuous variable
+        devices that impose a Fock cutoff the number of basis states per
+        subsystem equals the cutoff value.
+
+        Args:
+            num_systems (int): the number of qubits/qumodes
+            device (~.Device): a PennyLane device
+
+        Returns:
+            int: the number of basis states
+        """
+        cutoff = getattr(device, "cutoff", None)
+        base = 2 if cutoff is None else cutoff
+        return base ** num_systems
+
+    @staticmethod
+    def _single_measurement_shape(measurement_process, device):
+        """Auxiliary function that determines the output shape of a tape with
+        a single measurement.
+        """
+        shape = tuple()
+
+        ret_type = measurement_process.return_type
+        if device._shot_vector is None:
+            if measurement_process.shape is not None:
+
+                shape = measurement_process.shape
+
+            # TODO: consider CV cutoff
+            elif ret_type == qml.operation.Probability:
+                len_wires = len(measurement_process.wires)
+                dim = QuantumTape._get_num_basis_states(len_wires, device)
+                shape = (dim,)
+
+            elif ret_type == qml.operation.State:
+
+                # Note: qml.density_matrix has its shape defined, so we're handling
+                # the qml.state case; acts on all device wires
+                dim = 2 ** len(device.wires)
+                shape = (dim,)
+
+            elif ret_type == qml.operation.Sample:
+
+                if measurement_process.obs is not None:
+                    # qml.sample(some_observable) case
+                    shape = (device.shots,) if device.shots != 1 else 1
+                else:
+                    # qml.sample() case
+                    if device.shots is None or device.shots == 1:
+                        shape = (len(device.wires),)
+                    else:
+                        shape = (device.shots, len(device.wires))
+
+        else:
+            shot_vector = device._shot_vector
+            num_shot_elements = sum([s.copies for s in shot_vector])
+            if measurement_process.shape is not None:
+
+                shape = (num_shot_elements,)
+
+            elif ret_type == qml.operation.Probability:
+
+                len_wires = len(measurement_process.wires)
+                dim = QuantumTape._get_num_basis_states(len_wires, device)
+                shape = (num_shot_elements, dim)
+
+            elif ret_type == qml.operation.Sample:
+                if measurement_process.obs is not None:
+                    shape = tuple(
+                        (shot_val,) if shot_val != 1 else tuple()
+                        for shot_val in device._raw_shot_sequence
+                    )
+                else:
+                    # TODO: revisit when qml.sample without an observable fully supports shot vectors
+                    raise UnsupportedTapeOperationError(
+                        "Getting the output shape of a tape returning samples along with a device with a shot vector is not supported."
+                    )
+
+        return shape
+
+    @staticmethod
+    def _multi_homogenous_measurement_shape(mps, device):
+        """Auxiliary function that determines the output shape of a tape with
+        multiple homogenous measurements.
+
+        .. note::
+
+            Assuming multiple probability measurements where not all
+            probability measurements have the same number of wires specified,
+            the output shape of the tape is a sum of the output shapes produced
+            by each probability measurement.
+
+            Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
+            multiple probability measurement as an example.
+
+            The output shape will be a one element tuple `(6,)`, where the
+            element `6` is equal to `2 ** 1 + 2 ** 2 = 6`. The base of each
+            term is determined by the number of basis states and the exponent
+            of each term comes from the length of the wires specified for the
+            probability measurements: `1 == len([0]) and 2 == len([1, 2])`.
+        """
+        shape = tuple()
+
+        # We know that there's one type of return_type, gather it from the
+        # first one
+        ret_type = mps[0].return_type
+        if ret_type == qml.operation.State:
+            raise UnsupportedTapeOperationError(
+                "Getting the output shape of a tape with multiple state measurements is not supported."
+            )
+
+        shot_vector = device._shot_vector
+        if shot_vector is None:
+            if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+
+                shape = (len(mps),)
+
+            elif ret_type == qml.operation.Probability:
+
+                wires_num_set = {len(meas.wires) for meas in mps}
+                same_num_wires = len(wires_num_set) == 1
+                if same_num_wires:
+                    # All probability measurements have the same number of
+                    # wires, gather the length from the first one
+
+                    len_wires = len(mps[0].wires)
+                    dim = QuantumTape._get_num_basis_states(len_wires, device)
+                    shape = (len(mps), dim)
+
+                else:
+                    # There are a varying number of wires that the probability
+                    # measurement processes act on
+                    shape = (sum(2 ** len(m.wires) for m in mps),)
+
+            elif ret_type == qml.operation.Sample:
+
+                shape = (len(mps), device.shots)
+
+        else:
+            if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+                num = sum(shottup.copies for shottup in shot_vector)
+                shape = (num, len(mps))
+
+            elif ret_type == qml.operation.Probability:
+
+                wires_num_set = {len(meas.wires) for meas in mps}
+                same_num_wires = len(wires_num_set) == 1
+                if same_num_wires:
+                    # All probability measurements have the same number of
+                    # wires, gather the length from the first one
+
+                    len_wires = len(mps[0].wires)
+                    dim = QuantumTape._get_num_basis_states(len_wires, device)
+                    shot_copies_sum = sum(s.copies for s in shot_vector)
+                    shape = (shot_copies_sum, len(mps), dim)
+
+                else:
+                    # There are a varying number of wires that the probability
+                    # measurement processes act on
+                    shape = (sum(2 ** len(m.wires) for m in mps),)
+
+            elif ret_type == qml.operation.Sample:
+                shape = []
+                for shot_val in device.shot_vector:
+                    for _ in range(shot_val.copies):
+                        shots = shot_val.shots
+                        if shots != 1:
+                            shape.append(tuple([shots, len(mps)]))
+                        else:
+                            shape.append((len(mps),))
+
+        return shape
+
+    def get_output_shape(self, device):
+        """Produces the output shape of the tape by inspecting its measurements
+        and the device used for execution.
+
+        Note: as the output shape may be dependent on the device used for
+        execution, tapes do not store the computed shape.
+
+        Args:
+            device (~.Device): the device that will be used for the tape execution
+
+        Raises:
+            UnsupportedTapeOperationError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
+        Returns:
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
+            tape result
+        """
+        if not self._measurements:
+            self._process_queue()
+
+        output_shape = tuple()
+
+        if len(self._measurements) == 1:
+            output_shape = self._single_measurement_shape(self._measurements[0], device)
+        else:
+            num_measurements = len(set(meas.return_type for meas in self._measurements))
+            if num_measurements == 1:
+                output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
+            else:
+                raise UnsupportedTapeOperationError(
+                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
+                )
+        return output_shape
+
+    def get_output_domain(self):
+        """Returns the numeric type corresponding to the output domain of the
+        tape by inspecting its measurements.
+
+        This function can be used to determine the dtpe of the tape output
+        results before executing the tape.
+
+        Raises:
+            UnsupportedTapeOperationError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
+        Returns:
+            type: the numeric type corresponding to the output domain of the
+            tape
+        """
+        output_domain = float
+
+        for observable in self._measurements:
+            ret_type = observable.return_type
+            if ret_type == qml.operation.State:
+                return complex
+
+            if ret_type == qml.operation.Sample:
+
+                if observable.obs is None or all(
+                    np.issubdtype(e.dtype, int) for e in observable.eigvals
+                ):
+                    # qml.sample() or integer eigvals
+                    output_domain = int
+                else:
+                    output_domain = float
+
+                # Note: if one of the sample measurements contains outputs that
+                # are real, then the entire result will be real
+                if output_domain == float:
+                    return output_domain
+
+        return output_domain
+
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
         to NumPy arrays.
@@ -1130,7 +1391,7 @@ class QuantumTape(AnnotatedQueue):
             max_length=max_length,
         )
 
-    def to_openqasm(self, wires=None, rotations=True, measure_all=True):
+    def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
         Measurements are assumed to be performed on all qubits in the computational basis. An
@@ -1150,6 +1411,7 @@ class QuantumTape(AnnotatedQueue):
                 measured wires such that they are in the eigenbasis of the circuit observables.
             measure_all (bool): whether to perform a computational basis measurement on all qubits
                 or just those specified in the tape
+            precision (int): decimal digits to display for parameters
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1200,7 +1462,11 @@ class QuantumTape(AnnotatedQueue):
             if op.num_params > 0:
                 # If the operation takes parameters, construct a string
                 # with parameter values.
-                params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
+                if precision is not None:
+                    params = "(" + ",".join([f"{p:.{precision}}" for p in op.parameters]) + ")"
+                else:
+                    # use default precision
+                    params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
             qasm_str += f"{gate}{params} {wire_labels};\n"
 

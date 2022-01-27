@@ -66,6 +66,14 @@ def _add_barrier(drawer, layer, mapped_wires, op):
     drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
 
 
+# pylint: disable=unused-argument
+def _add_wirecut(drawer, layer, mapped_wires, op):
+    ymin = min(mapped_wires) - 0.5
+    ymax = max(mapped_wires) + 0.5
+    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
+    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+
+
 special_cases = {
     ops.SWAP: _add_swap,
     ops.CSWAP: _add_cswap,
@@ -74,6 +82,7 @@ special_cases = {
     ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
     ops.Barrier: _add_barrier,
+    ops.WireCut: _add_wirecut,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 

@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, UnsupportedTapeOperationError
 from pennylane.measure import MeasurementProcess, expval, sample, var
 
 
@@ -1255,6 +1255,9 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
+
         # since the copy is shallow, mutating the parameters
         # on one tape will affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
@@ -1298,6 +1301,9 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
+
         # Since they have unique operations, mutating the parameters
         # on one tape will *not* affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
@@ -1327,6 +1333,9 @@ class TestTapeCopying:
         assert copied_tape.observables != tape.observables
         assert copied_tape.measurements != tape.measurements
         assert copied_tape.operations[0] is not tape.operations[0]
+
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
 
         # The underlying operation data has also been copied
         assert copied_tape.operations[0].wires is not tape.operations[0].wires
@@ -1690,3 +1699,459 @@ class TestHashing:
             qml.expval(H)
 
         assert tape1.hash == tape2.hash
+
+
+def cost(tape, dev):
+    return qml.execute([tape], dev, interface="autograd", gradient_fn=qml.gradients.param_shift)
+
+
+measures = [
+    (qml.expval(qml.PauliZ(0)), 1),
+    (qml.var(qml.PauliZ(0)), 1),
+    (qml.probs(wires=[0]), (2,)),
+    (qml.probs(wires=[0, 1]), (4,)),
+    (qml.state(), (8,)),
+    (qml.sample(qml.PauliZ(0)), None),
+    (qml.sample(), None),
+]
+
+multi_measurements = [
+    ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+    ([qml.probs(wires=[0]), qml.probs(wires=[1])], (2, 2)),
+    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], (2 ** 1 + 2 ** 2,)),
+    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], (2 ** 2 + 2 ** 1,)),
+    (
+        [qml.probs(wires=[0]), qml.probs(wires=[1, 2]), qml.probs(wires=[0, 1, 2])],
+        (2 ** 1 + 2 ** 2 + 2 ** 3,),
+    ),
+]
+
+
+class TestOutputShape:
+    """Tests for determining the tape output shape of tapes."""
+
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_output_shapes_single(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the expected
+        output shape."""
+        num_wires = 3
+        dev = qml.device("default.qubit", wires=num_wires, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        shot_dim = shots if not isinstance(shots, tuple) else len(shots)
+        if expected_shape is None:
+            expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
+
+        if measurement.return_type is qml.operation.Sample and measurement.obs is None:
+            expected_shape = (num_wires,) if shots is None or dev.shots == 1 else (shots, num_wires)
+        assert tape.get_output_shape(dev) == expected_shape
+
+    @pytest.mark.parametrize("measurement, expected_shape", measures)
+    @pytest.mark.parametrize("shots", [None, 1, 10, (1, 1, 5, 1)])
+    def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
+        """Test that the output shape produced by the tape matches the output
+        shape of a QNode for a single measurement."""
+        if shots is None and measurement.return_type is qml.operation.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
+        if shots is not None and measurement.return_type is qml.operation.State:
+            pytest.skip("State only supports analytic computations.")
+
+        # TODO: revisit when qml.sample without an observable has been updated
+        # with shot vectors
+        if (
+            isinstance(shots, tuple)
+            and measurement.return_type is qml.operation.Sample
+            and not measurement.obs
+        ):
+            pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
+
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            qml.apply(measurement)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(a, b)
+
+        if isinstance(res, tuple):
+            res_shape = tuple([r.shape for r in res])
+        else:
+            res_shape = circuit(a, b).shape
+
+        res_shape = res_shape if res_shape != tuple() else 1
+        assert tape.get_output_shape(dev) == res_shape
+
+    def test_output_shapes_single_qnode_check_cutoff(self):
+        """Test that the tape output shape is correct when computing
+        probabilities with a dummy device that defines a cutoff value."""
+
+        class CustomDevice(qml.QubitDevice):
+            """A dummy device that has a cutoff value specified and returns
+            analytic probabilities in a fashion similar to the
+            strawberryfields.fock device.
+
+            Note: this device definition is used as PennyLane-SF is not a
+            dependency of PennyLane core and there are no CV device in
+            PennyLane core using a cutoff value.
+            """
+
+            name = "Device with cutoff"
+            short_name = "dummy.device"
+            pennylane_requires = "0.1.0"
+            version = "0.0.1"
+            author = "CV quantum"
+
+            operations = {}
+            observables = {"Identity"}
+
+            def __init__(self, shots=None, wires=None, cutoff=None):
+                super().__init__(wires=wires, shots=shots)
+                self.cutoff = cutoff
+
+            def apply(self, operations, **kwargs):
+                pass
+
+            def analytic_probability(self, wires=None):
+                if wires is None:
+                    wires = self.wires
+                return np.zeros(self.cutoff ** len(wires))
+
+        dev = CustomDevice(wires=2, cutoff=13)
+
+        # If PennyLane-SF is installed, the following can be checked e.g., locally:
+        # dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=13)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.probs(wires=[0])
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            return qml.probs(wires=[0])
+
+        res_shape = circuit(a, b).shape
+        assert tape.get_output_shape(dev) == res_shape
+
+    @pytest.mark.parametrize("measurements, expected", multi_measurements)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_multi_measure(self, measurements, expected, shots):
+        """Test that the expected output shape is obtained when using multiple
+        expectation value, variance and probability measurements."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for m in measurements:
+                qml.apply(m)
+
+        if measurements[0].return_type is qml.operation.Sample:
+            expected[1] = shots
+            expected = tuple(expected)
+
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
+        expected = execution_results[0].shape
+        assert res == expected
+
+    @pytest.mark.parametrize("measurements, expected", multi_measurements)
+    def test_multi_measure_shot_vector(self, measurements, expected):
+        """Test that the expected output shape is obtained when using multiple
+        expectation value, variance and probability measurements with a shot
+        vector."""
+        if measurements[0].return_type is qml.operation.Probability:
+            num_wires = set(len(m.wires) for m in measurements)
+            if len(num_wires) > 1:
+                pytest.skip(
+                    "Multi-probs with varying number of varies when using a shot vecto is to be updated in PennyLane."
+                )
+
+        shots = (1, 1, 5, 1)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for m in measurements:
+                qml.apply(m)
+
+        if measurements[0].return_type is qml.operation.Sample:
+            expected[1] = shots
+            expected = tuple(expected)
+
+        # Update expected as we're using a shotvector
+        expected = (len(shots),) + expected
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
+        expected = execution_results[0].shape
+        assert res == expected
+
+    @pytest.mark.parametrize("shots", [1, 10])
+    def test_multi_measure_sample(self, shots):
+        """Test that the expected output shape is obtained when using multiple
+        qml.sample measurements."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        num_samples = 3
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for i in range(num_samples):
+                qml.sample(qml.PauliZ(i))
+
+        expected = (num_samples, shots)
+
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
+        expected = execution_results[0].shape
+        assert res == expected
+
+    def test_multi_measure_sample_shot_vector(self):
+        """Test that the expected output shape is obtained when using multiple
+        qml.sample measurements with a shot vector."""
+        shots = (1, 1, 5, 1)
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
+
+        num_samples = 3
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for i in range(num_samples):
+                qml.sample(qml.PauliZ(i))
+
+        expected = []
+        for s in shots:
+            shape = (num_samples,) if s == 1 else (s, num_samples)
+            expected.append(shape)
+
+        res = tape.get_output_shape(dev)
+        for r, e in zip(res, expected):
+            assert r == e
+
+        execution_results = cost(tape, dev)[0]
+        for r, e in zip(res, execution_results):
+            assert r == e.shape
+
+    def test_raises_multiple_different_measurements(self):
+        """Test that getting the output shape of a tape that contains multiple
+        types of measurements raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.expval(qml.PauliZ(0))
+            qml.sample(qml.PauliZ(0))
+
+        with pytest.raises(
+            UnsupportedTapeOperationError,
+            match="contains multiple types of measurements is unsupported",
+        ):
+            tape.get_output_shape(dev)
+
+    def test_raises_multi_state(self):
+        """Test that getting the output shape of a tape that contains multiple
+        state measurements raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.state()
+            qml.density_matrix(wires=0)
+
+        with pytest.raises(
+            UnsupportedTapeOperationError, match="multiple state measurements is not supported"
+        ):
+            tape.get_output_shape(dev)
+
+    def test_raises_sample_shot_vector(self):
+        """Test that getting the output shape of a tape that returns samples
+        along with a device with a shot vector raises an error."""
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.sample()
+
+        with pytest.raises(
+            UnsupportedTapeOperationError,
+            match="returning samples along with a device with a shot vector",
+        ):
+            tape.get_output_shape(dev)
+
+    def test_raises_sample_shot_vector(self):
+        """Test that getting the output shape of a tape that returns samples
+        along with a device with a shot vector raises an error."""
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.sample()
+
+        with pytest.raises(
+            UnsupportedTapeOperationError,
+            match="returning samples along with a device with a shot vector",
+        ):
+            tape.get_output_shape(dev)
+
+
+class TestOutputDomain:
+    """Tests for determining the tape output shape of tapes."""
+
+    @pytest.mark.parametrize(
+        "ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])]
+    )
+    @pytest.mark.parametrize("shots", [None, 1, (1, 2, 3)])
+    def test_float_measures(self, ret, shots):
+        """Test that most measurements output floating point values and that
+        the tape output domain correctly identifies this."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(a, wires=[0])
+            qml.RZ(b, wires=[0])
+            return qml.apply(ret)
+
+        result = circuit(0.3, 0.2)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, float)
+        assert circuit.qtape.get_output_domain() is float
+
+    def test_complex_state(self):
+        """Test that a tape with qml.state correctly determines that the output
+        domain will be complex."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(a, wires=[0])
+            qml.RZ(b, wires=[0])
+            return qml.state()
+
+        result = circuit(0.3, 0.2)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, complex)
+        assert circuit.qtape.get_output_domain() is complex
+
+    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
+    def test_sample_int_eigvals(self, ret):
+        """Test that the tape can correctly determine the output domain for a
+        sampling measurement with a Hermitian observable with integer
+        eigenvalues."""
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        arr = np.array(
+            [
+                1.32,
+                2.312,
+            ]
+        )
+        herm = np.outer(arr, arr)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RY(0.4, wires=[0])
+            return qml.apply(ret)
+
+        result = circuit()
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, int)
+        assert circuit.qtape.get_output_domain() is int
+
+    # TODO: add cases for each interface once qml.Hermitian supports other
+    # interfaces
+    def test_sample_real_eigvals(self):
+        """Test that the tape can correctly determine the output domain when
+        sampling a Hermitian observable with real eigenvalues."""
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        arr = np.array(
+            [
+                1.32,
+                2.312,
+            ]
+        )
+        herm = np.outer(arr, arr)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            qml.RY(0.4, wires=[0])
+            return qml.sample(qml.Hermitian(herm, wires=0))
+
+        result = circuit(0.3, 0.2)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, float)
+        assert circuit.qtape.get_output_domain() is float
+
+    def test_sample_real_and_int_eigvals(self):
+        """Test that the tape can correctly determine the output domain for
+        multiple sampling measurements with a Hermitian observable with real
+        eigenvalues and another one with integer eigenvalues."""
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        arr = np.array(
+            [
+                1.32,
+                2.312,
+            ]
+        )
+        herm = np.outer(arr, arr)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))
+
+        result = circuit(0, 3)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, float)
+        assert circuit.qtape.get_output_domain() is float
