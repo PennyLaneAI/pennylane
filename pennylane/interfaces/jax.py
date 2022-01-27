@@ -17,7 +17,7 @@ JAX.
 """
 from functools import partial
 import jax
-import jax.experimental.host_callback as host_callback
+from jax.experimental import host_callback
 import jax.numpy as jnp
 from pennylane.queuing import AnnotatedQueue
 from pennylane.operation import Variance, Expectation

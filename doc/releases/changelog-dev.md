@@ -4,8 +4,39 @@
 
 <h3>New features since last release</h3>
 
-* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
-  static property. This allows to programmatically know the number of parameters before an operator is 
+* The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
+  QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a QNode that returns basis state probabilities:
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
+  ```
+  The QNode can be evaluated and its jacobian can be computed:
+  ```pycon
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
+   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
+  ```
+  Note that `jax.jit` is not supported for vector-valued QNodes.
+  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
+
+* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
+  static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
@@ -151,25 +182,39 @@
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
-  With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
-  on a reduced number of qubits.
+  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
 
   ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-  mol = qml.hf.Molecule(symbols, geometry)
-  H = qml.hf.generate_hamiltonian(mol)(geometry)
-  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  paulix_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
-  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
-  ```
+  from pennylane import hf
+  from pennylane import numpy as np
 
+  symbols = ["He", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+  mol = hf.Molecule(symbols, geometry, charge=1)
+  H = hf.generate_hamiltonian(mol)(geometry)
+  n_qubits, n_elec = len(H.wires), mol.n_electrons
+
+  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+  opt_sector = hf.optimal_sector(H, generators, n_elec)
+  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
+                                    n_elec, n_qubits)
+  ```
   ```pycon
   >>> print(H_tapered)
-    ((-0.321034397355719+0j)) [I0]
-  + ((0.1809270275619743+0j)) [X0]
-  + ((0.7959678503870796+0j)) [Z0]
+    ((-1.7997297644914574+0j)) [I0]
+  + ((-0.10492941956079854+0j)) [X0]
+  + ((0.10492941956079856+0j)) [X1]
+  + ((0.5675134088336165+0j)) [Z1]
+  + ((0.5675134088336168+0j)) [Z0]
+  + ((-0.14563730440190722+0j)) [Y0 Y1]
+  + ((-0.10492941933657857+0j)) [X0 Z1]
+  + ((0.09337410512815508+0j)) [Z0 Z1]
+  + ((0.10492941933657857+0j)) [Z0 X1]
+  >>> print(hf_tapered)
+  tensor([1, 1], requires_grad=True)
   ```
+  
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
@@ -368,12 +413,12 @@
   ...     ...
   ```
 
-* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this 
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this
   an explicit `_eigvals` method was added.
   [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
-  
-* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to 
-  the `composable_rotations` attribute. 
+
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to
+  the `composable_rotations` attribute.
   [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
 
 <h3>Breaking changes</h3>
@@ -537,6 +582,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
-Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
 David Wierichs, Shaoming Zhang
