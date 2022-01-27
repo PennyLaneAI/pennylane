@@ -1045,7 +1045,11 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     # There are a varying number of wires that the probability
                     # measurement processes act on
-                    shape = (sum(2 ** len(m.wires) for m in mps),)
+                    # TODO: revisit when issues with this case are resolved
+                    raise UnsupportedTapeOperationError(
+                        "Getting the output shape of a tape with multiple probability measurements "\
+                        "along with a device that defines a shot vector is not supported."
+                    )
 
             elif ret_type == qml.operation.Sample:
                 shape = []
@@ -1077,9 +1081,6 @@ class QuantumTape(AnnotatedQueue):
             Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
             tape result
         """
-        if not self._measurements:
-            self._process_queue()
-
         output_shape = tuple()
 
         if len(self._measurements) == 1:
