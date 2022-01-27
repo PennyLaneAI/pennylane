@@ -84,8 +84,8 @@ class TestMidCircuitMeasurements:
                 out1, m1, m2
             )
 
-            qml.condition(qml.RZ)(out2, wires=1)
+            qml.condition(qml.RZ)(out2, wires=3)
 
-            return qml.probs(wires=1)
+            return qml.probs(wires=3)
 
         value = runtime_circuit()
