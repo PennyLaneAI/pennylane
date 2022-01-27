@@ -264,7 +264,9 @@ class DefaultQubit(QubitDevice):
 
     def _apply_if_op(self, state, axes, op_object=None, **kwargs):
         """
-        Evaluate the MeasurementDependantValue[bool] value and then conditionally apply the operation.
+        Decompose the state vector into a sum of two components `true_state` and `false_state`.
+        `true_state` is the sum of all the projections where the branch expression evaluates to true, and `false_state`
+        is the sum of the other branches. Apply the op to `true_state` and resum with `false_state`.
         """
         mask = np.zeros(state.shape, dtype=bool)
         for branch in op_object.branches.keys():
@@ -274,12 +276,13 @@ class DefaultQubit(QubitDevice):
                     slicer[m] = branch[i]
                     mask[tuple(slicer)] = True
         true_state = state * mask.astype(int)  # this is the result of the projection applied to the state
-        false_state = state * np.logical_not(mask).astype(int)  # this is the complement of the projection
+        false_state = state * np.logical_not(mask).astypestate(int)  # this is the complement of the projection
         return self._apply_operation(true_state, op_object.then_op) + false_state
 
     def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
         """
-        Given the measured values, retrieve the op with the correct parameters and run it.
+        Decompose the state vector into a sum of projected state vectors (one for each branch). and apply the op to the
+        corresponding branch, and then re-sum.
         """
         sum_state = None
         for branch in op_object.branches.keys():
@@ -297,8 +300,9 @@ class DefaultQubit(QubitDevice):
 
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
         """
-        Slice the state along the qubit axes, make a random choice about which half of the state to keep, and reset
-        the qubit to |0\
+        Mark the measured wire as "measured", but do nothing to the state. Thanks to deferred measurement principle,
+        we can delay the actual measurement until the end. (but still restrict what operations can be performed on
+        this wire).
         """
 
         # don't actually change the state (deferred measurement principle)
