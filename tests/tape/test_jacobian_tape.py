@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.tape import JacobianTape, QuantumTape
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable
@@ -872,5 +873,6 @@ class TestObservableWithObjectReturnType:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
-        assert np.isclose(qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2))
+        par = pnp.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))

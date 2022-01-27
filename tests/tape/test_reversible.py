@@ -17,10 +17,9 @@ import pytest
 from pennylane import numpy as np
 
 import pennylane as qml
-from pennylane.interfaces.autograd import AutogradInterface
+from pennylane import numpy as pnp
 from pennylane.tape import JacobianTape, ReversibleTape
 from pennylane.qnode_old import QNode, qnode
-from pennylane.measure import MeasurementProcess
 
 
 thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
@@ -395,7 +394,7 @@ class TestQNodeIntegration:
             UserWarning,
             match="Requested reversible differentiation to be computed with finite shots.",
         ):
-            qml.grad(circ)(0.1)
+            qml.grad(circ)(pnp.array(0.1, requires_grad=True))
 
     def test_qnode(self, mocker, tol):
         """Test that specifying diff_method allows the reversible

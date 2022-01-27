@@ -1236,8 +1236,8 @@ class TestHamiltonianDifferentiation:
     def test_trainable_coeffs_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
+        param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
         @qml.qnode(dev, diff_method="parameter-shift")
