@@ -45,7 +45,7 @@ class QNode:
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
+              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays.
 
             * ``"torch"``: Allows PyTorch to backpropogate
@@ -60,7 +60,7 @@ class QNode:
               JAX ``DeviceArray`` objects.
 
             * ``None``: The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
+              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
