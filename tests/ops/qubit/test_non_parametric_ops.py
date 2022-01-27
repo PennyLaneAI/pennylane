@@ -937,7 +937,7 @@ all_ops = [
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)),
     qml.Barrier(0),
-    qml.WireCut(wires=0)
+    qml.WireCut(wires=0),
 ]
 
 idempotent_ops = [
@@ -954,7 +954,7 @@ idempotent_ops = [
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)),
     qml.Barrier(0),
-    qml.WireCut(wires=0)
+    qml.WireCut(wires=0),
 ]
 
 
