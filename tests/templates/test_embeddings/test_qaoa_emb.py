@@ -262,25 +262,6 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        features = [0.1, -1.3]
-        weights = [[0.1, -1.1, 0.2]]
-
-        dev = qml.device("default.qubit", wires=2)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(features, weights)
-        res2 = circuit2(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        res = circuit(tuple(features), tuple(weights))
-        res2 = circuit2(tuple(features), tuple(weights))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 

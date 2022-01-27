@@ -1154,9 +1154,9 @@ class Tensor(Observable):
 
         >>> T = qml.PauliX(0) @ qml.Hadamard(2)
         >>> T.label()
-        'X⊗H'
+        'X@H'
         >>> T.label(base_label=["X0", "H2"])
-        'X0⊗H2'
+        'X0@H2'
 
         """
         if base_label is not None:
@@ -1165,11 +1165,11 @@ class Tensor(Observable):
                     "Tensor label requires ``base_label`` keyword to be same length"
                     " as tensor components."
                 )
-            return "⊗".join(
+            return "@".join(
                 ob.label(decimals=decimals, base_label=lbl) for ob, lbl in zip(self.obs, base_label)
             )
 
-        return "⊗".join(ob.label(decimals=decimals) for ob in self.obs)
+        return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
     def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
