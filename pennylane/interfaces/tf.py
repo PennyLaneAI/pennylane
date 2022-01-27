@@ -140,7 +140,7 @@ class TFInterface(AnnotatedQueue):
 
         use_adjoint_cached_state = False
         # tape might not be a jacobian tape
-        jac_options = getattr(self, "jacobian_options", dict())
+        jac_options = getattr(self, "jacobian_options", {})
         # cache state for adjoint jacobian computation
         if jac_options.get("jacobian_method", None) == "adjoint_jacobian":
             if jac_options.get("adjoint_cache", True):
