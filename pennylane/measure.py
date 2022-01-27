@@ -441,7 +441,7 @@ def probs(wires=None, op=None):
     and :math:`85.4\%` of measuring the rotated :math:`|1\rangle` state.
 
     Note that the output shape of this measurement process depends on whether
-    the device simulates a qubit or a continuous variable quantum system.
+    the device simulates qubit or continuous variable quantum systems.
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
@@ -563,5 +563,5 @@ def density_matrix(wires):
     # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
     dim = 2 ** len(wires)
-    shape = (1, dim, dim)
+    shape = (dim, dim)
     return MeasurementProcess(State, wires=wires, shape=shape)
