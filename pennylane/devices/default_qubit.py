@@ -164,7 +164,7 @@ class DefaultQubit(QubitDevice):
         # state as an array of dimension [2]*wires.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
-        self._measured = {}
+        self._measured = []
 
         self._apply_ops = {
             "_MidCircuitMeasure": self._apply_mid_circuit_measure,
@@ -252,7 +252,7 @@ class DefaultQubit(QubitDevice):
         if operation in diagonal_in_z_basis:
             return self._apply_diagonal_unitary(state, matrix, wires)
         if len(wires) <= 2:
-            # Einsum is faster for small gates
+            # einsum is faster for small gates
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
@@ -263,13 +263,8 @@ class DefaultQubit(QubitDevice):
         """
         branches = op_object.branches
         required_measurements = op_object.required_measurements
-        calc = branches[tuple(
-            self._measured[measurement_id] for measurement_id in required_measurements
-        )]
-        # calc = expr.get_computation(self._measured)
-        if calc:
-            return self._apply_operation(state, op_object.then_op)
-        return state
+        true_state, false_state = self._get_projection_from_branch(state, branches, required_measurements)
+        return self._apply_operation(true_state, op_object.then_op) + false_state
 
     def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
         """
@@ -282,33 +277,22 @@ class DefaultQubit(QubitDevice):
         )]
         return self._apply_operation(state, op)
 
+    def _get_projection_from_branch(self, state, branches, r_measurements):
+        mask = np.zeros(state.shape, dtype=bool)
+        for branch in branches.keys():
+            if branches[branch]:
+                for i, m in enumerate(r_measurements):
+                    slicer = [slice(None)] * self.num_wires
+                    slicer[m] = branch[i]
+                    mask[tuple(slicer)] = True
+        return state * mask.astype(int), state * np.logical_not(mask).astype(int)
+
     def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
         """
         Slice the state along the qubit axes, make a random choice about which half of the state to keep, and reset
         the qubit to |0\
         """
-        # sl_0 = _get_slice(0, axes[0], self.num_wires)
-        # sl_1 = _get_slice(1, axes[0], self.num_wires)
-        #
-        # # get sub-states
-        # sub_0 = state[sl_0]
-        # sub_1 = state[sl_1]
-        #
-        # # get norms
-        # sub_0_norm = np.linalg.norm(sub_0)
-        # sub_1_norm = np.linalg.norm(sub_1)
-        #
-        # # make measurement
-        # result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
-        # self._measured[op_object.measure_var] = result
-        #
-        # # collapse state
-        # if result == 0:
-        #     return np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
-        #
-        # # if 1 perform qubit reset
-        # collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axes[0])
-        # return self._roll(collapsed_state, 1, axes[0])
+        self._measured.append(op_object.measure_var)
         return state
 
     def _apply_x(self, state, axes, **kwargs):
