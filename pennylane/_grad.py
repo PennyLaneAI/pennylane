@@ -14,7 +14,6 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
-import warnings
 from functools import partial
 
 import numpy as onp
@@ -30,9 +29,12 @@ make_vjp = unary_to_nary(_make_vjp)
 class grad:
     """Returns the gradient as a callable function of (functions of) QNodes.
 
-    Function arguments with the property ``requires_grad`` set to ``False``
-    will automatically be excluded from the gradient computation, unless
-    the ``argnum`` keyword argument is passed.
+    By default, gradients are computed for arguments which contain the property
+    ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument can
+    be specified to compute gradients for function arguments without this property,
+    such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
+    ``argnum`` to the index of an argument with ``requires_grad=False`` will raise
+    a ``NonDifferentiableError``.
 
     When the output gradient function is executed, both the forward pass
     *and* the backward pass will be performed in order to
@@ -84,23 +86,7 @@ class grad:
         argnum = []
 
         for idx, arg in enumerate(args):
-
-            trainable = getattr(arg, "requires_grad", None)
-            array_box = isinstance(arg, ArrayBox)
-
-            if trainable is None and not array_box:
-
-                warnings.warn(
-                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
-                    "have to explicitly specify requires_grad=True (or the "
-                    "argnum argument must be passed) in order for trainable parameters to be "
-                    "identified.",
-                    UserWarning,
-                )
-
-            if trainable is None:
-                trainable = True
-
+            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 argnum.append(idx)
 
@@ -162,6 +148,10 @@ def jacobian(func, argnum=None):
     Returns:
         function: the function that returns the Jacobian of the input
         function with respect to the arguments in argnum
+
+    .. note::
+        Due to a limitation in Autograd, this function can only differentiate built-in scalar
+        or NumPy array arguments.
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
@@ -292,23 +282,7 @@ def jacobian(func, argnum=None):
         argnum = []
 
         for idx, arg in enumerate(args):
-
-            trainable = getattr(arg, "requires_grad", None)
-            is_array_box = isinstance(arg, ArrayBox)
-
-            if trainable is None and not is_array_box:
-
-                warnings.warn(
-                    "Starting with PennyLane v0.21.0, when using Autograd, inputs "
-                    "have to explicitly specify requires_grad=True (or the "
-                    "argnum argument must be passed) in order for trainable parameters to be "
-                    "identified.",
-                    UserWarning,
-                )
-
-            if trainable is None:
-                trainable = True
-
+            trainable = getattr(arg, "requires_grad", None) or isinstance(arg, ArrayBox)
             if trainable:
                 argnum.append(idx)
 

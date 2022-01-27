@@ -125,21 +125,19 @@ How does PennyLane know which arguments of a quantum function to differentiate, 
 For example, you may want to pass arguments to a QNode but *not* have
 PennyLane consider them when computing gradients.
 
-All positional arguments provided to the QNode are assumed to be differentiable
-by default, but this behaviour is deprecated. In a future release, only arguments explicitly
-marked as trainable or marked using the `argnum` keyword argument will be treated as trainable. Not explicitly marking arguments currently raises a 
-deprecation warning.
-
-For now, arguments are internally turned into arrays from the PennyLane NumPy module,
-which have a special flag ``requires_grad`` specifying whether they are trainable or not:
+Regular positional arguments provided to the QNode are not assumed to be differentiable
+by default. This includes arguments in the form of built-in Python data types, and arrays from
+the original NumPy module. Thus, arguments need to be explicitly marked as trainable or selected
+using the ``argnum`` keyword. To mark an argument as trainable, a special flag ``requires_grad``
+has been added to arrays from PennyLane's NumPy module:
 
 >>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2], requires_grad=True)
 tensor([0.1, 0.2], requires_grad=True)
 
-If you would like to provide explicit non-differentiable arguments to the
-QNode or gradient function, make sure to use a NumPy array that specifies
-``requires_grad=False``:
+When omitted, the value for this flag is ``True``, so if you would like to provide a
+non-differentiable PennyLane NumPy array to the QNode or gradient function, make sure
+to specify ``requires_grad=False``:
 
 >>> from pennylane import numpy as np
 >>> np.array([0.1, 0.2], requires_grad=False)
@@ -150,67 +148,34 @@ tensor([0.1, 0.2], requires_grad=False)
     The ``requires_grad`` argument can be passed to any NumPy function provided by PennyLane,
     including NumPy functions that create arrays like ``np.random.random``, ``np.zeros``, etc.
 
-An alternative way to avoid having positional arguments turned into differentiable PennyLane NumPy arrays is to
-use a keyword argument syntax when the QNode is evaluated or when its gradient is computed.
-
-For example, consider the following QNode that accepts one trainable argument ``weights``,
-and two non-differentiable arguments ``data`` and ``wires``:
+On the other hand, keyword arguments (whether they have a default value or not), are always
+considered non-trainable, no matter their data type or flags they may have. For example, consider
+the following QNode that accepts two arguments ``data`` and ``weights``:
 
 .. code-block:: python
 
     dev = qml.device('default.qubit', wires=5)
 
     @qml.qnode(dev)
-    def circuit(weights, data, wires):
-        qml.AmplitudeEmbedding(data, wires=wires, normalize=True)
-        qml.RX(weights[0], wires=wires[0])
-        qml.RY(weights[1], wires=wires[1])
-        qml.RZ(weights[2], wires=wires[2])
-        qml.CNOT(wires=[wires[0], wires[1]])
-        qml.CNOT(wires=[wires[0], wires[2]])
-        return qml.expval(qml.PauliZ(wires[0]))
+    def circuit(data, weights):
+        qml.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
+        qml.RX(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        qml.RZ(weights[2], wires=2)
+        qml.CNOT(wires=[0, 1])
+        qml.CNOT(wires=[0, 2])
+        return qml.expval(qml.PauliZ(0))
 
+    rng = np.random.default_rng(seed=42)  # make the results reproducable
+    data = rng.random([2 ** 3], requires_grad=True)
+    weights = np.array([0.1, 0.2, 0.3], requires_grad=False)
 
-For ``data``, which is a PennyLane NumPy array, we can simply specify ``requires_grad=False``:
+When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments
+passed as keyword arguments are ignored by :func:`~.grad`, which in this case means no gradient
+is computed at all:
 
->>> rng = np.random.default_rng(seed=42)  # make the results reproducable
->>> data = rng.random([2**3], requires_grad=False)
-
-But ``wires`` is a list in this example, and if we turn it into a PennyLane NumPy array we would have to
-create a device that understands custom wire labels of this type.
-It is much easier to use the second option laid out above, and pass ``wires`` to the
-QNode using keyword argument syntax:
-
->>> wires = [2, 0, 1]
->>> weights = np.array([0.1, 0.2, 0.3])
->>> circuit(weights, data, wires=wires)
-tensor(-0.03404945, requires_grad=True)
-
-When we compute the derivative, arguments with ``requires_grad=False`` as well as arguments passed as
-keyword arguments are ignored by :func:`~.grad`:
-
->>> grad_fn = qml.grad(circuit)
->>> grad_fn(weights, data, wires=wires)
-array([ 3.41633993e-03,  8.23993651e-18, -6.93889390e-18])
-
-.. note::
-
-    **Keyword arguments**
-
-    The :func:`~.grad` function does not differentiate keyword arguments. A QNode may be defined
-    using arguments with default values; for example
-
-    .. code-block:: python
-
-        @qml.qnode(dev)
-        def circuit(weights, data=None):
-
-    These arguments must always be passed using ``keyword=value`` syntax:
-
-    >>> circuit(weights, data=[0.34, 0.1])
-
-    These arguments will always be treated as non-differentiable by the QNode and :func:`~.grad`
-    function.
+>>> qml.grad(circuit)(data, weights=weights)
+()
 
 Optimization
 ------------
@@ -376,8 +341,8 @@ to the ``scipy.minimize`` function:
 
 Some of the SciPy minimization methods require information about the gradient
 of the cost function via the ``jac`` keyword argument. This is easy to include; we
-can simply create a function that computes the gradient using ``qml.grad``.  Since
-``minimize`` does not use our wrapped version of numpy, we need to explicitly 
+can simply create a function that computes the gradient using ``qml.grad``. Since
+``minimize`` does not use our wrapped version of numpy, we need to explicitly
 specify which arguments are trainable via the ``argnum`` keyword.
 
 >>> minimize(cost, params, method='BFGS', jac=qml.grad(cost, argnum=0))

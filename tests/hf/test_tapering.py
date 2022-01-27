@@ -14,6 +14,8 @@
 """
 Unit tests for functions needed for qubit tapering.
 """
+import functools
+import scipy
 import pytest
 import pennylane as qml
 from pennylane import numpy as np
@@ -27,8 +29,9 @@ from pennylane.hf.tapering import (
     generate_paulis,
     generate_symmetries,
     get_generators,
-    transform_hamiltonian,
     optimal_sector,
+    transform_hamiltonian,
+    transform_hf,
 )
 
 
@@ -84,6 +87,17 @@ from pennylane.hf.tapering import (
                     [0, 1, 0, 1, 0, 0, 0, 0],
                     [0, 0, 1, 1, 0, 0, 0, 0],
                 ]
+            ),
+        ),
+        (
+            [
+                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
+                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
+                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
+            ],
+            4,
+            np.array(
+                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
             ),
         ),
     ],
@@ -537,3 +551,143 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
 
     with pytest.raises(ValueError, match=msg_match):
         optimal_sector(hamiltonian, generators, num_electrons)
+
+
+@pytest.mark.parametrize(
+    ("generators", "paulix_ops", "paulix_sector", "num_electrons", "num_wires", "result"),
+    [
+        (
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(3)]),
+            ],
+            [qml.PauliX(wires=[1]), qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            (1, -1, -1),
+            2,
+            4,
+            np.array([1]),
+        ),
+        (
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(4)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(1) @ qml.PauliZ(3) @ qml.PauliZ(5)]),
+            ],
+            [qml.PauliX(wires=[2]), qml.PauliX(wires=[3])],
+            (-1, -1),
+            2,
+            6,
+            np.array([1, 1, 0, 0]),
+        ),
+        (
+            [
+                qml.Hamiltonian([1.0], [qml.PauliZ(6) @ qml.PauliZ(7)]),
+                qml.Hamiltonian([1.0], [qml.PauliZ(8) @ qml.PauliZ(9)]),
+                qml.Hamiltonian(
+                    [1.0],
+                    [
+                        qml.PauliZ(wires=[0])
+                        @ qml.PauliZ(wires=[2])
+                        @ qml.PauliZ(wires=[4])
+                        @ qml.PauliZ(wires=[6])
+                        @ qml.PauliZ(wires=[8])
+                        @ qml.PauliZ(wires=[10])
+                    ],
+                ),
+                qml.Hamiltonian(
+                    [1.0],
+                    [
+                        qml.PauliZ(wires=[1])
+                        @ qml.PauliZ(wires=[3])
+                        @ qml.PauliZ(wires=[5])
+                        @ qml.PauliZ(wires=[6])
+                        @ qml.PauliZ(wires=[8])
+                        @ qml.PauliZ(wires=[11])
+                    ],
+                ),
+            ],
+            [
+                qml.PauliX(wires=[7]),
+                qml.PauliX(wires=[9]),
+                qml.PauliX(wires=[0]),
+                qml.PauliX(wires=[1]),
+            ],
+            (1, 1, 1, 1),
+            4,
+            12,
+            np.array([1, 1, 0, 0, 0, 0, 0, 0]),
+        ),
+    ],
+)
+def test_transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires, result):
+    r"""Test that transform_hf returns the correct result."""
+
+    tapered_hf_state = transform_hf(
+        generators,
+        paulix_ops,
+        paulix_sector,
+        num_electrons,
+        num_wires,
+    )
+    assert np.all(tapered_hf_state == result)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.40104295]], requires_grad=True),
+            0,
+        ),
+        (
+            ["He", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[-0.84586466, 0.0, 0.0], [0.84586466, 0.0, 0.0], [0.0, 1.46508057, 0.0]],
+                requires_grad=True,
+            ),
+            1,
+        ),
+    ],
+)
+def test_hf_energy(symbols, geometry, charge):
+    r"""Test that HF energy obtained from the tapered Hamiltonian and tapered Hartree Fock state is consistent."""
+    mol = qml.hf.Molecule(symbols, geometry, charge)
+    hamiltonian = qml.hf.generate_hamiltonian(mol)(geometry)
+    hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
+    generators, paulix_ops = generate_symmetries(hamiltonian, len(hamiltonian.wires))
+    paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
+
+    hamiltonian_tapered = transform_hamiltonian(hamiltonian, generators, paulix_ops, paulix_sector)
+    hf_state_tapered = transform_hf(
+        generators, paulix_ops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
+    )
+
+    # calculate the HF energy <\psi_{HF}| H |\psi_{HF}> for tapered and untapered Hamiltonian
+    o = np.array([1, 0])
+    l = np.array([0, 1])
+    state = functools.reduce(lambda i, j: np.kron(i, j), [l if s else o for s in hf_state])
+    state_tapered = functools.reduce(
+        lambda i, j: np.kron(i, j), [l if s else o for s in hf_state_tapered]
+    )
+
+    energy = (
+        scipy.sparse.coo_matrix(state)
+        @ qml.utils.sparse_hamiltonian(hamiltonian)
+        @ scipy.sparse.coo_matrix(state).T
+    ).toarray()
+    energy_tapered = (
+        scipy.sparse.coo_matrix(state_tapered)
+        @ qml.utils.sparse_hamiltonian(hamiltonian_tapered)
+        @ scipy.sparse.coo_matrix(state_tapered).T
+    ).toarray()
+
+    assert np.isclose(energy, energy_tapered)
