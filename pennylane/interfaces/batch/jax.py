@@ -141,7 +141,8 @@ def get_shapes_and_dtype(tapes, device):
                     shape += [1, dim]
                 elif obs.return_type == Sample:
                     if num_sampled == 0:
-                        shape.append(device.shots)
+                        sh = [device.shots] if device.shots != 1 else [1]
+                        shape.extend(sh)
                     elif num_sampled == 1:
                         shape = [2] + shape
                     else:
@@ -158,6 +159,7 @@ def get_shapes_and_dtype(tapes, device):
 
             shapes.append(jax.ShapeDtypeStruct(tuple(shape), dtype))
 
+    print(shapes, dtype)
     return shapes, dtype
 
 
@@ -189,6 +191,7 @@ def _execute(
 
         shapes, _ = get_shapes_and_dtype(tapes, device)
         res = host_callback.call(wrapper, params, result_shape=shapes)
+        #res = wrapper(params)
         return res
 
     def wrapped_exec_fwd(params):
