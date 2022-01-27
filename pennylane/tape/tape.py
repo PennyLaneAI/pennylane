@@ -82,6 +82,9 @@ All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
+class UnsupportedTapeOperationError(ValueError):
+    """An error raised when an unsupported operation is attempted using a
+    quantum tape."""
 
 def get_active_tape():
     """Returns the currently recording tape.
@@ -955,7 +958,7 @@ class QuantumTape(AnnotatedQueue):
                     )
                 else:
                     # TODO: revisit when qml.sample without an observable fully supports shot vectors
-                    return None
+                    raise UnsupportedTapeOperationError("Getting the output shape of a tape returning samples along with a device with a shot vector is not supported.")
 
         return shape
 
@@ -986,7 +989,7 @@ class QuantumTape(AnnotatedQueue):
         # first one
         ret_type = mps[0].return_type
         if ret_type == qml.operation.State:
-            raise ValueError("Multiple state measurements are not supported.")
+            raise UnsupportedTapeOperationError("Getting the output shape of a tape with multiple state measurements is not supported.")
 
         shot_vector = device._shot_vector
         if shot_vector is None:
@@ -1060,6 +1063,10 @@ class QuantumTape(AnnotatedQueue):
         Args:
             device (~.Device): the device that will be used for the tape execution
 
+        Raises:
+            UnsupportedTapeOperationError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
         Returns:
             Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
             tape result
@@ -1076,7 +1083,7 @@ class QuantumTape(AnnotatedQueue):
             if num_measurements == 1:
                 output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
-                raise ValueError(
+                raise UnsupportedTapeOperationError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
         return output_shape
@@ -1088,16 +1095,14 @@ class QuantumTape(AnnotatedQueue):
         This function can be used to determine the dtpe of the tape output
         results before executing the tape.
 
+        Raises:
+            UnsupportedTapeOperationError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
         Returns:
             type: the numeric type corresponding to the output domain of the
             tape
         """
-        num_measurements = len(set(meas.return_type for meas in self._measurements))
-        if num_measurements > 1:
-            raise ValueError(
-                "Getting the output domain of a tape that contains multiple types of measurements is unsupported."
-            )
-
         output_domain = float
 
         for observable in self._measurements:

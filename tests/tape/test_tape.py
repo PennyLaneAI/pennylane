@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, UnsupportedTapeOperationError
 from pennylane.measure import MeasurementProcess, expval, sample, var
 
 
@@ -1969,6 +1969,60 @@ class TestOutputShape:
         execution_results = cost(tape, dev)[0]
         for r, e in zip(res, execution_results):
             assert r == e.shape
+
+    def test_raises_multiple_different_measurements(self):
+        """Test that getting the output shape of a tape that contains multiple
+        types of measurements raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.expval(qml.PauliZ(0))
+            qml.sample(qml.PauliZ(0))
+
+        with pytest.raises(UnsupportedTapeOperationError, match="contains multiple types of measurements is unsupported"):
+            tape.get_output_shape(dev)
+
+    def test_raises_multi_state(self):
+        """Test that getting the output shape of a tape that contains multiple
+        state measurements raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.state()
+            qml.density_matrix(wires=0)
+
+        with pytest.raises(UnsupportedTapeOperationError, match="multiple state measurements is not supported"):
+            tape.get_output_shape(dev)
+
+    def test_raises_sample_shot_vector(self):
+        """Test that getting the output shape of a tape that returns samples
+        along with a device with a shot vector raises an error."""
+        dev = qml.device("default.qubit", wires=3, shots=(1,2,3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.sample()
+
+        with pytest.raises(UnsupportedTapeOperationError, match="returning samples along with a device with a shot vector"):
+            tape.get_output_shape(dev)
+
+    def test_raises_sample_shot_vector(self):
+        """Test that getting the output shape of a tape that returns samples
+        along with a device with a shot vector raises an error."""
+        dev = qml.device("default.qubit", wires=3, shots=(1,2,3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(0.3, wires=0)
+            qml.RX(0.2, wires=0)
+            qml.sample()
+
+        with pytest.raises(UnsupportedTapeOperationError, match="returning samples along with a device with a shot vector"):
+            tape.get_output_shape(dev)
 
 
 class TestOutputDomain:
