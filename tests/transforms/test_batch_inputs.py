@@ -28,7 +28,7 @@ def test_simple_circuit():
     @qml.batch_input(argnum=0)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
-        qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
+        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
         qml.RY(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
