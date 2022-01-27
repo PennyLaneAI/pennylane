@@ -360,3 +360,72 @@ class TestReplaceWireCut:
             if node.name == "PrepareNode":
                 pred = list(g.pred[node])[0]
                 assert pred.name == "MeasureNode"
+
+    def test_wirecut_has_no_predecessor(self):
+        """
+        Tests a wirecut is replaced if it is the first operation in the tape
+        i.e it has no predecessor
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
+            qml.RX(0.432, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.133, wires=1)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        node_data = list(g.nodes(data=True))
+
+        wire_cut_order = None
+        for op, order in node_data:
+            if op.name == "WireCut":
+                wire_cut_order = order
+
+        qcut.replace_wire_cut_nodes(g)
+        new_node_data = list(g.nodes(data=True))
+        op_names = [op.name for op, order in new_node_data]
+
+        assert "WireCut" not in op_names
+        assert "MeasureNode" in op_names
+        assert "PrepareNode" in op_names
+
+        for op, order in new_node_data:
+            if op.name == "MeasureNode":
+                assert order == {'order': 0}
+            elif op.name == "PrepareNode":
+                assert order == {'order': 0.5}
+
+    def test_wirecut_has_no_successor(self):
+        """
+        Tests a wirecut is replaced if it is the last operation in the tape
+        i.e it has no successor
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=0)
+
+        g = qcut.tape_to_graph(tape)
+        node_data = list(g.nodes(data=True))
+
+        wire_cut_order = None
+        for op, order in node_data:
+            if op.name == "WireCut":
+                wire_cut_order = order
+
+        qcut.replace_wire_cut_nodes(g)
+        new_node_data = list(g.nodes(data=True))
+        op_names = [op.name for op, order in new_node_data]
+
+        assert "WireCut" not in op_names
+        assert "MeasureNode" in op_names
+        assert "PrepareNode" in op_names
+
+        for op, order in new_node_data:
+            if op.name == "MeasureNode":
+                assert order == {'order': 3}
+            elif op.name == "PrepareNode":
+                assert order == {'order': 3.5}
