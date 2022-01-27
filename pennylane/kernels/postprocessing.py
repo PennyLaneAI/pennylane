@@ -217,7 +217,7 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
     if not fix_diagonal:
         return threshold_matrix(K)
     try:
-        import cvxpy as cp
+        import cvxpy as cp  # pylint: disable=import-outside-toplevel
 
         if solver is None:
             solver = cp.CVXOPT
@@ -231,7 +231,7 @@ def closest_psd_matrix(K, fix_diagonal=False, solver=None, **kwargs):
 
     try:
         problem.solve(solver=solver, **kwargs)
-    except Exception:
+    except Exception:  # pylint: disable=broad-except
         try:
             problem.solve(solver=solver, verbose=True, **kwargs)
         except Exception as e:

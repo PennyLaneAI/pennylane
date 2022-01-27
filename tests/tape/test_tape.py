@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1255,6 +1255,9 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
+
         # since the copy is shallow, mutating the parameters
         # on one tape will affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
@@ -1298,6 +1301,9 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
+
         # Since they have unique operations, mutating the parameters
         # on one tape will *not* affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
@@ -1327,6 +1333,9 @@ class TestTapeCopying:
         assert copied_tape.observables != tape.observables
         assert copied_tape.measurements != tape.measurements
         assert copied_tape.operations[0] is not tape.operations[0]
+
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
 
         # The underlying operation data has also been copied
         assert copied_tape.operations[0].wires is not tape.operations[0].wires
