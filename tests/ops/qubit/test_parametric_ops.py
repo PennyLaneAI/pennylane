@@ -1151,7 +1151,7 @@ class TestPauliRot:
         assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].data[0] == -np.pi / 2
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -1356,7 +1356,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -1436,10 +1436,10 @@ label_data = [
     (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
     (
         qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
-        "R(XYZ)",
-        "R(XYZ)\n(1.23)",
-        "R(XYZ)\n(1)",
-        "R(XYZ)⁻¹\n(1)",
+        "RXYZ",
+        "RXYZ\n(1.23)",
+        "RXYZ\n(1)",
+        "RXYZ⁻¹\n(1)",
     ),
     (
         qml.PhaseShift(1.2345, wires=0),

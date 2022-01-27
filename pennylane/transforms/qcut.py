@@ -18,7 +18,7 @@ circuits to be distributed across multiple devices
 
 from networkx import MultiDiGraph
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import Observable, Operation, Tensor
+from pennylane.operation import Observable, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 
@@ -84,12 +84,12 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
         if isinstance(op, WireCut):
             replace_wire_cut_node(op, graph)
 
-
-def add_operator_node(
-    graph: MultiDiGraph, op: Observable, order: int, wire_latest_node: dict
+            
+def _add_operator_node(
+    graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict
 ) -> None:
     """
-    Helper function to add operators as nodes during tape to graph connversion
+    Helper function to add operators as nodes during tape to graph conversion.
     """
     graph.add_node(op, order=order)
     for wire in op.wires:
@@ -100,39 +100,35 @@ def add_operator_node(
 
 
 def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
-    """Converts a quantum tape to a directed multigraph."""
+    """
+    Converts a quantum tape to a directed multigraph.
+
+    Args:
+        tape (.QuantumTape): tape to be converted into a directed multigraph
+
+    Returns:
+        graph (MultiDiGraph): a directed multigraph that captures the circuit
+        structure of the input tape
+    """
     graph = MultiDiGraph()
 
     wire_latest_node = {w: None for w in tape.wires}
-    state_preps = ["BasisState", "QubitStateVector"]
 
     for order, op in enumerate(tape.operations):
-        if op.name in state_preps:
-            sub_ops = op.expand().expand(depth=1).operations
-            for sub_op in sub_ops:
-                add_operator_node(graph, sub_op, order, wire_latest_node)
-            order += 1
-        else:
-            add_operator_node(graph, op, order, wire_latest_node)
-            order += 1
+        _add_operator_node(graph, op, order, wire_latest_node)
 
+    order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
         if obs is not None and isinstance(obs, Tensor):
             for o in obs.obs:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
-                graph.add_node(m_, order=order)
+                _add_operator_node(graph, m_, order, wire_latest_node)
                 order += 1
-                for wire in o.wires:
-                    parent_op = wire_latest_node[wire]
-                    graph.add_edge(parent_op, m_, wire=wire)
-        else:
-            graph.add_node(m, order=order)
-            order += 1
 
-            for wire in m.wires:
-                parent_op = wire_latest_node[wire]
-                graph.add_edge(parent_op, m, wire=wire)
+        else:
+            _add_operator_node(graph, m, order, wire_latest_node)
+            order += 1
 
     return graph
