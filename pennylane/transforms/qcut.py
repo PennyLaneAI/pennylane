@@ -54,7 +54,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     for order, op in enumerate(tape.operations):
         _add_operator_node(graph, op, order, wire_latest_node)
 
-    order += 1 # pylint: disable=undefined-loop-variable
+    order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
         if obs is not None and isinstance(obs, Tensor):
