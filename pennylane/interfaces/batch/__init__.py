@@ -390,7 +390,6 @@ def execute(
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
-
             _execute = _get_jax_execute_fn(interface, tapes)
         else:
             raise ValueError(
