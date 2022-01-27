@@ -22,7 +22,7 @@ import autograd.numpy as anp
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.hamiltonian import _simplify
+from pennylane.hf.hamiltonian import simplify
 
 
 def _binary_matrix(terms, num_qubits):
@@ -186,7 +186,7 @@ def get_generators(nullspace, num_qubits):
             x, z = op
             tau @= pauli_map[f"{x}{z}"](idx)
 
-        ham = _simplify(qml.Hamiltonian([1.0], [tau]))
+        ham = simplify(qml.Hamiltonian([1.0], [tau]))
         generators.append(ham)
 
     return generators
@@ -320,7 +320,7 @@ def _observable_mult(obs_a, obs_b):
             o.append(op)
             c.append(phase * obs_a.terms[0][i] * obs_b.terms[0][j])
 
-    return _simplify(qml.Hamiltonian(qml.math.stack(c), o))
+    return simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
 def clifford(generators, paulix_ops):
@@ -420,7 +420,7 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     c = anp.multiply(val, h.terms[0])
     c = qml.math.stack(c)
 
-    return _simplify(qml.Hamiltonian(c, o))
+    return simplify(qml.Hamiltonian(c, o))
 
 
 def optimal_sector(qubit_op, generators, active_electrons):

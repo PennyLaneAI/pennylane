@@ -7,9 +7,10 @@
 * Added a modified version of the `_simplify` function to the `hf` module.
   [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
 
-  This functions combines redundant terms in a Hamiltonian and eliminates terms with a zero
-  coefficient. The new function makes construction of molecular Hamiltonians more efficient.
-  For LiH, as an example, the time to construct the Hamiltonian is reduced roughly by a factor of 20.
+  This function combines redundant terms in a Hamiltonian and eliminates terms with a coefficient
+  smaller than a cutoff value. The new function makes construction of molecular Hamiltonians more
+  efficient. For LiH, as an example, the time to construct the Hamiltonian is reduced roughly by a
+  factor of 20.
 
 * For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
   static property. This allows to programmatically know the number of parameters before an operator is 

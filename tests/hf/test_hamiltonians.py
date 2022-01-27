@@ -23,7 +23,7 @@ from pennylane.hf.hamiltonian import (
     _generate_qubit_operator,
     _pauli_mult,
     _return_pauli,
-    _simplify,
+    simplify,
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
     generate_hamiltonian,
@@ -424,5 +424,5 @@ def test_gradient_expvalH():
 )
 def test_simplify(hamiltonian, result):
     r"""Test that simplify returns the correct hamiltonian."""
-    h = _simplify(hamiltonian)
+    h = simplify(hamiltonian)
     assert h.compare(result)

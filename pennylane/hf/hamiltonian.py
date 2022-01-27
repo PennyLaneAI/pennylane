@@ -283,7 +283,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
                     coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
                     ops = ops + op[1]
 
-        h = _simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
+        h = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
         return h
 
@@ -353,11 +353,11 @@ def _generate_qubit_operator(op):
     return c, o
 
 
-def _simplify(h, cutoff=1.0e-12):
+def simplify(h, cutoff=1.0e-12):
     r"""Add together identical terms in the Hamiltonian.
 
     The Hamiltonian terms with identical Pauli words are added together and eliminated if the
-    overall coefficient is zero.
+    overall coefficient is smaller than a cutoff value.
 
     Args:
         h (Hamiltonian): PennyLane Hamiltonian
@@ -370,7 +370,7 @@ def _simplify(h, cutoff=1.0e-12):
 
     >>> c = np.array([0.5, 0.5])
     >>> h = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)])
-    >>> print(_simplify(h))
+    >>> print(simplify(h))
     (1.0) [X0 Y1]
     """
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
