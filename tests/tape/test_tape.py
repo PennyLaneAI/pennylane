@@ -1958,11 +1958,37 @@ class TestOutputDomain:
         assert np.issubdtype(result.dtype, complex)
         assert circuit.qtape.get_output_domain() is complex
 
+    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
+    def test_sample_int_eigvals(self, ret):
+        """Test that the tape can correctly determine the output domain for a
+        sampling measurement with a Hermitian observable with integer
+        eigenvalues."""
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        arr = np.array(
+            [
+                1.32,
+                2.312,
+            ]
+        )
+        herm = np.outer(arr, arr)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RY(0.4, wires=[0])
+            return qml.apply(ret)
+
+        result = circuit()
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, int)
+        assert circuit.qtape.get_output_domain() is int
+
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
     def test_sample_real_eigvals(self):
-        """Test that the expected output shape is obtained when using multiple
-        qml.sample measurements with a shot vector."""
+        """Test that the tape can correctly determine the output domain when
+        sampling a Hermitian observable with real eigenvalues."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         arr = np.array(
@@ -1985,8 +2011,9 @@ class TestOutputDomain:
         assert circuit.qtape.get_output_domain() is float
 
     def test_sample_real_and_int_eigvals(self):
-        """Test that the expected output shape is obtained when using multiple
-        qml.sample measurements with a shot vector."""
+        """Test that the tape can correctly determine the output domain for
+        multiple sampling measurements with a Hermitian observable with real
+        eigenvalues and another one with integer eigenvalues."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         arr = np.array(

@@ -885,6 +885,7 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = measurement_process.shape
 
+            #TODO: consider CV cutoff
             elif ret_type == qml.operation.Probability:
 
                 dim = 2 ** len(measurement_process.wires)
@@ -1077,9 +1078,11 @@ class QuantumTape(AnnotatedQueue):
 
             if ret_type == qml.operation.Sample:
 
-                output_domain = (
-                    int if all(np.issubdtype(e.dtype, int) for e in observable.eigvals) else float
-                )
+                if observable.obs is None or all(np.issubdtype(e.dtype, int) for e in observable.eigvals):
+                    # qml.sample() or integer eigvals
+                    output_domain = int
+                else:
+                    output_domain = float
 
                 # Note: if one of the sample measurements contains outputs that
                 # are real, then the entire result will be real
