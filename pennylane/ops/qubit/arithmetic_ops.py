@@ -174,7 +174,7 @@ class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
 
-    This operation performs the transformation:
+    This operation performs the following transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
