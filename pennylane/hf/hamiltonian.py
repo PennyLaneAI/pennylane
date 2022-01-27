@@ -308,6 +308,9 @@ def _generate_qubit_operator(op):
     >>> q
     ([(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     """
+    if len(op) == 1:
+        op = [((op[0], 1),)]
+
     if len(op) == 2:
         op = [((op[0], 1), (op[1], 0))]
 

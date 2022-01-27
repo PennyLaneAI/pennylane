@@ -445,7 +445,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
     # Special case: all-identity Pauli
     if pauli_string == "I" * len(wire_map):
         first_wire = list(wire_map.keys())[0]
-        return Identity(wire_map[first_wire])
+        return Identity(first_wire)
 
     pauli_word = None
 

@@ -764,7 +764,7 @@ class CNOT(Operation):
     basis = "X"
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1369,7 +1369,7 @@ class Toffoli(Operation):
     basis = "X"
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1610,7 +1610,7 @@ class MultiControlledX(Operation):
         return self.wires[:~0]
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     def adjoint(self):
         return MultiControlledX(
