@@ -259,6 +259,11 @@
 
 <h3>Improvements</h3>
 
+* The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
+  differs in implementation and minor stylistic details from the old string circuit drawing
+  infrastructure.
+  [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
+
 * The `RotosolveOptimizer` now raises an error if no trainable arguments are
   detected, instead of silently skipping update steps for all arguments.
   [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
@@ -433,6 +438,7 @@
   it should be instantiated via PennyLane's NumPy wrapper using the `requires_grad=True`
   attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
+  [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
 
   ```python
   from pennylane import numpy as np

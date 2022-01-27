@@ -599,14 +599,14 @@ class PauliRot(Operation):
 
         >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
         >>> op.label()
-        'R(XYY)'
+        'RXYY'
         >>> op.label(decimals=2)
-        'R(XYY)\n(0.10)'
+        'RXYY\n(0.10)'
         >>> op.label(base_label="PauliRot")
         'PauliRot\n(0.10)'
 
         """
-        op_label = base_label or ("R(" + self.parameters[1] + ")")
+        op_label = base_label or ("R" + self.parameters[1])
 
         if self.inverse:
             op_label += "⁻¹"

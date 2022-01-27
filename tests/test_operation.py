@@ -469,9 +469,9 @@ class TestTensor:
         y = qml.PauliZ(2)
         T = Tensor(x, y)
 
-        assert T.label() == "X⊗Z"
-        assert T.label(decimals=2) == "X⊗Z"
-        assert T.label(base_label=["X0", "Z2"]) == "X0⊗Z2"
+        assert T.label() == "X@Z"
+        assert T.label(decimals=2) == "X@Z"
+        assert T.label(base_label=["X0", "Z2"]) == "X0@Z2"
 
         with pytest.raises(ValueError, match=r"Tensor label requires"):
             T.label(base_label="nope")
