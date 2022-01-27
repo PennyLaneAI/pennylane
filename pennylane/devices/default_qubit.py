@@ -287,28 +287,29 @@ class DefaultQubit(QubitDevice):
         Slice the state along the qubit axes, make a random choice about which half of the state to keep, and reset
         the qubit to |0\
         """
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
-
-        # get sub-states
-        sub_0 = state[sl_0]
-        sub_1 = state[sl_1]
-
-        # get norms
-        sub_0_norm = np.linalg.norm(sub_0)
-        sub_1_norm = np.linalg.norm(sub_1)
-
-        # make measurement
-        result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
-        self._measured[op_object.measure_var] = result
-
-        # collapse state
-        if result == 0:
-            return np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
-
-        # if 1 perform qubit reset
-        collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axes[0])
-        return self._roll(collapsed_state, 1, axes[0])
+        # sl_0 = _get_slice(0, axes[0], self.num_wires)
+        # sl_1 = _get_slice(1, axes[0], self.num_wires)
+        #
+        # # get sub-states
+        # sub_0 = state[sl_0]
+        # sub_1 = state[sl_1]
+        #
+        # # get norms
+        # sub_0_norm = np.linalg.norm(sub_0)
+        # sub_1_norm = np.linalg.norm(sub_1)
+        #
+        # # make measurement
+        # result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
+        # self._measured[op_object.measure_var] = result
+        #
+        # # collapse state
+        # if result == 0:
+        #     return np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axes[0])
+        #
+        # # if 1 perform qubit reset
+        # collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axes[0])
+        # return self._roll(collapsed_state, 1, axes[0])
+        return state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
