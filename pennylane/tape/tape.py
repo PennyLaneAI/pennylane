@@ -84,7 +84,7 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 class UnsupportedTapeOperationError(ValueError):
-    """An error raised when an unsupported operation is attempted using a
+    """An error raised when an unsupported operation is attempted with a
     quantum tape."""
 
 
@@ -886,7 +886,7 @@ class QuantumTape(AnnotatedQueue):
 
         This function is meant to be used with the Probability measurement to
         determine how many outcomes there will be. With qubit based devices
-        we'll have two outcomes for each subsystem, with continuous variable
+        we'll have two outcomes for each subsystem. With continuous variable
         devices that impose a Fock cutoff the number of basis states per
         subsystem equals the cutoff value.
 
@@ -903,9 +903,9 @@ class QuantumTape(AnnotatedQueue):
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
-        """Auxiliary function that determines the output shape of a tape with
-        a single measurement.
-        """
+        """Auxiliary function of get_output_shape that determines the output
+        shape of a tape with a single measurement."""
+
         shape = tuple()
 
         ret_type = measurement_process.return_type
@@ -914,7 +914,6 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = measurement_process.shape
 
-            # TODO: consider CV cutoff
             elif ret_type == qml.operation.Probability:
                 len_wires = len(measurement_process.wires)
                 dim = QuantumTape._get_num_basis_states(len_wires, device)
@@ -940,6 +939,8 @@ class QuantumTape(AnnotatedQueue):
                         shape = (device.shots, len(device.wires))
 
         else:
+            # Shot vector was defined
+
             shot_vector = device._shot_vector
             num_shot_elements = sum([s.copies for s in shot_vector])
             if measurement_process.shape is not None:
@@ -959,17 +960,19 @@ class QuantumTape(AnnotatedQueue):
                         for shot_val in device._raw_shot_sequence
                     )
                 else:
-                    # TODO: revisit when qml.sample without an observable fully supports shot vectors
+                    # TODO: revisit when qml.sample without an observable fully
+                    # supports shot vectors
                     raise UnsupportedTapeOperationError(
-                        "Getting the output shape of a tape returning samples along with a device with a shot vector is not supported."
+                        "Getting the output shape of a tape returning samples along with "\
+                        "a device with a shot vector is not supported."
                     )
 
         return shape
 
     @staticmethod
     def _multi_homogenous_measurement_shape(mps, device):
-        """Auxiliary function that determines the output shape of a tape with
-        multiple homogenous measurements.
+        """Auxiliary function of get_output_shape that determines the output
+        shape of a tape with multiple homogenous measurements.
 
         .. note::
 
@@ -979,7 +982,8 @@ class QuantumTape(AnnotatedQueue):
             by each probability measurement.
 
             Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
-            multiple probability measurement as an example.
+            multiple probability measurement with an analytic device as an
+            example.
 
             The output shape will be a one element tuple `(6,)`, where the
             element `6` is equal to `2 ** 1 + 2 ** 2 = 6`. The base of each
@@ -1025,6 +1029,8 @@ class QuantumTape(AnnotatedQueue):
                 shape = (len(mps), device.shots)
 
         else:
+            # Shot vector was defined
+
             if ret_type in (qml.operation.Expectation, qml.operation.Variance):
                 num = sum(shottup.copies for shottup in shot_vector)
                 shape = (num, len(mps))
