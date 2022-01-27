@@ -61,7 +61,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     if max_diff > 1:
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
-    _validate_tapes(tapes)
+    #_validate_tapes(tapes)
 
     for tape in tapes:
         # set the trainable parameters
@@ -112,6 +112,17 @@ def _validate_tapes(tapes):
                     f"Only Variance and Expectation returns are supported for the jittable JAX interface, given {return_type}."
                 )
 
+def _domain_to_dtype(domain):
+
+    single_precision = dtype is jnp.float32
+    if domain is int:
+        return jnp.int32 if single_precision else jnp.int64
+
+    if domain is float:
+        return jnp.float32 if single_precision else jnp.float64
+
+    # domain is complex
+    return jnp.complex64 if single_precision else jnp.complex128
 
 def _execute(
     params,
@@ -142,7 +153,14 @@ def _execute(
 
             return res
 
-        shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
+        #shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
+        #shapes, _ = get_shapes_and_dtype(tapes, device)
+        shapes = [t.get_output_shape(device) for t in tapes]
+        dtypes = [_domain_to_dtype(t.get_output_domain()) for t in tapes]
+
+        # Note: for qml.probs we'll first have a [1,dim] shape for the tape
+        # which is then reduced by the QNode
+        shapes = [jax.ShapeDtypeStruct(tuple([shape]), dtype) if isinstance(shape, int) else jax.ShapeDtypeStruct(tuple(shape), dtype) for shape, dtype in zip(shapes, dtypes)]
         res = host_callback.call(wrapper, params, result_shape=shapes)
         return res
 
