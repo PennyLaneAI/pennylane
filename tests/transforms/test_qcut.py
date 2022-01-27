@@ -392,9 +392,9 @@ class TestReplaceWireCut:
 
         for op, order in new_node_data:
             if op.name == "MeasureNode":
-                assert order == {'order': 0}
+                assert order == {"order": 0}
             elif op.name == "PrepareNode":
-                assert order == {'order': 0.5}
+                assert order == {"order": 0.5}
 
     def test_wirecut_has_no_successor(self):
         """
@@ -426,6 +426,6 @@ class TestReplaceWireCut:
 
         for op, order in new_node_data:
             if op.name == "MeasureNode":
-                assert order == {'order': 3}
+                assert order == {"order": 3}
             elif op.name == "PrepareNode":
-                assert order == {'order': 3.5}
+                assert order == {"order": 3.5}
