@@ -66,7 +66,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
         meas = MeasureNode(wires=wire)
         prep = PrepareNode(wires=wire)
         graph.add_node(meas, order=order)
-        graph.add_node(prep, order=order + 0.5)
+        graph.add_node(prep, order=order)
 
         graph.add_edge(meas, prep, wire=wire)
 

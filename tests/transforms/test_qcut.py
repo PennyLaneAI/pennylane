@@ -278,7 +278,7 @@ class TestReplaceWireCut:
                 assert order == wire_cut_order
             elif op.name == "PrepareNode":
                 assert op.wires.tolist() == [wire_cut_num]
-                assert order["order"] == wire_cut_order["order"] + 0.5
+                assert order == wire_cut_order
 
     def test_multiple_wire_cuts_replaced(self):
         """
@@ -329,7 +329,7 @@ class TestReplaceWireCut:
                 measure_counter += 1
             elif op.name == "PrepareNode":
                 assert op.wires.tolist() == [wire_cut_num[prepare_counter]]
-                assert order["order"] == wire_cut_order[prepare_counter]["order"] + 0.5
+                assert order == wire_cut_order[prepare_counter]
                 prepare_counter += 1
 
     def test_successor_and_predecessor(self):
@@ -394,7 +394,7 @@ class TestReplaceWireCut:
             if op.name == "MeasureNode":
                 assert order == {"order": 0}
             elif op.name == "PrepareNode":
-                assert order == {"order": 0.5}
+                assert order == {"order": 0}
 
     def test_wirecut_has_no_successor(self):
         """
@@ -428,4 +428,4 @@ class TestReplaceWireCut:
             if op.name == "MeasureNode":
                 assert order == {"order": 3}
             elif op.name == "PrepareNode":
-                assert order == {"order": 3.5}
+                assert order == {"order": 3}
