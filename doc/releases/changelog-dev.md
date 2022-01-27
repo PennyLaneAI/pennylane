@@ -4,6 +4,11 @@
 
 <h3>New features since last release</h3>
 
+* Added the `QuantumTape.get_output_shape` and `QuantumTape.get_output_domain`
+  methods to allow gathering information about the output shape and domain of
+  quantum tapes.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
 * The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
   QNodes include those with:
   * `qml.probs`;
