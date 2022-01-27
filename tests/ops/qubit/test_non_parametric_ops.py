@@ -976,6 +976,8 @@ def test_adjoint_method(op, num_adjoint_calls, tol):
     assert adj_op.label() == expected_adj_op.label()  # check that the name and labels are the same
 
     try:
-        np.testing.assert_allclose(adj_op.matrix, expected_adj_op.matrix, atol=tol)  # compare matrix if its defined
+        np.testing.assert_allclose(
+            adj_op.matrix, expected_adj_op.matrix, atol=tol
+        )  # compare matrix if its defined
     except NotImplementedError:
         pass
