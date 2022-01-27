@@ -273,8 +273,8 @@ class DefaultQubit(QubitDevice):
                     slicer = [slice(None)] * self.num_wires
                     slicer[m] = branch[i]
                     mask[tuple(slicer)] = True
-        true_state = state * mask.astype(int)
-        false_state = state * np.logical_not(mask).astype(int)
+        true_state = state * mask.astype(int)  # this is the result of the projection applied to the state
+        false_state = state * np.logical_not(mask).astype(int)  # this is the complement of the projection
         return self._apply_operation(true_state, op_object.then_op) + false_state
 
     def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
