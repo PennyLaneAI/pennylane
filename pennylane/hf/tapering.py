@@ -464,14 +464,10 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     o = []
     wires_tap = [i for i in h.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
-<<<<<<< HEAD
+
     for i in range(len(h.terms()[0])):
         s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
-=======
 
-    for i in range(len(h.terms[0])):
-        s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
->>>>>>> master
         wires = [x for x in h.wires if x not in paulix_wires]
         o.append(
             qml.grouping.string_to_pauli_word(
