@@ -9,7 +9,7 @@
   * `qml.probs`;
   * `qml.state`;
   * `qml.sample` or
-  * multiple `qml.expval` measurements.
+  * multiple `qml.expval` / `qml.var` measurements.
 
   Consider a QNode that returns basis state probabilities:
   ```python
