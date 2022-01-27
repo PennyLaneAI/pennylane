@@ -1908,3 +1908,45 @@ class TestOutputShape:
         execution_results = cost(tape, dev)[0]
         for r, e in zip(res, execution_results):
             assert r == e.shape
+
+class TestOutputDomain:
+    """Tests for determining the tape output shape of tapes."""
+
+    #TODO: need to test every interface
+    def test_sample_real_eigvals(self):
+        """Test that the expected output shape is obtained when using multiple
+        qml.sample measurements with a shot vector."""
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        arr = np.array([1.32, 2.312,])
+        herm = np.outer(arr, arr)
+
+        @qml.qnode(dev)
+        def circuit(a, b):
+            return qml.sample(qml.Hermitian(herm, wires=0))
+
+        result = circuit(0.3, 0.2)
+
+        # Double-check the domain of the QNode output
+        assert np.issubdtype(result.dtype, float)
+        assert circuit.qtape.get_output_domain() is float
+
+    def test_sample_real_and_int_eigvals(self):
+        """Test that the expected output shape is obtained when using multiple
+        qml.sample measurements with a shot vector."""
+        dev = qml.device("default.qubit", wires=3, shots=5)
+
+        arr = np.array([1.32, 2.312,])
+        herm = np.outer(arr, arr)
+
+        @qml.qnode(dev,interface='autograd')
+        def circuit(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))
+
+
+        print(circuit(0,3))
+        res = circuit(0,3)
+
+        [r.shape for r in res]

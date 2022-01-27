@@ -1052,31 +1052,39 @@ class QuantumTape(AnnotatedQueue):
         return output_shape
 
     def get_output_domain(self):
-        """Produces the output domain of the tape by inspecting its measurements.
+        """Returns the numeric type corresponding to the output domain of the
+        tape by inspecting its measurements.
 
-        Note: as the output shape may be dependent on the device used for
-        execution, tapes do not store the computed shape.
-
-        Args:
-            device (~.Device): the device that will be used for the tape execution
+        This function can be used to determine the dtpe of the tape output
+        results before executing the tape.
 
         Returns:
-            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
-            tape result
+            type: the numeric type corresponding to the output domain of the
+            tape
         """
-        # TODO: only have real or float not both
-        output_domain = "real"
+        num_measurements = len(set(meas.return_type for meas in self._measurements))
+        if num_measurements > 1:
+            raise ValueError(
+                "Getting the output domain of a tape that contains multiple types of measurements is unsupported."
+            )
+
+        output_domain = int
+
         for observable in self._measurements:
             ret_type = observable.return_type
             if ret_type == qml.operation.State:
-                output_domain = "complex"
+                return complex
 
-            elif ret_type == qml.operation.Sample:
+            if ret_type == qml.operation.Sample:
 
-                # TODO: what if we have floating point eigenvalues of an observable?
                 output_domain = (
-                    "integer" if any(not np.issubdtype(e, int) for e in observable.eigvals) else "float"
+                    int if all(np.issubdtype(e.dtype, int) for e in observable.eigvals) else float
                 )
+
+                # Note: if one of the sample measurements contains outputs that
+                # are real, then the entire result will be real
+                if output_domain == float:
+                    return output_domain
 
         return output_domain
 
