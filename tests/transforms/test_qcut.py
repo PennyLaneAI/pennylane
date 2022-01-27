@@ -23,7 +23,7 @@ with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
     qml.CNOT(wires=[0, "a"])
-    # qml.CRZ(0.5, wires=["a", 0])
+    qml.CRZ(0.5, wires=["a", 0])
     qml.RZ(0.240, wires=0)
     qml.RZ(0.133, wires="a")
     qml.expval(qml.PauliZ(wires=[0]))
@@ -59,16 +59,19 @@ class TestTapeToGraph:
         g = qcut.tape_to_graph(tape)
         edges = list(g.edges)
 
-        num_wires_connecting_gates = 5
+        num_wires_connecting_gates = 7
         assert len(edges) == num_wires_connecting_gates
 
         ops = tape.operations
+
         expected_edge_connections = [
             (ops[0], ops[2], 0),
             (ops[1], ops[2], 0),
             (ops[2], ops[3], 0),
-            (ops[2], ops[4], 0),
-            (ops[3], tape.measurements[0], 0),
+            (ops[2], ops[3], 1),
+            (ops[3], ops[4], 0),
+            (ops[3], ops[5], 0),
+            (ops[4], tape.measurements[0], 0),
         ]
 
         for edge, expected_edge in zip(edges, expected_edge_connections):
@@ -102,7 +105,15 @@ class TestTapeToGraph:
         g = qcut.tape_to_graph(tape)
         edge_data = list(g.edges(data=True))
 
-        expected_edge_wires = [{"wire": 0}, {"wire": "a"}, {"wire": 0}, {"wire": "a"}, {"wire": 0}]
+        expected_edge_wires = [
+            {"wire": 0},
+            {"wire": "a"},
+            {"wire": "a"},
+            {"wire": 0},
+            {"wire": 0},
+            {"wire": "a"},
+            {"wire": 0},
+        ]
 
         for data, expected_wire in zip(edge_data, expected_edge_wires):
             assert data[-1] == expected_wire
@@ -193,35 +204,32 @@ class TestTapeToGraph:
 
         assert node_observables[0].return_type.name == expected_measurement
 
-    # @pytest.mark.parametrize(
-    #     "prep,expected_prep",
-    #     [
-    #         (
-    #             qml.BasisState(np.array([1, 1]), wires=range(2)),
-    #             [qml.PauliX(wires=[0]), qml.PauliX(wires=[1])],
-    #         ),
-    #         (
-    #             qml.QubitStateVector(np.array([1, 0, 0, 0]), wires=range(2)),
-    #             [qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[0, 1])],
-    #         ),
-    #         # (qml.QubitDensityMatrix(np.zeros((2 ** 2, 2 ** 2)), wires=[0, 1]), "?"), #Broken
-    #     ],
-    # )
-    # def test_state_preparation(self, prep, expected_prep):
-    #     """
-    #     Tests that state preparation over mutliple wires are represented by
-    #     the individual operations
-    #     """
-    #
-    #     with qml.tape.QuantumTape() as tape:
-    #         qml.apply(prep)
-    #         qml.RX(0.432, wires=0)
-    #         qml.RY(0.543, wires=2)
-    #
-    #     g = qcut.tape_to_graph(tape)
-    #     nodes = list(g.nodes)
-    #
-    #     node_preps = nodes[:2]
-    #     for node_prep, expected_prep in zip(node_preps, expected_prep):
-    #         assert node_prep.wires == expected_prep.wires
-    #         assert node_prep.name == expected_prep.name
+    def test_multiple_observables(self):
+        """
+        Tests that a tape containing multiple measurements is correctly
+        converted to a graph
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.expval(qml.PauliZ(wires=[0]))
+            qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]))
+
+        expected_obs = [
+            qml.expval(qml.PauliZ(wires=[0])),
+            qml.expval(qml.PauliX(wires=[1])),
+            qml.expval(qml.PauliY(wires=[2])),
+        ]
+
+        g = qcut.tape_to_graph(tape)
+        nodes = list(g.nodes)
+
+        node_observables = [node for node in nodes if hasattr(node, "return_type")]
+
+        for node_obs, exp_obs in zip(node_observables, expected_obs):
+            assert node_obs.wires == exp_obs.wires
+            assert node_obs.obs.name == exp_obs.obs.name
