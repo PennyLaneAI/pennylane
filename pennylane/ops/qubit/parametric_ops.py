@@ -739,23 +739,31 @@ class PauliRot(Operation):
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
             wires = [wires]
+
+        # Check for identity and do nothing
+        if pauli_word == "I"*len(wires):
+            return []
+
+        active_wires, active_gates = zip(
+            *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
+        )
+
+        if len(active_wires) == 1: # single qubit rotation
+            if pauli_word == "X":
+                return [qml.RX(theta, wires=active_wires)]
+            elif pauli_word == "Y":
+                return [qml.RY(theta, wires=active_wires)]
+            elif pauli_word == "Z":
+                return [qml.RZ(theta, wires=active_wires)]
+
         with qml.tape.OperationRecorder() as rec:
-            # Check for identity and do nothing
-            if pauli_word == "I" * len(wires):
-                return []
-
-            active_wires, active_gates = zip(
-                *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]
-            )
-
             for wire, gate in zip(active_wires, active_gates):
                 if gate == "X":
                     Hadamard(wires=[wire])
                 elif gate == "Y":
                     RX(np.pi / 2, wires=[wire])
-            if len(active_wires) == 1:
-                RZ(theta, wires = active_wires[0])
-            elif len(active_wires) == 2:
+
+            if len(active_wires) == 2:
                 IsingZZ(theta, wires = list(active_wires))
             else:
                 MultiRZ(theta, wires=list(active_wires))

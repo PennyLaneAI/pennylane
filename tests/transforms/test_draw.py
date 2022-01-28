@@ -586,8 +586,8 @@ class TestOpsIntegration:
 
         res = qml.draw(circuit, expansion_strategy="device")(0.5)
         expected = [
-            " 0: ──H────────RZ(0.5)──H──H──╭RZ(0.25)──H──H────────RZ(0.5)──H──H──╭RZ(0.25)──H──┤ Probs \n",
-            " 1: ──RZ(0.5)──H──────────────╰RZ(0.25)──H──RZ(0.5)──H──────────────╰RZ(0.25)──H──┤       \n",
+            " 0: ──RX(0.5)──H──╭IsingZZ(0.25)──H──RX(0.5)──H──╭IsingZZ(0.25)──H──┤ Probs \n"
+            " 1: ──RZ(0.5)──H──╰IsingZZ(0.25)──H──RZ(0.5)──H──╰IsingZZ(0.25)──H──┤       \n"
         ]
 
         assert res == "".join(expected)

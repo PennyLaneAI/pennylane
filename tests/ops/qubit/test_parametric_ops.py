@@ -1053,7 +1053,7 @@ class TestPauliRot:
 
         assert len(decomp_ops) == 1
 
-        assert decomp_ops[0].name == "MultiRZ"
+        assert decomp_ops[0].name == "RZ"
 
         assert decomp_ops[0].wires == Wires([0])
         assert decomp_ops[0].data[0] == theta
