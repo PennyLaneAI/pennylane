@@ -53,7 +53,9 @@ def apply_to_measurement_dependant_values(fun):
         partial = _Value()
         for arg in args:
             partial = partial._merge(arg)
-        partial._transform_leaves_inplace(lambda *unwrapped: fun(*unwrapped, **kwargs))
+        partial._transform_leaves_inplace(
+            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
+        )
         return partial
 
     return wrapper

@@ -216,7 +216,7 @@ class DefaultQubit(QubitDevice):
                 )
 
             if any(w in self._measured for w in operation.wires):
-                raise DeviceError(f"Cannot perform operation on measured wires.")
+                raise DeviceError("Cannot perform operation on measured wires.")
 
             if isinstance(operation, QubitStateVector):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
