@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Added a modified version of the `simplify` function to the `hf` module.
+  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+
+  This function combines redundant terms in a Hamiltonian and eliminates terms with a coefficient
+  smaller than a cutoff value. The new function makes construction of molecular Hamiltonians more
+  efficient. For LiH, as an example, the time to construct the Hamiltonian is reduced roughly by a
+  factor of 20.
+
 * The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
   QNodes include those with:
   * `qml.probs`;
