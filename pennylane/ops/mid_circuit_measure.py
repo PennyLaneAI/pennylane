@@ -53,9 +53,7 @@ def apply_to_measurement_dependant_values(fun):
         partial = _Value()
         for arg in args:
             partial = partial._merge(arg)
-        partial._transform_leaves_inplace(
-            lambda *unwrapped: fun(*unwrapped, **kwargs)
-        )
+        partial._transform_leaves_inplace(lambda *unwrapped: fun(*unwrapped, **kwargs))
         return partial
 
     return wrapper
@@ -93,8 +91,7 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def branches(self):
-        """A dictionary representing all the possible outcomes of the MeasurementDependantValue.
-        """
+        """A dictionary representing all the possible outcomes of the MeasurementDependantValue."""
         branch_dict = {}
         if isinstance(self._zero_case, MeasurementDependantValue):
             for k, v in self._zero_case.branches.items():
@@ -108,8 +105,7 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def measurements(self):
-        """List of all measurements this MeasurementDependantValue depends on.
-        """
+        """List of all measurements this MeasurementDependantValue depends on."""
         if isinstance(self._zero_case, MeasurementDependantValue):
             return [self._dependent_on, *self._zero_case.measurements]
         return [self._dependent_on]
@@ -131,9 +127,12 @@ class MeasurementDependantValue(Generic[T]):
         measurements = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append(",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+            lines.append(
+                ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))])
+                + " => "
+                + str(v)
+            )
         return "\n".join(lines)
-
 
     def _merge(self, other: Union["MeasurementDependantValue", "_Value", Any]):
         """
@@ -228,8 +227,7 @@ class _Value(Generic[T]):
 
     @property
     def values(self):
-        """Values this Leaf node is holding.
-        """
+        """Values this Leaf node is holding."""
         if len(self._values) == 1:
             return self._values[0]
         return self._values
@@ -283,9 +281,7 @@ def condition(condition_op: Type[Operation]):
         def __init__(self, *args, **kwargs):
             measurement_dependant_op = apply_to_measurement_dependant_values(
                 lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
-            )(
-                *args
-            )
+            )(*args)
             self.branches = measurement_dependant_op.branches
             self.dependant_measurements = measurement_dependant_op.measurements
             super().__init__(*args, **kwargs)
