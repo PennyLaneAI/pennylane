@@ -1987,7 +1987,6 @@ class TestOutputShape:
         ):
             tape.get_output_shape(dev)
 
-
     def test_raises_multiple_different_measurements(self):
         """Test that getting the output shape of a tape that contains multiple
         types of measurements raises an error."""
