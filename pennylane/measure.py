@@ -57,8 +57,8 @@ class MeasurementProcess:
         self._wires = wires or Wires([])
         self._eigvals = kwargs.get("eigvals", None)
         self.shape = kwargs.get("shape", None)
-        """The output shape of the measurement proccess. Some shapes may depend
-        on device options, in such cases shape=None."""
+        """tuple[int]: The output shape of the measurement proccess. Some shapes may depend
+        on device options, in such cases ``shape=None``."""
 
         if eigvals is not None:
             if obs is not None:
