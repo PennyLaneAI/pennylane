@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a modified version of the `_simplify` function to the `hf` module.
+* Added a modified version of the `simplify` function to the `hf` module.
   [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
 
   This function combines redundant terms in a Hamiltonian and eliminates terms with a coefficient
