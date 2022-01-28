@@ -122,8 +122,8 @@ tensor([[-0.04673668, -0.09442394, -0.14409127],
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
 ``qml.grad()`` if using Autograd, ``loss.backward()`` for PyTorch, or ``tape.gradient()`` for TensorFlow).
-This is because gradient transforms do not take into account classical processing, and only support
-gradients of quantum components.
+This is because gradient transforms do not take into account classical computation nodes, and only
+support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
 

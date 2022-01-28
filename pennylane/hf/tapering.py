@@ -21,29 +21,38 @@ import numpy
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.hf.hamiltonian import _generate_qubit_operator
 
 
-def _binary_matrix(terms, num_qubits):
+def _binary_matrix(terms, num_qubits, wire_map=None):
     r"""Get a binary matrix representation of the Hamiltonian where each row corresponds to a
     Pauli term, which is represented by a concatenation of Z and X vectors.
 
     Args:
         terms (Iterable[Observable]): operators defining the Hamiltonian
         num_qubits (int): number of wires required to define the Hamiltonian
+        wire_map (dict): dictionary containing all wire labels used in the Pauli words as keys, and
+            unique integer labels as their values
+
     Returns:
         array[int]: binary matrix representation of the Hamiltonian of shape
         :math:`len(terms) \times 2*num_qubits`
 
     **Example**
 
-    >>> terms = [qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]),
-    ...          qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2]),
-    ...          qml.PauliX(wires=[0]) @ qml.PauliY(wires=[3])]
-    >>> _binary_matrix(terms, 4)
+    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
+    >>> terms = [qml.PauliZ(wires=['a']) @ qml.PauliX(wires=['b']),
+    ...          qml.PauliZ(wires=['a']) @ qml.PauliY(wires=['c']),
+    ...          qml.PauliX(wires=['a']) @ qml.PauliY(wires=['d'])]
+    >>> _binary_matrix(terms, 4, wire_map=wire_map)
     array([[1, 0, 0, 0, 0, 1, 0, 0],
            [1, 0, 1, 0, 0, 0, 1, 0],
            [0, 0, 0, 1, 1, 0, 0, 1]])
     """
+    if wire_map is None:
+        all_wires = qml.wires.Wires.all_wires([term.wires for term in terms], sort=True)
+        wire_map = {i: c for c, i in enumerate(all_wires)}
+
     binary_matrix = np.zeros((len(terms), 2 * num_qubits), dtype=int)
     for idx, term in enumerate(terms):
         ops, wires = term.name, term.wires
@@ -51,9 +60,9 @@ def _binary_matrix(terms, num_qubits):
             ops = [ops]
         for op, wire in zip(ops, wires):
             if op in ["PauliX", "PauliY"]:
-                binary_matrix[idx][wire + num_qubits] = 1
+                binary_matrix[idx][wire_map[wire] + num_qubits] = 1
             if op in ["PauliZ", "PauliY"]:
-                binary_matrix[idx][wire] = 1
+                binary_matrix[idx][wire_map[wire]] = 1
 
     return binary_matrix
 
@@ -217,7 +226,8 @@ def generate_paulis(generators, num_qubits):
     for row in range(bmat.shape[0]):
         bmatrow = bmat[row]
         bmatrest = np.delete(bmat, row, axis=0)
-        for col in range(bmat.shape[1] // 2):
+        # reversing the order to priortize removing higher index wires first
+        for col in range(bmat.shape[1] // 2)[::-1]:
             # Anti-commutes with the (row) and commutes with all other symmetries.
             if bmatrow[col] and np.array_equal(
                 bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
@@ -343,6 +353,7 @@ def _simplify(h, cutoff=1.0e-12):
     """
     s = []
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
+
     for term in h.terms[1]:
         term = qml.operation.Tensor(term).prune()
         s.append(qml.grouping.pauli_word_to_string(term, wire_map=wiremap))
@@ -452,13 +463,16 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
                 val[i] *= paulix_sector[idx]
 
     o = []
-    wires_tap = [h.wires[i] for i in range(len(h.wires)) if i not in paulix_wires]
+    wires_tap = [i for i in h.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
+
     for i in range(len(h.terms[0])):
         s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
         wires = [x for x in h.wires if x not in paulix_wires]
         o.append(
-            qml.grouping.string_to_pauli_word("".join([s[i] for i in wires]), wire_map=wiremap_tap)
+            qml.grouping.string_to_pauli_word(
+                "".join([s[wiremap[i]] for i in wires]), wire_map=wiremap_tap
+            )
         )
 
     c = anp.multiply(val, h.terms[0])
@@ -526,3 +540,76 @@ def optimal_sector(qubit_op, generators, active_electrons):
         perm.append(coeff)
 
     return perm
+
+
+def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
+    r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
+
+    The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
+    using the Jordan-Wigner encoding. This operator is then transformed using the Clifford operators :math:`U`
+    obtained from the :math:`\mathbb{Z}_2` symmetries of the molecular Hamiltonian resulting in a qubit operator
+    that acts non-trivially only on a subset of qubits. A new, tapered HF state is built on this reduced subset
+    of qubits by placing the qubits which are acted on by a Pauli-X or Pauli-Y operators in state :math:`|1\rangle`
+    and leaving the rest in state :math:`|0\rangle`.
+
+    Args:
+        generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
+        paulix_ops (list[Operation]):  list of single-qubit Pauli-X operators
+        paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
+        num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
+        num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
+
+    Returns:
+        array(int): tapered Hartree-Fock state
+
+    **Example**
+
+    >>> from pennylane import hf
+    >>> symbols = ['He', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+    >>> mol = hf.Molecule(symbols, geometry, charge=1)
+    >>> H = hf.generate_hamiltonian(mol)(geometry)
+    >>> n_qubits, n_elec = len(H.wires), mol.n_electrons
+    >>> generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+    >>> paulix_sector = hf.optimal_sector(H, generators, n_elec)
+    >>> hf.transform_hf(generators, paulix_ops, paulix_sector,
+    ...                 n_elec, n_qubits)
+    tensor([1, 1], requires_grad=True)
+    """
+
+    pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
+
+    # build the untapered Hartree Fock state
+    hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
+
+    # convert the HF state to a corresponding HF observable under the JW transform
+    fermop_terms = []
+    for idx, bit in enumerate(hf):
+        if bit:
+            op_coeffs, op_str = _generate_qubit_operator([idx])
+            op_terms = []
+            for term in op_str:
+                op_term = pauli_map[term[0][1]](term[0][0])
+                for tm in term[1:]:
+                    op_term @= pauli_map[tm[1]](tm[0])
+                op_terms.append(op_term)
+            op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
+        else:
+            op_term = qml.Hamiltonian([1], [qml.Identity(idx)])
+        fermop_terms.append(op_term)
+
+    ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
+
+    # taper the HF observable using the symmetries obtained from the molecular hamiltonian
+    fermop_taper = transform_hamiltonian(ferm_op, generators, paulix_ops, paulix_sector)
+    fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
+
+    # iterate over the terms in tapered HF observable and build the tapered HF state
+    tapered_hartree_fock = []
+    for col in fermop_mat.T[fermop_mat.shape[1] // 2 :]:
+        if 1 in col:
+            tapered_hartree_fock.append(1)
+        else:
+            tapered_hartree_fock.append(0)
+
+    return np.array(tapered_hartree_fock).astype(int)

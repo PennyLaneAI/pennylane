@@ -550,8 +550,21 @@ class TestHamiltonian:
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
     def test_label(self):
+        """Tests the label method of Hamiltonian when <=3 coefficients."""
         H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
         assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+
+    def test_label_many_coefficients(self):
+        """Tests the label method of Hamiltonian when >3 coefficients."""
+        H = (
+            0.1 * qml.PauliX(0)
+            + 0.1 * qml.PauliY(1)
+            + 0.3 * qml.PauliZ(0) @ qml.PauliX(1)
+            + 0.4 * qml.PauliX(3)
+        )
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗"
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):
@@ -1236,8 +1249,8 @@ class TestHamiltonianDifferentiation:
     def test_trainable_coeffs_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
+        param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
         @qml.qnode(dev, diff_method="parameter-shift")
