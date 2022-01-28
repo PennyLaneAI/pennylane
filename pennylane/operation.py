@@ -469,7 +469,7 @@ class Operator(abc.ABC):
             raise ValueError(f"Must specify the wires that {self.name} acts on")
 
         # Check whther the expected number of parameters (in case the Operation subclass defines it via the num_params property) coincides with the one received.
-        if hasattr(self.__class__, 'num_params'):
+        if hasattr(self.__class__, "num_params"):
             # pylint: disable=no-member
             if len(params) != self.__class__.num_params:
                 raise ValueError(
