@@ -1854,20 +1854,32 @@ class TestOutputShape:
         res_shape = circuit(a, b).shape
         assert tape.get_output_shape(dev) == res_shape
 
-    def test_multi_measure_probs_shot_vector_errors(self):
-        """Test that getting the output shape of a tape containing multiple
-        probability measurements with different number of wires errors when
-        using a device with a shot vector."""
-        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+    @pytest.mark.parametrize("measurements, expected", multi_measurements)
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_multi_measure(self, measurements, expected, shots):
+        """Test that the expected output shape is obtained when using multiple
+        expectation value, variance and probability measurements."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        a = np.array(0.1)
+        b = np.array(0.2)
 
         with qml.tape.QuantumTape() as tape:
-            qml.probs(wires=[0])
-            qml.probs(wires=[1, 2])
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=0)
+            for m in measurements:
+                qml.apply(m)
 
-        with pytest.raises(
-            UnsupportedTapeOperationError, match="multiple probability measurements"
-        ):
-            tape.get_output_shape(dev)
+        if measurements[0].return_type is qml.operation.Sample:
+            expected[1] = shots
+            expected = tuple(expected)
+
+        res = tape.get_output_shape(dev)
+        assert res == expected
+
+        execution_results = cost(tape, dev)
+        expected = execution_results[0].shape
+        assert res == expected
 
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     def test_multi_measure_shot_vector(self, measurements, expected):
@@ -1878,7 +1890,7 @@ class TestOutputShape:
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
                 pytest.skip(
-                    "Multi-probs with varying number of varies when using a shot vecto is to be updated in PennyLane."
+                    "Multi-probs with varying number of varies when using a shot vector is to be updated in PennyLane."
                 )
 
         shots = (1, 1, 5, 1)
@@ -1959,6 +1971,22 @@ class TestOutputShape:
         execution_results = cost(tape, dev)[0]
         for r, e in zip(res, execution_results):
             assert r == e.shape
+
+    def test_multi_measure_probs_shot_vector_errors(self):
+        """Test that getting the output shape of a tape containing multiple
+        probability measurements with different number of wires errors when
+        using a device with a shot vector."""
+        dev = qml.device("default.qubit", wires=3, shots=(1, 2, 3))
+
+        with qml.tape.QuantumTape() as tape:
+            qml.probs(wires=[0])
+            qml.probs(wires=[1, 2])
+
+        with pytest.raises(
+            UnsupportedTapeOperationError, match="multiple probability measurements"
+        ):
+            tape.get_output_shape(dev)
+
 
     def test_raises_multiple_different_measurements(self):
         """Test that getting the output shape of a tape that contains multiple
