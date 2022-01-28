@@ -1487,7 +1487,6 @@ class TestCriteria:
 
 
 class TestStaticProperties:
-
     @pytest.mark.parametrize(
         "op, num_params",
         [
@@ -1495,7 +1494,7 @@ class TestStaticProperties:
             (qml.PauliZ, 0),
             (qml.RY, 1),
             (qml.TwoModeSqueezing, 2),
-        ]
+        ],
     )
     def test_num_params_can_be_static(self, op, num_params):
         """Test for a sample of Operation that can have a static num_params
