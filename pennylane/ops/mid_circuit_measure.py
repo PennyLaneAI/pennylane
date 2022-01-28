@@ -35,6 +35,7 @@ class _MidCircuitMeasure(Operation):
         super().__init__(wires=wires)
 
 
+# pylint: disable=protected-access
 def apply_to_measurement_dependant_values(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
@@ -65,8 +66,7 @@ T = TypeVar("T")
 
 # pylint: disable=protected-access
 class MeasurementDependantValue(Generic[T]):
-    """
-    A class representing unknown measurement outcomes.
+    """A class representing unknown measurement outcomes.
     Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
 
@@ -93,6 +93,8 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def branches(self):
+        """A dictionary representing all the possible outcomes of the MeasurementDependantValue.
+        """
         branch_dict = {}
         if isinstance(self._zero_case, MeasurementDependantValue):
             for k, v in self._zero_case.branches.items():
@@ -106,6 +108,8 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def measurements(self):
+        """List of all measurements this MeasurementDependantValue depends on.
+        """
         if isinstance(self._zero_case, MeasurementDependantValue):
             return [self._dependent_on, *self._zero_case.measurements]
         return [self._dependent_on]
@@ -224,6 +228,8 @@ class _Value(Generic[T]):
 
     @property
     def values(self):
+        """Values this Leaf node is holding.
+        """
         if len(self._values) == 1:
             return self._values[0]
         return self._values
