@@ -735,6 +735,16 @@ class PauliRot(Operation):
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
+    def conjugate_tape(wires, pauli_word):
+        with qml.tape.OperationRecorder() as tape:
+            for wire, gate in zip(wires, pauli_word):
+                if gate == "X":
+                    qml.Hadamard(wires=[wire])
+                elif gate == "Y":
+                    qml.RX(np.pi / 2, wires=[wire])
+        return tape
+
+    @staticmethod
     def decomposition(theta, pauli_word, wires):
         # Catch cases when the wire is passed as a single int.
         if isinstance(wires, int):
@@ -751,28 +761,21 @@ class PauliRot(Operation):
         if len(active_wires) == 1: # single qubit rotation
             if pauli_word == "X":
                 return [qml.RX(theta, wires=active_wires)]
-            elif pauli_word == "Y":
+            if pauli_word == "Y":
                 return [qml.RY(theta, wires=active_wires)]
-            elif pauli_word == "Z":
+            if pauli_word == "Z":
                 return [qml.RZ(theta, wires=active_wires)]
-
+        
+        conjuate_tape = PauliRot.conjugate_tape(active_wires, active_gates)
+        conjuate_tape_inv = conjuate_tape.copy()
+        conjuate_tape_inv.inv() # inversion in place
         with qml.tape.OperationRecorder() as rec:
-            for wire, gate in zip(active_wires, active_gates):
-                if gate == "X":
-                    Hadamard(wires=[wire])
-                elif gate == "Y":
-                    RX(np.pi / 2, wires=[wire])
-
+            rec.append(conjuate_tape)
             if len(active_wires) == 2:
                 IsingZZ(theta, wires = list(active_wires))
             else:
                 MultiRZ(theta, wires=list(active_wires))
-
-            for wire, gate in zip(active_wires, active_gates):
-                if gate == "X":
-                    Hadamard(wires=[wire])
-                elif gate == "Y":
-                    RX(-np.pi / 2, wires=[wire])
+            rec.append(conjuate_tape_inv)
         return rec.queue
 
     def adjoint(self):
