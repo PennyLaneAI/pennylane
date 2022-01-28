@@ -81,6 +81,15 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
 
+        class DummyOp2(qml.operation.Operator):
+            r"""Dummy custom operator"""
+            num_params = 1
+            num_wires = 1
+            grad_method = "A"
+
+        with pytest.raises(ValueError, match="wrong number of parameters"):
+            DummyOp2(0.5, 0.6, wires=0)
+
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
 

@@ -470,11 +470,15 @@ class Operator(abc.ABC):
 
         # Check whther the expected number of parameters (in case the Operation subclass defines it via the num_params property) coincides with the one received.
         if hasattr(self.__class__, "num_params"):
-            # pylint: disable=no-member
-            if len(params) != self.__class__.num_params:
+            # pylint: disable=no-member, access-member-before-definition
+            if (
+                isinstance(self.__class__, int)
+                and len(params) != self.__class__.num_params
+                or self.num_params != len(params)
+            ):
                 raise ValueError(
                     f"{self.name}: wrong number of parameters. "
-                    f"{len(params)} parameters passed, {self.num_params} expected."
+                    f"{len(params)} parameters passed, {self.__class__.num_params} specified in class {self.__class__}."
                 )
         else:
             # If no num_params property was provided by the-sub class we set it
