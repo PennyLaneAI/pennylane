@@ -45,7 +45,7 @@ def apply_to_measurement_dependant_values(fun):
     .. code-block:: python
 
         m0 = qml.mid_measure(0)
-        m0_sin = qml.apply_to_outcome(np.sin)(m0)
+        m0_sin = qml.apply_to_measurement_dependant_values(np.sin)(m0)
     """
 
     @functools.wraps(fun)
