@@ -742,9 +742,11 @@ class Operation(Operator):
             operations decomposition, or if not implemented, simply
             the operation itself.
         """
-        tape = qml.tape.QuantumTape(do_queue=False)
 
         ops = self.decompose()
+        if isinstance(ops, Operation):
+            ops = [ops]
+        tape = qml.tape.QuantumTape(do_queue=False)
         with tape:
             for op in ops:
                 qml.apply(op)

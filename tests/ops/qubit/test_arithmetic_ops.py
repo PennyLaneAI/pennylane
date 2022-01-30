@@ -174,15 +174,13 @@ class TestArithmetic:
 
         with qml.tape.QuantumTape() as tape:
             qml.QubitStateVector(input_state, wires=[0, 1, 2])
-
-            if expand:
-                qml.QubitSum(wires=wires).expand()
-            else:
-                qml.QubitSum(wires=wires)
-
+            qml.QubitSum(wires=wires)
             qml.state()
 
-        result = dev.execute(tape)
+        if expand:
+            result = dev.execute(tape.expand(depth = 100))
+        else:
+            result = dev.execute(tape)
         assert np.allclose(result, output_state)
 
         # checks that decomposition is only used when intended
