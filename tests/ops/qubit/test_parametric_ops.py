@@ -1092,64 +1092,73 @@ class TestPauliRot:
 
         assert decomp_ops[0].wires == Wires([0, 1])
         assert decomp_ops[0].data[0] == theta
-
-    def test_PauliRot_decomposition_XY(self):
+    
+    def test_PauliRot_decomposition_XY(self, tol):
         """Test that the decomposition for a XY rotation is correct."""
+
+        dev = qml.device("default.qubit", wires=2)
 
         theta = 0.4
         op = qml.PauliRot(theta, "XY", wires=[0, 1])
         decomp_ops = op.decompose()
 
-        assert len(decomp_ops) == 5
+        assert len(decomp_ops) == 5 # decomposed
+        
+        @qml.qnode(dev)
+        def func1(**kwargs):
+            qml.QubitStateVector(kwargs['ini_st'], wires=range(2))
+            qml.QubitUnitary(op.matrix, wires = [0, 1])
+            return qml.state()
+        
+        @qml.qnode(dev)
+        def func2(**kwargs):
+            qml.QubitStateVector(kwargs['ini_st'], wires=range(2))
+            for decomp_op in decomp_ops:
+                qml.apply(decomp_op)
+            return qml.state()
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
-
-        assert decomp_ops[1].name == "RX"
-
-        assert decomp_ops[1].wires == Wires([1])
-        assert decomp_ops[1].data[0] == np.pi / 2
+        ini_st = np.array([0, 1/np.sqrt(2), 1/np.sqrt(2), 0])
+        assert func1(ini_st = ini_st) == pytest.approx(func2(ini_st = ini_st), abs=tol)
 
         assert decomp_ops[2].name == "IsingZZ"
         assert decomp_ops[2].wires == Wires([0, 1])
         assert decomp_ops[2].data[0] == theta
 
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-
-        assert decomp_ops[4].wires == Wires([1])
-        assert decomp_ops[4].data[0] == -np.pi / 2
-
-    def test_PauliRot_decomposition_XIYZ(self):
+    def test_PauliRot_decomposition_XIYZ(self, tol):
         """Test that the decomposition for a XIYZ rotation is correct."""
+
+        dev = qml.device("default.qubit", wires=4)
 
         theta = 0.4
         op = qml.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
         decomp_ops = op.decompose()
 
+        @qml.qnode(dev)
+        def func1(**kwargs):
+            qml.QubitStateVector(kwargs['ini_st'], wires=range(4))
+            qml.QubitUnitary(op.matrix, wires = [0, 1, 2, 3])
+            return qml.state()
+        
+        @qml.qnode(dev)
+        def func2(**kwargs):
+            qml.QubitStateVector(kwargs['ini_st'], wires=range(4))
+            for decomp_op in decomp_ops:
+                qml.apply(decomp_op)
+            return qml.state()
+
+        ini_st = np.array([
+            0, 0.5, 0, 0,
+            0, 0.5, 0, 0,
+            0, 0.5, 0, 0,
+            0, 0.5, 0, 0,
+        ])
+        assert func1(ini_st = ini_st) == pytest.approx(func2(ini_st = ini_st), abs=tol)
+
         assert len(decomp_ops) == 5
-
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
-
-        assert decomp_ops[1].name == "RX"
-
-        assert decomp_ops[1].wires == Wires([2])
-        assert decomp_ops[1].data[0] == np.pi / 2
 
         assert decomp_ops[2].name == "MultiRZ"
         assert decomp_ops[2].wires == Wires([0, 2, 3])
         assert decomp_ops[2].data[0] == theta
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-
-        assert decomp_ops[4].wires == Wires([2])
-        assert decomp_ops[4].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])

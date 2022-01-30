@@ -735,7 +735,16 @@ class PauliRot(Operation):
         return MultiRZ._eigvals(theta, len(pauli_word))
 
     @staticmethod
-    def conjugate_tape(wires, pauli_word):
+    def _conjugate_tape(wires, pauli_word):
+        """For a given Pauli word, return a tape that diagonalizes it
+
+        Args:
+            pauli_word (str): Pauli word we want to diagonalize
+
+        Returns:
+            qml.tape: A tape of operations U that UDU^\dagger = P, where P
+            is the Pauli word.
+        """
         with qml.tape.OperationRecorder() as tape:
             for wire, gate in zip(wires, pauli_word):
                 if gate == "X":
@@ -766,9 +775,9 @@ class PauliRot(Operation):
             if pauli_word == "Z":
                 return [qml.RZ(theta, wires=active_wires)]
         
-        conjuate_tape = PauliRot.conjugate_tape(active_wires, active_gates)
+        conjuate_tape = PauliRot._conjugate_tape(active_wires, active_gates)
         conjuate_tape_inv = conjuate_tape.copy()
-        conjuate_tape_inv.inv() # inversion in place
+        conjuate_tape_inv.inv() # inverse in place
         with qml.tape.OperationRecorder() as rec:
             rec.append(conjuate_tape)
             if len(active_wires) == 2:
