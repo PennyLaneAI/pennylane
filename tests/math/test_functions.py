@@ -1470,7 +1470,7 @@ class TestScatterElementAdd:
         y = np.array(self.y, requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
         assert isinstance(res, np.ndarray)
@@ -1487,7 +1487,7 @@ class TestScatterElementAdd:
         y = np.array([0.56, 0.3], requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1**2)
 
         res = cost_multi(x, y)
         assert isinstance(res, np.ndarray)
@@ -1506,7 +1506,7 @@ class TestScatterElementAdd:
         y = tf.Variable(self.y)
 
         with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, self.index, y ** 2)
+            res = fn.scatter_element_add(x, self.index, y**2)
             loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, tf.Tensor)
@@ -1521,7 +1521,7 @@ class TestScatterElementAdd:
         x = torch.tensor(self.x, requires_grad=True)
         y = torch.tensor(self.y, requires_grad=True)
 
-        res = fn.scatter_element_add(x, self.index, y ** 2)
+        res = fn.scatter_element_add(x, self.index, y**2)
         loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, torch.Tensor)
@@ -1554,7 +1554,7 @@ class TestScatterElementAdd:
         y = jnp.array(self.y)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
@@ -1606,7 +1606,7 @@ class TestScatterElementAddMultiValue:
         y = tf.Variable(self.y)
 
         with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y ** 2])
+            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y**2])
             loss = (
                 res[self.indices[0][0], self.indices[1][0]]
                 + res[self.indices[0][1], self.indices[1][1]]
@@ -1627,7 +1627,7 @@ class TestScatterElementAddMultiValue:
 
         values = torch.zeros(2)
         values[0] += torch.sin(y / 2)
-        values[1] += y ** 2
+        values[1] += y**2
         res = fn.scatter_element_add(x, self.indices, values)
         loss = (
             res[self.indices[0][0], self.indices[1][0]]
@@ -1950,7 +1950,7 @@ class TestBlockDiagDiffability:
         [
             [-np.sin(x * y) * x, 0, 0],
             [0, 0.0, 1.2],
-            [0, -1 / 3, x / y ** 2],
+            [0, -1 / 3, x / y**2],
         ],
     )
 
@@ -1958,7 +1958,7 @@ class TestBlockDiagDiffability:
         """Tests for differentiating the block diagonal function with autograd."""
         tensors = lambda x, y: [
             np.array([[fn.cos(x * y)]]),
-            np.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+            np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
         ]
         f = lambda x, y: fn.block_diag(tensors(x, y))
         x, y = np.array([0.2, 1.5], requires_grad=True)
@@ -1972,7 +1972,7 @@ class TestBlockDiagDiffability:
         jax = pytest.importorskip("jax")
         tensors = lambda x, y: [
             jnp.array([[fn.cos(x * y)]]),
-            jnp.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+            jnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
         ]
         f = lambda x, y: fn.block_diag(tensors(x, y))
         x, y = 0.2, 1.5
