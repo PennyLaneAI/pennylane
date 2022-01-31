@@ -330,13 +330,12 @@ def execute(
             return batch_fn(
                 cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
             )
-        else:
-            with qml.tape.Unwrap(*tapes):
-                res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
-                    tapes
-                )
+        with qml.tape.Unwrap(*tapes):
+            res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
+                tapes
+            )
 
-            return batch_fn(res)
+        return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
         return batch_fn(
