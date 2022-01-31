@@ -849,5 +849,4 @@ def test_diff_method_None_jit():
 
         return qml.execute([tape], dev, gradient_fn=None)
 
-    with pytest.warns(UserWarning, match=r"Explicitly requested dtype <class"):
-        wrapper(jnp.array(0.1))
+    assert jnp.allclose(wrapper(jnp.array(0.0)), 1.0)

@@ -520,6 +520,9 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where you can't use `diff_method=None` with the jax device and jitting.
+  [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
+
 * Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
   to NumPy arrays before executing gradient tapes on devices.
   [(#2117)](https://github.com/PennyLaneAI/pennylane/pull/2117)
