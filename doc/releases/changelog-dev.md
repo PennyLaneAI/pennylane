@@ -4,6 +4,11 @@
 
 <h3>New features since last release</h3>
 
+* Fixes a bug in PennyLane-Qchem where an error is raised because Psi4 cannot parse atomic 
+  coordinates entered as `pennylane.numpy.tensor` type. The bug is fixed by converting the atomic
+  coordinates to `numpy.ndarray` in `qml.qchem.meanfield` before importing them to openfermion.
+  [(#2108)](https://github.com/PennyLaneAI/pennylane/pull/2108)
+
 * Added a modified version of the `simplify` function to the `hf` module.
   [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
 
