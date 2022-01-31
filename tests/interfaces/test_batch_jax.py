@@ -482,7 +482,7 @@ class TestJaxExecuteIntegration:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
+                qml.RX(c + c**2 + jnp.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             return execute([tape], device, interface=interface, **execute_kwargs)[0][0]
@@ -834,3 +834,20 @@ class TestVectorValued:
 
         with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(cost)(params, cache=None)
+
+
+def test_diff_method_None_jit():
+    """Test that jitted execution works when `gradient_fn=None`."""
+
+    dev = qml.device("default.qubit.jax", wires=1, shots=10)
+
+    @jax.jit
+    def wrapper(x):
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        return qml.execute([tape], dev, gradient_fn=None)
+
+    with pytest.warns(UserWarning, match=r"Explicitly requested dtype <class"):
+        wrapper(jnp.array(0.1))
