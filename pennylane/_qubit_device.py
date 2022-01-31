@@ -210,7 +210,11 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                r = qml.math.squeeze(r)
+
+                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                    r = r[0]
+                else:
+                    r = qml.math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
@@ -849,8 +853,7 @@ class QubitDevice(Device):
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
         After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
-        gates to scan backwards through the circuit. This method is similar to the reversible
-        method, but has a lower time overhead and a similar memory overhead.
+        gates to scan backwards through the circuit.
 
         .. note::
             The adjoint differentiation method has the following restrictions:

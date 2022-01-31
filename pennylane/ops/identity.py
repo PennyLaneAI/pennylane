@@ -34,12 +34,9 @@ class Identity(CVObservable, Operation):
     """
     num_wires = 1
     grad_method = None
+    num_params = 0
 
     ev_order = 1
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "I"
@@ -124,3 +121,6 @@ class Identity(CVObservable, Operation):
     def identity_op(*params):
         """Returns the matrix representation of the identity operator."""
         return Identity.compute_matrix(*params)
+
+    def adjoint(self):  # pylint:disable=arguments-differ
+        return Identity(wires=self.wires)

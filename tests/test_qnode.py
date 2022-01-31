@@ -157,6 +157,14 @@ class TestValidation:
         ):
             QNode._validate_backprop_method(dev, "another_interface")
 
+    @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
+    def test_validate_backprop_finite_shots(self, device_string):
+        """Test that a device with finite shots cannot be used with backpropagation."""
+        dev = qml.device(device_string, wires=1, shots=100)
+
+        with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
+            QNode._validate_backprop_method(dev, "autograd")
+
     def test_parameter_shift_qubit_device(self):
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for qubit devices."""
@@ -269,7 +277,7 @@ class TestValidation:
 
         assert circuit.gradient_fn is qml.gradients.finite_diff
 
-        qml.grad(circuit)(0.5)
+        qml.grad(circuit)(pnp.array(0.5, requires_grad=True))
         spy.assert_called()
 
     def test_unknown_diff_method_string(self):
@@ -395,8 +403,8 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        x = 0.12
-        y = 0.54
+        x = pnp.array(0.12, requires_grad=True)
+        y = pnp.array(0.54, requires_grad=True)
 
         res = qn(x, y)
 
@@ -429,8 +437,12 @@ class TestTapeConstruction:
         assert qn.gradient_kwargs["h"] == 1e-8
         assert qn.gradient_kwargs["approx_order"] == 2
 
-        jac = qn.gradient_fn(qn)(0.45, 0.1)
-        assert jac.shape == (2, 2, 2)
+        jac = qn.gradient_fn(qn)(
+            pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
+        )
+        assert isinstance(jac, tuple) and len(jac) == 2
+        assert jac[0].shape == (2, 2)
+        assert jac[1].shape == (2, 2)
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
@@ -597,8 +609,8 @@ class TestDecorator:
         assert isinstance(func, QNode)
         assert func.__doc__ == "My function docstring"
 
-        x = 0.12
-        y = 0.54
+        x = pnp.array(0.12, requires_grad=True)
+        y = pnp.array(0.54, requires_grad=True)
 
         res = func(x, y)
 
@@ -802,13 +814,11 @@ class TestShots:
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-
-        # Todo: use standard creation of qnode below for both asserts once we do not parse args to tensors any more
-        dev = qml.device("default.qubit", wires=[qml.numpy.array(0), qml.numpy.array(1)], shots=10)
+        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
 
         def circuit(a, shots):
             qml.RX(a, wires=shots)
-            return qml.sample(qml.PauliZ(wires=qml.numpy.array(0)))
+            return qml.sample(qml.PauliZ(wires=0))
 
         # assert that warning is still raised
         with pytest.warns(
@@ -970,7 +980,7 @@ class TestTapeExpansion:
             UnsupportedOp(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        x = np.array(0.5)
+        x = pnp.array(0.5, requires_grad=True)
         spy = mocker.spy(circuit.gradient_fn, "transform_fn")
         qml.grad(circuit)(x)
 
@@ -1012,7 +1022,7 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliX(0))
 
         spy = mocker.spy(circuit.device, "batch_execute")
-        x = np.array(0.5)
+        x = pnp.array(0.5, requires_grad=True)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
@@ -1128,3 +1138,43 @@ class TestTapeExpansion:
 
         qml.grad(circuit)(x)
         assert len(spy_expand.call_args_list) == 3
+
+    def test_expansion_multiple_qwc_observables(self, mocker):
+        """Test that the QNode correctly expands tapes that return
+        multiple measurements of commuting observables"""
+        dev = qml.device("default.qubit", wires=2)
+        obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliY(1)]
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return [qml.expval(o) for o in obs]
+
+        spy_expand = mocker.spy(circuit.device, "expand_fn")
+        params = [0.1, 0.2]
+        res = circuit(*params)
+
+        tape = spy_expand.spy_return
+        rotations, observables = qml.grouping.diagonalize_qwc_pauli_words(obs)
+
+        assert tape.observables[0].name == observables[0].name
+        assert tape.observables[1].name == observables[1].name
+
+        assert tape.operations[-2].name == rotations[0].name
+        assert tape.operations[-2].parameters == rotations[0].parameters
+        assert tape.operations[-1].name == rotations[1].name
+        assert tape.operations[-1].parameters == rotations[1].parameters
+
+        # check output value is consistent with a Hamiltonian expectation
+        coeffs = np.array([1.0, 1.0])
+        H = qml.Hamiltonian(coeffs, obs)
+
+        @qml.qnode(dev)
+        def circuit2(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            return qml.expval(H)
+
+        res_H = circuit2(*params)
+        assert np.allclose(coeffs @ res, res_H)

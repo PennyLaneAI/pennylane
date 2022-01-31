@@ -228,13 +228,13 @@ class GateFabric(Operation):
         .. seealso:: :meth:`~.GateFabric.decomposition`.
 
         Args:
-            weights (tensor_like): Array of weights of shape ``(D, L, 2)``\,
+            weights (tensor_like): Array of weights of shape ``(D, L, 2)``,
                 where ``D`` is the number of gate fabric layers and ``L = N/2-1``
                 is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
             wires (Any or Iterable[Any]): wires that the operator acts on
             init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
                 in the Jordan-Wigner representation.
-            include_pi (boolean): If ``include_pi = True``\, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
+            include_pi (boolean): If ``True``, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
                 Default value is :math:`\hat{I}`.
 
         Returns:
@@ -261,13 +261,13 @@ class GateFabric(Operation):
         op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
         for layer in range(n_layers):
-            for idx, wires in enumerate(wire_pattern):
+            for idx, wires_ in enumerate(wire_pattern):
 
                 if include_pi:
-                    op_list.append(qml.OrbitalRotation(np.pi, wires=wires))
+                    op_list.append(qml.OrbitalRotation(np.pi, wires=wires_))
 
-                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires))
-                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires))
+                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires_))
+                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires_))
 
         return op_list
 

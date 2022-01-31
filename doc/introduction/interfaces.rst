@@ -53,13 +53,6 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
   forward pass by iteratively applying the inverse (adjoint) gate. This method is similar to
   ``"backprop"``, but has significantly lower memory usage and a similar runtime.
 
-* ``"reversible"``: Use a form of backpropagation that takes advantage of the unitary or reversible
-  nature of quantum computation.
-
-  This method is similar to the ``adjoint`` method, but has a slightly larger time overhead and a similar
-  memory overhead. Compared to the parameter-shift rule, the reversible method can be faster or slower,
-  depending on the density and location of parametrized gates in a circuit.
-
 Hardware-compatible differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,8 +122,8 @@ tensor([[-0.04673668, -0.09442394, -0.14409127],
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
 ``qml.grad()`` if using Autograd, ``loss.backward()`` for PyTorch, or ``tape.gradient()`` for TensorFlow).
-This is because gradient transforms do not take into account classical processing, and only support
-gradients of quantum components.
+This is because gradient transforms do not take into account classical computation nodes, and only
+support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
 

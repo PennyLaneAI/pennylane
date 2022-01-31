@@ -170,7 +170,7 @@ class SimplifiedTwoDesign(Operation):
         op_list = []
 
         # initial rotations
-        for i in range(len(wires)):
+        for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
             op_list.append(qml.RY(initial_layer_weights[i], wires=wires[i]))
 
         for layer in range(n_layers):

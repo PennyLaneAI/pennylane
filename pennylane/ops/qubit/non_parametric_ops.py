@@ -43,10 +43,7 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-
-    @property
-    def num_params(self):
-        return 0
+    num_params = 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
@@ -159,11 +156,8 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "X"
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
@@ -277,11 +271,8 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Y"
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
@@ -401,11 +392,8 @@ class PauliZ(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
@@ -510,11 +498,8 @@ class S(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -596,11 +581,8 @@ class T(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -682,11 +664,8 @@ class SX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "X"
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -781,14 +760,11 @@ class CNOT(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "X"
 
-    @property
-    def num_params(self):
-        return 0
-
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -840,11 +816,8 @@ class CZ(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "Z"
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
@@ -910,11 +883,8 @@ class CY(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "Y"
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
@@ -997,11 +967,8 @@ class SWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "X"
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1077,10 +1044,7 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-
-    @property
-    def num_params(self):
-        return 0
+    num_params = 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1175,11 +1139,7 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    op_eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
-
-    @property
-    def num_params(self):
-        return 0
+    num_params = 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1303,10 +1263,7 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-
-    @property
-    def num_params(self):
-        return 0
+    num_params = 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
@@ -1408,14 +1365,11 @@ class Toffoli(Operation):
         wires (Sequence[int]): the subsystem the gate acts on
     """
     num_wires = 3
+    num_params = 0
     basis = "X"
 
-    @property
-    def num_params(self):
-        return 0
-
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -1568,6 +1522,7 @@ class MultiControlledX(Operation):
     """
     is_self_inverse = True
     num_wires = AnyWires
+    num_params = 0
     grad_method = None
 
     # pylint: disable=too-many-arguments
@@ -1601,10 +1556,6 @@ class MultiControlledX(Operation):
         total_wires = control_wires + wires
 
         super().__init__(wires=total_wires, do_queue=do_queue)
-
-    @property
-    def num_params(self):
-        return 0
 
     # pylint: disable=unused-argument
     @staticmethod
@@ -1659,7 +1610,7 @@ class MultiControlledX(Operation):
         return self.wires[:~0]
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     def adjoint(self):
         return MultiControlledX(
@@ -1869,3 +1820,48 @@ class Barrier(Operation):
 
     def label(self, decimals=None):
         return "||"
+
+    def adjoint(self):
+        return Barrier(wires=self.wires)
+
+
+class WireCut(Operation):
+    r"""WireCut(wires)
+    The wire cut operator, used to manually mark locations for wire cuts.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_wires = AnyWires
+    grad_method = None
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Compute the decomposition for the WireCut operator.
+
+        Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
+
+        Args:
+            wires (Any, Wires): Wire that the operator acts on.
+
+        Returns:
+            list[Operator]: decomposition of the Operator into lower level operations
+
+        **Example:**
+
+        >>> qml.WireCut.compute_decomposition(0)
+        []
+
+        """
+        return []
+
+    def label(self, decimals=None):
+        return "//"
+
+    def adjoint(self):
+        return WireCut(wires=self.wires)

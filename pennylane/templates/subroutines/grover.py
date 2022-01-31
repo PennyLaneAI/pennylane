@@ -17,7 +17,6 @@ Contains the Grover Operation template.
 import itertools
 import functools
 import numpy as np
-import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import Hadamard, PauliZ, MultiControlledX
 
@@ -115,7 +114,7 @@ class GroverOperator(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
+    def compute_decomposition(wires, work_wires, **kwargs):  # pylint: disable=arguments-differ
         r"""Compute a decomposition of the GroverOperator operator.
 
         The decomposition defines an Operator as a product of more fundamental gates:
@@ -131,7 +130,6 @@ class GroverOperator(Operation):
             wires (Any or Iterable[Any]): wires that the operator acts on
             work_wires (Any or Iterable[Any]): optional auxiliary wires to assist
                 in the decomposition of :class:`~.MultiControlledX`.
-            n_wires (int): number of (non-work) wires used
 
         Returns:
             list[.Operator]: decomposition of the Operator into lower-level operations

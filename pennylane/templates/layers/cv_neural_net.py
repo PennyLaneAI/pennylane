@@ -213,7 +213,7 @@ class CVNeuralNetLayers(Operation):
                 )
             )
 
-            for i in range(len(wires)):
+            for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
                 op_list.append(qml.Squeezing(r[l, i], phi_r[l, i], wires=wires[i]))
 
             op_list.append(
@@ -225,10 +225,10 @@ class CVNeuralNetLayers(Operation):
                 )
             )
 
-            for i in range(len(wires)):
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(qml.Displacement(a[l, i], phi_a[l, i], wires=wires[i]))
 
-            for i in range(len(wires)):
+            for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
                 op_list.append(qml.Kerr(k[l, i], wires=wires[i]))
 
         return op_list

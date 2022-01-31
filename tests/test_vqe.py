@@ -496,7 +496,7 @@ class TestVQE:
 
         np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        w = pnp.random.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
         dc = qml.grad(cost)(w)
         exec_opt = dev.num_executions

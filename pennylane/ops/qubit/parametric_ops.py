@@ -57,6 +57,7 @@ class RX(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 1
     basis = "X"
     grad_method = "A"
 
@@ -65,10 +66,6 @@ class RX(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -134,6 +131,7 @@ class RY(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 1
     basis = "Y"
     grad_method = "A"
 
@@ -142,10 +140,6 @@ class RY(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -206,6 +200,7 @@ class RZ(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 1
     basis = "Z"
     grad_method = "A"
 
@@ -214,10 +209,6 @@ class RZ(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -300,6 +291,7 @@ class PhaseShift(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 1
     basis = "Z"
     grad_method = "A"
 
@@ -308,10 +300,6 @@ class PhaseShift(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -426,6 +414,7 @@ class ControlledPhaseShift(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     basis = "Z"
     grad_method = "A"
 
@@ -434,10 +423,6 @@ class ControlledPhaseShift(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -572,14 +557,11 @@ class Rot(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 3
     grad_method = "A"
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 3
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
@@ -700,16 +682,13 @@ class MultiRZ(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = "A"
 
     def __init__(self, theta, wires=None, do_queue=True, id=None):
         wires = Wires(wires)
         self.hyperparameters["n_wires"] = len(wires)
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(theta, n_wires):  # pylint: disable=arguments-differ
@@ -843,6 +822,7 @@ class PauliRot(Operation):
     0.8775825618903724
     """
     num_wires = AnyWires
+    num_params = 2
     do_check_domain = False
     grad_method = "A"
 
@@ -870,10 +850,6 @@ class PauliRot(Operation):
                 f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
-    @property
-    def num_params(self):
-        return 2
-
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
 
@@ -889,14 +865,14 @@ class PauliRot(Operation):
 
         >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
         >>> op.label()
-        'R(XYY)'
+        'RXYY'
         >>> op.label(decimals=2)
-        'R(XYY)\n(0.10)'
+        'RXYY\n(0.10)'
         >>> op.label(base_label="PauliRot")
         'PauliRot\n(0.10)'
 
         """
-        op_label = base_label or ("R(" + self.parameters[1] + ")")
+        op_label = base_label or ("R" + self.parameters[1])
 
         if self.inverse:
             op_label += "⁻¹"
@@ -1117,6 +1093,7 @@ class CRX(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1126,10 +1103,6 @@ class CRX(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
@@ -1264,6 +1237,7 @@ class CRY(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1273,10 +1247,6 @@ class CRY(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
@@ -1403,6 +1373,7 @@ class CRZ(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1412,10 +1383,6 @@ class CRZ(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
@@ -1553,15 +1520,12 @@ class CRot(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 3
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 3
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
@@ -1700,6 +1664,7 @@ class U1(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -1707,10 +1672,6 @@ class U1(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -1803,14 +1764,11 @@ class U2(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 2
     grad_method = "A"
 
     def __init__(self, phi, delta, wires, do_queue=True, id=None):
         super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def compute_matrix(phi, delta):  # pylint: disable=arguments-differ
@@ -1923,14 +1881,11 @@ class U3(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 1
+    num_params = 3
     grad_method = "A"
 
     def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
         super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 3
 
     @staticmethod
     def compute_matrix(theta, phi, delta):  # pylint: disable=arguments-differ
@@ -2041,6 +1996,7 @@ class IsingXX(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -2048,10 +2004,6 @@ class IsingXX(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -2146,6 +2098,7 @@ class IsingYY(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -2153,10 +2106,6 @@ class IsingYY(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -2248,6 +2197,7 @@ class IsingZZ(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -2255,10 +2205,6 @@ class IsingZZ(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -2315,6 +2261,29 @@ class IsingZZ(Operation):
         neg_phase = qml.math.exp(-1.0j * phi / 2)
 
         return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
+
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        """Eigenvalues of the IsingZZ operator.
+
+        Args:
+            phi (tensor_like or float): phase angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
+        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.stack([neg_phase, pos_phase, pos_phase, neg_phase])
 
     def adjoint(self):
         (phi,) = self.parameters

@@ -88,10 +88,7 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
-
-    @property
-    def num_params(self):
-        return 0
+    num_params = 0
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -231,10 +228,7 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
-
-    @property
-    def num_params(self):
-        return 0
+    num_params = 0
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")

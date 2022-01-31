@@ -82,6 +82,7 @@ class SingleExcitation(Operation):
     """
 
     num_wires = 2
+    num_params = 1
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -91,10 +92,6 @@ class SingleExcitation(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -187,6 +184,7 @@ class SingleExcitationMinus(Operation):
 
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -200,10 +198,6 @@ class SingleExcitationMinus(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -318,6 +312,7 @@ class SingleExcitationPlus(Operation):
 
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -331,10 +326,6 @@ class SingleExcitationPlus(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -431,8 +422,8 @@ class DoubleExcitation(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
 
     while leaving all other basis states unchanged.
 
@@ -457,7 +448,7 @@ class DoubleExcitation(Operation):
     **Example**
 
     The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
-    \phi/2)|1100\rangle +\sin(\phi/2)|0011\rangle)`:
+    \phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
 
@@ -473,6 +464,7 @@ class DoubleExcitation(Operation):
         circuit(0.1)
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -493,10 +485,6 @@ class DoubleExcitation(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -643,6 +631,7 @@ class DoubleExcitationPlus(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -655,10 +644,6 @@ class DoubleExcitationPlus(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -729,6 +714,7 @@ class DoubleExcitationMinus(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
 
     def generator(self):
@@ -742,10 +728,6 @@ class DoubleExcitationMinus(Operation):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -838,6 +820,7 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -853,10 +836,6 @@ class OrbitalRotation(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-    @property
-    def num_params(self):
-        return 1
-
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
         """Canonical matrix representation of the OrbitalRotation operator.
@@ -867,7 +846,6 @@ class OrbitalRotation(Operation):
         Returns:
           tensor_like: canonical matrix
         """
-
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
         # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
         # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.

@@ -228,7 +228,7 @@ class IQPEmbedding(Operation):
         op_list = []
         for _ in range(n_repeats):
 
-            for i in range(len(wires)):
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(qml.Hadamard(wires=wires[i]))
                 op_list.append(qml.RZ(features[i], wires=wires[i]))
 
