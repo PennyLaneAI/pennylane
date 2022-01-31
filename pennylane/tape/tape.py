@@ -1272,6 +1272,7 @@ class QuantumTape(AnnotatedQueue):
 
         tape._update()
         tape.trainable_params = self.trainable_params.copy()
+        tape._output_dim = self.output_dim
 
         return tape
 
