@@ -78,7 +78,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
 def replace_wire_cut_nodes(graph: MultiDiGraph):
     """
-    Remove all `WireCut`s in the graph with `MeasureNode`s and `PrepareNode`s
+    Replace all `WireCut`s in the graph with `MeasureNode`s and `PrepareNode`s
     """
     for op in list(graph.nodes):
         if isinstance(op, WireCut):

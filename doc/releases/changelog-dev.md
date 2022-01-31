@@ -51,7 +51,7 @@
   
   A method to replace `WireCut` nodes in a `MultiDiGraph` with `MeasureNode` and
   `PrepareNode` placeholders has been added.
-  [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124/files)
+  [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking

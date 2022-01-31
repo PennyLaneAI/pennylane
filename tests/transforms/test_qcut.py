@@ -237,7 +237,7 @@ class TestTapeToGraph:
 
 class TestReplaceWireCut:
     """
-    Tests that the replacement of WireCut operation with MeasureNode and
+    Tests the replacement of WireCut operation with MeasureNode and
     PrepareNode
     """
 
