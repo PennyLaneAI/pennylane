@@ -136,13 +136,13 @@ def get_unitary_matrix(circuit, wire_order=None):
             raise ValueError("Wires in circuit are inconsistent with those in wire_order")
 
         # initialize the unitary matrix
-        unitary_matrix = qml.math.eye(2 ** n_wires, like=interface)
+        unitary_matrix = qml.math.eye(2**n_wires, like=interface)
 
         for op in tape.operations:
             # operator wire position relative to wire ordering
             op_wire_pos = wire_order.indices(op.wires)
 
-            I = qml.math.reshape(qml.math.eye(2 ** n_wires, like=interface), [2] * n_wires * 2)
+            I = qml.math.reshape(qml.math.eye(2**n_wires, like=interface), [2] * n_wires * 2)
             axes = (list(range(len(op.wires), 2 * len(op.wires))), op_wire_pos)
 
             # reshape op.matrix
@@ -157,7 +157,7 @@ def get_unitary_matrix(circuit, wire_order=None):
             perm = op_wire_pos + unused_idxs
             U = qml.math.moveaxis(U_tensordot, wire_order.indices(wire_order), perm)
 
-            U = qml.math.reshape(U, ((2 ** n_wires, 2 ** n_wires)))
+            U = qml.math.reshape(U, ((2**n_wires, 2**n_wires)))
 
             # add to total matrix if there are multiple ops
             unitary_matrix = qml.math.dot(U, unitary_matrix)
