@@ -15,16 +15,16 @@
 Unit tests for functions needed for qubit tapering.
 """
 import functools
-import scipy
-import pytest
+
 import pennylane as qml
+import pytest
+import scipy
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
     _binary_matrix,
     _kernel,
     _observable_mult,
     _reduced_row_echelon,
-    _simplify,
     clifford,
     generate_paulis,
     generate_symmetries,
@@ -356,52 +356,6 @@ def test_observable_mult(obs_a, obs_b, result):
     r"""Test that observable_mult returns the correct result."""
     o = _observable_mult(obs_a, obs_b)
     assert o.compare(result)
-
-
-@pytest.mark.parametrize(
-    ("hamiltonian", "result"),
-    [
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
-            ),
-            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-            ),
-            qml.Hamiltonian([], []),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.0, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.25, 0.25, 0.25, -0.25]),
-                [
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                ],
-            ),
-            qml.Hamiltonian(
-                np.array([0.25, 0.25]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-        ),
-    ],
-)
-def test_simplify(hamiltonian, result):
-    r"""Test that simplify returns the correct hamiltonian."""
-    h = _simplify(hamiltonian)
-    assert h.compare(result)
 
 
 @pytest.mark.parametrize(
