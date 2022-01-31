@@ -649,7 +649,7 @@ class TestOrbitalRotation:
 
         res = circuit(0.1)
 
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)

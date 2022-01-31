@@ -210,7 +210,7 @@ class TestGradients:
     def test_Rot_gradient(self, theta, tol):
         """Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."""
         dev = qml.device("default.qubit", wires=1)
-        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with ReversibleTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
@@ -432,8 +432,8 @@ class TestQNodeIntegration:
         assert not isinstance(qnode2.qtape, ReversibleTape)
         assert np.allclose(grad_A, grad_F, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("reused_p", thetas ** 3 / 19)
-    @pytest.mark.parametrize("other_p", thetas ** 2 / 1)
+    @pytest.mark.parametrize("reused_p", thetas**3 / 19)
+    @pytest.mark.parametrize("other_p", thetas**2 / 1)
     def test_fanout_multiple_params(self, reused_p, other_p, tol):
         """Tests that the correct gradient is computed for qnodes which
         use the same parameter in multiple gates."""

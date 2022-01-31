@@ -37,7 +37,7 @@ def circuit_1(a, b):
     qml.RX(qml.math.sin(a), wires=0)
     qml.RZ(a / 3, wires=0)
     qml.CNOT(wires=[0, 1])
-    qml.RY(b ** 2, wires=1)
+    qml.RY(b**2, wires=1)
     qml.RZ(1 / b, wires=1)
     return qml.expval(qml.PauliZ(0))
 
@@ -93,7 +93,7 @@ class_jacs = [
                 0.0,
             ]
         ),
-        np.array([0.0, 0.0, 2 * b, -1 / (b ** 2)]),
+        np.array([0.0, 0.0, 2 * b, -1 / (b**2)]),
     ),
     (np.eye(len(x)),),
     (

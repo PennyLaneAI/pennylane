@@ -45,7 +45,7 @@ def test_first_finit_diff(x, y, argnum, idx, delta, exp_grad):
     r"""Tests the correctness of the first-order finite difference function."""
 
     def f(x, y):
-        return np.sin(x) / x ** 4 + y ** -3
+        return np.sin(x) / x**4 + y**-3
 
     grad = qml.finite_diff(f, argnum=argnum, idx=idx, delta=delta)(x, y)
 
@@ -84,7 +84,7 @@ def test_second_order_finite_diff(x, y, argnum, idx, delta, exp_deriv2):
     function '_fd_second_order_centered'"""
 
     def f(x, y):
-        return np.sin(x) / x ** 4 + y ** -3
+        return np.sin(x) / x**4 + y**-3
 
     deriv2 = qml.finite_diff(f, N=2, argnum=argnum, idx=idx, delta=delta)(x, y)
 

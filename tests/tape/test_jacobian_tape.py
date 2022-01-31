@@ -711,7 +711,7 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         assert res.shape == (1, 2)
 
-        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_output_values(self, tol):
@@ -731,7 +731,7 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
 
-        expected = np.array([[0, 0], [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[0, 0], [2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_trainable_measurement(self, tol):
