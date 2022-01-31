@@ -207,14 +207,15 @@ def test_jax(diff_method, tol):
 
 
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-def test_jax_jit(diff_method, tol):
+@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
