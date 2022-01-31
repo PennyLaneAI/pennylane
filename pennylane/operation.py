@@ -367,20 +367,139 @@ def _process_data(op):
 
 
 class Operator(abc.ABC):
-    r"""Base class for quantum operators.
+    r"""Base class representing quantum operators.
 
-    The following class attributes must be defined for all Operators:
+    Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
+    and their (non-trainable) hyperparameters. The trainable parameters
+    can be tensors of any supported auto-differentiation framework.
 
-    * :attr:`~.Operator.num_wires`
+    An operator can define any of the following representations:
+
+    * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a
+      global wire order that tells us where the wires are found on a register.
+
+    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`). Currently, this
+      is a SciPy COO matrix format.
+
+    * Representation via the **eigenvalue decomposition** specified by eigenvalues
+      (:meth:`.Operator.eigvals`) and diagonalizing gates (:meth:`.Operator.diagonalizing_gates`).
+
+    * Representation as a **product of operators** (:meth:`.Operator.decomposition`).
+
+    * Representation as a **linear combination of operators** (:meth:`.Operator.terms`).
+
+    * Representation by a **generator** via :math:`e^{G}` (:meth:`.Operator.generator`).
+
+    Each representation method comes with a static method prefixed by ``compute_``, which
+    takes the signature ``(*parameters, **hyperparameters)`` (for numerical representations that do not need
+    to know about wire labels) or ``(*parameters, wires, **hyperparameters)``, where ``parameters``, ``wires``, and
+    ``hyperparameters`` are the respective attributes of the operator class.
 
     Args:
-        params (tuple[float, int, array]): operator parameters
-
-    Keyword Args:
-        wires (Iterable[Number, str], Number, str, Wires): wires that the operator acts on
+        params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
-        do_queue (bool): Indicates whether the operator should be
-            immediately pushed into the Operator queue.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+
+    **Example**
+
+    A custom operator can be created by inheriting from :class:`~.Operator` or one of its subclasses.
+
+    The following is an example for a custom gate that inherits from the :class:`~.Operation` subclass.
+    It acts by potentially flipping a qubit and rotating another qubit.
+    The custom operator defines a decomposition, which the devices can use (since it is unlikely that a device
+    knows a native implementation for ``FlipAndRotate``). It also defines an adjoint operator.
+
+    .. code-block:: python
+
+        import pennylane as qml
+
+
+        class FlipAndRotate(qml.operation.Operation):
+
+            # Define how many wires the operator acts on in total.
+            # In our case this may be one or two, which is why we
+            # use the AnyWires Enumeration to indicate a variable number.
+            num_wires = qml.operation.AnyWires
+
+            # This attribute tells PennyLane what differentiation method to use. Here
+            # we request parameter-shift (or "analytic") differentiation.
+            grad_method = "A"
+
+            def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
+                               do_queue=True, id=None):
+
+                # checking the inputs --------------
+
+                if do_flip and wire_flip is None:
+                    raise ValueError("Expected a wire to flip; got None.")
+
+                # note: we use the framework-agnostic math library since
+                # trainable inputs could be tensors of different types
+                shape = qml.math.shape(angle)
+                if len(shape) > 1:
+                    raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
+
+                #------------------------------------
+
+                # do_flip is not trainable but influences the action of the operator,
+                # which is why we define it to be a hyperparameter
+                self._hyperparameters = {
+                    "do_flip": do_flip
+                }
+
+                # we extract all wires that the operator acts on,
+                # relying on the Wire class arithmetic
+                all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
+
+                # The parent class expects all trainable parameters to be fed as positional
+                # arguments, and all wires acted on fed as a keyword argument.
+                # The id keyword argument allows users to give their instance a custom name.
+                # The do_queue keyword argument specifies whether or not
+                # the operator is queued when created in a tape context.
+                super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+
+            @property
+            def num_params(self):
+                # if it is known before creation, define the number of parameters to expect here,
+                # which makes sure an error is raised if the wrong number was passed
+                return 1
+
+            @staticmethod
+            def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+                # Overwriting this method defines the decomposition of the new gate, as it is
+                # called by Operator.decomposition().
+                # The general signature of this function is (*parameters, wires, **hyperparameters).
+                op_list = []
+                if do_flip:
+                    op_list.append(qml.PauliX(wires=wires[1]))
+                op_list.append(qml.RX(angle, wires=wires[0]))
+                return op_list
+
+            def adjoint(self):
+                # the adjoint operator of this gate simply negates the angle
+                return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1], do_flip=self.hyperparameters["do_flip"])
+
+    We can use the operation as follows:
+
+    .. code-block:: python
+
+        from pennylane import numpy as np
+
+        dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
+
+        @qml.qnode(dev)
+        def circuit(angle):
+            FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
+            return qml.expval(qml.PauliZ("q1"))
+
+    >>> a = np.array(3.14)
+    >>> circuit(a)
+    -0.9999987318946099
+
     """
 
     def __copy__(self):
@@ -1011,12 +1130,9 @@ class Operator(abc.ABC):
 
 
 class Operation(Operator):
-    r"""Base class for quantum operations supported by a device.
+    r"""Base class representing quantum gates or channels applied to quantum states.
 
-    As with :class:`~.Operator`, the following class attributes must be
-    defined for all operations:
-
-    * :attr:`~.Operator.num_wires`
+    Operations define some additional properties, such as differentiation
 
     The following two class attributes are optional, but in most cases
     should be clearly defined to avoid unexpected behavior during
@@ -1031,15 +1147,13 @@ class Operation(Operator):
     * :attr:`~.Operation.generator`
 
     Args:
-        params (tuple[float, int, array]): operation parameters
-
-    Keyword Args:
-        wires (Sequence[int]): Subsystems it acts on. If not given, args[-1]
-            is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`BaseQNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a BaseQNode context.
+        params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
 
     @property
@@ -1248,33 +1362,17 @@ class Operation(Operator):
 class Channel(Operation, abc.ABC):
     r"""Base class for quantum channels.
 
-    As with :class:`~.Operation`, the following class attributes must be
-    defined for all channels:
-
-    * :attr:`~.Operator.num_wires`
-
-    To define a noisy channel, the following attribute of :class:`~.Channel`
-    can be used to list the corresponding Kraus matrices.
-
-    * :attr:`~.Channel._kraus_matrices`
-
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
-
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
+    Quantum channels have to define an additional numerical representation
+    as Kraus matrices.
 
     Args:
-        params (tuple[float, int, array]): operation parameters
-
-    Keyword Args:
-        wires (Sequence[int]): Subsystems the channel acts on. If not given, args[-1]
-            is interpreted as wires.
-        do_queue (bool): Indicates whether the operation should be
-            immediately pushed into a :class:`BaseQNode` circuit queue.
-            This flag is useful if there is some reason to run an Operation
-            outside of a BaseQNode context.
+        params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
     # pylint: disable=abstract-method
 
@@ -1334,23 +1432,18 @@ class Channel(Operation, abc.ABC):
 
 
 class Observable(Operator):
-    """Base class for observables supported by a device.
+    """Base class representing observables.
 
-    :class:`Observable` is used to describe Hermitian quantum observables.
-
-    As with :class:`~.Operator`, the following class attributes must be
-    defined for all observables:
-
-    * :attr:`~.Operator.num_wires`
+    Observables define a return type
 
     Args:
-        params (tuple[float, int, array]): observable parameters
-
-    Keyword Args:
-        wires (Sequence[int]): subsystems it acts on.
-            Currently, only one subsystem is supported.
-        do_queue (bool): Indicates whether the operation should be
-            immediately pushed into the Operator queue.
+        params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
 
     # pylint: disable=abstract-method
@@ -1491,6 +1584,10 @@ class Tensor(Observable):
     The ``@`` symbol can be used as a tensor product operation:
 
     >>> T = qml.PauliX(0) @ qml.Hadamard(2)
+
+    .. note:
+
+        This class is marked for deletion or overhaul.
     """
 
     # pylint: disable=abstract-method
@@ -2062,7 +2159,20 @@ class CV:
 
 
 class CVOperation(CV, Operation):
-    """Base class for continuous-variable quantum operations."""
+    """Base class representing continuous-variable quantum gates.
+
+    CV operations provide a special Heisenberg representation, as well as custom methods
+    for differentiation.
+
+    Args:
+        params (tuple[tensor_like]): trainable parameters
+        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+            If not given, args[-1] is interpreted as wires.
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
+    """
 
     # pylint: disable=abstract-method
 
@@ -2161,21 +2271,32 @@ class CVOperation(CV, Operation):
 
 
 class CVObservable(CV, Observable):
-    r"""Base class for continuous-variable observables.
+    r"""Base class representing continuous-variable observables.
+
+    CV observables provide a special Heisenberg representation.
 
     The class attribute :attr:`~.ev_order` can be defined to indicate
     to PennyLane whether the corresponding CV observable is a polynomial in the
     quadrature operators. If so,
 
     * ``ev_order = 1`` indicates a first order polynomial in quadrature
-      operators :math:`(\x, \p)`.
-
+     operators :math:`(\x, \p)`.
+    
     * ``ev_order = 2`` indicates a second order polynomial in quadrature
-      operators :math:`(\x, \p)`.
+     operators :math:`(\x, \p)`.
 
     If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
     of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
     returning an array of the correct dimension.
+
+    Args:
+       params (tuple[tensor_like]): trainable parameters
+       wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+           If not given, args[-1] is interpreted as wires.
+       do_queue (bool): indicates whether the operator should be
+           recorded when created in a tape context
+       id (str): custom label given to an operator instance,
+           can be useful for some applications where the instance has to be identified
     """
     # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of
