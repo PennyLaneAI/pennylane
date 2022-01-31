@@ -259,11 +259,11 @@ class TestTFQuantumTape:
             with TFInterface.apply(JacobianTape()) as qtape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + tf.sin(a), wires=0)
+                qml.RX(c + c**2 + tf.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             assert qtape.trainable_params == [0, 2]
-            assert qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
+            assert qtape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
             res = qtape.execute(dev)
 
         res = tape.jacobian(res, [a, b, c])
@@ -574,10 +574,10 @@ class TestTFPassthru:
             with JacobianTape() as qtape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + tf.sin(a), wires=0)
+                qml.RX(c + c**2 + tf.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            assert qtape.get_parameters() == [a * c, b, c + c ** 2 + tf.sin(a)]
+            assert qtape.get_parameters() == [a * c, b, c + c**2 + tf.sin(a)]
             res = qtape.execute(dev)
 
         res = tape.jacobian(res, [a, b, c])
