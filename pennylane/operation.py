@@ -436,7 +436,7 @@ class Operator(abc.ABC):
 
     @property
     def hash(self):
-        """int: Integer hash that uniquely represents the operator"""
+        """int: Integer hash that uniquely represents the operator."""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
     @staticmethod
@@ -736,7 +736,7 @@ class Operator(abc.ABC):
 
     @property
     def id(self):
-        """Custom string identifying an operator instance."""
+        """Custom string to identify a specific operator instance."""
         return self._id
 
     @name.setter
@@ -1376,6 +1376,7 @@ class Observable(Operator):
 
     # pylint: disable=abstract-method
     return_type = None
+    """None or ObservableReturnTypes: Measurement type that this observable is called with."""
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
         # extract the arguments
@@ -2069,10 +2070,14 @@ class CV:
 
     @classproperty
     def supports_heisenberg(self):
-        """Returns True iff the CV Operation has overridden the :meth:`~.CV._heisenberg_rep`
-        static method, thereby indicating that it is Gaussian and does not block the use
+        """Whether or not a CV operator defines a Heisenberg representation.
+
+        This indicates that it is Gaussian and does not block the use
         of the parameter-shift differentiation method if found between the differentiated gate
         and an observable.
+
+        Returns:
+            boolean
         """
         return CV._heisenberg_rep != self._heisenberg_rep
 
@@ -2194,7 +2199,7 @@ class CVObservable(CV, Observable):
     returning an array of the correct dimension.
     """
     # pylint: disable=abstract-method
-    ev_order = None  #: None, int: if not None, the observable is a polynomial of the given order in `(x, p)`.
+    ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of
 
     def heisenberg_obs(self, wire_order):
         r"""Representation of the observable in the position/momentum operator basis.
