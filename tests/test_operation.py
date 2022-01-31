@@ -1593,8 +1593,8 @@ class TestExpandMatrix:
 
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
-       Operator class docstring, as well as in the 'adding_operators'
-       page in the developer guide."""
+    Operator class docstring, as well as in the 'adding_operators'
+    page in the developer guide."""
 
     import pennylane as qml
 
@@ -1603,8 +1603,7 @@ def test_docstring_example_of_operator_class(tol):
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False,
-                     do_queue=True, id=None):
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
 
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -1613,9 +1612,7 @@ def test_docstring_example_of_operator_class(tol):
             if len(shape) > 1:
                 raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
 
-            self._hyperparameters = {
-                "do_flip": do_flip
-            }
+            self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
             super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
@@ -1633,8 +1630,12 @@ def test_docstring_example_of_operator_class(tol):
             return op_list
 
         def adjoint(self):
-            return FlipAndRotate(-self.parameters[0], self.wires[0], self.wires[1],
-                                 do_flip=self.hyperparameters["do_flip"])
+            return FlipAndRotate(
+                -self.parameters[0],
+                self.wires[0],
+                self.wires[1],
+                do_flip=self.hyperparameters["do_flip"],
+            )
 
     dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
 
@@ -1644,6 +1645,6 @@ def test_docstring_example_of_operator_class(tol):
         return qml.expval(qml.PauliZ("q1"))
 
     a = np.array(3.14)
-    res  = circuit(a)
+    res = circuit(a)
     expected = -0.9999987318946099
-    assert np.close(res, expected, atol=tol) 
+    assert np.close(res, expected, atol=tol)

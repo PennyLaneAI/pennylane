@@ -2281,7 +2281,7 @@ class CVObservable(CV, Observable):
 
     * ``ev_order = 1`` indicates a first order polynomial in quadrature
      operators :math:`(\x, \p)`.
-    
+
     * ``ev_order = 2`` indicates a second order polynomial in quadrature
      operators :math:`(\x, \p)`.
 
