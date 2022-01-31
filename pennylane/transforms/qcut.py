@@ -40,6 +40,11 @@ class PrepareNode(Operation):
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     """
     Replace a `WireCut` nodes in the graph with `MeasureNode` and `PrepareNode`
+
+    Args:
+        node (WireCut): the  `WireCut` node to be replaced with `MeasureNode`
+        and `PrepareNode`
+        graph (MultiDiGraph): The graph contaiined the node to be replaced
     """
     predecessors = graph.pred[node]
     successors = graph.succ[node]
@@ -65,6 +70,9 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
         meas = MeasureNode(wires=wire)
         prep = PrepareNode(wires=wire)
+        # There is degeneracy in the order of the measure and prepare nodes
+        # since the order can be inferred as MeasureNode always preceeds
+        # the corresponding PrepareNode
         graph.add_node(meas, order=order)
         graph.add_node(prep, order=order)
 

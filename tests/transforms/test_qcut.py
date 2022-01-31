@@ -264,10 +264,7 @@ class TestReplaceWireCut:
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
-        wire_cut_order = None
-        for op, order in node_data:
-            if op.name == "WireCut":
-                wire_cut_order = order
+        wire_cut_order = {"order": 5}
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
@@ -361,15 +358,19 @@ class TestReplaceWireCut:
         for node in nodes:
             if node.name == "MeasureNode":
                 succ = list(g.succ[node])[0]
-                assert succ.name == "PrepareNode"
-            if node.name == "PrepareNode":
                 pred = list(g.pred[node])[0]
+                assert succ.name == "PrepareNode"
+                assert pred.name == "RZ"
+            if node.name == "PrepareNode":
+                succ = list(g.succ[node])[0]
+                pred = list(g.pred[node])[0]
+                assert succ.name == "CNOT"
                 assert pred.name == "MeasureNode"
 
     def test_wirecut_has_no_predecessor(self):
         """
         Tests a wirecut is replaced if it is the first operation in the tape
-        i.e it has no predecessor
+        i.e if it has no predecessor
         """
 
         with qml.tape.QuantumTape() as tape:
@@ -382,10 +383,7 @@ class TestReplaceWireCut:
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
-        wire_cut_order = None
-        for op, order in node_data:
-            if op.name == "WireCut":
-                wire_cut_order = order
+        wire_cut_order = {"order": 0}
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
@@ -398,13 +396,15 @@ class TestReplaceWireCut:
         for op, order in new_node_data:
             if op.name == "MeasureNode":
                 assert order == {"order": 0}
+                pred = list(g.pred[op])
+                assert pred == []
             elif op.name == "PrepareNode":
                 assert order == {"order": 0}
 
     def test_wirecut_has_no_successor(self):
         """
         Tests a wirecut is replaced if it is the last operation in the tape
-        i.e it has no successor
+        i.e if it has no successor
         """
 
         with qml.tape.QuantumTape() as tape:
@@ -416,10 +416,7 @@ class TestReplaceWireCut:
         g = qcut.tape_to_graph(tape)
         node_data = list(g.nodes(data=True))
 
-        wire_cut_order = None
-        for op, order in node_data:
-            if op.name == "WireCut":
-                wire_cut_order = order
+        wire_cut_order = {"order": 3}
 
         qcut.replace_wire_cut_nodes(g)
         new_node_data = list(g.nodes(data=True))
@@ -434,3 +431,5 @@ class TestReplaceWireCut:
                 assert order == {"order": 3}
             elif op.name == "PrepareNode":
                 assert order == {"order": 3}
+                succ = list(g.succ[op])
+                assert succ == []
