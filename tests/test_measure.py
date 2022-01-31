@@ -567,7 +567,7 @@ class TestState:
             return state()
 
         state_val = func()
-        assert state_val.shape == (2 ** wires,)
+        assert state_val.shape == (2**wires,)
         assert state_val.dtype == np.complex128
 
     def test_return_type_is_state(self):

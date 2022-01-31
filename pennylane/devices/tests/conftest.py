@@ -60,7 +60,7 @@ def init_state():
     """Fixture to create an n-qubit random initial state vector."""
 
     def _init_state(n):
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 

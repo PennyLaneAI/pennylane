@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module provides the circuit cutting functionality that allows large
-circuits to be distributed across multiple devices
+circuits to be distributed across multiple devices.
 """
 
 from networkx import MultiDiGraph
@@ -84,10 +84,8 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
         if isinstance(op, WireCut):
             replace_wire_cut_node(op, graph)
 
-
-def _add_operator_node(
-    graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict
-) -> None:
+            
+def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
@@ -104,11 +102,28 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     Converts a quantum tape to a directed multigraph.
 
     Args:
-        tape (.QuantumTape): tape to be converted into a directed multigraph
+        tape (QuantumTape): tape to be converted into a directed multigraph
 
     Returns:
         graph (MultiDiGraph): a directed multigraph that captures the circuit
         structure of the input tape
+
+    **Example**
+
+    Consider the following tape:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RY(0.9, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(1))
+
+    Its corresponding circuit graph can be found using
+
+    >>> tape_to_graph(tape)
+    <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
 
@@ -125,7 +140,6 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
-                order += 1
 
         else:
             _add_operator_node(graph, m, order, wire_latest_node)
