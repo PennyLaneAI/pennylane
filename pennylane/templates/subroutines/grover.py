@@ -152,5 +152,5 @@ class GroverOperator(Operation):
         s = functools.reduce(np.kron, list(itertools.repeat(s1, num_wires)))
 
         # Grover diffusion operator
-        G = 2 * np.outer(s, s) - np.identity(2 ** num_wires)
+        G = 2 * np.outer(s, s) - np.identity(2**num_wires)
         return G

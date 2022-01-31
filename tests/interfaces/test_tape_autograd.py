@@ -196,7 +196,7 @@ class TestAutogradQuantumTape:
             with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
             assert tape.trainable_params == [0, 2]
             return tape.execute(device)
@@ -511,7 +511,7 @@ class TestAutogradPassthru:
             with JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
             return tape.execute(device)
 
