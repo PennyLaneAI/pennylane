@@ -88,14 +88,19 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the QubitCarry operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitCarry.matrix`
 
         Returns:
             ndarray: matrix
@@ -143,12 +148,9 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
 
         .. seealso:: :meth:`~.QubitCarry.decomposition`.
 
@@ -230,17 +232,22 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the QubitSum operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitSum.matrix`
 
         Returns:
             ndarray: matrix
@@ -272,12 +279,10 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
         .. seealso:: :meth:`~.QubitSum.decomposition`.
 
         Args:

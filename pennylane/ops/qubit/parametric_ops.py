@@ -58,7 +58,7 @@ class RX(Operation):
     """
     num_wires = 1
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
     grad_method = "A"
@@ -71,7 +71,12 @@ class RX(Operation):
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the RX operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RX.matrix`
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -134,7 +139,7 @@ class RY(Operation):
     """
     num_wires = 1
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
     grad_method = "A"
@@ -147,7 +152,13 @@ class RY(Operation):
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the RY operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RY.matrix`
+
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -205,7 +216,7 @@ class RZ(Operation):
     """
     num_wires = 1
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -218,7 +229,12 @@ class RZ(Operation):
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the RZ operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RZ.matrix`
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -241,7 +257,19 @@ class RZ(Operation):
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
-        """Eigenvalues of the RZ operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.RZ.eigvals`
+        
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -298,7 +326,7 @@ class PhaseShift(Operation):
     """
     num_wires = 1
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -314,7 +342,13 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the PhaseShift operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PhaseShift.matrix`
+
 
         Args:
             phi (tensor_like or float): phase shift
@@ -337,7 +371,19 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
-        """Eigenvalues of the PhaseShift operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PhaseShift.eigvals`
+        
 
         Args:
             phi (tensor_like or float): phase shift
@@ -359,12 +405,11 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.PhaseShift.decomposition`.
 
         Args:
@@ -422,7 +467,7 @@ class ControlledPhaseShift(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -438,7 +483,12 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the ControlledPhaseShift operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PhaseShift.matrix`
 
         Args:
             phi (tensor_like or float): phase shift
@@ -463,7 +513,19 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
-        """Eigenvalues of the ControlledPhaseShift operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.ControlledPhaseShift.eigvals`
+        
 
         Args:
             phi (tensor_like or float): phase shift
@@ -485,12 +547,11 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.ControlledPhaseShift.decomposition`.
 
@@ -566,7 +627,7 @@ class Rot(Operation):
     """
     num_wires = 1
     num_params = 3
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -575,7 +636,13 @@ class Rot(Operation):
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the Rot operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Rot.matrix`
+
 
         Args:
             phi (tensor_like or float): first rotation angle
@@ -622,12 +689,11 @@ class Rot(Operation):
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.Rot.decomposition`.
 
         Args:
@@ -692,7 +758,7 @@ class MultiRZ(Operation):
     """
     num_wires = AnyWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -703,7 +769,12 @@ class MultiRZ(Operation):
 
     @staticmethod
     def compute_matrix(theta, n_wires):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the MultiRZ operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.MultiRZ.matrix`
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -734,7 +805,19 @@ class MultiRZ(Operation):
 
     @staticmethod
     def compute_eigvals(theta, n_wires):  # pylint: disable=arguments-differ
-        """Eigenvalues of the MultiRZ operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.MultiRZ.eigvals`
+        
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -761,12 +844,11 @@ class MultiRZ(Operation):
     def compute_decomposition(
         theta, wires, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.MultiRZ.decomposition`.
 
         Args:
@@ -833,7 +915,7 @@ class PauliRot(Operation):
     """
     num_wires = AnyWires
     num_params = 2
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     do_check_domain = False
     grad_method = "A"
@@ -909,7 +991,13 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the PauliRot operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PauliRot.matrix`
+
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -977,7 +1065,19 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
-        """Eigenvalues of the PauliRot operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PauliRot.eigvals`
+        
 
         Returns:
             tensor_like: eigenvalues
@@ -998,12 +1098,11 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_decomposition(theta, pauli_word, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.PauliRot.decomposition`.
 
         Args:
@@ -1105,7 +1204,7 @@ class CRX(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
     grad_method = "A"
@@ -1122,7 +1221,12 @@ class CRX(Operation):
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CRX operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRX.matrix`
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1164,12 +1268,11 @@ class CRX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
@@ -1250,7 +1353,7 @@ class CRY(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
     grad_method = "A"
@@ -1267,7 +1370,13 @@ class CRY(Operation):
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CRY operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRY.matrix`
+
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1302,12 +1411,11 @@ class CRY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.CRY.decomposition`.
 
         Args:
@@ -1387,7 +1495,7 @@ class CRZ(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -1404,7 +1512,12 @@ class CRZ(Operation):
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CRZ operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRZ.matrix`
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1429,7 +1542,19 @@ class CRZ(Operation):
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
-        """Eigenvalues of the CRZ operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.CRZ.eigvals`
+        
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1453,12 +1578,11 @@ class CRZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.CRZ.decomposition`.
 
         Args:
@@ -1535,7 +1659,7 @@ class CRot(Operation):
     """
     num_wires = 2
     num_params = 3
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
@@ -1548,7 +1672,13 @@ class CRot(Operation):
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CRot operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRot.matrix`
+
 
         Args:
             phi(tensor_like or float): first rotation angle
@@ -1602,12 +1732,11 @@ class CRot(Operation):
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.CRot.decomposition`.
 
         Args:
@@ -1680,7 +1809,7 @@ class U1(Operation):
     """
     num_wires = 1
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -1692,7 +1821,12 @@ class U1(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the U1 operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.U1.matrix`
 
         Args:
             phi (tensor_like or float): rotation angle
@@ -1715,12 +1849,11 @@ class U1(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.U1.decomposition`.
 
         Args:
@@ -1781,7 +1914,7 @@ class U2(Operation):
     """
     num_wires = 1
     num_params = 2
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -1790,7 +1923,12 @@ class U2(Operation):
 
     @staticmethod
     def compute_matrix(phi, delta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the U2 operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.U2.matrix`
 
         Args:
             phi (tensor_like or float): azimuthal angle
@@ -1821,12 +1959,10 @@ class U2(Operation):
 
     @staticmethod
     def compute_decomposition(phi, delta, wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
         .. seealso:: :meth:`~.U2.decomposition`.
 
         Args:
@@ -1899,7 +2035,7 @@ class U3(Operation):
     """
     num_wires = 1
     num_params = 3
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -1908,7 +2044,12 @@ class U3(Operation):
 
     @staticmethod
     def compute_matrix(theta, phi, delta):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the U3 operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.U3.matrix`
 
         Args:
             theta (tensor_like or float): polar angle
@@ -1949,12 +2090,11 @@ class U3(Operation):
 
     @staticmethod
     def compute_decomposition(theta, phi, delta, wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.U3.decomposition`.
 
         Args:
@@ -2015,7 +2155,7 @@ class IsingXX(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -2027,7 +2167,13 @@ class IsingXX(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the IsingXX operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.IsingXX.matrix`
+
 
         Args:
            phi (tensor_like or float): phase angle
@@ -2058,12 +2204,11 @@ class IsingXX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.IsingXX.decomposition`.
 
         Args:
@@ -2118,7 +2263,7 @@ class IsingYY(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -2130,12 +2275,11 @@ class IsingYY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.IsingYY.decomposition`.
 
         Args:
@@ -2159,7 +2303,13 @@ class IsingYY(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the IsingYY operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.IsingYY.matrix`
+
 
         Args:
            phi (tensor_like or float): phase angle
@@ -2218,7 +2368,7 @@ class IsingZZ(Operation):
     """
     num_wires = 2
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
 
@@ -2230,12 +2380,11 @@ class IsingZZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.IsingZZ.decomposition`.
 
         Args:
@@ -2259,7 +2408,13 @@ class IsingZZ(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the IsingZZ operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.IsingZZ.matrix`
+
 
         Args:
            phi (tensor_like or float): phase angle
@@ -2285,7 +2440,19 @@ class IsingZZ(Operation):
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
-        """Eigenvalues of the IsingZZ operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.IsingZZ.eigvals`
+        
 
         Args:
             phi (tensor_like or float): phase angle

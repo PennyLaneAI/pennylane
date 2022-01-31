@@ -55,7 +55,7 @@ class Hermitian(Observable):
     """
     num_wires = AnyWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "F"
     _eigs = {}
@@ -68,7 +68,12 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_matrix(A):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the Hermitian operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Hermitian.matrix`
 
         Args:
             A (tensor_like): hermitian matrix
@@ -127,12 +132,11 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
-        """Diagonalizing gates of this operator.
+        """Diagonalizing gates of the operator (static method).
 
         Args:
-            eigenvectors (array): eigenvectors of this operator, as extracted from op.eigendecomposition["eigvec"]
-            wires (Iterable): wires that the operator acts on
-
+            eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"]
+            wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -187,7 +191,7 @@ class SparseHamiltonian(Observable):
     """
     num_wires = AllWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 
@@ -201,13 +205,19 @@ class SparseHamiltonian(Observable):
 
     @staticmethod
     def compute_matrix(H):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SparseHamiltonian operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SparseHamiltonian.matrix`
+
 
         This method returns a dense matrix. For a sparse matrix representation, see
         :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
 
         Args:
-            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
+            H (scipy.sparse.coo_matrix): sparse matrix used to create the operator
 
         Returns:
             array: dense matrix
@@ -228,13 +238,18 @@ class SparseHamiltonian(Observable):
 
     @staticmethod
     def compute_sparse_matrix(H):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SparseHamiltonian operator, using a sparse matrix type.
+        r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SparseHamiltonian.sparse_matrix`
 
         This method returns a sparse matrix. For a dense matrix representation, see
         :meth:`~.SparseHamiltonian.compute_matrix`.
 
         Args:
-            H (scipy.sparse.coo_matrix): sparse matrix used to create this operator
+            H (scipy.sparse.coo_matrix): sparse matrix used to create the operator
 
         Returns:
             scipy.sparse.coo_matrix: sparse matrix
@@ -284,7 +299,7 @@ class Projector(Observable):
     """
     num_wires = AnyWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
         wires = Wires(wires)
@@ -331,7 +346,12 @@ class Projector(Observable):
 
     @staticmethod
     def compute_matrix(basis_state):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the Projector operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Projector.matrix`
 
         Args:
             basis_state (Iterable): basis state to project on
@@ -354,7 +374,18 @@ class Projector(Observable):
 
     @staticmethod
     def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
-        """Eigenvalues of the Projector operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.Projector.eigvals`
 
         Args:
             basis_state (Iterable): basis state to project on
@@ -376,12 +407,11 @@ class Projector(Observable):
     def compute_diagonalizing_gates(
         basis_state, wires
     ):  # pylint: disable=arguments-differ,unused-argument
-        """Diagonalizing gates of this operator.
+        """Diagonalizing gates of the operator (static method).
 
         Args:
             basis_state (Iterable): basis state that the operator projects on
-            wires (Iterable): wires that the operator acts on
-
+            wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 

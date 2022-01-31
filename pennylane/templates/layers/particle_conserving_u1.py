@@ -277,8 +277,7 @@ class ParticleConservingU1(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.ParticleConservingU1.decomposition`.
 

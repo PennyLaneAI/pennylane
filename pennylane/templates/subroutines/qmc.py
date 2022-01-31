@@ -368,12 +368,11 @@ class QuantumMonteCarlo(Operation):
     def compute_decomposition(
         A, R, Q, wires, estimation_wires, target_wires
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of the QuantumMonteCarlooperator as a product of other operators.
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.QuantumMonteCarlo.decomposition`.
 

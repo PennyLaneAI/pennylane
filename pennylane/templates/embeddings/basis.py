@@ -97,12 +97,11 @@ class BasisEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(wires, basis_state):  # pylint: disable=arguments-differ
-        r"""Representation of the BasisEmbeddingoperator as a product of other operators.
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.BasisEmbedding.decomposition`.
 

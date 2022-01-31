@@ -91,12 +91,11 @@ class QFT(Operation):
 
     @staticmethod
     def compute_decomposition(wires, n_wires):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.QFT.decomposition`.
 
         Args:

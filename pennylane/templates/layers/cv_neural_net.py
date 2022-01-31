@@ -147,12 +147,11 @@ class CVNeuralNetLayers(Operation):
     def compute_decomposition(
         theta_1, phi_1, varphi_1, r, phi_r, theta_2, phi_2, varphi_2, a, phi_a, k, wires
     ):  # pylint: disable=arguments-differ
-        r"""Representation of the CVNeuralNetLayersoperator as a product of other operators.
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.CVNeuralNetLayers.decomposition`.
 

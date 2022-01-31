@@ -132,12 +132,11 @@ class QuantumPhaseEstimation(Operation):
     def compute_decomposition(
         unitary, wires, target_wires, estimation_wires
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of the QuantumPhaseEstimationoperator as a product of other operators.
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
 

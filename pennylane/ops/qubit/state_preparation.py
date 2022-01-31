@@ -56,18 +56,17 @@ class BasisState(Operation):
     """
     num_wires = AnyWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 
     @staticmethod
     def compute_decomposition(n, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.BasisState.decomposition`.
 
         Args:
@@ -123,18 +122,17 @@ class QubitStateVector(Operation):
     """
     num_wires = AnyWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 
     @staticmethod
     def compute_decomposition(state, wires):
-        r"""Representation of this operator as a product of other operators. :
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.QubitStateVector.decomposition`.
 
         Args:
@@ -205,7 +203,7 @@ class QubitDensityMatrix(Operation):
     """
     num_wires = AnyWires
     num_params = 1
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 

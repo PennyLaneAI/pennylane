@@ -43,17 +43,22 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the Hadamard operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Hadamard.matrix`
 
         Returns:
             ndarray: matrix
@@ -68,7 +73,18 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the Hadamard operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.Hadamard.eigvals`
 
         Returns:
             array: eigenvalues
@@ -82,7 +98,7 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
-        r"""Diagonalizing gates of this operator.
+        r"""Diagonalizing gates of the operator (static method).
 
         These gates rotate the specified wires such that they
         are in the eigenbasis of the Hadamard operator:
@@ -92,8 +108,7 @@ class Hadamard(Observable, Operation):
         where :math:`U = R_y(-\pi/4)`.
 
         Args:
-            wires (Iterable): wires that the operator acts on
-
+            wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -106,12 +121,10 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
         .. seealso:: :meth:`~.Hadamard.decomposition`.
 
         Args:
@@ -158,10 +171,10 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
 
@@ -170,7 +183,13 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the PauliX operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PauliX.matrix`
+
 
         Returns:
             ndarray: matrix
@@ -185,7 +204,18 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the PauliX operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PauliX.eigvals`
 
         Returns:
             array: eigenvalues
@@ -199,7 +229,7 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
-        r"""Diagonalizing gates of this operator.
+        r"""Diagonalizing gates of the operator (static method).
 
         These gates rotate the specified wires such that they
         are in the eigenbasis of PauliX:
@@ -207,8 +237,7 @@ class PauliX(Observable, Operation):
         .. math:: X = H^\dagger Z H.
 
         Args:
-           wires (Iterable): wires that the operator acts on
-
+           wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
            list[.Operator]: list of diagonalizing gates
 
@@ -221,12 +250,11 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.PauliX.decomposition`.
 
         Args:
@@ -276,10 +304,10 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
 
@@ -288,7 +316,12 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the PauliY operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PauliY.matrix`
 
         Returns:
             ndarray: matrix
@@ -303,7 +336,18 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the PauliY operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PauliY.eigvals`
 
         Returns:
             array: eigenvalues
@@ -317,7 +361,7 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):
-        r"""Diagonalizing gates of this operator.
+        r"""Diagonalizing gates of the operator (static method).
 
         These gates rotate the specified wires such that they
         are in the eigenbasis of PauliY:
@@ -327,8 +371,7 @@ class PauliY(Observable, Operation):
         where :math:`U=HSZ`.
 
         Args:
-            wires (Iterable): wires that the operator acts on
-
+            wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -345,12 +388,10 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
         .. seealso:: :meth:`~.PauliY.decomposition`.
 
         Args:
@@ -401,7 +442,7 @@ class PauliZ(Observable, Operation):
     """
     num_wires = 1
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
 
@@ -410,7 +451,12 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the PauliZ operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PauliZ.matrix`
 
         Returns:
             ndarray: matrix
@@ -425,7 +471,18 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the PauliZ operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PauliZ.eigvals`
 
         Returns:
             array: eigenvalues
@@ -439,10 +496,10 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):  # pylint: disable=unused-argument
-        """Diagonalizing gates of this operator.
+        """Diagonalizing gates of the operator (static method).
 
         Args:
-            wires (Iterable): wires that the operator acts on
+            wires (Iterable[Any] or Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -456,12 +513,10 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
         .. seealso:: :meth:`~.PauliZ.decomposition`.
 
         Args:
@@ -508,13 +563,18 @@ class S(Operation):
     """
     num_wires = 1
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the S operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.S.matrix`
 
         Returns:
             ndarray: matrix
@@ -529,7 +589,18 @@ class S(Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the S operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.S.eigvals`
 
         Returns:
             array: eigenvalues
@@ -543,12 +614,11 @@ class S(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.S.decomposition`.
 
         Args:
@@ -592,13 +662,18 @@ class T(Operation):
     """
     num_wires = 1
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the T operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.T.matrix`
 
         Returns:
             ndarray: matrix
@@ -613,7 +688,18 @@ class T(Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the T operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.T.eigvals`
 
         Returns:
             array: eigenvalues
@@ -627,12 +713,11 @@ class T(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.T.decomposition`.
 
         Args:
@@ -676,13 +761,18 @@ class SX(Operation):
     """
     num_wires = 1
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SX operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SX.matrix`
 
         Returns:
             ndarray: matrix
@@ -697,7 +787,19 @@ class SX(Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the SX operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.SX.eigvals`
+        
 
         Returns:
             array: eigenvalues
@@ -711,12 +813,11 @@ class SX(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.SX.decomposition`.
 
         Args:
@@ -773,7 +874,7 @@ class CNOT(Operation):
     """
     num_wires = 2
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
 
@@ -782,7 +883,13 @@ class CNOT(Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CNOT operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CNOT.matrix`
+
 
         Returns:
             ndarray: matrix
@@ -831,7 +938,7 @@ class CZ(Operation):
     """
     num_wires = 2
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
 
@@ -840,7 +947,12 @@ class CZ(Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CZ operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CZ.matrix`
 
         Returns:
             ndarray: matrix
@@ -857,7 +969,19 @@ class CZ(Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the CZ operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.CZ.eigvals`
+        
 
         Returns:
             array: eigenvalues
@@ -900,7 +1024,7 @@ class CY(Operation):
     """
     num_wires = 2
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
 
@@ -909,7 +1033,13 @@ class CY(Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CY operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CY.matrix`
+
 
         Returns:
             ndarray: matrix
@@ -933,13 +1063,12 @@ class CY(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.CY.decomposition`.
 
         Args:
@@ -985,13 +1114,18 @@ class SWAP(Operation):
     """
     num_wires = 2
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SWAP operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SWAP.matrix`
 
         Returns:
             ndarray: matrix
@@ -1008,12 +1142,11 @@ class SWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.SWAP.decomposition`.
 
         Args:
@@ -1063,11 +1196,16 @@ class ISWAP(Operation):
     """
     num_wires = 2
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the ISWAP operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.ISWAP.matrix`
 
         Returns:
             ndarray: matrix
@@ -1084,7 +1222,19 @@ class ISWAP(Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the ISWAP operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.ISWAP.eigvals`
+        
 
         Returns:
             array: eigenvalues
@@ -1098,12 +1248,11 @@ class ISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.ISWAP.decomposition`.
 
         Args:
@@ -1158,11 +1307,17 @@ class SISWAP(Operation):
     """
     num_wires = 2
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SISWAP operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SISWAP.matrix`
+
 
         Returns:
             ndarray: matrix
@@ -1186,7 +1341,19 @@ class SISWAP(Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the SISWAP operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.SISWAP.eigvals`
+        
 
         Returns:
             array: eigenvalues
@@ -1200,12 +1367,11 @@ class SISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.SISWAP.decomposition`.
 
         Args:
@@ -1282,14 +1448,19 @@ class CSWAP(Operation):
     is_self_inverse = True
     num_wires = 3
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the CSWAP operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CSWAP.matrix`
 
         Returns:
             ndarray: matrix
@@ -1321,12 +1492,11 @@ class CSWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.CSWAP.decomposition`.
 
         Args:
@@ -1384,7 +1554,7 @@ class Toffoli(Operation):
     """
     num_wires = 3
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
 
@@ -1393,7 +1563,13 @@ class Toffoli(Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the Toffoli operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Toffoli.matrix`
+
 
         Returns:
             ndarray: matrix
@@ -1425,12 +1601,11 @@ class Toffoli(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.Toffoli.decomposition`.
 
         Args:
@@ -1542,7 +1717,7 @@ class MultiControlledX(Operation):
     is_self_inverse = True
     num_wires = AnyWires
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 
@@ -1583,7 +1758,12 @@ class MultiControlledX(Operation):
     def compute_matrix(
         control_wires, control_values=None, **kwargs
     ):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the MultiControlledX operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.MultiControlledX.matrix`
 
         Args:
             control_wires (Any or Iterable[Any]): wires to place controls on
@@ -1642,12 +1822,11 @@ class MultiControlledX(Operation):
 
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.MultiControlledX.decomposition`.
 
         Args:
@@ -1802,7 +1981,7 @@ class Barrier(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 0
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     num_wires = AnyWires
     par_domain = None
@@ -1814,12 +1993,11 @@ class Barrier(Operation):
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.Barrier.decomposition`.
 
         ``Barrier`` decomposes into an empty list for all arguments.
@@ -1863,7 +2041,7 @@ class WireCut(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
 

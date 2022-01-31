@@ -33,7 +33,7 @@ class Identity(CVObservable, Operation):
     simulators should always be equal to 1.
     """
     num_wires = 1
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -45,7 +45,18 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
-        """Eigenvalues of the Identity operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{dagger},
+
+        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.Identity.eigvals`
 
         Returns:
             array: eigenvalues
@@ -59,7 +70,12 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the Identity operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Identity.matrix`
 
         Returns:
             ndarray: matrix
@@ -78,10 +94,10 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):  # pylint: disable=arguments-differ,unused-argument
-        """Diagonalizing gates of this operator.
+        """Diagonalizing gates of the operator (static method).
 
         Args:
-            wires (Iterable): wires that the operator acts on
+            wires (Iterable[Any], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -95,12 +111,11 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_decomposition(wires=None):  # pylint:disable=arguments-differ,unused-argument
-        r"""Representation of this operator as a product of other operators.
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.Identity.decomposition`.
 

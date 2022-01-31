@@ -161,12 +161,11 @@ class AllSinglesDoubles(Operation):
     def compute_decomposition(
         weights, wires, hf_state, singles, doubles
     ):  # pylint: disable=arguments-differ
-        r"""Representation of the AllSinglesDoublesoperator as a product of other operators.
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.AllSinglesDoubles.decomposition`.
 

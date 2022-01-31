@@ -542,10 +542,10 @@ class PauliError(Channel):
                [0.70710678, 0.        ]])
     """
     num_wires = AnyWires
-    """int: Number of wires that this operator acts on."""
+    """int: Number of wires that the operator acts on."""
 
     num_params = 2
-    """int: Number of trainable parameters that this operator depends on."""
+    """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, operators, p, wires=None, do_queue=True, id=None):
         super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)

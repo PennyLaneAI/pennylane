@@ -96,12 +96,11 @@ class AngleEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(features, wires, rotation):  # pylint: disable=arguments-differ
-        r"""Representation of the AngleEmbeddingoperator as a product of other operators.
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.AngleEmbedding.decomposition`.
 
