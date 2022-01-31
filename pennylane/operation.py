@@ -468,28 +468,6 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
 
-        # Check whther the expected number of parameters (in case the Operation subclass defines it via the num_params property) coincides with the one received.
-        if hasattr(self.__class__, "num_params"):
-            # pylint: disable=no-member, access-member-before-definition
-            if (
-                isinstance(self.__class__, int)
-                and len(params) != self.__class__.num_params
-                or self.num_params != len(params)
-            ):
-                raise ValueError(
-                    f"{self.name}: wrong number of parameters. "
-                    f"{len(params)} parameters passed, {self.__class__.num_params} specified in class {self.__class__}."
-                )
-        else:
-            # If no num_params property was provided by the-sub class we set it
-            # here. This allows sub-classes to define num_params as a class
-            # property in case it is the same for all intsances (which is the case
-            # for almost all Operations and allows to write more advanced circuit
-            # synthesis code that needs to know the number of paramters, e.g.,
-            # for instanciating the Operation with the correct number of
-            # parameters when given the class only)
-            self.num_params = len(params)
-
         if isinstance(wires, Wires):
             self._wires = wires
         else:
@@ -507,6 +485,32 @@ class Operator(abc.ABC):
             )
 
         self.data = list(params)  #: list[Any]: parameters of the operator
+        
+        # Check whther the expected number of parameters (in case the Operation subclass defines it via the num_params property) coincides with the one received.
+        # We do this after setting num_wires so that the value returned by .num_params can depend on num_wires.
+        if hasattr(self.__class__, "num_params"):
+            # pylint: disable=no-member, access-member-before-definition
+            if (
+                    # for sub-classes that define num_params = ? on the class level
+                    isinstance(self.__class__.num_params, int) and len(params) != self.__class__.num_params
+                    # for classes that define an `@property` decorated method `def num_paras(self):...`
+                    # so that num_params depends on the instance of the class
+                    or len(params) != self.num_params
+            ):
+                raise ValueError(
+                    f"{self.name}: wrong number of parameters. "
+                    f"{len(params)} parameters passed, {self.__class__.num_params} specified in class {self.__class__}."
+                )
+        else:
+            # If no num_params property was provided by the-sub class we set it
+            # here. This allows sub-classes to define num_params as a class
+            # property in case it is the same for all intsances (which is the case
+            # for almost all Operations and allows to write more advanced circuit
+            # synthesis code that needs to know the number of paramters, e.g.,
+            # for instanciating the Operation with the correct number of
+            # parameters when given the class only)
+            self.num_params = len(params)
+
 
         if do_queue:
             self.queue()
