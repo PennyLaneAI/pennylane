@@ -251,6 +251,18 @@ class Hamiltonian(Observable):
 
         Returns:
             tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
+
+        **Example**
+
+        >>> qml.Hamiltonian.compute_terms([1., 2.], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+
+        The coefficients are differentiable and can be stored as tensors:
+
+        >>> import tensorflow as tf
+        >>> t = qml.Hamiltonian.compute_terms([tf.Variable(1.), tf.Variable(2.)], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        >>> t[0]
+        [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
         return coeffs, ops
 

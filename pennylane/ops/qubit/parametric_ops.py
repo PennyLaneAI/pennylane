@@ -262,9 +262,9 @@ class RZ(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -376,9 +376,9 @@ class PhaseShift(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -518,9 +518,9 @@ class ControlledPhaseShift(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -810,9 +810,9 @@ class MultiRZ(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -1070,9 +1070,9 @@ class PauliRot(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -1547,9 +1547,9 @@ class CRZ(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -2445,9 +2445,9 @@ class IsingZZ(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 

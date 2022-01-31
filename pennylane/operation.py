@@ -552,26 +552,6 @@ class Operator(abc.ABC):
 
         Returns:
             tensor_like: matrix representation
-
-        **Example**
-
-        >>> qml.CNOT.compute_matrix()
-        [[1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0]]
-
-        The matrix representation may depend on parameters or hyperparameters:
-
-        >>> qml.Rot.compute_matrix(0.1, 0.2, 0.3)
-        [[ 0.97517033-0.19767681j -0.09933467+0.00996671j]
-         [ 0.09933467+0.00996671j  0.97517033+0.19767681j]]
-
-        If parameters are tensors, a tensor of the same type is returned:
-
-        >>> res = qml.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
-        >>> type(res)
-        <class 'torch.Tensor'>
         """
         raise MatrixUndefinedError
 
@@ -587,29 +567,13 @@ class Operator(abc.ABC):
 
         A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.PauliX.compute_matrix`
+        .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
 
         Returns:
             tensor_like: matrix representation
-
-        **Example**
-
-        >>> U = qml.PauliX(wires="b")
-        >>> U.matrix()
-        [[0 1]
-         [1 0]]
-        >>> U.matrix(wire_order=["a", "b"])
-        [[0 1 0 0]
-         [1 0 0 0]
-         [0 0 0 1]
-         [0 0 1 0]]
-        >>> qml.RY(tf.Variable(0.5), wires="b").matrix()
-        tf.Tensor([[ 0.9689124  -0.24740396]
-                   [ 0.24740396  0.9689124 ]], shape=(2, 2), dtype=float32)
-
         """
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
@@ -634,20 +598,6 @@ class Operator(abc.ABC):
 
         Returns:
             scipy.sparse.coo.coo_matrix: matrix representation
-
-        **Example**
-
-        >>> from scipy.sparse import coo_matrix
-        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
-        >>> H = coo_matrix(H)
-        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
-        >>> res
-        (0, 0)	(6+0j)
-        (0, 1)	(1-2j)
-        (1, 0)	(1+2j)
-        (1, 1)	(-1+0j)
-        >>> type(res)
-        <class 'scipy.sparse.coo_matrix'>
         """
         raise SparseMatrixUndefinedError
 
@@ -671,19 +621,6 @@ class Operator(abc.ABC):
         Returns:
             scipy.sparse.coo.coo_matrix: matrix representation
 
-        **Example**
-
-        >>> from scipy.sparse import coo_matrix
-        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
-        >>> H = coo_matrix(H)
-        >>> res = qml.SparseHamiltonian(H, wires=[0]).sparse_matrix()
-        >>> res
-        (0, 0)	(6+0j)
-        (0, 1)	(1-2j)
-        (1, 0)	(1+2j)
-        (1, 1)	(-1+0j)
-        >>> type(res)
-        <class 'scipy.sparse.coo_matrix'>
         """
         if wire_order is not None:
             raise NotImplementedError("The wire_order argument is not yet implemented")
@@ -699,9 +636,9 @@ class Operator(abc.ABC):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -713,52 +650,32 @@ class Operator(abc.ABC):
 
         Returns:
             tensor_like: eigenvalues
-
-        **Example:**
-
-        >>> qml.RZ.compute_eigvals(0.5)
-        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-        >>> qml.PauliX(wires=0).diagonalizing_gates()
-        [Hadamard(wires=[0])]
-        >>> qml.PauliX.compute_eigvals()
-        array([1, -1])
         """
         raise EigvalsUndefinedError
 
     def eigvals(self):
-        r"""Eigenvalues of the operator in the computational basis.
+        r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified, the order of the eigenvalues matches the order of
-        the computational basis vectors as they appear in the unitary constructed from these gates.
-        Otherwise, no particular order is guaranteed.
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
 
-        Together, the eigenvalues and the diagonalizing gates define a full representation of the operator via its
-        eigenvalue decomposition.
+        .. math:: O = U \Sigma U^{\dagger},
 
-        ..note::
-            The eigenvalues refer to the canonical matrix representation defined by :meth:`~.Operator.compute_matrix`.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
-        ..note::
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. note::
             When eigenvalues are not explicitly defined, they are computed automatically from the matrix representation.
             Currently, this computation is *not* differentiable.
 
         A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and
         cannot be inferred from the matrix representation.
 
-        .. seealso:: :meth:`~.PauliX.compute_eigvals`
+        .. seealso:: :meth:`~.Operator.compute_eigvals`
 
         Returns:
             tensor_like: eigenvalues
-
-        **Example:**
-
-        >>> U = qml.RZ(0.5, wires=1)
-        >>> U.eigvals()
-        array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
-        >>> qml.PauliX(wires=0).diagonalizing_gates()
-        [Hadamard(wires=[0])]
-        >>> qml.PauliX.eigvals()
-        array([1, -1])
         """
 
         try:
@@ -786,11 +703,6 @@ class Operator(abc.ABC):
 
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients and list of operations
-
-        **Example**
-
-        >>> qml.Hamiltonian.compute_terms([1., 2.], [qml.PauliX(0), qml.PauliZ(0)])
-        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
         """
         raise TermsUndefinedError
 
@@ -806,18 +718,6 @@ class Operator(abc.ABC):
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
                 and list of operations :math:`O_i`
-
-        **Example**
-
-        >>> qml.Hamiltonian([1., 2.], [qml.PauliX(0), qml.PauliZ(0)]).terms()
-        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
-
-        The coefficients are differentiable and can be stored as tensors:
-
-        >>> import tensorflow as tf
-        >>> op = qml.Hamiltonian(tf.Variable([1., 2.]), [qml.PauliX(0), qml.PauliZ(0)])
-        >>> op.terms()[0]
-        [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
 
@@ -985,11 +885,6 @@ class Operator(abc.ABC):
 
         Returns:
             list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> qml.IsingXX(1.23, wires=(0,1)).decomposition()
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
         """
         return self.compute_decomposition(
             *self.parameters, wires=self.wires, **self.hyperparameters
@@ -1010,12 +905,6 @@ class Operator(abc.ABC):
 
         Returns:
             list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> qml.IsingXX.compute_decomposition(1.23, (0,1))
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
-
         """
         raise DecompositionUndefinedError
 
@@ -1023,7 +912,7 @@ class Operator(abc.ABC):
     def compute_diagonalizing_gates(
         *params, wires, **hyperparams
     ):  # pylint: disable=unused-argument
-        r"""Sequence of gates that diagonalize the operator in the computational basis.
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
@@ -1041,38 +930,25 @@ class Operator(abc.ABC):
 
         Returns:
             list[.Operator]: list of diagonalizing gates
-
-        **Example**
-
-        >>> qml.PauliX.compute_diagonalizing_gates(wires="q1")
-        [Hadamard(wires=["q1"])]
         """
         raise DiagGatesUndefinedError
 
     def diagonalizing_gates(self):  # pylint:disable=no-self-use
-        r"""Defines a partial representation of the operator via
-        its eigendecomposition.
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
-        In other words, the diagonalizing gates rotate the state into the eigenbasis
+
+        The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        Returns ``None`` if the operator does not define its diagonalizing gates.
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. note::
-
-            By default, this method calls the static method ``compute_diagonalizing_gates``,
-            which is used by subclasses to define the actual representation.
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
 
         Returns:
             list[.Operator] or None: a list of operators
-
-        **Example**
-
-        >>> qml.PauliX(wires="q1").diagonalizing_gates()
-        [Hadamard(wires=["q1"])]
         """
         return self.compute_diagonalizing_gates(
             *self.parameters, wires=self.wires, **self.hyperparameters
@@ -1248,11 +1124,10 @@ class Operation(Operator):
         self._inverse = boolean
 
     def expand(self):
-        """Returns a tape that recorded the decomposition of the operator.
+        """Returns a tape that has recorded the decomposition of the operator.
 
         Returns:
-            .JacobianTape: quantum tape whose queue contains the sequence of operators
-                in the decomposition of the operator
+            .JacobianTape: quantum tape
         """
         tape = qml.tape.QuantumTape(do_queue=False)
 
@@ -1269,8 +1144,7 @@ class Operation(Operator):
         return tape
 
     def inv(self):
-        """Inverts the operation, such that the inverse will
-        be used for the computations by the specific device.
+        """Inverts the operator.
 
         This method concatenates a string to the name of the operation,
         to indicate that the inverse will be used for computations.

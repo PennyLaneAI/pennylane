@@ -50,9 +50,9 @@ class Identity(CVObservable, Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -94,7 +94,16 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(wires):  # pylint: disable=arguments-differ,unused-argument
-        """Diagonalizing gates of the operator (static method).
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.Identity.diagonalizing_gates`.
 
         Args:
             wires (Iterable[Any], Wires): wires that the operator acts on
@@ -115,8 +124,6 @@ class Identity(CVObservable, Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
         .. seealso:: :meth:`~.Identity.decomposition`.
 
         Args:
@@ -135,7 +142,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def identity_op(*params):
-        """Returns the matrix representation of the identity operator."""
+        """Alias for matrix representation of the identity operator."""
         return Identity.compute_matrix(*params)
 
     def adjoint(self):  # pylint:disable=arguments-differ

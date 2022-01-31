@@ -132,7 +132,16 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
-        """Diagonalizing gates of the operator (static method).
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.Hermitian.diagonalizing_gates`.
 
         Args:
             eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"]
@@ -379,9 +388,9 @@ class Projector(Observable):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
@@ -407,7 +416,16 @@ class Projector(Observable):
     def compute_diagonalizing_gates(
         basis_state, wires
     ):  # pylint: disable=arguments-differ,unused-argument
-        """Diagonalizing gates of the operator (static method).
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.Projector.diagonalizing_gates`.
 
         Args:
             basis_state (Iterable): basis state that the operator projects on

@@ -382,9 +382,9 @@ class DiagonalQubitUnitary(Operation):
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
         the operator can be reconstructed as
 
-        .. math:: O = U \Sigma U^{dagger},
+        .. math:: O = U \Sigma U^{\dagger},
 
-        where :math:`Sigma` is the diagonal matrix containing the eigenvalues.
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 

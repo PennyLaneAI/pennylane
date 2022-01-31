@@ -76,34 +76,35 @@ class BasisStatePreparation(Operation):
                     f"Basis states must only consist of 0s and 1s; state {i} is {state}"
                 )
 
-        self._hyperparameters = {"basis_state": list(qml.math.toarray(basis_state))}
+        # TODO: basis_state should be a hyperparameter, not a trainable parameter.
+        # However, this breaks a test that ensures compatibility with batch_transform.
+        # The transform should be rewritten to support hyperparameters as well.
+        basis_state = list(qml.math.toarray(basis_state))
 
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
+        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
-        return 0
+        return 1
 
     @staticmethod
-    def compute_decomposition(wires, basis_state):  # pylint: disable=arguments-differ
+    def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
         .. seealso:: :meth:`~.BasisStatePreparation.decomposition`.
 
         Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
             basis_state (array): Input array of shape ``(len(wires),)``
+            wires (Any or Iterable[Any]): wires that the operator acts on
 
         Returns:
             list[.Operator]: decomposition of the operator
 
         **Example**
 
-        >>> qml.BasisStatePreparation.compute_decomposition(wires=["a", "b"], basis_state=[1, 1])
+        >>> qml.BasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
         [PauliX(wires=['a']),
         PauliX(wires=['b'])]
         """
