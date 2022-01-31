@@ -2280,10 +2280,10 @@ class CVObservable(CV, Observable):
     quadrature operators. If so,
 
     * ``ev_order = 1`` indicates a first order polynomial in quadrature
-     operators :math:`(\x, \p)`.
+      operators :math:`(\x, \p)`.
 
     * ``ev_order = 2`` indicates a second order polynomial in quadrature
-     operators :math:`(\x, \p)`.
+      operators :math:`(\x, \p)`.
 
     If :attr:`~.ev_order` is not ``None``, then the Heisenberg representation
     of the observable should be defined in the static method :meth:`~.CV._heisenberg_rep`,
