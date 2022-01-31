@@ -52,6 +52,9 @@
   A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
+  A method for converting a quantum tape to a directed multigraph that is amenable
+  to graph partitioning algorithms for circuit cutting has been added.
+  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
