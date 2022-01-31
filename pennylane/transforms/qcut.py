@@ -22,9 +22,7 @@ from pennylane.operation import Operator, Tensor
 from pennylane.tape import QuantumTape
 
 
-def _add_operator_node(
-    graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict
-) -> None:
+def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_latest_node: dict):
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
