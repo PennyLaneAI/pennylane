@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module provides the circuit cutting functionality that allows large
-circuits to be distributed across multiple devices
+circuits to be distributed across multiple devices.
 """
 
 from networkx import MultiDiGraph
@@ -41,11 +41,28 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     Converts a quantum tape to a directed multigraph.
 
     Args:
-        tape (.QuantumTape): tape to be converted into a directed multigraph
+        tape (QuantumTape): tape to be converted into a directed multigraph
 
     Returns:
         graph (MultiDiGraph): a directed multigraph that captures the circuit
         structure of the input tape
+
+    **Example**
+
+    Consider the following tape:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RY(0.9, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(1))
+
+    Its corresponding circuit graph can be found using
+
+    >>> tape_to_graph(tape)
+    <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
 
