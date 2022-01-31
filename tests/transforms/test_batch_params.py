@@ -57,7 +57,7 @@ def test_basic_entangler_layers(mocker):
         return qml.probs(wires=[0, 1])
 
     batch_size = 5
-    weights = np.random.random((batch_size, 2, 2))
+    weights = np.random.random((batch_size, 2, 2), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(weights)
@@ -77,7 +77,7 @@ def test_angle_embedding(mocker):
         return qml.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size, 3))
+    data = np.random.random((batch_size, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data)
@@ -99,9 +99,9 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2 ** 3))
+    data = np.random.random((batch_size, 2 ** 3), requires_grad=True)
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
-    weights = np.random.random((batch_size, 10, 3, 3))
+    weights = np.random.random((batch_size, 10, 3, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
@@ -135,8 +135,8 @@ def test_basis_state_preparation(mocker):
     batch_size = 5
 
     # create random batched basis states
-    data = np.random.randint(2, size=(batch_size, 4))
-    weights = np.random.random((batch_size, 10, 4, 3))
+    data = np.random.randint(2, size=(batch_size, 4), requires_grad=True)
+    weights = np.random.random((batch_size, 10, 4, 3), requires_grad=True)
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
@@ -207,14 +207,15 @@ def test_jax(diff_method, tol):
 
 
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-def test_jax_jit(diff_method, tol):
+@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -352,8 +353,8 @@ def test_unbatched_parameter():
         qml.RX(y, wires=[0])
         return qml.expval(qml.PauliZ(0))
 
-    x = np.array([0.3, 0.4, 0.5])
-    y = np.array(0.2)
+    x = np.array([0.3, 0.4, 0.5], requires_grad=True)
+    y = np.array(0.2, requires_grad=True)
 
     with pytest.raises(ValueError, match="0.2 has incorrect batch dimension"):
         circuit(x, y)
@@ -372,8 +373,8 @@ def test_initial_unbatched_parameter():
         qml.RX(y, wires=[0])
         return qml.expval(qml.PauliZ(0))
 
-    x = np.array(0.2)
-    y = np.array([0.3, 0.4, 0.5])
+    x = np.array(0.2, requires_grad=True)
+    y = np.array([0.3, 0.4, 0.5], requires_grad=True)
 
     with pytest.raises(ValueError, match="Parameter 0.2 does not contain a batch"):
         circuit(x, y)

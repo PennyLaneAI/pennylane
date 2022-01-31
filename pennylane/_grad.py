@@ -23,15 +23,20 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.numpy import tensor
+
 make_vjp = unary_to_nary(_make_vjp)
 
 
 class grad:
     """Returns the gradient as a callable function of (functions of) QNodes.
 
-    Function arguments with the property ``requires_grad`` set to ``False``
-    will automatically be excluded from the gradient computation, unless
-    the ``argnum`` keyword argument is passed.
+    By default, gradients are computed for arguments which contain the property
+    ``requires_grad=True``. Alternatively, the ``argnum`` keyword argument can
+    be specified to compute gradients for function arguments without this property,
+    such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
+    ``argnum`` to the index of an argument with ``requires_grad=False`` will raise
+    a ``NonDifferentiableError``.
 
     When the output gradient function is executed, both the forward pass
     *and* the backward pass will be performed in order to
@@ -74,7 +79,7 @@ class grad:
           inspecting as to which of the parameter arguments are marked
           as differentiable.
         """
-        if self._grad_fn:
+        if self._grad_fn is not None:
             return self._grad_fn
 
         # Inspect the arguments for differentiability, and
@@ -98,15 +103,19 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
-        # Make sure to override arguments specified in argnum with requires_grad=True.
         if self._argnum is not None:
-            for idx in [self._argnum] if isinstance(self._argnum, int) else self._argnum:
-                if hasattr(args[idx], "requires_grad"):
-                    args[idx].requires_grad = True
+            new_args = []
+            for idx, arg in enumerate(args):
+                argnum = [self._argnum] if isinstance(self._argnum, int) else self._argnum
+                if idx in argnum and not hasattr(arg, "requires_grad"):
+                    new_args.append(tensor(arg, requires_grad=True))
+                else:
+                    new_args.append(arg)
+            args = tuple(new_args)
 
         grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
-
         self._forward = ans
+
         return grad_value
 
     @property
@@ -152,6 +161,10 @@ def jacobian(func, argnum=None):
     Returns:
         function: the function that returns the Jacobian of the input
         function with respect to the arguments in argnum
+
+    .. note::
+        Due to a limitation in Autograd, this function can only differentiate built-in scalar
+        or NumPy array arguments.
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
@@ -306,10 +319,13 @@ def jacobian(func, argnum=None):
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
 
-            # Make sure to override arguments specified in argnum with requires_grad=True.
-            for idx in _argnum:
-                if hasattr(args[idx], "requires_grad"):
-                    args[idx].requires_grad = True
+            new_args = []
+            for idx, arg in enumerate(args):
+                if idx in _argnum and not hasattr(arg, "requires_grad"):
+                    new_args.append(tensor(arg, requires_grad=True))
+                else:
+                    new_args.append(arg)
+            args = tuple(new_args)
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 

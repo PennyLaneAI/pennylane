@@ -733,7 +733,7 @@ class TestArgnum:
             ((0.1, 0.2), (0.1, 0.2)),
             [[0.1, 0.2], [0.1, 0.2]],
             np.array([[0.1, 0.2], [0.1, 0.2]]),
-            qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]]),
+            qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]], requires_grad=True),
         ],
     )
     def test_grad(self, diff_method, input, argnum):
@@ -762,7 +762,7 @@ class TestArgnum:
 
     @pytest.mark.parametrize(
         "input",
-        [np.array([[0.1, 0.2], [0.1, 0.2]]), qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]])],
+        [np.array([[0.1, 0.2], [0.1, 0.2]]), qml.numpy.tensor([[0.1, 0.2], [0.1, 0.2]], requires_grad=True)],
     )
     def test_jacobian(self, diff_method, input, argnum):
         """Test qml.jacobian with various argnums (no support for lists/tuples)"""

@@ -30,7 +30,7 @@ class TestGradientUnivar:
 
     def test_sin(self, tol):
         """Tests with sin function."""
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = np.linspace(-10, 10, 16, endpoint=False, requires_grad=True)
         g = qml.grad(np.sin, 0)
         auto_grad = [g(x) for x in x_vals]
         correct_grad = np.cos(x_vals)
@@ -39,7 +39,7 @@ class TestGradientUnivar:
 
     def test_exp(self, tol):
         """Tests exp function."""
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = np.linspace(-10, 10, 16, endpoint=False, requires_grad=True)
         func = lambda x: np.exp(x / 10.0) / 10.0
         g = qml.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
@@ -49,7 +49,7 @@ class TestGradientUnivar:
 
     def test_poly(self, tol):
         """Tests a polynomial function."""
-        x_vals = np.linspace(-10, 10, 16, endpoint=False)
+        x_vals = np.linspace(-10, 10, 16, endpoint=False, requires_grad=True)
         func = lambda x: 2 * x ** 2 + 3 * x + 4
         g = qml.grad(func, 0)
         auto_grad = [g(x) for x in x_vals]
@@ -82,7 +82,7 @@ class TestGradientMultiVar:
                 np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
             ]
         )
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=(2), requires_grad=True)
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
@@ -93,7 +93,7 @@ class TestGradientMultiVar:
         """Tests gradients with a quadratic function."""
         multi_var = lambda x: np.sum([x_ ** 2 for x_ in x])
         grad_multi_var = lambda x: np.array([2 * x_ for x_ in x])
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=(2), requires_grad=True)
         g = qml.grad(multi_var, 0)
         auto_grad = g(x_vec)
         correct_grad = grad_multi_var(x_vec)
@@ -189,7 +189,7 @@ class TestGradientMultivarMultidim:
 
     def test_sin(self, tol):
         """Tests gradients with multivariate multidimensional sin and cos."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=(2), requires_grad=True)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: np.array([[np.cos(x[0, 0])], [-np.sin(x[[1]])]], dtype=np.float64)
@@ -202,7 +202,7 @@ class TestGradientMultivarMultidim:
 
     def test_exp(self, tol):
         """Tests gradients with multivariate multidimensional exp and tanh."""
-        x_vec = np.random.uniform(-5, 5, size=(2))
+        x_vec = np.random.uniform(-5, 5, size=(2), requires_grad=True)
         x_vec_multidim = np.expand_dims(x_vec, axis=1)
 
         gradf = lambda x: np.array(
