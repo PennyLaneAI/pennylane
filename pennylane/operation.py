@@ -478,7 +478,7 @@ class Operator(abc.ABC):
             ):
                 raise ValueError(
                     f"{self.name}: wrong number of parameters. "
-                    f"{len(params)} parameters passed, {self.__class__.num_params} specified in class {self.__class__}."
+                    f"{len(params)} parameters passed, but {self.__class__.num_params} expected for {self.__class__}."
                 )
         else:
             # If no num_params property was provided by the-sub class we set it
