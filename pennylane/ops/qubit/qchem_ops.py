@@ -607,7 +607,7 @@ class OrbitalRotation(Operation):
         else:
             z = qml.math.zeros([16], like=interface)
 
-        diag = qml.math.diag([1, c, c, c ** 2, c, 1, c ** 2, c, c, c ** 2, 1, c, c ** 2, c, c, 1])
+        diag = qml.math.diag([1, c, c, c**2, c, 1, c**2, c, c, c**2, 1, c, c**2, c, c, 1])
 
         U = diag + qml.math.stack(
             [
