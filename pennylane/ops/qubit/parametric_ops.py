@@ -269,7 +269,7 @@ class RZ(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.RZ.eigvals`
-        
+
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -383,7 +383,7 @@ class PhaseShift(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.PhaseShift.eigvals`
-        
+
 
         Args:
             phi (tensor_like or float): phase shift
@@ -525,7 +525,7 @@ class ControlledPhaseShift(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.ControlledPhaseShift.eigvals`
-        
+
 
         Args:
             phi (tensor_like or float): phase shift
@@ -817,7 +817,7 @@ class MultiRZ(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.MultiRZ.eigvals`
-        
+
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -1077,7 +1077,7 @@ class PauliRot(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.PauliRot.eigvals`
-        
+
 
         Returns:
             tensor_like: eigenvalues
@@ -1554,7 +1554,7 @@ class CRZ(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.CRZ.eigvals`
-        
+
 
         Args:
             theta (tensor_like or float): rotation angle
@@ -2452,7 +2452,7 @@ class IsingZZ(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.IsingZZ.eigvals`
-        
+
 
         Args:
             phi (tensor_like or float): phase angle

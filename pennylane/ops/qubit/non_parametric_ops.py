@@ -816,7 +816,7 @@ class SX(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.SX.eigvals`
-        
+
 
         Returns:
             array: eigenvalues
@@ -998,7 +998,7 @@ class CZ(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.CZ.eigvals`
-        
+
 
         Returns:
             array: eigenvalues
@@ -1251,7 +1251,7 @@ class ISWAP(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.ISWAP.eigvals`
-        
+
 
         Returns:
             array: eigenvalues
@@ -1370,7 +1370,7 @@ class SISWAP(Operation):
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
         .. seealso:: :meth:`~.SISWAP.eigvals`
-        
+
 
         Returns:
             array: eigenvalues
