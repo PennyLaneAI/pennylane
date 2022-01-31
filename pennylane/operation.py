@@ -727,7 +727,10 @@ class Operation(Operator):
         Returns:
             The adjointed operation.
         """
-        raise NotImplementedError
+
+        adj_op = copy.deepcopy(self)
+        adj_op.inverse = not self.inverse
+        return adj_op
 
     @inverse.setter
     def inverse(self, boolean):
@@ -1112,6 +1115,22 @@ class Observable(Operator):
             the observable in the computational basis.
         """
         raise NotImplementedError
+
+    def adjoint(self, do_queue=False):
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The adjointed operation.
+        """
+
+        raise NotImplementedError  # override the operation adjoint method as observables can be hermitian
 
 
 class Tensor(Observable):

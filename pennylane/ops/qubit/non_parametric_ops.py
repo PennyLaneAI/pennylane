@@ -313,11 +313,6 @@ class S(Operation):
         decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
-    def adjoint(self):
-        op = S(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
-
     def single_qubit_rot_angles(self):
         # S = RZ(\pi/2) RY(0) RZ(0)
         return [np.pi / 2, 0.0, 0.0]
@@ -358,11 +353,6 @@ class T(Operation):
     def decomposition(wires):
         decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
-
-    def adjoint(self):
-        op = T(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
     def single_qubit_rot_angles(self):
         # T = RZ(\pi/4) RY(0) RZ(0)
@@ -409,11 +399,6 @@ class SX(Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
         return decomp_ops
-
-    def adjoint(self):
-        op = SX(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
@@ -651,11 +636,6 @@ class ISWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
-        op = ISWAP(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
-
 
 class SISWAP(Operation):
     r"""SISWAP(wires)
@@ -713,11 +693,6 @@ class SISWAP(Operation):
             SX(wires=wires[1]),
         ]
         return decomp_ops
-
-    def adjoint(self):
-        op = SISWAP(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
 
 SQISW = SISWAP
