@@ -719,7 +719,8 @@ The Operator class has undergone a major refactor with the following changes:
   for developers.
   [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
 
-* The ``operation.py`` file got cleaned up.
+* The methods of classes in the ``operation.py`` were reorganised to follow
+  into logical categories and their documentation was improved.
   [(#2112)](https://github.com/PennyLaneAI/pennylane/pull/2112)
 
 <h3>Contributors</h3>
