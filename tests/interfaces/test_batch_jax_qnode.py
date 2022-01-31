@@ -366,6 +366,18 @@ class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     remains differentiable."""
 
+    def test_diff_method_None(self, interface):
+        """Test jax device works with diff_method=None."""
+        dev = qml.device("default.qubit.jax", wires=1, shots=10)
+
+        @jax.jit
+        @qml.qnode(dev, diff_method=None, interface=interface)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(jnp.array(0.0)), 1)
+
     def test_changing_shots(self, interface, mocker, tol):
         """Test that changing shots works on execution"""
         dev = qml.device("default.qubit", wires=2, shots=None)
