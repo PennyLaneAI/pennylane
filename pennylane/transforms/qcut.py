@@ -77,7 +77,6 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
-                order += 1
 
         else:
             _add_operator_node(graph, m, order, wire_latest_node)
