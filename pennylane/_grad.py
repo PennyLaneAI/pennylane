@@ -23,6 +23,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.numpy import tensor
+
 make_vjp = unary_to_nary(_make_vjp)
 
 
@@ -101,8 +103,19 @@ class grad:
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
+        if self._argnum is not None:
+            new_args = []
+            for idx, arg in enumerate(args):
+                argnum = [self._argnum] if isinstance(self._argnum, int) else self._argnum
+                if idx in argnum and not hasattr(arg, "requires_grad"):
+                    new_args.append(tensor(arg, requires_grad=True))
+                else:
+                    new_args.append(arg)
+            args = tuple(new_args)
+
         grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
         self._forward = ans
+
         return grad_value
 
     @property
@@ -305,6 +318,14 @@ def jacobian(func, argnum=None):
             # For a single integer as argnum, unpack the Jacobian tuple
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
+
+            new_args = []
+            for idx, arg in enumerate(args):
+                if idx in _argnum and not hasattr(arg, "requires_grad"):
+                    new_args.append(tensor(arg, requires_grad=True))
+                else:
+                    new_args.append(arg)
+            args = tuple(new_args)
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 

@@ -107,11 +107,13 @@ class tensor(_np.ndarray):
         [0., 0., 0.]], requires_grad=True)
     """
 
-    def __new__(cls, input_array, *args, requires_grad=True, **kwargs):
+    def __new__(cls, input_array, *args, requires_grad=None, **kwargs):
         obj = asarray(input_array, *args, **kwargs)
 
         if isinstance(obj, onp.ndarray):
             obj = obj.view(cls)
+            if requires_grad is None:
+                requires_grad = getattr(obj, "requires_grad", False)
             obj.requires_grad = requires_grad
 
         return obj
