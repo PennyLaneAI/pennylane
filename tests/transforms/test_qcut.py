@@ -433,3 +433,59 @@ class TestReplaceWireCut:
                 assert order == {"order": 3}
                 succ = list(g.succ[op])
                 assert succ == []
+
+    def test_multi_wire_wirecut_successor_and_predecessor(self):
+        """
+        Tests the successors and predecessors of a multi-wire wirecut are
+        correct
+        """
+        wire_cut_num = 1
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CNOT(wires=[0, "a"])
+            qml.CNOT(wires=["a", 2])
+            qml.WireCut(wires=[0, "a", 2])
+            qml.CZ(wires=[0, 2])
+            qml.Toffoli(wires=[0, "a", 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+
+        nodes = list(g.nodes)
+        measure_nodes = [node for node in nodes if node.name == "MeasureNode"]
+        prepare_nodes = [node for node in nodes if node.name == "PrepareNode"]
+
+        assert len(measure_nodes) == len(prepare_nodes) == 3
+
+        expected_meas_pred_wires = [[0, "a"], ["a", 2], ["a", 2]]
+        exepeted_meas_pred_name = [
+            "CNOT",
+            "CNOT",
+        ] * len(measure_nodes)
+        expected_meas_succ_wires = [[0], ["a"], [2]]
+        expected_meas_succ_name = ["PrepareNode"] * len(measure_nodes)
+
+        expected_prep_pred_wires = expected_meas_succ_wires
+        exepeted_prep_pred_name = ["MeasureNode"] * len(measure_nodes)
+        expected_prep_succ_wires = [[0, 2], [0, "a", 2], [0, 2]]
+        expected_prep_succ_name = ["CZ", "Toffoli", "CZ"]
+
+        measure_pred = [list(g.pred[node])[0] for node in measure_nodes]
+        measure_succ = [list(g.succ[node])[0] for node in measure_nodes]
+        prep_pred = [list(g.pred[node])[0] for node in prepare_nodes]
+        prep_succ = [list(g.succ[node])[0] for node in prepare_nodes]
+
+        assert len(measure_nodes) == len(prepare_nodes) == 3
+
+        def compare_nodes(nodes, expected_wires, expected_names):
+
+            for node, exp_wire in zip(nodes, expected_wires):
+                assert node.wires.tolist() == exp_wire
+
+            for node, exp_name in zip(nodes, expected_names):
+                assert node.name == exp_name
+
+        compare_nodes(measure_pred, expected_meas_pred_wires, exepeted_meas_pred_name)
+        compare_nodes(measure_succ, expected_meas_succ_wires, expected_meas_succ_name)
+        compare_nodes(prep_pred, expected_prep_pred_wires, exepeted_prep_pred_name)
+        compare_nodes(prep_succ, expected_prep_succ_wires, expected_prep_succ_name)

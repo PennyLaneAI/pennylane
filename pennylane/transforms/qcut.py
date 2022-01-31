@@ -18,7 +18,7 @@ circuits to be distributed across multiple devices.
 
 from networkx import MultiDiGraph
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import Observable, Operation, Operator, Tensor
+from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 
