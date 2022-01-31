@@ -56,12 +56,13 @@ class BasisState(Operation):
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
 
     @staticmethod
     def compute_decomposition(n, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -122,12 +123,13 @@ class QubitStateVector(Operation):
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
 
     @staticmethod
     def compute_decomposition(state, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -203,6 +205,8 @@ class QubitDensityMatrix(Operation):
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
 
     def adjoint(self):

@@ -132,9 +132,7 @@ class QuantumPhaseEstimation(Operation):
     def compute_decomposition(
         unitary, wires, target_wires, estimation_wires
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute a decomposition of the QuantumPhaseEstimation operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the QuantumPhaseEstimationoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -151,7 +149,7 @@ class QuantumPhaseEstimation(Operation):
                 estimation
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
 
         unitary_powers = [unitary]

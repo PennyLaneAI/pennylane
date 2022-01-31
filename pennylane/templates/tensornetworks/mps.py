@@ -117,6 +117,8 @@ class MPS(Operation):
     """
 
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     num_wires = AnyWires
     par_domain = "A"
 
@@ -155,9 +157,7 @@ class MPS(Operation):
     def compute_decomposition(
         weights, wires, ind_gates, block
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute a decomposition of the MPS operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the MPSoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -173,7 +173,7 @@ class MPS(Operation):
             ind_gates (array): array of wire indices
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         return [block(weights=weights[idx][:], wires=w.tolist()) for idx, w in enumerate(ind_gates)]
 

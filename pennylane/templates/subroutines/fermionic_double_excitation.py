@@ -543,9 +543,7 @@ class FermionicDoubleExcitation(Operation):
     def compute_decomposition(
         weight, wires, wires1, wires2
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute a decomposition of the FermionicDoubleExcitation operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the FermionicDoubleExcitationoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -563,7 +561,7 @@ class FermionicDoubleExcitation(Operation):
                 orbitals in the interval ``[q, p]``.
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         s = wires1[0]
         r = wires1[-1]

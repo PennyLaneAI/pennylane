@@ -55,6 +55,8 @@ class Hermitian(Observable):
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "F"
     _eigs = {}
 
@@ -185,6 +187,8 @@ class SparseHamiltonian(Observable):
     """
     num_wires = AllWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
@@ -280,6 +284,7 @@ class Projector(Observable):
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
 
     def __init__(self, basis_state, wires, do_queue=True, id=None):
         wires = Wires(wires)
@@ -332,7 +337,7 @@ class Projector(Observable):
             basis_state (Iterable): basis state to project on
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 

@@ -192,9 +192,7 @@ class TTN(Operation):
     def compute_decomposition(
         weights, wires, block, ind_gates
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute a decomposition of the TTN operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the TTNoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -210,7 +208,7 @@ class TTN(Operation):
             ind_gates (array): array of wire indices
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         op_list = []
         if block.__code__.co_argcount > 2:

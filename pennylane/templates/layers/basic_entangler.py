@@ -152,9 +152,7 @@ class BasicEntanglerLayers(Operation):
 
     @staticmethod
     def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the BasicEntanglerLayers operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the BasicEntanglerLayersoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -170,7 +168,7 @@ class BasicEntanglerLayers(Operation):
             rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
 
         **Example**
 

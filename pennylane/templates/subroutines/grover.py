@@ -115,9 +115,7 @@ class GroverOperator(Operation):
 
     @staticmethod
     def compute_decomposition(wires, work_wires, **kwargs):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the GroverOperator operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the GroverOperatoroperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -132,7 +130,7 @@ class GroverOperator(Operation):
                 in the decomposition of :class:`~.MultiControlledX`.
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         ctrl_str = "0" * (len(wires) - 1)
 

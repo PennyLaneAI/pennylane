@@ -86,9 +86,7 @@ class BasisStatePreparation(Operation):
 
     @staticmethod
     def compute_decomposition(wires, basis_state):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the BasisStatePreparation operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the BasisStatePreparationoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -102,7 +100,7 @@ class BasisStatePreparation(Operation):
             basis_state (array): Input array of shape ``(len(wires),)``
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
 
         **Example**
 

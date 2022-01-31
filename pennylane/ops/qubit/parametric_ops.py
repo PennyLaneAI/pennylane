@@ -58,6 +58,8 @@ class RX(Operation):
     """
     num_wires = 1
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
     grad_method = "A"
 
@@ -132,6 +134,8 @@ class RY(Operation):
     """
     num_wires = 1
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Y"
     grad_method = "A"
 
@@ -201,6 +205,8 @@ class RZ(Operation):
     """
     num_wires = 1
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
     grad_method = "A"
 
@@ -292,6 +298,8 @@ class PhaseShift(Operation):
     """
     num_wires = 1
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
     grad_method = "A"
 
@@ -351,8 +359,7 @@ class PhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -362,7 +369,7 @@ class PhaseShift(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Any, Wires): Wires that the operator acts on.
+            wires (Any, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -415,6 +422,8 @@ class ControlledPhaseShift(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
     grad_method = "A"
 
@@ -476,8 +485,7 @@ class ControlledPhaseShift(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -488,7 +496,7 @@ class ControlledPhaseShift(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -558,6 +566,8 @@ class Rot(Operation):
     """
     num_wires = 1
     num_params = 3
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
@@ -612,8 +622,7 @@ class Rot(Operation):
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -683,6 +692,8 @@ class MultiRZ(Operation):
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def __init__(self, theta, wires=None, do_queue=True, id=None):
@@ -750,8 +761,7 @@ class MultiRZ(Operation):
     def compute_decomposition(
         theta, wires, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -823,6 +833,8 @@ class PauliRot(Operation):
     """
     num_wires = AnyWires
     num_params = 2
+    """int: Number of trainable parameters that this operator depends on."""
+
     do_check_domain = False
     grad_method = "A"
 
@@ -986,8 +998,7 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_decomposition(theta, pauli_word, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1094,6 +1105,8 @@ class CRX(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1151,8 +1164,7 @@ class CRX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1238,6 +1250,8 @@ class CRY(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1288,8 +1302,7 @@ class CRY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1299,7 +1312,7 @@ class CRY(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1374,6 +1387,8 @@ class CRZ(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1438,8 +1453,7 @@ class CRZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1449,7 +1463,7 @@ class CRZ(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1521,6 +1535,8 @@ class CRot(Operation):
     """
     num_wires = 2
     num_params = 3
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
@@ -1586,8 +1602,7 @@ class CRot(Operation):
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1665,6 +1680,8 @@ class U1(Operation):
     """
     num_wires = 1
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def generator(self):
@@ -1698,8 +1715,7 @@ class U1(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1765,6 +1781,8 @@ class U2(Operation):
     """
     num_wires = 1
     num_params = 2
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def __init__(self, phi, delta, wires, do_queue=True, id=None):
@@ -1803,8 +1821,7 @@ class U2(Operation):
 
     @staticmethod
     def compute_decomposition(phi, delta, wires):
-        r"""Compute the decomposition for the specified parameters and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1882,6 +1899,8 @@ class U3(Operation):
     """
     num_wires = 1
     num_params = 3
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
@@ -1930,8 +1949,7 @@ class U3(Operation):
 
     @staticmethod
     def compute_decomposition(theta, phi, delta, wires):
-        r"""Compute the decomposition for the specified parameters and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1997,6 +2015,8 @@ class IsingXX(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def generator(self):
@@ -2038,8 +2058,7 @@ class IsingXX(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -2099,6 +2118,8 @@ class IsingYY(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def generator(self):
@@ -2109,8 +2130,7 @@ class IsingYY(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -2198,6 +2218,8 @@ class IsingZZ(Operation):
     """
     num_wires = 2
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
 
     def generator(self):
@@ -2208,8 +2230,7 @@ class IsingZZ(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 

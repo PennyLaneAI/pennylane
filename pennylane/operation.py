@@ -398,7 +398,7 @@ class Operator(abc.ABC):
         params (tuple[float, int, array]): operator parameters
 
     Keyword Args:
-        wires (Iterable[Number, str], Number, str, Wires): Wires that the operator acts on.
+        wires (Iterable[Number, str], Number, str, Wires): wires that the operator acts on
             If not given, args[-1] is interpreted as wires.
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue.
@@ -436,12 +436,12 @@ class Operator(abc.ABC):
 
     @property
     def hash(self):
-        """int: returns an integer hash uniquely representing the operator"""
+        """int: Integer hash that uniquely represents the operator"""
         return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
-        """Canonical matrix of this operator in the computational basis.
+        """Canonical matrix representation of this operator in the computational basis.
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
@@ -449,6 +449,8 @@ class Operator(abc.ABC):
         .. note::
             This method gets overwritten by subclasses to define the matrix representation
             of a particular operator.
+
+        .. seealso:: :meth:`~.Operator.matrix`
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -482,19 +484,16 @@ class Operator(abc.ABC):
     def matrix(self, wire_order=None):
         r"""Matrix representation of this operator in the computational basis.
 
-        If ``wire_order`` is provided, the
-        numerical representation considers the position of the
-        operator's wires in the global wire order.
-        Otherwise, the wire order defaults to ``self.wires``.
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
 
         If the matrix depends on trainable parameters, the result
         will be cast in the same autodifferentiation framework as the parameters.
 
-        .. note::
-            By default, this method calls the static method ``compute_matrix``,
-            which is used by subclasses to define the actual matrix representation.
+        A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
 
-        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
+        .. seealso:: :meth:`~.Operator.compute_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
@@ -527,15 +526,13 @@ class Operator(abc.ABC):
 
     @staticmethod
     def compute_sparse_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
-        """Canonical matrix of this operator in the computational basis, using a sparse
+        """Canonical matrix representation of this operator in the computational basis, using a sparse
         matrix type.
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. note::
-            This method gets overwritten by subclasses to define the sparse matrix representation
-            of a particular operator.
+        .. seealso:: :meth:`~.Operator.sparse_matrix`
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -564,19 +561,16 @@ class Operator(abc.ABC):
         r"""Matrix representation of this operator in the computational basis, using
         a sparse matrix type.
 
-        If ``wire_order`` is provided, the
-        numerical representation considers the position of the
-        operator's wires in the global wire order.
-        Otherwise, the wire order defaults to ``self.wires``.
+        If ``wire_order`` is provided, the numerical representation considers the position of the
+        operator's wires in the global wire order. Otherwise, the wire order defaults to the
+        operator's wires.
+
+        A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
         .. note::
-            By default, this method calls the static method ``compute_sparse_matrix``,
-            which is used by subclasses to define the actual numerical representation.
+            The wire_order argument is currently not implemented, and using it will raise an error.
 
-        A ``NotImplementedError`` is raised if the matrix representation has not been defined.
-
-        .. note::
-            The wire_order argument is not yet implemented.
+        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from this operator's wires
@@ -609,30 +603,22 @@ class Operator(abc.ABC):
     def compute_eigvals(*params, **hyperparams):
         """Eigenvalues of the operator in the computational basis.
 
-        The eigenvalues refer to the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+        If :attr:`diagonalizing_gates` are specified, the order of the eigenvalues matches the order of
+        the computational basis vectors as they appear in the unitary constructed from these gates.
+        Otherwise, no particular order is guaranteed.
 
-        This static method allows eigenvalues to be computed
-        directly without instantiating the operator first.
-        To return the eigenvalues of *instantiated* operators,
-        please use the :meth:`~.Operator.eigvals()` method instead.
+        ..note::
+            The eigenvalues refer to the canonical matrix representation defined by :meth:`~.Operator.compute_matrix`.
+            Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        If :attr:`diagonalizing_gates` are specified, the order of the
-        eigenvalues matches the order of
-        the computational basis vectors when the observable is
-        diagonalized using these ops. Otherwise, no particular order is
-        guaranteed.
-
-        .. note::
-            This method gets overwritten by subclasses to define the eigenvalues
-            of a particular operator.
+        .. seealso:: :meth:`~.Operator.eigvals`
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            array: eigenvalues
+            tensor_like: eigenvalues
 
         **Example:**
 
@@ -648,20 +634,24 @@ class Operator(abc.ABC):
     def eigvals(self):
         r"""Eigenvalues of the operator.
 
-        If :attr:`diagonalizing_gates` are specified, the order of the
-        eigenvalues needs to match the order of
-        the computational basis vectors when the observable is
-        diagonalized using these ops. Otherwise, no particular order is
-        guaranteed.
+        If :attr:`diagonalizing_gates` are specified, the order of the eigenvalues matches the order of
+        the computational basis vectors as they appear in the unitary constructed from these gates.
+        Otherwise, no particular order is guaranteed.
 
-        .. note::
-            By default, this method calls the static method ``compute_eigvals``,
-            which is used by subclasses to define the actual eigenvalues. If no
-            eigenvalues are defined, it is attempted to compute them from the matrix
-            representation.
+        ..note::
+            The eigenvalues refer to the canonical matrix representation defined by :meth:`~.Operator.compute_matrix`.
+
+        ..note::
+            When eigenvalues are not explicitly defined, they are computed from the matrix representation.
+            Currently, this is not compatible with tensor-like matrix representations.
+
+        A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and
+        cannot be inferred from the matrix representation.
+
+        .. seealso:: :meth:`~.Operator.compute_eigvals`
 
         Returns:
-            array: eigenvalues
+            tensor_like: eigenvalues
 
         **Example:**
 
@@ -686,20 +676,11 @@ class Operator(abc.ABC):
 
     @staticmethod
     def compute_terms(*params, **hyperparams):  # pylint: disable=unused-argument
-        r"""Static method to define the representation of this operation as a linear combination.
-
-        Each term in the linear combination is a pair of a scalar
-        value :math:`c_i` and an operator :math:`O_i`, so that the sum
+        r"""Representation of this operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
 
-        constructs this operator :math:`O`.
-
-        A ``NotImplementedError`` is raised if no representation by terms is defined.
-
-        .. note::
-            This method gets overwritten by subclasses to define the linear combination representation
-            of a particular operator.
+        .. seealso:: :meth:`~.Operator.compute_terms`
 
         Args:
             params (list): trainable parameters of this operator, as stored in the ``parameters`` attribute
@@ -717,20 +698,13 @@ class Operator(abc.ABC):
         raise TermsUndefinedError
 
     def terms(self):
-        r"""Representation of this operator as a linear combination.
-
-        Each term in the linear combination is a pair of a
-        scalar value :math:`c_i` and an operator :math:`O_i`, so that the sum
+        r"""Representation of this operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
 
-        constructs this operator :math:`O`.
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. note::
-            By default, this method calls the static method ``compute_terms``,
-            which is used by subclasses to define the concrete representation.
-
-        A ``NotImplementedError`` is raised if no representation through terms is defined.
+        .. seealso:: :meth:`~.Operator.compute_terms`
 
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
@@ -762,7 +736,7 @@ class Operator(abc.ABC):
 
     @property
     def id(self):
-        """String for the ID of the operator."""
+        """Custom string identifying an operator instance."""
         return self._id
 
     @name.setter
@@ -869,8 +843,7 @@ class Operator(abc.ABC):
 
     @property
     def num_params(self):
-        """Number of trainable parameters that this operator expects to be fed via the
-        dynamic `*params` argument.
+        """Number of trainable parameters that this operator depends on.
 
         By default, this property returns as many parameters as were used for the
         operator creation. If the number of parameters for an operator subclass is fixed,
@@ -883,7 +856,7 @@ class Operator(abc.ABC):
 
     @property
     def wires(self):
-        """Wires of this operator.
+        """Wires that this operator acts on.
 
         Returns:
             Wires: wires
@@ -892,12 +865,12 @@ class Operator(abc.ABC):
 
     @property
     def parameters(self):
-        """Current parameter values."""
+        """Trainable parameters that this operator depends on."""
         return self.data.copy()
 
     @property
     def hyperparameters(self):
-        """dict: Dictionary of non-trainable variables that define this operation."""
+        """dict: Dictionary of non-trainable variables that this operation depends on."""
         # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
@@ -905,7 +878,7 @@ class Operator(abc.ABC):
         return self._hyperparameters
 
     def decomposition(self):
-        r"""The decomposition of the Operator into a product of more fundamental gates.
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
 
@@ -916,7 +889,7 @@ class Operator(abc.ABC):
             this method should not be overwritten.
 
         Returns:
-            list[Operator]: The decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -950,12 +923,12 @@ class Operator(abc.ABC):
             *params: Variable length argument list.  Should match the ``parameters`` attribute
 
         Keyword Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
             **hyperparameters: Variable length keyword arguments.  Should match the
                 ``hyperparameters`` attribute.
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -969,21 +942,16 @@ class Operator(abc.ABC):
     def compute_diagonalizing_gates(
         *params, wires, **hyperparams
     ):  # pylint: disable=unused-argument
-        r"""Defines a partial representation of this operator via
-        its eigendecomposition.
+        r"""Sequence of gates that diagonalize this operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
         :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
         the sequence of diagonalizing gates implements the unitary :math:`U`.
-        In other words, the diagonalizing gates rotate the state into the eigenbasis
+
+        The diagonalizing gates rotate the state into the eigenbasis
         of this operator.
 
-        This is the static version of ``diagonalizing_gates``, which can be called
-        without creating an instance of the class.
-
-        .. note::
-
-            This method gets overwritten by subclasses to define the representation of a particular operator.
+        .. seealso:: :meth:`~.Operator.diagonalizing_gates`.
 
         Args:
             params (list): trainable parameters of this operator, as stored in ``op.parameters``
@@ -991,7 +959,7 @@ class Operator(abc.ABC):
             hyperparams (dict): non-trainable hyperparameters of this operator, as stored in ``op.hyperparameters``
 
         Returns:
-            list[.Operator]: A list of operators.
+            list[.Operator]: list of diagonalizing gates
 
         **Example**
 
@@ -1030,14 +998,15 @@ class Operator(abc.ABC):
         )
 
     def generator(self):  # pylint: disable=no-self-use
-        r"""list[.Operation] or None: Generator of an operation
-        with a single trainable parameter.
+        r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
 
         .. math::
 
             U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+
+        we get the generator
 
         >>> U.generator()
           (0.5) [Y0]
@@ -1123,7 +1092,7 @@ class Operation(Operator):
     """
 
     basis = None
-    """str or None: The basis of an operation, or for controlled gates, of the
+    """str or None: The target operation for controlled gates.
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
     or ``"Z"``.
 
@@ -1133,7 +1102,9 @@ class Operation(Operator):
 
     @property
     def control_wires(self):  # pragma: no cover
-        r"""Returns the control wires.  For operations that are not controlled,
+        r"""Control wires of this operation.
+
+        For operations that are not controlled,
         this is an empty ``Wires`` object of length ``0``.
 
         Returns:
@@ -1154,7 +1125,7 @@ class Operation(Operator):
         raise NotImplementedError
 
     def get_parameter_shift(self, idx, shift=np.pi / 2):
-        """Multiplier and shift for the given parameter, based on its gradient recipe.
+        """Multiplier and shift for the parameter at position idx, based on its gradient recipe.
 
         Args:
             idx (int): parameter index
@@ -1201,13 +1172,11 @@ class Operation(Operator):
         self._inverse = boolean
 
     def expand(self):
-        """Returns a tape containing the decomposed operations, rather
-        than a list.
+        """Returns a tape that recorded the decomposition of this operator.
 
         Returns:
-            .JacobianTape: Returns a quantum tape that contains the
-            operations decomposition, or if not implemented, simply
-            the operation itself.
+            .JacobianTape: quantum tape whose queue contains the sequence of operators
+                in the decomposition of this operator
         """
         tape = qml.tape.QuantumTape(do_queue=False)
 
@@ -1264,12 +1233,13 @@ class Operation(Operator):
 
     @property
     def base_name(self):
-        """Get base name of the operator."""
+        """If inverse is requested, this is the name of the original
+        operator to be inverted."""
         return self.__class__.__name__
 
     @property
     def name(self):
-        """Get and set the name of the operator."""
+        """Name of the operator."""
         return self._name + ".inv" if self.inverse else self._name
 
     def label(self, decimals=None, base_label=None):

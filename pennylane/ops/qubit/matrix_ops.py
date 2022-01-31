@@ -50,8 +50,13 @@ class QubitUnitary(Operation):
     0.0
     """
     num_wires = AnyWires
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
+    """Gradient computation method."""
 
     def __init__(self, *params, wires, do_queue=True):
         wires = Wires(wires)
@@ -104,8 +109,7 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(U, wires):
-        r"""Compute the decomposition for specified matrix and wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -124,7 +128,7 @@ class QubitUnitary(Operation):
             wires (Iterable[Any] or Wires): the wire(s) the operation acts on
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -198,8 +202,13 @@ class ControlledQubitUnitary(QubitUnitary):
 
     """
     num_wires = AnyWires
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
+    """Gradient computation method."""
 
     def __init__(
         self,
@@ -322,8 +331,13 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
+    """Gradient computation method."""
 
     @staticmethod
     def compute_matrix(D):  # pylint: disable=arguments-differ

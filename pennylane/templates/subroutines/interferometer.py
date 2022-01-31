@@ -194,9 +194,7 @@ class Interferometer(CVOperation):
     def compute_decomposition(
         theta, phi, varphi, wires, mesh, beamsplitter
     ):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the Interferometer operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the Interferometeroperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -214,7 +212,7 @@ class Interferometer(CVOperation):
             beamsplitter (str): beamsplitter convention
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
 
         wires = Wires(wires)

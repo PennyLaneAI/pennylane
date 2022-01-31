@@ -43,7 +43,10 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    """int: Number of wires that this operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
@@ -53,7 +56,7 @@ class Hadamard(Observable, Operation):
         """Canonical matrix representation of the Hadamard operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -103,8 +106,7 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -116,7 +118,7 @@ class Hadamard(Observable, Operation):
             wires (Any, Wires): Wire that the operator acts on.
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -156,7 +158,11 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    """int: Number of wires that this operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
 
     def label(self, decimals=None, base_label=None):
@@ -167,7 +173,7 @@ class PauliX(Observable, Operation):
         """Canonical matrix representation of the PauliX operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -215,8 +221,7 @@ class PauliX(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wire. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -271,7 +276,11 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    """int: Number of wires that this operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Y"
 
     def label(self, decimals=None, base_label=None):
@@ -282,7 +291,7 @@ class PauliY(Observable, Operation):
         """Canonical matrix representation of the PauliY operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -336,8 +345,7 @@ class PauliY(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wire. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -393,6 +401,8 @@ class PauliZ(Observable, Operation):
     """
     num_wires = 1
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
 
     def label(self, decimals=None, base_label=None):
@@ -403,7 +413,7 @@ class PauliZ(Observable, Operation):
         """Canonical matrix representation of the PauliZ operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -446,8 +456,7 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -499,6 +508,8 @@ class S(Operation):
     """
     num_wires = 1
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
 
     @staticmethod
@@ -506,7 +517,7 @@ class S(Operation):
         """Canonical matrix representation of the S operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -532,8 +543,7 @@ class S(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -582,6 +592,8 @@ class T(Operation):
     """
     num_wires = 1
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
 
     @staticmethod
@@ -589,7 +601,7 @@ class T(Operation):
         """Canonical matrix representation of the T operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -615,8 +627,7 @@ class T(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -665,6 +676,8 @@ class SX(Operation):
     """
     num_wires = 1
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
 
     @staticmethod
@@ -672,7 +685,7 @@ class SX(Operation):
         """Canonical matrix representation of the SX operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -698,8 +711,7 @@ class SX(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wire. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -761,6 +773,8 @@ class CNOT(Operation):
     """
     num_wires = 2
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
 
     def label(self, decimals=None, base_label=None):
@@ -771,7 +785,7 @@ class CNOT(Operation):
         """Canonical matrix representation of the CNOT operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -817,6 +831,8 @@ class CZ(Operation):
     """
     num_wires = 2
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Z"
 
     def label(self, decimals=None, base_label=None):
@@ -827,7 +843,7 @@ class CZ(Operation):
         """Canonical matrix representation of the CZ operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -884,6 +900,8 @@ class CY(Operation):
     """
     num_wires = 2
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "Y"
 
     def label(self, decimals=None, base_label=None):
@@ -894,7 +912,7 @@ class CY(Operation):
         """Canonical matrix representation of the CY operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -915,8 +933,7 @@ class CY(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -926,7 +943,7 @@ class CY(Operation):
         .. seealso:: :meth:`~.CY.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -968,6 +985,8 @@ class SWAP(Operation):
     """
     num_wires = 2
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
 
     @staticmethod
@@ -975,7 +994,7 @@ class SWAP(Operation):
         """Canonical matrix representation of the SWAP operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -989,8 +1008,7 @@ class SWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -999,7 +1017,7 @@ class SWAP(Operation):
         .. seealso:: :meth:`~.SWAP.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1045,13 +1063,14 @@ class ISWAP(Operation):
     """
     num_wires = 2
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the ISWAP operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -1079,8 +1098,7 @@ class ISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1089,7 +1107,7 @@ class ISWAP(Operation):
         .. seealso:: :meth:`~.ISWAP.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1140,13 +1158,14 @@ class SISWAP(Operation):
     """
     num_wires = 2
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the SISWAP operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -1181,8 +1200,7 @@ class SISWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1191,7 +1209,7 @@ class SISWAP(Operation):
         .. seealso:: :meth:`~.SISWAP.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1264,6 +1282,7 @@ class CSWAP(Operation):
     is_self_inverse = True
     num_wires = 3
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
@@ -1273,7 +1292,7 @@ class CSWAP(Operation):
         """Canonical matrix representation of the CSWAP operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -1302,8 +1321,7 @@ class CSWAP(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1312,7 +1330,7 @@ class CSWAP(Operation):
         .. seealso:: :meth:`~.CSWAP.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1366,6 +1384,8 @@ class Toffoli(Operation):
     """
     num_wires = 3
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     basis = "X"
 
     def label(self, decimals=None, base_label=None):
@@ -1376,7 +1396,7 @@ class Toffoli(Operation):
         """Canonical matrix representation of the Toffoli operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -1405,8 +1425,7 @@ class Toffoli(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1415,7 +1434,7 @@ class Toffoli(Operation):
         .. seealso:: :meth:`~.Toffoli.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1523,6 +1542,8 @@ class MultiControlledX(Operation):
     is_self_inverse = True
     num_wires = AnyWires
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = None
 
     # pylint: disable=too-many-arguments
@@ -1621,8 +1642,7 @@ class MultiControlledX(Operation):
 
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1782,6 +1802,8 @@ class Barrier(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
+
     num_wires = AnyWires
     par_domain = None
 
@@ -1792,8 +1814,7 @@ class Barrier(Operation):
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
-        r"""Compute the decomposition for the specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -1804,11 +1825,11 @@ class Barrier(Operation):
         ``Barrier`` decomposes into an empty list for all arguments.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
             only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
 
         Returns:
-            list: decomposition of the Operator into lower level operations
+            list: decomposition of the operator
 
         **Example:**
 
@@ -1842,7 +1863,7 @@ class WireCut(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for the WireCut operator.
+        r"""Representation of this operator as a product of other operators.
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
 
@@ -1850,7 +1871,7 @@ class WireCut(Operation):
             wires (Any, Wires): Wire that the operator acts on.
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 

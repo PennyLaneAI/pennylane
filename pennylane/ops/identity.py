@@ -33,8 +33,10 @@ class Identity(CVObservable, Operation):
     simulators should always be equal to 1.
     """
     num_wires = 1
+    """int: Number of wires that this operator acts on."""
+
     grad_method = None
-    num_params = 0
+    """Gradient computation method."""
 
     ev_order = 1
 
@@ -60,7 +62,7 @@ class Identity(CVObservable, Operation):
         """Canonical matrix representation of the Identity operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -93,8 +95,7 @@ class Identity(CVObservable, Operation):
 
     @staticmethod
     def compute_decomposition(wires=None):  # pylint:disable=arguments-differ,unused-argument
-        r"""Compute the decomposition for the specified wire.
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 

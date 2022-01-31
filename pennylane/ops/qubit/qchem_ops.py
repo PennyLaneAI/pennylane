@@ -82,9 +82,16 @@ class SingleExcitation(Operation):
     """
 
     num_wires = 2
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -120,8 +127,7 @@ class SingleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -131,7 +137,7 @@ class SingleExcitation(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -184,8 +190,13 @@ class SingleExcitationMinus(Operation):
 
     """
     num_wires = 2
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -234,8 +245,7 @@ class SingleExcitationMinus(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -245,7 +255,7 @@ class SingleExcitationMinus(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -312,8 +322,13 @@ class SingleExcitationPlus(Operation):
 
     """
     num_wires = 2
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -362,8 +377,7 @@ class SingleExcitationPlus(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -373,7 +387,7 @@ class SingleExcitationPlus(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -464,9 +478,16 @@ class DoubleExcitation(Operation):
         circuit(0.1)
     """
     num_wires = 4
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -506,8 +527,7 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -520,7 +540,7 @@ class DoubleExcitation(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -631,8 +651,13 @@ class DoubleExcitationPlus(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         G = -1 * np.eye(16, dtype=np.complex64)
@@ -714,8 +739,13 @@ class DoubleExcitationMinus(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         G = np.eye(16, dtype=np.complex64)
@@ -820,9 +850,16 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
     num_wires = 4
+    """int: Number of wires that this operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that this operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -889,8 +926,7 @@ class OrbitalRotation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators. :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -903,7 +939,7 @@ class OrbitalRotation(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations

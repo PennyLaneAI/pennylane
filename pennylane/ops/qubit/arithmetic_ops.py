@@ -88,14 +88,17 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
+    """int: Number of wires that this operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
         """Canonical matrix representation of the QubitCarry operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -140,8 +143,7 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -151,10 +153,10 @@ class QubitCarry(Operation):
         .. seealso:: :meth:`~.QubitCarry.decomposition`.
 
         Args:
-            wires (Iterable[Any], Wires): Wires that the operator acts on.
+            wires (Iterable[Any], Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -228,7 +230,10 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
+    """int: Number of wires that this operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that this operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
@@ -238,7 +243,7 @@ class QubitSum(Operation):
         """Canonical matrix representation of the QubitSum operator.
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -267,8 +272,7 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of this operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -277,10 +281,10 @@ class QubitSum(Operation):
         .. seealso:: :meth:`~.QubitSum.decomposition`.
 
         Args:
-            wires (Iterable[Any], Wires): Wires that the operator acts on.
+            wires (Iterable[Any], Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 

@@ -142,9 +142,7 @@ class FermionicSingleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(weight, wires):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the FermionicSingleExcitation operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the FermionicSingleExcitationoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -158,7 +156,7 @@ class FermionicSingleExcitation(Operation):
             wires (Any or Iterable[Any]): wires that the operator acts on
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
 
         # Interpret first and last wire as r and p

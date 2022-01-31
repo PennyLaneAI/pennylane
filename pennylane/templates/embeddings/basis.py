@@ -97,9 +97,7 @@ class BasisEmbedding(Operation):
 
     @staticmethod
     def compute_decomposition(wires, basis_state):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the BasisEmbedding operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the BasisEmbeddingoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -113,7 +111,7 @@ class BasisEmbedding(Operation):
             wires (Any or Iterable[Any]): wires that the operator acts on
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
 
         **Example**
 

@@ -247,9 +247,7 @@ class kUpCCGSD(Operation):
     def compute_decomposition(
         weights, wires, s_wires, d_wires, k, init_state
     ):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the kUpCCGSD operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the kUpCCGSDoperator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
@@ -268,7 +266,7 @@ class kUpCCGSD(Operation):
                 HF state.
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         init_state_flipped = np.flip(init_state)
         op_list = []
