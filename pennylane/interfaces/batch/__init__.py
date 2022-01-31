@@ -324,16 +324,21 @@ def execute(
     if expand_fn == "device":
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
 
-    # don't unwrap if its an interface device
-    if (gradient_fn is None) and ("passthru_interface" not in device.capabilities()):
-        with qml.tape.Unwrap(*tapes):
-            res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
-                tapes
+    if gradient_fn is None:
+        # don't unwrap if it's an interface device
+        if "passthru_interface" in device.capabilities():
+            return batch_fn(
+                cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
             )
+        else:
+            with qml.tape.Unwrap(*tapes):
+                res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
+                    tapes
+                )
 
-        return batch_fn(res)
+            return batch_fn(res)
 
-    if gradient_fn == "backprop" or interface is None or gradient_fn is None:
+    if gradient_fn == "backprop" or interface is None:
         return batch_fn(
             cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
         )

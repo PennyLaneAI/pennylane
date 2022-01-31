@@ -849,4 +849,4 @@ def test_diff_method_None_jit():
 
         return qml.execute([tape], dev, gradient_fn=None)
 
-    assert jnp.allclose(wrapper(jnp.array(0.0)), 1.0)
+    assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)
