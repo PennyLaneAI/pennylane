@@ -35,7 +35,7 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
@@ -51,7 +51,7 @@ class TestValidation:
             qml.RX(wires=0)
             return qml.probs(wires=0)
 
-        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
