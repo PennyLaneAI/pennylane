@@ -382,7 +382,7 @@ class TestValidation:
         # QNode can still be executed
         assert np.allclose(circuit(0.5), np.cos(0.5), atol=tol, rtol=0)
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)

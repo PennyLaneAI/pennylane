@@ -135,7 +135,7 @@ class TestBatchTransform:
         assert isinstance(res, float)
         assert not np.allclose(res, 0)
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             qml.grad(circuit)(0.5)
 
     def test_use_qnode_execution_options(self, mocker):
