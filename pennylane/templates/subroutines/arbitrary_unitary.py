@@ -127,3 +127,6 @@ class ArbitraryUnitary(Operation):
             n_wires (int): number of wires that template acts on
         """
         return (4**n_wires - 1,)
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
