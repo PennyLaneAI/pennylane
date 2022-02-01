@@ -89,7 +89,7 @@ def _yzy_to_zyz(middle_yzy):
     z1_arg2 = 2 * (qx * qz + qw * qy)
     z1 = arctan2(z1_arg1, z1_arg2)
 
-    y = arccos(qw ** 2 - qx ** 2 - qy ** 2 + qz ** 2)
+    y = arccos(qw**2 - qx**2 - qy**2 + qz**2)
 
     z2_arg1 = 2 * (qy * qz + qw * qx)
     z2_arg2 = -2 * (qx * qz - qw * qy)

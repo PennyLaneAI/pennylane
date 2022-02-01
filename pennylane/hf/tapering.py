@@ -365,7 +365,7 @@ def clifford(generators, paulix_ops):
     """
     cliff = []
     for i, t in enumerate(generators):
-        cliff.append(1 / 2 ** 0.5 * (paulix_ops[i] + t))
+        cliff.append(1 / 2**0.5 * (paulix_ops[i] + t))
 
     u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
 

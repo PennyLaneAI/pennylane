@@ -81,7 +81,7 @@ class QFT(Operation):
     @classmethod
     @functools.lru_cache()
     def _matrix(cls, num_wires):
-        dimension = 2 ** num_wires
+        dimension = 2**num_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)
@@ -95,7 +95,7 @@ class QFT(Operation):
     @staticmethod
     def decomposition(wires):
         num_wires = len(wires)
-        shifts = [2 * np.pi * 2 ** -i for i in range(2, num_wires + 1)]
+        shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
 
         decomp_ops = []
         for i, wire in enumerate(wires):
