@@ -468,6 +468,15 @@ class Operator(abc.ABC):
         if wires is None:
             raise ValueError(f"Must specify the wires that {self.name} acts on")
 
+        self._num_params = len(params)
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
+        if len(params) != self.num_params:
+            raise ValueError(
+                f"{self.name}: wrong number of parameters. "
+                f"{len(params)} parameters passed, {self.num_params} expected."
+            )
 
         if isinstance(wires, Wires):
             self._wires = wires
@@ -486,31 +495,6 @@ class Operator(abc.ABC):
             )
 
         self.data = list(params)  #: list[Any]: parameters of the operator
-        
-        # Check whther the expected number of parameters (in case the Operation subclass defines it via the num_params property) coincides with the one received.
-        # We do this after setting num_wires so that the value returned by .num_params can depend on num_wires.
-        if hasattr(self.__class__, "num_params"):
-            # pylint: disable=no-member, access-member-before-definition
-            if (
-                    # for sub-classes that define num_params = ? on the class level
-                    isinstance(self.__class__.num_params, int) and len(params) != self.__class__.num_params
-                    # for classes that define an `@property` decorated method `def num_paras(self):...`
-                    # so that num_params depends on the instance of the class
-                    or len(params) != self.num_params
-            ):
-                raise ValueError(
-                    f"{self.name}: wrong number of parameters. "
-                    f"{len(params)} parameters passed, but {self.__class__.num_params} expected for {self.__class__}."
-                )
-        else:
-            # If no num_params property was provided by the-sub class we set it
-            # here. This allows sub-classes to define num_params as a class
-            # property in case it is the same for all intsances (which is the case
-            # for almost all Operations and allows to write more advanced circuit
-            # synthesis code that needs to know the number of paramters, e.g.,
-            # for instanciating the Operation with the correct number of
-            # parameters when given the class only)
-            self.num_params = len(params)
 
         if do_queue:
             self.queue()
@@ -521,6 +505,20 @@ class Operator(abc.ABC):
             params = ", ".join([repr(p) for p in self.parameters])
             return f"{self.name}({params}, wires={self.wires.tolist()})"
         return f"{self.name}(wires={self.wires.tolist()})"
+
+    @property
+    def num_params(self):
+        """Number of trainable parameters that this operator expects to be fed via the
+        dynamic `*params` argument.
+
+        By default, this property returns as many parameters as were used for the
+        operator creation. If the number of parameters for an operator subclass is fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            int: number of parameters
+        """
+        return self._num_params
 
     @property
     def wires(self):
