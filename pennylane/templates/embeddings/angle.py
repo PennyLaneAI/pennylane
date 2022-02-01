@@ -106,3 +106,6 @@ class AngleEmbedding(Operation):
                 self.rotation(features[i], wires=self.wires[i])
 
         return tape
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError

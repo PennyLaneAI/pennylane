@@ -246,3 +246,6 @@ class RandomLayers(Operation):
         """
 
         return n_layers, n_rotations
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError

@@ -187,3 +187,6 @@ class BasicEntanglerLayers(Operation):
         """
 
         return n_layers, n_wires
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError

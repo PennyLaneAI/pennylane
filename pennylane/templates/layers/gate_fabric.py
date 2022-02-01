@@ -262,3 +262,6 @@ class GateFabric(Operation):
             )
 
         return n_layers, n_wires // 2 - 1, 2
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError

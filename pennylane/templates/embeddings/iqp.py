@@ -208,3 +208,6 @@ class IQPEmbedding(Operation):
                     qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair)
 
         return tape
+
+    def adjoint(self, do_queue=False):
+        raise NotImplementedError
