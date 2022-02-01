@@ -67,7 +67,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
     >>> graph = qcut.tape_to_graph(tape)
     >>> qcut.replace_wire_cut_node(wire_cut, graph)
-        """
+    """
     predecessors = graph.pred[node]
     successors = graph.succ[node]
 
@@ -109,7 +109,40 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
 def replace_wire_cut_nodes(graph: MultiDiGraph):
     """
-    Replace all `WireCut`s in the graph with `MeasureNode`s and `PrepareNode`s
+    Replace all :class:`~.WireCut` nodes in the graph with
+    :class:`~.MeasureNode` and :class:`~.PrepareNode`.
+
+    Args:
+        graph (MultiDiGraph): The graph containing the :class:`~.WireCut` nodes
+        to be replaced
+
+    **Example**
+
+    Consider the following circuit with a manually-placed wire cut:
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        wire_cut_0 = qml.WireCut(wires=0)
+        wire_cut_1 = qml.WireCut(wires=1)
+        multi_wire_cut = qml.WireCut(wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.apply(wire_cut_0)
+            qml.RY(0.5, wires=0)
+            qml.apply(wire_cut_1)
+            qml.CNOT(wires=[0, 1])
+            qml.apply(multi_wire_cut)
+            qml.RZ(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
+
+    We can find the circuit graph and remove all the wire cut nodes using:
+
+    >>> graph = qcut.tape_to_graph(tape)
+    >>> qcut.replace_wire_cut_nodes(wire_cut, graph)
+
     """
     for op in list(graph.nodes):
         if isinstance(op, WireCut):

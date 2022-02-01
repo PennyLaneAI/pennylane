@@ -458,7 +458,7 @@ class TestReplaceWireCut:
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
         expected_meas_pred_wires = [[0, "a"], ["a", 2], ["a", 2]]
-        exepeted_meas_pred_name = [
+        expected_meas_pred_name = [
             "CNOT",
             "CNOT",
         ] * len(measure_nodes)
@@ -485,7 +485,7 @@ class TestReplaceWireCut:
             for node, exp_name in zip(nodes, expected_names):
                 assert node.name == exp_name
 
-        compare_nodes(measure_pred, expected_meas_pred_wires, exepeted_meas_pred_name)
+        compare_nodes(measure_pred, expected_meas_pred_wires, expected_meas_pred_name)
         compare_nodes(measure_succ, expected_meas_succ_wires, expected_meas_succ_name)
         compare_nodes(prep_pred, expected_prep_pred_wires, exepeted_prep_pred_name)
         compare_nodes(prep_succ, expected_prep_succ_wires, expected_prep_succ_name)
