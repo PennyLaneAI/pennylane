@@ -46,7 +46,7 @@
 * For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
   static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface. A test was added to ensure that
-  this feaure is not broken again in the future by changes in the Operation class.
+  different ways of defining `num_params` work as expected.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
 * Development of circuit cutting compiler has begun:
