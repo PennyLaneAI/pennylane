@@ -36,7 +36,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
         expected_error = (
-            fr"Unknown interface {test_interface}\. Interface must be "
+            rf"Unknown interface {test_interface}\. Interface must be "
             r"one of \['autograd', 'torch', 'tf', 'jax'\]\."
         )
 

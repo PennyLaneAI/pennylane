@@ -577,13 +577,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -612,13 +612,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -647,7 +647,7 @@ class TestGrad:
 
         phi = npp.array(0.1, requires_grad=True)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -686,13 +686,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -733,13 +733,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -778,7 +778,7 @@ class TestGrad:
 
         phi = jnp.array(0.1)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -809,13 +809,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -850,13 +850,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -889,7 +889,7 @@ class TestGrad:
 
         phi = tf.Variable(0.1, dtype=tf.complex128)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         with tf.GradientTape() as tape:
             result = circuit(phi)

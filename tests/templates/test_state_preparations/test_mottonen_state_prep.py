@@ -243,7 +243,7 @@ class TestDecomposition:
     def test_RZ_skipped(self, mocker, state_vector, n_wires):
         """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
-        n_CNOT = 2 ** n_wires - 2
+        n_CNOT = 2**n_wires - 2
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -340,9 +340,11 @@ class TestGradient:
     # Make the template fully differentiable and test it.
 
     @pytest.mark.parametrize(
-        "state_vector", [
+        "state_vector",
+        [
             pnp.array([0.70710678, 0.70710678], requires_grad=True),
-            pnp.array([0.70710678, 0.70710678j], requires_grad=True)]
+            pnp.array([0.70710678, 0.70710678j], requires_grad=True),
+        ],
     )
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
