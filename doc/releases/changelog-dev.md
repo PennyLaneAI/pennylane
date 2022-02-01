@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Continued development of circuit cutting compiler:
+* Continued development of the circuit-cutting compiler:
   
   A method for converting a quantum tape to a directed multigraph that is amenable
   to graph partitioning algorithms for circuit cutting has been added.

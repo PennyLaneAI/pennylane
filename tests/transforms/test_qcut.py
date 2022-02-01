@@ -489,3 +489,14 @@ class TestReplaceWireCut:
         compare_nodes(measure_succ, expected_meas_succ_wires, expected_meas_succ_name)
         compare_nodes(prep_pred, expected_prep_pred_wires, exepeted_prep_pred_name)
         compare_nodes(prep_succ, expected_prep_succ_wires, expected_prep_succ_name)
+
+        for node in measure_nodes + prepare_nodes:
+            in_edges = list(g.in_edges(node, data="wire"))
+            out_edges = list(g.out_edges(node, data="wire"))
+            assert len(in_edges) == 1
+            assert len(out_edges) == 1
+
+            _, _, wire_label_in = in_edges[0]
+            _, _, wire_label_out = out_edges[0]
+
+            assert wire_label_in == wire_label_out == node.wires.tolist()[0]

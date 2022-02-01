@@ -39,13 +39,35 @@ class PrepareNode(Operation):
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     """
-    Replace a `WireCut` nodes in the graph with `MeasureNode` and `PrepareNode`
+    Replace a :class:`~.WireCut` node in the graph with a :class:`~.MeasureNode`
+    and :class:`~.PrepareNode`.
 
     Args:
-        node (WireCut): the  `WireCut` node to be replaced with `MeasureNode`
-        and `PrepareNode`
-        graph (MultiDiGraph): The graph contaiined the node to be replaced
-    """
+        node (WireCut): the  :class:`~.WireCut` node to be replaced with a :class:`~.MeasureNode`
+            and :class:`~.PrepareNode`
+        graph (MultiDiGraph): The graph containing the node to be replaced
+
+    **Example**
+
+    Consider the following circuit with a manually-placed wire cut:
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        wire_cut = qml.WireCut(wires=0)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.apply(wire_cut)
+            qml.RY(0.5, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+    We can find the circuit graph and remove the wire cut node using:
+
+    >>> graph = qcut.tape_to_graph(tape)
+    >>> qcut.replace_wire_cut_node(wire_cut, graph)
+        """
     predecessors = graph.pred[node]
     successors = graph.succ[node]
 
@@ -70,8 +92,9 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
         meas = MeasureNode(wires=wire)
         prep = PrepareNode(wires=wire)
-        # There is degeneracy in the order of the measure and prepare nodes
-        # since the order can be inferred as MeasureNode always preceeds
+
+        # We are introducing a degeneracy in the order of the measure and prepare nodes
+        # here but the order can be inferred as MeasureNode always precedes
         # the corresponding PrepareNode
         graph.add_node(meas, order=order)
         graph.add_node(prep, order=order)
