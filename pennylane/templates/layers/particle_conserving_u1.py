@@ -273,14 +273,11 @@ class ParticleConservingU1(Operation):
 
     @staticmethod
     def compute_decomposition(weights, wires, init_state):  # pylint: disable=arguments-differ
-        r"""Compute a decomposition of the ParticleConservingU1 operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the ParticleConservingU1operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.ParticleConservingU1.decomposition`.
 
@@ -293,7 +290,7 @@ class ParticleConservingU1(Operation):
                 used to initialize the wires
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
 
         **Example**
 

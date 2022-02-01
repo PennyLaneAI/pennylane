@@ -50,8 +50,13 @@ class QubitUnitary(Operation):
     0.0
     """
     num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
+    """Gradient computation method."""
 
     def __init__(self, *params, wires, do_queue=True):
         wires = Wires(wires)
@@ -85,7 +90,12 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the QubitUnitary operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitUnitary.matrix`
 
         Args:
             U (tensor_like): unitary matrix
@@ -104,14 +114,9 @@ class QubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(U, wires):
-        r"""Compute the decomposition for specified matrix and wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
-        .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
         A decomposition is only defined for matrices that act on either one or two wires. For more
         than two wires, this method raises a ``DecompositionUndefined``.
@@ -119,12 +124,14 @@ class QubitUnitary(Operation):
         See :func:`~.transforms.zyz_decomposition` and :func:`~.transforms.two_qubit_decomposition`
         for more information on how the decompositions are computed.
 
+        .. seealso:: :meth:`~.QubitUnitary.decomposition`.
+
         Args:
             U (array[complex]): square unitary matrix
             wires (Iterable[Any] or Wires): the wire(s) the operation acts on
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -198,8 +205,13 @@ class ControlledQubitUnitary(QubitUnitary):
 
     """
     num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
+    """Gradient computation method."""
 
     def __init__(
         self,
@@ -237,7 +249,12 @@ class ControlledQubitUnitary(QubitUnitary):
     def compute_matrix(
         U, control_wires, u_wires, control_values=None
     ):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the ControlledQubitUnitary operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.ControlledQubitUnitary.matrix`
 
         Args:
             U (tensor_like): unitary matrix
@@ -322,12 +339,22 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
+    """Gradient computation method."""
 
     @staticmethod
     def compute_matrix(D):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the DiagonalQubitUnitary operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DiagonalQubitUnitary.matrix`
 
         Args:
             D (tensor_like): diagonal of the matrix
@@ -350,7 +377,18 @@ class DiagonalQubitUnitary(Operation):
 
     @staticmethod
     def compute_eigvals(D):  # pylint: disable=arguments-differ
-        """Eigenvalues of the DiagonalQubitUnitary operator.
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.DiagonalQubitUnitary.eigvals`
 
         Args:
             D (tensor_like): diagonal of the matrix
@@ -372,18 +410,14 @@ class DiagonalQubitUnitary(Operation):
 
     @staticmethod
     def compute_decomposition(D, wires):
-        r"""Determine the ``DiagonalQubitUnitary``'s decomposition for specified parameters, wires,
-        and hyperparameters. The decomposition defines an Operator as a product of
-        more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
-        .. seealso:: :meth:`~.DiagonalQubitUnitary.decomposition`.
-
         ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, which has further
         decompositions for one and two qubit matrices.
+
+        .. seealso:: :meth:`~.DiagonalQubitUnitary.decomposition`.
 
         Args:
             U (array[complex]): square unitary matrix

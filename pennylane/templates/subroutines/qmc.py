@@ -368,14 +368,11 @@ class QuantumMonteCarlo(Operation):
     def compute_decomposition(
         A, R, Q, wires, estimation_wires, target_wires
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute a decomposition of the QuantumMonteCarlo operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.QuantumMonteCarlo.decomposition`.
 
@@ -389,7 +386,7 @@ class QuantumMonteCarlo(Operation):
             estimation_wires (Iterable[Any]): the estimation wires
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),

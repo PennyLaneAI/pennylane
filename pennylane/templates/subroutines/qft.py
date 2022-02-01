@@ -91,21 +91,19 @@ class QFT(Operation):
 
     @staticmethod
     def compute_decomposition(wires, n_wires):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.QFT.decomposition`.
 
         Args:
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
             n_wires (int): number of wires or ``len(wires)``
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 

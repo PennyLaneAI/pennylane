@@ -238,8 +238,12 @@ class Hamiltonian(Observable):
         return self._ops
 
     @staticmethod
-    def compute_terms(*params, ops):  # pylint: disable=arguments-differ
-        r"""The terms of the Hamiltonian expression :math:`\sum_{k=0}^{N-1} c_k O_k`
+    def compute_terms(*coeffs, ops):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a linear combination of other operators (static method).
+
+         .. math:: O = \sum_i c_i O_i
+
+         .. seealso:: :meth:`~.Hamiltonian.terms`
 
         Args:
             coeffs (Iterable[tensor_like or float]): coefficients
@@ -247,8 +251,20 @@ class Hamiltonian(Observable):
 
         Returns:
             tuple[Iterable[tensor_like or float], list[.Operator]]: coefficients and operations
+
+        **Example**
+
+        >>> qml.Hamiltonian.compute_terms([1., 2.], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        [1., 2.], [qml.PauliX(0), qml.PauliZ(0)]
+
+        The coefficients are differentiable and can be stored as tensors:
+
+        >>> import tensorflow as tf
+        >>> t = qml.Hamiltonian.compute_terms([tf.Variable(1.), tf.Variable(2.)], ops=[qml.PauliX(0), qml.PauliZ(0)])
+        >>> t[0]
+        [<tf.Tensor: shape=(), dtype=float32, numpy=1.0>, <tf.Tensor: shape=(), dtype=float32, numpy=2.0>]
         """
-        return params, ops
+        return coeffs, ops
 
     @property
     def wires(self):
@@ -447,9 +463,9 @@ class Hamiltonian(Observable):
         return data
 
     def compare(self, other):
-        r"""Compares with another :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`,
-        to determine if they are equivalent.
+        r"""Determines whether the operator is equivalent to another.
 
+        Currently only supported for :class:`~Hamiltonian`, :class:`~.Observable`, or :class:`~.Tensor`.
         Hamiltonians/observables are equivalent if they represent the same operator
         (their matrix representations are equal), and they are defined on the same wires.
 

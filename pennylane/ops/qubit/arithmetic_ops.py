@@ -88,14 +88,22 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the QubitCarry operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitCarry.matrix`
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -140,21 +148,17 @@ class QubitCarry(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
-
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
 
         .. seealso:: :meth:`~.QubitCarry.decomposition`.
 
         Args:
-            wires (Iterable[Any], Wires): Wires that the operator acts on.
+            wires (Iterable[Any], Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 
@@ -174,7 +178,7 @@ class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
 
-    This operation performs the transformation:
+    This operation performs the following transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
@@ -228,17 +232,25 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
+    """int: Number of wires that the operator acts on."""
+
     num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the QubitSum operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitSum.matrix`
 
         Returns:
-            array: canonical matrix
+            ndarray: matrix
 
         **Example**
 
@@ -267,20 +279,17 @@ class QubitSum(Operation):
 
     @staticmethod
     def compute_decomposition(wires):
-        r"""Compute the decomposition for specified wires. The decomposition defines an Operator
-        as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
         .. seealso:: :meth:`~.QubitSum.decomposition`.
 
         Args:
-            wires (Iterable[Any], Wires): Wires that the operator acts on.
+            wires (Iterable[Any], Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the Operator into lower level operations
+            list[Operator]: decomposition of the operator
 
         **Example:**
 

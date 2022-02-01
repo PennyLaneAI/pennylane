@@ -136,14 +136,11 @@ class CommutingEvolution(Operation):
     def compute_decomposition(
         *time_and_coeffs, wires, hamiltonian, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Compute a decomposition of the CommutingEvolution operator.
-
-        The decomposition defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
 
         .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
 
@@ -158,7 +155,7 @@ class CommutingEvolution(Operation):
                 generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
         Returns:
-            list[.Operator]: decomposition of the Operator into lower-level operations
+            list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
         hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)

@@ -1589,3 +1589,62 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(), base_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
+
+
+def test_docstring_example_of_operator_class(tol):
+    """Tests an example of how to create an operator which is used in the
+    Operator class docstring, as well as in the 'adding_operators'
+    page in the developer guide."""
+
+    import pennylane as qml
+
+    class FlipAndRotate(qml.operation.Operation):
+
+        num_wires = qml.operation.AnyWires
+        grad_method = "A"
+
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
+
+            if do_flip and wire_flip is None:
+                raise ValueError("Expected a wire to flip; got None.")
+
+            shape = qml.math.shape(angle)
+            if len(shape) > 1:
+                raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
+
+            self._hyperparameters = {"do_flip": do_flip}
+
+            all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
+            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+
+        @property
+        def num_params(self):
+            return 1
+
+        @staticmethod
+        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+            op_list = []
+            if do_flip:
+                op_list.append(qml.PauliX(wires=wires[1]))
+            op_list.append(qml.RX(angle, wires=wires[0]))
+            return op_list
+
+        def adjoint(self):
+            return FlipAndRotate(
+                -self.parameters[0],
+                self.wires[0],
+                self.wires[1],
+                do_flip=self.hyperparameters["do_flip"],
+            )
+
+    dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
+
+    @qml.qnode(dev)
+    def circuit(angle):
+        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
+        return qml.expval(qml.PauliZ("q1"))
+
+    a = np.array(3.14)
+    res = circuit(a)
+    expected = -0.9999987318946099
+    assert np.close(res, expected, atol=tol)

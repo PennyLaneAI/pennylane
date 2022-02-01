@@ -82,9 +82,16 @@ class SingleExcitation(Operation):
     """
 
     num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -95,7 +102,13 @@ class SingleExcitation(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SingleExcitation operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitation.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -120,18 +133,16 @@ class SingleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.SingleExcitation.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -184,8 +195,13 @@ class SingleExcitationMinus(Operation):
 
     """
     num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -201,7 +217,13 @@ class SingleExcitationMinus(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SingleExcitationMinus operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitationMinus.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -234,18 +256,16 @@ class SingleExcitationMinus(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.SingleExcitationMinus.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -312,8 +332,13 @@ class SingleExcitationPlus(Operation):
 
     """
     num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -329,7 +354,13 @@ class SingleExcitationPlus(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the SingleExcitationPlus operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitationPlus.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -362,18 +393,16 @@ class SingleExcitationPlus(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.SingleExcitationPlus.decomposition`.
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -464,9 +493,16 @@ class DoubleExcitation(Operation):
         circuit(0.1)
     """
     num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -488,7 +524,13 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the DoubleExcitation operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitation.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -506,13 +548,11 @@ class DoubleExcitation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
 
         For the source of this decomposition, see page 17 of
@@ -520,7 +560,7 @@ class DoubleExcitation(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -631,8 +671,13 @@ class DoubleExcitationPlus(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         G = -1 * np.eye(16, dtype=np.complex64)
@@ -647,7 +692,13 @@ class DoubleExcitationPlus(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the DoubleExcitationPlus operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitationPlus.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -714,8 +765,13 @@ class DoubleExcitationMinus(Operation):
         id (str or None): String representing the operation (optional)
     """
     num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
 
     def generator(self):
         G = np.eye(16, dtype=np.complex64)
@@ -731,7 +787,13 @@ class DoubleExcitationMinus(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the DoubleExcitationMinus operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitationMinus.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -820,9 +882,16 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
     num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -838,7 +907,13 @@ class OrbitalRotation(Operation):
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
-        """Canonical matrix representation of the OrbitalRotation operator.
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.OrbitalRotation.matrix`
+
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -889,13 +964,11 @@ class OrbitalRotation(Operation):
 
     @staticmethod
     def compute_decomposition(phi, wires):
-        r"""Compute the decomposition for the specified parameter and wires. The decomposition
-        defines an Operator as a product of more fundamental gates:
+        r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``compute_decomposition`` is a static method and can provide the decomposition of a given
-        operator without creating a specific instance.
+
         .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
 
         For the source of this decomposition, see page 18 of
@@ -903,7 +976,7 @@ class OrbitalRotation(Operation):
 
         Args:
             phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): Wires that the operator acts on.
+            wires (Iterable, Wires): wires that the operator acts on
 
         Returns:
             list[Operator]: decomposition into lower level operations
