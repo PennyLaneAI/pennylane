@@ -148,7 +148,7 @@ def init_state(scope="session"):
     def _init_state(n, torch_device):
         """random initial state"""
         torch.manual_seed(42)
-        state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
+        state = torch.rand([2**n], dtype=torch.complex128) + torch.rand([2**n]) * 1j
         state /= torch.linalg.norm(state)
         return state.to(torch_device)
 
@@ -199,7 +199,7 @@ class TestApply:
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = torch.zeros([2 ** 4], dtype=torch.complex128, device=torch_device)
+        expected = torch.zeros([2**4], dtype=torch.complex128, device=torch_device)
         expected[2] = 1
 
         assert isinstance(res, torch.Tensor)

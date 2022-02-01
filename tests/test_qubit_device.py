@@ -365,7 +365,7 @@ class TestGenerateSamples:
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
         dev = mock_qubit_device()
-        number_of_states = 2 ** dev.num_wires
+        number_of_states = 2**dev.num_wires
 
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
@@ -423,7 +423,7 @@ class TestStatesToBinary:
         wires = 4
         shots = 10
 
-        number_of_states = 2 ** wires
+        number_of_states = 2**wires
         basis_states = np.arange(number_of_states)
         samples = np.random.choice(basis_states, shots)
 
@@ -595,7 +595,7 @@ class TestSample:
         with monkeypatch.context() as m:
             res = dev.sample(obs)
 
-        assert np.allclose(res ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(res**2, 1, atol=tol, rtol=0)
 
     def test_correct_custom_eigenvalues(
         self, mock_qubit_device_with_original_statistics, monkeypatch, tol
@@ -691,7 +691,7 @@ class TestMarginalProb:
         """Test that the correct arguments are passed to the marginal_prob method"""
 
         # Generate probabilities
-        probs = np.array([random() for i in range(2 ** 3)])
+        probs = np.array([random() for i in range(2**3)])
         probs /= sum(probs)
 
         spy = mocker.spy(np, "sum")

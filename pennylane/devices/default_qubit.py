@@ -575,7 +575,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
+        state = np.zeros(2**self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
@@ -652,7 +652,7 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
@@ -792,5 +792,5 @@ class DefaultQubit(QubitDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
+        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob

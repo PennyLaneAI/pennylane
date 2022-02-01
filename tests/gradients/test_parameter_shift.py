@@ -352,7 +352,7 @@ class TestParameterShiftRule:
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
-        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.tape.JacobianTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -415,7 +415,7 @@ class TestParameterShiftRule:
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.tape.JacobianTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
