@@ -159,7 +159,7 @@ class TestCVGradient:
         between the finite difference and analytic methods."""
 
         tol = 1e-5
-        par = 0.4
+        par = anp.array(0.4, requires_grad=True)
 
         def circuit(x):
             qml.Displacement(0.5, 0, wires=0)
@@ -218,7 +218,7 @@ class TestCVGradient:
 
     def test_cv_gradients_repeated_gate_parameters(self, gaussian_dev, tol):
         "Tests that repeated use of a free parameter in a multi-parameter gate yield correct gradients."
-        par = [0.2, 0.3]
+        par = anp.array([0.2, 0.3], requires_grad=True)
 
         def qf(x, y):
             qml.Displacement(x, 0, wires=[0])
@@ -261,7 +261,7 @@ class TestCVGradient:
 
     def test_cv_gradient_fanout(self, gaussian_dev, tol):
         "Tests that qnodes can compute the correct gradient when the same parameter is used in multiple gates."
-        par = [0.5, 1.3]
+        par = anp.array([0.5, 1.3], requires_grad=True)
 
         def circuit(x, y):
             qml.Displacement(x, 0, wires=[0])
@@ -280,13 +280,15 @@ class TestCVGradient:
         assert qml.math.allclose(grad_A2, grad_F, atol=tol, rtol=0)
 
     def test_CVOperation_with_heisenberg_and_no_params(self, gaussian_dev, tol):
-        """An integration test for InterferometerUnitary, a gate that supports analytic differentiation
-        if succeeding the gate to be differentiated, but cannot be differentiated
-        itself.
+        """An integration test for InterferometerUnitary, a gate that supports analytic
+        differentiation if succeeding the gate to be differentiated, but cannot be
+        differentiated itself.
 
         This ensures that, assuming the _heisenberg_rep is defined, the quantum
         gradient analytic method can still be used, and returns the correct result.
         """
+
+        x = anp.array(0.5, requires_grad=True)
 
         U = np.array(
             [
@@ -301,10 +303,10 @@ class TestCVGradient:
             return qml.expval(qml.X(0))
 
         qnode = qml.QNode(circuit, gaussian_dev)
-        qnode(0.5)
-        grad_F = qml.gradients.finite_diff(qnode)(0.5)
-        grad_A = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev)(0.5)
-        grad_A2 = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev, force_order2=True)(0.5)
+        qnode(x)
+        grad_F = qml.gradients.finite_diff(qnode)(x)
+        grad_A = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev)(x)
+        grad_A2 = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev, force_order2=True)(x)
 
         # the different methods agree
         assert grad_A == pytest.approx(grad_F, abs=tol)
@@ -445,7 +447,7 @@ class TestQubitGradient:
             return qml.expval(qml.PauliZ(0))
 
         qnode = qml.QNode(circuit, qubit_device_2_wires, diff_method="parameter-shift")
-        params = np.array([0.1, -1.6, np.pi / 5])
+        params = anp.array([0.1, -1.6, np.pi / 5], requires_grad=True)
 
         # manual gradients
         grad_fd1 = qml.gradients.finite_diff(qnode, approx_order=1)(*params)
@@ -479,7 +481,7 @@ class TestQubitGradient:
             classifier_circuit, qubit_device_2_wires, diff_method="parameter-shift"
         )
 
-        param = -0.1259
+        param = anp.array(-0.1259, requires_grad=True)
         in_data = qml.numpy.array([-0.1, -0.88, np.exp(0.5)], requires_grad=False)
         out_data = np.array([1.5, np.pi / 3, 0.0])
 
@@ -676,7 +678,7 @@ class TestFourTermParameterShifts:
     def test_controlled_rotation_gradient(self, G, tol):
         """Test gradient of controlled RX gate"""
         dev = qml.device("default.qubit", wires=2)
-        b = 0.123
+        b = anp.array(0.123, requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(b):

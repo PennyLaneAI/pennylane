@@ -614,7 +614,7 @@ class TestThermalRelaxationError:
         grad recipes are independent of channel parameter"""
 
         dev = qml.device("default.mixed", wires=1)
-        pe = 0.0
+        pe = pnp.array(0.0, requires_grad=True)
 
         @qml.qnode(dev)
         def circuit(pe):

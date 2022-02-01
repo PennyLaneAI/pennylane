@@ -19,6 +19,7 @@ import numpy as np
 from scipy.linalg import expm
 
 import pennylane as qml
+from pennylane import numpy as pnp
 
 from gate_data import (
     X,
@@ -210,9 +211,9 @@ class TestSingleExcitation:
     @pytest.mark.parametrize(
         ("excitation", "phi"),
         [
-            (qml.SingleExcitation, -0.1),
-            (qml.SingleExcitationPlus, 0.2),
-            (qml.SingleExcitationMinus, np.pi / 4),
+            (qml.SingleExcitation, pnp.array(-0.1, requires_grad=True)),
+            (qml.SingleExcitationPlus, pnp.array(0.2, requires_grad=True)),
+            (qml.SingleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
         ],
     )
     def test_autograd_grad(self, diff_method, excitation, phi):
@@ -480,9 +481,9 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize(
         ("excitation", "phi"),
         [
-            (qml.DoubleExcitation, -0.1),
-            (qml.DoubleExcitationPlus, 0.2),
-            (qml.DoubleExcitationMinus, np.pi / 4),
+            (qml.DoubleExcitation, pnp.array(-0.1, requires_grad=True)),
+            (qml.DoubleExcitationPlus, pnp.array(0.2, requires_grad=True)),
+            (qml.DoubleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
         ],
     )
     def test_autograd_grad(self, excitation, phi):
@@ -808,10 +809,10 @@ class TestOrbitalRotation:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"),
+        "phi",
         [
-            (-0.1),
-            (0.1),
+            pnp.array(-0.1, requires_grad=True),
+            pnp.array(0.1, requires_grad=True),
         ],
     )
     def test_autograd_grad(self, phi, diff_method):

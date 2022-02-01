@@ -336,12 +336,13 @@ class TestQNode:
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
 
-        assert not qml.jacobian(circuit)(a, b)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            assert not qml.jacobian(circuit)(a, b)
 
         def cost(a, b):
             return np.sum(circuit(a, b))
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             grad = qml.grad(cost)(a, b)
 
         assert grad == tuple()
@@ -1230,7 +1231,7 @@ def test_adjoint_reuse_device_state(mocker):
 
     spy = mocker.spy(dev, "adjoint_jacobian")
 
-    grad = qml.grad(circ)(1.0)
+    qml.grad(circ, argnum=0)(1.0)
     assert circ.device.num_executions == 1
 
     spy.assert_called_with(mocker.ANY, use_device_state=True)
