@@ -105,7 +105,7 @@ class grad:
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
                 "If this is unintended, please add trainable parameters via the "
-                "`requires_grad` attribute or `argnum` keyword."
+                "'requires_grad' attribute or 'argnum' keyword."
             )
             self._forward = self._fun(*args, **kwargs)
             return ()
@@ -320,7 +320,7 @@ def jacobian(func, argnum=None):
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
                 "If this is unintended, please add trainable parameters via the "
-                "`requires_grad` attribute or `argnum` keyword."
+                "'requires_grad' attribute or 'argnum' keyword."
             )
 
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
