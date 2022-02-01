@@ -331,7 +331,6 @@ def _observable_mult(obs_a, obs_b):
     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
-
 def clifford(generators, paulix_ops):
     r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
 
@@ -365,7 +364,7 @@ def clifford(generators, paulix_ops):
     """
     cliff = []
     for i, t in enumerate(generators):
-        cliff.append(1 / 2 ** 0.5 * (paulix_ops[i] + t))
+        cliff.append(1 / 2**0.5 * (paulix_ops[i] + t))
 
     u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
 

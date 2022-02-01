@@ -136,7 +136,7 @@ def get_unitary_matrix(circuit, wire_order=None):
             raise ValueError("Wires in circuit are inconsistent with those in wire_order")
 
         # initialize the unitary matrix
-        unitary_matrix = qml.math.eye(2 ** n_wires, like=interface)
+        unitary_matrix = qml.math.eye(2**n_wires, like=interface)
 
         for op in tape.operations:
 

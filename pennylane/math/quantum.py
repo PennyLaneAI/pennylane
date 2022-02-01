@@ -93,7 +93,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(l ** 2, p) - (dot(l, p)) ** 2
+        res = dot(l**2, p) - (dot(l, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
