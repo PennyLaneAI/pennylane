@@ -6,8 +6,12 @@
 
 * Continued development of circuit cutting compiler:
   
-  A method to replace `WireCut` nodes in a directed multigraph with `MeasureNode` and
-  `PrepareNode` placeholders has been added.
+  A method for converting a quantum tape to a directed multigraph that is amenable
+  to graph partitioning algorithms for circuit cutting has been added.
+  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
+  
+  A method to replace `WireCut` nodes in a directed multigraph with `MeasureNode` 
+  and `PrepareNode` placeholders has been added.
   [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
   
 <h3>Improvements</h3>
