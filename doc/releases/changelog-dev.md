@@ -222,7 +222,7 @@
   >>> print(hf_tapered)
   tensor([1, 1], requires_grad=True)
   ```
-  
+
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
@@ -493,6 +493,7 @@
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
   [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
   [(#2139)](https://github.com/PennyLaneAI/pennylane/pull/2139)
+  [(#2148)](https://github.com/PennyLaneAI/pennylane/pull/2148)
 
   ```python
   from pennylane import numpy as np
