@@ -648,3 +648,59 @@ class TestFragmentGraph:
             for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
                 assert node.name == exp_node.name
                 assert node.wires.tolist() == exp_node.wires.tolist()
+
+    def test_fragment_wirecut_first_and_last(self):
+        """
+        Tests a circuit with wirecut at the start and end is fragmented
+        correctly
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires="a")
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        sub_0_expected_nodes = [
+            (qcut.PrepareNode(wires=[0]), {"order": 0}),
+            (qml.RX(0.432, wires=[0]), {"order": 1}),
+        ]
+        sub_1_expected_nodes = [
+            (qcut.MeasureNode(wires=["a"]), {"order": 3}),
+            (qml.RY(0.543, wires=["a"]), {"order": 2}),
+        ]
+        sub_2_expected_nodes = [(qcut.MeasureNode(wires=[0]), {"order": 0})]
+        sub_3_expected_nodes = [(qcut.PrepareNode(wires=["a"]), {"order": 3})]
+
+        expected_nodes = [
+            sub_0_expected_nodes,
+            sub_1_expected_nodes,
+            sub_2_expected_nodes,
+            sub_3_expected_nodes,
+        ]
+
+        sub_0_expected_edges = [
+            (qcut.PrepareNode(wires=[0]), qml.RX(0.432, wires=[0]), {"wire": 0})
+        ]
+        sub_1_expected_edges = [
+            (qml.RY(0.543, wires=["a"]), qcut.MeasureNode(wires=["a"]), {"wire": "a"})
+        ]
+        sub_2_expected_edges = []
+        sub_3_expected_edges = []
+
+        expected_edges = [
+            sub_0_expected_edges,
+            sub_1_expected_edges,
+            sub_2_expected_edges,
+            sub_3_expected_edges,
+        ]
+
+        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+            compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
+
+        for subgraph, expected_e in zip(subgraphs, expected_edges):
+            compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
