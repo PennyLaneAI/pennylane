@@ -16,7 +16,10 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
+from typing import Sequence
+
 from networkx import MultiDiGraph
+
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -210,3 +213,68 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             order += 1
 
     return graph
+
+
+def contract_tensors(
+    tensors: Sequence,
+    communication_graph: MultiDiGraph,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+    use_opt_einsum: bool = False,
+):
+
+    if use_opt_einsum:
+        try:
+            from opt_einsum import contract, get_symbol
+        except ImportError as e:
+            raise ImportError(
+                "The opt_einsum package is required when use_opt_einsum is set to "
+                "True in the contract_tensors function. This package can be "
+                "installed using:\npip install opt_einsum"
+            ) from e
+    else:
+        from string import ascii_letters as symbols
+
+        from pennylane.math import einsum as contract
+
+        def _get_symbol(i):
+            if i >= len(symbols):
+                raise ValueError(
+                    "Set the use_opt_einsum argument to True when applying more than "
+                    f"{len(symbols)} wire cuts to a circuit"
+                )
+            return symbols[i]
+
+    ctr = 0
+    tensor_indxs = [""] * len(communication_graph.nodes)
+
+    meas_map = {}
+
+    for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes)):
+        predecessors = communication_graph.pred[node]
+
+        for _, pred_edges in predecessors.items():
+            for pred_edge in pred_edges.values():
+                meas_op, prep_op = pred_edge["pair"]
+                for p in prep:
+                    if p is prep_op:
+                        symb = _get_symbol(ctr)
+                        ctr += 1
+                        tensor_indxs[i] += symb
+                        meas_map[meas_op] = symb
+
+    for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes)):
+        successors = communication_graph.succ[node]
+
+        for _, succ_edges in successors.items():
+            for succ_edge in succ_edges.values():
+                meas_op, prep_op = succ_edge["pair"]
+
+                for m in meas:
+                    if m is meas_op:
+                        symb = meas_map[meas_op]
+                        tensor_indxs[i] += symb
+
+    eqn = ",".join(tensor_indxs)
+
+    return contract(eqn, *tensors)
