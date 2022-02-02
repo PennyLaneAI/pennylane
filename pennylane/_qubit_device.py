@@ -129,8 +129,11 @@ class QubitDevice(Device):
         *after* rotation to diagonalize the observables."""
 
         if cache > 0:
-            warnings.warn("The caching ability of QubitDevice is being deprecated, passing a "\
-                          "dictionary as the cache argument to the QNode is preferred.", UserWarning)
+            warnings.warn(
+                "The caching ability of QubitDevice is being deprecated, passing a "
+                "dictionary as the cache argument to the QNode is preferred.",
+                UserWarning,
+            )
 
         self._cache = cache
         """int: Number of device executions to store in a cache to speed up subsequent
