@@ -215,6 +215,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     return graph
 
 
+# pylint: disable=too-many-branches
 def contract_tensors(
     tensors: Sequence,
     communication_graph: MultiDiGraph,
@@ -222,7 +223,19 @@ def contract_tensors(
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
 ):
+    """TODO.
 
+    Args:
+        tensors:
+        communication_graph:
+        prepare_nodes:
+        measure_nodes:
+        use_opt_einsum:
+
+    Returns:
+
+    """
+    # pylint: disable=import-outside-toplevel
     if use_opt_einsum:
         try:
             from opt_einsum import contract, get_symbol
@@ -237,7 +250,7 @@ def contract_tensors(
 
         from pennylane.math import einsum as contract
 
-        def _get_symbol(i):
+        def get_symbol(i):
             if i >= len(symbols):
                 raise ValueError(
                     "Set the use_opt_einsum argument to True when applying more than "
@@ -258,7 +271,7 @@ def contract_tensors(
                 meas_op, prep_op = pred_edge["pair"]
                 for p in prep:
                     if p is prep_op:
-                        symb = _get_symbol(ctr)
+                        symb = get_symbol(ctr)
                         ctr += 1
                         tensor_indxs[i] += symb
                         meas_map[meas_op] = symb
