@@ -254,7 +254,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     We can find the circuit graph and remove all the wire cut nodes using:
 
     >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(wire_cut, graph)
+    >>> qcut.replace_wire_cut_nodes(graph)
     >>> qcut.fragment_graph(g)
     ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,

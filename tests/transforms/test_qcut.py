@@ -1,5 +1,5 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
 #
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -26,6 +26,22 @@ with qml.tape.QuantumTape() as tape:
     qml.CRZ(0.5, wires=["a", 0])
     qml.RZ(0.240, wires=0)
     qml.RZ(0.133, wires="a")
+    qml.expval(qml.PauliZ(wires=[0]))
+
+with qml.tape.QuantumTape() as multi_cut_tape:
+    qml.RX(0.432, wires=0)
+    qml.RY(0.543, wires="a")
+    qml.WireCut(wires=0)
+    qml.CNOT(wires=[0, "a"])
+    qml.RZ(0.240, wires=0)
+    qml.RZ(0.133, wires="a")
+    qml.WireCut(wires="a")
+    qml.CNOT(wires=["a", 2])
+    qml.RX(0.432, wires="a")
+    qml.WireCut(wires=2)
+    qml.CNOT(wires=[2, 3])
+    qml.RY(0.543, wires=2)
+    qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]))
 
 
@@ -535,28 +551,7 @@ class TestFragmentGraph:
         correct nodes and edges
         """
 
-        wire_cut_1 = 0
-        wire_cut_2 = "a"
-        wire_cut_3 = 2
-        wire_cut_num = [wire_cut_1, wire_cut_2, wire_cut_3]
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires="a")
-            qml.WireCut(wires=wire_cut_1)
-            qml.CNOT(wires=[0, "a"])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires="a")
-            qml.WireCut(wires=wire_cut_2)
-            qml.CNOT(wires=["a", 2])
-            qml.RX(0.432, wires="a")
-            qml.WireCut(wires=wire_cut_3)
-            qml.CNOT(wires=[2, 3])
-            qml.RY(0.543, wires=2)
-            qml.RZ(0.876, wires=3)
-            qml.expval(qml.PauliZ(wires=[0]))
-
-        g = qcut.tape_to_graph(tape)
+        g = qcut.tape_to_graph(multi_cut_tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
@@ -627,3 +622,29 @@ class TestFragmentGraph:
 
         for subgraph, expected_e in zip(subgraphs, expected_edges):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
+
+    def test_communication_graph(self):
+        """
+        Tests that the communication graph containse the correct nodes and edges
+        """
+
+        g = qcut.tape_to_graph(multi_cut_tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        assert list(communication_graph.nodes) == list(range(4))
+
+        expected_edge_data = [
+            (0, 1, {"pair": (qcut.MeasureNode(wires=[0]), qcut.PrepareNode(wires=[0]))}),
+            (1, 2, {"pair": (qcut.MeasureNode(wires=["a"]), qcut.PrepareNode(wires=["a"]))}),
+            (2, 3, {"pair": (qcut.MeasureNode(wires=[2]), qcut.PrepareNode(wires=[2]))}),
+        ]
+        edge_data = list(communication_graph.edges(data=True))
+
+        for edge, exp_edge in zip(edge_data, expected_edge_data):
+            assert edge[0] == exp_edge[0]
+            assert edge[1] == exp_edge[1]
+
+            for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
+                assert node.name == exp_node.name
+                assert node.wires.tolist() == exp_node.wires.tolist()
