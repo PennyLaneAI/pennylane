@@ -19,6 +19,7 @@ circuits to be distributed across multiple devices.
 from typing import Tuple
 
 from networkx import MultiDiGraph, weakly_connected_components
+
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -292,23 +293,35 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
 from typing import Sequence
 
-def contract_tensors(tensors: Sequence, communication_graph: MultiDiGraph, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]], use_opt_einsum: bool=False):
+
+def contract_tensors(
+    tensors: Sequence,
+    communication_graph: MultiDiGraph,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+    use_opt_einsum: bool = False,
+):
 
     if use_opt_einsum:
         try:
             from opt_einsum import contract, get_symbol
         except ImportError as e:
-            raise ImportError("The opt_einsum package is required when use_opt_einsum is set to "
-                              "True in the contract_tensors function. This package can be "
-                              "installed using:\npip install opt_einsum") from e
+            raise ImportError(
+                "The opt_einsum package is required when use_opt_einsum is set to "
+                "True in the contract_tensors function. This package can be "
+                "installed using:\npip install opt_einsum"
+            ) from e
     else:
-        from pennylane.math import einsum as contract
         from string import ascii_letters as symbols
+
+        from pennylane.math import einsum as contract
 
         def _get_symbol(i):
             if i >= len(symbols):
-                raise ValueError("Set the use_opt_einsum argument to True when applying more than "
-                                 f"{len(symbols)} wire cuts to a circuit")
+                raise ValueError(
+                    "Set the use_opt_einsum argument to True when applying more than "
+                    f"{len(symbols)} wire cuts to a circuit"
+                )
             return symbols[i]
 
     ctr = 0
