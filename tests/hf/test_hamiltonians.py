@@ -23,6 +23,7 @@ from pennylane.hf.hamiltonian import (
     _generate_qubit_operator,
     _pauli_mult,
     _return_pauli,
+    simplify,
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
     generate_hamiltonian,
@@ -379,3 +380,49 @@ def test_gradient_expvalH():
     grad_finitediff = (e_2 - e_1) / 0.0002
 
     assert np.allclose(grad_autograd[0][0], grad_finitediff)
+
+
+@pytest.mark.parametrize(
+    ("hamiltonian", "result"),
+    [
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
+            ),
+            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+            ),
+            qml.Hamiltonian([], []),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.0, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.25, 0.25, 0.25, -0.25]),
+                [
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                ],
+            ),
+            qml.Hamiltonian(
+                np.array([0.25, 0.25]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+        ),
+    ],
+)
+def test_simplify(hamiltonian, result):
+    r"""Test that simplify returns the correct hamiltonian."""
+    h = simplify(hamiltonian)
+    assert h.compare(result)

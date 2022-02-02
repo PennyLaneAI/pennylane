@@ -16,14 +16,15 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.transforms.classical_jacobian import classical_jacobian
 
-a = -2.1
-b = 0.71
-w = np.array([0.3, 2.3, 0.1])
-x = np.array([0.3, 2.3, 0.1])
-y = np.array([[1.0, 2.0], [4.0, 5.0]])
-z = np.array([2.1, -0.3, 0.62, 0.89])
+a = pnp.array(-2.1, requires_grad=True)
+b = pnp.array(0.71, requires_grad=True)
+w = pnp.array([0.3, 2.3, 0.1], requires_grad=True)
+x = pnp.array([0.3, 2.3, 0.1], requires_grad=True)
+y = pnp.array([[1.0, 2.0], [4.0, 5.0]], requires_grad=True)
+z = pnp.array([2.1, -0.3, 0.62, 0.89], requires_grad=True)
 
 
 def circuit_0(a):
@@ -36,7 +37,7 @@ def circuit_1(a, b):
     qml.RX(qml.math.sin(a), wires=0)
     qml.RZ(a / 3, wires=0)
     qml.CNOT(wires=[0, 1])
-    qml.RY(b ** 2, wires=1)
+    qml.RY(b**2, wires=1)
     qml.RZ(1 / b, wires=1)
     return qml.expval(qml.PauliZ(0))
 
@@ -92,7 +93,7 @@ class_jacs = [
                 0.0,
             ]
         ),
-        np.array([0.0, 0.0, 2 * b, -1 / (b ** 2)]),
+        np.array([0.0, 0.0, 2 * b, -1 / (b**2)]),
     ),
     (np.eye(len(x)),),
     (

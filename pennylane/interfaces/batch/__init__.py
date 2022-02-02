@@ -29,13 +29,18 @@ import pennylane as qml
 INTERFACE_NAMES = {
     "NumPy": (None,),
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
-    "JAX": ("jax", "JAX"),
+    "JAX": ("jax", "jax-jit", "jax-python", "JAX"),
     "PyTorch": ("torch", "pytorch"),
     "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
 }
 """dict[str, str]: maps allowed interface strings to the name of the interface"""
 
 SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
+
+
+class InterfaceUnsupportedError(NotImplementedError):
+    """Exception raised when features not supported by an interface are
+    attempted to be used."""
 
 
 @contextlib.contextmanager
@@ -320,6 +325,11 @@ def execute(
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
 
     if gradient_fn is None:
+        # don't unwrap if it's an interface device
+        if "passthru_interface" in device.capabilities():
+            return batch_fn(
+                cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+            )
         with qml.tape.Unwrap(*tapes):
             res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
                 tapes
@@ -385,7 +395,7 @@ def execute(
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
-            from .jax import execute as _execute
+            _execute = _get_jax_execute_fn(interface, tapes)
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "
@@ -404,3 +414,21 @@ def execute(
     )
 
     return batch_fn(res)
+
+
+def _get_jax_execute_fn(interface, tapes):
+    """Auxiliary function to determine the execute function to use with the JAX
+    interface."""
+
+    # The most general JAX interface was sepcified, automatically determine if
+    # support for jitting is needed by swapping to "jax-jit" or "jax-python"
+    if interface == "jax":
+        from .jax import get_jax_interface_name
+
+        interface = get_jax_interface_name(tapes)
+
+    if interface == "jax-jit":
+        from .jax_jit import execute as _execute
+    else:
+        from .jax import execute as _execute
+    return _execute

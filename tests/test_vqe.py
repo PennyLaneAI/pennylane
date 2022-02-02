@@ -192,7 +192,7 @@ ANSAETZE = [
 
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
-EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
+EMBED_PARAMS = np.array([1 / np.sqrt(2**3)] * 2**3)
 LAYER_PARAMS = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
 
 CIRCUITS = [
@@ -496,7 +496,7 @@ class TestVQE:
 
         np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        w = pnp.random.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
         dc = qml.grad(cost)(w)
         exec_opt = dev.num_executions

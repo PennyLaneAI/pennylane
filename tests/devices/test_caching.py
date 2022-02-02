@@ -219,7 +219,7 @@ class TestCaching:
 
         @qnode(dev)
         def qfunc(x, y):
-            qml.RX(x ** 2, wires=0)
+            qml.RX(x**2, wires=0)
             qml.RX(x / y, wires=1)
             qml.CNOT(wires=[0, 1])
             return expval(qml.PauliZ(wires=1))
@@ -240,7 +240,7 @@ class TestCaching:
 
         @qnode(dev)
         def qfunc(x, y):
-            qml.RX(x ** 2, wires=0)
+            qml.RX(x**2, wires=0)
             qml.RX(x / y, wires=1)
             qml.CNOT(wires=[0, 1])
             return expval(qml.PauliZ(wires=1))

@@ -169,7 +169,7 @@ class ExecuteTapes(torch.autograd.Function):
                             gradient_kwargs=ctx.gradient_kwargs,
                         )
 
-                    vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
+                        vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
 
             else:
                 # Gradient function is not a gradient transform

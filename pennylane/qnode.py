@@ -45,7 +45,7 @@ class QNode:
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
+              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays.
 
             * ``"torch"``: Allows PyTorch to backpropogate
@@ -60,7 +60,7 @@ class QNode:
               JAX ``DeviceArray`` objects.
 
             * ``None``: The QNode accepts default Python types
-              (floats, ints, lists) as well as NumPy array arguments,
+              (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays. It does not connect to any
               machine learning library automatically for backpropagation.
 
@@ -478,16 +478,6 @@ class QNode:
 
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
-
-        if self.interface == "autograd":
-            # HOTFIX: to maintain backwards compatibility existing PennyLane code and demos, here we treat
-            # all inputs that do not explicitly specify `requires_grad=False`
-            # as trainable. This should be removed at some point, forcing users
-            # to specify `requires_grad=True` for trainable parameters.
-            args = [
-                qml.numpy.array(a, requires_grad=True) if not hasattr(a, "requires_grad") else a
-                for a in args
-            ]
 
         self._tape = qml.tape.JacobianTape()
 

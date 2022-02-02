@@ -99,13 +99,13 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2 ** 3))
+    data = np.random.random((batch_size, 2**3))
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 2 ** 3)
+    assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
 
     # check the results against individually executed circuits (no batching)
@@ -140,7 +140,7 @@ def test_basis_state_preparation(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 2 ** 4)
+    assert res.shape == (batch_size, 2**4)
     assert len(spy.call_args[0][0]) == batch_size
 
     # check the results against individually executed circuits (no batching)
@@ -207,14 +207,15 @@ def test_jax(diff_method, tol):
 
 
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-def test_jax_jit(diff_method, tol):
+@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)

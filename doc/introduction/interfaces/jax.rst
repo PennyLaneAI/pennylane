@@ -13,9 +13,16 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
 
 .. note::
 
-    When using ``diff_method="parameter-shift"`` with the JAX interface, only QNodes that
-    return a single expectation value or variance are supported. Returning more
-    than one expectation value, or other statistics such as probabilities, is not supported.
+    When using ``diff_method="parameter-shift"``, ``diff_method="finite-diff"``
+    or ``diff_method="adjoint"`` with the JAX interface some restrictions apply to
+    the measurements in the QNode:
+
+    * Sample and probability measurements cannot be mixed with other measurement
+      types in QNodes;
+    * Multiple probability measurements need to have the same number of wires
+      specified;
+    * Computing the jacobian of vector-valued QNodes is not supported
+      in ``mode="forward"``.
 
     However, when using ``diff_method="backprop"``, all QNode measurement statistics
     are supported.
@@ -97,8 +104,8 @@ Using jax.jit on QNodes
 -----------------------
 
 To fully utilize the power and speed of JAX, you'll need to just-in-time compile your functions - a
-process called "jitting". If only expectation values are returned, the ``@jax.jit`` decorator can be
-directly applied to the QNode.
+process called "jitting". If only expectation values or variances are returned,
+the ``@jax.jit`` decorator can be directly applied to the QNode.
 
 .. code-block:: python
 
@@ -112,6 +119,22 @@ directly applied to the QNode.
         qml.CNOT(wires=[0, 1])
         qml.RX(theta, wires=0)
         return qml.expval(qml.PauliZ(0))
+
+.. note::
+
+    For differentiation methods other than ``backprop``, when
+    ``interface='jax'`` is specified, PennyLane will attempt to determine if
+    the computation was just-in-time compiled. This is done by checking if any
+    of the input parameters were subject to a JAX transformation. If so, a
+    variant of the interface that supports the just-in-time compilation of
+    scalar-valued QNodes (i.e., those that have a single expectation value or
+    variance measurement) will be used. This is equivalent to passing
+    ``interface='jax-jit'``.
+
+    Specify ``interface='jax-python'`` to enforce support for computing the
+    forward and backward pass of vector-valued QNodes (e.g., QNodes with
+    probability, state or multiple expectation value measurements). This
+    option does not support just-in-time compilation.
 
 
 Randomness: Shots and Samples

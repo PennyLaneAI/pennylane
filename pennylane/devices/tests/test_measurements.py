@@ -552,7 +552,7 @@ class TestSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol(False))
 
     def test_sample_values_hermitian(self, device, tol):
         """Tests if the samples of a Hermitian observable returned by sample have
@@ -755,7 +755,7 @@ class TestTensorSample:
         res = circuit()
 
         # res should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
@@ -800,7 +800,7 @@ class TestTensorSample:
         res = circuit()
 
         # s1 should only contain 1 and -1
-        assert np.allclose(res ** 2, 1, atol=tol(False))
+        assert np.allclose(res**2, 1, atol=tol(False))
 
         mean = np.mean(res)
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
