@@ -47,7 +47,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     Args:
         node (WireCut): the  :class:`~.WireCut` node to be replaced with a :class:`~.MeasureNode`
             and :class:`~.PrepareNode`
-        graph (MultiDiGraph): The graph containing the node to be replaced
+        graph (MultiDiGraph): the graph containing the node to be replaced
 
     **Example**
 
@@ -111,16 +111,16 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
 def replace_wire_cut_nodes(graph: MultiDiGraph):
     """
-    Replace all :class:`~.WireCut` nodes in the graph with
+    Replace each :class:`~.WireCut` node in the graph with a
     :class:`~.MeasureNode` and :class:`~.PrepareNode`.
 
     Args:
         graph (MultiDiGraph): The graph containing the :class:`~.WireCut` nodes
-        to be replaced
+            to be replaced
 
     **Example**
 
-    Consider the following circuit with a manually-placed wire cut:
+    Consider the following circuit with manually-placed wire cuts:
 
     .. code-block:: python
 
@@ -143,7 +143,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
     We can find the circuit graph and remove all the wire cut nodes using:
 
     >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(wire_cut, graph)
+    >>> qcut.replace_wire_cut_nodes(graph)
 
     """
     for op in list(graph.nodes):
