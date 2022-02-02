@@ -418,6 +418,7 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     return qml.math.reshape(expanded_tensor, 2**M)
 
+
 def decompose_ops_until_all(ops, pred):
     """Expand list of operations until pred is satisfied. If it is impossible even
     after expanding all, return None
@@ -426,7 +427,6 @@ def decompose_ops_until_all(ops, pred):
         array: List of operations.
     """
 
-    
     new_ops = []
     for op in ops:
         if not pred(op):

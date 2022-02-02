@@ -18,6 +18,7 @@ from pennylane.operation import Operation
 from pennylane.tape import QuantumTape, stop_recording
 from pennylane.utils import decompose_ops_until_all
 
+
 def adjoint(fn):
     """Create a function that applies the adjoint (inverse) of the provided operation or template.
 
@@ -120,11 +121,11 @@ def adjoint(fn):
     def wrapper(*args, **kwargs):
         ops = fn(*args, **kwargs)
 
-        return_type = None
+        return_tape = False
 
         if isinstance(ops, QuantumTape):
             ops = ops.operations
-            return_type = "tape"
+            return_tape = True
 
         elif isinstance(ops, Operation):
             ops = [ops]
@@ -141,8 +142,8 @@ def adjoint(fn):
         adjoint_ops = []
         for op in reversed(ops):
             adjoint_ops.append(op.adjoint())
-        
-        if return_type == "tape":
+
+        if return_tape:
             with QuantumTape(do_queue=False) as adjoint_tape:
                 for op in adjoint_ops:
                     adjoint_tape.apply(op)
