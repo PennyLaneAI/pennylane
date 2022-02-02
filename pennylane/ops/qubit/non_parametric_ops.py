@@ -1096,7 +1096,7 @@ class MultiControlledX(Operation):
 
         gates = [
             MultiControlledX(
-                wires=first_part+work_wire,
+                wires=first_part + work_wire,
                 work_wires=second_part + target_wire,
             ),
             MultiControlledX(
@@ -1104,7 +1104,7 @@ class MultiControlledX(Operation):
                 work_wires=first_part,
             ),
             MultiControlledX(
-                wires=first_part +work_wire,
+                wires=first_part + work_wire,
                 work_wires=second_part + target_wire,
             ),
             MultiControlledX(

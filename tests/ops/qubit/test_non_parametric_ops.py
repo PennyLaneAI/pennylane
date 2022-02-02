@@ -575,12 +575,11 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
-
     @pytest.mark.parametrize(
         "control_wires,wires,control_values,expected_warning_message",
         [
-            ([0], 1, "0", 'The control_wires keyword will be removed soon.'),
-        ]
+            ([0], 1, "0", "The control_wires keyword will be removed soon."),
+        ],
     )
     def test_warning_depractation_controlwires(
         self, control_wires, wires, control_values, expected_warning_message
@@ -594,7 +593,7 @@ class TestMultiControlledX:
     @pytest.mark.parametrize(
         "control_wires,wires,control_values,expected_error_message",
         [
-            (None, None, "10","Must specify the wires where the operation acts on"),
+            (None, None, "10", "Must specify the wires where the operation acts on"),
             (None, [0, 1, 2], "ab", "String of control values can contain only '0' or '1'."),
             (
                 None,
@@ -614,7 +613,7 @@ class TestMultiControlledX:
                 "1",
                 "MultiControlledX: wrong number of wires. 1 wire given. Need at least 2.",
             ),
-            ([0], None, "","Must specify the wires where the operation acts on"),
+            ([0], None, "", "Must specify the wires where the operation acts on"),
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
             ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
@@ -627,7 +626,7 @@ class TestMultiControlledX:
     ):
         """Test if MultiControlledX properly handles invalid mixed-polarity
         control values."""
-        #target_wires = Wires(wires)
+        # target_wires = Wires(wires)
         target_wires = wires
 
         with pytest.raises(ValueError, match=expected_error_message):
@@ -729,9 +728,7 @@ class TestMultiControlledX:
             qml.templates.ArbitraryStatePreparation(control_state_weights, wires=control_wires)
             qml.templates.ArbitraryStatePreparation(target_state_weights, wires=target_wires)
 
-            qml.MultiControlledX(
-                wires=Wires(wires), control_values=control_values
-            )
+            qml.MultiControlledX(wires=Wires(wires), control_values=control_values)
             return qml.state()
 
         # The result of applying the mixed-polarity gate should be the same as
@@ -780,7 +777,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires)+[target_wire]).inv()
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire]).inv()
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -813,7 +810,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(wires=list(control_wires)+[target_wire]).inv()
+            qml.MultiControlledX(wires=list(control_wires) + [target_wire]).inv()
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -842,9 +839,7 @@ class TestMultiControlledX:
         with pytest.raises(
             ValueError, match="The work wires must be different from the control and target wires"
         ):
-            qml.MultiControlledX(
-                wires=control_target_wires, work_wires=work_wires
-            )
+            qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
     @pytest.mark.parametrize("control_val", ["0", "1"])
     @pytest.mark.parametrize("n_ctrl_wires", range(1, 6))
@@ -853,7 +848,7 @@ class TestMultiControlledX:
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on varying the control values."""
         control_values = control_val * n_ctrl_wires
-        control_target_wires = list(range(n_ctrl_wires))+ [n_ctrl_wires]
+        control_target_wires = list(range(n_ctrl_wires)) + [n_ctrl_wires]
         work_wires = range(n_ctrl_wires + 1, 2 * n_ctrl_wires + 1)
 
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
@@ -871,9 +866,7 @@ class TestMultiControlledX:
         @qml.qnode(dev)
         def f(bitstring):
             qml.BasisState(bitstring, wires=range(n_ctrl_wires + 1))
-            qml.MultiControlledX(
-                wires=control_target_wires, control_values=control_values
-            ).inv()
+            qml.MultiControlledX(wires=control_target_wires, control_values=control_values).inv()
             for op in tape.operations:
                 op.queue()
             return qml.probs(wires=range(n_ctrl_wires + 1))
@@ -897,9 +890,7 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=all_wires)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX(
-                wires=control_target_wires, work_wires=work_wires
-            )
+            qml.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
         tape = tape.expand(depth=2)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
@@ -931,9 +922,7 @@ class TestMultiControlledX:
         dev = qml.device("default.qubit", wires=n_all_wires)
 
         with qml.tape.QuantumTape() as tape:
-            qml.MultiControlledX(
-                wires=control_target_wires, work_wires=worker_wires
-            )
+            qml.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = tape.expand(depth=1)
         assert all(not isinstance(op, qml.MultiControlledX) for op in tape.operations)
 
