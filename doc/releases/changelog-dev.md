@@ -591,5 +591,5 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin Christina Lee, Olivia Di Matteo, Diego Guala,
-Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
-David Wierichs, Shaoming Zhang
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Maria Fernanda Morris,
+Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
