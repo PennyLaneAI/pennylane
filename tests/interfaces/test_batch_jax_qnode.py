@@ -137,7 +137,7 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
+            qml.RX(c + c**2 + jnp.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = jax.grad(circuit, argnums=[0, 2])(a, b, c)
@@ -365,6 +365,18 @@ class TestVectorValuedQNode:
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     remains differentiable."""
+
+    def test_diff_method_None(self, interface):
+        """Test jax device works with diff_method=None."""
+        dev = qml.device("default.qubit.jax", wires=1, shots=10)
+
+        @jax.jit
+        @qml.qnode(dev, diff_method=None, interface=interface)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(jnp.array(0.0)), 1)
 
     def test_changing_shots(self, interface, mocker, tol):
         """Test that changing shots works on execution"""
@@ -1061,12 +1073,12 @@ class TestCV:
             return qml.var(qml.NumberOperator(0))
 
         res = circuit(n, a)
-        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         res = jax.grad(circuit, argnums=[0, 1])(n, a)
-        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 

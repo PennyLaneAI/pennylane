@@ -493,6 +493,7 @@
   attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
   [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
+  [(#2139)](https://github.com/PennyLaneAI/pennylane/pull/2139)
 
   ```python
   from pennylane import numpy as np
@@ -520,6 +521,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
+  [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
 
 * Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
   to NumPy arrays before executing gradient tapes on devices.

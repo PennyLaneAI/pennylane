@@ -355,7 +355,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         gradient[i] = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
             - f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
-        ) * delta ** -1
+        ) * delta**-1
 
     return gradient
 
@@ -415,7 +415,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
             - 2 * f(*args[:argnum], x, *args[argnum + 1 :], **kwargs)
             + f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
-        ) * delta ** -2
+        ) * delta**-2
 
     # off-diagonal
     if i != j:
@@ -430,7 +430,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             - f(*args[:argnum], x - shift_i + shift_j, *args[argnum + 1 :], **kwargs)
             - f(*args[:argnum], x + shift_i - shift_j, *args[argnum + 1 :], **kwargs)
             + f(*args[:argnum], x - shift_i - shift_j, *args[argnum + 1 :], **kwargs)
-        ) * delta ** -2
+        ) * delta**-2
 
     return deriv2
 
