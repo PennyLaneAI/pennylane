@@ -29,6 +29,36 @@ with qml.tape.QuantumTape() as tape:
     qml.expval(qml.PauliZ(wires=[0]))
 
 
+def compare_nodes(nodes, expected_wires, expected_names):
+    """Helper function to comper nodes of directed multigraph"""
+
+    for node, exp_wire in zip(nodes, expected_wires):
+        assert node.wires.tolist() == exp_wire
+
+    for node, exp_name in zip(nodes, expected_names):
+        assert node.name == exp_name
+
+
+def compare_fragment_nodes(node_data, expected_data):
+    """Helper function to comper nodes of fragment graphs"""
+
+    expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
+
+    for data in node_data:
+        # The exact ordering of node data within the list varies on each call
+        assert (data[0].name, data[0].wires, data[1]) in expected
+
+
+def compare_fragment_edges(edge_data, expected_data):
+    """Helper function to compare fragment edges"""
+
+    expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
+
+    for data in edge_data:
+        # The exact ordering of edge data within the list varies on each call
+        assert (data[0].name, data[1].name, data[2]) in expected
+
+
 class TestTapeToGraph:
     """
     Tests conversion of tapes to graph representations that are amenable to
@@ -477,14 +507,6 @@ class TestReplaceWireCut:
 
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
-        def compare_nodes(nodes, expected_wires, expected_names):
-
-            for node, exp_wire in zip(nodes, expected_wires):
-                assert node.wires.tolist() == exp_wire
-
-            for node, exp_name in zip(nodes, expected_names):
-                assert node.name == exp_name
-
         compare_nodes(measure_pred, expected_meas_pred_wires, expected_meas_pred_name)
         compare_nodes(measure_succ, expected_meas_succ_wires, expected_meas_succ_name)
         compare_nodes(prep_pred, expected_prep_pred_wires, exepeted_prep_pred_name)
@@ -500,3 +522,108 @@ class TestReplaceWireCut:
             _, _, wire_label_out = out_edges[0]
 
             assert wire_label_in == wire_label_out == node.wires.tolist()[0]
+
+
+class TestFragmentGraph:
+    """
+    Tests that a cut graph is fragmented into subgraph correctly
+    """
+
+    def test_subgraphs_of_multi_wirecut(self):
+        """
+        Tests that the subgraphs of a graph with multiple wirecuts contain the
+        correct nodes and edges
+        """
+
+        wire_cut_1 = 0
+        wire_cut_2 = "a"
+        wire_cut_3 = 2
+        wire_cut_num = [wire_cut_1, wire_cut_2, wire_cut_3]
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires=wire_cut_1)
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.WireCut(wires=wire_cut_2)
+            qml.CNOT(wires=["a", 2])
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires=wire_cut_3)
+            qml.CNOT(wires=[2, 3])
+            qml.RY(0.543, wires=2)
+            qml.RZ(0.876, wires=3)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        assert len(subgraphs) == 4
+
+        sub_0_expected_nodes = [
+            (qcut.MeasureNode(wires=[0]), {"order": 2}),
+            (qml.RX(0.432, wires=[0]), {"order": 0}),
+        ]
+        sub_1_expected_nodes = [
+            (qml.RY(0.543, wires=["a"]), {"order": 1}),
+            (qcut.PrepareNode(wires=[0]), {"order": 2}),
+            (qcut.MeasureNode(wires=["a"]), {"order": 6}),
+            (qml.RZ(0.24, wires=[0]), {"order": 4}),
+            (qml.CNOT(wires=[0, "a"]), {"order": 3}),
+            (qml.expval(qml.PauliZ(wires=[0])), {"order": 13}),
+            (qml.RZ(0.133, wires=["a"]), {"order": 5}),
+        ]
+        sub_2_expected_nodes = [
+            (qml.RX(0.432, wires=["a"]), {"order": 8}),
+            (qcut.MeasureNode(wires=[2]), {"order": 9}),
+            (qcut.PrepareNode(wires=["a"]), {"order": 6}),
+            (qml.CNOT(wires=["a", 2]), {"order": 7}),
+        ]
+        sub_3_expected_nodes = [
+            (qml.CNOT(wires=[2, 3]), {"order": 10}),
+            (qml.RY(0.543, wires=[2]), {"order": 11}),
+            (qcut.PrepareNode(wires=[2]), {"order": 9}),
+            (qml.RZ(0.876, wires=[3]), {"order": 12}),
+        ]
+        expected_nodes = [
+            sub_0_expected_nodes,
+            sub_1_expected_nodes,
+            sub_2_expected_nodes,
+            sub_3_expected_nodes,
+        ]
+
+        sub_0_expected_edges = [
+            (qml.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})
+        ]
+        sub_1_expected_edges = [
+            (qcut.PrepareNode(wires=[0]), qml.CNOT(wires=[0, "a"]), {"wire": 0}),
+            (qml.RZ(0.24, wires=[0]), qml.expval(qml.PauliZ(wires=[0])), {"wire": 0}),
+            (qml.RZ(0.133, wires=["a"]), qcut.MeasureNode(wires=["a"]), {"wire": "a"}),
+            (qml.CNOT(wires=[0, "a"]), qml.RZ(0.24, wires=[0]), {"wire": 0}),
+            (qml.CNOT(wires=[0, "a"]), qml.RZ(0.133, wires=["a"]), {"wire": "a"}),
+            (qml.RY(0.543, wires=["a"]), qml.CNOT(wires=[0, "a"]), {"wire": "a"}),
+        ]
+        sub_2_expected_edges = [
+            (qcut.PrepareNode(wires=["a"]), qml.CNOT(wires=["a", 2]), {"wire": "a"}),
+            (qml.CNOT(wires=["a", 2]), qml.RX(0.432, wires=["a"]), {"wire": "a"}),
+            (qml.CNOT(wires=["a", 2]), qcut.MeasureNode(wires=[2]), {"wire": 2}),
+        ]
+        sub_3_expected_edges = [
+            (qcut.PrepareNode(wires=[2]), qml.CNOT(wires=[2, 3]), {"wire": 2}),
+            (qml.CNOT(wires=[2, 3]), qml.RY(0.543, wires=[2]), {"wire": 2}),
+            (qml.CNOT(wires=[2, 3]), qml.RZ(0.876, wires=[3]), {"wire": 3}),
+        ]
+        expected_edges = [
+            sub_0_expected_edges,
+            sub_1_expected_edges,
+            sub_2_expected_edges,
+            sub_3_expected_edges,
+        ]
+
+        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+            compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
+
+        for subgraph, expected_e in zip(subgraphs, expected_edges):
+            compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)

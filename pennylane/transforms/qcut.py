@@ -16,7 +16,9 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
-from networkx import MultiDiGraph
+from typing import Tuple
+
+from networkx import MultiDiGraph, weakly_connected_components
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -210,3 +212,79 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             order += 1
 
     return graph
+
+
+def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
+    """
+    Fragments a cut graph into a collection of subgraphs as well as returning
+    the communication/quotient graph.
+
+    Args:
+        graph (MultiDiGraph): directed multigraph containing measure and prepare
+        nodes at cut locations
+
+    Returns:
+        subgraphs, communication_graph (Tuple[Tuple[MultiDiGraph], MultiDiGraph]):
+        the subgraphs of the cut graph and the communication graph where each
+        node represents a fragment and edges denote the flow of qubits between
+        fragments
+
+    **Example**
+
+    Consider the following circuit with a manually-placed wire cut:
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        wire_cut_0 = qml.WireCut(wires=0)
+        wire_cut_1 = qml.WireCut(wires=1)
+        multi_wire_cut = qml.WireCut(wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.apply(wire_cut_0)
+            qml.RY(0.5, wires=0)
+            qml.apply(wire_cut_1)
+            qml.CNOT(wires=[0, 1])
+            qml.apply(multi_wire_cut)
+            qml.RZ(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
+
+    We can find the circuit graph and remove all the wire cut nodes using:
+
+    >>> graph = qcut.tape_to_graph(tape)
+    >>> qcut.replace_wire_cut_nodes(wire_cut, graph)
+    >>> qcut.fragment_graph(g)
+    ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e27f0>),
+     <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
+    """
+
+    edges = list(graph.edges)
+    cut_edges = []
+
+    for node1, node2, _ in edges:
+        if isinstance(node1, MeasureNode):
+            assert isinstance(node2, PrepareNode)
+            cut_edges.append((node1, node2))
+            graph.remove_edge(node1, node2)
+
+    subgraph_nodes = weakly_connected_components(graph)
+    subgraphs = tuple(graph.subgraph(n) for n in subgraph_nodes)
+
+    communication_graph = MultiDiGraph()
+    communication_graph.add_nodes_from(range(len(subgraphs)))
+
+    for node1, node2 in cut_edges:
+        for i, subgraph in enumerate(subgraphs):
+            if subgraph.has_node(node1):
+                start_fragment = i
+            if subgraph.has_node(node2):
+                end_fragment = i
+
+        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+
+    return subgraphs, communication_graph
