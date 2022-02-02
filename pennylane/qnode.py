@@ -168,6 +168,7 @@ class QNode:
         max_diff=1,
         **gradient_kwargs,
     ):
+        print(cache)
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
