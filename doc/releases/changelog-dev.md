@@ -520,6 +520,11 @@
   qml.grad(circuit, argnum=1)(0.5, x)
   ```
 
+<h3>Deprecations</h3>
+
+* Deprecates the caching ability provided by `QubitDevice`.
+  [(#2154)](https://github.com/PennyLaneAI/pennylane/pull/2154)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
