@@ -746,10 +746,9 @@ class Operation(Operator):
         ops = self.decompose()
         if isinstance(ops, Operation):
             ops = [ops]
-        tape = qml.tape.QuantumTape(do_queue=False)
-        with tape:
+        with qml.tape.QuantumTape(do_queue=False) as tape:
             for op in ops:
-                qml.apply(op)
+                op.queue()
 
         if not self.data:
             # original operation has no trainable parameters

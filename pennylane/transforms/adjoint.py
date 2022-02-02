@@ -17,6 +17,7 @@ from functools import wraps
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape, stop_recording
 from pennylane.utils import decompose_ops_until_all
+from pennylane.queuing import QueuingContext
 
 
 def adjoint(fn):
@@ -119,16 +120,6 @@ def adjoint(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        ops = fn(*args, **kwargs)
-
-        return_tape = False
-
-        if isinstance(ops, QuantumTape):
-            ops = ops.operations
-            return_tape = True
-
-        elif isinstance(ops, Operation):
-            ops = [ops]
 
         def is_adjoint_implemted(op):
             try:
@@ -138,16 +129,23 @@ def adjoint(fn):
             else:
                 return True
 
-        ops = decompose_ops_until_all(ops, is_adjoint_implemted)
-        adjoint_ops = []
-        for op in reversed(ops):
-            adjoint_ops.append(op.adjoint())
+        with stop_recording():
+            with QuantumTape() as tape:
+                fn(*args, **kwargs)
+            ops = tape.operations
+            ops = decompose_ops_until_all(ops, is_adjoint_implemted)
 
-        if return_tape:
-            with QuantumTape(do_queue=False) as adjoint_tape:
-                for op in adjoint_ops:
-                    adjoint_tape.apply(op)
-            return adjoint_tape
+            adjoint_ops = []
+            for op in reversed(ops):
+                to_append = op.adjoint()
+                if isinstance(to_append, list):
+                    adjoint_ops += to_append
+                else:
+                    adjoint_ops.append(to_append)
+        
+        if QueuingContext.recording():
+            for op in adjoint_ops:
+                op.queue() # record to the 
 
         if len(adjoint_ops) == 1:
             adjoint_ops = adjoint_ops[0]
