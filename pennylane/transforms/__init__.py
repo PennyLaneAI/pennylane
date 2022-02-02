@@ -81,7 +81,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
-    
+
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -94,7 +94,7 @@ Utility function to assist with the circuit cutting transform
     ~transforms.replace_wire_cut_node
     ~transforms.replace_wire_cut_nodes
     ~transforms.fragment_graph
-    
+
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
