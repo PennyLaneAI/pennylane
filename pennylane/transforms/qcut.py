@@ -111,8 +111,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
 def replace_wire_cut_nodes(graph: MultiDiGraph):
     """
-    Replace all :class:`~.WireCut` nodes in the graph with
-
+    Replace each :class:`~.WireCut` node in the graph with a
     :class:`~.MeasureNode` and :class:`~.PrepareNode`.
 
     Args:
