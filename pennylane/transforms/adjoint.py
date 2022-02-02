@@ -14,8 +14,9 @@
 """Code for the adjoint transform."""
 
 from functools import wraps
+from pennylane.operation import Operation
 from pennylane.tape import QuantumTape, stop_recording
-
+from pennylane.utils import decompose_ops_until_all
 
 def adjoint(fn):
     """Create a function that applies the adjoint (inverse) of the provided operation or template.
@@ -117,30 +118,38 @@ def adjoint(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        with stop_recording(), QuantumTape() as tape:
-            fn(*args, **kwargs)
+        ops = fn(*args, **kwargs)
 
-        if not tape.operations:
-            # we called op.expand(): get the outputted tape
-            tape = fn(*args, **kwargs)
+        return_type = None
 
-        adjoint_ops = []
-        for op in reversed(tape.operations):
+        if isinstance(ops, QuantumTape):
+            ops = ops.operations
+            return_type = "tape"
+
+        elif isinstance(ops, Operation):
+            ops = [ops]
+
+        def is_adjoint_implemted(op):
             try:
-                new_op = op.adjoint()
-                adjoint_ops.append(new_op)
+                op.adjoint()
             except NotImplementedError:
-                # Expand the operation and adjoint the result.
-                new_ops = adjoint(op.expand)()
+                return False
+            else:
+                return True
 
-                if isinstance(new_ops, QuantumTape):
-                    new_ops = new_ops.operations
-
-                adjoint_ops.extend(new_ops)
+        ops = decompose_ops_until_all(ops, is_adjoint_implemted)
+        adjoint_ops = []
+        for op in reversed(ops):
+            adjoint_ops.append(op.adjoint())
+        
+        if return_type == "tape":
+            with QuantumTape(do_queue=False) as adjoint_tape:
+                for op in adjoint_ops:
+                    adjoint_tape.apply(op)
+            return adjoint_tape
 
         if len(adjoint_ops) == 1:
             adjoint_ops = adjoint_ops[0]
-
         return adjoint_ops
 
     return wrapper
