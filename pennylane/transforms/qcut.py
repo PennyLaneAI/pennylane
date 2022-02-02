@@ -16,7 +16,7 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
-from typing import Tuple
+from typing import Tuple, Sequence
 
 from networkx import MultiDiGraph, weakly_connected_components
 
@@ -289,9 +289,6 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
         communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
 
     return subgraphs, communication_graph
-
-
-from typing import Sequence
 
 
 def contract_tensors(
