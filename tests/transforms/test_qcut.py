@@ -14,10 +14,12 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
+from networkx import MultiDiGraph
 import numpy as np
 import pennylane as qml
 import pytest
 from pennylane.transforms import qcut
+import sys
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -500,3 +502,32 @@ class TestReplaceWireCut:
             _, _, wire_label_out = out_edges[0]
 
             assert wire_label_in == wire_label_out == node.wires.tolist()[0]
+
+
+class TestContractTensors:
+    """Tests for the contract_tensors function"""
+
+    t = [np.arange(4), np.arange(4, 8)]
+    m = [[qcut.MeasureNode(wires=0)], []]
+    p = [[], [qcut.PrepareNode(wires=0)]]
+    edge_dict = {"pair": (m[0][0], p[1][0])}
+    g = MultiDiGraph([(0, 1, edge_dict)])
+    expected_result = np.dot(*t)
+
+    @pytest.mark.parametrize("use_opt_einsum", [False, True])
+    def test_basic(self, use_opt_einsum):
+        """Test that the correct answer is returned for a simple contraction scenario"""
+        pytest.importorskip("opt_einsum")
+        res = qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        assert np.allclose(res, self.expected_result)
+
+
+    def test_fail_import(self, monkeypatch):
+        """Test if an ImportError is raised when opt_einsum is requested but not installed"""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "opt_einsum", None)
+
+            with pytest.raises(ImportError, match="The opt_einsum package is required"):
+                qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=True)
