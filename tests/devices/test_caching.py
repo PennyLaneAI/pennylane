@@ -28,12 +28,14 @@ def qfunc(x, y):
     qml.CNOT(wires=[0, 1])
     return expval(qml.PauliZ(wires=1))
 
+
 def get_device_with_caching(wires, cache):
     """Get a device that defines caching."""
     with pytest.warns(UserWarning, match="deprecated"):
         dev = qml.device("default.qubit", wires=wires, cache=cache)
 
     return dev
+
 
 class TestCaching:
     """Tests for device caching"""
