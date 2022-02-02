@@ -251,7 +251,8 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             qml.RZ(0.6, wires=1)
             qml.expval(qml.PauliZ(0))
 
-    We can find the circuit graph and remove all the wire cut nodes using:
+    We can find the corresponding graph, remove all the wire cut nodes, and
+    find the subgraphs and communication graph by using:
 
     >>> graph = qcut.tape_to_graph(tape)
     >>> qcut.replace_wire_cut_nodes(graph)
