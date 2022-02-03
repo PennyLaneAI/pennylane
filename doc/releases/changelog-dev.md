@@ -47,7 +47,9 @@
   static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface. A test was added to ensure that
   different ways of defining `num_params` work as expected.
-  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/pull/2099)
+  [(#2101)](https://github.com/PennyLaneAI/pennylane/pull/2101)
+  [(#2135)](https://github.com/PennyLaneAI/pennylane/pull/2135)
 
 * Development of circuit cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
