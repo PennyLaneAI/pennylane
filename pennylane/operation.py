@@ -727,7 +727,6 @@ class Operation(Operator):
         Returns:
             The adjointed operation.
         """
-
         raise NotImplementedError
 
     @inverse.setter
