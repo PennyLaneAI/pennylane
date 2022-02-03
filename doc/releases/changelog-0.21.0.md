@@ -555,7 +555,7 @@
   provided by the underlying device.
   [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
 
-* An error is raised during QNode creation if backpropagation is requested on a device with
+* Raises an error during QNode creation if backpropagation is requested on a device with
   finite shots specified.
   [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
 
@@ -605,7 +605,7 @@
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
   [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
 
-* Extended the interfaces description page to explicitly mention device
+* Extends the interfaces description page to explicitly mention device
   compatibility.
   [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
 
