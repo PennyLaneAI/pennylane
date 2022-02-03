@@ -223,7 +223,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     Args:
         graph (MultiDiGraph): directed multigraph containing measure and prepare
-        nodes at cut locations
+            nodes at cut locations
 
     Returns:
         subgraphs, communication_graph (Tuple[Tuple[MultiDiGraph], MultiDiGraph]):
@@ -307,7 +307,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     Args:
         graph (MultiDiGraph): directed multigraph containing measure to be
-        converted to a tape
+            converted to a tape
 
     Returns:
         tape (QuantumTape): the quantum tape corresponding to the input
