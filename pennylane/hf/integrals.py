@@ -212,6 +212,40 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     )
 
 
+def _hermite_moment(t, e, rc, alpha, beta):
+    r"""Compute Hermite moment integrals recursively.
+
+    The Hermite moment integral in one dimension is defined as
+
+    .. math::
+
+        \int_{-\infty }^{+\infty} x_C^e \Lambda_t dx,
+
+    where :math:`e` is the order, :math:`C` is the reference which will be considered here as the
+    origin of the Cartesian coordinates, and :math:`\Lambda_t` is the :math:`t` component of the
+    Hermite Gaussian. The integral can be computed recursively as
+    [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        M_{t}^{e+1} = t M_{t-1}^{e} + X_PC M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
+    """
+    p = alpha + beta
+
+    if t > e:
+        return 0.0
+    if e == 0 and t != 0:
+        return 0.0
+    if e == 0 and t == 0:
+        return anp.sqrt(anp.pi / p)
+    m = (
+        _hermite_moment(t - 1, e - 1, rc, alpha, beta) * t
+        + _hermite_moment(t, e - 1, rc, alpha, beta) * rc
+        + _hermite_moment(t + 1, e - 1, rc, alpha, beta) / (2 * p)
+    )
+    return m
+
+
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     r"""Compute overlap integral for two primitive Gaussian functions.
 
