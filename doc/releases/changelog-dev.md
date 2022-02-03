@@ -110,7 +110,7 @@
   ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
   ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
   New cost: 0.0 reached via substeps [-0.  0.  0.]
-  New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
+  New cost: -1.0 reached via substeps [-1. -1. -1.]
   ```
   However, note that these intermediate minimal values are evaluations of the
   *reconstructions* that Rotosolve creates and uses internally for the optimization,
