@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Qubit tapering</h4>
+<h4>Tapering off qubits</h4>
 
 * Functions for tapering qubits based on molecular symmetries have been added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
@@ -46,7 +46,7 @@
   tensor([1, 1], requires_grad=True)
   ```
 
-<h4>Tensor network templates</h4>
+<h4>New tensor network templates</h4>
 
 * A tensor network templates module has been added. Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented.
@@ -217,7 +217,7 @@
   and not of the original objective function. For noisy cost functions, these intermediate
   evaluations may differ significantly from evaluations of the original cost function.
 
-<h4>Adjoint metric tensor function</h4>
+<h4>Adjoint metric tensor</h4>
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
