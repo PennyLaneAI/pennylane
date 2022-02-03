@@ -132,7 +132,7 @@ class CommutingEvolution(Operation):
     @property
     def num_params(self):
         return len(self.hamiltonian.data) + 1
-    
+
     def expand(self):
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
