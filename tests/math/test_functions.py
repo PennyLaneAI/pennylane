@@ -1063,10 +1063,8 @@ class TestRequiresGrad:
 
         t.requires_grad = False
         s.requires_grad = False
-
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             qml.grad(cost_fn)(t, s)
-
         assert res == [False, False]
 
     def test_torch(self):

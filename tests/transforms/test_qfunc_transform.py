@@ -369,9 +369,12 @@ class TestQFuncTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
-        a = tf.Variable(0.5, dtype=tf.float64)
-        b = tf.Variable([0.1, 0.2], dtype=tf.float64)
-        x = tf.Variable(0.543, dtype=tf.float64)
+        a_np = np.array(0.5, requires_grad=True)
+        b_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = np.array(0.543, requires_grad=True)
+        a = tf.Variable(a_np, dtype=tf.float64)
+        b = tf.Variable(b_np, dtype=tf.float64)
+        x = tf.Variable(x_np, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = qnode(x, a, b)
@@ -379,7 +382,7 @@ class TestQFuncTransformGradients:
         assert np.allclose(res, self.expval(x, a, b))
 
         grad = tape.gradient(res, [x, a, b])
-        expected = qml.grad(self.expval)(x.numpy(), a.numpy(), b.numpy())
+        expected = qml.grad(self.expval)(x_np, a_np, b_np)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
     def test_differentiable_qfunc_torch(self, diff_method):

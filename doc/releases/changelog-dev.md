@@ -494,6 +494,7 @@
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
   [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
   [(#2139)](https://github.com/PennyLaneAI/pennylane/pull/2139)
+  [(#2148)](https://github.com/PennyLaneAI/pennylane/pull/2148)
 
   ```python
   from pennylane import numpy as np

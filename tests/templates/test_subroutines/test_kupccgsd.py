@@ -522,7 +522,7 @@ class TestInterfaces:
     def test_autograd(self, tol):
         """Test the autograd interface."""
 
-        weights = qml.math.array(np.random.random(size=(1, 6)))
+        weights = qml.numpy.random.random(size=(1, 6), requires_grad=True)
 
         dev = qml.device("default.qubit", wires=4)
 
