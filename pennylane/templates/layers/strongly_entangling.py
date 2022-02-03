@@ -206,6 +206,3 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

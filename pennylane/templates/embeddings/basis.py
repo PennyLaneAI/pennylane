@@ -104,6 +104,3 @@ class BasisEmbedding(Operation):
                     qml.PauliX(wire)
 
         return tape
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

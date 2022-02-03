@@ -175,6 +175,3 @@ class SimplifiedTwoDesign(Operation):
             return [(n_wires,), (n_layers,)]
 
         return [(n_wires,), (n_layers, n_wires - 1, 2)]
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

@@ -159,6 +159,3 @@ class ApproxTimeEvolution(Operation):
                     PauliRot(theta[j], term, wires=wires[j])
 
         return tape
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

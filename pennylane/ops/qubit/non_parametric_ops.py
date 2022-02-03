@@ -317,6 +317,11 @@ class S(Operation):
         # S = RZ(\pi/2) RY(0) RZ(0)
         return [np.pi / 2, 0.0, 0.0]
 
+    def adjoint(self, do_queue=False):
+        op = S(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
+
 
 class T(Operation):
     r"""T(wires)
@@ -357,6 +362,11 @@ class T(Operation):
     def single_qubit_rot_angles(self):
         # T = RZ(\pi/4) RY(0) RZ(0)
         return [np.pi / 4, 0.0, 0.0]
+
+    def adjoint(self, do_queue=False):
+        op = T(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
 
 class SX(Operation):
@@ -403,6 +413,11 @@ class SX(Operation):
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
+
+    def adjoint(self, do_queue=False):
+        op = SX(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
 
 class CNOT(Operation):
@@ -637,6 +652,7 @@ class ISWAP(Operation):
         return decomp_ops
 
 
+
 class SISWAP(Operation):
     r"""SISWAP(wires)
     The square root of i-swap operator. Can also be accessed as ``qml.SQISW``
@@ -693,6 +709,11 @@ class SISWAP(Operation):
             SX(wires=wires[1]),
         ]
         return decomp_ops
+
+    def adjoint(self, do_queue=False):
+        op = SISWAP(wires=self.wires)
+        op.inverse = not self.inverse 
+        return op
 
 
 SQISW = SISWAP

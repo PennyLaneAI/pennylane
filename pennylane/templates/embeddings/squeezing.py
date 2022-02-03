@@ -139,6 +139,3 @@ class SqueezingEmbedding(Operation):
                 qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
 
         return tape
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

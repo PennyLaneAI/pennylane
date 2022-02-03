@@ -298,6 +298,3 @@ class QAOAEmbedding(Operation):
             return n_layers, 3
 
         return n_layers, 2 * n_wires
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

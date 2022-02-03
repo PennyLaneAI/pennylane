@@ -373,6 +373,3 @@ class QuantumMonteCarlo(Operation):
             )
 
         return tape
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError

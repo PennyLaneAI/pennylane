@@ -297,6 +297,3 @@ class ParticleConservingU1(Operation):
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, n_wires - 1, 2
-
-    def adjoint(self, do_queue=False):
-        raise NotImplementedError
