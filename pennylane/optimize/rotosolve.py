@@ -146,9 +146,10 @@ class RotosolveOptimizer:
             *Only used if there are more than one frequency for a given parameter.*
 
     For each parameter, a purely classical one-dimensional global optimization over the
-    interval :math:`(-\pi,\pi]` is performed, which is replaced by a closed-form expression for
-    the optimal value if the :math:`d\text{th}` parametrized gate has only two eigenvalues
-    (This means that ``substep_optimizer`` and ``substep_kwargs`` will not be used for these parameters).
+    interval :math:`(-\pi,\pi]` is performed, which is replaced automatically by a 
+    closed-form expression for the optimal value if the :math:`d\text{th}` parametrized
+    gate has only two eigenvalues. This means that ``substep_optimizer`` and
+    ``substep_kwargs`` will not be used for these parameters.
     In this case, the optimal value :math:`\theta^*_d` is given analytically by
 
     .. math::
