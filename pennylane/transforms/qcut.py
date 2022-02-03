@@ -221,7 +221,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     Args:
         graph (MultiDiGraph): directed multigraph containing measure and prepare
-        nodes at cut locations
+            nodes at cut locations
 
     Returns:
         subgraphs, communication_graph (Tuple[Tuple[MultiDiGraph], MultiDiGraph]):
