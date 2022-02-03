@@ -19,7 +19,7 @@
   * `qml.sample` or
   * multiple `qml.expval` / `qml.var` measurements.
 
-  Consider a QNode that returns basis state probabilities:
+  Consider a QNode that returns basis-state probabilities:
   ```python
   dev = qml.device('default.qubit', wires=2)
   x = jnp.array(0.543)
@@ -48,7 +48,7 @@
   instantiated without changing the user interface.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
-* Development of circuit cutting compiler has begun:
+* Development of a circuit-cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
   [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
@@ -185,7 +185,7 @@
   3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
   ```
 
-* Functions for tapering qubits based on molecular symmetries is added.
+* Functions for tapering qubits based on molecular symmetries have been added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
@@ -230,12 +230,12 @@
   This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
   a number of operations that scales quadratically in the number of trainable
-  parameters (see below for details).
+  parameters.
 
   Note that as it makes use of state cloning, it is inherently classical
   and can only be used with statevector simulators and `shots=None`.
 
-  It is particular useful for larger circuits for which backpropagation requires
+  It is particularly useful for larger circuits for which backpropagation requires
   inconvenient or even unfeasible amounts of storage, but is slower.
   Furthermore, the adjoint method is only available for analytic computation, not
   for measurements simulation with `shots!=None`.
@@ -376,10 +376,10 @@
   to control the precision of parameters.
   [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
 
-* Insert transform now supports adding operation after or before certain specific gates.
+* `insert` transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
-* Interferometer is now a class with `shape` method.
+* Interferometer now has a `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
 
 * The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
@@ -533,7 +533,7 @@
   [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
 
 * An error is raised during QNode creation if backpropagation is requested on a device with
-  finite-shots specified.
+  finite shots specified.
   [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
 
 * Pytest now ignores any `DeprecationWarning` raised within autograd's `numpy_wrapper` module.
@@ -590,6 +590,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin Christina Lee, Olivia Di Matteo, Diego Guala,
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
 Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
 David Wierichs, Shaoming Zhang
