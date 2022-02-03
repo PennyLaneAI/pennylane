@@ -20,6 +20,7 @@ from .hamiltonian import (
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
     generate_hamiltonian,
+    simplify,
 )
 from .hartree_fock import generate_scf, hf_energy, nuclear_energy
 from .integrals import (
