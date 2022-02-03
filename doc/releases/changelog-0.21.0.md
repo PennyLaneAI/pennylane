@@ -312,8 +312,10 @@
 * For subclasses of `Operator` where it is known before instantiation, the
   `num_params` is reverted back to being a static property. This allows to
   programmatically know the number of parameters before an operator is
-  instantiated without changing the user interface.
-  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+  instantiated without changing the user interface. A test was added to ensure
+  that different ways of defining `num_params` work as expected.
+  [(#2101)](https://github.com/PennyLaneAI/pennylane/pull/2101)
+  [(#2135)](https://github.com/PennyLaneAI/pennylane/pull/2135)
 
 * A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
