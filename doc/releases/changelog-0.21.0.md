@@ -24,6 +24,7 @@
   n_qubits, n_elec = len(H.wires), mol.n_electrons
 
   generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+  paulix_sector = [1, -1, -1]
   opt_sector = hf.optimal_sector(H, generators, n_elec)
   H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
   hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
@@ -40,7 +41,7 @@
   + ((-0.10492941933657857+0j)) [X0 Z1]
   + ((0.09337410512815508+0j)) [Z0 Z1]
   + ((0.10492941933657857+0j)) [Z0 X1]
-  >>> print(hf_tapered)
+  >>> hf_tapered
   tensor([1, 1], requires_grad=True)
   ```
 
@@ -81,6 +82,7 @@
   2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
   3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
   ```
+
 * Added a template for tree tensor networks (TTN).
   [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
   An example circuit that uses the `TTN` template is:
@@ -116,8 +118,10 @@
 
 <h4>More powerful JAX interface</h4>
 
-* The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
-  QNodes include those with:
+* The JAX interface now supports evaluating vector-valued QNodes.
+  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
+
+  Vector-valued QNodes include those with:
   * `qml.probs`;
   * `qml.state`;
   * `qml.sample` or
@@ -145,7 +149,6 @@
    DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
   ```
   Note that `jax.jit` is not supported for vector-valued QNodes.
-  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
 
 <h4>Generalized RotosolveOptmizer</h4>
 
