@@ -357,6 +357,12 @@ def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
             1,
             3.12846324e-01 # obtained from pyscf using mol.intor_symmetric("int1e_r")
        ),
+        (
+            ["H", "Li"],
+            np.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], requires_grad=True),
+            1,
+            4.82090830e-01  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
     ],
 )
 def test_generate_moment(symbols, geometry, e, ref):
@@ -364,8 +370,9 @@ def test_generate_moment(symbols, geometry, e, ref):
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
+    args = [p for p in [geometry] if p.requires_grad]
 
-    s = generate_moment(basis_a, basis_b, e)()
+    s = generate_moment(basis_a, basis_b, e)(*args)
     assert np.allclose(s, ref)
 
 
