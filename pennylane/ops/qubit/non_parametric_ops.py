@@ -313,7 +313,7 @@ class S(Operation):
         decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         op = S(wires=self.wires)
         op.inverse = not self.inverse
         return op
@@ -359,7 +359,7 @@ class T(Operation):
         decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         op = T(wires=self.wires)
         op.inverse = not self.inverse
         return op
@@ -410,7 +410,7 @@ class SX(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         op = SX(wires=self.wires)
         op.inverse = not self.inverse
         return op
@@ -651,7 +651,7 @@ class ISWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         op = ISWAP(wires=self.wires)
         op.inverse = not self.inverse
         return op
@@ -714,7 +714,7 @@ class SISWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self, do_queue=False):
+    def adjoint(self):
         op = SISWAP(wires=self.wires)
         op.inverse = not self.inverse
         return op

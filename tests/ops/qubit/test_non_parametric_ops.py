@@ -940,7 +940,7 @@ all_ops = [
     qml.WireCut(wires=0),
 ]
 
-idempotent_ops = [
+involution_ops = [  # ops who are their own inverses
     qml.Identity,
     qml.Hadamard,
     qml.PauliX,
@@ -959,25 +959,26 @@ idempotent_ops = [
 
 
 @pytest.mark.parametrize("op", all_ops)
-@pytest.mark.parametrize("num_adjoint_calls", [1, 2, 3])
-def test_adjoint_method(op, num_adjoint_calls, tol):
-    adj_op = copy.copy(op)
-    for i in range(num_adjoint_calls):
-        adj_op = adj_op.adjoint()
+def test_adjoint_method(op, tol):
+    for num_adjoint_calls in range(1, 4):
 
-    if (type(op) in idempotent_ops) or (num_adjoint_calls % 2 == 0):
-        expected_adj_op = copy.copy(op)
+        adj_op = copy.copy(op)
+        for i in range(num_adjoint_calls):
+            adj_op = adj_op.adjoint()
 
-    else:
-        expected_adj_op = copy.copy(op)
-        expected_adj_op.inverse = not expected_adj_op.inverse
+        if (type(op) in involution_ops) or (num_adjoint_calls % 2 == 0):
+            expected_adj_op = copy.copy(op)
 
-    assert adj_op.name == expected_adj_op.name
-    assert adj_op.label() == expected_adj_op.label()  # check that the name and labels are the same
+        else:
+            expected_adj_op = copy.copy(op)
+            expected_adj_op.inverse = not expected_adj_op.inverse
 
-    try:
-        np.testing.assert_allclose(
-            adj_op.matrix, expected_adj_op.matrix, atol=tol
-        )  # compare matrix if its defined
-    except NotImplementedError:
-        pass
+        assert adj_op.name == expected_adj_op.name
+        assert adj_op.label() == expected_adj_op.label()  # check that the name and labels are the same
+
+        try:
+            np.testing.assert_allclose(
+                adj_op.matrix, expected_adj_op.matrix, atol=tol
+            )  # compare matrix if its defined
+        except NotImplementedError:
+            pass
