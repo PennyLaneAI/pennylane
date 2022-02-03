@@ -32,4 +32,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes
+Anthony Hayes, David Wierichs
