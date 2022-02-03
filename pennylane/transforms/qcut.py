@@ -281,7 +281,7 @@ def contract_tensors(
 
         for _, succ_edges in successors.items():
             for succ_edge in succ_edges.values():
-                meas_op, prep_op = succ_edge["pair"]
+                meas_op, _ = succ_edge["pair"]
 
                 for m in meas:
                     if m is meas_op:
@@ -289,5 +289,6 @@ def contract_tensors(
                         tensor_indxs[i] += symb
 
     eqn = ",".join(tensor_indxs)
+    kwargs = {} if use_opt_einsum else {"like": tensors[0]}
 
-    return contract(eqn, *tensors)
+    return contract(eqn, *tensors, **kwargs)
