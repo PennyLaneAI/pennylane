@@ -974,7 +974,9 @@ def test_adjoint_method(op, tol):
             expected_adj_op.inverse = not expected_adj_op.inverse
 
         assert adj_op.name == expected_adj_op.name
-        assert adj_op.label() == expected_adj_op.label()  # check that the name and labels are the same
+        assert (
+            adj_op.label() == expected_adj_op.label()
+        )  # check that the name and labels are the same
 
         try:
             np.testing.assert_allclose(
