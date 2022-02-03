@@ -600,8 +600,9 @@ class TestMetricTensor:
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
-
     def test_no_trainable_params_qnode(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -617,6 +618,8 @@ class TestMetricTensor:
         assert res == ()
 
     def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
         dev = qml.device("default.qubit", wires=3)
 
         weights = [0.1, 0.2]
@@ -632,7 +635,8 @@ class TestMetricTensor:
             mt_tapes, post_processing = qml.metric_tensor(tape)
         res = post_processing(qml.execute(mt_tapes, dev, None))
 
-        assert mt_tapes == [] and res == []
+        assert mt_tapes == [] and res == ()
+
 
 fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
 

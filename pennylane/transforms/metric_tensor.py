@@ -248,9 +248,9 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
         warnings.warn(
             "Attempted to compute the metric tensor of a tape with no trainable parameters. "
             "If this is unintended, please mark trainable parameters in accordance with your "
-            "autodiff framework, or via the tape's 'trainable_params' property."
+            "autodiff framework, or via the 'tape.trainable_params' property."
         )
-        return [], None
+        return [], lambda _: ()
 
     # pylint: disable=too-many-arguments
     if approx in {"diag", "block-diag"}:
