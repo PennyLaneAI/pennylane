@@ -147,7 +147,7 @@
   Note that `jax.jit` is not supported for vector-valued QNodes.
   [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
 
-<h4>More general RotosolveOptmizer</h4>
+<h4>Generalized RotosolveOptmizer</h4>
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
@@ -213,9 +213,7 @@
   and not of the original objective function. For noisy cost functions, these intermediate
   evaluations may differ significantly from evaluations of the original cost function.
 
-<h4>More powerful quantum gradients</h4>
-
-Adjoint metric tensor and parameter-shift Hessian
+<h4>Adjoint metric tensor function</h4>
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
@@ -270,16 +268,18 @@ Adjoint metric tensor and parameter-shift Hessian
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
-* A new method `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
-  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The method generates
+<h4>New parameter-shift Hessian function</h4>
+
+* A new function `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
+  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The function generates
   parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
   software devices. Compared to using an auto-differentiation framework to compute the Hessian
-  via parameter shifts, this method will use fewer device invocations and can be used to inspect
-  the parameter-shifted "Hessian tapes" directly. The method remains fully differentiable on all
+  via parameter shifts, this function will use fewer device invocations and can be used to inspect
+  the parameter-shifted "Hessian tapes" directly. The function remains fully differentiable on all
   supported PennyLane interfaces.
 
   Additionally, the parameter-shift Hessian comes with a new batch transform decorator
-  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian methods.
+  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian functions.
   [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
 
   The following code demonstrates how to use the parameter-shift Hessian:
@@ -303,7 +303,7 @@ Adjoint metric tensor and parameter-shift Hessian
           [ 0.01983384, -0.97517033]], requires_grad=True)
   ```
 
-<h4>Cutting wires</h4>
+<h4>Wire cutting operator</h4>
 
 * A `WireCut` operator has been added for manual wire cut placement
   when constructing a QNode.
