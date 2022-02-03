@@ -582,7 +582,12 @@
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
-<h3>Documentation</h3>
+* Updated the `adjoint()` method for non-parametric qubit operations to 
+  solve a bug where repeated `adjoint()` calls don't return the correct 
+  operator.
+  [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
+
+* <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
   [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
