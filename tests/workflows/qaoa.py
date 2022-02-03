@@ -4,21 +4,24 @@ from pennylane import numpy as np
 import networkx as nx
 
 def main(bucket_info=None, device_arn=None, display=False):
-
+    # Define the four-vertex graph for which we want to find the minimum vertex cover
     edges = [(0, 1), (1, 2), (2, 0), (2, 3)]
     graph = nx.Graph(edges)
 
-
+    # The cost Hamiltonian has two ground states, |1010\ and |0110\, coinciding with the solutions of the problem.
+    # The mixer Hamiltonian is the simple, non-commuting sum of Pauli-X operations on each node of the graph.
     cost_h, mixer_h = qaoa.min_vertex_cover(graph, constrained=False)
 
     if display:
         print("Cost Hamiltonian", cost_h)
         print("Mixer Hamiltonian", mixer_h)
 
+    # A single layer of QAOA consists of time evolution under these Hamiltonians.
     def qaoa_layer(gamma, alpha):
         qaoa.cost_layer(gamma, cost_h)
         qaoa.mixer_layer(alpha, mixer_h)
 
+    # build full variational circuit
     wires = range(4)
     depth = 2
 
@@ -46,6 +49,7 @@ def main(bucket_info=None, device_arn=None, display=False):
         circuit(params)
         return qml.expval(cost_h)
 
+    # perform optimizations
     optimizer = qml.GradientDescentOptimizer()
     steps = 70
     params = np.array([[0.5, 0.5], [0.5, 0.5]], requires_grad=True)
@@ -68,6 +72,7 @@ def main(bucket_info=None, device_arn=None, display=False):
 
     max_values = [i for i, x in enumerate(probs) if x == max(probs)]
 
+    # assert the wo ground states |1010\ and |0110\ are correct.
     assert max_values == [6, 10]
 
     if display:
