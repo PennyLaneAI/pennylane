@@ -584,6 +584,10 @@
 
 <h3>Documentation</h3>
 
+* Improves the documentation of `RotosolveOptimizer` regarding the
+  usage of the passed `substep_optimizer` and its keyword arguments.
+  [(#2160)](https://github.com/PennyLaneAI/pennylane/pull/2160)
+
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
   [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
 

@@ -77,10 +77,10 @@ class TestMetricTensor:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_parameter_fan_out(self, diff_method):
-        """The metric tensor is always with respect to the quantum circuit. Any
-        classical processing is not taken into account. As a result, if there is
+        """The metric tensor is with respect to the quantum circuit and ignores
+        classical processing if ``hybrid=False``. As a result, if there is
         parameter fan-out, the returned metric tensor will be larger than
-        expected.
+        ``(len(args), len(args))`` if hybrid computation is deactivated.
         """
         dev = qml.device("default.qubit", wires=2)
 
