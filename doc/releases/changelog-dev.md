@@ -18,6 +18,10 @@
   placeholders and fragments into subgraphs and a communication graph has been added.
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
 
+  A method has been added that takes a directed multigraph with `MeasureNode`
+  and `PrepareNode` placeholder nodes and converts them into a tape.
+  [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
