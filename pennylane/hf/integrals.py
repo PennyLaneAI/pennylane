@@ -221,9 +221,9 @@ def _hermite_moment(alpha, beta, t, e, rc):
 
         \int_{-\infty }^{+\infty} x_C^e \Lambda_t dx,
 
-    where :math:`e` is the multipole moment order, :math:`C` is the reference which will be
-    considered here as the origin of the Cartesian coordinates, and :math:`\Lambda_t` is the
-    :math:`t` component of the Hermite Gaussian. The integral can be computed recursively as
+    where :math:`e` is the multipole moment order, :math:`C` is the origin of the Cartesian
+    coordinates, and :math:`\Lambda_t` is the :math:`t` component of the Hermite Gaussian. The
+    integral can be computed recursively as
     [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
@@ -275,6 +275,58 @@ def _hermite_moment(alpha, beta, t, e, rc):
     return m
 
 
+def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
+    r"""Compute one-dimensional multipole moment integral for two primitive Gaussian functions.
+
+    The multipole moment integral in one dimension is defined as
+
+    .. math::
+
+        S_{ij}^e = \left \langle G_i | q_C^e | G_j \right \rangle,
+
+    where :math:`G` is a Gaussian function at dimension :math:`q = x, y, z` of the Cartesian
+    coordinates system, :math:`e` is the multipole moment order and :math:`C` is the origin of the
+    Cartesian coordinates. The integrals can be evauated as
+    [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        S_{ij}^e = \sum_{t=0}^{\mathrm{min}(i+j, \ e)} E_t^{ij} M_t^e,
+
+    where :math:`E` and :math:`M` are the Hermite Gaussian expansion coefficient and the Hermite
+    moment integral, respectively, that can be computed recursively.
+
+    Args:
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        ra (float): position of the first Gaussian function
+        rb (float): position of the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        e (integer): order of the multipole moment
+        rc (array[float]): distance between the center of the Hermite Gaussian and the origin
+
+    Returns:
+        array[float]: one-dimensional multipole moment integral between primitive Gaussian functions
+
+    **Example**
+
+    >>> la, lb = 0, 0
+    >>> ra, rb = np.array([2.0]), np.array([2.0])
+    >>> alpha = np.array([3.42525091])
+    >>> beta = np.array([3.42525091])
+    >>> e = 1
+    >>> rc = 1.5
+    >>> gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc)
+    array([1.0157925])
+    """
+    s = 0.0
+    for t in range(min(la + lb + 1, e + 1)):
+        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * _hermite_moment(alpha, beta, t, e, rc)
+
+    return s
+
+
 def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     r"""Compute overlap integral for two primitive Gaussian functions.
 
@@ -292,8 +344,8 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     Args:
         la (integer): angular momentum for the first Gaussian function
         lb (integer): angular momentum for the second Gaussian function
-        ra (float): position vector of the the first Gaussian function
-        rb (float): position vector of the the second Gaussian function
+        ra (float): position vector of the first Gaussian function
+        rb (float): position vector of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 
