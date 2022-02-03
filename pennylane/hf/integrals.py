@@ -212,8 +212,8 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     )
 
 
-def _hermite_moment(t, e, rc, alpha, beta):
-    r"""Compute Hermite moment integrals recursively.
+def _hermite_moment(alpha, beta, t, e, rc):
+    r"""Compute Hermite moment integral recursively.
 
     The Hermite moment integral in one dimension is defined as
 
@@ -221,16 +221,45 @@ def _hermite_moment(t, e, rc, alpha, beta):
 
         \int_{-\infty }^{+\infty} x_C^e \Lambda_t dx,
 
-    where :math:`e` is the order, :math:`C` is the reference which will be considered here as the
-    origin of the Cartesian coordinates, and :math:`\Lambda_t` is the :math:`t` component of the
-    Hermite Gaussian. The integral can be computed recursively as
+    where :math:`e` is the multipole moment order, :math:`C` is the reference which will be
+    considered here as the origin of the Cartesian coordinates, and :math:`\Lambda_t` is the
+    :math:`t` component of the Hermite Gaussian. The integral can be computed recursively as
     [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
 
         M_{t}^{e+1} = t M_{t-1}^{e} + X_PC M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
+
+    This integral is zero for :math:`t > e` and
+
+    .. math::
+
+        M_t^0 = \delta _{t0} \sqrt{\frac{\pi}{p}},
+
+    where :math:`p = \alpha + \beta` and :math:`\alpha, \beta` are the exponents of the Gaussian
+    functions that construct the Hermite Gaussian :math:`\Lambda`.
+
+    Args:
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        t (integer): order of the Hermite Gaussian
+        e (integer): order of the multipole moment
+        rc (array[float]): distance between the center of the Hermite Gaussian and the origin
+
+    Returns:
+        array[float]: expansion coefficients for each Gaussian combination
+
+    **Example**
+
+    >>> alpha = np.array([3.42525091])
+    >>> beta =  np.array([3.42525091])
+    >>> t = 0
+    >>> e = 0
+    >>> rc = 2.0
+    >>> _hermite_moment(alpha, beta, t, e, rc)
+    array([0.677195])
     """
-    p = alpha + beta
+    p = anp.array(alpha + beta)
 
     if t > e:
         return 0.0
