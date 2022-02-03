@@ -338,7 +338,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     >>> graph = qcut.tape_to_graph(tape)
     >>> qcut.replace_wire_cut_nodes(graph)
-    >>> qcut.fragment_graph(graph)
+    >>> subgraphs, communication_graph = qcut.fragment_graph(graph)
     >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
     >>> tapes
     [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
