@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.22.0-dev (development release)
+# Release 0.21.0-dev (development release)
 
 <h3>New features since last release</h3>
 
@@ -312,6 +312,123 @@
 
 <h3>Improvements</h3>
 
+* The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
+  differs in implementation and minor stylistic details from the old string circuit drawing
+  infrastructure.
+  [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
+
+* The `RotosolveOptimizer` now raises an error if no trainable arguments are
+  detected, instead of silently skipping update steps for all arguments.
+  [(#2109)](https://github.com/PennyLaneAI/pennylane/pull/2109)
+
+* The function `qml.math.safe_squeeze` is introduced and `gradient_transform` allows
+  for QNode argument axes of size `1`.
+  [(#2080)](https://github.com/PennyLaneAI/pennylane/pull/2080)
+
+  `qml.math.safe_squeeze` wraps `qml.math.squeeze`, with slight modifications:
+
+  - When provided the `axis` keyword argument, axes that do not have size `1` will be
+    ignored, instead of raising an error.
+
+  - The keyword argument `exclude_axis` allows to explicitly exclude axes from the
+    squeezing.
+
+* The `adjoint` transform now raises and error whenever the object it is applied to
+  is not callable.
+  [(#2060)](https://github.com/PennyLaneAI/pennylane/pull/2060)
+
+  An example is a list of operations to which one might apply `qml.adjoint`:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_wrong(params):
+      # Note the difference:                  v                         v
+      qml.adjoint(qml.templates.AngleEmbedding(params, wires=dev.wires))
+      return qml.state()
+
+  @qml.qnode(dev)
+  def circuit_correct(params):
+      # Note the difference:                  v                         v
+      qml.adjoint(qml.templates.AngleEmbedding)(params, wires=dev.wires)
+      return qml.state()
+
+  params = list(range(1, 3))
+  ```
+
+  The produced state is
+
+  ```pycon
+  >>> circuit_wrong(params)
+  [ 0.47415988+0.j          0.        -0.73846026j  0.        -0.25903472j
+   -0.40342268+0.j        ]
+  ```
+
+  but if we apply the `adjoint` correctly, we get
+
+  ```pycon
+  >>> circuit_correct(params)
+  [ 0.47415988+0.j          0.         0.73846026j  0.         0.25903472j
+   -0.40342268+0.j        ]
+  ```
+
+* A precision argument has been added to the tape's ``to_openqasm`` function
+  to control the precision of parameters.
+  [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
+
+* Insert transform now supports adding operation after or before certain specific gates.
+  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
+
+* Interferometer is now a class with `shape` method.
+  [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
+
+* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
+  uses RetworkX for its internal representation. This results in significant speedup
+  for algorithms that rely on a directed acyclic graph representation.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
+* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
+* The Barrier and Identity operations now support the `adjoint` method.
+  [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
+  [(#2063)](https://github.com/PennyLaneAI/pennylane/pull/2063)
+
+* `qml.BasisStatePreparation` now supports the `batch_params` decorator.
+  [(#2091)](https://github.com/PennyLaneAI/pennylane/pull/2091)
+
+* Added a new `multi_dispatch` decorator that helps ease the definition of new functions
+  inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
+  [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
+
+  [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
+
+  We can decorate a function, indicating the arguments that are
+  tensors handled by the interface:
+
+  ```pycon
+  >>> @qml.math.multi_dispatch(argnum=[0, 1])
+  ... def some_function(tensor1, tensor2, option, like):
+  ...     # the interface string is stored in ``like``.
+  ...     ...
+  ```
+
+  Previously, this was done using the private utility function `_multi_dispatch`.
+
+  ```pycon
+  >>> def some_function(tensor1, tensor2, option):
+  ...     interface = qml.math._multi_dispatch([tensor1, tensor2])
+  ...     ...
+  ```
+
+* The `IsingZZ` gate was added to the `diagonal_in_z_basis` attribute. For this
+  an explicit `_eigvals` method was added.
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+
+* The `IsingXX`, `IsingYY` and `IsingZZ` gates were added to
+  the `composable_rotations` attribute.
+  [(#2113)](https://github.com/PennyLaneAI/pennylane/pull/2113)
+
 <h3>Breaking changes</h3>
 
 * `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
@@ -464,15 +581,20 @@
   which return `qml.probs` when the `default.qubit.jax` is provided with a custom shot
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
-  
-* Updated the `adjoint()` method for non-parametric qubit operations to
-  solve a bug where repeated `adjoint()` calls don't return the correct 
-  operator.
-  [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
 
 <h3>Documentation</h3>
+
+* Fixes an error in the signs of equations in the `DoubleExcitation` page.
+  [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
+
+* Extended the interfaces description page to explicitly mention device
+  compatibility.
+  [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
-Anthony Hayes, Jay Soni
+
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin Christina Lee, Olivia Di Matteo, Diego Guala,
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
+David Wierichs, Shaoming Zhang
