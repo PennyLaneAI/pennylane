@@ -22,6 +22,7 @@ from pennylane.hf.integrals import (
     _diff2,
     _generate_params,
     _hermite_coulomb,
+    _hermite_moment,
     contracted_norm,
     expansion,
     gaussian_kinetic,
@@ -129,6 +130,49 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, t), c)
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
     assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
+
+
+@pytest.mark.parametrize(
+    ("alpha", "beta", "t", "e", "rc", "ref"),
+    [
+        (  # trivial case, ref = 0.0 for t > e
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            2,
+            1,
+            np.array([1.5]),
+            np.array([0.0]),
+        ),
+        (  # trivial case, ref = 0.0 for e == 0 and t != 0
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            1,
+            0,
+            np.array([1.5]),
+            np.array([0.0]),
+        ),
+        (  # trivial case, ref = np.sqrt(np.pi / (alpha + beta))
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            0,
+            0,
+            np.array([1.5]),
+            np.array([0.677195]),
+        ),
+        (  # manually computed, ref = 1.0157925
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            0,
+            1,
+            np.array([1.5]),
+            np.array([1.0157925]),
+        ),
+    ],
+)
+def test_hermite_moment(alpha, beta, t, e, rc, ref):
+    r"""Test that _hermite_moment function returns correct values."""
+    print(_hermite_moment(alpha, beta, t, e, rc), ref)
+    assert np.allclose(_hermite_moment(alpha, beta, t, e, rc), ref)
 
 
 @pytest.mark.parametrize(

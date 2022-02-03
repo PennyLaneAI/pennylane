@@ -268,9 +268,9 @@ def _hermite_moment(alpha, beta, t, e, rc):
     if e == 0 and t == 0:
         return anp.sqrt(anp.pi / p)
     m = (
-        _hermite_moment(t - 1, e - 1, rc, alpha, beta) * t
-        + _hermite_moment(t, e - 1, rc, alpha, beta) * rc
-        + _hermite_moment(t + 1, e - 1, rc, alpha, beta) / (2 * p)
+        _hermite_moment(alpha, beta, t - 1, e - 1, rc) * t
+        + _hermite_moment(alpha, beta, t, e - 1, rc) * rc
+        + _hermite_moment(alpha, beta, t + 1, e - 1, rc) / (2 * p)
     )
     return m
 
