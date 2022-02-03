@@ -32,15 +32,12 @@ class Identity(CVObservable, Operation):
     corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
     """
+    num_params = 0
     num_wires = 1
     grad_method = None
 
     ev_order = 1
     eigvals = np.array([1, 1])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "I"

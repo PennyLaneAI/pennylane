@@ -96,12 +96,9 @@ class Rotation(CVOperation):
     Args:
         phi (float): the rotation angle
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -143,6 +140,7 @@ class Squeezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = 1
     grad_method = "A"
 
@@ -150,10 +148,6 @@ class Squeezing(CVOperation):
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -197,6 +191,7 @@ class Displacement(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = 1
     grad_method = "A"
 
@@ -204,10 +199,6 @@ class Displacement(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -257,12 +248,9 @@ class Beamsplitter(CVOperation):
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = 2
     grad_method = "A"
-
-    @property
-    def num_params(self):
-        return 2
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -317,6 +305,7 @@ class TwoModeSqueezing(CVOperation):
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = 2
 
     grad_method = "A"
@@ -325,10 +314,6 @@ class TwoModeSqueezing(CVOperation):
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -378,6 +363,7 @@ class QuadraticPhase(CVOperation):
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 1
 
     grad_method = "A"
@@ -386,10 +372,6 @@ class QuadraticPhase(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -431,6 +413,7 @@ class ControlledAddition(CVOperation):
         s (float): addition multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 2
     grad_method = "A"
 
@@ -438,10 +421,6 @@ class ControlledAddition(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -487,6 +466,7 @@ class ControlledPhase(CVOperation):
         s (float):  phase shift multiplier
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 2
     grad_method = "A"
 
@@ -494,10 +474,6 @@ class ControlledPhase(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -530,12 +506,9 @@ class Kerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self, do_queue=True):
         return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -558,12 +531,9 @@ class CrossKerr(CVOperation):
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 2
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self, do_queue=True):
         return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -586,12 +556,9 @@ class CubicPhase(CVOperation):
         gamma (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self, do_queue=True):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -634,13 +601,10 @@ class InterferometerUnitary(CVOperation):
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = None
     grad_recipe = None
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -687,12 +651,9 @@ class CoherentState(CVOperation):
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 2
 
 
 class SqueezedState(CVOperation):
@@ -710,12 +671,9 @@ class SqueezedState(CVOperation):
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 2
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -743,12 +701,9 @@ class DisplacedSqueezedState(CVOperation):
         phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 4
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 4
 
 
 class ThermalState(CVOperation):
@@ -765,12 +720,9 @@ class ThermalState(CVOperation):
         nbar (float): mean thermal population of the mode
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Thermal")
@@ -792,12 +744,9 @@ class GaussianState(CVOperation):
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 2
     num_wires = AnyWires
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 2
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Gaussian")
@@ -817,12 +766,9 @@ class FockState(CVOperation):
         n (int): Fock state to prepare
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -903,12 +849,9 @@ class FockStateVector(CVOperation):
                 return qml.expval(qml.NumberOperator(wires=0))
 
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -947,12 +890,9 @@ class FockDensityMatrix(CVOperation):
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
 
 class CatState(CVOperation):
@@ -981,12 +921,9 @@ class CatState(CVOperation):
             cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 3
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 3
 
 
 # =============================================================================
@@ -1020,13 +957,10 @@ class NumberOperator(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 0
     num_wires = 1
 
     ev_order = 2
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1074,6 +1008,7 @@ class TensorN(CVObservable):
         >>> cv_obs.ev_order
         2
     """
+    num_params = 0
     num_wires = AnyWires
     ev_order = None
 
@@ -1088,10 +1023,6 @@ class TensorN(CVObservable):
         if wires is not None and (isinstance(wires, int) or len(wires) == 1):
             return NumberOperator(*params, wires=wires, do_queue=do_queue)
         return super().__new__(cls)
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         if base_label is not None:
@@ -1119,13 +1050,10 @@ class X(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 0
     num_wires = 1
 
     ev_order = 1
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1152,13 +1080,10 @@ class P(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 0
     num_wires = 1
 
     ev_order = 1
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1187,14 +1112,11 @@ class QuadOperator(CVObservable):
             the generalized quadrature observable
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 1
     num_wires = 1
 
     grad_method = "A"
     ev_order = 1
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1261,14 +1183,11 @@ class PolyXP(CVObservable):
         q (array[float]): expansion coefficients
 
     """
+    num_params = 1
     num_wires = AnyWires
 
     grad_method = "F"
     ev_order = 2
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1317,14 +1236,11 @@ class FockStateProjector(CVObservable):
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
     """
+    num_params = 1
     num_wires = AnyWires
 
     grad_method = None
     ev_order = None
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
