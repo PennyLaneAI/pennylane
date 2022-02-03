@@ -960,7 +960,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2, 2), 16],
@@ -993,7 +993,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(), (2,), (3,), (10,)], 16],

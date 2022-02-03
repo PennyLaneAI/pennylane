@@ -1286,8 +1286,8 @@ class TestHamiltonianDifferentiation:
     def test_nontrainable_coeffs_paramshift(self):
         """Test the parameter-shift method if the coefficients are explicitly set non-trainable
         by not passing them to the qnode."""
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=False)
+        param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
         @qml.qnode(dev, diff_method="parameter-shift")
