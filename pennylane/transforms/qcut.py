@@ -231,7 +231,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     **Example**
 
-    Consider the following circuit with a manually-placed wire cut:
+    Consider the following circuit with the manually-placed wire cuts:
 
     .. code-block:: python
 
@@ -256,7 +256,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     >>> graph = qcut.tape_to_graph(tape)
     >>> qcut.replace_wire_cut_nodes(graph)
-    >>> qcut.fragment_graph(g)
+    >>> qcut.fragment_graph(graph)
     ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,
