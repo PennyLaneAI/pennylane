@@ -4,118 +4,47 @@
 
 <h3>New features since last release</h3>
 
-* Added a modified version of the `simplify` function to the `hf` module.
-  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+<h4>Qubit tapering</h4>
 
-  This function combines redundant terms in a Hamiltonian and eliminates terms with a coefficient
-  smaller than a cutoff value. The new function makes construction of molecular Hamiltonians more
-  efficient. For LiH, as an example, the time to construct the Hamiltonian is reduced roughly by a
-  factor of 20.
+* Functions for tapering qubits based on molecular symmetries have been added.
+  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
+  [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+  [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
 
-* The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
-  QNodes include those with:
-  * `qml.probs`;
-  * `qml.state`;
-  * `qml.sample` or
-  * multiple `qml.expval` / `qml.var` measurements.
+  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
 
-  Consider a QNode that returns basis-state probabilities:
   ```python
-  dev = qml.device('default.qubit', wires=2)
-  x = jnp.array(0.543)
-  y = jnp.array(-0.654)
+  from pennylane import hf
+  from pennylane import numpy as np
 
-  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
-  def circuit(x, y):
-      qml.RX(x, wires=[0])
-      qml.RY(y, wires=[1])
-      qml.CNOT(wires=[0, 1])
-      return qml.probs(wires=[1])
+  symbols = ["He", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+  mol = hf.Molecule(symbols, geometry, charge=1)
+  H = hf.generate_hamiltonian(mol)(geometry)
+  n_qubits, n_elec = len(H.wires), mol.n_electrons
+
+  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+  opt_sector = hf.optimal_sector(H, generators, n_elec)
+  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
+                                    n_elec, n_qubits)
   ```
-  The QNode can be evaluated and its jacobian can be computed:
   ```pycon
-  >>> circuit(x, y)
-  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
-  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
-   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
-  ```
-  Note that `jax.jit` is not supported for vector-valued QNodes.
-  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
-
-* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
-  static property. This allows to programmatically know the number of parameters before an operator is
-  instantiated without changing the user interface.
-  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
-
-* Development of a circuit-cutting compiler has begun:
-  A `WireCut` operator has been added for manual wire cut placement
-  when constructing a QNode.
-  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
-
-* The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
-  in the cost function. Also note the changes in behaviour listed under *Breaking
-  changes*.
-  [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
-
-  Previously, the `RotsolveOptimizer` was available for cost functions with
-  frequency spectra that only contained integers, and the maximal frequency
-  (instead of the number of frequencies) determined the cost of the optimization.
-  Now arbitrary frequencies are supported.
-
-  Consider the QNode
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def qnode(x, Y):
-      qml.RX(2.5 * x, wires=0)
-      qml.CNOT(wires=[0, 1])
-      qml.RZ(0.3 * Y[0], wires=0)
-      qml.CRY(1.1 * Y[1], wires=[1, 0])
-      return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
-
-  x = np.array(0.8, requires_grad=True)
-  Y = np.array([-0.2, 1.5], requires_grad=True)
+  >>> print(H_tapered)
+    ((-1.7997297644914574+0j)) [I0]
+  + ((-0.10492941956079854+0j)) [X0]
+  + ((0.10492941956079856+0j)) [X1]
+  + ((0.5675134088336165+0j)) [Z1]
+  + ((0.5675134088336168+0j)) [Z0]
+  + ((-0.14563730440190722+0j)) [Y0 Y1]
+  + ((-0.10492941933657857+0j)) [X0 Z1]
+  + ((0.09337410512815508+0j)) [Z0 Z1]
+  + ((0.10492941933657857+0j)) [Z0 X1]
+  >>> print(hf_tapered)
+  tensor([1, 1], requires_grad=True)
   ```
 
-  Its frequency spectra can be easily obtained via `qml.fourier.qnode_spectrum`:
-  ```pycon
-  >>> spectra = qml.fourier.qnode_spectrum(qnode)(x, Y)
-  >>> spectra
-  {'x': {(): [-2.5, 0.0, 2.5]},
-   'Y': {(0,): [-0.3, 0.0, 0.3], (1,): [-1.1, -0.55, 0.0, 0.55, 1.1]}}
-  ```
-
-  We may then initialize the `RotosolveOptimizer` and minimize the QNode cost function
-  by providing this information about the frequency spectra. We also compare the cost at
-  each step to the initial cost.
-  ```pycon
-  >>> cost_init = qnode(x, Y)
-  >>> opt = qml.RotosolveOptimizer()
-  >>> for _ in range(2):
-  ...     x, Y = opt.step(qnode, x, Y, spectra=spectra)
-  ...     print(f"New cost: {np.round(qnode(x, Y), 3)}; Initial cost: {np.round(cost_init, 3)}")
-  New cost: 0.0; Initial cost: 0.706
-  New cost: -1.0; Initial cost: 0.706
-  ```
-
-  The optimization with `RotosolveOptimizer` is performed in substeps. The minimal cost
-  of these substeps can be retrieved by setting `full_output=True`.
-  ```pycon
-  >>> x = np.array(0.8, requires_grad=True)
-  >>> Y = np.array([-0.2, 1.5], requires_grad=True)
-  >>> opt = qml.RotosolveOptimizer()
-  >>> for _ in range(2):
-  ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
-  ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
-  New cost: 0.0 reached via substeps [-0.  0.  0.]
-  New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
-  ```
-  However, note that these intermediate minimal values are evaluations of the
-  *reconstructions* that Rotosolve creates and uses internally for the optimization,
-  and not of the original objective function. For noisy cost functions, these intermediate
-  evaluations may differ significantly from evaluations of the original cost function.
+<h4>Tensor network templates</h4>
 
 * A tensor network templates module has been added. Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented.
@@ -185,44 +114,108 @@
   3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
   ```
 
-* Functions for tapering qubits based on molecular symmetries have been added.
-  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
-  [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
-  [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
+<h4>More powerful JAX interface</h4>
 
-  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
+* The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
+  QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
 
+  Consider a QNode that returns basis-state probabilities:
   ```python
-  from pennylane import hf
-  from pennylane import numpy as np
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
 
-  symbols = ["He", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
-  mol = hf.Molecule(symbols, geometry, charge=1)
-  H = hf.generate_hamiltonian(mol)(geometry)
-  n_qubits, n_elec = len(H.wires), mol.n_electrons
-
-  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
-  opt_sector = hf.optimal_sector(H, generators, n_elec)
-  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
-  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
-                                    n_elec, n_qubits)
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
   ```
+  The QNode can be evaluated and its jacobian can be computed:
   ```pycon
-  >>> print(H_tapered)
-    ((-1.7997297644914574+0j)) [I0]
-  + ((-0.10492941956079854+0j)) [X0]
-  + ((0.10492941956079856+0j)) [X1]
-  + ((0.5675134088336165+0j)) [Z1]
-  + ((0.5675134088336168+0j)) [Z0]
-  + ((-0.14563730440190722+0j)) [Y0 Y1]
-  + ((-0.10492941933657857+0j)) [X0 Z1]
-  + ((0.09337410512815508+0j)) [Z0 Z1]
-  + ((0.10492941933657857+0j)) [Z0 X1]
-  >>> print(hf_tapered)
-  tensor([1, 1], requires_grad=True)
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
+   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
+  ```
+  Note that `jax.jit` is not supported for vector-valued QNodes.
+  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
+
+<h4>More general RotosolveOptmizer</h4>
+
+* The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
+  in the cost function. Also note the changes in behaviour listed under *Breaking
+  changes*.
+  [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
+
+  Previously, the `RotsolveOptimizer` was available for cost functions with
+  frequency spectra that only contained integers, and the maximal frequency
+  (instead of the number of frequencies) determined the cost of the optimization.
+  Now arbitrary frequencies are supported.
+
+  Consider the QNode
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def qnode(x, Y):
+      qml.RX(2.5 * x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      qml.RZ(0.3 * Y[0], wires=0)
+      qml.CRY(1.1 * Y[1], wires=[1, 0])
+      return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
+
+  x = np.array(0.8, requires_grad=True)
+  Y = np.array([-0.2, 1.5], requires_grad=True)
   ```
 
+  Its frequency spectra can be easily obtained via `qml.fourier.qnode_spectrum`:
+  ```pycon
+  >>> spectra = qml.fourier.qnode_spectrum(qnode)(x, Y)
+  >>> spectra
+  {'x': {(): [-2.5, 0.0, 2.5]},
+   'Y': {(0,): [-0.3, 0.0, 0.3], (1,): [-1.1, -0.55, 0.0, 0.55, 1.1]}}
+  ```
+
+  We may then initialize the `RotosolveOptimizer` and minimize the QNode cost function
+  by providing this information about the frequency spectra. We also compare the cost at
+  each step to the initial cost.
+  ```pycon
+  >>> cost_init = qnode(x, Y)
+  >>> opt = qml.RotosolveOptimizer()
+  >>> for _ in range(2):
+  ...     x, Y = opt.step(qnode, x, Y, spectra=spectra)
+  ...     print(f"New cost: {np.round(qnode(x, Y), 3)}; Initial cost: {np.round(cost_init, 3)}")
+  New cost: 0.0; Initial cost: 0.706
+  New cost: -1.0; Initial cost: 0.706
+  ```
+
+  The optimization with `RotosolveOptimizer` is performed in substeps. The minimal cost
+  of these substeps can be retrieved by setting `full_output=True`.
+  ```pycon
+  >>> x = np.array(0.8, requires_grad=True)
+  >>> Y = np.array([-0.2, 1.5], requires_grad=True)
+  >>> opt = qml.RotosolveOptimizer()
+  >>> for _ in range(2):
+  ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
+  ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
+  New cost: 0.0 reached via substeps [-0.  0.  0.]
+  New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
+  ```
+  However, note that these intermediate minimal values are evaluations of the
+  *reconstructions* that Rotosolve creates and uses internally for the optimization,
+  and not of the original objective function. For noisy cost functions, these intermediate
+  evaluations may differ significantly from evaluations of the original cost function.
+
+<h4>More powerful quantum gradients</h4>
+
+Adjoint metric tensor and parameter-shift Hessian
 
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
@@ -310,12 +303,33 @@
           [ 0.01983384, -0.97517033]], requires_grad=True)
   ```
 
+<h4>Cutting wires</h4>
+
+* A `WireCut` operator has been added for manual wire cut placement
+  when constructing a QNode.
+  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
+
 <h3>Improvements</h3>
+
+* For subclasses of `Operator` where it is known before instantiation, the
+  `num_params` is reverted back to being a static property. This allows to
+  programmatically know the number of parameters before an operator is
+  instantiated without changing the user interface.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
 * The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
   differs in implementation and minor stylistic details from the old string circuit drawing
   infrastructure.
   [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
+
+* Added a modified version of the `simplify` function to the `hf` module.
+  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+
+  This function combines redundant terms in a Hamiltonian and eliminates terms
+  with a coefficient smaller than a cutoff value. The new function makes
+  construction of molecular Hamiltonians more efficient. For LiH, as an
+  example, the time to construct the Hamiltonian is reduced roughly by a factor
+  of 20.
 
 * The `RotosolveOptimizer` now raises an error if no trainable arguments are
   detected, instead of silently skipping update steps for all arguments.
