@@ -355,13 +355,13 @@ def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
             ["H", "Li"],
             np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
             1,
-            3.12846324e-01 # obtained from pyscf using mol.intor_symmetric("int1e_r")
-       ),
+            3.12846324e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
         (
             ["H", "Li"],
             np.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], requires_grad=True),
             1,
-            4.82090830e-01  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+            4.82090830e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
         ),
     ],
 )

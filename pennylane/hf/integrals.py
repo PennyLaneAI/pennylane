@@ -247,7 +247,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     >>> o
     array([1.])
     """
-    p = anp.array(alpha + beta)
+    p = alpha + beta
     s = 1.0
     for i in range(3):
         s = s * anp.sqrt(anp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
@@ -441,7 +441,7 @@ def generate_moment(basis_a, basis_b, e):
         na = contracted_norm(basis_a.l, alpha, ca)
         nb = contracted_norm(basis_b.l, beta, cb)
 
-        p = anp.array(alpha[:, anp.newaxis] + beta)
+        p = alpha[:, anp.newaxis] + beta
         q = anp.sqrt(anp.pi / p)
         rc = (
             alpha[:, anp.newaxis] * ra[:, anp.newaxis, anp.newaxis]
