@@ -313,14 +313,14 @@ class S(Operation):
         decomp_ops = [qml.PhaseShift(np.pi / 2, wires=wires)]
         return decomp_ops
 
-    def single_qubit_rot_angles(self):
-        # S = RZ(\pi/2) RY(0) RZ(0)
-        return [np.pi / 2, 0.0, 0.0]
-
     def adjoint(self, do_queue=False):
         op = S(wires=self.wires)
         op.inverse = not self.inverse
         return op
+
+    def single_qubit_rot_angles(self):
+        # S = RZ(\pi/2) RY(0) RZ(0)
+        return [np.pi / 2, 0.0, 0.0]
 
 
 class T(Operation):
@@ -359,14 +359,14 @@ class T(Operation):
         decomp_ops = [qml.PhaseShift(np.pi / 4, wires=wires)]
         return decomp_ops
 
-    def single_qubit_rot_angles(self):
-        # T = RZ(\pi/4) RY(0) RZ(0)
-        return [np.pi / 4, 0.0, 0.0]
-
     def adjoint(self, do_queue=False):
         op = T(wires=self.wires)
         op.inverse = not self.inverse
         return op
+
+    def single_qubit_rot_angles(self):
+        # T = RZ(\pi/4) RY(0) RZ(0)
+        return [np.pi / 4, 0.0, 0.0]
 
 
 class SX(Operation):
@@ -410,14 +410,14 @@ class SX(Operation):
         ]
         return decomp_ops
 
-    def single_qubit_rot_angles(self):
-        # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
-        return [np.pi / 2, np.pi / 2, -np.pi / 2]
-
     def adjoint(self, do_queue=False):
         op = SX(wires=self.wires)
         op.inverse = not self.inverse
         return op
+
+    def single_qubit_rot_angles(self):
+        # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
+        return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 
 class CNOT(Operation):
@@ -651,6 +651,10 @@ class ISWAP(Operation):
         ]
         return decomp_ops
 
+    def adjoint(self, do_queue=False):
+        op = ISWAP(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
 
 class SISWAP(Operation):
@@ -712,7 +716,7 @@ class SISWAP(Operation):
 
     def adjoint(self, do_queue=False):
         op = SISWAP(wires=self.wires)
-        op.inverse = not self.inverse 
+        op.inverse = not self.inverse
         return op
 
 
