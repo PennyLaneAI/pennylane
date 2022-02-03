@@ -10,6 +10,7 @@
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
+  [(#2042)](https://github.com/PennyLaneAI/pennylane/pull/2042)
 
   With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
 
@@ -418,7 +419,6 @@
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
   inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
-
   [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
 
   We can decorate a function, indicating the arguments that are
@@ -613,6 +613,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
-Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
-David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Sam Banning, Thomas Bromley,
+Esther Cruz, Christian Gogolin, Nathan Killoran, Christina Lee, Olivia Di
+Matteo, Diego Guala, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri,
+Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Romain Moyard, Lee James
+O'Riordan, Maria Schuld, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
