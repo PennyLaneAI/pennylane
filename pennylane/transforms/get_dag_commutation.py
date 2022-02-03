@@ -136,6 +136,9 @@ position = OrderedDict(
         "U1": 20,
         "U2": 21,
         "U3": 22,
+        "IsingXX": 23,
+        "IsingYY": 24,
+        "IsingZZ": 25,
     }
 )
 """OrderedDict[str, int]: represents the place of each gates in the commutation_map."""
@@ -164,6 +167,11 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
         ],
         "PauliX": [
             0,
@@ -187,6 +195,11 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
+            1,
+            0,
+            0,
         ],
         "PauliY": [
             0,
@@ -199,6 +212,11 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0,
             0,
             0,
@@ -233,6 +251,11 @@ commutation_map = OrderedDict(
             1,
             1,
             1,
+            0,
+            0,
+            0,
+            0,
+            1,
         ],
         "SWAP": [
             0,
@@ -255,6 +278,11 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
         ],
         "ctrl": [
@@ -279,6 +307,11 @@ commutation_map = OrderedDict(
             1,
             1,
             1,
+            0,
+            0,
+            0,
+            0,
+            1,
         ],
         "S": [
             0,
@@ -301,6 +334,11 @@ commutation_map = OrderedDict(
             0,
             1,
             1,
+            1,
+            0,
+            0,
+            0,
+            0,
             1,
         ],
         "T": [
@@ -325,6 +363,11 @@ commutation_map = OrderedDict(
             1,
             1,
             1,
+            0,
+            0,
+            0,
+            0,
+            1,
         ],
         "SX": [
             0,
@@ -347,6 +390,11 @@ commutation_map = OrderedDict(
             0,
             1,
             1,
+            1,
+            0,
+            0,
+            0,
+            0,
             1,
         ],
         "ISWAP": [
@@ -371,6 +419,11 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
         ],
         "SISWAP": [
             0,
@@ -394,8 +447,18 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
         ],
         "Barrier": [
+            0,
+            0,
+            0,
+            0,
+            0,
             0,
             0,
             0,
@@ -440,6 +503,11 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
         ],
         "RX": [
             0,
@@ -463,6 +531,11 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
+            1,
+            0,
+            0,
         ],
         "RY": [
             0,
@@ -475,6 +548,11 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
+            0,
+            0,
+            0,
+            1,
             0,
             0,
             0,
@@ -509,6 +587,11 @@ commutation_map = OrderedDict(
             1,
             1,
             1,
+            0,
+            0,
+            0,
+            0,
+            1,
         ],
         "PhaseShift": [
             0,
@@ -531,6 +614,11 @@ commutation_map = OrderedDict(
             0,
             1,
             1,
+            1,
+            0,
+            0,
+            0,
+            0,
             1,
         ],
         "Rot": [
@@ -555,6 +643,11 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
+            0,
+            0,
+            0,
         ],
         "MultiRZ": [
             0,
@@ -578,6 +671,11 @@ commutation_map = OrderedDict(
             1,
             1,
             1,
+            0,
+            0,
+            0,
+            0,
+            1,
         ],
         "Identity": [
             1,
@@ -593,6 +691,11 @@ commutation_map = OrderedDict(
             1,
             0,
             0,
+            1,
+            1,
+            1,
+            1,
+            1,
             1,
             1,
             1,
@@ -623,6 +726,151 @@ commutation_map = OrderedDict(
             0,
             1,
             1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+        ],
+        "U2": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ],
+        "U3": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ],
+        "IsingXX": [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+        ],
+        "IsingYY": [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+        ],
+        "IsingZZ": [
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
             1,
         ],
     }
@@ -655,24 +903,28 @@ def simplify_rotation(rot):
     """
 
     if (
-        np.allclose(rot.data[0], 0)
-        and not np.allclose(rot.data[1], 0)
-        and np.allclose(rot.data[2], 0)
+            np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi / 2)
+            and not np.allclose(np.mod(rot.data[1], 2 * np.pi), 0)
+            and np.allclose(np.mod(rot.data[2], 2 * np.pi), - np.pi / 2)
     ):
         rot_simplified = qml.RX(rot.data[1], rot.wires)
     elif (
-        np.allclose(rot.data[0], np.pi / 2)
-        and not np.allclose(rot.data[1], 0)
-        and not np.allclose(rot.data[2], -np.pi / 2)
+            np.allclose(np.mod(rot.data[0], 2 * np.pi), 0)
+            and not np.allclose(np.mod(rot.data[1], 2 * np.pi), 0)
+            and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
     ):
         rot_simplified = qml.RY(rot.data[1], rot.wires)
     elif (
-        not np.allclose(rot.data[0], 0)
-        and not np.allclose(rot.data[1], 0)
-        and not np.allclose(rot.data[2], 0)
+            not np.allclose(np.mod(rot.data[0], 2 * np.pi), 0)
+            and not np.allclose(np.mod(rot.data[1], 2 * np.pi), 0)
+            and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
     ):
         rot_simplified = qml.RZ(rot.data[0] + rot.data[2], rot.wires)
-    elif np.allclose(rot.data, [3.141592653589793, 1.5707963267948966, 0.0]):
+    elif (
+            np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi)
+            and np.allclose(np.mod(rot.data[1], 2 * np.pi), np.pi / 2)
+            and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
+    ):
         rot_simplified = qml.Hadamard(rot.wires)
     else:
         rot_simplified = rot
@@ -690,24 +942,28 @@ def simplify_controlled_rotation(crot):
     """
 
     if (
-        np.allclose(crot.data[0], 0)
-        and not np.allclose(crot.data[1], 0)
-        and np.allclose(crot.data[2], 0)
+            np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi / 2)
+            and not np.allclose(np.mod(crot.data[1], 2 * np.pi), 0)
+            and np.allclose(np.mod(crot.data[2], 2 * np.pi), - np.pi / 2)
     ):
         rot_simplified = qml.CRX(crot.data[1], crot.wires)
     elif (
-        np.allclose(crot.data[0], np.pi / 2)
-        and not np.allclose(crot.data[1], 0)
-        and not np.allclose(crot.data[2], -np.pi / 2)
+            np.allclose(np.mod(crot.data[0], 2 * np.pi), 0)
+            and not np.allclose(np.mod(crot.data[1], 2 * np.pi), 0)
+            and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
     ):
         rot_simplified = qml.CRY(crot.data[1], crot.wires)
     elif (
-        not np.allclose(crot.data[0], 0)
-        and not np.allclose(crot.data[1], 0)
-        and not np.allclose(crot.data[2], 0)
+            not np.allclose(np.mod(crot.data[0], 2 * np.pi), 0)
+            and not np.allclose(np.mod(crot.data[1], 2 * np.pi), 0)
+            and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
     ):
         rot_simplified = qml.CRZ(crot.data[0] + crot.data[2], crot.wires)
-    elif np.allclose(crot.data, [3.141592653589793, 1.5707963267948966, 0.0]):
+    elif (
+            np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi)
+            and np.allclose(np.mod(crot.data[1], 2 * np.pi), np.pi / 2)
+            and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
+    ):
         hadamard = qml.Hadamard
         control_hadamard = qml.ctrl(hadamard, control=crot.control_wires)(wires=crot.target_wires)
         rot_simplified = qml.Hadamard(control_hadamard)
@@ -715,6 +971,80 @@ def simplify_controlled_rotation(crot):
         rot_simplified = crot
     return rot_simplified
 
+
+def simplify_u2(u2):
+    r"""Simplify a u2 one qubit rotation into RX and RY rotations.
+
+    Args:
+        u2 (pennylane.U2): U2 rotation.
+
+    Returns:
+         qml.operation: Simplified rotation if possible.
+    """
+
+    if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
+            np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
+    ):
+        u2_simplified = qml.RY(np.pi / 2, u2.wires)
+    elif np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
+            np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
+    ):
+        u2_simplified = qml.RX(u2.data[1], u2.wires)
+    else:
+        u2_simplified = u2
+    return u2_simplified
+
+def simplify_u3(u3):
+    r"""Simplify a general U3 one qubit rotation into RX, RY and RZ rotation.
+
+    Args:
+        u3 (pennylane.u3): One qubit U3 rotation.
+
+    Returns:
+         qml.operation: Simplified rotation if possible.
+    """
+
+    if (
+            np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
+        and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
+        and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
+    ):
+        u3_simplified = qml.RZ(u3.data[0], u3.wires)
+    elif (
+            np.allclose(np.mod(u3.data[2], 2 * np.pi), np.pi/2)
+        and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
+        and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
+    ):
+        u3_simplified = qml.RX(u3.data[1], u3.wires)
+    elif (
+            np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
+        and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
+        and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
+    ):
+        u3_simplified = qml.RY(u3.data[0], u3.wires)
+    else:
+        u3_simplified = u3
+    return u3_simplified
+
+def simplify(operation):
+    r"""Simplify a rotation into RX, RY and RZ rotations.
+
+    Args:
+        operation (pennylane.Operation): One qubit operation.
+
+    Returns:
+         qml.operation: Simplified rotation if possible.
+    """
+    if operation.name == 'Rot':
+        operation = simplify_rotation(operation)
+
+    if operation.name == 'U2':
+        operation = simplify_u2(operation)
+
+    if operation.name == 'U3':
+        operation = simplify_u3(operation)
+
+    return operation
 
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
@@ -737,34 +1067,37 @@ def is_commuting(operation1, operation2):
     # pylint: disable=too-many-return-statements
 
     # Parametric operation implements identity operator
-    if operation1.data:
-        all_zeros = not np.any(operation1.data)
+    if operation1.data and operation1.name != 'U2':
+        all_zeros = not np.allclose(np.mod(operation1.data, 2 * np.pi), 0)
         if all_zeros:
             operation1 = qml.Identity(wires=operation1.wires)
 
-    if operation2.data:
-        all_zeros = not np.any(operation2.data)
+    if operation2.data and operation2.name != 'U2':
+        all_zeros = not np.allclose(np.mod(operation2.data, 2 * np.pi), 0)
         if all_zeros:
             operation2 = qml.Identity(wires=operation2.wires)
 
     # Simplify the rotation if possible
-    if operation1.name == "Rot":
-        operation1 = simplify_rotation(operation1)
+    if operation1.name in ['U2', 'U3', 'Rot']:
+        operation1 = simplify(operation1)
 
-    if operation2.name == "Rot":
-        operation2 = simplify_rotation(operation2)
-
-    if operation1.name == "CRot":
-        operation1 = simplify_controlled_rotation(operation1)
-
-    if operation2.name == "CRot":
-        operation2 = simplify_controlled_rotation(operation2)
+    if operation2.name in ['U2', 'U3', 'Rot']:
+        operation2 = simplify(operation2)
 
     # PauliRot
 
     # Case 1 operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
         return True
+
+    # Impossible to use the look up table for this case
+    if (operation1.name in ['U2', 'U3', 'Rot']) and (operation2.name in ['U2', 'U3', 'Rot']):
+        return np.all(
+            np.allcllose(
+                np.matmul(operation1.matrix, operation2.matrix),
+                np.matmul(operation2.matrix, operation1.matrix),
+            )
+        )
 
     # Case 2 both operations are controlled
     if operation1.is_controlled and operation2.is_controlled:
@@ -818,11 +1151,11 @@ def is_commuting(operation1, operation2):
         # Case 2.9: targets and controls overlap with targets and controls
         if target_control and control_target and target_target:
             return (
-                bool(commutation_map[operation1.is_controlled][position["ctrl"]])
-                and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
-                and bool(
-                    commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-                )
+                    bool(commutation_map[operation1.is_controlled][position["ctrl"]])
+                    and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
+                    and bool(
+                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
+            )
             )
 
     # Case 3: only operation 1 is controlled
@@ -920,18 +1253,18 @@ class CommutationDAGNode:
     ]
 
     def __init__(
-        self,
-        op=None,
-        wires=None,
-        target_wires=None,
-        control_wires=None,
-        successors=None,
-        predecessors=None,
-        reachable=None,
-        matchedwith=None,
-        successorstovisit=None,
-        isblocked=None,
-        node_id=-1,
+            self,
+            op=None,
+            wires=None,
+            target_wires=None,
+            control_wires=None,
+            successors=None,
+            predecessors=None,
+            reachable=None,
+            matchedwith=None,
+            successorstovisit=None,
+            isblocked=None,
+            node_id=-1,
     ):
         self.op = op
         self.wires = wires
@@ -1058,7 +1391,7 @@ class CommutationDAG:
 
         for prev_node_id in range(max_node_id - 1, -1, -1):
             if self.get_node(prev_node_id).reachable and not is_commuting(
-                self.get_node(prev_node_id).op, max_node
+                    self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)
                 self._pred_update(max_node_id)
