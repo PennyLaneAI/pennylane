@@ -247,8 +247,8 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     if not tape.trainable_params:
         warnings.warn(
             "Attempted to compute the metric tensor of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters via the 'requires_grad' "
-            "attribute or 'trainable_params' property."
+            "If this is unintended, please mark trainable parameters in accordance with your "
+            "autodiff framework, or via the tape's 'trainable_params' property."
         )
         return [], None
 
@@ -334,8 +334,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         if not qml.math.get_trainable_indices(args):
             warnings.warn(
                 "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
-                "If this is unintended, please add trainable parameters via the 'requires_grad' "
-                "attribute."
+                "If this is unintended, please add trainable parameters in accordance with your "
+                "autodiff framework."
             )
             return ()
 
