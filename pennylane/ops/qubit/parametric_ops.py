@@ -284,6 +284,7 @@ class ControlledPhaseShift(Operation):
     """
     num_wires = 2
     num_params = 1
+    is_controlled = "PhaseShift"
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
@@ -330,6 +331,10 @@ class ControlledPhaseShift(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 CPhase = ControlledPhaseShift
@@ -814,6 +819,7 @@ class CRX(Operation):
     """
     num_wires = 2
     num_params = 1
+    is_controlled = "RX"
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -872,6 +878,10 @@ class CRX(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
+
 
 class CRY(Operation):
     r"""CRY(phi, wires)
@@ -913,6 +923,7 @@ class CRY(Operation):
     num_wires = 2
     num_params = 1
     basis = "Y"
+    is_controlled = "RY"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -961,6 +972,10 @@ class CRY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
+
 
 class CRZ(Operation):
     r"""CRZ(phi, wires)
@@ -1005,6 +1020,7 @@ class CRZ(Operation):
     num_wires = 2
     num_params = 1
     basis = "Z"
+    is_controlled = "RZ"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -1055,6 +1071,10 @@ class CRZ(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
+
 
 class CRot(Operation):
     r"""CRot(phi, theta, omega, wires)
@@ -1095,6 +1115,7 @@ class CRot(Operation):
     """
     num_wires = 2
     num_params = 3
+    is_controlled = "Rot"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
 
@@ -1159,6 +1180,10 @@ class CRot(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
+
+    @property
+    def target_wires(self):
+        return Wires(self.wires[1])
 
 
 class U1(Operation):
