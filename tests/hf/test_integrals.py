@@ -26,6 +26,7 @@ from pennylane.hf.integrals import (
     contracted_norm,
     expansion,
     gaussian_kinetic,
+    gaussian_moment,
     gaussian_overlap,
     generate_attraction,
     generate_kinetic,
@@ -171,8 +172,28 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
 )
 def test_hermite_moment(alpha, beta, t, e, rc, ref):
     r"""Test that _hermite_moment function returns correct values."""
-    print(_hermite_moment(alpha, beta, t, e, rc), ref)
     assert np.allclose(_hermite_moment(alpha, beta, t, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "e", "rc", "ref"),
+    [
+        (  # manually computed, ref = 1.0157925
+            0,
+            0,
+            np.array([2.0]),
+            np.array([2.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            1,
+            np.array([1.5]),
+            np.array([1.0157925]),
+        ),
+    ],
+)
+def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
+    r"""Test that gaussian_moment function returns correct values."""
+    assert np.allclose(gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
 
 
 @pytest.mark.parametrize(
