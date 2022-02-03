@@ -14,12 +14,15 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-from networkx import MultiDiGraph
-import numpy as np
-import pennylane as qml
-import pytest
-from pennylane.transforms import qcut
+import string
 import sys
+
+import pytest
+from networkx import MultiDiGraph
+
+import pennylane as qml
+from pennylane import numpy as np
+from pennylane.transforms import qcut
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -517,11 +520,11 @@ class TestContractTensors:
     @pytest.mark.parametrize("use_opt_einsum", [False, True])
     def test_basic(self, use_opt_einsum):
         """Test that the correct answer is returned for a simple contraction scenario"""
-        pytest.importorskip("opt_einsum")
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
         res = qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
 
         assert np.allclose(res, self.expected_result)
-
 
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
@@ -531,3 +534,102 @@ class TestContractTensors:
 
             with pytest.raises(ImportError, match="The opt_einsum package is required"):
                 qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=True)
+
+    def test_run_out_of_symbols(self, monkeypatch):
+        """Test if a ValueError is raised when there are not enough symbols in the
+        use_opt_einsum = False setting"""
+
+        with monkeypatch.context() as m:
+            m.setattr(string, "ascii_letters", "")
+            with pytest.raises(ValueError, match="Set the use_opt_einsum argument to True"):
+                qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=False)
+
+    params = [0.3, 0.5]
+
+    expected_grad_0 = (
+        np.cos(params[0]) * np.cos(params[1])
+        + 2 * np.cos(params[0]) * np.sin(params[0]) * np.cos(params[1]) ** 2
+        + 3 * np.cos(params[0]) * np.sin(params[0]) ** 2 * np.cos(params[1]) ** 3
+    )
+    expected_grad_1 = (
+        -np.sin(params[0]) * np.sin(params[1])
+        - 2 * np.sin(params[0]) ** 2 * np.sin(params[1]) * np.cos(params[1])
+        - 3 * np.sin(params[0]) ** 3 * np.sin(params[1]) * np.cos(params[1]) ** 2
+    )
+    expected_grad = (expected_grad_0, expected_grad_1)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_autograd(self, use_opt_einsum):
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        def contract(params):
+            t1 = np.asarray([np.sin(params[0]) ** i for i in range(4)])
+            t2 = np.asarray([np.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+            return r
+
+        params = np.array(self.params, requires_grad=True)
+        grad = qml.grad(contract)(params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_torch(self, use_opt_einsum):
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import torch
+
+        params = torch.tensor(self.params, requires_grad=True)
+
+        t1 = torch.stack([torch.sin(params[0]) ** i for i in range(4)])
+        t2 = torch.stack([torch.cos(params[1]) ** i for i in range(4)])
+        t = [t1, t2]
+        r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        r.backward()
+        grad = params.grad
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_tf(self, use_opt_einsum):
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import tensorflow as tf
+
+        params = tf.Variable(self.params)
+
+        with tf.GradientTape() as tape:
+            t1 = tf.stack([tf.sin(params[0]) ** i for i in range(4)])
+            t2 = tf.stack([tf.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        grad = tape.gradient(r, params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_jax_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_jax(self, use_opt_einsum):
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import jax
+        from jax import numpy as np
+
+        params = np.array(self.params)
+
+        def contract(params):
+            t1 = np.stack([np.sin(params[0]) ** i for i in range(4)])
+            t2 = np.stack([np.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+            return r
+
+        grad = jax.grad(contract)(params)
+
+        assert np.allclose(grad, self.expected_grad)
