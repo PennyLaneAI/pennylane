@@ -633,3 +633,54 @@ class TestContractTensors:
         grad = jax.grad(contract)(params)
 
         assert np.allclose(grad, self.expected_grad)
+
+    def test_advanced(self):
+        t = [
+            np.arange(4 ** 8).reshape((4,) * 8),
+            np.arange(4 ** 4).reshape((4,) * 4),
+            np.arange(4 ** 2).reshape((4,) * 2),
+        ]
+        m = [
+            [
+                qcut.MeasureNode(wires=3),
+                qcut.MeasureNode(wires=1),
+                qcut.MeasureNode(wires=2),
+                qcut.MeasureNode(wires=3),
+                qcut.MeasureNode(wires=4),
+            ],
+            [
+                qcut.MeasureNode(wires=1),
+                qcut.MeasureNode(wires=2),
+            ],
+            [],
+        ]
+        p = [
+            [
+                qcut.PrepareNode(wires=1),
+                qcut.PrepareNode(wires=2),
+                qcut.PrepareNode(wires=3),
+            ],
+            [
+                qcut.PrepareNode(wires=1),
+                qcut.PrepareNode(wires=2),
+            ],
+            [
+                qcut.PrepareNode(wires=3),
+                qcut.PrepareNode(wires=4),
+            ],
+        ]
+        edges = [
+            (0, 0, 0, {"pair": (m[0][0], p[0][2])}),
+            (0, 1, 0, {"pair": (m[0][1], p[1][0])}),
+            (0, 1, 1, {"pair": (m[0][2], p[1][1])}),
+            (0, 2, 0, {"pair": (m[0][3], p[2][0])}),
+            (0, 2, 1, {"pair": (m[0][4], p[2][1])}),
+            (1, 0, 0, {"pair": (m[1][0], p[0][0])}),
+            (1, 0, 1, {"pair": (m[1][1], p[0][1])}),
+        ]
+        g = MultiDiGraph(edges)
+
+        res = qcut.contract_tensors(t, g, p, m)
+        print(res)
+
+        # expected_result = np.dot(*t)
