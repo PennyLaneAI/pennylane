@@ -196,6 +196,59 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
     0: ──H─╭C───────╭C──┤ ╭<Z@Z>
     1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
 
+    .. usage-details::
+
+
+    By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
+    are displayed to the specified precision. Matrix-valued parameters are never displayed.
+
+    >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
+    0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
+    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
+
+    The ``max_length`` keyword warps long circuits:
+
+    .. code-block:: python
+
+        rng = np.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_wires=3, n_layers=5)
+        params = rng.random(shape)
+
+        @qml.qnode(qml.device('lightning.qubit', wires=3))
+        def longer_circuit(params):
+            qml.StronglyEntanglingLayers(params, wires=range(3))
+            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+        print(qml.draw(longer_circuit, max_length=60)(params))
+
+    .. code-block:: none
+
+        0: ──Rot─╭C────╭X──Rot─╭C─╭X──Rot──────╭C────╭X──Rot─╭C─╭X
+        1: ──Rot─╰X─╭C─│───Rot─│──╰C─╭X────Rot─╰X─╭C─│───Rot─│──╰C
+        2: ──Rot────╰X─╰C──Rot─╰X────╰C────Rot────╰X─╰C──Rot─╰X───
+
+        ───Rot──────╭C────╭X─┤  <Z>
+        ──╭X────Rot─╰X─╭C─│──┤  <Z>
+        ──╰C────Rot────╰X─╰C─┤  <Z>
+
+    The ``wire_order`` keyword specifies the order of the wires from
+    top to bottom:
+
+    >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
+    1: ────╭RX──Rot─╭RX─┤ ╭<Z@Z>
+    0: ──H─╰C───────╰C──┤ ╰<Z@Z>
+
+    If the device or ``wire_order`` has wires not used by operations, the are omitted
+    unless requested with ``show_all_wires=True``
+
+    >>> @qml.qnode(qml.device('lightning.qubit', wires=3))
+        def empty_circuit():
+            return qml.expval(qml.PauliZ(0))
+    >>> print(qml.draw(empty_circuit, show_all_wires=True)())
+    0: ───┤  <Z>
+    1: ───┤     
+    2: ───┤     
+
     """
     @wraps(qnode)
     def wrapper(*args, **kwargs):
