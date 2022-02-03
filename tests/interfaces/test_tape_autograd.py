@@ -196,7 +196,7 @@ class TestAutogradQuantumTape:
             with AutogradInterface.apply(JacobianTape()) as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
             assert tape.trainable_params == [0, 2]
             return tape.execute(device)
@@ -226,13 +226,14 @@ class TestAutogradQuantumTape:
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
-        res = qml.jacobian(cost)(a, b, device=dev)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            res = qml.jacobian(cost)(a, b, device=dev)
         assert not res
 
         def loss(a, b):
             return np.sum(cost(a, b, device=dev))
 
-        with pytest.warns(UserWarning, match="Output seems independent"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.grad(loss)(a, b)
 
         assert not res
@@ -511,7 +512,7 @@ class TestAutogradPassthru:
             with JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
             return tape.execute(device)
 
@@ -542,13 +543,14 @@ class TestAutogradPassthru:
         assert res.shape == (2,)
         spy.assert_not_called()
 
-        res = qml.jacobian(cost)(a, b, device=dev)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            res = qml.jacobian(cost)(a, b, device=dev)
         assert not res
 
         def loss(a, b):
             return np.sum(cost(a, b, device=dev))
 
-        with pytest.warns(UserWarning, match="Output seems independent"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.grad(loss)(a, b)
 
         assert not res

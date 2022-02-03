@@ -370,8 +370,8 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * 1  # 1 = (1+2-1)C(2)
-        assert hessian_qruns <= 3 ** 1
+        assert hessian_qruns <= 2**2 * 1  # 1 = (1+2-1)C(2)
+        assert hessian_qruns <= 3**1
 
     def test_fewer_device_invocations_vector_input(self):
         """Test that the hessian invokes less hardware executions than double differentiation
@@ -396,8 +396,8 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * 3  # 3 = (2+2-1)C(2)
-        assert hessian_qruns <= 3 ** 2
+        assert hessian_qruns <= 2**2 * 3  # 3 = (2+2-1)C(2)
+        assert hessian_qruns <= 3**2
 
     def test_fewer_device_invocations_vector_output(self):
         """Test that the hessian invokes less hardware executions than double differentiation
@@ -423,8 +423,8 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian, expected)
         assert hessian_qruns < jacobian_qruns
-        assert hessian_qruns <= 2 ** 2 * 6  # 6 = (3+2-1)C(2)
-        assert hessian_qruns <= 3 ** 3
+        assert hessian_qruns <= 2**2 * 6  # 6 = (3+2-1)C(2)
+        assert hessian_qruns <= 3**3
 
     def test_error_unsupported_operation(self):
         """Test that the correct error is thrown for unsopperted operations"""
@@ -515,8 +515,9 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=False)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x)
-        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            expected = qml.jacobian(qml.jacobian(circuit))(x)
+            hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
         assert np.allclose(expected, hessian)
 

@@ -1500,19 +1500,3 @@ class TestCriteria:
         assert not both(self.cnot)
         assert not both(self.rot)
         assert not both(self.exp)
-
-
-class TestStaticProperties:
-    @pytest.mark.parametrize(
-        "op, num_params",
-        [
-            (qml.Identity, 0),
-            (qml.PauliZ, 0),
-            (qml.RY, 1),
-            (qml.TwoModeSqueezing, 2),
-        ],
-    )
-    def test_num_params_can_be_static(self, op, num_params):
-        """Test for soee of Operations which can declare num_params as a
-        class property that they actually do so"""
-        assert op.num_params == num_params

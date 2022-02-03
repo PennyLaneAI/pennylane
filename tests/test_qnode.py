@@ -35,7 +35,7 @@ class TestValidation:
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
-        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             QNode(dummyfunc, dev, interface="something")
@@ -51,7 +51,7 @@ class TestValidation:
             qml.RX(wires=0)
             return qml.probs(wires=0)
 
-        expected_error = fr"Unknown interface {test_interface}\. Interface must be one of"
+        expected_error = rf"Unknown interface {test_interface}\. Interface must be one of"
 
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
@@ -348,7 +348,7 @@ class TestValidation:
             match="SparseHamiltonian observable must be"
             " used with the parameter-shift differentiation method",
         ):
-            qml.grad(circuit)([0.5])
+            qml.grad(circuit, argnum=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -382,7 +382,7 @@ class TestValidation:
         # QNode can still be executed
         assert np.allclose(circuit(0.5), np.cos(0.5), atol=tol, rtol=0)
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
@@ -1117,7 +1117,7 @@ class TestTapeExpansion:
         """Test that the device expansion strategy performs the device
         decomposition at construction time, and not at execution time"""
         dev = qml.device("default.qubit", wires=2)
-        x = np.array(0.5)
+        x = pnp.array(0.5, requires_grad=True)
 
         @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
         def circuit(x):

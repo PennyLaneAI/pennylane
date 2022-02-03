@@ -46,7 +46,7 @@
 * For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
   static property. This allows to programmatically know the number of parameters before an operator is
   instantiated without changing the user interface. A test was added to ensure that
-  this feaure is not broken again in the future by changes in the Operation class.
+  different ways of defining `num_params` work as expected.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
 
 * Development of circuit cutting compiler has begun:
@@ -493,6 +493,8 @@
   attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
   [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
+  [(#2139)](https://github.com/PennyLaneAI/pennylane/pull/2139)
+  [(#2148)](https://github.com/PennyLaneAI/pennylane/pull/2148)
 
   ```python
   from pennylane import numpy as np
@@ -520,6 +522,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
+  [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
 
 * Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
   to NumPy arrays before executing gradient tapes on devices.

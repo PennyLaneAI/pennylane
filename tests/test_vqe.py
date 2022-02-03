@@ -192,7 +192,7 @@ ANSAETZE = [
 
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
-EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
+EMBED_PARAMS = np.array([1 / np.sqrt(2**3)] * 2**3)
 LAYER_PARAMS = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
 
 CIRCUITS = [
@@ -526,9 +526,10 @@ class TestVQE:
 
         np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        w = pnp.random.random(shape, requires_grad=True)
 
-        dc = qml.grad(cost)(w)
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
 
     @pytest.mark.slow
