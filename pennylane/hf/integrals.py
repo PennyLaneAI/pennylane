@@ -212,6 +212,102 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     )
 
 
+def gaussian_overlap(la, lb, ra, rb, alpha, beta):
+    r"""Compute overlap integral for two primitive Gaussian functions.
+
+    The overlap integral between two Gaussian functions denoted by :math:`a` and :math:`b` can be
+    computed as [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
+
+    .. math::
+
+        S_{ab} = E^{ij} E^{kl} E^{mn} \left (\frac{\pi}{p}  \right )^{3/2},
+
+    where :math:`E` is a coefficient that can be computed recursively, :math:`i-n` are the angular
+    momentum quantum numbers corresponding to different Cartesian components and :math:`p` is
+    computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
+
+    Args:
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        ra (float): position vector of the first Gaussian function
+        rb (float): position vector of the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+
+    Returns:
+        array[float]: overlap integral between primitive Gaussian functions
+
+    **Example**
+
+    >>> la, lb = (0, 0, 0), (0, 0, 0)
+    >>> ra, rb = np.array([0., 0., 0.]), np.array([0., 0., 0.])
+    >>> alpha = np.array([np.pi/2])
+    >>> beta = np.array([np.pi/2])
+    >>> o = gaussian_overlap(la, lb, ra, rb, alpha, beta)
+    >>> o
+    array([1.])
+    """
+    p = anp.array(alpha + beta)
+    s = 1.0
+    for i in range(3):
+        s = s * anp.sqrt(anp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
+    return s
+
+
+def generate_overlap(basis_a, basis_b):
+    r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+
+    Returns:
+        function: function that computes the overlap integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> args = []
+    >>> generate_overlap(mol.basis_set[0], mol.basis_set[0])(*args)
+    1.0
+    """
+
+    def overlap_integral(*args):
+        r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the overlap integral between two contracted Gaussian orbitals
+        """
+
+        args_a = [i[0] for i in args]
+        args_b = [i[1] for i in args]
+
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
+
+        ca = ca * primitive_norm(basis_a.l, alpha)
+        cb = cb * primitive_norm(basis_b.l, beta)
+
+        na = contracted_norm(basis_a.l, alpha, ca)
+        nb = contracted_norm(basis_b.l, beta, cb)
+
+        return (
+            na
+            * nb
+            * (
+                (ca[:, anp.newaxis] * cb)
+                * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, anp.newaxis], beta)
+            ).sum()
+        )
+
+    return overlap_integral
+
+
 def _hermite_moment(alpha, beta, t, e, rc):
     r"""Compute Hermite moment integral recursively.
 
@@ -327,80 +423,14 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
     return s
 
 
-def gaussian_overlap(la, lb, ra, rb, alpha, beta):
-    r"""Compute overlap integral for two primitive Gaussian functions.
-
-    The overlap integral between two Gaussian functions denoted by :math:`a` and :math:`b` can be
-    computed as [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]:
-
-    .. math::
-
-        S_{ab} = E^{ij} E^{kl} E^{mn} \left (\frac{\pi}{p}  \right )^{3/2},
-
-    where :math:`E` is a coefficient that can be computed recursively, :math:`i-n` are the angular
-    momentum quantum numbers corresponding to different Cartesian components and :math:`p` is
-    computed from the exponents of the two Gaussian functions as :math:`p = \alpha + \beta`.
-
-    Args:
-        la (integer): angular momentum for the first Gaussian function
-        lb (integer): angular momentum for the second Gaussian function
-        ra (float): position vector of the first Gaussian function
-        rb (float): position vector of the second Gaussian function
-        alpha (array[float]): exponent of the first Gaussian function
-        beta (array[float]): exponent of the second Gaussian function
-
-    Returns:
-        array[float]: overlap integral between primitive Gaussian functions
-
-    **Example**
-
-    >>> la, lb = (0, 0, 0), (0, 0, 0)
-    >>> ra, rb = np.array([0., 0., 0.]), np.array([0., 0., 0.])
-    >>> alpha = np.array([np.pi/2])
-    >>> beta = np.array([np.pi/2])
-    >>> o = gaussian_overlap(la, lb, ra, rb, alpha, beta)
-    >>> o
-    array([1.])
-    """
-    p = alpha + beta
-    s = 1.0
-    for i in range(3):
-        s = s * anp.sqrt(anp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
-    return s
-
-
-def generate_overlap(basis_a, basis_b):
-    r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
-
-    Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
-
-    Returns:
-        function: function that computes the overlap integral
-
-    **Example**
-
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = qml.hf.Molecule(symbols, geometry)
-    >>> args = []
-    >>> generate_overlap(mol.basis_set[0], mol.basis_set[0])(*args)
-    1.0
-    """
-
-    def overlap_integral(*args):
-        r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
-
-        Args:
-            args (array[float]): initial values of the differentiable parameters
-
-        Returns:
-            array[float]: the overlap integral between two contracted Gaussian orbitals
-        """
+def generate_moment(basis_a, basis_b, e):
+    def moment_integral(*args):
 
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
+
+        la = basis_a.l
+        lb = basis_b.l
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
@@ -411,16 +441,24 @@ def generate_overlap(basis_a, basis_b):
         na = contracted_norm(basis_a.l, alpha, ca)
         nb = contracted_norm(basis_b.l, beta, cb)
 
-        return (
-            na
-            * nb
-            * (
-                (ca[:, anp.newaxis] * cb)
-                * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, anp.newaxis], beta)
-            ).sum()
+        p = anp.array(alpha[:, anp.newaxis] + beta)
+        q = anp.sqrt(anp.pi / p)
+        rc = (
+            alpha[:, anp.newaxis] * ra[:, anp.newaxis, anp.newaxis]
+            + beta * rb[:, anp.newaxis, anp.newaxis]
+        ) / p
+
+        sx = (
+            gaussian_moment(la[0], lb[0], ra[0], rb[0], alpha[:, anp.newaxis], beta, e, rc[0])
+            * expansion(la[1], lb[1], ra[1], rb[1], alpha[:, anp.newaxis], beta, 0)
+            * q
+            * expansion(la[2], lb[2], ra[2], rb[2], alpha[:, anp.newaxis], beta, 0)
+            * q
         )
 
-    return overlap_integral
+        return (na * nb * (ca[:, anp.newaxis] * cb) * sx).sum()
+
+    return moment_integral
 
 
 def _diff2(i, j, ri, rj, alpha, beta):
