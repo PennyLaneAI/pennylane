@@ -30,6 +30,7 @@ from pennylane.hf.integrals import (
     gaussian_overlap,
     generate_attraction,
     generate_kinetic,
+    generate_moment,
     generate_overlap,
     generate_repulsion,
     primitive_norm,
@@ -131,69 +132,6 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, t), c)
     assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
     assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
-
-
-@pytest.mark.parametrize(
-    ("alpha", "beta", "t", "e", "rc", "ref"),
-    [
-        (  # trivial case, ref = 0.0 for t > e
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            2,
-            1,
-            np.array([1.5]),
-            np.array([0.0]),
-        ),
-        (  # trivial case, ref = 0.0 for e == 0 and t != 0
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            1,
-            0,
-            np.array([1.5]),
-            np.array([0.0]),
-        ),
-        (  # trivial case, ref = np.sqrt(np.pi / (alpha + beta))
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            0,
-            0,
-            np.array([1.5]),
-            np.array([0.677195]),
-        ),
-        (  # manually computed, ref = 1.0157925
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            0,
-            1,
-            np.array([1.5]),
-            np.array([1.0157925]),
-        ),
-    ],
-)
-def test_hermite_moment(alpha, beta, t, e, rc, ref):
-    r"""Test that _hermite_moment function returns correct values."""
-    assert np.allclose(_hermite_moment(alpha, beta, t, e, rc), ref)
-
-
-@pytest.mark.parametrize(
-    ("la", "lb", "ra", "rb", "alpha", "beta", "e", "rc", "ref"),
-    [
-        (  # manually computed, ref = 1.0157925
-            0,
-            0,
-            np.array([2.0]),
-            np.array([2.0]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            1,
-            np.array([1.5]),
-            np.array([1.0157925]),
-        ),
-    ],
-)
-def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
-    r"""Test that gaussian_moment function returns correct values."""
-    assert np.allclose(gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
 
 
 @pytest.mark.parametrize(
@@ -309,7 +247,7 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
         ),
     ],
 )
-def test_gradient(symbols, geometry, alpha, coeff):
+def test_gradient_overlap(symbols, geometry, alpha, coeff):
     r"""Test that the overlap gradient computed with respect to the basis parameters is correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
@@ -345,6 +283,90 @@ def test_gradient(symbols, geometry, alpha, coeff):
 
     assert np.allclose(g_alpha, g_ref_alpha)
     assert np.allclose(g_coeff, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("alpha", "beta", "t", "e", "rc", "ref"),
+    [
+        (  # trivial case, ref = 0.0 for t > e
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            2,
+            1,
+            np.array([1.5]),
+            np.array([0.0]),
+        ),
+        (  # trivial case, ref = 0.0 for e == 0 and t != 0
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            1,
+            0,
+            np.array([1.5]),
+            np.array([0.0]),
+        ),
+        (  # trivial case, ref = np.sqrt(np.pi / (alpha + beta))
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            0,
+            0,
+            np.array([1.5]),
+            np.array([0.677195]),
+        ),
+        (  # manually computed, ref = 1.0157925
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            0,
+            1,
+            np.array([1.5]),
+            np.array([1.0157925]),
+        ),
+    ],
+)
+def test_hermite_moment(alpha, beta, t, e, rc, ref):
+    r"""Test that _hermite_moment function returns correct values."""
+    assert np.allclose(_hermite_moment(alpha, beta, t, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "e", "rc", "ref"),
+    [
+        (  # manually computed, ref = 1.0157925
+            0,
+            0,
+            np.array([2.0]),
+            np.array([2.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            1,
+            np.array([1.5]),
+            np.array([1.0157925]),
+        ),
+    ],
+)
+def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
+    r"""Test that gaussian_moment function returns correct values."""
+    assert np.allclose(gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "e", "ref"),
+    [
+        (
+            ["H", "Li"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            3.12846324e-01 # obtained from pyscf using mol.intor_symmetric("int1e_r")
+       ),
+    ],
+)
+def test_generate_moment(symbols, geometry, e, ref):
+    r"""Test that generate_moment function returns a correct value for the moment integral."""
+    mol = Molecule(symbols, geometry)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    s = generate_moment(basis_a, basis_b, e)()
+    assert np.allclose(s, ref)
 
 
 @pytest.mark.parametrize(
