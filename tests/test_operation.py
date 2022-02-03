@@ -70,7 +70,7 @@ class TestOperatorConstruction:
         """Test that an exception is raised if called with wrong number of parameters"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator"""
+            r"""Dummy custom operator that declares num_params as a instance property"""
             num_wires = 1
             grad_method = "A"
 
@@ -80,6 +80,31 @@ class TestOperatorConstruction:
 
         with pytest.raises(ValueError, match="wrong number of parameters"):
             DummyOp(0.5, 0.6, wires=0)
+
+        op = DummyOp(0.5, wires=0)
+        assert op.num_params == 1
+
+        class DummyOp2(qml.operation.Operator):
+            r"""Dummy custom operator that declared num_params as a class property"""
+            num_params = 4
+            num_wires = 1
+            grad_method = "A"
+
+        with pytest.raises(ValueError, match="wrong number of parameters"):
+            DummyOp2(0.5, 0.6, wires=0)
+
+        op2 = DummyOp2(0.5, 0.3, 0.1, 0.2, wires=0)
+        assert op2.num_params == 4
+        assert DummyOp2.num_params == 4
+
+        class DummyOp3(qml.operation.Operator):
+            r"""Dummy custom operator that does not declare num_params at all"""
+            num_wires = 1
+            grad_method = "A"
+
+        op3 = DummyOp3(0.5, 0.6, wires=0)
+
+        assert op3.num_params == 2
 
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""

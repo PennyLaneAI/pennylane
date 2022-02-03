@@ -102,7 +102,6 @@ class CommutingEvolution(Operation):
         0.6536436208636115
     """
 
-    num_params = 3
     num_wires = AnyWires
     par_domain = "R"
     grad_method = None
@@ -125,11 +124,14 @@ class CommutingEvolution(Operation):
             self.grad_method = "A"
 
         self.hamiltonian = hamiltonian
-        self.num_params = len(hamiltonian.data) + 1
         self.frequencies = frequencies
         self.shifts = shifts
 
         super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return len(self.hamiltonian.data) + 1
 
     def expand(self):
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
