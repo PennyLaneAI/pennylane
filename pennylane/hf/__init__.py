@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the functionality to perform differentiable Hartree-Fock calculations.
+This subpackage provides the functionality to perform differentiable
+Hartree-Fock calculations.
 """
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
