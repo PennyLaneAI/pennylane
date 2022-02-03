@@ -157,7 +157,7 @@
   changes*.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
 
-  Previously, the `RotsolveOptimizer` was available for cost functions with
+  Previously, the `RotosolveOptimizer` was available for cost functions with
   frequency spectra that only contained integers, and the maximal frequency
   (instead of the number of frequencies) determined the cost of the optimization.
   Now arbitrary frequencies are supported.
@@ -248,6 +248,7 @@
       qml.RY(y[0], wires=0)
       qml.RY(y[1], wires=1)
       qml.RY(y[0], wires=2)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
 
   x = np.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
   y = np.array([1.3, 0.2], requires_grad=True)
@@ -306,12 +307,6 @@
           [ 0.01983384, -0.97517033]], requires_grad=True)
   ```
 
-<h4>Wire cutting operator</h4>
-
-* A `WireCut` operator has been added for manual wire cut placement
-  when constructing a QNode.
-  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
-
 <h3>Improvements</h3>
 
 * For subclasses of `Operator` where it is known before instantiation, the
@@ -319,6 +314,10 @@
   programmatically know the number of parameters before an operator is
   instantiated without changing the user interface.
   [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+
+* A `WireCut` operator has been added for manual wire cut placement
+  when constructing a QNode.
+  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
 
 * The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
   differs in implementation and minor stylistic details from the old string circuit drawing
