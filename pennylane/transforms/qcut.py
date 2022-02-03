@@ -19,10 +19,12 @@ circuits to be distributed across multiple devices.
 from typing import Tuple
 
 from networkx import MultiDiGraph, weakly_connected_components
+from pennylane import apply
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
+from pennylane.wires import Wires
 
 
 class MeasureNode(Operation):
@@ -289,3 +291,77 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
         communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
 
     return subgraphs, communication_graph
+
+
+def _find_new_wire(wires: Wires) -> int:
+    """Finds a new wire label that is not in ``wires``."""
+    ctr = 0
+    while ctr in wires:
+        ctr += 1
+    return ctr
+
+
+def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+    """
+    Converts a directed multigraph to the corresponding quantum tape.
+
+    Args:
+        graph (MultiDiGraph): directed multigraph containing measure to be
+        converted to a tape
+
+    Returns:
+        tape (QuantumTape): the quantum tape corresponding to the input
+
+    **Example**
+
+    Consider the following ... :
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        wire_cut_0 = qml.WireCut(wires=0)
+        wire_cut_1 = qml.WireCut(wires=1)
+        multi_wire_cut = qml.WireCut(wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.apply(wire_cut_0)
+            qml.RY(0.5, wires=0)
+            qml.apply(wire_cut_1)
+            qml.CNOT(wires=[0, 1])
+            qml.apply(multi_wire_cut)
+            qml.RZ(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
+
+    We can find the subgraphs and corresponding tapes by using:
+
+    >>> graph = qcut.tape_to_graph(tape)
+    >>> qcut.replace_wire_cut_nodes(graph)
+    >>> qcut.fragment_graph(graph)
+    >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+    >>> tapes
+    [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
+     <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
+     <QuantumTape: wires=[1], params=0>]
+    """
+    wires = Wires.all_wires([n.wires for n in graph.nodes])
+
+    ordered_ops = sorted(
+        [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
+    )
+    wire_map = {w: w for w in wires}
+
+    with QuantumTape() as tape:
+        for _, op in ordered_ops:
+            new_wires = [wire_map[w] for w in op.wires]
+            op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
+            apply(op)
+
+            if isinstance(op, MeasureNode):
+                measured_wire = op.wires[0]
+                new_wire = _find_new_wire(wires)
+                wires += new_wire
+                wire_map[measured_wire] = new_wire
+
+    return tape
