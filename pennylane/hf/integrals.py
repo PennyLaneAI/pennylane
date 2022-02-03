@@ -254,10 +254,10 @@ def _hermite_moment(alpha, beta, t, e, rc):
     >>> alpha = np.array([3.42525091])
     >>> beta =  np.array([3.42525091])
     >>> t = 0
-    >>> e = 0
-    >>> rc = 2.0
+    >>> e = 1
+    >>> rc = 1.5
     >>> _hermite_moment(alpha, beta, t, e, rc)
-    array([0.677195])
+    array([1.0157925])
     """
     p = anp.array(alpha + beta)
 
