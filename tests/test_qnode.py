@@ -715,7 +715,7 @@ class TestIntegration:
         """Tests that if we swapped the original device (e.g., when
         diff_method='backprop') then the number of executions recorded is
         correct."""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         cache = {}
 

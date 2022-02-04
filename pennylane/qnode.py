@@ -268,7 +268,9 @@ class QNode:
 
             # Use the number of executions on the original device as we may
             # have used the cache
-            self._original_device._num_executions = self.device._num_executions # pylint: disable=protected-access
+            self._original_device._num_executions = (
+                self.device._num_executions
+            )  # pylint: disable=protected-access
 
             # Update for state vector simulators that have the _pre_rotated_state attribute
             if hasattr(self._original_device, "_pre_rotated_state"):
