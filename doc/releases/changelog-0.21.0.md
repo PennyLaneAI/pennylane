@@ -314,6 +314,27 @@
 
 <h3>Improvements</h3>
 
+* The `qml.transforms.insert` transform now supports adding operation after or
+  before certain specific gates.
+  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
+
+* Added a modified version of the `simplify` function to the `hf` module.
+  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+
+  This function combines redundant terms in a Hamiltonian and eliminates terms
+  with a coefficient smaller than a cutoff value. The new function makes
+  construction of molecular Hamiltonians more efficient. For LiH, as an
+  example, the time to construct the Hamiltonian is reduced roughly by a factor
+  of 20.
+
+* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
+* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
+  uses RetworkX for its internal representation. This results in significant speedup
+  for algorithms that rely on a directed acyclic graph representation.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
 * For subclasses of `Operator` where the number of parameters
   is known before instantiation, the
   `num_params` is reverted back to being a static property. This allows to
@@ -331,15 +352,6 @@
   differs in implementation and minor stylistic details from the old string circuit drawing
   infrastructure.
   [(#1885)](https://github.com/PennyLaneAI/pennylane/pull/1885)
-
-* Added a modified version of the `simplify` function to the `hf` module.
-  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
-
-  This function combines redundant terms in a Hamiltonian and eliminates terms
-  with a coefficient smaller than a cutoff value. The new function makes
-  construction of molecular Hamiltonians more efficient. For LiH, as an
-  example, the time to construct the Hamiltonian is reduced roughly by a factor
-  of 20.
 
 * The `RotosolveOptimizer` now raises an error if no trainable arguments are
   detected, instead of silently skipping update steps for all arguments.
@@ -400,19 +412,8 @@
   to control the precision of parameters.
   [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
 
-* The `qml.transforms.insert` transform now supports adding operation after or before certain specific gates.
-  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
-
 * Interferometer now has a `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
-
-* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
-  uses RetworkX for its internal representation. This results in significant speedup
-  for algorithms that rely on a directed acyclic graph representation.
-  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
-
-* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
-  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
 * The Barrier and Identity operations now support the `adjoint` method.
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
