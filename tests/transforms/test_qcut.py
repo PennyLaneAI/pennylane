@@ -1,4 +1,3 @@
-#
 # Copyright 2022 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -704,3 +703,29 @@ class TestFragmentGraph:
 
         for subgraph, expected_e in zip(subgraphs, expected_edges):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
+
+    def test_communication_graph_persistence(self):
+        """
+        Tests that when `fragment_graph` is repeatedly applied the
+        communication graph is the same each time.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs_0, communication_graph_0 = qcut.fragment_graph(g)
+        subgraphs_1, communication_graph_1 = qcut.fragment_graph(g)
+
+        assert communication_graph_0.nodes == communication_graph_1.nodes
+        assert communication_graph_0.edges == communication_graph_1.edges
