@@ -242,7 +242,7 @@ class TestDecomposition:
     def test_RZ_skipped(self, mocker, state_vector, n_wires):
         """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
-        n_CNOT = 2 ** n_wires - 2
+        n_CNOT = 2**n_wires - 2
 
         dev = qml.device("default.qubit", wires=n_wires)
 

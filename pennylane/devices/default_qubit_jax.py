@@ -207,7 +207,7 @@ class DefaultQubitJax(DefaultQubit):
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.
-            key = jax.random.PRNGKey(np.random.randint(0, 2 ** 31))
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
         else:
             key = self._prng_key
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
@@ -268,7 +268,7 @@ class DefaultQubitJax(DefaultQubit):
 
             indices = indices.reshape((bins, -1))
             prob = np.zeros(
-                [2 ** num_wires + 1, bins], dtype=jnp.float64
+                [2**num_wires + 1, bins], dtype=jnp.float64
             )  # extend it to store 'filled values'
             prob = qml.math.convert_like(prob, indices)
 
@@ -276,28 +276,28 @@ class DefaultQubitJax(DefaultQubit):
             for b, idx in enumerate(indices):
                 idx = qml.math.convert_like(idx, indices)
                 basis_states, counts = qml.math.unique(
-                    idx, return_counts=True, size=2 ** num_wires, fill_value=-1
+                    idx, return_counts=True, size=2**num_wires, fill_value=-1
                 )
 
                 for state, count in zip(basis_states, counts):
                     prob = prob.at[state, b].set(count / bin_size)
 
             prob = jnp.resize(
-                prob, (2 ** num_wires, bins)
+                prob, (2**num_wires, bins)
             )  # resize prob which discards the 'filled values'
 
         else:
             basis_states, counts = qml.math.unique(
-                indices, return_counts=True, size=2 ** num_wires, fill_value=-1
+                indices, return_counts=True, size=2**num_wires, fill_value=-1
             )
-            prob = np.zeros([2 ** num_wires + 1], dtype=jnp.float64)
+            prob = np.zeros([2**num_wires + 1], dtype=jnp.float64)
             prob = qml.math.convert_like(prob, indices)
 
             for state, count in zip(basis_states, counts):
                 prob = prob.at[state].set(count / len(samples))
 
             prob = jnp.resize(
-                prob, 2 ** num_wires
+                prob, 2**num_wires
             )  # resize prob which discards the 'filled values'
 
         return self._asarray(prob, dtype=self.R_DTYPE)
