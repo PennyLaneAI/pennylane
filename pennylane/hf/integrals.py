@@ -462,6 +462,7 @@ def generate_moment(basis_a, basis_b, e, idx):
     >>> generate_overlap(mol.basis_set[0], mol.basis_set[0], e, idx)(*args)
     3.12846324e-01
     """
+
     def moment_integral(*args):
         r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
 
