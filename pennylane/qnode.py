@@ -267,9 +267,6 @@ class QNode:
 
         if self.device is not self._original_device:
 
-            # Use the number of executions on the original device as we may
-            # have used the cache
-
             if not self._tape_cached:
                 self._original_device._num_executions += 1  # pylint: disable=protected-access
 
