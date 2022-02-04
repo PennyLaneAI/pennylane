@@ -560,7 +560,7 @@
   provided by the underlying device.
   [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
 
-* Raises an error during QNode creation if backpropagation is requested on a device with
+* An error is now raised during QNode creation if backpropagation is requested on a device with
   finite shots specified.
   [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
 
