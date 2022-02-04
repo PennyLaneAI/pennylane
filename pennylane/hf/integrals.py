@@ -459,7 +459,7 @@ def generate_moment(basis_a, basis_b, e, idx):
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> args = []
     >>> e, idx =  1, 0
-    >>> generate_overlap(mol.basis_set[0], mol.basis_set[0], e, idx)(*args)
+    >>> generate_moment(mol.basis_set[0], mol.basis_set[1], e, idx)(*args)
     3.12846324e-01
     """
 
