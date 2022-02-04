@@ -223,17 +223,55 @@ def contract_tensors(
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
 ):
-    """TODO.
+    """Contract tensors according to the edges specified in the communication graph.
+
+    This operation is differentiable. The ``prepare_nodes`` and ``measure_nodes`` arguments are both
+    sequences of size ``len(communication_graph.nodes)`` that describe the order of indices in the
+    ``tensors`` with respect to to the :class:`~.PrepareNode` and :class`~.MeasureNode` edges in the
+    communication graph.
 
     Args:
-        tensors:
-        communication_graph:
-        prepare_nodes:
-        measure_nodes:
-        use_opt_einsum:
+        tensors (Sequence): the tensors to be contracted
+        communication_graph (MultiDiGraph): the communication graph determining connectivity between
+            the tensors
+        prepare_nodes (Sequence[PrepareNode]): a sequence of size ``len(communication_graph.nodes)``
+            that determines the order of preparation indices in each tensor
+        measure_nodes (Sequence[MeasureNode]): a sequence of size ``len(communication_graph.nodes)``
+            that determines the order of measurement indices in each tensor
+        use_opt_einsum (bool): Determines whether to use the
+            [opt_einsum](https://dgasmith.github.io/opt_einsum/) package. This package is useful for
+            tensor contractions of large networks but must be installed separately using, e.g.,
+            ``pip install opt_einsum``.
 
     Returns:
+        float or array-like: the result of contracting the tensor network
 
+    **Example**
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    We first set up the tensors and their corresponding :class:`~.PrepareNode` and
+    :class`~.MeasureNode` orderings:
+
+    .. code-block:: python
+
+        t = [np.arange(4), np.arange(4, 8)]
+        p = [[], [qcut.PrepareNode(wires=0)]]
+        m = [[qcut.MeasureNode(wires=0)], []]
+
+    The communication graph describing edges in the tensor network must also be constructed:
+
+    .. code-block:: python
+
+        g = MultiDiGraph([(0, 1, {"pair": (m[0][0], p[1][0])})])
+
+    The network can then be contracted using:
+
+    >>> qcut.contract_tensors(t, g, p, m)
+    38
     """
     # pylint: disable=import-outside-toplevel
     if use_opt_einsum:
