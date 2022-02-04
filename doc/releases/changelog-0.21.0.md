@@ -122,40 +122,6 @@
   3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
   ```
 
-<h4>Improved JAX support</h4>
-
-* The JAX interface now supports evaluating vector-valued QNodes.
-  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
-
-  Vector-valued QNodes include those with:
-  * `qml.probs`;
-  * `qml.state`;
-  * `qml.sample` or
-  * multiple `qml.expval` / `qml.var` measurements.
-
-  Consider a QNode that returns basis-state probabilities:
-  ```python
-  dev = qml.device('default.qubit', wires=2)
-  x = jnp.array(0.543)
-  y = jnp.array(-0.654)
-
-  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
-  def circuit(x, y):
-      qml.RX(x, wires=[0])
-      qml.RY(y, wires=[1])
-      qml.CNOT(wires=[0, 1])
-      return qml.probs(wires=[1])
-  ```
-  The QNode can be evaluated and its jacobian can be computed:
-  ```pycon
-  >>> circuit(x, y)
-  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
-  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
-   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
-  ```
-  Note that `jax.jit` is not yet supported for vector-valued QNodes.
-
 <h4>Generalized RotosolveOptmizer</h4>
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
@@ -221,6 +187,40 @@
   *reconstructions* that Rotosolve creates and uses internally for the optimization,
   and not of the original objective function. For noisy cost functions, these intermediate
   evaluations may differ significantly from evaluations of the original cost function.
+
+<h4>Improved JAX support</h4>
+
+* The JAX interface now supports evaluating vector-valued QNodes.
+  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
+
+  Vector-valued QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a QNode that returns basis-state probabilities:
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
+
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
+  ```
+  The QNode can be evaluated and its jacobian can be computed:
+  ```pycon
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
+   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
+  ```
+  Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
 <h4>Adjoint metric tensor</h4>
 
