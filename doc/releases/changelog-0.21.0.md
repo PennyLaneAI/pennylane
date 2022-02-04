@@ -55,16 +55,13 @@
 
 <h4>New tensor network templates</h4>
 
-* A tensor network templates module has been added. Quantum circuits with the shape
+* Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented.
   Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
   [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
   An example circuit that uses the `MPS` template is:
   ```python
-  import pennylane as qml
-  import numpy as np
-
   def block(weights, wires):
       qml.CNOT(wires=[wires[0],wires[1]])
       qml.RY(weights[0], wires=wires[0])
@@ -317,7 +314,8 @@
 
 <h3>Improvements</h3>
 
-* For subclasses of `Operator` where it is known before instantiation, the
+* For subclasses of `Operator` where the number of parameters
+  is known before instantiation, the
   `num_params` is reverted back to being a static property. This allows to
   programmatically know the number of parameters before an operator is
   instantiated without changing the user interface. A test was added to ensure
@@ -402,7 +400,7 @@
   to control the precision of parameters.
   [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
 
-* `insert` transform now supports adding operation after or before certain specific gates.
+* The `qml.transforms.insert` transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
 * Interferometer now has a `shape` method.
@@ -562,7 +560,7 @@
   provided by the underlying device.
   [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
 
-* Raises an error during QNode creation if backpropagation is requested on a device with
+* An error is now raised during QNode creation if backpropagation is requested on a device with
   finite shots specified.
   [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
 
