@@ -154,7 +154,7 @@
   (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
    DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
   ```
-  Note that `jax.jit` is not supported for vector-valued QNodes.
+  Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
 <h4>Generalized RotosolveOptmizer</h4>
 
