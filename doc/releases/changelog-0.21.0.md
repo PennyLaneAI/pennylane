@@ -56,7 +56,7 @@
   tensor([1, 1], requires_grad=True)
   ```
 
-<h4>New tensor network templates</h4>
+<h4>New tensor network templates 🪢</h4>
 
 * Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented
@@ -122,7 +122,7 @@
   3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
   ```
 
-<h4>Generalized RotosolveOptmizer</h4>
+<h4>Generalized RotosolveOptmizer 📉</h4>
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
@@ -190,7 +190,7 @@
   and not of the original objective function. For noisy cost functions, these intermediate
   evaluations may differ significantly from evaluations of the original cost function.
 
-<h4>Improved JAX support</h4>
+<h4>Improved JAX support 💻</h4>
 
 * The JAX interface now supports evaluating vector-valued QNodes.
   [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
@@ -224,7 +224,7 @@
   ```
   Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
-<h4>Speedier quantum natural gradient</h4>
+<h4>Speedier quantum natural gradient ⚡</h4>
 
 * A new function for computing the metric tensor on simulators,
   `qml.adjoint_metric_tensor`, has been added, that uses classically
@@ -282,7 +282,7 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
-<h4>Compute the Hessian on hardware</h4>
+<h4>Compute the Hessian on hardware ⬆️</h4>
 
 * A new gradient transform `qml.gradients.param_shift_hessian` has been added
   to directly compute the Hessian (2nd order partial derivative matrix) of
