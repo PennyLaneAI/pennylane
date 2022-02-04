@@ -721,7 +721,7 @@ class TestFragmentGraph:
 
         for subgraph, expected_e in zip(subgraphs, expected_edges):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
-           
+
     def test_communication_graph_persistence(self):
         """
         Tests that when `fragment_graph` is repeatedly applied the
