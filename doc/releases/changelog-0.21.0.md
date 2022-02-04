@@ -55,7 +55,7 @@
 
 <h4>New tensor network templates</h4>
 
-* A tensor network templates module has been added. Quantum circuits with the shape
+* Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented.
   Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
   [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
