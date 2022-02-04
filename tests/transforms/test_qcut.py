@@ -556,7 +556,7 @@ class TestContractTensors:
         - 2 * np.sin(params[0]) ** 2 * np.sin(params[1]) * np.cos(params[1])
         - 3 * np.sin(params[0]) ** 3 * np.sin(params[1]) * np.cos(params[1]) ** 2
     )
-    expected_grad = (expected_grad_0, expected_grad_1)
+    expected_grad = np.array([expected_grad_0, expected_grad_1])
 
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_autograd(self, use_opt_einsum):
