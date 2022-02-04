@@ -765,3 +765,107 @@ class TestGraphToTape:
 
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
+
+
+class TestExpandFragmentTapes:
+    """
+    Tests that fragment tapes are correctly expanded to all configurations
+    """
+
+    def test_expand_fragment_tapes(self):
+        """
+        Tests that a fragment tape expands correctly
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+
+        import pdb
+
+        pdb.set_trace()
+        frag_tapes_0 = fragment_configurations[0][0]
+        frag_tapes_1 = fragment_configurations[1][0]
+
+        assert len(frag_tapes_0) == 4
+        assert len(frag_tapes_1) == 4
+
+        frag_0_ops = [
+            qml.RX(0.432, wires=[0]),
+            qml.RY(0.543, wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(0.24, wires=[0]),
+            qml.RZ(0.133, wires=[1]),
+        ]
+
+        with qml.tape.QuantumTape() as tape_00:
+            for op in frag_0_ops:
+                qml.apply(op)
+            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_01:
+            for op in frag_0_ops:
+                qml.apply(op)
+            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.PauliX(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_02:
+            for op in frag_0_ops:
+                qml.apply(op)
+            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.PauliY(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_03:
+            for op in frag_0_ops:
+                qml.apply(op)
+            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.PauliZ(wires=[1]))
+
+        frag_0_expected_tapes = [tape_00, tape_01, tape_02, tape_03]
+
+        frag_1_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
+
+        with qml.tape.QuantumTape() as tape_10:
+            qml.Identity(wires=[1])
+            for op in frag_1_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_11:
+            qml.PauliX(wires=[1])
+            for op in frag_1_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_12:
+            qml.Hadamard(wires=[1])
+            for op in frag_1_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_12:
+            qml.Hadamard(wires=[1])
+            qml.S(wires=[1])
+            for op in frag_1_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        frag_1_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
+
+        for tape_0, exp_tape_0 in zip(frag_tapes_0, frag_0_expected_tapes):
+            compare_tapes(tape_0, exp_tape_0)
+
+        for tape_1, exp_tape_1 in zip(frag_tapes_1, frag_1_expected_tapes):
+            compare_tapes(tape_1, exp_tape_1)

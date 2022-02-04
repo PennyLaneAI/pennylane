@@ -15,15 +15,15 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
-
-from typing import Tuple
+from itertools import product
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, weakly_connected_components
-from pennylane import apply
+from pennylane import Hadamard, Identity, PauliX, PauliY, PauliZ, S, apply, expval
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import Operation, Operator, Tensor
+from pennylane.operation import AnyWires, Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, stop_recording
 from pennylane.wires import Wires
 
 
@@ -365,3 +365,132 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 wire_map[measured_wire] = new_wire
 
     return tape
+
+
+def _prep_zero_state(wire):
+    Identity(wire)
+
+
+def _prep_one_state(wire):
+    PauliX(wire)
+
+
+def _prep_plus_state(wire):
+    Hadamard(wire)
+
+
+def _prep_iplus_state(wire):
+    Hadamard(wire)
+    S(wires=wire)
+
+
+PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
+MEASURE_SETTINGS = [Identity, PauliX, PauliY, PauliZ]
+
+
+def expand_fragment_tapes(
+    tape: QuantumTape,
+) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
+    """
+    Expands a fragment tape into a tape for each configuration.
+
+    Args:
+        tape (QuantumTape): the fragment tape to be expanded.
+
+    Returns:
+        Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
+        tapes corresponding to each configration, the preparation nodes and
+        the measurement nodes.
+
+    **Example**
+
+    Consider the following where ``graph`` contains a single
+    :class:`~.MeasureNode` and :class:`~.PrepareNode` within the full circuit
+    graph:
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        >>> subgraphs, communication_graph = qcut.fragment_graph(graph)
+        >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        >>> fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+        >>> fragment_configurations
+        [([<QuantumTape: wires=[0, 1], params=4>,
+           <QuantumTape: wires=[0, 1], params=4>,
+           <QuantumTape: wires=[0, 1], params=4>,
+           <QuantumTape: wires=[0, 1], params=4>],
+          [],
+          [MeasureNode(wires=[1])]),
+         ([<QuantumTape: wires=[1, 2], params=2>,
+           <QuantumTape: wires=[1, 2], params=2>,
+           <QuantumTape: wires=[1, 2], params=2>,
+           <QuantumTape: wires=[1, 2], params=2>],
+          [PrepareNode(wires=[1])],
+          [])]
+
+    """
+
+    prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
+    measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
+
+    prepare_combinations = product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes))
+    measure_combinations = product(range(len(MEASURE_SETTINGS)), repeat=len(measure_nodes))
+
+    tapes = []
+
+    for prepare_settings, measure_settings in product(prepare_combinations, measure_combinations):
+        prepare_mapping = {n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)}
+        measure_mapping = {n: MEASURE_SETTINGS[s] for n, s in zip(measure_nodes, measure_settings)}
+
+        meas = []
+
+        with QuantumTape() as tape_:
+            for op in tape.operations:
+                if isinstance(op, PrepareNode):
+                    w = op.wires[0]
+                    prepare_mapping[op](w)
+                elif isinstance(op, MeasureNode):
+                    meas.append(op)
+                else:
+                    apply(op)
+
+            with stop_recording():
+                op_tensor = Tensor(*[measure_mapping[op](op.wires[0]) for op in meas])
+
+            if len(tape.measurements) > 0:
+                for m in tape.measurements:
+                    if m.return_type is not Expectation:
+                        raise ValueError("Only expectation values supported for now")
+                    with stop_recording():
+                        m_obs = m.obs
+                        if isinstance(m_obs, Tensor):
+                            terms = m_obs.obs
+                            for t in terms:
+                                if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
+                                    raise ValueError("Only tensor products of Paulis for now")
+                            op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
+                            m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
+                            all_wires = sorted(op_tensor_wires + m_obs_wires)
+                            all_terms = [t[1] for t in all_wires]
+                            full_tensor = Tensor(*all_terms)
+                        else:
+                            if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
+                                raise ValueError("Only tensor products of Paulis for now")
+
+                            op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
+                            m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
+                            all_wires = sorted(op_tensor_wires + m_obs_wires)
+                            all_terms = [t[1] for t in all_wires]
+                            full_tensor = Tensor(*all_terms)
+
+                    expval(full_tensor)
+            elif len(op_tensor.name) > 0:
+                expval(op_tensor)
+            else:
+                expval(Identity(tape.wires[0]))
+
+        tapes.append(tape_)
+
+    return tapes, prepare_nodes, measure_nodes

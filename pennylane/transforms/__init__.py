@@ -95,6 +95,7 @@ Utility function to assist with the circuit cutting transform
     ~transforms.replace_wire_cut_nodes
     ~transforms.fragment_graph
     ~transforms.graph_to_tape
+    ~transforms.expand_fragment_tapes
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -173,4 +174,5 @@ from .qcut import (
     replace_wire_cut_nodes,
     fragment_graph,
     graph_to_tape,
+    expand_fragment_tapes,
 )
