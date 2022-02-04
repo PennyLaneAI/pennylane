@@ -122,7 +122,7 @@
   3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
   ```
 
-<h4>More powerful JAX interface</h4>
+<h4>Improved JAX support</h4>
 
 * The JAX interface now supports evaluating vector-valued QNodes.
   [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
