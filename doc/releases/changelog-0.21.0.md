@@ -89,7 +89,7 @@
   3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
   ```
 
-* Added a template for tree tensor networks (TTN).
+* Added a template for tree tensor networks, `qml.TTN`.
   [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
   An example circuit that uses the `TTN` template is:
   ```python
