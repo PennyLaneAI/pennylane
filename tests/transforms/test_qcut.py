@@ -796,9 +796,6 @@ class TestExpandFragmentTapes:
 
         fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
 
-        import pdb
-
-        pdb.set_trace()
         frag_tapes_0 = fragment_configurations[0][0]
         frag_tapes_1 = fragment_configurations[1][0]
 
@@ -816,22 +813,22 @@ class TestExpandFragmentTapes:
         with qml.tape.QuantumTape() as tape_00:
             for op in frag_0_ops:
                 qml.apply(op)
-            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.Identity(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_01:
             for op in frag_0_ops:
                 qml.apply(op)
-            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.PauliX(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_02:
             for op in frag_0_ops:
                 qml.apply(op)
-            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.PauliY(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_03:
             for op in frag_0_ops:
                 qml.apply(op)
-            qml.expval(qml.expval(qml.PauliZ(wires=[0])) @ qml.PauliZ(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
 
         frag_0_expected_tapes = [tape_00, tape_01, tape_02, tape_03]
 
@@ -855,7 +852,7 @@ class TestExpandFragmentTapes:
                 qml.apply(op)
             qml.expval(qml.Identity(wires=[1]))
 
-        with qml.tape.QuantumTape() as tape_12:
+        with qml.tape.QuantumTape() as tape_13:
             qml.Hadamard(wires=[1])
             qml.S(wires=[1])
             for op in frag_1_ops:

@@ -431,6 +431,7 @@ def expand_fragment_tapes(
           [])]
 
     """
+    obs_map = {"Identity": Identity, "PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
 
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
@@ -464,7 +465,7 @@ def expand_fragment_tapes(
                     if m.return_type is not Expectation:
                         raise ValueError("Only expectation values supported for now")
                     with stop_recording():
-                        m_obs = m.obs
+                        m_obs = obs_map[m.obs.name](wires=m.obs.wires)
                         if isinstance(m_obs, Tensor):
                             terms = m_obs.obs
                             for t in terms:
@@ -484,7 +485,6 @@ def expand_fragment_tapes(
                             all_wires = sorted(op_tensor_wires + m_obs_wires)
                             all_terms = [t[1] for t in all_wires]
                             full_tensor = Tensor(*all_terms)
-
                     expval(full_tensor)
             elif len(op_tensor.name) > 0:
                 expval(op_tensor)
