@@ -74,7 +74,7 @@
   n_wires = 4
   n_block_wires = 2
   n_params_block = 2
-  template_weights = [[0.1,-0.3],[0.4,0.2],[-0.15,0.5]]
+  template_weights = np.array([[0.1, -0.3], [0.4, 0.2], [-0.15, 0.5]], requires_grad=True)
 
   dev = qml.device('default.qubit', wires=range(n_wires))
   @qml.qnode(dev)
