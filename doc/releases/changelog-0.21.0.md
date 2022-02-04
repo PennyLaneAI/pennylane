@@ -4,9 +4,10 @@
 
 <h3>New features since last release</h3>
 
-<h4>Reduce the qubit requirements of simulating Hamiltonians ⚛️</h4>
+<h4>Reduce qubit requirements of simulating Hamiltonians ⚛️</h4>
 
-* Functions for tapering qubits based on molecular symmetries have been added.
+* Functions for tapering qubits based on molecular symmetries have been added,
+  following results from [Setia et al.](https://arxiv.org/abs/1910.14644).
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
   [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
   [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
