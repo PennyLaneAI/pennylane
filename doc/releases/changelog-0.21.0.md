@@ -224,7 +224,9 @@
 
 <h4>Adjoint metric tensor</h4>
 
-* Added the adjoint method for the metric tensor.
+* A new function for computing the metric tensor on simulators,
+  `qml.adjoint_metric_tensor`, has been added, that uses classically
+  efficient methods to massively improve performance.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
   This method, detailed in [Jones (2020)](https://arxiv.org/abs/2011.02991),
@@ -281,7 +283,7 @@
 <h4>New parameter-shift Hessian function</h4>
 
 * A new gradient transform `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
-  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The function generates
+  (2nd order partial derivative matrix) of QNodes on hardware. The function generates
   parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
   software devices. Compared to using an auto-differentiation framework to compute the Hessian
   via parameter shifts, this function will use fewer device invocations and can be used to inspect
