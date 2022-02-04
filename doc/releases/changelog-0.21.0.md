@@ -222,7 +222,7 @@
   ```
   Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
-<h4>Adjoint metric tensor</h4>
+<h4>Speedier quantum natural gradient</h4>
 
 * A new function for computing the metric tensor on simulators,
   `qml.adjoint_metric_tensor`, has been added, that uses classically
@@ -280,7 +280,7 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
-<h4>New parameter-shift Hessian function</h4>
+<h4>Compute the Hessian on hardware</h4>
 
 * A new gradient transform `qml.gradients.param_shift_hessian` has been added
   to directly compute the Hessian (2nd order partial derivative matrix) of
