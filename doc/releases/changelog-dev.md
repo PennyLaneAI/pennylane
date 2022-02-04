@@ -14,6 +14,10 @@
   and `PrepareNode` placeholders has been added.
   [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
   
+  A differentiable tensor contraction function `contract_tensors` has been
+  added.
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+  
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -28,4 +32,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes
+Anthony Hayes, Thomas Bromley
