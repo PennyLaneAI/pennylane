@@ -282,17 +282,20 @@
 
 <h4>New parameter-shift Hessian function</h4>
 
-* A new gradient transform `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
-  (2nd order partial derivative matrix) of QNodes on hardware. The function generates
-  parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
-  software devices. Compared to using an auto-differentiation framework to compute the Hessian
-  via parameter shifts, this function will use fewer device invocations and can be used to inspect
-  the parameter-shifted "Hessian tapes" directly. The function remains fully differentiable on all
-  supported PennyLane interfaces.
+* A new gradient transform `qml.gradients.param_shift_hessian` has been added
+  to directly compute the Hessian (2nd order partial derivative matrix) of
+  QNodes on hardware.
+  [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
+
+  The function generates parameter-shifted tapes which allow the Hessian to be
+  computed analytically on hardware and software devices. Compared to using an
+  auto-differentiation framework to compute the Hessian via parameter shifts,
+  this function will use fewer device invocations and can be used to inspect
+  the parameter-shifted "Hessian tapes" directly. The function remains fully
+  differentiable on all supported PennyLane interfaces.
 
   Additionally, the parameter-shift Hessian comes with a new batch transform decorator
   `@qml.gradients.hessian_transform`, which can be used to create custom Hessian functions.
-  [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
 
   The following code demonstrates how to use the parameter-shift Hessian:
 
