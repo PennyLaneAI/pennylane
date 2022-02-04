@@ -129,10 +129,12 @@
   changes*.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
 
-  Previously, the `RotosolveOptimizer` was available for cost functions with
-  frequency spectra that only contained integers, and the maximal frequency
-  (instead of the number of frequencies) determined the cost of the optimization.
-  Now arbitrary frequencies are supported.
+  Previously, the `RotosolveOptimizer` only supported variational circuits with
+  single-qubit Pauli rotations. Now, circuits with arbitrary gates are
+  supported natively without decomposition, as long as the frequencies of the
+  gate parameters are known. This new generalization extends the Rotosolve
+  optimization method to a larger class of circuits, and can reduce the cost of
+  the optimization compared to decomposing all gates to single-qubit rotations.
 
   Consider the QNode
   ```python
