@@ -227,7 +227,7 @@
 * Added the adjoint method for the metric tensor.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
-  This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
+  This method, detailed in [Jones (2020)](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
   a number of operations that scales quadratically in the number of trainable
   parameters.
