@@ -266,10 +266,11 @@ def contract_tensors(
     for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes)):
         predecessors = communication_graph.pred[node]
 
-        for _, pred_edges in predecessors.items():
-            for pred_edge in pred_edges.values():
-                meas_op, prep_op = pred_edge["pair"]
-                for p in prep:
+        for p in prep:
+            for _, pred_edges in predecessors.items():
+                for pred_edge in pred_edges.values():
+                    meas_op, prep_op = pred_edge["pair"]
+
                     if p is prep_op:
                         symb = get_symbol(ctr)
                         ctr += 1
@@ -279,11 +280,11 @@ def contract_tensors(
     for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes)):
         successors = communication_graph.succ[node]
 
-        for _, succ_edges in successors.items():
-            for succ_edge in succ_edges.values():
-                meas_op, _ = succ_edge["pair"]
+        for m in meas:
+            for _, succ_edges in successors.items():
+                for succ_edge in succ_edges.values():
+                    meas_op, _ = succ_edge["pair"]
 
-                for m in meas:
                     if m is meas_op:
                         symb = meas_map[meas_op]
                         tensor_indxs[i] += symb

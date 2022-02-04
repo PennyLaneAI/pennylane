@@ -560,6 +560,7 @@ class TestContractTensors:
 
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_autograd(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the autograd interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
 
@@ -578,6 +579,7 @@ class TestContractTensors:
     @pytest.mark.usefixtures("skip_if_no_torch_support")
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_torch(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the torch interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
         import torch
@@ -597,6 +599,7 @@ class TestContractTensors:
     @pytest.mark.usefixtures("skip_if_no_tf_support")
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_tf(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the tf interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
         import tensorflow as tf
@@ -616,6 +619,7 @@ class TestContractTensors:
     @pytest.mark.usefixtures("skip_if_no_jax_support")
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_jax(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the jax interface"""
         if use_opt_einsum:
             pytest.importorskip("opt_einsum")
         import jax
@@ -636,6 +640,24 @@ class TestContractTensors:
 
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_advanced(self, mocker, use_opt_einsum):
+        """Test if the contraction works as expected for a more complicated example based
+        upon the circuit:
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
+            qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+
+            qml.Barrier(wires=0)
+            qml.WireCut(wires=[1, 2, 3])
+
+            qml.QubitUnitary(np.eye(2 ** 1), wires=[0])
+            qml.QubitUnitary(np.eye(2 ** 4), wires=[1, 2, 3, 4])
+
+            qml.WireCut(wires=[1, 2, 3, 4])
+
+            qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
+            qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+        """
         if use_opt_einsum:
             opt_einsum = pytest.importorskip("opt_einsum")
             spy = mocker.spy(opt_einsum, "contract")
@@ -672,16 +694,16 @@ class TestContractTensors:
                 qcut.PrepareNode(wires=2),
             ],
             [
-                qcut.PrepareNode(wires=3),
                 qcut.PrepareNode(wires=4),
+                qcut.PrepareNode(wires=3),
             ],
         ]
         edges = [
             (0, 0, 0, {"pair": (m[0][0], p[0][2])}),
             (0, 1, 0, {"pair": (m[0][1], p[1][0])}),
             (0, 1, 1, {"pair": (m[0][2], p[1][1])}),
-            (0, 2, 0, {"pair": (m[0][3], p[2][0])}),
-            (0, 2, 1, {"pair": (m[0][4], p[2][1])}),
+            (0, 2, 0, {"pair": (m[0][4], p[2][0])}),
+            (0, 2, 1, {"pair": (m[0][3], p[2][1])}),
             (1, 0, 0, {"pair": (m[1][0], p[0][0])}),
             (1, 0, 1, {"pair": (m[1][1], p[0][1])}),
         ]
@@ -690,6 +712,7 @@ class TestContractTensors:
         res = qcut.contract_tensors(t, g, p, m, use_opt_einsum=use_opt_einsum)
 
         eqn = spy.call_args[0][0]
-        print(eqn)
+        expected_eqn = "abccdegf,deab,fg"
 
-        # expected_result = np.dot(*t)
+        assert eqn == expected_eqn
+        assert np.allclose(res, np.einsum(eqn, *t))
