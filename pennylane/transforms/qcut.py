@@ -216,8 +216,8 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
-    Fragments a cut graph into a collection of subgraphs as well as returning
-    the communication/quotient graph.
+    Fragments a graph into a collection of subgraphs as well as returning
+    the communication/[quotient](https://en.wikipedia.org/wiki/Quotient_graph) graph.
 
     Args:
         graph (MultiDiGraph): directed multigraph containing measure and prepare
@@ -231,7 +231,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     **Example**
 
-    Consider the following circuit with the manually-placed wire cuts:
+    Consider the following circuit with manually-placed wire cuts:
 
     .. code-block:: python
 
