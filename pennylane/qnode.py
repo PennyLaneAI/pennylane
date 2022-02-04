@@ -265,7 +265,10 @@ class QNode:
         # of the user's device before and after executing the tape.
 
         if self.device is not self._original_device:
-            self._original_device._num_executions += 1  # pylint: disable=protected-access
+
+            # Use the number of executions on the original device as we may
+            # have used the cache
+            self._original_device._num_executions = self.device._num_executions # pylint: disable=protected-access
 
             # Update for state vector simulators that have the _pre_rotated_state attribute
             if hasattr(self._original_device, "_pre_rotated_state"):
