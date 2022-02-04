@@ -16,11 +16,14 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
+import warnings
 from networkx import MultiDiGraph
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
+from dataclasses import dataclass
+from typing import List, Tuple, Dict, Any, Union
 
 
 class MeasureNode(Operation):
@@ -210,3 +213,241 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             order += 1
 
     return graph
+
+
+@dataclass(frozen=True)
+class CutConfig:
+    """
+    Container wrapping partitioning parameters for passing to the automatic cutter.
+    """
+
+    k: int
+    imbalance: float
+    fragment_wires: List[int] = None
+    fragment_gates: List[int] = None
+
+
+def _infer_cut_configs(
+    num_tape_wires,
+    num_tape_gates,
+    max_device_wires,
+    max_device_gates,
+    min_device_wires=None,
+    min_device_gates=None,
+    k_lower=None,
+    k_upper=None,
+    imbalance_tolerance=None,
+    fragment_wires=None,
+    fragment_gates=None,
+):
+    """
+    Helper function for deriving the best default partitioning parameters for the automatic
+    circuit cutter. Arguments can be either user provided or inferred from devices.
+
+    Args:
+        num_tape_wires (int): Number of wires in the circuit tape to be partitioned.
+        num_tape_gates (int): Number of gates in the circuit tape to be partitioned.
+        max_device_wires (int): Number of wires for the largest available device.
+        max_device_gates (int): Maximum allowed circuit depth for the deepest available device.
+        min_device_wires (int): Number of wires for the smallest available device.
+            Optional, defaults to `max_device_wires`.
+        min_device_gates (int): Maximum allowed circuit depth for the shallowest available device.
+            Optional, defaults to `max_device_gates`.
+        k_lower (int): Lowest number of fragments to attempt for the automatic circuit cutter.
+            Optional, defaults to the scenario where each fragment is executed on the largest
+            available device, satisfying both wire and gate constraints.
+            If supplied, can be higher than said default if the the desired k is known.
+        k_upper (int): Largest number of fragments to attempt for the automatic circuit cutter.
+            Optional, defaults to the scenario where each fragment is executed on the smallest
+            available device, satisfying both wire and gate constraints.
+            If supplied, can be higher than said default to encourage exploration.
+        imbalance_tolerance (float): Maximum allowed imbalance for all partition attempts.
+            Can be used to globally override the imbalance constraint parameter.
+            Optional, defaults to a loose upper bound to avoid being too restrictive.
+        fragment_wires (List[int]): User provided predetermined list of fragment wire limits.
+            If supplied, k will be derived from it and exploration of other ks will not be made.
+        fragment_gates (List[int]): User provided predetermined list of fragment gate limits.
+            If supplied, k will be derived from it and exploration of other ks will not be made.
+
+    Returns:
+        cut_configs (List[CutConfig]): A list of cut configurations for passing to the automatic
+            circuit cutter to attempt.
+
+    """
+    assert isinstance(num_tape_wires, int)
+    assert isinstance(num_tape_gates, int)
+    assert isinstance(max_device_wires, int)
+    assert isinstance(max_device_gates, int)
+
+    # Assumes same number of wires/gates across all devices if min_device_* not provided.
+    min_device_wires = min_device_wires or max_device_wires
+    min_device_gates = min_device_gates or max_device_gates
+
+    # The lower bound of k corresponds to executing each fragment on the largest available device.
+    k_lb = 1 + min(
+        (num_tape_wires - 1) // max_device_wires,  # wire limited
+        (num_tape_gates - 1) // max_device_gates,  # gate limited
+    )
+    # The upper bound of k corresponds to executing each fragment on the smallest available device.
+    k_ub = 1 + max(
+        (num_tape_wires - 1) // min_device_wires,  # wire limited
+        (num_tape_gates - 1) // min_device_gates,  # gate limited
+    )
+
+    # The global imbalance tolerance, if not given, defaults to a very loose upper bound:
+    imbalance_tolerance = imbalance_tolerance or k_ub
+    if not (isinstance(imbalance_tolerance, (float, int)) and imbalance_tolerance >= 0):
+        raise ValueError(
+            "The global `imbalance_tolerance` is expected to be a non-negative number, "
+            f"got {type(imbalance_tolerance)} with value {imbalance_tolerance}."
+        )
+
+    cut_configs = []
+
+    if fragment_gates is None and fragment_wires is None:
+
+        # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
+        k_lower = int(k_lower or k_lb)
+        # k_upper, when supplied by a user, can be higher than k_ub to encourage exploration:
+        k_upper = int(k_upper or k_ub)
+
+        if k_lower < k_lb:
+            warnings.warn(
+                f"The provided `k_lower={k_lower}` is less than the lowest allowed value, "
+                f"will override and set `k_lower={k_lb}`."
+            )
+            k_lower = k_lb
+        if k_upper < k_lower:
+            warnings.warn(
+                f"The provided `k_upper={k_upper}` is less than `k_lower={k_lower}`, "
+                f"will override and set `k_upper={k_lower}`. "
+                "Note this will result in only one partitioning attempt, with the number of fragments "
+                f"fixed at {k_lower}, rather than exploring into higher number of fragments."
+            )
+            k_upper = k_lower
+
+        # Prepare the list of ks to explore:
+        ks = list(range(k_lower, k_upper + 1))
+
+        HIGH_NUM_FRAGMENTS = 20
+        HIGH_PARTITION_ATTEMPS = 20
+
+        if k_lower > HIGH_NUM_FRAGMENTS:
+            warnings.warn(
+                f"The attempted number of fragments seems high with lower bound at {k_lower}, "
+                "are you sure?"
+            )
+        if len(ks) > HIGH_PARTITION_ATTEMPS:
+            warnings.warn(f"The numer of partition attempts seems high ({len(ks)}), are you sure?")
+
+        for k in ks:
+            avg_fragment_gates = (num_tape_gates - 1) // k + 1
+            avg_fragment_wires = (num_tape_wires - 1) // k + 1
+            gate_imbalance = max_device_gates / avg_fragment_gates - 1
+            wire_imbalance = max_device_wires / avg_fragment_wires - 1
+            imbalance = min(gate_imbalance, wire_imbalance, imbalance_tolerance)
+
+            cut_configs.append(CutConfig(k, imbalance))
+
+    # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
+    # return a single partition config:
+
+    elif fragment_wires is None:
+        assert isinstance(fragment_gates, (list, tuple))
+        assert all([isinstance(i, int) for i in fragment_gates])
+        assert all([i <= max_device_gates for i in fragment_gates])
+
+        k = len(fragment_gates)
+
+        avg_fragment_gates = (num_tape_gates - 1) // k + 1
+        avg_fragment_wires = (num_tape_wires - 1) // k + 1
+        gate_imbalance = max(fragment_gates) / avg_fragment_gates - 1
+        wire_imbalance = max_device_wires / avg_fragment_wires - 1
+        imbalance = min(gate_imbalance, wire_imbalance, imbalance_tolerance)
+
+        cut_configs.append(CutConfig(k, imbalance, fragment_wires, fragment_gates))
+
+    elif fragment_gates is None:
+        assert isinstance(fragment_wires, (list, tuple))
+        assert all([isinstance(i, int) for i in fragment_wires])
+        assert all([i <= max_device_wires for i in fragment_wires])
+
+        k = len(fragment_wires)
+
+        avg_fragment_gates = (num_tape_gates - 1) // k + 1
+        avg_fragment_wires = (num_tape_wires - 1) // k + 1
+        gate_imbalance = max_device_gates / avg_fragment_gates - 1
+        wire_imbalance = max(fragment_wires) / avg_fragment_wires - 1
+        imbalance = min(gate_imbalance, wire_imbalance, imbalance_tolerance)
+
+        cut_configs.append(CutConfig(k, imbalance, fragment_wires, fragment_gates))
+
+    else:
+        assert isinstance(fragment_gates, (list, tuple))
+        assert all([isinstance(i, int) for i in fragment_gates])
+        assert all([i <= max_device_gates for i in fragment_gates])
+
+        assert isinstance(fragment_wires, (list, tuple))
+        assert all([isinstance(i, int) for i in fragment_wires])
+        assert all([i <= max_device_wires for i in fragment_wires])
+
+        assert len(fragment_wires) == len(fragment_gates)
+
+        k = len(fragment_wires)
+
+        avg_fragment_gates = (num_tape_gates - 1) // k + 1
+        avg_fragment_wires = (num_tape_wires - 1) // k + 1
+        gate_imbalance = max(fragment_gates) / avg_fragment_gates - 1
+        wire_imbalance = max(fragment_wires) / avg_fragment_wires - 1
+        imbalance = min(gate_imbalance, wire_imbalance, imbalance_tolerance)
+
+        cut_configs.append(CutConfig(k, imbalance, fragment_wires, fragment_gates))
+
+    return cut_configs
+
+
+@dataclass(frozen=True)
+class CutSpec:
+    """
+    Container wrapping partitioning results returned from the automatic cutter.
+    NOTE: Incomplete.
+    """
+
+    trial_id: Tuple[int, int]
+    num_wires: int
+    num_gates: int
+    config: CutConfig
+    fragments: Dict[Any]
+    raw_cuts: List[Any]  # i.e. including "hyper-wires"
+    raw_cost: Union[int, float]
+    mode: str = "wire"
+
+    @property
+    def k(self) -> int:
+        return self.config.k
+
+    @property
+    def cuts(self):
+        # removes hyperedges, assuming they are at the end of raw_cuts.
+        return self.raw_cuts[: (self.num_gates if self.mode == "gate" else self.num_wires)]
+
+    @property
+    def num_cuts(self) -> int:
+        return len(self.cuts)
+
+    @property
+    def cost(self) -> int:
+        # TODO: should be different for gate cut
+        return self.num_cuts / 2
+
+    @property
+    def fragment_gates(self):
+        return {k: len(gates) for k, gates in self.fragments.items()}
+
+    @property
+    def fragment_wires(self):
+        def collect_wires(gates):
+            # TODO: implement this.
+            return set([0, 1, 1, 2])
+
+        return {k: len(collect_wires(gates)) for k, gates in self.fragments.items()}
