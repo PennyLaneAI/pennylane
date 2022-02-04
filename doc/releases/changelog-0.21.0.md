@@ -224,7 +224,9 @@
 
 <h4>Adjoint metric tensor</h4>
 
-* Added the adjoint method for the metric tensor.
+* A new function for computing the metric tensor on simulators,
+  `qml.adjoint_metric_tensor`, has been added, that uses classically
+  efficient methods to massively improve performance.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
   This method, detailed in [Jones (2020)](https://arxiv.org/abs/2011.02991),
