@@ -634,7 +634,14 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-    def test_advanced(self):
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_advanced(self, mocker, use_opt_einsum):
+        if use_opt_einsum:
+            opt_einsum = pytest.importorskip("opt_einsum")
+            spy = mocker.spy(opt_einsum, "contract")
+        else:
+            spy = mocker.spy(qml.math, "einsum")
+
         t = [
             np.arange(4 ** 8).reshape((4,) * 8),
             np.arange(4 ** 4).reshape((4,) * 4),
@@ -680,7 +687,9 @@ class TestContractTensors:
         ]
         g = MultiDiGraph(edges)
 
-        res = qcut.contract_tensors(t, g, p, m)
-        print(res)
+        res = qcut.contract_tensors(t, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        eqn = spy.call_args[0][0]
+        print(eqn)
 
         # expected_result = np.dot(*t)
