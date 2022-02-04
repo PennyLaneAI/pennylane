@@ -14,8 +14,8 @@
   and `PrepareNode` placeholders has been added.
   [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
   
-  A method that takes a directed multigraph with `MeasureNode` and `PrepareNode` 
-  placeholders and fragments into subgraphs and a communication graph has been added.
+  A method has been added that takes a directed multigraph with `MeasureNode` and
+  `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
 
   A method has been added that takes a directed multigraph with `MeasureNode`

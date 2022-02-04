@@ -85,7 +85,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Utility function to assist with the circuit cutting transform
+The following are utility functions that compose the circuit cutting transform.
 
 .. autosummary::
     :toctree: api

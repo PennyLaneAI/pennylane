@@ -1,4 +1,3 @@
-#
 # Copyright 2022 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,7 +45,7 @@ with qml.tape.QuantumTape() as multi_cut_tape:
 
 
 def compare_nodes(nodes, expected_wires, expected_names):
-    """Helper function to comper nodes of directed multigraph"""
+    """Helper function to compare nodes of directed multigraph"""
 
     for node, exp_wire in zip(nodes, expected_wires):
         assert node.wires.tolist() == exp_wire
@@ -56,12 +55,12 @@ def compare_nodes(nodes, expected_wires, expected_names):
 
 
 def compare_fragment_nodes(node_data, expected_data):
-    """Helper function to comper nodes of fragment graphs"""
+    """Helper function to compare nodes of fragment graphs"""
 
     expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
 
     for data in node_data:
-        # The exact ordering of node data within the list varies on each call
+        # The exact ordering of node_data varies on each call
         assert (data[0].name, data[0].wires, data[1]) in expected
 
 
@@ -71,7 +70,7 @@ def compare_fragment_edges(edge_data, expected_data):
     expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
 
     for data in edge_data:
-        # The exact ordering of edge data within the list varies on each call
+        # The exact ordering of edge_data varies on each call
         assert (data[0].name, data[1].name, data[2]) in expected
 
 
@@ -560,7 +559,7 @@ class TestReplaceWireCut:
 
 class TestFragmentGraph:
     """
-    Tests that a cut graph is fragmented into subgraph correctly
+    Tests that a cut graph is fragmented into subgraphs correctly
     """
 
     def test_subgraphs_of_multi_wirecut(self):
@@ -643,7 +642,7 @@ class TestFragmentGraph:
 
     def test_communication_graph(self):
         """
-        Tests that the communication graph containse the correct nodes and edges
+        Tests that the communication graph contains the correct nodes and edges
         """
 
         g = qcut.tape_to_graph(multi_cut_tape)
@@ -722,6 +721,32 @@ class TestFragmentGraph:
 
         for subgraph, expected_e in zip(subgraphs, expected_edges):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
+           
+    def test_communication_graph_persistence(self):
+        """
+        Tests that when `fragment_graph` is repeatedly applied the
+        communication graph is the same each time.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs_0, communication_graph_0 = qcut.fragment_graph(g)
+        subgraphs_1, communication_graph_1 = qcut.fragment_graph(g)
+
+        assert communication_graph_0.nodes == communication_graph_1.nodes
+        assert communication_graph_0.edges == communication_graph_1.edges
 
 
 class TestGraphToTape:
