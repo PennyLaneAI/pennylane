@@ -400,7 +400,7 @@
   to control the precision of parameters.
   [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
 
-* `insert` transform now supports adding operation after or before certain specific gates.
+* The `qml.transforms.insert` transform now supports adding operation after or before certain specific gates.
   [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
 
 * Interferometer now has a `shape` method.
