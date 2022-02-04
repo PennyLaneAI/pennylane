@@ -423,7 +423,7 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
     return s
 
 
-def generate_moment(basis_a, basis_b, e):
+def generate_moment(basis_a, basis_b, e, idx):
     def moment_integral(*args):
 
         args_a = [i[0] for i in args]
@@ -448,15 +448,17 @@ def generate_moment(basis_a, basis_b, e):
             + beta * rb[:, anp.newaxis, anp.newaxis]
         ) / p
 
-        sx = (
-            gaussian_moment(la[0], lb[0], ra[0], rb[0], alpha[:, anp.newaxis], beta, e, rc[0])
-            * expansion(la[1], lb[1], ra[1], rb[1], alpha[:, anp.newaxis], beta, 0)
+        i, j, k = anp.roll(anp.array([0, 2, 1]), idx)
+
+        s = (
+            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, anp.newaxis], beta, e, rc[i])
+            * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, anp.newaxis], beta, 0)
             * q
-            * expansion(la[2], lb[2], ra[2], rb[2], alpha[:, anp.newaxis], beta, 0)
+            * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, anp.newaxis], beta, 0)
             * q
         )
 
-        return (na * nb * (ca[:, anp.newaxis] * cb) * sx).sum()
+        return (na * nb * (ca[:, anp.newaxis] * cb) * s).sum()
 
     return moment_integral
 
