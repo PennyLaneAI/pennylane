@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Tapering off qubits</h4>
+<h4>Reduce the qubit requirements of simulating Hamiltonians ⚛️</h4>
 
 * Functions for tapering qubits based on molecular symmetries have been added.
   [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
@@ -15,9 +15,6 @@
   With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
 
   ```python
-  from pennylane import hf
-  from pennylane import numpy as np
-
   symbols = ["He", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
   mol = hf.Molecule(symbols, geometry, charge=1)
