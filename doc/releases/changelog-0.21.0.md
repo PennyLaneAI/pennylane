@@ -283,7 +283,7 @@
 <h4>New parameter-shift Hessian function</h4>
 
 * A new gradient transform `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
-  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The function generates
+  (2nd order partial derivative matrix) of QNodes on hardware. The function generates
   parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
   software devices. Compared to using an auto-differentiation framework to compute the Hessian
   via parameter shifts, this function will use fewer device invocations and can be used to inspect
