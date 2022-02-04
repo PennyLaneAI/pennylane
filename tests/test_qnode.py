@@ -736,7 +736,7 @@ class TestIntegration:
         """Tests that if we swapped the original device (e.g., when
         diff_method='backprop') then the number of executions recorded is
         correct even with multiple QNode evaluations."""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         cache = {}
 
@@ -755,7 +755,6 @@ class TestIntegration:
 
         for _ in range(15):
             circuit()
-
 
         # Although we've evaluated the QNode several times, due to caching,
         # there were two device executions recorded
