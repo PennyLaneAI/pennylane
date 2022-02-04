@@ -314,7 +314,8 @@
 
 <h3>Improvements</h3>
 
-* For subclasses of `Operator` where it is known before instantiation, the
+* For subclasses of `Operator` where the number of parameters
+  is known before instantiation, the
   `num_params` is reverted back to being a static property. This allows to
   programmatically know the number of parameters before an operator is
   instantiated without changing the user interface. A test was added to ensure
