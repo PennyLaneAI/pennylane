@@ -665,9 +665,9 @@ class TestContractTensors:
             spy = mocker.spy(qml.math, "einsum")
 
         t = [
-            np.arange(4 ** 8).reshape((4,) * 8),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 2).reshape((4,) * 2),
+            np.arange(4**8).reshape((4,) * 8),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**2).reshape((4,) * 2),
         ]
         m = [
             [
