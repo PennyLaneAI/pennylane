@@ -732,6 +732,36 @@ class TestIntegration:
         assert dev.num_executions == 1
         assert cache != {}
 
+    def test_num_exec_caching_device_swap_two_exec(self):
+        """Tests that if we swapped the original device (e.g., when
+        diff_method='backprop') then the number of executions recorded is
+        correct even with multiple QNode evaluations."""
+        dev = qml.device('default.qubit', wires=2)
+
+        cache = {}
+
+        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        def circuit():
+            qml.RY(0.345, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        for _ in range(15):
+            circuit()
+
+        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        def circuit():
+            qml.RZ(0.345, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        for _ in range(15):
+            circuit()
+
+
+        # Although we've evaluated the QNode several times, due to caching,
+        # there were two device executions recorded
+        assert dev.num_executions == 2
+        assert cache != {}
+
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
