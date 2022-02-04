@@ -93,9 +93,6 @@
   [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
   An example circuit that uses the `TTN` template is:
   ```python
-  import pennylane as qml
-  import numpy as np
-
   def block(weights, wires):
       qml.CNOT(wires=[wires[0],wires[1]])
       qml.RY(weights[0], wires=wires[0])
