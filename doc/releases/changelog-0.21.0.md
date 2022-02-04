@@ -44,8 +44,11 @@
   For quantum chemistry algorithms, the Hartree-Fock state can also be tapered:
 
   ```python
+  n_elec = mol.n_electrons
+  n_qubits = mol.n_orbitals * 2
+
   hf_tapered = qml.hf.transform_hf(
-      generators, paulix_ops, paulix_sector, n_elec, n_qubits
+      generators, paulix_ops, opt_sector, n_elec, n_qubits
   )
   ```
   ```pycon
@@ -604,8 +607,8 @@
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
-* Updated the `adjoint()` method for non-parametric qubit operations to 
-  solve a bug where repeated `adjoint()` calls don't return the correct 
+* Updated the `adjoint()` method for non-parametric qubit operations to
+  solve a bug where repeated `adjoint()` calls don't return the correct
   operator.
   [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
 
