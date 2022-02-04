@@ -424,8 +424,53 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
 
 
 def generate_moment(basis_a, basis_b, e, idx):
-    def moment_integral(*args):
+    r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
 
+    The multipole moment integral for two primitive Gaussian functions is computed as
+
+    .. math::
+
+        S^e = \left \langle G_i | q_C^e | G_j \right \rangle
+                   \left \langle G_k | G_l \right \rangle
+                   \left \langle G_m | G_n \right \rangle,
+
+    where :math:`G_{i-n}` is a one-dimensional Gaussian function, :math:`q = x, y, z` is the
+    dimension at which the integral is evaluated, :math:`C` is the origin of the Cartesian
+    coordinates and :math:`e` is the multipole moment order. For contracted Gaussians, such
+    integrals will be computed over primitive Gaussians, multiplied by the normalized contraction
+    coefficients and finally summed over.
+
+    The ``idx`` argument determines the dimension :math:`q` at which the integral is computed. It
+    can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+        e (integer): order of the multipole moment
+        idx (integer): index determining the dimension of the multipole moment integral
+
+    Returns:
+        function: function that computes the multipole moment integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'Li']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> args = []
+    >>> e, idx =  1, 0
+    >>> generate_overlap(mol.basis_set[0], mol.basis_set[0], e, idx)(*args)
+    3.12846324e-01
+    """
+    def moment_integral(*args):
+        r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the multipole moment integral between two contracted Gaussian orbitals
+        """
         args_a = [i[0] for i in args]
         args_b = [i[1] for i in args]
 
