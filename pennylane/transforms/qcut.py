@@ -17,13 +17,13 @@ circuits to be distributed across multiple devices.
 """
 
 import warnings
+from typing import List, Tuple, Dict, Any, Union
+from dataclasses import dataclass
 from networkx import MultiDiGraph
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
-from dataclasses import dataclass
-from typing import List, Tuple, Dict, Any, Union
 
 
 class MeasureNode(Operation):
@@ -354,8 +354,8 @@ def _infer_cut_configs(
 
     elif fragment_wires is None:
         assert isinstance(fragment_gates, (list, tuple))
-        assert all([isinstance(i, int) for i in fragment_gates])
-        assert all([i <= max_device_gates for i in fragment_gates])
+        assert all(isinstance(i, int) for i in fragment_gates)
+        assert all(i <= max_device_gates for i in fragment_gates)
 
         k = len(fragment_gates)
 
@@ -369,8 +369,8 @@ def _infer_cut_configs(
 
     elif fragment_gates is None:
         assert isinstance(fragment_wires, (list, tuple))
-        assert all([isinstance(i, int) for i in fragment_wires])
-        assert all([i <= max_device_wires for i in fragment_wires])
+        assert all(isinstance(i, int) for i in fragment_wires)
+        assert all(i <= max_device_wires for i in fragment_wires)
 
         k = len(fragment_wires)
 
@@ -384,12 +384,12 @@ def _infer_cut_configs(
 
     else:
         assert isinstance(fragment_gates, (list, tuple))
-        assert all([isinstance(i, int) for i in fragment_gates])
-        assert all([i <= max_device_gates for i in fragment_gates])
+        assert all(isinstance(i, int) for i in fragment_gates)
+        assert all(i <= max_device_gates for i in fragment_gates)
 
         assert isinstance(fragment_wires, (list, tuple))
-        assert all([isinstance(i, int) for i in fragment_wires])
-        assert all([i <= max_device_wires for i in fragment_wires])
+        assert all(isinstance(i, int) for i in fragment_wires)
+        assert all(i <= max_device_wires for i in fragment_wires)
 
         assert len(fragment_wires) == len(fragment_gates)
 
@@ -417,7 +417,7 @@ class CutSpec:
     num_wires: int
     num_gates: int
     config: CutConfig
-    fragments: Dict[Any]
+    fragments: Dict[Any, Any]
     raw_cuts: List[Any]  # i.e. including "hyper-wires"
     raw_cost: Union[int, float]
     mode: str = "wire"
@@ -444,10 +444,12 @@ class CutSpec:
     def fragment_gates(self):
         return {k: len(gates) for k, gates in self.fragments.items()}
 
+    @staticmethod
+    def collect_fragment_wires(gates):
+        """Collects wires from a fragment"""
+        # TODO: implement this.
+        return set([0, 1, 1, 2])
+
     @property
     def fragment_wires(self):
-        def collect_wires(gates):
-            # TODO: implement this.
-            return set([0, 1, 1, 2])
-
-        return {k: len(collect_wires(gates)) for k, gates in self.fragments.items()}
+        return {k: len(self.collect_wires(gates)) for k, gates in self.fragments.items()}
