@@ -14,32 +14,41 @@
   [(#2042)](https://github.com/PennyLaneAI/pennylane/pull/2042)
 
   With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
-
   ```python
+  # molecular geometry
   symbols = ["He", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
-  mol = hf.Molecule(symbols, geometry, charge=1)
-  H = hf.generate_hamiltonian(mol)(geometry)
-  n_qubits, n_elec = len(H.wires), mol.n_electrons
+  mol = qml.hf.Molecule(symbols, geometry, charge=1)
 
-  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
-  paulix_sector = [1, -1, -1]
-  opt_sector = hf.optimal_sector(H, generators, n_elec)
-  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
-  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
-                                    n_elec, n_qubits)
+  # generate the qubit Hamiltonian
+  H = qml.hf.generate_hamiltonian(mol)(geometry)
+
+  # determine Hamiltonian symmetries
+  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+  opt_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
+
+  # taper the Hamiltonian
+  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
+  ```
+
+  We can compare the number of qubits required by the original Hamiltonian
+  and the tapered Hamiltonian:
+
+  ```pycon
+  >>> len(H.wires)
+  4
+  >>> len(H_tapered.wires)
+  2
+  ```
+
+  For quantum chemistry algorithms, the Hartree-Fock state can also be tapered:
+
+  ```python
+  hf_tapered = qml.hf.transform_hf(
+      generators, paulix_ops, paulix_sector, n_elec, n_qubits
+  )
   ```
   ```pycon
-  >>> print(H_tapered)
-    ((-1.7997297644914574+0j)) [I0]
-  + ((-0.10492941956079854+0j)) [X0]
-  + ((0.10492941956079856+0j)) [X1]
-  + ((0.5675134088336165+0j)) [Z1]
-  + ((0.5675134088336168+0j)) [Z0]
-  + ((-0.14563730440190722+0j)) [Y0 Y1]
-  + ((-0.10492941933657857+0j)) [X0 Z1]
-  + ((0.09337410512815508+0j)) [Z0 Z1]
-  + ((0.10492941933657857+0j)) [Z0 X1]
   >>> hf_tapered
   tensor([1, 1], requires_grad=True)
   ```
