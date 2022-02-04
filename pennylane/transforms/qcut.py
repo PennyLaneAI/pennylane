@@ -278,6 +278,14 @@ def _infer_cut_configs(
     assert isinstance(num_tape_gates, int)
     assert isinstance(max_device_wires, int)
     assert isinstance(max_device_gates, int)
+    if fragment_gates is not None:
+        assert isinstance(fragment_gates, (list, tuple))
+        assert all(isinstance(i, int) for i in fragment_gates)
+        assert all(i <= max_device_gates for i in fragment_gates)
+    if fragment_wires is not None:
+        assert isinstance(fragment_wires, (list, tuple))
+        assert all(isinstance(i, int) for i in fragment_wires)
+        assert all(i <= max_device_wires for i in fragment_wires)
 
     # Assumes same number of wires/gates across all devices if min_device_* not provided.
     min_device_wires = min_device_wires or max_device_wires
@@ -353,10 +361,6 @@ def _infer_cut_configs(
     # return a single partition config:
 
     elif fragment_wires is None:
-        assert isinstance(fragment_gates, (list, tuple))
-        assert all(isinstance(i, int) for i in fragment_gates)
-        assert all(i <= max_device_gates for i in fragment_gates)
-
         k = len(fragment_gates)
 
         avg_fragment_gates = (num_tape_gates - 1) // k + 1
@@ -368,10 +372,6 @@ def _infer_cut_configs(
         cut_configs.append(CutConfig(k, imbalance, fragment_wires, fragment_gates))
 
     elif fragment_gates is None:
-        assert isinstance(fragment_wires, (list, tuple))
-        assert all(isinstance(i, int) for i in fragment_wires)
-        assert all(i <= max_device_wires for i in fragment_wires)
-
         k = len(fragment_wires)
 
         avg_fragment_gates = (num_tape_gates - 1) // k + 1
@@ -383,14 +383,6 @@ def _infer_cut_configs(
         cut_configs.append(CutConfig(k, imbalance, fragment_wires, fragment_gates))
 
     else:
-        assert isinstance(fragment_gates, (list, tuple))
-        assert all(isinstance(i, int) for i in fragment_gates)
-        assert all(i <= max_device_gates for i in fragment_gates)
-
-        assert isinstance(fragment_wires, (list, tuple))
-        assert all(isinstance(i, int) for i in fragment_wires)
-        assert all(i <= max_device_wires for i in fragment_wires)
-
         assert len(fragment_wires) == len(fragment_gates)
 
         k = len(fragment_wires)
@@ -448,7 +440,7 @@ class CutSpec:
     def collect_fragment_wires(gates):
         """Collects wires from a fragment"""
         # TODO: implement this.
-        return set([0, 1, 1, 2])
+        return set([w for g in gates for w in g.wires])
 
     @property
     def fragment_wires(self):
