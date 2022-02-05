@@ -148,15 +148,22 @@ class TestInsert:
         tape = insert(qml.PhaseDamping, 0.4, position=op, before=True)(self.tape)
 
         with QuantumTape() as tape_exp:
-            qml.PhaseDamping(0.4, wires=0)
+            if op == qml.RX:
+                qml.PhaseDamping(0.4, wires=0)
             qml.RX(0.9, wires=0)
+
             qml.RY(0.4, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RY(0.5, wires=0)
-            qml.PhaseDamping(0.4, wires=1)
+
+            if op == qml.PauliZ:
+                qml.PhaseDamping(0.4, wires=1)
             qml.PauliZ(wires=1)
-            qml.PhaseDamping(0.4, wires=2)
+
+            if op == qml.Identity:
+                qml.PhaseDamping(0.4, wires=2)
             qml.Identity(wires=2)
+
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
