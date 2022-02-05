@@ -46,7 +46,7 @@ class TestInsert:
         qml.RX(0.6, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-    with QuantumTape as custom_tape:
+    with QuantumTape() as custom_tape:
         qml.RX(0.9, wires=0)
         qml.RY(0.4, wires=1)
         qml.CNOT(wires=[0, 1])
