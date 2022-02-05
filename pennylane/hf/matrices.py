@@ -86,7 +86,7 @@ def generate_overlap_matrix(basis_functions):
             array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
-        overlap_matrix = anp.eye(len(basis_functions))
+        overlap_matrix = anp.eye(n)
         for i, a in enumerate(basis_functions):
             for j, b in enumerate(basis_functions):
                 if i < j:
@@ -103,6 +103,56 @@ def generate_overlap_matrix(basis_functions):
         return overlap_matrix
 
     return overlap
+
+
+def generate_moment_matrix(basis_functions, e, idx):
+    r"""Return a function that computes the multipole moment matrix for a given set of basis functions.
+
+    Args:
+        basis_functions (list[BasisFunction]): basis functions
+
+    Returns:
+        function: function that computes the overlap matrix
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> e, idx = 1, 0
+    >>> generate_moment_matrix(mol.basis_set, e, idx)(*args)
+    tensor([[0.0, 0.4627777], [0.4627777, 2.0]], requires_grad=True)
+    """
+
+    def moment(*args):
+        r"""Construct the multipole moment matrix for a given set of basis functions.
+
+        Args:
+            args (array[array[float]]): initial values of the differentiable parameters
+
+        Returns:
+            array[array[float]]: the overlap matrix
+        """
+        n = len(basis_functions)
+        moment_matrix = anp.zeros((n, n))
+        for i, a in enumerate(basis_functions):
+            for j, b in enumerate(basis_functions):
+                if args:
+                    args_ab = []
+                    for arg in args:
+                        args_ab.append(arg[[i, j]])
+                    moment_integral = generate_moment(a, b, e, idx)(*args_ab)
+                else:
+                    moment_integral = generate_moment(a, b, e, idx)()
+                o = anp.zeros((n, n))
+                o[i, j] = 1.0
+                moment_matrix = moment_matrix + moment_integral * o
+        return moment_matrix
+
+    return moment
 
 
 def generate_kinetic_matrix(basis_functions):
