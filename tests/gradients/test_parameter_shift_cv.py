@@ -271,10 +271,12 @@ class TestTransformObservable:
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     def test_no_trainable_params_qnode(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
         dev = qml.device("default.gaussian", wires=2)
 
         @qml.qnode(dev, interface=interface)

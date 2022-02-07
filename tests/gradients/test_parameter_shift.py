@@ -197,10 +197,12 @@ class TestParamShift:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tf"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
     def test_no_trainable_params_qnode(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface=interface)
