@@ -235,7 +235,7 @@ def contract_tensors(
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
 ):
-    """Contract tensors according to the edges specified in the communication graph.
+    r"""Contract tensors according to the edges specified in the communication graph.
 
     .. note::
 
