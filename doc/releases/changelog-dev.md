@@ -45,8 +45,11 @@
 
 * For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
   static property. This allows to programmatically know the number of parameters before an operator is
-  instantiated without changing the user interface.
-  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+  instantiated without changing the user interface. A test was added to ensure that
+  different ways of defining `num_params` work as expected.
+  [(#2099)](https://github.com/PennyLaneAI/pennylane/pull/2099)
+  [(#2101)](https://github.com/PennyLaneAI/pennylane/pull/2101)
+  [(#2135)](https://github.com/PennyLaneAI/pennylane/pull/2135)
 
 * Development of circuit cutting compiler has begun:
   A `WireCut` operator has been added for manual wire cut placement
@@ -110,7 +113,7 @@
   ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
   ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
   New cost: 0.0 reached via substeps [-0.  0.  0.]
-  New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
+  New cost: -1.0 reached via substeps [-1. -1. -1.]
   ```
   However, note that these intermediate minimal values are evaluations of the
   *reconstructions* that Rotosolve creates and uses internally for the optimization,
@@ -523,6 +526,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where an incorrect number of executions are recorded by
+  a QNode using a custom cache with `diff_method="backprop"`.
+  [(#2171)](https://github.com/PennyLaneAI/pennylane/pull/2171)
+
 * Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
   [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
 
@@ -583,7 +590,16 @@
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
-<h3>Documentation</h3>
+* Updated the `adjoint()` method for non-parametric qubit operations to 
+  solve a bug where repeated `adjoint()` calls don't return the correct 
+  operator.
+  [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
+
+* Fixed a bug in `insert()` which prevented operations that inherited
+  from multiple classes to be inserted. 
+  [(#2172)](https://github.com/PennyLaneAI/pennylane/pull/2172)
+
+* <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
   [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
