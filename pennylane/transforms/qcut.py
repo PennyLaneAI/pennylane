@@ -15,11 +15,12 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
-
+import string
 from typing import Sequence
 
 from networkx import MultiDiGraph
 
+import pennylane as qml
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -215,6 +216,17 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     return graph
 
 
+def _get_symbol(i):
+    """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
+    51."""
+    if i >= len(string.ascii_letters):
+        raise ValueError(
+            "Set the use_opt_einsum argument to True when applying more than "
+            f"{len(string.ascii_letters)} wire cuts to a circuit"
+        )
+    return string.ascii_letters[i]
+
+
 # pylint: disable=too-many-branches
 def contract_tensors(
     tensors: Sequence,
@@ -288,17 +300,8 @@ def contract_tensors(
                 "installed using:\npip install opt_einsum"
             ) from e
     else:
-        from string import ascii_letters as symbols
-
-        from pennylane.math import einsum as contract
-
-        def get_symbol(i):
-            if i >= len(symbols):
-                raise ValueError(
-                    "Set the use_opt_einsum argument to True when applying more than "
-                    f"{len(symbols)} wire cuts to a circuit"
-                )
-            return symbols[i]
+        contract = qml.math.einsum
+        get_symbol = _get_symbol
 
     ctr = 0
     tensor_indxs = [""] * len(communication_graph.nodes)
