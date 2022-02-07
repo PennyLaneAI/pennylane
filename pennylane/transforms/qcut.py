@@ -230,6 +230,11 @@ def contract_tensors(
     ``tensors`` with respect to to the :class:`~.PrepareNode` and :class`~.MeasureNode` edges in the
     communication graph.
 
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
     Args:
         tensors (Sequence): the tensors to be contracted
         communication_graph (MultiDiGraph): the communication graph determining connectivity between
@@ -247,11 +252,6 @@ def contract_tensors(
         float or array-like: the result of contracting the tensor network
 
     **Example**
-
-    .. note::
-
-        This function is designed for use as part of the circuit cutting workflow. Check out the
-        :doc:`transforms </code/qml_transforms>` page for more details.
 
     We first set up the tensors and their corresponding :class:`~.PrepareNode` and
     :class`~.MeasureNode` orderings:
