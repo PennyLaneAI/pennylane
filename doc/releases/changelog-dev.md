@@ -32,4 +32,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes, Thomas Bromley
+Thomas Bromley, Anthony Hayes
