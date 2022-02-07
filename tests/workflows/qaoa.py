@@ -35,6 +35,10 @@ def main(bucket_info=None, device_arn=None, display=False):
             "default.qubit",
             wires=wires
         )
+
+    elif device_arn == "local_sim":
+        dev = qml.device("braket.local.qubit", wires=wires)
+
     else:
         dev = qml.device(
             "braket.aws.qubit",
@@ -67,7 +71,6 @@ def main(bucket_info=None, device_arn=None, display=False):
         circuit([gamma, alpha])
         return qml.probs(wires=wires)
 
-
     probs = probability_circuit(params[0], params[1])
 
     max_values = [i for i, x in enumerate(probs) if x == max(probs)]
@@ -79,12 +82,15 @@ def main(bucket_info=None, device_arn=None, display=False):
         print("probs", probs)
         print("max_values", max_values)
 
+
 if __name__ == "__main__":
     my_bucket = "amazon-braket-Bucket-Name"
     my_prefix = "Folder-Name"
     s3_bucket = (my_bucket, my_prefix)
 
     state_vector_sim_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+    local_sim = "local_sim"
 
-    main(display=False)
+    main(display=True)
     # main(s3_bucket, state_vector_sim_device_arn, display=True)
+    # main(None, local_sim, display=True)

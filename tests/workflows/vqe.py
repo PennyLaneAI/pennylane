@@ -57,6 +57,9 @@ def main(bucket_info=None, device_arn=None, display=False):
             "default.qubit",
             wires=qubits
         )
+    elif device_arn == "local_sim":
+        dev = qml.device("braket.local.qubit", wires=qubits)
+
     else:
         dev = qml.device(
             "braket.aws.qubit",
@@ -136,6 +139,8 @@ if __name__ == "__main__":
     s3_bucket = (my_bucket, my_prefix)
 
     state_vector_sim_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+    local_sim = "local_sim"
 
-    main(display=True)
+    # main(display=True)
     # main(s3_bucket, state_vector_sim_device_arn, display=True)
+    main(None, local_sim, display=True)
