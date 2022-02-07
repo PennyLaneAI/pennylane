@@ -464,7 +464,7 @@ class PauliError(Channel):
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p) * np.eye(2 ** nq)
+        K0 = np.sqrt(1 - p) * np.eye(2**nq)
 
         # K1 is composed by Kraus matrices of operators
         K1 = np.sqrt(p) * np.array([1])
@@ -707,15 +707,15 @@ class ThermalRelaxationError(Channel):
             v1 = np.array([[0, 1], [0, 0]])
             K1 = np.sqrt(e1) * v1
             common_term = np.sqrt(
-                4 * eT2 ** 2 + 4 * p_reset ** 2 * pe ** 2 - 4 * p_reset ** 2 * pe + p_reset ** 2
+                4 * eT2**2 + 4 * p_reset**2 * pe**2 - 4 * p_reset**2 * pe + p_reset**2
             )
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
-            v2 = np.array([[term2, 0], [0, 1]]) / np.sqrt(term2 ** 2 + 1)
+            v2 = np.array([[term2, 0], [0, 1]]) / np.sqrt(term2**2 + 1)
             K2 = np.sqrt(e2) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
-            v3 = np.array([[term3, 0], [0, 1]]) / np.sqrt(term3 ** 2 + 1)
+            v3 = np.array([[term3, 0], [0, 1]]) / np.sqrt(term3**2 + 1)
             K3 = np.sqrt(e3) * v3
 
             K = [K0, K1, K2, K3]

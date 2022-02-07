@@ -213,7 +213,7 @@ class TestTransformObservable:
     def test_first_order_transform(self, tol):
         """Test that a first order observable is transformed correctly"""
         # create a symmetric transformation
-        Z = np.arange(3 ** 2).reshape(3, 3)
+        Z = np.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
         obs = qml.X(0)
@@ -230,7 +230,7 @@ class TestTransformObservable:
     def test_second_order_transform(self, tol):
         """Test that a second order observable is transformed correctly"""
         # create a symmetric transformation
-        Z = np.arange(3 ** 2).reshape(3, 3)
+        Z = np.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
         obs = qml.NumberOperator(0)
@@ -254,7 +254,7 @@ class TestTransformObservable:
         wires = qml.wires.Wires([0, "a", 2])
         ndim = 1 + 2 * len(wires)
 
-        Z = np.arange(ndim ** 2).reshape(ndim, ndim)
+        Z = np.arange(ndim**2).reshape(ndim, ndim)
         Z = Z.T + Z
 
         obs = qml.NumberOperator(0)
@@ -746,12 +746,12 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 1}
 
         res = tape.execute(dev)
-        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         grad_F = tape.jacobian(dev, method="numeric")
-        expected = np.array([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(grad_F, expected, atol=tol, rtol=0)
 
     def test_expval_and_variance(self, tol):
@@ -896,5 +896,5 @@ class TestVarianceQuantumGradients:
 
         tape.trainable_params = {0, 1}
         grad = tape.jacobian(dev)
-        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(grad, expected, atol=tol, rtol=0)

@@ -371,7 +371,7 @@ class TestQubitGradient:
 
         eye = np.eye(3)
         for theta in thetas:
-            angle_inputs = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+            angle_inputs = np.array([theta, theta**3, np.sqrt(2) * theta])
             autograd_val = grad_fn(*angle_inputs)
             for idx in range(3):
                 onehot_idx = eye[idx]
@@ -567,9 +567,9 @@ class TestQubitGradient:
         zero_state = np.array([1.0, 0.0])
 
         for reused_p in thetas:
-            reused_p = reused_p ** 3 / 19
+            reused_p = reused_p**3 / 19
             for other_p in thetas:
-                other_p = other_p ** 2 / 11
+                other_p = other_p**2 / 11
 
                 # autograd gradient
                 grad = autograd.grad(f)
@@ -696,7 +696,7 @@ class TestFourTermParameterShifts:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        a, b, c = anp.array([theta, theta ** 3, np.sqrt(2) * theta], requires_grad=True)
+        a, b, c = anp.array([theta, theta**3, np.sqrt(2) * theta], requires_grad=True)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
