@@ -554,6 +554,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where an incorrect number of executions are recorded by
+  a QNode using a custom cache with `diff_method="backprop"`.
+  [(#2171)](https://github.com/PennyLaneAI/pennylane/pull/2171)
+
 * Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
   [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
 
@@ -618,6 +622,10 @@
   solve a bug where repeated `adjoint()` calls don't return the correct
   operator.
   [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
+
+* Fixed a bug in `insert()` which prevented operations that inherited
+  from multiple classes to be inserted. 
+  [(#2172)](https://github.com/PennyLaneAI/pennylane/pull/2172)
 
 * <h3>Documentation</h3>
 
