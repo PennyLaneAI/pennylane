@@ -65,12 +65,10 @@
   [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
   ```python
-
   def block(weights, wires):
       qml.CNOT(wires=[wires[0], wires[1]])
       qml.RY(weights[0], wires=wires[0])
       qml.RY(weights[1], wires=wires[1])
-
 
   n_wires = 4
   n_block_wires = 2
@@ -78,7 +76,6 @@
   template_weights = np.array([[0.1, -0.3], [0.4, 0.2], [-0.15, 0.5]], requires_grad=True)
 
   dev = qml.device("default.qubit", wires=range(n_wires))
-
 
   @qml.qnode(dev)
   def circuit(weights):
@@ -97,13 +94,11 @@
 
 * Added a template for tree tensor networks, `qml.TTN`.
   [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
-  An example circuit that uses the `TTN` template is:
   ```python
   def block(weights, wires):
       qml.CNOT(wires=[wires[0], wires[1]])
       qml.RY(weights[0], wires=wires[0])
       qml.RY(weights[1], wires=wires[1])
-
 
   n_wires = 4
   n_block_wires = 2
@@ -112,7 +107,6 @@
   template_weights = [[0.1, -0.3]] * n_blocks
 
   dev = qml.device("default.qubit", wires=range(n_wires))
-
 
   @qml.qnode(dev)
   def circuit(template_weights):
