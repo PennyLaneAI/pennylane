@@ -258,19 +258,23 @@ def contract_tensors(
 
     .. code-block:: python
 
-        t = [np.arange(4), np.arange(4, 8)]
-        p = [[], [qcut.PrepareNode(wires=0)]]
-        m = [[qcut.MeasureNode(wires=0)], []]
+        from pennylane.transforms import qcut
+        import networkx as nx
+        import numpy as np
+
+        tensors = [np.arange(4), np.arange(4, 8)]
+        prep = [[], [qcut.PrepareNode(wires=0)]]
+        meas = [[qcut.MeasureNode(wires=0)], []]
 
     The communication graph describing edges in the tensor network must also be constructed:
 
     .. code-block:: python
 
-        g = MultiDiGraph([(0, 1, {"pair": (m[0][0], p[1][0])})])
+        graph = nx.MultiDiGraph([(0, 1, {"pair": (meas[0][0], prep[1][0])})])
 
     The network can then be contracted using:
 
-    >>> qcut.contract_tensors(t, g, p, m)
+    >>> qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
     # pylint: disable=import-outside-toplevel
