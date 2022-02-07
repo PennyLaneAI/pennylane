@@ -276,7 +276,8 @@ def contract_tensors(
         use_opt_einsum (bool): Determines whether to use the
             [opt_einsum](https://dgasmith.github.io/opt_einsum/) package. This package is useful for
             tensor contractions of large networks but must be installed separately using, e.g.,
-            ``pip install opt_einsum``.
+            ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            differentiable contraction.
 
     Returns:
         float or array-like: the result of contracting the tensor network
