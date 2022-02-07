@@ -213,7 +213,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication/`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__
-    graph. Each node of the commnication graph represents a fragment and the edges
+    graph. Each node of the communication graph represents a fragment and the edges
     denote the flow of qubits between fragments.
 
     Args:
@@ -257,12 +257,11 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
     """
 
-    graph_copy = copy.deepcopy(graph)
+    graph_copy = graph.copy()
 
-    edges = list(graph_copy.edges)
     cut_edges = []
 
-    for node1, node2, wire in edges:
+    for node1, node2, wire in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
             cut_edges.append((node1, node2, wire))
