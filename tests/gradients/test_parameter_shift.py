@@ -233,7 +233,9 @@ class TestParamShift:
             g_tapes, post_processing = qml.gradients.param_shift(tape)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
-        assert g_tapes == [] and res.size == 0 and np.all(res == np.array([[]]))
+        assert g_tapes == []
+        assert res.size == 0
+        assert np.all(res == np.array([[]]))
 
     def test_y0(self, mocker):
         """Test that if the gradient recipe has a zero-shift component, then
