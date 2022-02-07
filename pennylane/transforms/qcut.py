@@ -15,7 +15,6 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
-import copy
 from typing import Tuple
 
 from networkx import MultiDiGraph, weakly_connected_components
