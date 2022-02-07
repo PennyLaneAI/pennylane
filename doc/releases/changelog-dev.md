@@ -525,6 +525,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where an incorrect number of executions are recorded by
+  a QNode using a custom cache with `diff_method="backprop"`.
+  [(#2171)](https://github.com/PennyLaneAI/pennylane/pull/2171)
+
 * Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
   [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
 
