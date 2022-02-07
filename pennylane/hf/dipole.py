@@ -105,9 +105,9 @@ def generate_dipole_integrals(mol, core=None, active=None):
         for i in core:
             core_constant = core_constant + 2 * (dx[i][i] + dy[i][i] + dz[i][i])
 
-        dx = dx[anp.ix_(active, active, active, active)]
-        dy = dx[anp.ix_(active, active, active, active)]
-        dz = dx[anp.ix_(active, active, active, active)]
+        dx = dx[anp.ix_(active, active)]
+        dy = dy[anp.ix_(active, active)]
+        dz = dz[anp.ix_(active, active)]
 
         return core_constant, dx, dy, dz
 
