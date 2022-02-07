@@ -244,6 +244,14 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the circuits for the block diagonal.
     """
+    if not tape.trainable_params:
+        warnings.warn(
+            "Attempted to compute the metric tensor of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
+        return [], lambda _: ()
+
     # pylint: disable=too-many-arguments
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
@@ -323,6 +331,14 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
+        if not qml.math.get_trainable_indices(args):
+            warnings.warn(
+                "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
+                "If this is unintended, please add trainable parameters in accordance with the "
+                "chosen auto differentiation framework."
+            )
+            return ()
+
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
