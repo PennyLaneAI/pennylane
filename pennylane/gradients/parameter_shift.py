@@ -549,8 +549,9 @@ def param_shift(
     if argnum is None and not tape.trainable_params:
         warnings.warn(
             "Attempted to compute the gradient of a tape with no trainable parameters. "
-            "If this is unintended, please mark trainable parameters in accordance with your "
-            "autodiff framework, or via the 'tape.trainable_params' property."
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+
         )
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 

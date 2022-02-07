@@ -118,7 +118,7 @@ class hessian_transform(qml.batch_transform):
                 warnings.warn(
                     "Attempted to compute the hessian of a QNode with no trainable parameters. "
                     "If this is unintended, please add trainable parameters in accordance with "
-                    "your autodiff framework."
+                    "the chosen auto differentiation framework."
                 )
                 return ()
 
