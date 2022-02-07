@@ -64,7 +64,6 @@
   Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
   [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
-  An example circuit that uses the `MPS` template is:
   ```python
 
   def block(weights, wires):
