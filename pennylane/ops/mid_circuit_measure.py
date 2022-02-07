@@ -17,9 +17,8 @@ def mid_measure(wire):
 
         m0 = qml.Measure(0)
     """
-    wire_id = wire
-    _MidCircuitMeasure(wire_id, wire)
-    return MeasurementDependantValue(wire_id, 0, 1)
+    _MidCircuitMeasure(wire)
+    return MeasurementDependantValue(wire, _Value(0), _Value(1))
 
 
 class _MidCircuitMeasure(Operation):
@@ -29,10 +28,9 @@ class _MidCircuitMeasure(Operation):
 
     num_wires = 1
 
-    def __init__(self, measure_var, wires=None):
-        self.measure_var = measure_var
-        self.runtime_value = None
-        super().__init__(wires=wires)
+    def __init__(self, measured_wire):
+        self.measured_wire = measured_wire
+        super().__init__(wires=measured_wire)
 
 
 def apply_to_measurement_dependant_values(fun):
@@ -51,6 +49,8 @@ def apply_to_measurement_dependant_values(fun):
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
+            if not isinstance(arg, MeasurementDependantValue):
+                arg = _Value(arg)
             partial = partial._merge(arg)
         partial._transform_leaves_inplace(
             lambda *unwrapped: fun(*unwrapped, **kwargs)
@@ -73,23 +73,17 @@ class MeasurementDependantValue(Generic[T]):
     supports python __dunder__ mathematical operations. As well as arbitrary functions using qml.apply_to_outcome
     """
 
-    __slots__ = ("_dependent_on", "_zero_case", "_one_case")
+    __slots__ = ("_depends_on", "_zero_case", "_one_case")
 
     def __init__(
         self,
-        measurement_id: str,
-        zero_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
-        one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
+        wire_id: str,
+        zero_case: Union["MeasurementDependantValue[T]", "_Value[T]"],
+        one_case: Union["MeasurementDependantValue[T]", "_Value[T]"],
     ):
-        self._dependent_on = measurement_id
-        if isinstance(zero_case, (MeasurementDependantValue, _Value)):
-            self._zero_case = zero_case
-        else:
-            self._zero_case = _Value(zero_case)
-        if isinstance(one_case, (MeasurementDependantValue, _Value)):
-            self._one_case = one_case
-        else:
-            self._one_case = _Value(one_case)
+        self._depends_on = wire_id
+        self._zero_case = zero_case
+        self._one_case = one_case
 
     @property
     def branches(self):
@@ -97,6 +91,7 @@ class MeasurementDependantValue(Generic[T]):
         if isinstance(self._zero_case, MeasurementDependantValue):
             for k, v in self._zero_case.branches.items():
                 branch_dict[(0, *k)] = v
+            # if _zero_case is a MeaurementDependantValue, then _one_case is too.
             for k, v in self._one_case.branches.items():
                 branch_dict[(1, *k)] = v
         else:
@@ -107,8 +102,8 @@ class MeasurementDependantValue(Generic[T]):
     @property
     def measurements(self):
         if isinstance(self._zero_case, MeasurementDependantValue):
-            return [self._dependent_on, *self._zero_case.measurements]
-        return [self._dependent_on]
+            return [self._depends_on, *self._zero_case.measurements]
+        return [self._depends_on]
 
     # define all mathematical __dunder__ methods https://docs.python.org/3/library/operator.html
     def __add__(self, other: Any):
@@ -131,7 +126,7 @@ class MeasurementDependantValue(Generic[T]):
         return "\n".join(lines)
 
 
-    def _merge(self, other: Union["MeasurementDependantValue", "_Value", Any]):
+    def _merge(self, other: Union["MeasurementDependantValue", "_Value"]):
         """
         Merge this MeasurementDependantValue with `other`.
 
@@ -162,25 +157,25 @@ class MeasurementDependantValue(Generic[T]):
 
         """
         if isinstance(other, MeasurementDependantValue):
-            if self._dependent_on == other._dependent_on:
+            if self._depends_on == other._depends_on:
                 return MeasurementDependantValue(
-                    self._dependent_on,
+                    self._depends_on,
                     self._zero_case._merge(other._zero_case),
                     self._one_case._merge(other._one_case),
                 )
-            if self._dependent_on < other._dependent_on:
+            if self._depends_on < other._depends_on:
                 return MeasurementDependantValue(
-                    self._dependent_on,
+                    self._depends_on,
                     self._zero_case._merge(other),
                     self._one_case._merge(other),
                 )
             return MeasurementDependantValue(
-                other._dependent_on,
+                other._depends_on,
                 self._merge(other._zero_case),
                 self._merge(other._one_case),
             )
         return MeasurementDependantValue(
-            self._dependent_on,
+            self._depends_on,
             self._zero_case._merge(other),
             self._one_case._merge(other),
         )
@@ -204,17 +199,15 @@ class _Value(Generic[T]):
     def __init__(self, *values):
         self._values = values
 
-    def _merge(self, other):
+    def _merge(self, other: Union["MeasurementDependantValue", "_Value"]):
         """
         Works with MeasurementDependantValue._merge
         """
         if isinstance(other, MeasurementDependantValue):
             return MeasurementDependantValue(
-                other._dependent_on, self._merge(other._zero_case), self._merge(other._one_case)
+                other._depends_on, self._merge(other._zero_case), self._merge(other._one_case)
             )
-        if isinstance(other, _Value):
-            return _Value(*self._values, *other._values)
-        return _Value(*self._values, other)
+        return _Value(*self._values, *other._values)
 
     def _transform_leaves_inplace(self, fun):
         """
