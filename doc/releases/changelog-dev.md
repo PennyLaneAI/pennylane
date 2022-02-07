@@ -524,6 +524,30 @@
   qml.grad(circuit, argnum=1)(0.5, x)
   ```
 
+<h3>Deprecations</h3>
+
+* Deprecates the caching ability provided by `QubitDevice`.
+  [(#2154)](https://github.com/PennyLaneAI/pennylane/pull/2154)
+
+  Going forward, the preferred way is to use the caching abilities of the
+  QNode:
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  cache = {}
+
+  @qml.qnode(dev, diff_method='parameter-shift', cache=cache)
+  def circuit():
+      qml.RY(0.345, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> for _ in range(10):
+  ...    circuit()
+  >>> dev.num_executions
+  1
+  ```
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where an incorrect number of executions are recorded by
