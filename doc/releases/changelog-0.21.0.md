@@ -60,8 +60,8 @@
 
 * Quantum circuits with the shape
   of a matrix product state tensor network can now be easily implemented
-  using the new `qml.MPS` template.
-  Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
+  using the new `qml.MPS` template, based on the work
+  [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
   [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
 
   ```python
