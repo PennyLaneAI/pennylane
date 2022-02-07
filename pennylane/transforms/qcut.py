@@ -237,24 +237,42 @@ def contract_tensors(
 ):
     """Contract tensors according to the edges specified in the communication graph.
 
-    This operation is differentiable. The ``prepare_nodes`` and ``measure_nodes`` arguments are both
-    sequences of size ``len(communication_graph.nodes)`` that describe the order of indices in the
-    ``tensors`` with respect to to the :class:`~.PrepareNode` and :class`~.MeasureNode` edges in the
-    communication graph.
-
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow. Check out the
         :doc:`transforms </code/qml_transforms>` page for more details.
 
+    Consider the three tensors :math:`T^{(1)}`, :math:`T^{(2)}`, and :math:`T^{(3)}`, along with
+    their contraction equation
+
+    .. math::
+
+        \sum_{ijklmn} T^{(1)}_{ij,km} T^{(2)}_{kl,in} T^{(3)}_{mn,jl}
+
+    Each tensor is the result of the tomography of a circuit fragment and has some indices
+    corresponding to state preparations (marked by the indices before the comma) and some indices
+    corresponding to measurements (marked by the indices after the comma).
+
+    An equivalent representation of the contraction equation is to use a directed multigraph known
+    as the communication/quotient graph. In the communication graph, each tensor is assigned a node
+    and edges are added between nodes to mark a contraction along an index. The communication graph
+    resulting from the above contraction equation is a complete directed graph.
+
+    In the communication graph provided by :func:`fragment_graph`, edges are composed of
+    :class:`PrepareNode` and :class:`MeasureNode` pairs. To correctly map back to the contraction
+    equation, we must keep track of the order of preparation and measurement indices in each tensor.
+    This order is specified in the ``prepare_nodes`` and ``measure_nodes`` arguments.
+
     Args:
         tensors (Sequence): the tensors to be contracted
         communication_graph (MultiDiGraph): the communication graph determining connectivity between
             the tensors
-        prepare_nodes (Sequence[PrepareNode]): a sequence of size ``len(communication_graph.nodes)``
-            that determines the order of preparation indices in each tensor
-        measure_nodes (Sequence[MeasureNode]): a sequence of size ``len(communication_graph.nodes)``
-            that determines the order of measurement indices in each tensor
+        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of preparation indices in
+            each tensor
+        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of measurement indices in
+            each tensor
         use_opt_einsum (bool): Determines whether to use the
             [opt_einsum](https://dgasmith.github.io/opt_einsum/) package. This package is useful for
             tensor contractions of large networks but must be installed separately using, e.g.,
