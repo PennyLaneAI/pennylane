@@ -197,12 +197,13 @@ class TestParamShift:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
 
-    def test_no_trainable_params_qnode(self):
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tf"])
+    def test_no_trainable_params_qnode(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)

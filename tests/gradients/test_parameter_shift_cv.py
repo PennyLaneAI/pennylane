@@ -271,12 +271,13 @@ class TestTransformObservable:
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
 
-    def test_no_trainable_params_qnode(self):
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tf"])
+    def test_no_trainable_params_qnode(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.gaussian", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.Displacement(weights[0], 0.0, wires=[0])
             qml.Rotation(weights[1], wires=[0])

@@ -600,12 +600,13 @@ class TestMetricTensor:
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
-    def test_no_trainable_params_qnode(self):
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tf"])
+    def test_no_trainable_params_qnode(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
