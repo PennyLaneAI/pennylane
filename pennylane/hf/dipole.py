@@ -112,3 +112,54 @@ def generate_dipole_integrals(mol, core=None, active=None):
         return core_constant, dx, dy, dz
 
     return dipole_integrals
+
+
+def generate_fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
+    r"""Return a function that computes the fermionic dipole.
+
+    Args:
+        mol (Molecule): the molecule object
+        cutoff (float): cutoff value for discarding the negligible electronic integrals
+
+    Returns:
+        function: function that computes the fermionic dipole
+
+    **Example**
+
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> h = generate_fermionic_hamiltonian(mol)(*args)
+    """
+
+    def fermionic_dipole(*args):
+        r"""Compute the fermionic dipole.
+
+        Args:
+            args (array[array[float]]): initial values of the differentiable parameters
+
+        Returns:
+            tuple(array[float], list[list[int]]): the dipole coefficients and operators
+        """
+        core_constant, dx, dy, dz = generate_dipole_integrals(mol, core, active)(*args)
+
+        coeffs = anp.array([])
+        operators = [[]]
+
+        coeffs = anp.concatenate((coeffs, core_constant))
+
+        for d in [dx, dy, dz]:
+            indices = anp.argwhere(abs(d) >= cutoff)
+            operators = (
+                operators + (indices * 2).tolist() + (indices * 2 + 1).tolist()
+            )  # up-up + down-down terms
+            coeffs = anp.concatenate((coeffs, anp.tile(d[abs(d) >= cutoff], 2)))
+
+        indices_sort = [operators.index(i) for i in sorted(operators)]
+
+        return coeffs[indices_sort], sorted(operators)
+
+    return fermionic_dipole
