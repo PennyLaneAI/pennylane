@@ -626,7 +626,6 @@ class TestMultiControlledX:
     ):
         """Test if MultiControlledX properly handles invalid mixed-polarity
         control values."""
-        # target_wires = Wires(wires)
         target_wires = wires
 
         with pytest.raises(ValueError, match=expected_error_message):
@@ -917,7 +916,7 @@ class TestMultiControlledX:
         worker_wires = [5, 6]
         n_all_wires = 7
 
-        rnd_state = unitary_group.rvs(2**n_all_wires, random_state=1)[0]
+        rnd_state = unitary_group.rvs(2 ** n_all_wires, random_state=1)[0]
         spy = mocker.spy(qml.MultiControlledX, "decomposition")
         dev = qml.device("default.qubit", wires=n_all_wires)
 
@@ -947,7 +946,7 @@ label_data = [
     (qml.S(wires=0), "S", "S⁻¹"),
     (qml.T(wires=0), "T", "T⁻¹"),
     (qml.SX(wires=0), "SX", "SX⁻¹"),
-    (qml.CNOT(wires=(0, 1)), "⊕", "⊕"),
+    (qml.CNOT(wires=(0, 1)), "X", "X"),
     (qml.CZ(wires=(0, 1)), "Z", "Z"),
     (qml.CY(wires=(0, 1)), "Y", "Y"),
     (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
@@ -955,9 +954,9 @@ label_data = [
     (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
-    (qml.Toffoli(wires=(0, 1, 2)), "⊕", "⊕"),
-    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "⊕", "⊕"),
-    (qml.MultiControlledX(wires=(0, 1, 2, 3)), "⊕", "⊕"),
+    (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
+    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "X", "X"),
+    (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
 ]

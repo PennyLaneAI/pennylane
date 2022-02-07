@@ -229,7 +229,7 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
 
         final_terms = [qml.operation.Tensor(*list(m)).prune() for m in itertools.product(*n_terms)]
         final_coeffs = [
-            (0.5**degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
+            (0.5 ** degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
             for m in itertools.product(*n_coeffs)
         ]
 
