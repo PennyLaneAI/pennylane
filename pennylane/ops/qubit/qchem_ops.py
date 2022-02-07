@@ -78,16 +78,13 @@ class SingleExcitation(Operation):
     """
 
     num_wires = 2
+    num_params = 1
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -141,15 +138,12 @@ class SingleExcitationMinus(Operation):
 
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -217,15 +211,12 @@ class SingleExcitationPlus(Operation):
 
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
     generator = [
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -278,8 +269,8 @@ class DoubleExcitation(Operation):
 
     .. math::
 
-        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
-        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle,
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
 
     while leaving all other basis states unchanged.
 
@@ -301,7 +292,7 @@ class DoubleExcitation(Operation):
     **Example**
 
     The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
-    \phi/2)|1100\rangle +\sin(\phi/2)|0011\rangle)`:
+    \phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle)`:
 
     .. code-block::
 
@@ -317,6 +308,7 @@ class DoubleExcitation(Operation):
         circuit(0.1)
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
 
@@ -324,10 +316,6 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -413,6 +401,7 @@ class DoubleExcitationPlus(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
 
     G = -1 * np.eye(16, dtype=np.complex64)
@@ -421,10 +410,6 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -485,6 +470,7 @@ class DoubleExcitationMinus(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
 
     G = np.eye(16, dtype=np.complex64)
@@ -493,10 +479,6 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _matrix(cls, *params):
@@ -579,6 +561,7 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
     num_wires = 4
+    num_params = 1
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     generator = [
@@ -605,10 +588,6 @@ class OrbitalRotation(Operation):
         -1 / 2,
     ]
 
-    @property
-    def num_params(self):
-        return 1
-
     @classmethod
     def _matrix(cls, *params):
         # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
@@ -628,7 +607,7 @@ class OrbitalRotation(Operation):
         else:
             z = qml.math.zeros([16], like=interface)
 
-        diag = qml.math.diag([1, c, c, c ** 2, c, 1, c ** 2, c, c, c ** 2, 1, c, c ** 2, c, c, 1])
+        diag = qml.math.diag([1, c, c, c**2, c, 1, c**2, c, c, c**2, 1, c, c**2, c, c, 1])
 
         U = diag + qml.math.stack(
             [

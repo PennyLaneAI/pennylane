@@ -45,7 +45,11 @@ from .matrices import (
 )
 from .molecule import Molecule
 from .tapering import (
-    get_generators,
+    clifford,
     generate_paulis,
     generate_symmetries,
+    get_generators,
+    optimal_sector,
+    transform_hamiltonian,
+    transform_hf,
 )

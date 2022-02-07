@@ -345,6 +345,7 @@ class TestCorrectness:
     def test_isingzz(self, tol):
         """Test that the IsingZZ operation is correct"""
         assert np.allclose(qml.IsingZZ._matrix(0), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingZZ._eigvals(0), np.diagonal(np.identity(4)), atol=tol, rtol=0)
 
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
@@ -356,9 +357,31 @@ class TestCorrectness:
 
         param = np.pi / 2
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
 
         param = np.pi
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
+
+    def test_isingzz_matrix_tf(self, tol):
+        """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
+        different logic for this framework"""
+        tf = pytest.importorskip("tensorflow")
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = tf.Variable(np.pi)
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(np.pi), atol=tol, rtol=0)
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -554,13 +577,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -589,13 +612,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -624,7 +647,7 @@ class TestGrad:
 
         phi = npp.array(0.1, requires_grad=True)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -663,13 +686,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -710,13 +733,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -755,7 +778,7 @@ class TestGrad:
 
         phi = jnp.array(0.1)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -786,13 +809,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -827,13 +850,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -866,7 +889,7 @@ class TestGrad:
 
         phi = tf.Variable(0.1, dtype=tf.complex128)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         with tf.GradientTape() as tape:
             result = circuit(phi)
@@ -1128,7 +1151,7 @@ class TestPauliRot:
         assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].data[0] == -np.pi / 2
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -1333,7 +1356,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -1413,10 +1436,10 @@ label_data = [
     (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
     (
         qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
-        "R(XYZ)",
-        "R(XYZ)\n(1.23)",
-        "R(XYZ)\n(1)",
-        "R(XYZ)⁻¹\n(1)",
+        "RXYZ",
+        "RXYZ\n(1.23)",
+        "RXYZ\n(1)",
+        "RXYZ⁻¹\n(1)",
     ),
     (
         qml.PhaseShift(1.2345, wires=0),

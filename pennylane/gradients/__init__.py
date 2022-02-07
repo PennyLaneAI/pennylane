@@ -45,6 +45,7 @@ Gradient transforms
     finite_diff
     param_shift
     param_shift_cv
+    param_shift_hessian
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
@@ -53,6 +54,7 @@ Custom gradients
     :toctree: api
 
     gradient_transform
+    hessian_transform
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -283,11 +285,14 @@ import pennylane as qml
 from . import finite_difference
 from . import parameter_shift
 from . import parameter_shift_cv
+from . import param_shift_hessian
 
 from .gradient_transform import gradient_transform
+from .hessian_transform import hessian_transform
 from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted_tapes
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
+from .param_shift_hessian import param_shift_hessian
 from .vjp import compute_vjp, batch_vjp, vjp
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (

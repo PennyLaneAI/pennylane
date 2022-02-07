@@ -493,7 +493,6 @@ class TestCreateCustomDecompExpandFn:
         assert np.allclose(original_grad, decomp_grad)
 
         expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
-        print(decomp_qnode.qtape.operations)
         assert all(
             [op.name == name for op, name in zip(decomp_qnode.qtape.operations, expected_ops)]
         )

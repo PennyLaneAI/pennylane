@@ -183,7 +183,7 @@ class DefaultMixed(QubitDevice):
     @property
     def state(self):
         """Returns the state density matrix of the circuit prior to measurement"""
-        dim = 2 ** self.num_wires
+        dim = 2**self.num_wires
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
@@ -439,7 +439,7 @@ class DefaultMixed(QubitDevice):
         state = qnp.reshape(state, (-1,))
 
         state_dim = 2 ** len(device_wires)
-        dm_dim = state_dim ** 2
+        dm_dim = state_dim**2
         if dm_dim != state.shape[0]:
             raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
 
@@ -478,7 +478,7 @@ class DefaultMixed(QubitDevice):
             transpose_axes = left_axes + right_axes
             rho = qnp.transpose(rho, axes=transpose_axes)
             assert qnp.allclose(
-                qnp.trace(qnp.reshape(rho, (2 ** self.num_wires, 2 ** self.num_wires))),
+                qnp.trace(qnp.reshape(rho, (2**self.num_wires, 2**self.num_wires))),
                 1.0,
                 atol=tolerance,
             )

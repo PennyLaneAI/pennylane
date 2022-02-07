@@ -51,10 +51,11 @@ class TestInsert:
         with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
             insert(qml.CNOT, [])(self.tape)
 
-    def test_invalid_position(self):
+    @pytest.mark.parametrize("pos", [1, ["all", qml.RY, int], "ABC", str])
+    def test_invalid_position(self, pos):
         """Test if a ValueError is raised when an invalid position is requested"""
         with pytest.raises(ValueError, match="Position must be either 'start', 'end', or 'all'"):
-            insert(qml.AmplitudeDamping, 0.4, position="ABC")(self.tape)
+            insert(qml.AmplitudeDamping, 0.4, position=pos)(self.tape)
 
     def test_start(self):
         """Test if the expected tape is returned when the start position is requested"""
@@ -93,6 +94,87 @@ class TestInsert:
             qml.CNOT(wires=[0, 1])
             qml.PhaseDamping(0.4, wires=0)
             qml.PhaseDamping(0.4, wires=1)
+            qml.RY(0.5, wires=0)
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RX(0.6, wires=1)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
+        assert len(tape.measurements) == 1
+        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert tape.observables[0].wires.tolist() == [0, 1]
+        assert tape.measurements[0].return_type is Expectation
+
+    def test_before(self):
+        """Test if the expected tape is returned when the before argument is True"""
+        tape = insert(qml.PhaseDamping, 0.4, position="all", before=True)(self.tape)
+
+        with QuantumTape() as tape_exp:
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RX(0.9, wires=0)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.RY(0.4, wires=1)
+            qml.PhaseDamping(0.4, wires=0)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RY(0.5, wires=0)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
+        assert len(tape.measurements) == 1
+        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert tape.observables[0].wires.tolist() == [0, 1]
+        assert tape.measurements[0].return_type is Expectation
+
+    def test_operation_as_position(self):
+        """Test if expected tape is returned when an operation is passed in position"""
+        tape = insert(qml.PhaseDamping, 0.4, position=qml.RX, before=True)(self.tape)
+
+        with QuantumTape() as tape_exp:
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RX(0.9, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(0.5, wires=0)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.RX(0.6, wires=1)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            np.allclose(o1.parameters, o2.parameters)
+            for o1, o2 in zip(tape.operations, tape_exp.operations)
+        )
+        assert len(tape.measurements) == 1
+        assert tape.observables[0].name == ["PauliZ", "PauliZ"]
+        assert tape.observables[0].wires.tolist() == [0, 1]
+        assert tape.measurements[0].return_type is Expectation
+
+    def test_operation_list_as_position(self):
+        """Test if expected tape is returned when an operation list is passed in position"""
+        tape = insert(qml.PhaseDamping, 0.4, position=[qml.RX, qml.RY])(self.tape)
+
+        with QuantumTape() as tape_exp:
+            qml.RX(0.9, wires=0)
+            qml.PhaseDamping(0.4, wires=0)
+            qml.RY(0.4, wires=1)
+            qml.PhaseDamping(0.4, wires=1)
+            qml.CNOT(wires=[0, 1])
             qml.RY(0.5, wires=0)
             qml.PhaseDamping(0.4, wires=0)
             qml.RX(0.6, wires=1)
