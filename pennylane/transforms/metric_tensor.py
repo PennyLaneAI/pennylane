@@ -249,7 +249,6 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
             "Attempted to compute the metric tensor of a tape with no trainable parameters. "
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
-
         )
         return [], lambda _: ()
 
@@ -337,7 +336,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
                 "If this is unintended, please add trainable parameters in accordance with the "
                 "chosen auto differentiation framework."
-
             )
             return ()
 
