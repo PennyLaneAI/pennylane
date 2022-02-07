@@ -536,7 +536,8 @@ class TestParameterShiftHessian:
             h_tapes, post_processing = qml.gradients.param_shift_hessian(tape)
         res = post_processing(qml.execute(h_tapes, dev, None))
 
-        assert h_tapes == [] and res == ()
+        assert h_tapes == []
+        assert res == ()
 
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""

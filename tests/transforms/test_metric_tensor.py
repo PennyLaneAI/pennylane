@@ -635,7 +635,8 @@ class TestMetricTensor:
             mt_tapes, post_processing = qml.metric_tensor(tape)
         res = post_processing(qml.execute(mt_tapes, dev, None))
 
-        assert mt_tapes == [] and res == ()
+        assert mt_tapes == []
+        assert res == ()
 
 
 fixed_pars = np.array([-0.2, 0.2, 0.5, 0.3, 0.7], requires_grad=False)
