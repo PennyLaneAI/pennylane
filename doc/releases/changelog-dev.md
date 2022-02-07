@@ -594,6 +594,10 @@
   operator.
   [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
 
+* Fixed a bug in `insert()` which prevented operations that inherited
+  from multiple classes to be inserted. 
+  [(#2172)](https://github.com/PennyLaneAI/pennylane/pull/2172)
+
 * <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
