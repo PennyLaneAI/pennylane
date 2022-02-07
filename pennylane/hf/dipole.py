@@ -87,9 +87,15 @@ def generate_dipole_integrals(mol, core=None, active=None):
         """
         _, coeffs, _, _, _ = generate_scf(mol)(*args)
 
-        dx = anp.einsum("qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 0)(*args), coeffs)
-        dy = anp.einsum("qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 1)(*args), coeffs)
-        dz = anp.einsum("qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 2)(*args), coeffs)
+        dx = anp.einsum(
+            "qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 0)(*args), coeffs
+        )
+        dy = anp.einsum(
+            "qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 1)(*args), coeffs
+        )
+        dz = anp.einsum(
+            "qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 2)(*args), coeffs
+        )
 
         core_constant = anp.array([0])
 
