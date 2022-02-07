@@ -143,4 +143,4 @@ if __name__ == "__main__":
 
     # main(display=True)
     # main(s3_bucket, state_vector_sim_device_arn, display=True)
-    main(None, local_sim, display=True)
+    main(None, local_sim, display=False)

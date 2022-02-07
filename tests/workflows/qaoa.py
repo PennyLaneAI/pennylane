@@ -3,6 +3,7 @@ from pennylane import qaoa
 from pennylane import numpy as np
 import networkx as nx
 
+
 def main(bucket_info=None, device_arn=None, display=False):
     # Define the four-vertex graph for which we want to find the minimum vertex cover
     edges = [(0, 1), (1, 2), (2, 0), (2, 3)]
@@ -91,6 +92,6 @@ if __name__ == "__main__":
     state_vector_sim_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
     local_sim = "local_sim"
 
-    main(display=True)
+    # main(display=True)
     # main(s3_bucket, state_vector_sim_device_arn, display=True)
-    # main(None, local_sim, display=True)
+    main(None, local_sim, display=True)
