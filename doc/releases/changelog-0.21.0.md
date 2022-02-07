@@ -554,6 +554,30 @@
   For more details, see the
   [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
 
+<h3>Deprecations</h3>
+
+* Deprecates the caching ability provided by `QubitDevice`.
+  [(#2154)](https://github.com/PennyLaneAI/pennylane/pull/2154)
+
+  Going forward, the preferred way is to use the caching abilities of the
+  QNode:
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  cache = {}
+
+  @qml.qnode(dev, diff_method='parameter-shift', cache=cache)
+  def circuit():
+      qml.RY(0.345, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> for _ in range(10):
+  ...    circuit()
+  >>> dev.num_executions
+  1
+  ```
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug where an incorrect number of executions are recorded by
@@ -629,7 +653,7 @@
   from multiple classes to be inserted.
   [(#2172)](https://github.com/PennyLaneAI/pennylane/pull/2172)
 
-* <h3>Documentation</h3>
+<h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
   [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
