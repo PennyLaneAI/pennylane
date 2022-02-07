@@ -19,6 +19,7 @@ import autograd.numpy as anp
 from pennylane.hf.integrals import (
     generate_attraction,
     generate_kinetic,
+    generate_moment,
     generate_overlap,
     generate_repulsion,
 )

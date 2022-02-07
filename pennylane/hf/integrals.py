@@ -229,8 +229,8 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     Args:
         la (integer): angular momentum for the first Gaussian function
         lb (integer): angular momentum for the second Gaussian function
-        ra (float): position vector of the the first Gaussian function
-        rb (float): position vector of the the second Gaussian function
+        ra (float): position vector of the first Gaussian function
+        rb (float): position vector of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
 
@@ -306,6 +306,207 @@ def generate_overlap(basis_a, basis_b):
         )
 
     return overlap_integral
+
+
+def _hermite_moment(alpha, beta, t, e, rc):
+    r"""Compute Hermite moment integral recursively.
+
+    The Hermite moment integral in one dimension is defined as
+
+    .. math::
+
+        \int_{-\infty }^{+\infty} x_C^e \Lambda_t dx,
+
+    where :math:`e` is the multipole moment order, :math:`C` is the origin of the Cartesian
+    coordinates, and :math:`\Lambda_t` is the :math:`t` component of the Hermite Gaussian. The
+    integral can be computed recursively as
+    [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        M_{t}^{e+1} = t M_{t-1}^{e} + X_PC M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
+
+    This integral is zero for :math:`t > e` and
+
+    .. math::
+
+        M_t^0 = \delta _{t0} \sqrt{\frac{\pi}{p}},
+
+    where :math:`p = \alpha + \beta` and :math:`\alpha, \beta` are the exponents of the Gaussian
+    functions that construct the Hermite Gaussian :math:`\Lambda`.
+
+    Args:
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        t (integer): order of the Hermite Gaussian
+        e (integer): order of the multipole moment
+        rc (array[float]): distance between the center of the Hermite Gaussian and the origin
+
+    Returns:
+        array[float]: expansion coefficients for each Gaussian combination
+
+    **Example**
+
+    >>> alpha = np.array([3.42525091])
+    >>> beta =  np.array([3.42525091])
+    >>> t = 0
+    >>> e = 1
+    >>> rc = 1.5
+    >>> _hermite_moment(alpha, beta, t, e, rc)
+    array([1.0157925])
+    """
+    p = anp.array(alpha + beta)
+
+    if t > e:
+        return 0.0
+    if e == 0 and t != 0:
+        return 0.0
+    if e == 0 and t == 0:
+        return anp.sqrt(anp.pi / p)
+    m = (
+        _hermite_moment(alpha, beta, t - 1, e - 1, rc) * t
+        + _hermite_moment(alpha, beta, t, e - 1, rc) * rc
+        + _hermite_moment(alpha, beta, t + 1, e - 1, rc) / (2 * p)
+    )
+    return m
+
+
+def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
+    r"""Compute one-dimensional multipole moment integral for two primitive Gaussian functions.
+
+    The multipole moment integral in one dimension is defined as
+
+    .. math::
+
+        S_{ij}^e = \left \langle G_i | q_C^e | G_j \right \rangle,
+
+    where :math:`G` is a Gaussian function at dimension :math:`q = x, y, z` of the Cartesian
+    coordinates system, :math:`e` is the multipole moment order and :math:`C` is the origin of the
+    Cartesian coordinates. The integrals can be evauated as
+    [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
+
+    .. math::
+
+        S_{ij}^e = \sum_{t=0}^{\mathrm{min}(i+j, \ e)} E_t^{ij} M_t^e,
+
+    where :math:`E` and :math:`M` are the Hermite Gaussian expansion coefficient and the Hermite
+    moment integral, respectively, that can be computed recursively.
+
+    Args:
+        la (integer): angular momentum for the first Gaussian function
+        lb (integer): angular momentum for the second Gaussian function
+        ra (float): position of the first Gaussian function
+        rb (float): position of the second Gaussian function
+        alpha (array[float]): exponent of the first Gaussian function
+        beta (array[float]): exponent of the second Gaussian function
+        e (integer): order of the multipole moment
+        rc (array[float]): distance between the center of the Hermite Gaussian and the origin
+
+    Returns:
+        array[float]: one-dimensional multipole moment integral between primitive Gaussian functions
+
+    **Example**
+
+    >>> la, lb = 0, 0
+    >>> ra, rb = np.array([2.0]), np.array([2.0])
+    >>> alpha = np.array([3.42525091])
+    >>> beta = np.array([3.42525091])
+    >>> e = 1
+    >>> rc = 1.5
+    >>> gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc)
+    array([1.0157925])
+    """
+    s = 0.0
+    for t in range(min(la + lb + 1, e + 1)):
+        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * _hermite_moment(alpha, beta, t, e, rc)
+
+    return s
+
+
+def generate_moment(basis_a, basis_b, e, idx):
+    r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
+
+    The multipole moment integral for two primitive Gaussian functions is computed as
+
+    .. math::
+
+        S^e = \left \langle G_i | q_C^e | G_j \right \rangle
+                   \left \langle G_k | G_l \right \rangle
+                   \left \langle G_m | G_n \right \rangle,
+
+    where :math:`G_{i-n}` is a one-dimensional Gaussian function, :math:`q = x, y, z` is the
+    dimension at which the integral is evaluated, :math:`C` is the origin of the Cartesian
+    coordinates and :math:`e` is the multipole moment order. For contracted Gaussians, such
+    integrals will be computed over primitive Gaussians, multiplied by the normalized contraction
+    coefficients and finally summed over.
+
+    The ``idx`` argument determines the dimension :math:`q` at which the integral is computed. It
+    can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
+
+    Args:
+        basis_a (BasisFunction): first basis function
+        basis_b (BasisFunction): second basis function
+        e (integer): order of the multipole moment
+        idx (integer): index determining the dimension of the multipole moment integral
+
+    Returns:
+        function: function that computes the multipole moment integral
+
+    **Example**
+
+    >>> symbols  = ['H', 'Li']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
+    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> args = []
+    >>> e, idx =  1, 0
+    >>> generate_moment(mol.basis_set[0], mol.basis_set[1], e, idx)(*args)
+    3.12846324e-01
+    """
+
+    def moment_integral(*args):
+        r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
+
+        Args:
+            args (array[float]): initial values of the differentiable parameters
+
+        Returns:
+            array[float]: the multipole moment integral between two contracted Gaussian orbitals
+        """
+        args_a = [i[0] for i in args]
+        args_b = [i[1] for i in args]
+
+        la = basis_a.l
+        lb = basis_b.l
+
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
+
+        ca = ca * primitive_norm(basis_a.l, alpha)
+        cb = cb * primitive_norm(basis_b.l, beta)
+
+        na = contracted_norm(basis_a.l, alpha, ca)
+        nb = contracted_norm(basis_b.l, beta, cb)
+
+        p = alpha[:, anp.newaxis] + beta
+        q = anp.sqrt(anp.pi / p)
+        rc = (
+            alpha[:, anp.newaxis] * ra[:, anp.newaxis, anp.newaxis]
+            + beta * rb[:, anp.newaxis, anp.newaxis]
+        ) / p
+
+        i, j, k = anp.roll(anp.array([0, 2, 1]), idx)
+
+        s = (
+            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, anp.newaxis], beta, e, rc[i])
+            * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, anp.newaxis], beta, 0)
+            * q
+            * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, anp.newaxis], beta, 0)
+            * q
+        )
+
+        return (na * nb * (ca[:, anp.newaxis] * cb) * s).sum()
+
+    return moment_integral
 
 
 def _diff2(i, j, ri, rj, alpha, beta):

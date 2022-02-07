@@ -21,6 +21,7 @@ from pennylane.hf.matrices import (
     generate_attraction_matrix,
     generate_core_matrix,
     generate_kinetic_matrix,
+    generate_moment_matrix,
     generate_overlap_matrix,
     generate_repulsion_tensor,
     molecular_density_matrix,
@@ -147,6 +148,50 @@ def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
     g_coeff = autograd.jacobian(generate_overlap_matrix(mol.basis_set), argnum=1)(*args)
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "e", "idx", "s_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            1,
+            0,
+            np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
+        )
+    ],
+)
+def test_moment_matrix(symbols, geometry, alpha, e, idx, s_ref):
+    r"""Test that moment_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    s = generate_moment_matrix(mol.basis_set, e, idx)(*args)
+    assert np.allclose(s, s_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "e", "idx", "s_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            0,
+            np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
+        )
+    ],
+)
+def test_moment_matrix_nodiff(symbols, geometry, e, idx, s_ref):
+    r"""Test that moment_matrix returns the correct matrix when no differentiable parameter is
+    used."""
+    mol = Molecule(symbols, geometry)
+    s = generate_moment_matrix(mol.basis_set, e, idx)()
+    assert np.allclose(s, s_ref)
 
 
 @pytest.mark.parametrize(
