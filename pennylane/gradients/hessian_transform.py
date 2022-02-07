@@ -13,8 +13,9 @@
 # limitations under the License.
 """This module contains utilities for defining custom Hessian transforms,
 including a decorator for specifying Hessian expansions."""
-import pennylane as qml
+import warnings
 
+import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
@@ -113,6 +114,14 @@ class hessian_transform(qml.batch_transform):
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=self.expand_fn)
 
         def hessian_wrapper(*args, **kwargs):
+            if not qml.math.get_trainable_indices(args):
+                warnings.warn(
+                    "Attempted to compute the hessian of a QNode with no trainable parameters. "
+                    "If this is unintended, please add trainable parameters in accordance with "
+                    "the chosen auto differentiation framework."
+                )
+                return ()
+
             qhess = _wrapper(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
