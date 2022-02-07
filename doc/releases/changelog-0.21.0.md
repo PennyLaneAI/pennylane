@@ -645,4 +645,4 @@ Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Sam Banning, Thomas Bromley,
 Esther Cruz, Christian Gogolin, Nathan Killoran, Christina Lee, Olivia Di
 Matteo, Diego Guala, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri,
 Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Romain Moyard, Lee James
-O'Riordan, Maria Schuld, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang
+O'Riordan, Maria Schuld, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang.
