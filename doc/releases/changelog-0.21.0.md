@@ -401,15 +401,8 @@
   params = list(range(1, 3))
   ```
 
-  The produced state is
-
-  ```pycon
-  >>> circuit_wrong(params)
-  [ 0.47415988+0.j          0.        -0.73846026j  0.        -0.25903472j
-   -0.40342268+0.j        ]
-  ```
-
-  but if we apply the `adjoint` correctly, we get
+  Evaluating `circuit_wrong(params)` now raises a `ValueError` and if we apply
+  `qml.adjoint` correctly, we get
 
   ```pycon
   >>> circuit_correct(params)
