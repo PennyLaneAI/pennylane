@@ -345,8 +345,8 @@ def contract_tensors(
             ``len(communication_graph.nodes)`` that determines the order of measurement indices in
             each tensor
         use_opt_einsum (bool): Determines whether to use the
-            `opt_einsum <https://dgasmith.github.io/opt_einsum/>` package. This package is useful for
-            tensor contractions of large networks but must be installed separately using, e.g.,
+            `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
+            for tensor contractions of large networks but must be installed separately using, e.g.,
             ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
 
