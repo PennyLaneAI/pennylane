@@ -80,12 +80,17 @@ def compare_tapes(tape, expected_tape):
     Helper function to compare tapes
     """
 
-    assert tape.wires.tolist() == expected_tape.wires.tolist()
+    assert set(tape.wires) == set(expected_tape.wires)
     assert tape.get_parameters() == expected_tape.get_parameters()
 
     for op, exp_op in zip(tape.operations, expected_tape.operations):
-        assert op.name == exp_op.name
-        assert op.wires.tolist() == exp_op.wires.tolist()
+        if (
+            op.name == "PrepareNode"
+        ):  # The exact ordering of PrepareNodes w.r.t wires varies on each call
+            assert exp_op.name == "PrepareNode"
+        else:
+            assert op.name == exp_op.name
+            assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(tape.measurements, expected_tape.measurements):
         assert meas.return_type.name == exp_meas.return_type.name
@@ -758,8 +763,23 @@ class TestGraphToTape:
         Tests that a directed multigraph, containing MeasureNodes and
         PrepareNodes, is correctly converted to a tape
         """
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires=[0, "a"])
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.WireCut(wires="a")
+            qml.CNOT(wires=["a", 2])
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires=2)
+            qml.CNOT(wires=[2, 3])
+            qml.RY(0.543, wires=2)
+            qml.RZ(0.876, wires=3)
+            qml.expval(qml.PauliZ(wires=[0]))
 
-        g = qcut.tape_to_graph(multi_cut_tape)
+        g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
@@ -771,26 +791,30 @@ class TestGraphToTape:
 
         with qml.tape.QuantumTape() as tape_1:
             qml.RY(0.543, wires=["a"])
+            qcut.MeasureNode(wires=["a"])
+
+        with qml.tape.QuantumTape() as tape_2:
             qcut.PrepareNode(wires=[0])
+            qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=[0, "a"])
             qml.RZ(0.24, wires=[0])
             qml.RZ(0.133, wires=["a"])
             qcut.MeasureNode(wires=["a"])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        with qml.tape.QuantumTape() as tape_2:
+        with qml.tape.QuantumTape() as tape_3:
             qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=["a", 2])
             qml.RX(0.432, wires=["a"])
             qcut.MeasureNode(wires=[2])
 
-        with qml.tape.QuantumTape() as tape_3:
+        with qml.tape.QuantumTape() as tape_4:
             qcut.PrepareNode(wires=[2])
             qml.CNOT(wires=[2, 3])
             qml.RY(0.543, wires=[2])
             qml.RZ(0.876, wires=[3])
 
-        expected_tapes = [tape_0, tape_1, tape_2, tape_3]
+        expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
 
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
