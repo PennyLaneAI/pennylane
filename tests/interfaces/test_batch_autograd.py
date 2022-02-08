@@ -584,13 +584,14 @@ class TestAutogradExecuteIntegration:
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
-        res = qml.jacobian(cost)(a, b, device=dev)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            res = qml.jacobian(cost)(a, b, device=dev)
         assert len(res) == 0
 
         def loss(a, b):
             return np.sum(cost(a, b, device=dev))
 
-        with pytest.warns(UserWarning, match="Output seems independent"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.grad(loss)(a, b)
 
         assert np.allclose(res, 0)

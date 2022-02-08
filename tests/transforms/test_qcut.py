@@ -1,4 +1,5 @@
 # Copyright 2022 Xanadu Quantum Technologies Inc.
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -748,7 +749,7 @@ class TestFragmentGraph:
         assert communication_graph_0.nodes == communication_graph_1.nodes
         assert communication_graph_0.edges == communication_graph_1.edges
 
-
+        
 class TestGraphToTape:
     def test_graph_to_tape(self):
         """
