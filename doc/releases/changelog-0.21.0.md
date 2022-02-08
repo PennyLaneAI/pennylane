@@ -4,64 +4,138 @@
 
 <h3>New features since last release</h3>
 
-* Added a modified version of the `simplify` function to the `hf` module.
-  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+<h4>Reduce qubit requirements of simulating Hamiltonians ⚛️</h4>
 
-  This function combines redundant terms in a Hamiltonian and eliminates terms with a coefficient
-  smaller than a cutoff value. The new function makes construction of molecular Hamiltonians more
-  efficient. For LiH, as an example, the time to construct the Hamiltonian is reduced roughly by a
-  factor of 20.
+* Functions for tapering qubits based on molecular symmetries have been added,
+  following results from [Setia et al](https://arxiv.org/abs/1910.14644).
+  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
+  [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
+  [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
+  [(#2042)](https://github.com/PennyLaneAI/pennylane/pull/2042)
 
-* The JAX interface now supports evaluating vector-valued QNodes. Vector-valued
-  QNodes include those with:
-  * `qml.probs`;
-  * `qml.state`;
-  * `qml.sample` or
-  * multiple `qml.expval` / `qml.var` measurements.
-
-  Consider a QNode that returns basis-state probabilities:
+  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
   ```python
-  dev = qml.device('default.qubit', wires=2)
-  x = jnp.array(0.543)
-  y = jnp.array(-0.654)
+  # molecular geometry
+  symbols = ["He", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
+  mol = qml.hf.Molecule(symbols, geometry, charge=1)
 
-  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
-  def circuit(x, y):
-      qml.RX(x, wires=[0])
-      qml.RY(y, wires=[1])
-      qml.CNOT(wires=[0, 1])
-      return qml.probs(wires=[1])
+  # generate the qubit Hamiltonian
+  H = qml.hf.generate_hamiltonian(mol)(geometry)
+
+  # determine Hamiltonian symmetries
+  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+  opt_sector = qml.hf.optimal_sector(H, generators, mol.n_electrons)
+
+  # taper the Hamiltonian
+  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
   ```
-  The QNode can be evaluated and its jacobian can be computed:
+
+  We can compare the number of qubits required by the original Hamiltonian
+  and the tapered Hamiltonian:
+
   ```pycon
-  >>> circuit(x, y)
-  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
-  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
-  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
-   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
+  >>> len(H.wires)
+  4
+  >>> len(H_tapered.wires)
+  2
   ```
-  Note that `jax.jit` is not supported for vector-valued QNodes.
-  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
 
-* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a
-  static property. This allows to programmatically know the number of parameters before an operator is
-  instantiated without changing the user interface.
-  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+  For quantum chemistry algorithms, the Hartree-Fock state can also be tapered:
 
-* Development of a circuit-cutting compiler has begun:
-  A `WireCut` operator has been added for manual wire cut placement
-  when constructing a QNode.
-  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
+  ```python
+  n_elec = mol.n_electrons
+  n_qubits = mol.n_orbitals * 2
+
+  hf_tapered = qml.hf.transform_hf(
+      generators, paulix_ops, opt_sector, n_elec, n_qubits
+  )
+  ```
+  ```pycon
+  >>> hf_tapered
+  tensor([1, 1], requires_grad=True)
+  ```
+
+<h4>New tensor network templates 🪢</h4>
+
+* Quantum circuits with the shape
+  of a matrix product state tensor network can now be easily implemented
+  using the new `qml.MPS` template, based on the work
+  [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
+  [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
+
+  ```python
+  def block(weights, wires):
+      qml.CNOT(wires=[wires[0], wires[1]])
+      qml.RY(weights[0], wires=wires[0])
+      qml.RY(weights[1], wires=wires[1])
+
+  n_wires = 4
+  n_block_wires = 2
+  n_params_block = 2
+  template_weights = np.array([[0.1, -0.3], [0.4, 0.2], [-0.15, 0.5]], requires_grad=True)
+
+  dev = qml.device("default.qubit", wires=range(n_wires))
+
+  @qml.qnode(dev)
+  def circuit(weights):
+      qml.MPS(range(n_wires), n_block_wires, block, n_params_block, weights)
+      return qml.expval(qml.PauliZ(wires=n_wires - 1))
+  ```
+
+  The resulting circuit is:
+  ```pycon
+  >>> print(qml.draw(circuit, expansion_strategy="device")(template_weights))
+  0: ──╭C──RY(0.1)───────────────────────────────┤
+  1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
+  2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
+  3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
+  ```
+
+* Added a template for tree tensor networks, `qml.TTN`.
+  [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
+  ```python
+  def block(weights, wires):
+      qml.CNOT(wires=[wires[0], wires[1]])
+      qml.RY(weights[0], wires=wires[0])
+      qml.RY(weights[1], wires=wires[1])
+
+  n_wires = 4
+  n_block_wires = 2
+  n_params_block = 2
+  n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+  template_weights = [[0.1, -0.3]] * n_blocks
+
+  dev = qml.device("default.qubit", wires=range(n_wires))
+
+  @qml.qnode(dev)
+  def circuit(template_weights):
+      qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+      return qml.expval(qml.PauliZ(wires=n_wires - 1))
+  ```
+  The resulting circuit is:
+  ```pycon
+  >>> print(qml.draw(circuit, expansion_strategy="device")(template_weights))
+  0: ──╭C──RY(0.1)─────────────────┤
+  1: ──╰X──RY(-0.3)──╭C──RY(0.1)───┤
+  2: ──╭C──RY(0.1)───│─────────────┤
+  3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
+  ```
+
+<h4>Generalized RotosolveOptmizer 📉</h4>
 
 * The `RotosolveOptimizer` has been generalized to arbitrary frequency spectra
   in the cost function. Also note the changes in behaviour listed under *Breaking
   changes*.
   [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
 
-  Previously, the `RotsolveOptimizer` was available for cost functions with
-  frequency spectra that only contained integers, and the maximal frequency
-  (instead of the number of frequencies) determined the cost of the optimization.
-  Now arbitrary frequencies are supported.
+  Previously, the RotosolveOptimizer only supported variational circuits using
+  special gates such as single-qubit Pauli rotations. Now, circuits with
+  arbitrary gates are supported natively without decomposition, as long as the
+  frequencies of the gate parameters are known. This new generalization extends
+  the Rotosolve optimization method to a larger class of circuits, and can
+  reduce the cost of the optimization compared to decomposing all gates to
+  single-qubit rotations.
 
   Consider the QNode
   ```python
@@ -110,124 +184,55 @@
   ...     (x, Y), history = opt.step(qnode, x, Y, spectra=spectra, full_output=True)
   ...     print(f"New cost: {np.round(qnode(x, Y), 3)} reached via substeps {np.round(history, 3)}")
   New cost: 0.0 reached via substeps [-0.  0.  0.]
-  New cost: -1.0 reached via substeps [-0.276 -0.276 -1.   ]
+  New cost: -1.0 reached via substeps [-1. -1. -1.]
   ```
   However, note that these intermediate minimal values are evaluations of the
   *reconstructions* that Rotosolve creates and uses internally for the optimization,
   and not of the original objective function. For noisy cost functions, these intermediate
   evaluations may differ significantly from evaluations of the original cost function.
 
-* A tensor network templates module has been added. Quantum circuits with the shape
-  of a matrix product state tensor network can now be easily implemented.
-  Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537).
-  [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
+<h4>Improved JAX support 💻</h4>
 
-  An example circuit that uses the `MPS` template is:
+* The JAX interface now supports evaluating vector-valued QNodes.
+  [(#2110)](https://github.com/PennyLaneAI/pennylane/pull/2110)
+
+  Vector-valued QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a QNode that returns basis-state probabilities:
   ```python
-  import pennylane as qml
-  import numpy as np
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
 
-  def block(weights, wires):
-      qml.CNOT(wires=[wires[0],wires[1]])
-      qml.RY(weights[0], wires=wires[0])
-      qml.RY(weights[1], wires=wires[1])
-
-  n_wires = 4
-  n_block_wires = 2
-  n_params_block = 2
-  template_weights = [[0.1,-0.3],[0.4,0.2],[-0.15,0.5]]
-
-  dev= qml.device('default.qubit',wires=range(n_wires))
-  @qml.qnode(dev)
-  def circuit(weights):
-      qml.MPS(range(n_wires),n_block_wires,block, n_params_block, weights)
-      return qml.expval(qml.PauliZ(wires=n_wires-1))
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
   ```
-
-  The resulting circuit is:
+  The QNode can be evaluated and its jacobian can be computed:
   ```pycon
-  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-  0: ──╭C──RY(0.1)───────────────────────────────┤
-  1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
-  2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
-  3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  >>> jax.jacobian(circuit, argnums=[0, 1])(x, y)
+  (DeviceArray([-0.2050439,  0.2050439], dtype=float32, weak_type=True),
+   DeviceArray([ 0.26043, -0.26043], dtype=float32, weak_type=True))
   ```
-* Added a template for tree tensor networks (TTN).
-  [(#2043)](https://github.com/PennyLaneAI/pennylane/pull/2043)
-  An example circuit that uses the `TTN` template is:
-  ```python
-  import pennylane as qml
-  import numpy as np
+  Note that `jax.jit` is not yet supported for vector-valued QNodes.
 
-  def block(weights, wires):
-      qml.CNOT(wires=[wires[0],wires[1]])
-      qml.RY(weights[0], wires=wires[0])
-      qml.RY(weights[1], wires=wires[1])
+<h4>Speedier quantum natural gradient ⚡</h4>
 
-  n_wires = 4
-  n_block_wires = 2
-  n_params_block = 2
-  n_blocks = qml.MPS.get_n_blocks(range(n_wires),n_block_wires)
-  template_weights = [[0.1,-0.3]]*n_blocks
-
-  dev= qml.device('default.qubit',wires=range(n_wires))
-  @qml.qnode(dev)
-  def circuit(template_weights):
-      qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
-      return qml.expval(qml.PauliZ(wires=n_wires-1))
-  ```
-  The resulting circuit is:
-  ```pycon
-  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-  0: ──╭C──RY(0.1)─────────────────┤
-  1: ──╰X──RY(-0.3)──╭C──RY(0.1)───┤
-  2: ──╭C──RY(0.1)───│─────────────┤
-  3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
-  ```
-
-* Functions for tapering qubits based on molecular symmetries have been added.
-  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
-  [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
-  [(#2041)](https://github.com/PennyLaneAI/pennylane/pull/2041)
-
-  With this functionality, a molecular Hamiltonian and the corresponding Hartree-Fock (HF) state can be transformed to a new Hamiltonian and HF state that acts on a reduced number of qubits, respectively.
-
-  ```python
-  from pennylane import hf
-  from pennylane import numpy as np
-
-  symbols = ["He", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4588684632]])
-  mol = hf.Molecule(symbols, geometry, charge=1)
-  H = hf.generate_hamiltonian(mol)(geometry)
-  n_qubits, n_elec = len(H.wires), mol.n_electrons
-
-  generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
-  opt_sector = hf.optimal_sector(H, generators, n_elec)
-  H_tapered = hf.transform_hamiltonian(H, generators, paulix_ops, opt_sector)
-  hf_tapered = hf.transform_hf(generators, paulix_ops, paulix_sector,
-                                    n_elec, n_qubits)
-  ```
-  ```pycon
-  >>> print(H_tapered)
-    ((-1.7997297644914574+0j)) [I0]
-  + ((-0.10492941956079854+0j)) [X0]
-  + ((0.10492941956079856+0j)) [X1]
-  + ((0.5675134088336165+0j)) [Z1]
-  + ((0.5675134088336168+0j)) [Z0]
-  + ((-0.14563730440190722+0j)) [Y0 Y1]
-  + ((-0.10492941933657857+0j)) [X0 Z1]
-  + ((0.09337410512815508+0j)) [Z0 Z1]
-  + ((0.10492941933657857+0j)) [Z0 X1]
-  >>> print(hf_tapered)
-  tensor([1, 1], requires_grad=True)
-  ```
-  
-
-* Added the adjoint method for the metric tensor.
+* A new function for computing the metric tensor on simulators,
+  `qml.adjoint_metric_tensor`, has been added, that uses classically
+  efficient methods to massively improve performance.
   [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
 
-  This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
+  This method, detailed in [Jones (2020)](https://arxiv.org/abs/2011.02991),
   computes the metric tensor using four copies of the state vector and
   a number of operations that scales quadratically in the number of trainable
   parameters.
@@ -254,6 +259,7 @@
       qml.RY(y[0], wires=0)
       qml.RY(y[1], wires=1)
       qml.RY(y[0], wires=2)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)), qml.expval(qml.PauliY(1))
 
   x = np.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
   y = np.array([1.3, 0.2], requires_grad=True)
@@ -277,17 +283,22 @@
   The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
   to storing a state vector of a system with 2 additional qubits.
 
-* A new method `qml.gradients.param_shift_hessian` has been added to directly compute the Hessian
-  (2nd order partial derivative matrix) of QNodes and QuantumTapes. The method generates
-  parameter-shifted tapes which allow the Hessian to be computed analytically on hardware and
-  software devices. Compared to using an auto-differentiation framework to compute the Hessian
-  via parameter shifts, this method will use fewer device invocations and can be used to inspect
-  the parameter-shifted "Hessian tapes" directly. The method remains fully differentiable on all
-  supported PennyLane interfaces.
+<h4>Compute the Hessian on hardware ⬆️</h4>
+
+* A new gradient transform `qml.gradients.param_shift_hessian` has been added
+  to directly compute the Hessian (2nd order partial derivative matrix) of
+  QNodes on hardware.
+  [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
+
+  The function generates parameter-shifted tapes which allow the Hessian to be
+  computed analytically on hardware and software devices. Compared to using an
+  auto-differentiation framework to compute the Hessian via parameter shifts,
+  this function will use fewer device invocations and can be used to inspect
+  the parameter-shifted "Hessian tapes" directly. The function remains fully
+  differentiable on all supported PennyLane interfaces.
 
   Additionally, the parameter-shift Hessian comes with a new batch transform decorator
-  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian methods.
-  [(#1884)](https://github.com/PennyLaneAI/pennylane/pull/1884)
+  `@qml.gradients.hessian_transform`, which can be used to create custom Hessian functions.
 
   The following code demonstrates how to use the parameter-shift Hessian:
 
@@ -311,6 +322,40 @@
   ```
 
 <h3>Improvements</h3>
+
+* The `qml.transforms.insert` transform now supports adding operation after or
+  before certain specific gates.
+  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
+
+* Added a modified version of the `simplify` function to the `hf` module.
+  [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
+
+  This function combines redundant terms in a Hamiltonian and eliminates terms
+  with a coefficient smaller than a cutoff value. The new function makes
+  construction of molecular Hamiltonians more efficient. For LiH, as an
+  example, the time to construct the Hamiltonian is reduced roughly by a factor
+  of 20.
+
+* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
+* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
+  uses RetworkX for its internal representation. This results in significant speedup
+  for algorithms that rely on a directed acyclic graph representation.
+  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
+
+* For subclasses of `Operator` where the number of parameters
+  is known before instantiation, the
+  `num_params` is reverted back to being a static property. This allows to
+  programmatically know the number of parameters before an operator is
+  instantiated without changing the user interface. A test was added to ensure
+  that different ways of defining `num_params` work as expected.
+  [(#2101)](https://github.com/PennyLaneAI/pennylane/pull/2101)
+  [(#2135)](https://github.com/PennyLaneAI/pennylane/pull/2135)
+
+* A `WireCut` operator has been added for manual wire cut placement
+  when constructing a QNode.
+  [(#2093)](https://github.com/PennyLaneAI/pennylane/pull/2093)
 
 * The new function `qml.drawer.tape_text` produces a string drawing of a tape. This function
   differs in implementation and minor stylistic details from the old string circuit drawing
@@ -356,15 +401,8 @@
   params = list(range(1, 3))
   ```
 
-  The produced state is
-
-  ```pycon
-  >>> circuit_wrong(params)
-  [ 0.47415988+0.j          0.        -0.73846026j  0.        -0.25903472j
-   -0.40342268+0.j        ]
-  ```
-
-  but if we apply the `adjoint` correctly, we get
+  Evaluating `circuit_wrong(params)` now raises a `ValueError` and if we apply
+  `qml.adjoint` correctly, we get
 
   ```pycon
   >>> circuit_correct(params)
@@ -376,19 +414,8 @@
   to control the precision of parameters.
   [(#2071)](https://github.com/PennyLaneAI/pennylane/pull/2071)
 
-* `insert` transform now supports adding operation after or before certain specific gates.
-  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
-
 * Interferometer now has a `shape` method.
   [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
-
-* The `CircuitGraph`, used to represent circuits via directed acyclic graphs, now
-  uses RetworkX for its internal representation. This results in significant speedup
-  for algorithms that rely on a directed acyclic graph representation.
-  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
-
-* The QAOA module now accepts both NetworkX and RetworkX graphs as function inputs.
-  [(#1791)](https://github.com/PennyLaneAI/pennylane/pull/1791)
 
 * The Barrier and Identity operations now support the `adjoint` method.
   [(#2062)](https://github.com/PennyLaneAI/pennylane/pull/2062)
@@ -400,7 +427,6 @@
 * Added a new `multi_dispatch` decorator that helps ease the definition of new functions
   inside PennyLane. The decorator is used throughout the math module, demonstrating use cases.
   [(#2082)](https://github.com/PennyLaneAI/pennylane/pull/2084)
-
   [(#2096)](https://github.com/PennyLaneAI/pennylane/pull/2096)
 
   We can decorate a function, indicating the arguments that are
@@ -431,67 +457,15 @@
 
 <h3>Breaking changes</h3>
 
-* `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
-  now follow a different convention regarding their output shape when being used
-  with the Autograd interface
-  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
-
-  See the previous entry for details. This breaking change immediately follows from
-  the change in `qml.jacobian` whenever `hybrid=True` is used in the above methods.
-
-* `qml.jacobian` now follows a different convention regarding its output shape.
-  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
-
-  Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
-  QNode arguments, which succeeded whenever the arguments have the same shape.
-  In this case, the stacked Jacobian would also be transposed, leading to the
-  output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
-
-  If no stacking and transposing occurs, the output shape instead is a `tuple`
-  where each entry corresponds to one QNode argument and has the shape
-  `(*output_shape, *QNode_arg_shape)`.
-
-  This breaking change alters the behaviour in the first case and removes the attempt
-  to stack and transpose, so that the output always has the shape of the second
-  type.
-
-  Note that the behaviour is unchanged --- that is, the Jacobian tuple is unpacked into
-  a single Jacobian --- if `argnum=None` and there is only one QNode argument
-  with respect to which the differentiation takes place, or if an integer
-  is provided as `argnum`.
-
-  A workaround that allowed `qml.jacobian` to differentiate multiple QNode arguments
-  will no longer support higher-order derivatives. In such cases, combining multiple
-  arguments into a single array is recommended.
-
-* The behaviour of `RotosolveOptimizer` has been changed regarding
-  its keyword arguments.
-  [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
-
-  The keyword arguments `optimizer` and `optimizer_kwargs` for the
-  `RotosolveOptimizer` have been renamed to `substep_optimizer`
-  and `substep_kwargs`, respectively. Furthermore they have been
-  moved from `step` and `step_and_cost` to the initialization `__init__`.
-
-  The keyword argument `num_freqs` has been renamed to `nums_frequency`
-  and is expected to take a different shape now:
-  Previously, it was expected to be an `int` or a list of entries, with
-  each entry in turn being either an `int` or a `list` of `int` entries.
-  Now the expected structure is a nested dictionary, matching the
-  formatting expected by
-  [qml.fourier.reconstruct](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.fourier.reconstruct.html)
-  This also matches the expected formatting of the new keyword arguments
-  `spectra` and `shifts`.
-
-  For more details, see the
-  [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
-
 * QNode arguments will no longer be considered trainable by default when using
   the Autograd interface. In order to obtain derivatives with respect to a parameter,
   it should be instantiated via PennyLane's NumPy wrapper using the `requires_grad=True`
   attribute. The previous behaviour was deprecated in version v0.19.0 of PennyLane.
   [(#2116)](https://github.com/PennyLaneAI/pennylane/pull/2116)
   [(#2125)](https://github.com/PennyLaneAI/pennylane/pull/2125)
+  [(#2139)](https://github.com/PennyLaneAI/pennylane/pull/2139)
+  [(#2148)](https://github.com/PennyLaneAI/pennylane/pull/2148)
+  [(#2156)](https://github.com/PennyLaneAI/pennylane/pull/2156)
 
   ```python
   from pennylane import numpy as np
@@ -518,7 +492,93 @@
   qml.grad(circuit, argnum=1)(0.5, x)
   ```
 
+* `qml.jacobian` now follows a different convention regarding its output shape.
+  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
+
+  Previously, `qml.jacobian` would attempt to stack the Jacobian for multiple
+  QNode arguments, which succeeded whenever the arguments have the same shape.
+  In this case, the stacked Jacobian would also be transposed, leading to the
+  output shape `(*reverse_QNode_args_shape, *reverse_output_shape, num_QNode_args)`
+
+  If no stacking and transposing occurs, the output shape instead is a `tuple`
+  where each entry corresponds to one QNode argument and has the shape
+  `(*output_shape, *QNode_arg_shape)`.
+
+  This breaking change alters the behaviour in the first case and removes the attempt
+  to stack and transpose, so that the output always has the shape of the second
+  type.
+
+  Note that the behaviour is unchanged --- that is, the Jacobian tuple is unpacked into
+  a single Jacobian --- if `argnum=None` and there is only one QNode argument
+  with respect to which the differentiation takes place, or if an integer
+  is provided as `argnum`.
+
+  A workaround that allowed `qml.jacobian` to differentiate multiple QNode arguments
+  will no longer support higher-order derivatives. In such cases, combining multiple
+  arguments into a single array is recommended.
+
+* `qml.metric_tensor`, `qml.adjoint_metric_tensor` and `qml.transforms.classical_jacobian`
+  now follow a different convention regarding their output shape when being used
+  with the Autograd interface
+  [(#2059)](https://github.com/PennyLaneAI/pennylane/pull/2059)
+
+  See the previous entry for details. This breaking change immediately follows from
+  the change in `qml.jacobian` whenever `hybrid=True` is used in the above methods.
+
+* The behaviour of `RotosolveOptimizer` has been changed regarding
+  its keyword arguments.
+  [(#2081)](https://github.com/PennyLaneAI/pennylane/pull/2081)
+
+  The keyword arguments `optimizer` and `optimizer_kwargs` for the
+  `RotosolveOptimizer` have been renamed to `substep_optimizer`
+  and `substep_kwargs`, respectively. Furthermore they have been
+  moved from `step` and `step_and_cost` to the initialization `__init__`.
+
+  The keyword argument `num_freqs` has been renamed to `nums_frequency`
+  and is expected to take a different shape now:
+  Previously, it was expected to be an `int` or a list of entries, with
+  each entry in turn being either an `int` or a `list` of `int` entries.
+  Now the expected structure is a nested dictionary, matching the
+  formatting expected by
+  [qml.fourier.reconstruct](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.fourier.reconstruct.html)
+  This also matches the expected formatting of the new keyword arguments
+  `spectra` and `shifts`.
+
+  For more details, see the
+  [RotosolveOptimizer documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.RotosolveOptimizer.html).
+
+<h3>Deprecations</h3>
+
+* Deprecates the caching ability provided by `QubitDevice`.
+  [(#2154)](https://github.com/PennyLaneAI/pennylane/pull/2154)
+
+  Going forward, the preferred way is to use the caching abilities of the
+  QNode:
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  cache = {}
+
+  @qml.qnode(dev, diff_method='parameter-shift', cache=cache)
+  def circuit():
+      qml.RY(0.345, wires=0)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  ```pycon
+  >>> for _ in range(10):
+  ...    circuit()
+  >>> dev.num_executions
+  1
+  ```
+
 <h3>Bug fixes</h3>
+
+* Fixes a bug where an incorrect number of executions are recorded by
+  a QNode using a custom cache with `diff_method="backprop"`.
+  [(#2171)](https://github.com/PennyLaneAI/pennylane/pull/2171)
+
+* Fixes a bug where the `default.qubit.jax` device can't be used with `diff_method=None` and jitting.
+  [(#2136)](https://github.com/PennyLaneAI/pennylane/pull/2136)
 
 * Fixes a bug where the Torch interface was not properly unwrapping Torch tensors
   to NumPy arrays before executing gradient tapes on devices.
@@ -532,7 +592,7 @@
   provided by the underlying device.
   [(#2111)](https://github.com/PennyLaneAI/pennylane/pull/2111)
 
-* An error is raised during QNode creation if backpropagation is requested on a device with
+* An error is now raised during QNode creation if backpropagation is requested on a device with
   finite shots specified.
   [(#2114)](https://github.com/PennyLaneAI/pennylane/pull/2114)
 
@@ -577,12 +637,21 @@
   vector.
   [(#2028)](https://github.com/PennyLaneAI/pennylane/pull/2028)
 
+* Updated the `adjoint()` method for non-parametric qubit operations to
+  solve a bug where repeated `adjoint()` calls don't return the correct
+  operator.
+  [(#2133)](https://github.com/PennyLaneAI/pennylane/pull/2133)
+
+* Fixed a bug in `insert()` which prevented operations that inherited
+  from multiple classes to be inserted.
+  [(#2172)](https://github.com/PennyLaneAI/pennylane/pull/2172)
+
 <h3>Documentation</h3>
 
 * Fixes an error in the signs of equations in the `DoubleExcitation` page.
   [(#2072)](https://github.com/PennyLaneAI/pennylane/pull/2072)
 
-* Extended the interfaces description page to explicitly mention device
+* Extends the interfaces description page to explicitly mention device
   compatibility.
   [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
 
@@ -590,6 +659,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
-Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
-David Wierichs, Shaoming Zhang
+Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Sam Banning, Thomas Bromley,
+Esther Cruz, Christian Gogolin, Nathan Killoran, Christina Lee, Olivia Di
+Matteo, Diego Guala, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri,
+Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Romain Moyard, Lee James
+O'Riordan, Maria Schuld, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang.
