@@ -725,9 +725,11 @@ class Operation(Operator):
         These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
         on the value of the expectation value as the parameters are modified.
         For more details, please see the :mod:`.pennylane.fourier` module.
+
         Returns:
             list[tuple[int or float]]: Tuple of frequencies for each parameter.
                 Note that only non-negative frequency values are returned.
+
         **Example**
         >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
         >>> op.parameter_frequencies()
