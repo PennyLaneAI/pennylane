@@ -790,6 +790,12 @@ class PauliRot(Operation):
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
+# Four term gradient recipe for controlled rotations
+c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
+c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
+a = np.pi / 2
+b = 3 * np.pi / 2
+four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 class CRX(Operation):
     r"""CRX(phi, wires)
@@ -832,6 +838,7 @@ class CRX(Operation):
     num_params = 1
     basis = "X"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
@@ -937,6 +944,7 @@ class CRY(Operation):
     num_params = 1
     basis = "Y"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
@@ -1036,6 +1044,7 @@ class CRZ(Operation):
     num_params = 1
     basis = "Z"
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
@@ -1133,6 +1142,7 @@ class CRot(Operation):
     num_wires = 2
     num_params = 3
     grad_method = "A"
+    grad_recipe = four_term_grad_recipe * 3
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
