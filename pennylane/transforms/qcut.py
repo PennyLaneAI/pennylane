@@ -16,12 +16,11 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
-import copy
-from typing import Tuple
+from functools import partial
+from typing import Tuple, Union
 
 from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply
-
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -41,6 +40,9 @@ class PrepareNode(Operation):
 
     num_wires = 1
     grad_method = None
+
+
+SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
@@ -289,18 +291,45 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     return subgraphs, communication_graph
 
-  
-def _find_new_wire(wires: Wires) -> int:
-    """Finds a new wire label that is not in ``wires``."""
-    ctr = 0
-    while ctr in wires:
+
+def _subscripted(inp: Union[int, str], subscript: int) -> str:
+    """Returns a subscripted version of ``inp`` with an integer
+    subscript."""
+    return str(inp) + str(subscript).translate(SUB)
+
+
+def _find_new_wire(target, wires: Wires) -> int:
+    """Finds a new wire label that is not in ``wires`` based
+    upon a ``target`` label. Subscripts are used to find a
+    unique new label."""
+    if target not in wires:
+        return target
+
+    if isinstance(target, (int, str)):
+        wire_func = partial(_subscripted, target)
+    else:
+        wire_func = lambda ctr: ctr - 1
+
+    ctr = 1
+    new_wire = wire_func(ctr)
+
+    while new_wire in wires:
         ctr += 1
-    return ctr
+        new_wire = wire_func(ctr)
+    return new_wire
 
 
 def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
-    Converts a directed multigraph to the corresponding quantum tape.
+    Converts a directed multigraph to the corresponding quantum tape. Each node
+    in graph should have an order attribute specifying the topological order of
+    the operations. This allows for the support of mid circuit measurements
+    when speficied as `MeasureNode` within a  directed multigraph.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :doc:`transforms </code/qml_transforms>` page for more details.
 
     Args:
         graph (MultiDiGraph): directed multigraph to be converted to a tape
@@ -310,36 +339,18 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     **Example**
 
-    Consider the following ... :
+    Consider the following where ``graph`` contains a three pairs of :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` which divides the full circuit graph into five subgraphs.
+    We can find the circuit fragments by using:
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
-        wire_cut_0 = qml.WireCut(wires=0)
-        wire_cut_1 = qml.WireCut(wires=1)
-        multi_wire_cut = qml.WireCut(wires=[0, 1])
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut_0)
-            qml.RY(0.5, wires=0)
-            qml.apply(wire_cut_1)
-            qml.CNOT(wires=[0, 1])
-            qml.apply(multi_wire_cut)
-            qml.RZ(0.6, wires=1)
-            qml.expval(qml.PauliZ(0))
-
-    We can find the circuit fragments by using:
-
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(graph)
-    >>> subgraphs, communication_graph = qcut.fragment_graph(graph)
-    >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-    >>> tapes
-    [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
-     <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
-     <QuantumTape: wires=[1], params=0>]
+        >>> subgraphs, communication_graph = qml.transforms.fragment_graph(graph)
+        >>> tapes = [qml.transforms.graph_to_tape(sg) for sg in subgraphs]
+        >>> tapes
+        [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
+         <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
+         <QuantumTape: wires=[1], params=0>]
     """
     wires = Wires.all_wires([n.wires for n in graph.nodes])
 
@@ -350,14 +361,16 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     with QuantumTape() as tape:
         for _, op in ordered_ops:
+            original_op_wires = op._wires
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
+            op._wires = original_op_wires
 
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
                 measured_wire = op.wires[0]
-                new_wire = _find_new_wire(wires)
+                new_wire = _find_new_wire(measured_wire, wires)
                 wires += new_wire
                 wire_map[measured_wire] = new_wire
 

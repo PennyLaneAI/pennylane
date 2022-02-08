@@ -749,11 +749,14 @@ class TestFragmentGraph:
         assert communication_graph_0.nodes == communication_graph_1.nodes
         assert communication_graph_0.edges == communication_graph_1.edges
 
-        
+
 class TestGraphToTape:
+    """Tests that directed multigraphs are correctly converted to tapes"""
+
     def test_graph_to_tape(self):
         """
-        Tests that a directed multigraph is correctly converted to a tape
+        Tests that a directed multigraph, containing MeasureNodes and
+        PrepareNodes, is correctly converted to a tape
         """
 
         g = qcut.tape_to_graph(multi_cut_tape)
