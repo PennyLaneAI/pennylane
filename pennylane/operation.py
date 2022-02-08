@@ -1,5 +1,4 @@
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -227,6 +226,21 @@ def classproperty(func):
         func = classmethod(func)
 
     return ClassPropertyDescriptor(func)
+
+
+# =============================================================================
+# Error classes
+# =============================================================================
+
+
+class OperatorPropertyUndefined(Exception):
+    """Generic exception to be used for undefined
+    Operator properties or methods."""
+
+
+class GeneratorUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have a generator"""
 
 
 # =============================================================================
@@ -677,7 +691,7 @@ class Operation(Operator):
         multiplier = 0.5 / np.sin(shift)
         a = 1
 
-        # We set the default recipe following:
+        # We set the following default recipe:
         # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
@@ -1112,6 +1126,56 @@ class Observable(Operator):
             the observable in the computational basis.
         """
         raise NotImplementedError
+
+    def generator(self):  # pylint: disable=no-self-use
+        r"""list[.Operation] or None: Generator of an operation
+        with a single trainable parameter.
+        For example, for operator
+        .. math::
+            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
+        >>> U.generator()
+          (0.5) [Y0]
+        + (1.0) [Z0 X1]
+        The generator may also be provided in the form of a dense or sparse Hamiltonian
+        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
+        The default value to return is ``None``, indicating that the operation has
+        no defined generator.
+        """
+        raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
+
+    def parameter_frequencies(self):
+        r"""Returns the frequencies for each operator parameter with respect
+        to an expectation value of the form
+        :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
+        These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
+        on the value of the expectation value as the parameters are modified.
+        For more details, please see the :mod:`.pennylane.fourier` module.
+        Returns:
+            list[tuple[int or float]]: Tuple of frequencies for each parameter.
+                Note that only non-negative frequency values are returned.
+        **Example**
+        >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+        >>> op.parameter_frequencies()
+        [(0.5, 1), (0.5, 1), (0.5, 1)]
+        For operators that define a generator, the parameter frequencies are directly
+        related to the eigenvalues of the generator:
+        >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
+        >>> op.parameter_frequencies()
+        [(1,)]
+        >>> gen_eigvals = tuple(op.generator().eigvals())
+        >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
+        (1.0,)
+        For more details on this relationship, see :func:`.eigvals_to_frequencies`.
+        """
+        if self.num_params == 1:
+            # if the operator has a single parameter, we can query the
+            # generator, and if defined, use its eigenvalues.
+            gen_eigvals = tuple(self.generator().eigvals())
+            return qml.gradients.eigvals_to_frequencies(gen_eigvals)
+
+        raise OperatorPropertyUndefined(
+            f"Operation {self.name} does not have parameter frequencies."
+        )
 
 
 class Tensor(Observable):
@@ -1846,7 +1910,11 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    return hasattr(obj, "generator") and obj.generator[0] is not None
+    try:
+        obj.generator()
+        return True
+    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
+        return False
 
 
 @qml.BooleanFn

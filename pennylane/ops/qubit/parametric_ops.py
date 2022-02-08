@@ -56,6 +56,9 @@ class RX(Operation):
     grad_method = "A"
     generator = [PauliX, -1 / 2]
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -110,6 +113,9 @@ class RY(Operation):
     grad_method = "A"
     generator = [PauliY, -1 / 2]
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -157,6 +163,9 @@ class RZ(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -219,6 +228,9 @@ class PhaseShift(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -290,6 +302,9 @@ class ControlledPhaseShift(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -368,6 +383,9 @@ class Rot(Operation):
     num_wires = 1
     num_params = 3
     grad_method = "A"
+
+    def parameter_frequencies(self):
+        return [(1,), (1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -449,6 +467,9 @@ class MultiRZ(Operation):
     num_wires = AnyWires
     num_params = 1
     grad_method = "A"
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, theta, n):
@@ -629,6 +650,9 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         pauli_word = params[1]
@@ -766,15 +790,6 @@ class PauliRot(Operation):
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
-
-# Four term gradient recipe for controlled rotations
-c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
-c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
-a = np.pi / 2
-b = 3 * np.pi / 2
-four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
-
-
 class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
@@ -816,7 +831,6 @@ class CRX(Operation):
     num_params = 1
     basis = "X"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
@@ -825,6 +839,9 @@ class CRX(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
+
+    def parameter_frequencies(self):
+        return [(0.5, 1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -914,7 +931,6 @@ class CRY(Operation):
     num_params = 1
     basis = "Y"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
@@ -923,6 +939,9 @@ class CRY(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
+
+    def parameter_frequencies(self):
+        return [(0.5, 1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1006,7 +1025,6 @@ class CRZ(Operation):
     num_params = 1
     basis = "Z"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
 
     generator = [
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
@@ -1015,6 +1033,9 @@ class CRZ(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
+
+    def parameter_frequencies(self):
+        return [(0.5, 1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1096,10 +1117,12 @@ class CRot(Operation):
     num_wires = 2
     num_params = 3
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe * 3
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
+
+    def parameter_frequencies(self):
+        return [(0.5, 1,), (0.5, 1,), (0.5, 1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1190,6 +1213,9 @@ class U1(Operation):
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
@@ -1246,6 +1272,9 @@ class U2(Operation):
     num_wires = 1
     num_params = 2
     grad_method = "A"
+
+    def parameter_frequencies(self):
+        return [(1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1320,6 +1349,9 @@ class U3(Operation):
     num_params = 3
     grad_method = "A"
 
+    def parameter_frequencies(self):
+        return [(1,), (1,), (1,)]
+
     @classmethod
     def _matrix(cls, *params):
         theta, phi, lam = params
@@ -1393,6 +1425,9 @@ class IsingXX(Operation):
         -1 / 2,
     ]
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
@@ -1461,6 +1496,9 @@ class IsingYY(Operation):
             qml.CY(wires=wires),
         ]
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         phi = params[0]
@@ -1518,6 +1556,9 @@ class IsingZZ(Operation):
             qml.RZ(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
         ]
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):

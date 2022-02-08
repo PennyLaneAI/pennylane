@@ -58,7 +58,7 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
+def _get_operation_recipe(tape, t_idx, shifts=None):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
     t_idx on tape.
@@ -66,8 +66,16 @@ def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
     If the corresponding operation has grad_recipe=None, then
     the default two-term parameter-shift rule is assumed.
     """
-    op, p_idx = tape.get_operation(t_idx)
-    return op.get_parameter_shift(p_idx, shift=shift)
+    try:
+        frequencies = op.parameter_frequencies()[p_idx]
+        coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+        mults = np.ones_like(coeffs)
+        return coeffs, mults, shifts
+
+    except qml.operation.OperatorPropertyUndefined:
+        # This will go wrong somehow
+        print(f"Expected error (shifts={shifts})")
+        return _process_gradient_recipe(op.get_parameter_shift(p_idx, shift=shifts))
 
 
 def _process_gradient_recipe(gradient_recipe, tol=1e-10):
@@ -106,7 +114,7 @@ def _gradient_analysis(tape, use_graph=True):
                 )
 
 
-def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
+def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -168,13 +176,16 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             continue
 
         # get the gradient recipe for the trainable parameter
-        recipe = gradient_recipes[argnum.index(idx)]
-        recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
-        recipe = _process_gradient_recipe(recipe)
-        coeffs, multipliers, shifts = recipe
+        kwarg_idx = argnum.index(idx)
+        recipe = gradient_recipes[kwarg_idx]
+        if recipe is not None:
+            recipe = _process_gradient_recipe(recipe)
+        else:
+            recipe = _get_operation_recipe(tape, idx, shifts=shifts[kwarg_idx])
+        coeffs, multipliers, shifts_ = recipe
         fns.append(None)
 
-        if shifts[0] == 0 and multipliers[0] == 1:
+        if shifts_[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
 
             if not unshifted_coeffs and f0 is None:
@@ -185,11 +196,11 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             # Store the unshifted coefficient. We know that
             # it will always be the first coefficient due to processing.
             unshifted_coeffs.append(coeffs[0])
-            coeffs, multipliers, shifts = recipe[:, 1:]
+            coeffs, multipliers, shifts_ = recipe[:, 1:]
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
-        g_tapes = generate_shifted_tapes(tape, idx, shifts, multipliers)
+        g_tapes = generate_shifted_tapes(tape, idx, shifts_, multipliers)
 
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
