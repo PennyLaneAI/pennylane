@@ -749,6 +749,8 @@ class Operation(Operator):
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
             op, coeff = self.generator
+            if not isinstance(op, np.ndarray):
+                op = op.matrix
             gen_eigvals = tuple(np.linalg.eigvals(op))
             coeff = np.abs(coeff)
             return tuple(coeff * val for val in qml.gradients.eigvals_to_frequencies(gen_eigvals))
