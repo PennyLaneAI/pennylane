@@ -254,6 +254,7 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
         op: Type[Operation] = then_op
         branches = expr.branches
         dependant_measurements = expr.measurements
+        measured_qubit = expr
 
         def __init__(self, *args, **kwargs):
             self.then_op = then_op(*args, do_queue=False, **kwargs)
