@@ -271,6 +271,48 @@ class TestTransformObservable:
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
 
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_no_trainable_params_qnode(self, interface):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(weights):
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            return qml.expval(qml.X(0))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_cv(circuit)(weights)
+
+        assert res == ()
+
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.gaussian", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            qml.expval(qml.X(0))
+
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = qml.gradients.param_shift_cv(tape, dev)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
+        assert res.size == 0
+        assert np.all(res == np.array([[]]))
+
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
