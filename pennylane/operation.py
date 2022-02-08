@@ -621,7 +621,13 @@ class Operation(Operator):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        return None if self.num_params == 0 else "F"
+        if self.num_params == 0:
+            return None
+        try:
+            op.parameter_frequencies()
+            return "A"
+        except OperatorPropertyUndefined:
+            return "F"
 
     grad_recipe = None
     r"""tuple(Union(list[list[float]], None)) or None: Gradient recipe for the
@@ -681,8 +687,12 @@ class Operation(Operator):
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
+        if recipe is not None:
+            return recipe
 
         # Default values
+        if shift is None:
+            shift = np.pi / 2
         multiplier = 0.5 / np.sin(shift)
         a = 1
 
@@ -690,8 +700,7 @@ class Operation(Operator):
         # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
-        param_shift = default_param_shift if recipe is None else recipe
-        return param_shift
+        return default_param_shift
 
     @property
     def generator(self):
@@ -879,8 +888,6 @@ class Operation(Operator):
                 assert (
                     len(self.grad_recipe) == self.num_params
                 ), "Gradient recipe must have one entry for each parameter!"
-        else:
-            assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
 
 class Channel(Operation, abc.ABC):
@@ -1908,7 +1915,6 @@ def has_gen(obj):
 def has_grad_method(obj):
     """Returns ``True`` if an operator has a grad_method defined."""
     return obj.grad_method is not None
-
 
 @qml.BooleanFn
 def has_multipar(obj):

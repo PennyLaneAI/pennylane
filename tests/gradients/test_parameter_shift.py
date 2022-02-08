@@ -52,7 +52,7 @@ class TestGradAnalysis:
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        spy = mocker.spy(tape, "_grad_method")
+        spy = mocker.spy(qml.operation, "has_grad_method")
         _gradient_analysis(tape)
         spy.assert_called()
 
@@ -60,7 +60,7 @@ class TestGradAnalysis:
         assert tape._par_info[1]["grad_method"] == "A"
         assert tape._par_info[2]["grad_method"] == "A"
 
-        spy = mocker.spy(tape, "_grad_method")
+        spy = mocker.spy(qml.operation, "has_grad_method")
         _gradient_analysis(tape)
         spy.assert_not_called()
 
@@ -311,6 +311,9 @@ class TestParamShift:
         shift rule"""
 
         class RX(qml.RX):
+            def parameter_frequencies(self):
+                raise qml.operation.OperatorPropertyUndefined
+
             @property
             def grad_recipe(self):
                 # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
@@ -354,7 +357,7 @@ class TestParameterShiftRule:
 
         tape.trainable_params = {1}
 
-        tapes, fn = qml.gradients.param_shift(tape, shift=shift)
+        tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)])
         assert len(tapes) == 2
 
         autograd_val = fn(dev.batch_execute(tapes))
@@ -364,7 +367,7 @@ class TestParameterShiftRule:
         ) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
 
-        assert spy.call_args[1]["shift"] == shift
+        assert spy.call_args[1]["shifts"] == (shift,)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -386,7 +389,7 @@ class TestParameterShiftRule:
 
         tape.trainable_params = {1, 2, 3}
 
-        tapes, fn = qml.gradients.param_shift(tape, shift=shift)
+        tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)]*3)
         assert len(tapes) == 2 * len(tape.trainable_params)
 
         autograd_val = fn(dev.batch_execute(tapes))
@@ -402,7 +405,7 @@ class TestParameterShiftRule:
             manualgrad_val[0, idx] = (forward - backward) / 2
 
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
-        assert spy.call_args[1]["shift"] == shift
+        assert spy.call_args[1]["shifts"] == (shift,)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)

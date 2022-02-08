@@ -36,6 +36,94 @@ of that observable.
 """
 
 
+def _grad_method_validation(method, tape):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods.
+
+    This method will generate parameter gradient information for the given tape if it
+    has not already been generated, and then proceed to validate the gradient method.
+    In particular:
+
+    * An exception will be raised if there exist non-differentiable trainable
+      parameters on the tape.
+
+    * An exception will be raised if the Jacobian method is ``"analytic"`` but there
+      exist some trainable parameters on the tape that only support numeric differentiation.
+
+    If all validations pass, this method will return a tuple containing the allowed parameter
+    gradient methods for each trainable parameter.
+
+    Args:
+        method (str): the overall Jacobian differentiation method
+        tape (.JacobianTape): the tape with associated parameter information
+
+    Returns:
+        tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
+    """
+
+    if "grad_method" not in tape._par_info[0]:
+        tape._update_gradient_info()
+
+    diff_methods = {
+        idx: info["grad_method"]
+        for idx, info in tape._par_info.items()
+        if idx in tape.trainable_params
+    }
+
+    # check and raise an error if any parameters are non-differentiable
+    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
+
+    if nondiff_params:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
+
+    # If explicitly using analytic mode, ensure that all parameters
+    # support analytic differentiation.
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+    return tuple(diff_methods.values())
+
+
+def _choose_params_with_methods(diff_methods, argnum):
+    """Chooses the trainable parameters to use for computing the Jacobian
+    by returning a map of their indices and differentiation methods.
+
+    When there are fewer parameters specified than the total number of
+    trainable parameters, the Jacobian is estimated by using the parameters
+    specified using the ``argnum`` keyword argument.
+
+    Args:
+        diff_methods (list): the ordered list of differentiation methods
+            for each parameter
+        argnum (int, list(int), None): Indices for argument(s) with respect
+            to which to compute the Jacobian.
+
+    Returns:
+        dict: map of the trainable parameter indices and
+        differentiation methods
+    """
+    if argnum is None:
+        return dict(enumerate(diff_methods))
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    num_params = len(argnum)
+
+    if num_params == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+        return []
+
+    return {idx: diff_methods[idx] for idx in argnum}
+
+
 def _square_observable(obs):
     """Returns the square of an observable."""
 
@@ -59,20 +147,54 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-def _get_operation_recipe(tape, t_idx, shift=np.pi / 2):
+def _get_operation_recipe(tape, t_idx, shifts):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
     t_idx on tape.
 
-    If the corresponding operation has grad_recipe=None, then
-    the default two-term parameter-shift rule is assumed.
+    This function performs multiple attempts to obtain the recipe:
+    
+    - If ``parameter_frequencies`` yield a result, the frequencies are
+      used to construct the general parameter-shift rule via 
+      ``qml.gradients.generate_shift_rule``
+    - If ``parameter_frequencies`` raises an error (because the operation
+      has no custom ``parameter_frequencies`` and no ``generator`` is defined),
+      the ``get_parameter_shift`` method of the operation is used.
+      If in turn no custom version of ``get_parameter_shift`` is defined
+      and the operation does not have a ``grad_recipe``, the two-term
+      parameter-shift rule is assumed.
+
+    That is, a default to the two-term rule only is returned if no custom
+    ``parameter_frequencies``, ``generator``, ``get_parameter_shift``,
+     and ``grad_recipe`` are defined.
     """
     op, p_idx = tape.get_operation(t_idx)
-    return op.get_parameter_shift(p_idx, shift=shift)
+    try:
+        # Obtain frequencies, either via custom implementation or from generator eigvals
+        frequencies = op.parameter_frequencies()[p_idx]
+        # Create shift rule from frequencies with given shifts
+        coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+        # The shift rules do not include a rescaling of the parameter, only shifts.
+        mults = np.ones_like(coeffs)
+        return coeffs, mults, shifts
+
+    except qml.operation.OperatorPropertyUndefined:
+        # if no frequencies could be obtained, use the operation's shift rule if present.
+        # Note that the keyword argument ``shift`` only is used for the default two-term rule
+        if shifts is None:
+            use_shift = None
+        else:
+            use_shift = shifts[0]
+
+        return _process_gradient_recipe(op.get_parameter_shift(p_idx, shift=use_shift))
 
 
 def _process_gradient_recipe(gradient_recipe, tol=1e-10):
-    """Utility function to process gradient recipes."""
+    """Utility function to process gradient recipes.
+    Discards all terms in a recipe with small coefficients and
+    sorts the remaining terms according to the absolute value
+    of the parameter shift.
+    """
     gradient_recipe = np.array(gradient_recipe).T
     # remove all small coefficients, shifts, and multipliers
     gradient_recipe[np.abs(gradient_recipe) < tol] = 0
@@ -95,19 +217,24 @@ def _gradient_analysis(tape, use_graph=True):
     for idx, info in tape._par_info.items():
 
         if idx not in tape.trainable_params:
+            # non-trainable parameters do not require a grad_method
             info["grad_method"] = None
         else:
             op = tape._par_info[idx]["op"]
 
-            if op.grad_method == "F":
-                info["grad_method"] = "F"
-            else:
-                info["grad_method"] = tape._grad_method(
-                    idx, use_graph=use_graph, default_method="A"
-                )
+            if not qml.operation.has_grad_method(op):
+                # no differentiation method is registered for this operation
+                info["grad_method"] = None
 
+            elif (tape._graph is not None) or use_graph:
+                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
+                    # there is no influence of this operation on any of the observables
+                    info["grad_method"] = "0"
+                    continue
 
-def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
+            info["grad_method"] = op.grad_method
+
+def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -117,10 +244,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable indices are returned.
-        shift (float): The shift value to use for the two-term parameter-shift formula.
-            Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-            is ``None``.
+        shifts (list[tuple[int or float]]): TODO
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -169,13 +293,18 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             continue
 
         # get the gradient recipe for the trainable parameter
-        recipe = gradient_recipes[argnum.index(idx)]
-        recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
-        recipe = _process_gradient_recipe(recipe)
-        coeffs, multipliers, shifts = recipe
+        arg_idx = argnum.index(idx)
+        recipe = gradient_recipes[arg_idx]
+        if recipe is not None:
+            recipe = _process_gradient_recipe(recipe)
+        else:
+            op_shifts = None if shifts is None else shifts[arg_idx]
+            recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
+        coeffs, multipliers, op_shifts = recipe
         fns.append(None)
 
-        if shifts[0] == 0 and multipliers[0] == 1:
+        # Extract zero-shift term if present (if so, it will always be the first)
+        if op_shifts[0] == 0 and multipliers[0] == 1:
             # Gradient recipe includes a term with zero shift.
 
             if not unshifted_coeffs and f0 is None:
@@ -186,11 +315,11 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
             # Store the unshifted coefficient. We know that
             # it will always be the first coefficient due to processing.
             unshifted_coeffs.append(coeffs[0])
-            coeffs, multipliers, shifts = recipe[:, 1:]
+            coeffs, multipliers, op_shifts = recipe[:, 1:]
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
-        g_tapes = generate_shifted_tapes(tape, idx, shifts, multipliers)
+        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
 
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
@@ -239,7 +368,7 @@ def expval_param_shift(tape, argnum=None, shift=np.pi / 2, gradient_recipes=None
     return gradient_tapes, processing_fn
 
 
-def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=None):
+def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to a
     variance value.
@@ -249,10 +378,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shift (float): The shift value to use for the two-term parameter-shift formula.
-            Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-            is ``None``.
+        shifts (list[tuple[int or float]]): TODO
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -284,7 +410,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
     gradient_tapes = [expval_tape]
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shift, gradient_recipes, f0)
+    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0)
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
@@ -325,7 +451,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
         # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
         # observables.
         pdA2_tapes, pdA2_fn = expval_param_shift(
-            expval_sq_tape, argnum, shift, gradient_recipes, f0
+            expval_sq_tape, argnum, shifts, gradient_recipes, f0
         )
         gradient_tapes.extend(pdA2_tapes)
 
@@ -380,7 +506,7 @@ def var_param_shift(tape, argnum, shift=np.pi / 2, gradient_recipes=None, f0=Non
 
 @gradient_transform
 def param_shift(
-    tape, argnum=None, shift=np.pi / 2, gradient_recipes=None, fallback_fn=finite_diff, f0=None
+    tape, argnum=None, shifts=None, gradient_recipes=None, fallback_fn=finite_diff, f0=None
 ):
     r"""Transform a QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
@@ -390,10 +516,7 @@ def param_shift(
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shift (float): The shift value to use for the two-term parameter-shift formula.
-            Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-            is ``None``.
+        shifts (list[tuple[int or float]]): TODO
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -554,17 +677,14 @@ def param_shift(
         )
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # TODO: replace the JacobianTape._grad_method_validation
-    # functionality before deprecation.
     method = "analytic" if fallback_fn is None else "best"
-    diff_methods = tape._grad_method_validation(method)
+    diff_methods = _grad_method_validation(method, tape)
+
     all_params_grad_method_zero = all(g == "0" for g in diff_methods)
     if all_params_grad_method_zero:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # TODO: replace the JacobianTape._choose_params_with_methods
-    # functionality before deprecation.
-    method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
+    method_map = _choose_params_with_methods(diff_methods, argnum)
 
     # If there are unsupported operations, call the fallback gradient function
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
@@ -587,9 +707,9 @@ def param_shift(
         gradient_recipes = [None] * len(argnum)
 
     if any(m.return_type is qml.operation.Variance for m in tape.measurements):
-        g_tapes, fn = var_param_shift(tape, argnum, shift, gradient_recipes, f0)
+        g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0)
     else:
-        g_tapes, fn = expval_param_shift(tape, argnum, shift, gradient_recipes, f0)
+        g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0)
 
     gradient_tapes.extend(g_tapes)
 
