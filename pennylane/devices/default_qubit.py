@@ -848,6 +848,7 @@ class DefaultQubit(QubitDevice):
         # init the state vector to |00..0>
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        self._measured = []
 
     def analytic_probability(self, wires=None):
 
