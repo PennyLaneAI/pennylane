@@ -29,6 +29,7 @@ from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, Qu
 from pennylane.operation import Channel
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
+from pennylane.ops.measurements import Measurement, If
 from .._version import __version__
 
 ABC_ARRAY = np.array(list(ABC))
@@ -58,6 +59,8 @@ class DefaultMixed(QubitDevice):
     author = "Xanadu Inc."
 
     operations = {
+        "Measurement",
+        "If",
         "Identity",
         "BasisState",
         "QubitStateVector",
@@ -152,7 +155,7 @@ class DefaultMixed(QubitDevice):
         """Returns the state density matrix of the circuit prior to measurement"""
         dim = 2**self.num_wires
         # User obtains state as a matrix
-        return self._reshape(self._pre_rotated_state, (dim, dim))
+        return self._reshape(self._state, (dim, dim))
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
@@ -449,6 +452,50 @@ class DefaultMixed(QubitDevice):
             )
             self._state = self._asarray(rho, dtype=self.C_DTYPE)
 
+    def _generate_projector_diagonal(self, wire):
+        n_wires_right = self.num_wires-wire-1
+        n_wires_left = wire
+        id_dim_right = 2**n_wires_right
+        id_dim_left = 2**n_wires_left
+
+        diag = [1]*(id_dim_right) + [0]*(id_dim_right)
+        diag = diag*(id_dim_left)
+
+        return diag
+
+    def _apply_measurement(self, meas_op):
+        zero_projector = self._generate_projector_diagonal(meas_op.wire)
+        one_projector = [int(not b) for b in zero_projector]
+
+        pre_op_state = self._state
+        self._apply_diagonal_unitary(zero_projector, self.wires)
+        zero_state = self.state
+
+        self._state = pre_op_state
+        self._apply_diagonal_unitary(one_projector, self.wires)
+        one_state = self.state
+
+        rho = zero_state + one_state
+        self._apply_density_matrix(rho, self.wires)
+
+    def _apply_conditional(self, if_op):
+        zero_projector = self._generate_projector_diagonal(if_op.m_val.wire)
+        one_projector = [int(not b) for b in zero_projector]
+
+        pre_op_state = self._state
+        self._apply_diagonal_unitary(one_projector, self.wires)
+        self._apply_operation(if_op.then_op)
+        one_state = self.state
+
+        self._state = pre_op_state
+        self._apply_diagonal_unitary(zero_projector, self.wires)
+        if if_op.else_op is not None:
+            self._apply_operation(if_op.else_op)
+        zero_state = self.state
+
+        rho = zero_state + one_state
+        self._apply_density_matrix(rho, self.wires)
+
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
 
@@ -467,6 +514,14 @@ class DefaultMixed(QubitDevice):
 
         if isinstance(operation, QubitDensityMatrix):
             self._apply_density_matrix(operation.parameters[0], wires)
+            return
+
+        if isinstance(operation, Measurement):
+            self._apply_measurement(operation)
+            return
+
+        if isinstance(operation, If):
+            self._apply_conditional(operation)
             return
 
         matrices = self._get_kraus(operation)
