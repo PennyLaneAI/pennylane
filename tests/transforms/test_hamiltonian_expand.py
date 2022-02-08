@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 import pennylane.tape
+from pennylane import numpy as pnp
 
 """Defines the device used for all tests"""
 
@@ -145,17 +146,7 @@ class TestHamiltonianExpval:
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]
         )
 
-        var = [
-            np.array(0.1),
-            np.array(0.67),
-            np.array(0.3),
-            np.array(0.4),
-            np.array(-0.5),
-            np.array(0.7),
-            np.array(-0.2),
-            np.array(0.5),
-            np.array(1.0),
-        ]
+        var = pnp.array([0.1, 0.67, 0.3, 0.4, -0.5, 0.7, -0.2, 0.5, 1.0], requires_grad=True)
         output = 0.42294409781940356
         output2 = [
             9.68883500e-02,
@@ -187,7 +178,9 @@ class TestHamiltonianExpval:
             return fn(res)
 
         assert np.isclose(cost(var), output)
+
         grad = qml.grad(cost)(var)
+        assert len(grad) == len(output2)
         for g, o in zip(grad, output2):
             assert np.allclose(g, o, atol=tol)
 
