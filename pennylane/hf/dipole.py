@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.matrices import generate_moment_matrix
+from pennylane.hf.hamiltonian import simplify, _generate_qubit_operator, _return_pauli
 
 def generate_dipole_integrals(mol, core=None, active=None):
     r"""Return a function that computes the dipole moment integrals in the molecular orbital basis.
@@ -132,13 +133,6 @@ def generate_fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
     **Example**
 
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
-    >>> args = [alpha]
-    >>> h = generate_fermionic_hamiltonian(mol)(*args)
     """
 
     def fermionic_dipole(*args):
@@ -164,8 +158,28 @@ def generate_fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
 
 def generate_dipole(mol, cutoff=1.0e-12, core=None, active=None):
+    r"""Return a function that computes the qubit dipole.
 
+    Args:
+        mol (Molecule): the molecule object
+        cutoff (float): cutoff value for discarding the negligible electronic integrals
+
+    Returns:
+        function: function that computes the qubit dipole
+
+    **Example**
+
+    """
     def dipole(*args):
+        r"""Compute the qubit dipole.
+
+        Args:
+            args (array[array[float]]): initial values of the differentiable parameters
+
+        Returns:
+            (list[Hamiltonian]): x, y and z components of the dipole observable
+        """
+
         d = []
         d_ferm = generate_fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
@@ -177,7 +191,19 @@ def generate_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
 
 def one_particle(core_constant, integral, cutoff=1.0e-12):
+    r"""Create a fermionic operator from one-particle molecular orbital integrals.
 
+    Args:
+        core_constant (array[float]): the contribution of the core orbitalss and nucleai
+        integral (array[float]): the one-particle molecular orbital integrals
+        cutoff (float): cutoff value for discarding the negligible terms
+
+    Returns:
+        tuple(array[float], list[int]): fermionic coefficients and operators
+
+    **Example**
+
+    """
     coeffs = anp.array([])
 
     if core_constant != 0:
@@ -197,8 +223,20 @@ def one_particle(core_constant, integral, cutoff=1.0e-12):
 
 
 def qubit_operator(d_ferm, cutoff=1.0e-12):
+    r"""Convert a fermionic operator to a PennyLane qubit operator.
+
+    Args:
+        d_ferm tuple(array[float], list[int]): fermionic operator
+        cutoff (float): cutoff value for discarding the negligible terms
+
+    Returns:
+        Hamiltonian: Simplified PennyLane Hamiltonian
+
+    **Example**
+
+    """
     if len(d_ferm[0]) == 0 and len(d_ferm[1]) == 0:
-        return qml.Hamiltonian([anp.array([0.0])], [qml.Identity(0)])
+        return qml.Hamiltonian([d_ferm[0]], [qml.Identity(0)])
 
     ops = []
     coeffs = anp.array([])
@@ -211,21 +249,21 @@ def qubit_operator(d_ferm, cutoff=1.0e-12):
             ops = ops + [qml.Identity(0)]
 
         else:
-            op = qml.hf.hamiltonian._generate_qubit_operator(t)
+            op = _generate_qubit_operator(t)
             if op != 0:
                 for i, o in enumerate(op[1]):
                     if len(o) == 0:
                         op[1][i] = qml.Identity(0)
                     if len(o) == 1:
-                        op[1][i] = qml.hf.hamiltonian._return_pauli(o[0][1])(o[0][0])
+                        op[1][i] = _return_pauli(o[0][1])(o[0][0])
                     if len(o) > 1:
                         k = qml.Identity(0)
                         for o_ in o:
-                            k = k @ qml.hf.hamiltonian._return_pauli(o_[1])(o_[0])
+                            k = k @ _return_pauli(o_[1])(o_[0])
                         op[1][i] = k
                 coeffs = np.concatenate([coeffs, np.array(op[0]) * d_ferm[0][n]])
                 ops = ops + op[1]
 
-    d = qml.hf.hamiltonian.simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff) * (-1)
+    d = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff) * (-1)
 
     return d
