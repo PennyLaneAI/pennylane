@@ -19,8 +19,9 @@ import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
+from pennylane.hf.hamiltonian import _generate_qubit_operator, _return_pauli, simplify
 from pennylane.hf.matrices import generate_moment_matrix
-from pennylane.hf.hamiltonian import simplify, _generate_qubit_operator, _return_pauli
+
 
 def generate_dipole_integrals(mol, core=None, active=None):
     r"""Return a function that computes the dipole moment integrals in the molecular orbital basis.
@@ -99,7 +100,7 @@ def generate_dipole_integrals(mol, core=None, active=None):
 
         core_x, core_y, core_z = anp.array([0]), anp.array([0]), anp.array([0])
 
-        for i in range(len(mol.symbols)): # nuclear contributions
+        for i in range(len(mol.symbols)):  # nuclear contributions
             core_x = core_x + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
             core_y = core_y + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
             core_z = core_z + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
@@ -150,7 +151,8 @@ def generate_fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
         for i in range(3):
             f.append(
-                one_particle(constants[i], integrals[i], cutoff=cutoff, core=core, active=active))
+                one_particle(constants[i], integrals[i], cutoff=cutoff, core=core, active=active)
+            )
 
         return f
 
@@ -170,6 +172,7 @@ def generate_dipole(mol, cutoff=1.0e-12, core=None, active=None):
     **Example**
 
     """
+
     def dipole(*args):
         r"""Compute the qubit dipole.
 
@@ -179,7 +182,6 @@ def generate_dipole(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             (list[Hamiltonian]): x, y and z components of the dipole observable
         """
-
         d = []
         d_ferm = generate_fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
