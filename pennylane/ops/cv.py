@@ -222,6 +222,8 @@ class Displacement(CVOperation):
 
     @staticmethod
     def _heisenberg_rep(p):
+        c = math.cos(p[1])
+        s = math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 

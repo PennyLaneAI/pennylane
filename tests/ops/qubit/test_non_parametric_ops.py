@@ -983,6 +983,7 @@ involution_ops = [  # ops who are their own inverses
 
 @pytest.mark.parametrize("op", all_ops)
 def test_adjoint_method(op, tol):
+    print(op)
     for num_adjoint_calls in range(1, 4):
 
         adj_op = copy.copy(op)
@@ -1003,7 +1004,7 @@ def test_adjoint_method(op, tol):
 
         try:
             np.testing.assert_allclose(
-                adj_op.matrix, expected_adj_op.matrix, atol=tol
+                adj_op.matrix(), expected_adj_op.matrix(), atol=tol
             )  # compare matrix if its defined
-        except NotImplementedError:
+        except qml.operation.OperatorPropertyUndefined:
             pass
