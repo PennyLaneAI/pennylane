@@ -1,8 +1,4 @@
-# Release 0.21.0-dev
-
-<h3>New features</h3>
-
-<h3>Improvements</h3>
+# Release 0.21.0
 
 <h3>Bug fixes</h3>
 
@@ -10,8 +6,6 @@
   coordinates entered as `pennylane.numpy.tensor` type. The bug is fixed by converting the atomic
   coordinates to `numpy.ndarray` in `qml.qchem.meanfield` before importing them to openfermion.
   [(#2108)](https://github.com/PennyLaneAI/pennylane/pull/2108)
-
-<h3>Breaking changes</h3>
 
 <h3>Contributors</h3>
 
