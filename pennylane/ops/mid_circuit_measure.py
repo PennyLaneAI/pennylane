@@ -42,7 +42,7 @@ def apply_to_measurement_dependant_values(fun):
     .. code-block:: python
 
         m0 = qml.mid_measure(0)
-        m0_sin = qml.apply_to_outcome(np.sin)(m0)
+        m0_sin = qml.apply_to_measurement_dependant_value(np.sin)(m0)
     """
 
     @functools.wraps(fun)
@@ -69,7 +69,8 @@ class MeasurementDependantValue(Generic[T]):
     Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
 
-    supports python __dunder__ mathematical operations. As well as arbitrary functions using qml.apply_to_outcome
+    supports python __dunder__ mathematical operations. As well as arbitrary functions using
+    qml.apply_to_measurement_dependant_value.
     """
 
     __slots__ = ("_depends_on", "_zero_case", "_one_case")
@@ -121,7 +122,7 @@ class MeasurementDependantValue(Generic[T]):
         measurements = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append(",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+            lines.append("if " + ",".join([f"wire_{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
         return "\n".join(lines)
 
 
@@ -130,11 +131,11 @@ class MeasurementDependantValue(Generic[T]):
         Merge this MeasurementDependantValue with `other`.
 
         Ex: Merging a MeasurementDependantValue such as
-
+mid
         .. code-block:: python
 
-            df3jff4t=0 => 3.4
-            df3jff4t=1 => 1
+            wire_0=0 => 3.4
+            wire_0=1 => 1
 
         with another MeasurementDependantValue:
 
