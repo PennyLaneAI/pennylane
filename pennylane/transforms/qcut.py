@@ -303,11 +303,10 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     Converts a directed multigraph to the corresponding quantum tape.
 
     Args:
-        graph (MultiDiGraph): directed multigraph containing measure to be
-            converted to a tape
+        graph (MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        tape (QuantumTape): the quantum tape corresponding to the input
+        QuantumTape: the quantum tape corresponding to the input graph
 
     **Example**
 
@@ -331,7 +330,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             qml.RZ(0.6, wires=1)
             qml.expval(qml.PauliZ(0))
 
-    We can find the subgraphs and corresponding tapes by using:
+    We can find the circuit fragments by using:
 
     >>> graph = qcut.tape_to_graph(tape)
     >>> qcut.replace_wire_cut_nodes(graph)
@@ -356,6 +355,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             apply(op)
 
             if isinstance(op, MeasureNode):
+                assert len(op.wires) == 1
                 measured_wire = op.wires[0]
                 new_wire = _find_new_wire(wires)
                 wires += new_wire
