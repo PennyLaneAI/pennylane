@@ -624,7 +624,7 @@ class Operation(Operator):
         if self.num_params == 0:
             return None
         try:
-            op.parameter_frequencies()
+            self.parameter_frequencies()
             return "A"
         except OperatorPropertyUndefined:
             return "F"

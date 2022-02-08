@@ -317,7 +317,8 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         shapes.append(1)
 
         # get the gradient recipe for the trainable parameter
-        recipe = gradient_recipes[argnum.index(idx)]
+        arg_idx = argnum.index(idx)
+        recipe = gradient_recipes[arg_idx]
         if recipe is not None:
             recipe = _process_gradient_recipe(recipe)
         else:
