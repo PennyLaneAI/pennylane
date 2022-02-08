@@ -395,15 +395,15 @@ class TestGradientTransformIntegration:
         """Raise an exception if shots is used within the QNode"""
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
-        @qml.qnode(dev)
         def circuit(x, shots):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="'shots' argument name is reserved for overriding the number of shots"
-        ):
-            qml.gradients.param_shift(circuit)(0.2, shots=100)
+        with pytest.warns(UserWarning, match="Detected 'shots' as an argument to the given"):
+            qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match="Detected 'shots' as an argument of the quantum"):
+            qml.gradients.param_shift(qnode)(0.2, shots=100)
 
 
 class TestInterfaceIntegration:

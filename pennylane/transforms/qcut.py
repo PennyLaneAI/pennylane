@@ -15,8 +15,9 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
+from typing import Tuple
 
-from networkx import MultiDiGraph
+from networkx import MultiDiGraph, weakly_connected_components
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -53,8 +54,6 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
         wire_cut = qml.WireCut(wires=0)
 
         with qml.tape.QuantumTape() as tape:
@@ -65,8 +64,8 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
     We can find the circuit graph and remove the wire cut node using:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_node(wire_cut, graph)
+    >>> graph = qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.replace_wire_cut_node(wire_cut, graph)
     """
     predecessors = graph.pred[node]
     successors = graph.succ[node]
@@ -122,8 +121,6 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
         wire_cut_0 = qml.WireCut(wires=0)
         wire_cut_1 = qml.WireCut(wires=1)
         multi_wire_cut = qml.WireCut(wires=[0, 1])
@@ -140,9 +137,8 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
 
     We can find the circuit graph and remove all the wire cut nodes using:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(graph)
-
+    >>> graph = qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.replace_wire_cut_nodes(graph)
     """
     for op in list(graph.nodes):
         if isinstance(op, WireCut):
@@ -169,8 +165,8 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
         tape (QuantumTape): tape to be converted into a directed multigraph
 
     Returns:
-        graph (MultiDiGraph): a directed multigraph that captures the circuit
-        structure of the input tape
+        MultiDiGraph: a directed multigraph that captures the circuit structure
+        of the input tape
 
     **Example**
 
@@ -186,7 +182,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     Its corresponding circuit graph can be found using
 
-    >>> tape_to_graph(tape)
+    >>> qml.transforms.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
@@ -210,3 +206,79 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
             order += 1
 
     return graph
+
+
+def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
+    """
+    Fragments a graph into a collection of subgraphs as well as returning
+    the communication/`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__
+    graph. Each node of the communication graph represents a fragment and the edges
+    denote the flow of qubits between fragments.
+
+    Args:
+        graph (MultiDiGraph): directed multigraph containing measure and prepare
+            nodes at cut locations
+
+    Returns:
+        Tuple[Tuple[MultiDiGraph], MultiDiGraph]: the subgraphs of the cut graph
+        and the communication graph.
+
+    **Example**
+
+    Consider the following circuit with manually-placed wire cuts:
+
+    .. code-block:: python
+
+        wire_cut_0 = qml.WireCut(wires=0)
+        wire_cut_1 = qml.WireCut(wires=1)
+        multi_wire_cut = qml.WireCut(wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.apply(wire_cut_0)
+            qml.RY(0.5, wires=0)
+            qml.apply(wire_cut_1)
+            qml.CNOT(wires=[0, 1])
+            qml.apply(multi_wire_cut)
+            qml.RZ(0.6, wires=1)
+            qml.expval(qml.PauliZ(0))
+
+    We can find the corresponding graph, remove all the wire cut nodes, and
+    find the subgraphs and communication graph by using:
+
+    >>> graph = qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.replace_wire_cut_nodes(graph)
+    >>> qml.transforms.fragment_graph(graph)
+    ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,
+      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e27f0>),
+     <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
+    """
+
+    graph_copy = graph.copy()
+
+    cut_edges = []
+
+    for node1, node2, wire in graph.edges:
+        if isinstance(node1, MeasureNode):
+            assert isinstance(node2, PrepareNode)
+            cut_edges.append((node1, node2, wire))
+            graph_copy.remove_edge(node1, node2, key=wire)
+
+    subgraph_nodes = weakly_connected_components(graph_copy)
+    subgraphs = tuple(graph_copy.subgraph(n) for n in subgraph_nodes)
+
+    communication_graph = MultiDiGraph()
+    communication_graph.add_nodes_from(range(len(subgraphs)))
+
+    for node1, node2, wire in cut_edges:
+        for i, subgraph in enumerate(subgraphs):
+            if subgraph.has_node(node1):
+                start_fragment = i
+            if subgraph.has_node(node2):
+                end_fragment = i
+
+        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2, wire))
+
+    return subgraphs, communication_graph
