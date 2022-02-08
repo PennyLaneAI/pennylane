@@ -16,13 +16,11 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 import string
-
-import pennylane as qml
-
 from typing import Sequence, Tuple
 
 from networkx import MultiDiGraph, weakly_connected_components
 
+import pennylane as qml
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
