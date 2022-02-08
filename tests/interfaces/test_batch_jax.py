@@ -834,3 +834,19 @@ class TestVectorValued:
 
         with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(cost)(params, cache=None)
+
+
+def test_diff_method_None_jit():
+    """Test that jitted execution works when `gradient_fn=None`."""
+
+    dev = qml.device("default.qubit.jax", wires=1, shots=10)
+
+    @jax.jit
+    def wrapper(x):
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        return qml.execute([tape], dev, gradient_fn=None)
+
+    assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)

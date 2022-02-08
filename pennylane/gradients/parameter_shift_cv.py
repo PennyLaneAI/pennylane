@@ -646,6 +646,14 @@ def param_shift_cv(
     shapes = []
     fns = []
 
+    if argnum is None and not tape.trainable_params:
+        warnings.warn(
+            "Attempted to compute the gradient of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
+        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+
     def _update(data):
         """Utility function to update the list of gradient tapes,
         the corresponding number of gradient tapes, and the processing functions"""
@@ -657,8 +665,7 @@ def param_shift_cv(
     # functionality before deprecation.
     diff_methods = tape._grad_method_validation("analytic" if fallback_fn is None else "best")
     all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-
-    if not tape.trainable_params or all_params_grad_method_zero:
+    if all_params_grad_method_zero:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # TODO: replace the JacobianTape._choose_params_with_methods

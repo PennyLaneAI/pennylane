@@ -217,6 +217,7 @@ class QNode:
         self._original_device = device
         self.gradient_fn = None
         self.gradient_kwargs = None
+        self._tape_cached = False
 
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
@@ -265,7 +266,9 @@ class QNode:
         # of the user's device before and after executing the tape.
 
         if self.device is not self._original_device:
-            self._original_device._num_executions += 1  # pylint: disable=protected-access
+
+            if not self._tape_cached:
+                self._original_device._num_executions += 1  # pylint: disable=protected-access
 
             # Update for state vector simulators that have the _pre_rotated_state attribute
             if hasattr(self._original_device, "_pre_rotated_state"):
@@ -545,6 +548,14 @@ class QNode:
 
         # construct the tape
         self.construct(args, kwargs)
+
+        cache = self.execute_kwargs.get("cache", False)
+        using_custom_cache = (
+            hasattr(cache, "__getitem__")
+            and hasattr(cache, "__setitem__")
+            and hasattr(cache, "__delitem__")
+        )
+        self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         res = qml.execute(
             [self.tape],

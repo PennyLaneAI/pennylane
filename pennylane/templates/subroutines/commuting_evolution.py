@@ -140,10 +140,6 @@ class CommutingEvolution(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
-        .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
-
         Args:
             time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
                 variable
@@ -153,6 +149,8 @@ class CommutingEvolution(Operation):
                 the spectrum of the Hamiltonian.
             shifts (tuple[int or float]): The parameter shifts to use in obtaining the
                 generalized parameter shift rules. If unspecified, equidistant shifts are used.
+
+        .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
 
         Returns:
             list[.Operator]: decomposition of the operator

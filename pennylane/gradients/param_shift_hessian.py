@@ -15,6 +15,7 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -302,7 +303,12 @@ def param_shift_hessian(tape, f0=None):
         )
 
     if not tape.trainable_params:
-        return [], lambda _: []
+        warnings.warn(
+            "Attempted to compute the hessian of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
+        return [], lambda _: ()
 
     # The parameter-shift Hessian implementation currently only supports
     # the two-term parameter-shift rule. Raise an error for unsupported operations.

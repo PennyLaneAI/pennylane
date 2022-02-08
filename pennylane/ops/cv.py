@@ -101,15 +101,12 @@ class Rotation(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -154,6 +151,7 @@ class Squeezing(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 1
     grad_method = "A"
 
@@ -164,10 +162,6 @@ class Squeezing(CVOperation):
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -214,6 +208,7 @@ class Displacement(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 1
     grad_method = "A"
 
@@ -225,14 +220,8 @@ class Displacement(CVOperation):
     def __init__(self, a, phi, wires, do_queue=True, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
-    @property
-    def num_params(self):
-        return 2
-
     @staticmethod
     def _heisenberg_rep(p):
-        c = math.cos(p[1])
-        s = math.sin(p[1])
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
@@ -280,15 +269,12 @@ class Beamsplitter(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 2
     grad_method = "A"
 
     def __init__(self, theta, phi, wires, do_queue=True, id=None):
         super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -346,6 +332,7 @@ class TwoModeSqueezing(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 2
 
     grad_method = "A"
@@ -357,10 +344,6 @@ class TwoModeSqueezing(CVOperation):
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -413,6 +396,7 @@ class QuadraticPhase(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
 
     grad_method = "A"
@@ -424,10 +408,6 @@ class QuadraticPhase(CVOperation):
 
     def __init__(self, s, wires, do_queue=True, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -472,6 +452,7 @@ class ControlledAddition(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 2
     grad_method = "A"
 
@@ -482,10 +463,6 @@ class ControlledAddition(CVOperation):
 
     def __init__(self, s, wires, do_queue=True, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -534,6 +511,7 @@ class ControlledPhase(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 2
     grad_method = "A"
 
@@ -544,10 +522,6 @@ class ControlledPhase(CVOperation):
 
     def __init__(self, s, wires, do_queue=True, id=None):
         super().__init__(s, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -583,15 +557,12 @@ class Kerr(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, kappa, wires, do_queue=True, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self, do_queue=True):
         return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -617,15 +588,12 @@ class CrossKerr(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 2
     grad_method = "F"
 
     def __init__(self, kappa, wires, do_queue=True, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self, do_queue=True):
         return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -651,15 +619,12 @@ class CubicPhase(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, gamma, wires, do_queue=True, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def adjoint(self, do_queue=True):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -705,16 +670,13 @@ class InterferometerUnitary(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = None
     grad_recipe = None
 
     def __init__(self, U, wires, do_queue=True, id=None):
         super().__init__(U, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -764,15 +726,12 @@ class CoherentState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, a, phi, wires, do_queue=True, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
 
 class SqueezedState(CVOperation):
@@ -793,15 +752,12 @@ class SqueezedState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
 
 class DisplacedSqueezedState(CVOperation):
@@ -832,15 +788,12 @@ class DisplacedSqueezedState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 4
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, a, phi_a, r, phi_r, wires, do_queue=True, id=None):
         super().__init__(a, phi_a, r, phi_r, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 4
 
 
 class ThermalState(CVOperation):
@@ -860,15 +813,12 @@ class ThermalState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, nbar, wires, do_queue=True, id=None):
         super().__init__(nbar, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Thermal")
@@ -893,15 +843,12 @@ class GaussianState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, V, r, wires, do_queue=True, id=None):
         super().__init__(V, r, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Gaussian")
@@ -924,15 +871,12 @@ class FockState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = None
 
     def __init__(self, n, wires, do_queue=True, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -1017,15 +961,12 @@ class FockStateVector(CVOperation):
                 return qml.expval(qml.NumberOperator(wires=0))
 
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, do_queue=True, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -1068,15 +1009,12 @@ class FockDensityMatrix(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = "F"
 
     def __init__(self, state, wires, do_queue=True, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
 
 class CatState(CVOperation):
@@ -1108,15 +1046,12 @@ class CatState(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 3
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, a, phi, p, wires, do_queue=True, id=None):
         super().__init__(a, phi, p, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 3
 
 
 # =============================================================================
@@ -1150,16 +1085,13 @@ class NumberOperator(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 0
     num_wires = 1
 
     ev_order = 2
 
     def __init__(self, wires):
         super().__init__(wires=wires)
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1207,6 +1139,7 @@ class TensorN(CVObservable):
         >>> cv_obs.ev_order
         2
     """
+    num_params = 0
     num_wires = AnyWires
     ev_order = None
 
@@ -1221,10 +1154,6 @@ class TensorN(CVObservable):
             return NumberOperator(wires=wires)
 
         return super().__new__(cls)
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         if base_label is not None:
@@ -1252,16 +1181,13 @@ class X(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 0
     num_wires = 1
 
     ev_order = 1
 
     def __init__(self, wires):
         super().__init__(wires=wires)
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1288,16 +1214,13 @@ class P(CVObservable):
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
     """
+    num_params = 0
     num_wires = 1
 
     ev_order = 1
 
     def __init__(self, wires):
         super().__init__(wires=wires)
-
-    @property
-    def num_params(self):
-        return 0
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1329,6 +1252,7 @@ class QuadOperator(CVObservable):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
 
     grad_method = "A"
@@ -1336,10 +1260,6 @@ class QuadOperator(CVObservable):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1410,6 +1330,7 @@ class PolyXP(CVObservable):
         id (str or None): String representing the operation (optional)
 
     """
+    num_params = 1
     num_wires = AnyWires
 
     grad_method = "F"
@@ -1417,10 +1338,6 @@ class PolyXP(CVObservable):
 
     def __init__(self, q, wires, do_queue=True, id=None):
         super().__init__(q, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1473,6 +1390,7 @@ class FockStateProjector(CVObservable):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = AnyWires
 
     grad_method = None
@@ -1480,10 +1398,6 @@ class FockStateProjector(CVObservable):
 
     def __init__(self, n, wires, do_queue=True, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.

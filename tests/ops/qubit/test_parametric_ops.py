@@ -714,7 +714,7 @@ class TestGrad:
 
     for phi in phis:
         for device, method in device_methods:
-            configuration.append([device, method, phi])
+            configuration.append([device, method, npp.array(phi, requires_grad=True)])
 
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
@@ -1325,8 +1325,8 @@ class TestPauliRot:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_decomposition_integration(self, angle):
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    def test_decomposition_integration(self, angle, tol):
         """Test that the decompositon of PauliRot yields the same results."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1542,8 +1542,8 @@ class TestMultiRZ:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
-    def test_decomposition_integration(self, angle):
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
+    def test_decomposition_integration(self, angle, tol):
         """Test that the decompositon of MultiRZ yields the same results."""
         angle = qml.numpy.array(angle)
         dev = qml.device("default.qubit", wires=2)

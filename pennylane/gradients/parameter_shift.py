@@ -16,6 +16,7 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
+import warnings
 import numpy as np
 
 import pennylane as qml
@@ -546,6 +547,11 @@ def param_shift(
     gradient_tapes = []
 
     if argnum is None and not tape.trainable_params:
+        warnings.warn(
+            "Attempted to compute the gradient of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     # TODO: replace the JacobianTape._grad_method_validation

@@ -55,15 +55,12 @@ class AmplitudeDamping(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, gamma, wires, do_queue=True, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -136,15 +133,12 @@ class GeneralizedAmplitudeDamping(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, gamma, p, wires, do_queue=True, id=None):
         super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
@@ -209,15 +203,12 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, gamma, wires, do_queue=True, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
@@ -288,16 +279,13 @@ class DepolarizingChannel(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
     def __init__(self, p, wires, do_queue=True, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -359,16 +347,13 @@ class BitFlip(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
     def __init__(self, p, wires, do_queue=True, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -446,15 +431,12 @@ class ResetError(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, p0, p1, wires, do_queue=True, id=None):
         super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
 
     @staticmethod
     def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
@@ -637,16 +619,13 @@ class PhaseFlip(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
     def __init__(self, p, wires, do_queue=True, id=None):
         super().__init__(p, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
@@ -692,6 +671,7 @@ class QubitChannel(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = None
 
@@ -719,10 +699,6 @@ class QubitChannel(Channel):
         Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_kraus_matrices(K_list):  # pylint:disable=arguments-differ
@@ -824,15 +800,12 @@ class ThermalRelaxationError(Channel):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_params = 4
     num_wires = 1
     grad_method = "F"
 
     def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
         super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 4
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ

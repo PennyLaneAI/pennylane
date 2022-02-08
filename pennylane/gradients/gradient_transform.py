@@ -14,6 +14,8 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
+import warnings
+
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
@@ -117,6 +119,14 @@ class gradient_transform(qml.batch_transform):
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
+            if not qml.math.get_trainable_indices(args):
+                warnings.warn(
+                    "Attempted to compute the gradient of a QNode with no trainable parameters. "
+                    "If this is unintended, please add trainable parameters in accordance with "
+                    "the chosen auto differentiation framework."
+                )
+                return ()
+
             qjac = _wrapper(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
