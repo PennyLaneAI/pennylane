@@ -22,6 +22,10 @@
 
 <h3>Breaking changes</h3>
 
+* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
+  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
+
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
