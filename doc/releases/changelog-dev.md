@@ -37,6 +37,11 @@
 
 <h3>Bug fixes</h3>
 
+* The operation `OrbitalRotation` previously was wrongfully registered to satisfy
+  the four-term parameter shift rule, it now will be decomposed instead when
+  using the parameter-shift rule.
+  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
