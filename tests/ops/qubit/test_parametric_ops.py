@@ -105,7 +105,13 @@ class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if op.generator[0] is None:
-            pytest.skip(f"Operation {op.name} does not have a generator defined.")
+            # For operations without generator, we only can try and check that the function
+            # executes properly, not its return value.
+            try:
+                op.parameter_frequencies()
+            except qml.operation.OperatorPropertyUndefined:
+                pytest.skip(f"Operation {op.name} does not have parameter frequencies defined.")
+            pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
         gen, coeff = op.generator
         if isinstance(gen, np.ndarray):
             matrix = gen

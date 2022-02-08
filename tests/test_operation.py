@@ -179,7 +179,9 @@ class TestOperationConstruction:
 
         x = [0.654, 2.31, 0.1]
         op = DummyOp(*x, wires=0)
-        with pytest.raises(qml.operation.OperatorPropertyUndefined, match="does not have parameter"):
+        with pytest.raises(
+            qml.operation.OperatorPropertyUndefined, match="does not have parameter"
+        ):
             op.parameter_frequencies()
 
     @pytest.mark.parametrize("num_param", [1, 2])

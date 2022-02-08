@@ -749,6 +749,11 @@ class Operation(Operator):
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
             op, coeff = self.generator
+            if op is None:
+                raise OperatorPropertyUndefined(
+                    f"Operation {self.name} does not have parameter frequencies."
+                )
+
             if not isinstance(op, np.ndarray):
                 op = op.matrix
             gen_eigvals = tuple(np.linalg.eigvals(op))
