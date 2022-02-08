@@ -8,7 +8,6 @@ from typing import Union, Any, TypeVar, Generic, Callable, Type
 
 from pennylane.operation import Operation
 
-
 def mid_measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
@@ -36,6 +35,7 @@ class _MidCircuitMeasure(Operation):
 def apply_to_measurement_dependant_values(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
+    (fun should be a "pure" function)
 
     Ex:
 
@@ -56,7 +56,6 @@ def apply_to_measurement_dependant_values(fun):
             lambda *unwrapped: fun(*unwrapped, **kwargs)
         )
         return partial
-
     return wrapper
 
 
