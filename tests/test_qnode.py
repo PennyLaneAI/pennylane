@@ -348,7 +348,7 @@ class TestValidation:
             match="SparseHamiltonian observable must be"
             " used with the parameter-shift differentiation method",
         ):
-            qml.grad(circuit)([0.5])
+            qml.grad(circuit, argnum=0)([0.5])
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -382,7 +382,7 @@ class TestValidation:
         # QNode can still be executed
         assert np.allclose(circuit(0.5), np.cos(0.5), atol=tol, rtol=0)
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             grad = qml.grad(circuit)(0.5)
 
         assert np.allclose(grad, 0)
@@ -710,6 +710,56 @@ class TestIntegration:
         qn3()
 
         assert dev.num_executions == 6
+
+    def test_num_exec_caching_device_swap(self):
+        """Tests that if we swapped the original device (e.g., when
+        diff_method='backprop') then the number of executions recorded is
+        correct."""
+        dev = qml.device("default.qubit", wires=2)
+
+        cache = {}
+
+        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        def circuit():
+            qml.RY(0.345, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        for _ in range(15):
+            circuit()
+
+        # Although we've evaluated the QNode more than once, due to caching,
+        # there was one device execution recorded
+        assert dev.num_executions == 1
+        assert cache != {}
+
+    def test_num_exec_caching_device_swap_two_exec(self):
+        """Tests that if we swapped the original device (e.g., when
+        diff_method='backprop') then the number of executions recorded is
+        correct even with multiple QNode evaluations."""
+        dev = qml.device("default.qubit", wires=2)
+
+        cache = {}
+
+        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        def circuit():
+            qml.RY(0.345, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        for _ in range(15):
+            circuit()
+
+        @qml.qnode(dev, diff_method="backprop", cache=cache)
+        def circuit():
+            qml.RZ(0.345, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        for _ in range(15):
+            circuit()
+
+        # Although we've evaluated the QNode several times, due to caching,
+        # there were two device executions recorded
+        assert dev.num_executions == 2
+        assert cache != {}
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
@@ -1117,7 +1167,7 @@ class TestTapeExpansion:
         """Test that the device expansion strategy performs the device
         decomposition at construction time, and not at execution time"""
         dev = qml.device("default.qubit", wires=2)
-        x = np.array(0.5)
+        x = pnp.array(0.5, requires_grad=True)
 
         @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
         def circuit(x):
