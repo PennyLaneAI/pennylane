@@ -790,6 +790,7 @@ class PauliRot(Operation):
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
+
 class CRX(Operation):
     r"""CRX(phi, wires)
     The controlled-RX operator
@@ -841,7 +842,12 @@ class CRX(Operation):
         return super().label(decimals=decimals, base_label=base_label or "RX")
 
     def parameter_frequencies(self):
-        return [(0.5, 1,)]
+        return [
+            (
+                0.5,
+                1,
+            )
+        ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -941,7 +947,12 @@ class CRY(Operation):
         return super().label(decimals=decimals, base_label=base_label or "RY")
 
     def parameter_frequencies(self):
-        return [(0.5, 1,)]
+        return [
+            (
+                0.5,
+                1,
+            )
+        ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1035,7 +1046,12 @@ class CRZ(Operation):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
 
     def parameter_frequencies(self):
-        return [(0.5, 1,)]
+        return [
+            (
+                0.5,
+                1,
+            )
+        ]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1122,7 +1138,20 @@ class CRot(Operation):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
 
     def parameter_frequencies(self):
-        return [(0.5, 1,), (0.5, 1,), (0.5, 1,)]
+        return [
+            (
+                0.5,
+                1,
+            ),
+            (
+                0.5,
+                1,
+            ),
+            (
+                0.5,
+                1,
+            ),
+        ]
 
     @classmethod
     def _matrix(cls, *params):

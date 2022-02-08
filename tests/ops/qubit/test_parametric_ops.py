@@ -78,6 +78,7 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 
+
 class TestOperations:
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
@@ -99,8 +100,8 @@ class TestOperations:
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
 
-class TestParameterFrequencies:
 
+class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if op.generator[0] is None:
