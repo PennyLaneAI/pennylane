@@ -749,9 +749,7 @@ class Operation(Operator):
             op, coeff = self.generator
             gen_eigvals = tuple(np.linalg.eigvals(op))
             coeff = np.abs(coeff)
-            return tuple(
-                coeff * val for val in qml.gradients.eigvals_to_frequencies(gen_eigvals)
-            )
+            return tuple(coeff * val for val in qml.gradients.eigvals_to_frequencies(gen_eigvals))
 
         raise OperatorPropertyUndefined(
             f"Operation {self.name} does not have parameter frequencies."
