@@ -389,7 +389,7 @@ class TestParameterShiftRule:
 
         tape.trainable_params = {1, 2, 3}
 
-        tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)]*3)
+        tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)] * 3)
         assert len(tapes) == 2 * len(tape.trainable_params)
 
         autograd_val = fn(dev.batch_execute(tapes))

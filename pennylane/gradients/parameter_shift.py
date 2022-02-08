@@ -153,9 +153,9 @@ def _get_operation_recipe(tape, t_idx, shifts):
     t_idx on tape.
 
     This function performs multiple attempts to obtain the recipe:
-    
+
     - If ``parameter_frequencies`` yield a result, the frequencies are
-      used to construct the general parameter-shift rule via 
+      used to construct the general parameter-shift rule via
       ``qml.gradients.generate_shift_rule``
     - If ``parameter_frequencies`` raises an error (because the operation
       has no custom ``parameter_frequencies`` and no ``generator`` is defined),
@@ -233,6 +233,7 @@ def _gradient_analysis(tape, use_graph=True):
                     continue
 
             info["grad_method"] = op.grad_method
+
 
 def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required

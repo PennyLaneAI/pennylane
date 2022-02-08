@@ -1916,6 +1916,7 @@ def has_grad_method(obj):
     """Returns ``True`` if an operator has a grad_method defined."""
     return obj.grad_method is not None
 
+
 @qml.BooleanFn
 def has_multipar(obj):
     """Returns ``True`` if an operator has more than one parameter
