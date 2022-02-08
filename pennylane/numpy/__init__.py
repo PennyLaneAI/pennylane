@@ -36,10 +36,16 @@ docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`__.
 PennyLane additionally extends Autograd with the following classes,
 errors, and functions:
 
-.. automodapi:: pennylane.numpy
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
+.. autosummary::
+    :toctree: api
+    :nosignatures:
+    :template: autosummary/class_no_inherited.rst
+
+    ~wrap_arrays
+    ~extract_tensors
+    ~tensor_wrapper
+    ~tensor
+    ~NonDifferentiableError
 
 Caveats
 -------
