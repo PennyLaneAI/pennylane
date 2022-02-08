@@ -515,9 +515,8 @@ class TestParameterShiftHessian:
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=False)
 
-        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            expected = qml.jacobian(qml.jacobian(circuit))(x)
-            hessian = qml.gradients.param_shift_hessian(circuit)(x)
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
 
         assert np.allclose(expected, hessian)
 
