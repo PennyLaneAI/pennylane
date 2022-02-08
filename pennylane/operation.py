@@ -1891,11 +1891,7 @@ def not_tape(obj):
 @qml.BooleanFn
 def has_gen(obj):
     """Returns ``True`` if an operator has a generator defined."""
-    try:
-        obj.generator()
-        return True
-    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
-        return False
+    return hasattr(obj, "generator") and obj.generator[0] is not None
 
 
 @qml.BooleanFn
