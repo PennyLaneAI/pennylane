@@ -238,11 +238,6 @@ class OperatorPropertyUndefined(Exception):
     Operator properties or methods."""
 
 
-class GeneratorUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have a generator"""
-
-
 # =============================================================================
 # Base Operator class
 # =============================================================================
@@ -705,7 +700,7 @@ class Operation(Operator):
         A length-2 list ``[generator, scaling_factor]``, where
 
         * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
+          operation class or a Hermitian array
           that acts as the generator of the current operation
 
         * ``scaling_factor`` represents a scaling factor applied
@@ -1127,22 +1122,6 @@ class Observable(Operator):
         """
         raise NotImplementedError
 
-    def generator(self):  # pylint: disable=no-self-use
-        r"""list[.Operation] or None: Generator of an operation
-        with a single trainable parameter.
-        For example, for operator
-        .. math::
-            U(\phi) = e^{i\phi (0.5 Y + Z\otimes X)}
-        >>> U.generator()
-          (0.5) [Y0]
-        + (1.0) [Z0 X1]
-        The generator may also be provided in the form of a dense or sparse Hamiltonian
-        (using :class:`.Hermitian` and :class:`.SparseHamiltonian` respectively).
-        The default value to return is ``None``, indicating that the operation has
-        no defined generator.
-        """
-        raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
-
     def parameter_frequencies(self):
         r"""Returns the frequencies for each operator parameter with respect
         to an expectation value of the form
@@ -1162,15 +1141,17 @@ class Observable(Operator):
         >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
         >>> op.parameter_frequencies()
         [(1,)]
-        >>> gen_eigvals = tuple(op.generator().eigvals())
+        >>> gen_eigvals = tuple(np.eigvals(op.generator[0] * op.generator[1]))
         >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
-        (1.0,)
+        (tensor(1., requires_grad=True),)
+
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen_eigvals = tuple(self.generator().eigvals())
+            op, coeff = self.generator
+            gen_eigvals = tuple(np.linalg.eigvals(op * coeff))
             return qml.gradients.eigvals_to_frequencies(gen_eigvals)
 
         raise OperatorPropertyUndefined(
