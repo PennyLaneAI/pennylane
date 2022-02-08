@@ -86,6 +86,9 @@ class SingleExcitation(Operation):
         -1 / 2,
     ]
 
+    def parameter_frequencies(self):
+        return [(0.5, 1,)]
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -144,6 +147,9 @@ class SingleExcitationMinus(Operation):
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -217,6 +223,9 @@ class SingleExcitationPlus(Operation):
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -317,6 +326,9 @@ class DoubleExcitation(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    def parameter_frequencies(self):
+        return [(0.5, 1,)]
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -411,6 +423,9 @@ class DoubleExcitationPlus(Operation):
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
 
+    def parameter_frequencies(self):
+        return [(1,)]
+
     @classmethod
     def _matrix(cls, *params):
         theta = params[0]
@@ -479,6 +494,9 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+
+    def parameter_frequencies(self):
+        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -587,6 +605,9 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+
+    def parameter_frequencies(self):
+        return [(0.5, 1,)]
 
     @classmethod
     def _matrix(cls, *params):
