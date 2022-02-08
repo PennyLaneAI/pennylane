@@ -565,7 +565,7 @@ class OrbitalRotation(Operation):
     * Number of parameters: 1
     * Gradient recipe: The ``OrbitalRotation`` operator does *not* satisfy the
       four-term parameter-shift rule but a higher-order general parameter-shift rule
-      (with 4 equidistant frequencise :math:`\{0.5, 1, 1.5, 2\}` see, 
+      (with 4 equidistant frequencise :math:`\{0.5, 1, 1.5, 2\}` see,
       https://arxiv.org/abs/2107.12390)
 
     Args:
