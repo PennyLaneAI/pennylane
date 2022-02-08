@@ -501,24 +501,46 @@ class TestParameterShiftHessian:
 
         qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-    def test_no_trainable_parameters(self):
-        """Test that the correct ouput is generated in the absence of any trainable parameters"""
-
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_no_trainable_params_qnode(self, interface):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            qml.RX(x[0], wires=0)
-            qml.RY(x[1], wires=0)
-            qml.CRZ(x[2], wires=[0, 1])
-            return qml.probs(wires=1)
+        @qml.qnode(dev, interface=interface)
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=False)
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
 
-        expected = qml.jacobian(qml.jacobian(circuit))(x)
-        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+        assert res == ()
 
-        assert np.allclose(expected, hessian)
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="hessian of a tape with no trainable parameters"):
+            h_tapes, post_processing = qml.gradients.param_shift_hessian(tape)
+        res = post_processing(qml.execute(h_tapes, dev, None))
+
+        assert h_tapes == []
+        assert res == ()
 
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""

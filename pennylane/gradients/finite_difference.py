@@ -17,6 +17,7 @@ of a quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments
 import functools
+import warnings
 
 import numpy as np
 from scipy.special import factorial
@@ -291,6 +292,14 @@ def finite_diff(
         [[-0.38751721 -0.18884787 -0.38355704]
          [ 0.69916862  0.34072424  0.69202359]]
     """
+    if argnum is None and not tape.trainable_params:
+        warnings.warn(
+            "Attempted to compute the gradient of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+
     # TODO: replace the JacobianTape._grad_method_validation
     # functionality before deprecation.
     if validate_params:
@@ -298,10 +307,8 @@ def finite_diff(
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
-    if not tape.trainable_params or all(g == "0" for g in diff_methods):
-        # Either all parameters have grad method 0, or there are no trainable
-        # parameters.
-        return [], lambda x: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     gradient_tapes = []
     shapes = []
