@@ -4,9 +4,32 @@
 
 <h3>New features since last release</h3>
 
+* The general parameter-shift rule is now automatically used by
+  `qml.gradients.param_shift`.
+  [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
+
+  If an operation has `parameter_frequencies` defined (also see
+  the next feature entry) and calling
+  this method does not raise an error, the operation will be 
+  considered to have an analytic differentiation method registered,
+  namely via the parameter-shift rule.
+  The frequencies are then used to obtain the shift rule for the
+  operation.
+
+  If `parameter_frequencies` raises an error although the operation
+  is registered to have an analytic derivative, the `grad_recipe`
+  property of an operation will be used instead, if defined.
+  If it is not defined, the standard two-term shift rule will
+  be used.
+
+  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
+  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
+  for additional information.
+
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
   enters a circuit when using the operation.
+  Also see the previous feature.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
   The frequencies can be used for circuit analysis, optimization
@@ -14,6 +37,9 @@
   parameter-shift rule. They assume that the circuit returns
   expectation values or probabilities, for a variance
   measurement the frequencies will differ.
+
+  By default, the frequencies will be obtained from the
+  `generator` property, if it is defined.
 
 * Continued development of the circuit-cutting compiler:
   
