@@ -526,9 +526,10 @@ class TestVQE:
 
         np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        w = pnp.random.random(shape, requires_grad=True)
 
-        dc = qml.grad(cost)(w)
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
 
     @pytest.mark.slow

@@ -378,3 +378,18 @@ def test_initial_unbatched_parameter():
 
     with pytest.raises(ValueError, match="Parameter 0.2 does not contain a batch"):
         circuit(x, y)
+
+
+def test_no_batch_param_error():
+    """Test that the right error is thrown when there is nothing to batch"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    x = [0.2, 0.6, 3]
+    with pytest.raises(ValueError, match="There are no operations to transform"):
+        circuit(x)

@@ -1,5 +1,5 @@
 # Copyright 2022 Xanadu Quantum Technologies Inc.
-#
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -27,6 +27,52 @@ with qml.tape.QuantumTape() as tape:
     qml.RZ(0.240, wires=0)
     qml.RZ(0.133, wires="a")
     qml.expval(qml.PauliZ(wires=[0]))
+
+with qml.tape.QuantumTape() as multi_cut_tape:
+    qml.RX(0.432, wires=0)
+    qml.RY(0.543, wires="a")
+    qml.WireCut(wires=0)
+    qml.CNOT(wires=[0, "a"])
+    qml.RZ(0.240, wires=0)
+    qml.RZ(0.133, wires="a")
+    qml.WireCut(wires="a")
+    qml.CNOT(wires=["a", 2])
+    qml.RX(0.432, wires="a")
+    qml.WireCut(wires=2)
+    qml.CNOT(wires=[2, 3])
+    qml.RY(0.543, wires=2)
+    qml.RZ(0.876, wires=3)
+    qml.expval(qml.PauliZ(wires=[0]))
+
+
+def compare_nodes(nodes, expected_wires, expected_names):
+    """Helper function to compare nodes of directed multigraph"""
+
+    for node, exp_wire in zip(nodes, expected_wires):
+        assert node.wires.tolist() == exp_wire
+
+    for node, exp_name in zip(nodes, expected_names):
+        assert node.name == exp_name
+
+
+def compare_fragment_nodes(node_data, expected_data):
+    """Helper function to compare nodes of fragment graphs"""
+
+    expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
+
+    for data in node_data:
+        # The exact ordering of node_data varies on each call
+        assert (data[0].name, data[0].wires, data[1]) in expected
+
+
+def compare_fragment_edges(edge_data, expected_data):
+    """Helper function to compare fragment edges"""
+
+    expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
+
+    for data in edge_data:
+        # The exact ordering of edge_data varies on each call
+        assert (data[0].name, data[1].name, data[2]) in expected
 
 
 class TestTapeToGraph:
@@ -477,14 +523,6 @@ class TestReplaceWireCut:
 
         assert len(measure_nodes) == len(prepare_nodes) == 3
 
-        def compare_nodes(nodes, expected_wires, expected_names):
-
-            for node, exp_wire in zip(nodes, expected_wires):
-                assert node.wires.tolist() == exp_wire
-
-            for node, exp_name in zip(nodes, expected_names):
-                assert node.name == exp_name
-
         compare_nodes(measure_pred, expected_meas_pred_wires, expected_meas_pred_name)
         compare_nodes(measure_succ, expected_meas_succ_wires, expected_meas_succ_name)
         compare_nodes(prep_pred, expected_prep_pred_wires, exepeted_prep_pred_name)
@@ -500,3 +538,195 @@ class TestReplaceWireCut:
             _, _, wire_label_out = out_edges[0]
 
             assert wire_label_in == wire_label_out == node.wires.tolist()[0]
+
+
+class TestFragmentGraph:
+    """
+    Tests that a cut graph is fragmented into subgraphs correctly
+    """
+
+    def test_subgraphs_of_multi_wirecut(self):
+        """
+        Tests that the subgraphs of a graph with multiple wirecuts contain the
+        correct nodes and edges
+        """
+
+        g = qcut.tape_to_graph(multi_cut_tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        assert len(subgraphs) == 4
+
+        sub_0_expected_nodes = [
+            (qcut.MeasureNode(wires=[0]), {"order": 2}),
+            (qml.RX(0.432, wires=[0]), {"order": 0}),
+        ]
+        sub_1_expected_nodes = [
+            (qml.RY(0.543, wires=["a"]), {"order": 1}),
+            (qcut.PrepareNode(wires=[0]), {"order": 2}),
+            (qcut.MeasureNode(wires=["a"]), {"order": 6}),
+            (qml.RZ(0.24, wires=[0]), {"order": 4}),
+            (qml.CNOT(wires=[0, "a"]), {"order": 3}),
+            (qml.expval(qml.PauliZ(wires=[0])), {"order": 13}),
+            (qml.RZ(0.133, wires=["a"]), {"order": 5}),
+        ]
+        sub_2_expected_nodes = [
+            (qml.RX(0.432, wires=["a"]), {"order": 8}),
+            (qcut.MeasureNode(wires=[2]), {"order": 9}),
+            (qcut.PrepareNode(wires=["a"]), {"order": 6}),
+            (qml.CNOT(wires=["a", 2]), {"order": 7}),
+        ]
+        sub_3_expected_nodes = [
+            (qml.CNOT(wires=[2, 3]), {"order": 10}),
+            (qml.RY(0.543, wires=[2]), {"order": 11}),
+            (qcut.PrepareNode(wires=[2]), {"order": 9}),
+            (qml.RZ(0.876, wires=[3]), {"order": 12}),
+        ]
+        expected_nodes = [
+            sub_0_expected_nodes,
+            sub_1_expected_nodes,
+            sub_2_expected_nodes,
+            sub_3_expected_nodes,
+        ]
+
+        sub_0_expected_edges = [
+            (qml.RX(0.432, wires=[0]), qcut.MeasureNode(wires=[0]), {"wire": 0})
+        ]
+        sub_1_expected_edges = [
+            (qcut.PrepareNode(wires=[0]), qml.CNOT(wires=[0, "a"]), {"wire": 0}),
+            (qml.RZ(0.24, wires=[0]), qml.expval(qml.PauliZ(wires=[0])), {"wire": 0}),
+            (qml.RZ(0.133, wires=["a"]), qcut.MeasureNode(wires=["a"]), {"wire": "a"}),
+            (qml.CNOT(wires=[0, "a"]), qml.RZ(0.24, wires=[0]), {"wire": 0}),
+            (qml.CNOT(wires=[0, "a"]), qml.RZ(0.133, wires=["a"]), {"wire": "a"}),
+            (qml.RY(0.543, wires=["a"]), qml.CNOT(wires=[0, "a"]), {"wire": "a"}),
+        ]
+        sub_2_expected_edges = [
+            (qcut.PrepareNode(wires=["a"]), qml.CNOT(wires=["a", 2]), {"wire": "a"}),
+            (qml.CNOT(wires=["a", 2]), qml.RX(0.432, wires=["a"]), {"wire": "a"}),
+            (qml.CNOT(wires=["a", 2]), qcut.MeasureNode(wires=[2]), {"wire": 2}),
+        ]
+        sub_3_expected_edges = [
+            (qcut.PrepareNode(wires=[2]), qml.CNOT(wires=[2, 3]), {"wire": 2}),
+            (qml.CNOT(wires=[2, 3]), qml.RY(0.543, wires=[2]), {"wire": 2}),
+            (qml.CNOT(wires=[2, 3]), qml.RZ(0.876, wires=[3]), {"wire": 3}),
+        ]
+        expected_edges = [
+            sub_0_expected_edges,
+            sub_1_expected_edges,
+            sub_2_expected_edges,
+            sub_3_expected_edges,
+        ]
+
+        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+            compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
+
+        for subgraph, expected_e in zip(subgraphs, expected_edges):
+            compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
+
+    def test_communication_graph(self):
+        """
+        Tests that the communication graph contains the correct nodes and edges
+        """
+
+        g = qcut.tape_to_graph(multi_cut_tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        assert list(communication_graph.nodes) == list(range(4))
+
+        expected_edge_data = [
+            (0, 1, {"pair": (qcut.MeasureNode(wires=[0]), qcut.PrepareNode(wires=[0]))}),
+            (1, 2, {"pair": (qcut.MeasureNode(wires=["a"]), qcut.PrepareNode(wires=["a"]))}),
+            (2, 3, {"pair": (qcut.MeasureNode(wires=[2]), qcut.PrepareNode(wires=[2]))}),
+        ]
+        edge_data = list(communication_graph.edges(data=True))
+
+        for edge, exp_edge in zip(edge_data, expected_edge_data):
+            assert edge[0] == exp_edge[0]
+            assert edge[1] == exp_edge[1]
+
+            for node, exp_node in zip(edge[2]["pair"], exp_edge[2]["pair"]):
+                assert node.name == exp_node.name
+                assert node.wires.tolist() == exp_node.wires.tolist()
+
+    def test_fragment_wirecut_first_and_last(self):
+        """
+        Tests a circuit with wirecut at the start and end is fragmented
+        correctly
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires="a")
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        sub_0_expected_nodes = [
+            (qcut.PrepareNode(wires=[0]), {"order": 0}),
+            (qml.RX(0.432, wires=[0]), {"order": 1}),
+        ]
+        sub_1_expected_nodes = [
+            (qcut.MeasureNode(wires=["a"]), {"order": 3}),
+            (qml.RY(0.543, wires=["a"]), {"order": 2}),
+        ]
+        sub_2_expected_nodes = [(qcut.MeasureNode(wires=[0]), {"order": 0})]
+        sub_3_expected_nodes = [(qcut.PrepareNode(wires=["a"]), {"order": 3})]
+
+        expected_nodes = [
+            sub_0_expected_nodes,
+            sub_1_expected_nodes,
+            sub_2_expected_nodes,
+            sub_3_expected_nodes,
+        ]
+
+        sub_0_expected_edges = [
+            (qcut.PrepareNode(wires=[0]), qml.RX(0.432, wires=[0]), {"wire": 0})
+        ]
+        sub_1_expected_edges = [
+            (qml.RY(0.543, wires=["a"]), qcut.MeasureNode(wires=["a"]), {"wire": "a"})
+        ]
+        sub_2_expected_edges = []
+        sub_3_expected_edges = []
+
+        expected_edges = [
+            sub_0_expected_edges,
+            sub_1_expected_edges,
+            sub_2_expected_edges,
+            sub_3_expected_edges,
+        ]
+
+        for subgraph, expected_n in zip(subgraphs, expected_nodes):
+            compare_fragment_nodes(list(subgraph.nodes(data=True)), expected_n)
+
+        for subgraph, expected_e in zip(subgraphs, expected_edges):
+            compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
+
+    def test_communication_graph_persistence(self):
+        """
+        Tests that when `fragment_graph` is repeatedly applied the
+        communication graph is the same each time.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs_0, communication_graph_0 = qcut.fragment_graph(g)
+        subgraphs_1, communication_graph_1 = qcut.fragment_graph(g)
+
+        assert communication_graph_0.nodes == communication_graph_1.nodes
+        assert communication_graph_0.edges == communication_graph_1.edges

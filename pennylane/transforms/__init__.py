@@ -82,6 +82,19 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
 
+Transforms for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following are utility functions that compose the circuit cutting transform.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.tape_to_graph
+    ~transforms.replace_wire_cut_node
+    ~transforms.replace_wire_cut_nodes
+    ~transforms.fragment_graph
+
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -153,3 +166,4 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
+from .qcut import tape_to_graph, replace_wire_cut_node, replace_wire_cut_nodes, fragment_graph
