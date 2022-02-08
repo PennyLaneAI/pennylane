@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.transforms import draw_old as draw
+from pennylane.transforms import draw_old
 
 
 def test_drawing():
@@ -344,16 +344,16 @@ def test_qubit_circuit_with_max_length_kwdarg():
             qml.RZ(i * 0.1, wires=i)
         return qml.expval(qml.PauliZ(0))
 
-        expected = (
-            " 0: ──H──RX(0)────RY(0)────RZ\n"
-            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
-            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
-            + " \n"
-            + " (0)────┤ ⟨Z⟩ \n"
-            + " (0.1)──┤     \n"
-            + " (0.2)──┤     \n"
-        )
-        assert draw_old(qnode, max_length=30)() == expected
+    expected = (
+        " 0: ──H──RX(0)────RY(0)────RZ\n"
+        + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
+        + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
+        + " \n"
+        + " (0)────┤ ⟨Z⟩ \n"
+        + " (0.1)──┤     \n"
+        + " (0.2)──┤     \n"
+    )
+    assert draw_old(qnode, max_length=30)() == expected
 
 
 def test_qubit_circuit_with_max_length_kwdarg():
@@ -370,16 +370,16 @@ def test_qubit_circuit_with_max_length_kwdarg():
             qml.RZ(i * 0.1, wires=i)
         return qml.expval(qml.PauliZ(0))
 
-        expected = (
-            " 0: ──H──RX(0)────RY(0)────RZ\n"
-            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
-            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
-            + " \n"
-            + " (0)────┤ ⟨Z⟩ \n"
-            + " (0.1)──┤     \n"
-            + " (0.2)──┤     \n"
-        )
-        assert draw_old(qnode, max_length=30)() == expected
+    expected = (
+        " 0: ──H──RX(0)────RY(0)────RZ\n"
+        + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
+        + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
+        + " \n"
+        + " (0)────┤ ⟨Z⟩ \n"
+        + " (0.1)──┤     \n"
+        + " (0.2)──┤     \n"
+    )
+    assert draw_old(qnode, max_length=30)() == expected
 
 
 def test_qubit_circuit_length_under_max_length_kwdarg():
@@ -395,12 +395,12 @@ def test_qubit_circuit_length_under_max_length_kwdarg():
             qml.RZ(i * 0.1, wires=i)
         return qml.expval(qml.PauliZ(0))
 
-        expected = (
-            " 0: ──H──RX(0)────RY(0)────RZ(0)────┤ ⟨Z⟩\n"
-            + " 1: ──H──RX(0.1)──RY(0.1)──RZ(0.1)──┤    \n"
-            + " 2: ──H──RX(0.2)──RY(0.2)──RZ(0.2)──┤    \n"
-        )
-        assert draw_old(qnode, max_length=60)() == expected
+    expected = (
+        " 0: ──H──RX(0)────RY(0)────RZ(0)────┤ ⟨Z⟩\n"
+        + " 1: ──H──RX(0.1)──RY(0.1)──RZ(0.1)──┤    \n"
+        + " 2: ──H──RX(0.2)──RY(0.2)──RZ(0.2)──┤    \n"
+    )
+    assert draw_old(qnode, max_length=60)() == expected
 
 
 def test_matrix_parameter_template():

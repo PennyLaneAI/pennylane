@@ -152,8 +152,14 @@ def draw_old(
     return wrapper
 
 
-def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
-    max_length=100, expansion_strategy=None):
+def draw(
+    qnode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    max_length=100,
+    expansion_strategy=None,
+):
     """Create a function that draws the given qnode.
 
     Args:
@@ -162,7 +168,7 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
-        max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
+        max_length (int): Maximum string width (columns) when printing the circuit
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
             are required.
 
@@ -180,8 +186,6 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
 
     **Example**
 
-    Given the following definition of a QNode,
-
     .. code-block:: python3
 
         @qml.qnode(qml.device('lightning.qubit', wires=2))
@@ -196,7 +200,7 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
     0: ──H─╭C───────╭C──┤ ╭<Z@Z>
     1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
 
-    .. usage-details::
+    .. UsageDetails::
 
 
     By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
@@ -238,7 +242,7 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
     1: ────╭RX──Rot─╭RX─┤ ╭<Z@Z>
     0: ──H─╰C───────╰C──┤ ╰<Z@Z>
 
-    If the device or ``wire_order`` has wires not used by operations, the are omitted
+    If the device or ``wire_order`` has wires not used by operations, those wires are omitted
     unless requested with ``show_all_wires=True``
 
     >>> @qml.qnode(qml.device('lightning.qubit', wires=3))
@@ -246,10 +250,11 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
             return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(empty_circuit, show_all_wires=True)())
     0: ───┤  <Z>
-    1: ───┤     
-    2: ───┤     
+    1: ───┤
+    2: ───┤
 
     """
+
     @wraps(qnode)
     def wrapper(*args, **kwargs):
 
@@ -264,21 +269,27 @@ def draw(qnode, wire_order=None, show_all_wires=False, decimals=None,
         _wire_order = wire_order or qnode.device.wires
 
         if tapes is not None:
-            cache = {'tape_offset': 0}
-            res = [tape_text(t,
-                        wire_order=_wire_order,
-                        show_all_wires=show_all_wires,
-                        decimals=decimals,
-                        max_length=max_length,
-                        cache=cache
-                    )
-                    for t in tapes[0]]
-            return "\n".join(res)
-        
-        return tape_text(qnode.tape, wire_order=_wire_order,
+            cache = {"tape_offset": 0}
+            res = [
+                tape_text(
+                    t,
+                    wire_order=_wire_order,
+                    show_all_wires=show_all_wires,
+                    decimals=decimals,
+                    max_length=max_length,
+                    cache=cache,
+                )
+                for t in tapes[0]
+            ]
+            return "\n\n".join(res)
+
+        return tape_text(
+            qnode.tape,
+            wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
-            max_length=max_length)
+            max_length=max_length,
+        )
 
     return wrapper
 
