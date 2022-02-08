@@ -13,8 +13,11 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 import pennylane as qml
+from pennylane.transforms import qfunc_transform, ctrl
+from pennylane.queuing import apply
+from pennylane.tape import QuantumTape
 
-@qml.qfunc_transform
+@qfunc_transform
 def defer_measurements(tape):
     new_tape_ops = []
     
@@ -26,16 +29,16 @@ def defer_measurements(tape):
             control = op.measured_qubit._dependent_on
             op_class = op.then_op.__class__
             if op.data:
-                controlled_op = qml.ctrl(op_class, control=control)(*op.data, wires=op.wires)
+                controlled_op = ctrl(op_class, control=control)(*op.data, wires=op.wires)
                 
             else:
-                controlled_op = qml.ctrl(op_class, control=control)(wires=op.wires)
+                controlled_op = ctrl(op_class, control=control)(wires=op.wires)
             new_tape_ops.append(controlled_op)
         else:
             new_tape_ops.append(op)
         
-    with qml.tape.QuantumTape() as new_tape:
+    with QuantumTape() as new_tape:
         for op in new_tape_ops:
-            qml.apply(op)
+            apply(op)
             
     return new_tape

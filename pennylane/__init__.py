@@ -63,6 +63,7 @@ from pennylane.transforms import (
     ControlledOperation,
     compile,
     ctrl,
+    defer_measurements,
     measurement_grouping,
     metric_tensor,
     specs,

@@ -123,6 +123,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
+from .defer_measurements import defer_measurements
 from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
