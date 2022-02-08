@@ -538,7 +538,7 @@ class TestParameterShiftHessian:
         with pytest.warns(UserWarning, match="hessian of a tape with no trainable parameters"):
             h_tapes, post_processing = qml.gradients.param_shift_hessian(tape)
         res = post_processing(qml.execute(h_tapes, dev, None))
-        
+
         assert h_tapes == []
         assert res == ()
 
