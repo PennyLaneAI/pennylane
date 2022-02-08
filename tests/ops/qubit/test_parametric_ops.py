@@ -493,7 +493,7 @@ class TestMatrix:
             qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
         assert np.allclose(
-            qml.IsingZZ.compute__eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+            qml.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
 
         param = np.pi
@@ -502,7 +502,7 @@ class TestMatrix:
             qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
         assert np.allclose(
-            qml.IsingZZ.compute__eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+            qml.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
 
     def test_isingzz_matrix_tf(self, tol):

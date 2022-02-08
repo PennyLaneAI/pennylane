@@ -983,7 +983,6 @@ involution_ops = [  # ops who are their own inverses
 
 @pytest.mark.parametrize("op", all_ops)
 def test_adjoint_method(op, tol):
-    print(op)
     for num_adjoint_calls in range(1, 4):
 
         adj_op = copy.copy(op)

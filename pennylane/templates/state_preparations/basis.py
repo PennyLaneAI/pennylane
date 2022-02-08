@@ -47,6 +47,7 @@ class BasisStatePreparation(Operation):
         basis_state = [0, 1, 1, 0]
         print(circuit(basis_state)) # [ 1. -1. -1.  1.]
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = None
 
@@ -79,13 +80,7 @@ class BasisStatePreparation(Operation):
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
         # The transform should be rewritten to support hyperparameters as well.
-        basis_state = list(qml.math.toarray(basis_state))
-
         super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 1
 
     @staticmethod
     def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ

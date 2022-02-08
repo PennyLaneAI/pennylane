@@ -1672,4 +1672,4 @@ def test_docstring_example_of_operator_class(tol):
     a = np.array(3.14)
     res = circuit(a)
     expected = -0.9999987318946099
-    assert np.close(res, expected, atol=tol)
+    assert np.allclose(res, expected, atol=tol)

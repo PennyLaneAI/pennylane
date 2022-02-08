@@ -535,7 +535,14 @@ class Operator(abc.ABC):
     @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
-        return hash((str(self.name), tuple(self.wires.tolist()), _process_data(self)))
+        return hash(
+            (
+                str(self.name),
+                tuple(self.wires.tolist()),
+                str(self.hyperparameters.values()),
+                _process_data(self),
+            )
+        )
 
     @staticmethod
     def compute_matrix(*params, **hyperparams):  # pylint:disable=unused-argument
