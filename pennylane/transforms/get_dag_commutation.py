@@ -902,33 +902,24 @@ def simplify_rotation(rot):
          qml.operation: Simplified rotation if possible.
     """
 
-    if (
-            np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi / 2)
-            and not np.allclose(np.mod(rot.data[1], 2 * np.pi), 0)
-            and np.allclose(np.mod(rot.data[2], 2 * np.pi), - np.pi / 2)
+    if np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi / 2) and np.allclose(
+        np.mod(rot.data[2], -2 * np.pi), -np.pi / 2
     ):
-        rot_simplified = qml.RX(rot.data[1], rot.wires)
+        return qml.RX(rot.data[1], wires=rot.wires)
+    elif np.allclose(np.mod(rot.data[0], 2 * np.pi), 0) and np.allclose(
+        np.mod(rot.data[2], 2 * np.pi), 0
+    ):
+        return qml.RY(rot.data[1], wires=rot.wires)
+    elif np.allclose(np.mod(rot.data[1], 2 * np.pi), 0):
+        return qml.RZ(rot.data[0] + rot.data[2], wires=rot.wires)
     elif (
-            np.allclose(np.mod(rot.data[0], 2 * np.pi), 0)
-            and not np.allclose(np.mod(rot.data[1], 2 * np.pi), 0)
-            and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
+        np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi)
+        and np.allclose(np.mod(rot.data[1], 2 * np.pi), np.pi / 2)
+        and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
     ):
-        rot_simplified = qml.RY(rot.data[1], rot.wires)
-    elif (
-            not np.allclose(np.mod(rot.data[0], 2 * np.pi), 0)
-            and not np.allclose(np.mod(rot.data[1], 2 * np.pi), 0)
-            and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
-    ):
-        rot_simplified = qml.RZ(rot.data[0] + rot.data[2], rot.wires)
-    elif (
-            np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi)
-            and np.allclose(np.mod(rot.data[1], 2 * np.pi), np.pi / 2)
-            and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
-    ):
-        rot_simplified = qml.Hadamard(rot.wires)
-    else:
-        rot_simplified = rot
-    return rot_simplified
+        return qml.Hadamard(wires=rot.wires)
+
+    return rot
 
 
 def simplify_controlled_rotation(crot):
@@ -941,35 +932,25 @@ def simplify_controlled_rotation(crot):
          qml.operation: Simplified controlled rotation if possible.
     """
 
-    if (
-            np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi / 2)
-            and not np.allclose(np.mod(crot.data[1], 2 * np.pi), 0)
-            and np.allclose(np.mod(crot.data[2], 2 * np.pi), - np.pi / 2)
+    if np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi / 2) and np.allclose(
+        np.mod(crot.data[2], -2 * np.pi), -np.pi / 2
     ):
-        rot_simplified = qml.CRX(crot.data[1], crot.wires)
-    elif (
-            np.allclose(np.mod(crot.data[0], 2 * np.pi), 0)
-            and not np.allclose(np.mod(crot.data[1], 2 * np.pi), 0)
-            and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
+        return qml.CRX(crot.data[1], wires=crot.wires)
+    elif np.allclose(np.mod(crot.data[0], 2 * np.pi), 0) and np.allclose(
+        np.mod(crot.data[2], 2 * np.pi), 0
     ):
-        rot_simplified = qml.CRY(crot.data[1], crot.wires)
+        return qml.CRY(crot.data[1], wires=crot.wires)
+    elif np.allclose(np.mod(crot.data[1], 2 * np.pi), 0):
+        return qml.CRZ(crot.data[0] + crot.data[2], wires=crot.wires)
     elif (
-            not np.allclose(np.mod(crot.data[0], 2 * np.pi), 0)
-            and not np.allclose(np.mod(crot.data[1], 2 * np.pi), 0)
-            and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
-    ):
-        rot_simplified = qml.CRZ(crot.data[0] + crot.data[2], crot.wires)
-    elif (
-            np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi)
-            and np.allclose(np.mod(crot.data[1], 2 * np.pi), np.pi / 2)
-            and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
+        np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi)
+        and np.allclose(np.mod(crot.data[1], 2 * np.pi), np.pi / 2)
+        and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
     ):
         hadamard = qml.Hadamard
-        control_hadamard = qml.ctrl(hadamard, control=crot.control_wires)(wires=crot.target_wires)
-        rot_simplified = qml.Hadamard(control_hadamard)
-    else:
-        rot_simplified = crot
-    return rot_simplified
+        return qml.ctrl(hadamard, control=crot.control_wires)(wires=crot.target_wires)
+
+    return crot
 
 
 def simplify_u2(u2):
@@ -983,16 +964,17 @@ def simplify_u2(u2):
     """
 
     if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
-            np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
+        np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
         u2_simplified = qml.RY(np.pi / 2, u2.wires)
     elif np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
-            np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
+        np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
         u2_simplified = qml.RX(u2.data[1], u2.wires)
     else:
         u2_simplified = u2
     return u2_simplified
+
 
 def simplify_u3(u3):
     r"""Simplify a general U3 one qubit rotation into RX, RY and RZ rotation.
@@ -1005,19 +987,19 @@ def simplify_u3(u3):
     """
 
     if (
-            np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
+        np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
         and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
     ):
         u3_simplified = qml.RZ(u3.data[0], u3.wires)
     elif (
-            np.allclose(np.mod(u3.data[2], 2 * np.pi), np.pi/2)
+        np.allclose(np.mod(u3.data[2], 2 * np.pi), np.pi / 2)
         and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
     ):
         u3_simplified = qml.RX(u3.data[1], u3.wires)
     elif (
-            np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
+        np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
         and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
     ):
@@ -1025,6 +1007,7 @@ def simplify_u3(u3):
     else:
         u3_simplified = u3
     return u3_simplified
+
 
 def simplify(operation):
     r"""Simplify a rotation into RX, RY and RZ rotations.
@@ -1035,16 +1018,18 @@ def simplify(operation):
     Returns:
          qml.operation: Simplified rotation if possible.
     """
-    if operation.name == 'Rot':
-        operation = simplify_rotation(operation)
+    if operation.name == "Rot":
+        return simplify_rotation(operation)
 
-    if operation.name == 'U2':
-        operation = simplify_u2(operation)
+    if operation.name == "U2":
+        return simplify_u2(operation)
 
-    if operation.name == 'U3':
-        operation = simplify_u3(operation)
+    if operation.name == "U3":
+        return simplify_u3(operation)
 
-    return operation
+    if operation.name == "CRot":
+        return simplify_controlled_rotation(operation)
+
 
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
@@ -1066,36 +1051,107 @@ def is_commuting(operation1, operation2):
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-return-statements
 
-    # Parametric operation implements identity operator
-    if operation1.data and operation1.name != 'U2':
-        all_zeros = not np.allclose(np.mod(operation1.data, 2 * np.pi), 0)
-        if all_zeros:
-            operation1 = qml.Identity(wires=operation1.wires)
-
-    if operation2.data and operation2.name != 'U2':
-        all_zeros = not np.allclose(np.mod(operation2.data, 2 * np.pi), 0)
-        if all_zeros:
-            operation2 = qml.Identity(wires=operation2.wires)
-
     # Simplify the rotation if possible
-    if operation1.name in ['U2', 'U3', 'Rot']:
+    if operation1.name in ["U2", "U3", "Rot", "CRot"]:
         operation1 = simplify(operation1)
 
-    if operation2.name in ['U2', 'U3', 'Rot']:
+    if operation2.name in ["U2", "U3", "Rot", "CRot"]:
         operation2 = simplify(operation2)
 
-    # PauliRot
+    # Parametric operation implements identity operator
+    if operation1.data and operation1.name != "U2":
+        all_zeros = np.allclose(np.mod(operation1.data, 2 * np.pi), 0)
+        if all_zeros:
+            if operation2.name not in ["Barrier", "WireCut"]:
+                return True
+            return False
+
+    if operation2.data and operation2.name != "U2":
+        all_zeros = np.allclose(np.mod(operation2.data, 2 * np.pi), 0)
+        if all_zeros:
+            if operation1.name not in ["Barrier", "WireCut"]:
+                return True
+            return False
 
     # Case 1 operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
         return True
 
-    # Impossible to use the look up table for this case
-    if (operation1.name in ['U2', 'U3', 'Rot']) and (operation2.name in ['U2', 'U3', 'Rot']):
+    # Two simplified CRot
+    if operation1.name == "CRot" and operation2.name == "CRot":
+        control_control = intersection(operation1.control_wires, operation2.control_wires)
+        target_target = intersection(operation1.target_wires, operation2.target_wires)
+
+        if control_control and target_target:
+            return np.all(
+                np.allcllose(
+                    np.matmul(operation1.matrix, operation2.matrix),
+                    np.matmul(operation2.matrix, operation1.matrix),
+                )
+            )
+        elif control_control and not target_target:
+            return True
+        elif not control_control and target_target:
+            return np.all(
+                np.allcllose(
+                    np.matmul(
+                        qml.Rot(*operation1.data, wires=operation1.wires).matrix,
+                        qml.Rot(*operation2.data, wires=operation2.wires).matrix,
+                    ),
+                    np.matmul(
+                        qml.Rot(*operation2.data, wires=operation2.wires).matrix,
+                        qml.Rot(*operation1.data, wires=operation1.wires).matrix,
+                    ),
+                )
+            )
+        return False
+
+    # Two simplified rotations
+    if (operation1.name in ["U2", "U3", "Rot", "CRot"]) and (
+        operation2.name in ["U2", "U3", "Rot", "CRot"]
+    ):
+        if operation1.name == "CRot":
+            if not intersection(operation1.target_wires, operation2.wires):
+                return bool(commutation_map["ctrl"][position[operation2.name]])
+            return np.all(
+                np.allcllose(
+                    np.matmul(
+                        qml.Rot(*operation1.data, wires=operation1.target_wires).matrix,
+                        operation2.matrix,
+                    ),
+                    np.matmul(
+                        operation2.matrix,
+                        qml.Rot(*operation1.data, wires=operation1.target_wires).matrix,
+                    ),
+                )
+            )
+
+        if operation2.name == "CRot":
+            if not intersection(operation2.target_wires, operation1.wires):
+                return bool(commutation_map[operation1.name][position["ctrl"]])
+            return np.all(
+                np.allcllose(
+                    np.matmul(
+                        qml.Rot(*operation2.data, wires=operation2.target_wires).matrix,
+                        operation2.matrix,
+                    ),
+                    np.matmul(
+                        operation2.matrix,
+                        qml.Rot(*operation2.data, wires=operation2.target_wires).matrix,
+                    ),
+                )
+            )
+
         return np.all(
             np.allcllose(
-                np.matmul(operation1.matrix, operation2.matrix),
-                np.matmul(operation2.matrix, operation1.matrix),
+                np.matmul(
+                    operation1.matrix,
+                    operation2.matrix,
+                ),
+                np.matmul(
+                    operation2.matrix,
+                    operation1.matrix,
+                ),
             )
         )
 
@@ -1151,11 +1207,11 @@ def is_commuting(operation1, operation2):
         # Case 2.9: targets and controls overlap with targets and controls
         if target_control and control_target and target_target:
             return (
-                    bool(commutation_map[operation1.is_controlled][position["ctrl"]])
-                    and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
-                    and bool(
-                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-            )
+                bool(commutation_map[operation1.is_controlled][position["ctrl"]])
+                and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
+                and bool(
+                    commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
+                )
             )
 
     # Case 3: only operation 1 is controlled
@@ -1253,18 +1309,18 @@ class CommutationDAGNode:
     ]
 
     def __init__(
-            self,
-            op=None,
-            wires=None,
-            target_wires=None,
-            control_wires=None,
-            successors=None,
-            predecessors=None,
-            reachable=None,
-            matchedwith=None,
-            successorstovisit=None,
-            isblocked=None,
-            node_id=-1,
+        self,
+        op=None,
+        wires=None,
+        target_wires=None,
+        control_wires=None,
+        successors=None,
+        predecessors=None,
+        reachable=None,
+        matchedwith=None,
+        successorstovisit=None,
+        isblocked=None,
+        node_id=-1,
     ):
         self.op = op
         self.wires = wires
@@ -1391,7 +1447,7 @@ class CommutationDAG:
 
         for prev_node_id in range(max_node_id - 1, -1, -1):
             if self.get_node(prev_node_id).reachable and not is_commuting(
-                    self.get_node(prev_node_id).op, max_node
+                self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)
                 self._pred_update(max_node_id)

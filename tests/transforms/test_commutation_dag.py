@@ -17,6 +17,7 @@ Unit tests for :mod:`pennylane.operation`.
 import pytest
 from collections import OrderedDict
 from pennylane.wires import Wires
+import pennylane.numpy as np
 import pennylane as qml
 
 
@@ -216,6 +217,226 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], True),
+        ],
+    )
+    def test_cphase_z(self, wires, res):
+        print(wires)
+        commutation = qml.is_commuting(qml.CPhase(0.2, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], True),
+        ],
+    )
+    def test_cphase_phase(self, wires, res):
+        commutation = qml.is_commuting(qml.CPhase(0.2, wires=wires[0]), qml.PhaseShift(0.1, wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], False),
+            ([[0, 1], [1]], False),
+        ],
+    )
+    def test_cphase_paulix(self, wires, res):
+        commutation = qml.is_commuting(qml.CPhase(0.2, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], True),
+        ],
+    )
+    def test_cphase_zero_pauli(self, wires, res):
+        commutation = qml.is_commuting(qml.CPhase(0.0, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], False),
+        ],
+    )
+    def test_crx_pauliz(self, wires, res):
+        commutation = qml.is_commuting(qml.CRX(0.1, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], True),
+        ],
+    )
+    def test_crx_zero_pauliz(self, wires, res):
+        commutation = qml.is_commuting(qml.CRX(0.0, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], False),
+            ([[0, 1], [1]], False),
+        ],
+    )
+    def test_crz_paulix(self, wires, res):
+        commutation = qml.is_commuting(qml.CRZ(0.1, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], True),
+        ],
+    )
+    def test_crz_zero_paulix(self, wires, res):
+        commutation = qml.is_commuting(qml.CRZ(0.0, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], False),
+            ([[0, 1], [1]], False),
+        ],
+    )
+    def test_cry_hadamard(self, wires, res):
+        commutation = qml.is_commuting(qml.CRY(0.1, wires=wires[0]), qml.Hadamard(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], True),
+            ([[0, 1], [1]], True),
+        ],
+    )
+    def test_cry_zero_hadamard(self, wires, res):
+        commutation = qml.is_commuting(qml.CRY(0.0, wires=wires[0]), qml.Hadamard(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_rot_x_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.Rot(np.pi / 2, 0.1, - np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_rot_y_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.Rot(0, 0.1, 0, wires=wires[0]), qml.PauliY(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_rot_z_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.Rot(0.1, 0, 0.2, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_rot_hadamard_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.Rot(np.pi, np.pi/2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], False),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_rot_z(self, wires, res):
+        commutation = qml.is_commuting(qml.Rot(0.1, 0.2, 0.3, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [1]], True),
+            ([[0, 1], [0]], False),
+        ],
+    )
+    def test_crot_x_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.CRot(np.pi / 2, 0.1, - np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [1]], True),
+            ([[0, 1], [0]], False),
+        ],
+    )
+    def test_crot_y_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.CRot(0, 0.1, 0, wires=wires[0]), qml.PauliY(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [1]], True),
+            ([[0, 1], [0]], True),
+        ],
+    )
+    def test_crot_z_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.CRot(0.1, 0, 0.2, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [1]], True),
+            ([[0, 1], [0]], False),
+        ],
+    )
+    def test_crot_hadamard_simplified(self, wires, res):
+        commutation = qml.is_commuting(qml.CRot(np.pi, np.pi/2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1]))
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [1]], False),
+            ([[0, 1], [0]], True),
+        ],
+    )
+    def test_crot_z(self, wires, res):
+        commutation = qml.is_commuting(qml.CRot(0.1, 0.2, 0.3, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        assert commutation == res
 
 class TestCommutationDAG:
     """Commutation DAG tests."""
