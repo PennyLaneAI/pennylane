@@ -18,6 +18,10 @@
   `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
 
+  A differentiable tensor contraction function `contract_tensors` has been
+  added.
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
@@ -40,4 +44,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes, Josh Izaac, David Wierichs
+Thomas Bromley, Anthony Hayes, Josh Izaac, David Wierichs
