@@ -141,16 +141,17 @@ def generate_moment_matrix(basis_functions, e, idx):
         moment_matrix = anp.zeros((n, n))
         for i, a in enumerate(basis_functions):
             for j, b in enumerate(basis_functions):
-                if args:
-                    args_ab = []
-                    for arg in args:
-                        args_ab.append(arg[[i, j]])
-                    moment_integral = generate_moment(a, b, e, idx)(*args_ab)
-                else:
-                    moment_integral = generate_moment(a, b, e, idx)()
-                o = anp.zeros((n, n))
-                o[i, j] = 1.0
-                moment_matrix = moment_matrix + moment_integral * o
+                if i <= j:
+                    if args:
+                        args_ab = []
+                        for arg in args:
+                            args_ab.append(arg[[i, j]])
+                        moment_integral = generate_moment(a, b, e, idx)(*args_ab)
+                    else:
+                        moment_integral = generate_moment(a, b, e, idx)()
+                    o = anp.zeros((n, n))
+                    o[i, j] = o[j, i] = 1.0
+                    moment_matrix = moment_matrix + moment_integral * o
         return moment_matrix
 
     return moment

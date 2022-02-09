@@ -151,7 +151,7 @@ def generate_fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
         for i in range(3):
             f.append(
-                one_particle(constants[i], integrals[i], cutoff=cutoff, core=core, active=active)
+                one_particle(constants[i], integrals[i], cutoff=cutoff)
             )
 
         return f
