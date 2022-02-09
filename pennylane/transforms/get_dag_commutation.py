@@ -1167,15 +1167,12 @@ def is_commuting(operation1, operation2):
 
     not_supported_operations = [
         "PauliRot",
-        "QubitCarry",
-        "QubitSum",
-        "SingleExcitation",
-        "SingleExcitationMinus",
-        "SingleExcitationPlus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "QubitDensityMatrix"
+        "QubitDensityMatrix",
+        "CVNeuralNetLayers",
+        "ApproxTimeEvolution",
+        "ArbitraryUnitary" "CommutingEvolution",
+        "DisplacementEmbedding",
+        "SqueezingEmbedding",
     ]
 
     if (
@@ -1216,6 +1213,47 @@ def is_commuting(operation1, operation2):
     # Case 1 operations are disjoints
     if not intersection(operation1.wires, operation2.wires):
         return True
+
+    non_commuting_operations = [
+        "ArbitraryStatePreparation",
+        "BasisStatePreparation",
+        "MottonenStatePreparation",
+        "QubitCarry",
+        "QubitSum",
+        "SingleExcitation",
+        "SingleExcitationMinus",
+        "SingleExcitationPlus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "BasicEntanglerLayers",
+        "GateFabric",
+        "ParticleConservingU1",
+        "ParticleConservingU2",
+        "RandomLayers",
+        "SimplifiedTwoDesign",
+        "StronglyEntanglingLayers",
+        "AllSinglesDoubles",
+        "FermionicDoubleExcitation",
+        "FermionicSingleExcitation",
+        "Grover",
+        "kUpCCGSD",
+        "Permute",
+        "QFT",
+        "QuantumMonteCarlo",
+        "QuantumPhaseEstimation",
+        "UCCSD",
+        "MPS",
+        "TTN",
+        "AmplitudeEmbedding",
+        "AngleEmbedding",
+        "BasisEmbedding",
+        "IQPEmbedding",
+        "QAOAEmbedding",
+    ]
+
+    if operation1.name or operation2.name in non_commuting_operations:
+        return False
 
     # Two simplified CRot
     if operation1.name == "CRot" and operation2.name == "CRot":
