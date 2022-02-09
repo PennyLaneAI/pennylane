@@ -139,6 +139,8 @@ position = OrderedDict(
         "IsingXX": 23,
         "IsingYY": 24,
         "IsingZZ": 25,
+        "QubitStateVector": 26,
+        "BasisState": 27,
     }
 )
 """OrderedDict[str, int]: represents the place of each gates in the commutation_map."""
@@ -166,6 +168,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -200,6 +204,8 @@ commutation_map = OrderedDict(
             1,
             0,
             0,
+            0,
+            0,
         ],
         "PauliY": [
             0,
@@ -227,6 +233,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
         ],
         "PauliZ": [
@@ -256,6 +264,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "SWAP": [
             0,
@@ -278,6 +288,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -312,6 +324,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "S": [
             0,
@@ -340,6 +354,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "T": [
             0,
@@ -368,6 +384,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "SX": [
             0,
@@ -396,6 +414,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "ISWAP": [
             0,
@@ -418,6 +438,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -452,8 +474,12 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
+            0,
         ],
         "Barrier": [
+            0,
+            0,
             0,
             0,
             0,
@@ -508,6 +534,8 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
+            0,
         ],
         "RX": [
             0,
@@ -534,6 +562,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
         ],
@@ -564,6 +594,8 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
         ],
         "RZ": [
             0,
@@ -592,6 +624,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "PhaseShift": [
             0,
@@ -620,6 +654,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "Rot": [
             0,
@@ -642,6 +678,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -676,6 +714,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "Identity": [
             1,
@@ -704,6 +744,8 @@ commutation_map = OrderedDict(
             1,
             1,
             1,
+            0,
+            0,
         ],
         "U1": [
             0,
@@ -732,6 +774,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
         ],
         "U2": [
             0,
@@ -754,6 +798,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
             0,
@@ -788,6 +834,8 @@ commutation_map = OrderedDict(
             0,
             0,
             0,
+            0,
+            0,
         ],
         "IsingXX": [
             0,
@@ -814,6 +862,8 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
             0,
             0,
         ],
@@ -844,6 +894,8 @@ commutation_map = OrderedDict(
             0,
             1,
             0,
+            0,
+            0,
         ],
         "IsingZZ": [
             0,
@@ -872,6 +924,68 @@ commutation_map = OrderedDict(
             0,
             0,
             1,
+            0,
+            0,
+        ],
+        "QubitStateVector": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ],
+        "BasisState": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
         ],
     }
 )
@@ -1051,7 +1165,33 @@ def is_commuting(operation1, operation2):
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-return-statements
 
-    # Simplify the rotation if possible
+    not_supported_operations = [
+        "PauliRot",
+        "QubitCarry",
+        "QubitSum",
+        "SingleExcitation",
+        "SingleExcitationMinus",
+        "SingleExcitationPlus",
+        "DoubleExcitation",
+        "DoubleExcitationPlus",
+        "DoubleExcitationMinus",
+        "QubitDensityMatrix"
+    ]
+
+    if (
+        operation1.name in not_supported_operations
+        or isinstance(operation1, qml.operation.CVOperation)
+        or isinstance(operation1, qml.operation.Channel)
+    ):
+        raise qml.QuantumFunctionError(f"Operation {operation1.name} not supported.")
+    if (
+        operation2.name in not_supported_operations
+        or isinstance(operation2, qml.operation.CVOperation)
+        or isinstance(operation2, qml.operation.Channel)
+    ):
+        raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
+
+    # Simplify the rotations if possible
     if operation1.name in ["U2", "U3", "Rot", "CRot"]:
         operation1 = simplify(operation1)
 
