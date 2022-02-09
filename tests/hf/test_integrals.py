@@ -386,6 +386,63 @@ def test_moment_integral(symbols, geometry, e, idx, ref):
 
 
 @pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "e", "idx"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.1, 0.2, 0.3], [2.0, 0.1, 0.2]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            np.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            1,
+            0,
+        ),
+    ],
+)
+def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
+    r"""Test that the moment gradient computed with respect to the basis parameters is correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+    args = [mol.alpha, mol.coeff]
+
+    g_alpha = autograd.grad(moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
+    g_coeff = autograd.grad(moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
+
+    # compute moment gradients with respect to alpha and coeff using finite diff
+    delta = 0.0001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = alpha.copy()
+            alpha_plus = alpha.copy()
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+            o_minus = moment_integral(basis_a, basis_b, e, idx)(*[alpha_minus, coeff])
+            o_plus = moment_integral(basis_a, basis_b, e, idx)(*[alpha_plus, coeff])
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = coeff.copy()
+            coeff_plus = coeff.copy()
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+            o_minus = moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_minus])
+            o_plus = moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_plus])
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
     ("i", "j", "ri", "rj", "alpha", "beta", "d"),
     [
         # _diff2 must return 0.0 for two Gaussians centered far apart at 0.0 and 20.0
