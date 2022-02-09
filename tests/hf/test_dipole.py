@@ -14,10 +14,8 @@
 """
 Unit tests for functions needed for computing the dipole.
 """
-import autograd
 import pennylane as qml
 import pytest
-from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane.hf.dipole import (
     generate_dipole,
@@ -261,3 +259,21 @@ def test_one_particle(core_constant, integral, f_ref):
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert np.allclose(f[0], f_ref[0])  # fermionic operators
+
+
+@pytest.mark.parametrize(
+    ("f_operator", "q_operator"),
+    [
+        (
+            (np.array([1.0]), [[0, 0]]),
+            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [[0.5 + 0j, -0.5 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
+        ),
+    ],
+)
+def test_generate_qubit_operator(f_operator, q_operator):
+    r"""Test that _generate_qubit_operator returns the correct operator."""
+    h = qubit_operator(f_operator)
+    h_ref = qml.Hamiltonian(q_operator[0], q_operator[1])
+
+    assert h.compare(h_ref)

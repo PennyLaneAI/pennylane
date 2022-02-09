@@ -185,7 +185,7 @@ def generate_dipole(mol, cutoff=1.0e-12, core=None, active=None):
         d = []
         d_ferm = generate_fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
-            d.append(qubit_operator(i, cutoff=cutoff))
+            d.append(qubit_operator(i, cutoff=cutoff) * (-1))
 
         return d
 
@@ -266,6 +266,6 @@ def qubit_operator(d_ferm, cutoff=1.0e-12):
                 coeffs = np.concatenate([coeffs, np.array(op[0]) * d_ferm[0][n]])
                 ops = ops + op[1]
 
-    d = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff) * (-1)
+    d = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
     return d
