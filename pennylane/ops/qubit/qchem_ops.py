@@ -610,16 +610,18 @@ class OrbitalRotation(Operation):
     @property
     def grad_recipe(self):
         coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies()[0])
-        return np.stack([coeffs, np.ones_like(coeffs), shifts]).T
+        return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
 
     def parameter_frequencies(self):
         return [(0.5, 1.0, 1.5, 2.0)]
 
     @classmethod
     def _matrix(cls, *params):
-        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
-        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
-        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        r"""
+        This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        """
 
         phi = params[0]
         c = qml.math.cos(phi / 2)
