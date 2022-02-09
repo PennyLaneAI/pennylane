@@ -165,7 +165,7 @@ class TestOperationConstruction:
 
         x = 0.654
         op = DummyOp(x, wires=0)
-        assert op.parameter_frequencies() == (0.4,)
+        assert op.parameter_frequencies == (0.4,)
 
     def test_frequencies_default_multi_param(self):
         """Test that an operation with default parameter frequencies and multiple
@@ -182,7 +182,7 @@ class TestOperationConstruction:
         with pytest.raises(
             qml.operation.OperatorPropertyUndefined, match="does not have parameter"
         ):
-            op.parameter_frequencies()
+            op.parameter_frequencies
 
     @pytest.mark.parametrize("num_param", [1, 2])
     def test_frequencies_parameter_dependent(self, num_param):
@@ -195,13 +195,14 @@ class TestOperationConstruction:
             num_wires = 1
             grad_method = "A"
 
+            @property
             def parameter_frequencies(self):
                 x = self.data
                 return [(0.2, _x) for _x in x]
 
         x = [0.654, 2.31][:num_param]
         op = DummyOp(*x, wires=0)
-        f = op.parameter_frequencies()
+        f = op.parameter_frequencies
         for i in range(num_param):
             assert f[i] == (0.2, x[i])
 

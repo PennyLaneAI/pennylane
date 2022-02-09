@@ -85,14 +85,7 @@ class SingleExcitation(Operation):
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [
-            (
-                0.5,
-                1,
-            )
-        ]
+    parameter_frequencies = [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -152,9 +145,7 @@ class SingleExcitationPlus(Operation):
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -228,9 +219,7 @@ class SingleExcitationMinus(Operation):
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -330,14 +319,7 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [
-            (
-                0.5,
-                1,
-            )
-        ]
+    parameter_frequencies = [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -432,9 +414,7 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -504,9 +484,7 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -563,10 +541,9 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The ``OrbitalRotation`` operator does *not* satisfy the
-      four-term parameter-shift rule but a higher-order general parameter-shift rule
-      (with 4 equidistant frequencise :math:`\{0.5, 1, 1.5, 2\}` see,
-      https://arxiv.org/abs/2107.12390)
+    * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
+      :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
+      (see https://arxiv.org/abs/2107.12390).
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -592,7 +569,8 @@ class OrbitalRotation(Operation):
     """
     num_wires = 4
     num_params = 1
-    grad_method = "F"
+    grad_method = "A"
+
     generator = [
         qml.math.array(
             [
@@ -616,22 +594,19 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
 
-    def parameter_frequencies(self):
-        return [
-            (
-                0.5,
-                1.0,
-                1.5,
-                2.0,
-            )
-        ]
+    @property
+    def grad_recipe(self):
+        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
+        return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
 
     @classmethod
     def _matrix(cls, *params):
-        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
-        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
-        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        r"""This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        """
 
         phi = params[0]
         c = qml.math.cos(phi / 2)

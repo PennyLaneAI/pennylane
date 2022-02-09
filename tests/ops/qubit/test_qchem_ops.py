@@ -50,8 +50,6 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
-        if op.generator[0] is None:
-            pytest.skip(f"Operation {op.name} does not have a generator defined.")
         gen, coeff = op.generator
         if isinstance(gen, np.ndarray):
             matrix = gen
@@ -66,7 +64,7 @@ class TestParameterFrequencies:
         )
         freqs_from_gen = freqs_from_gen[freqs_from_gen > 0]
 
-        freqs = op.parameter_frequencies()
+        freqs = op.parameter_frequencies
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
