@@ -17,6 +17,7 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import cmath
+import warnings
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -877,12 +878,15 @@ class MultiControlledX(Operation):
     * Gradient recipe: None
 
     Args:
-        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
-        wires (Union[Wires or int]): a single target wire the operation acts on
+        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
+            Now users should use "wires" to indicate both the control wires and the target wire.
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
+            the operation acts on
         control_values (str): a string of bits representing the state of the control
             qubits to control on (default is the all 1s state)
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of Toffoli gates
+
 
     .. note::
 
@@ -907,17 +911,6 @@ class MultiControlledX(Operation):
         Note that the state of the work wires before and after the decomposition takes place is
         unchanged.
 
-    **Example**
-
-    The ``MultiControlledX`` operation (sometimes called a mixed-polarity
-    multi-controlled Toffoli) is a commonly-encountered case of the
-    :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
-    unitary is the Pauli X (NOT) gate. It can be used in the same manner as
-    ``ControlledQubitUnitary``, but there is no need to specify a matrix
-    argument:
-
-    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
-
     """
     is_self_inverse = True
     num_wires = AnyWires
@@ -934,12 +927,29 @@ class MultiControlledX(Operation):
         work_wires=None,
         do_queue=True,
     ):
-        wires = Wires(wires)
-        control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        if wires is None:
+            raise ValueError("Must specify the wires where the operation acts on")
+        if control_wires is None:
+            if len(wires) > 1:
+                control_wires = Wires(wires[:-1])
+                wires = Wires(wires[-1])
+            else:
+                raise ValueError(
+                    "MultiControlledX: wrong number of wires. 1 wire given. Need at least 2."
+                )
+        else:
+            wires = Wires(wires)
+            control_wires = Wires(control_wires)
 
-        if len(wires) != 1:
-            raise ValueError("MultiControlledX accepts a single target wire.")
+            warnings.warn(
+                "The control_wires keyword will be removed soon. Use wires = (control_wires,target_wire). See the documentation for more information.",
+                category=UserWarning,
+            )
+
+            if len(wires) != 1:
+                raise ValueError("MultiControlledX accepts a single target wire.")
+
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
@@ -1096,23 +1106,19 @@ class MultiControlledX(Operation):
 
         gates = [
             MultiControlledX(
-                control_wires=first_part,
-                wires=work_wire,
+                wires=first_part + work_wire,
                 work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire,
-                wires=target_wire,
+                wires=second_part + work_wire + target_wire,
                 work_wires=first_part,
             ),
             MultiControlledX(
-                control_wires=first_part,
-                wires=work_wire,
+                wires=first_part + work_wire,
                 work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire,
-                wires=target_wire,
+                wires=second_part + work_wire + target_wire,
                 work_wires=first_part,
             ),
         ]
