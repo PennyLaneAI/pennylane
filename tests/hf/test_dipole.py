@@ -164,8 +164,8 @@ def test_generate_fermionic_dipole(symbols, geometry, core, charge, active, f_re
     args = [p for p in [geometry] if p.requires_grad]
     f = generate_fermionic_dipole(mol, core=core, active=active)(*args)[0]
 
-    assert np.allclose(f[0], f_ref[0]) # fermionic coefficients
-    assert np.allclose(f[0], f_ref[0]) # fermionic operators
+    assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
+    assert np.allclose(f[0], f_ref[0])  # fermionic operators
 
 
 @pytest.mark.parametrize(
