@@ -32,8 +32,12 @@
   API documentation.
   [(#2179)](https://github.com/PennyLaneAI/pennylane/pull/2179)
 
+* Improves the documentation of `RotosolveOptimizer` regarding the
+  usage of the passed `substep_optimizer` and its keyword arguments.
+  [(#2160)](https://github.com/PennyLaneAI/pennylane/pull/2160)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes, Josh Izaac
+Anthony Hayes, Josh Izaac, David Wierichs
