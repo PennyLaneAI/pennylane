@@ -359,7 +359,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     )
     wire_map = {w: w for w in wires}
 
-    with QuantumTape() as tape:
+    with QuantumTape() as tape: # pylint: disable=protected-access
         for _, op in ordered_ops:
             original_op_wires = op._wires
             new_wires = [wire_map[w] for w in op.wires]
