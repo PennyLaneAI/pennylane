@@ -818,3 +818,28 @@ class TestGraphToTape:
 
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
+
+    def test_mid_circuit_measurement(self, mocker):
+        """
+        Tests that a circuit that is fragmented using a mid circuit measurement
+        gives the correct updated wires.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.RZ(0.321, wires=1)
+            qml.Hadamard(wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        spy = mocker.spy(qcut, "_find_new_wire")
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        assert spy.call_count == 1
