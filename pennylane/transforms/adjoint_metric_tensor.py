@@ -140,7 +140,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
