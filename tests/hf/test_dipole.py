@@ -191,3 +191,73 @@ def test_generate_dipole(symbols, geometry, core, charge, active, n_terms):
     f = generate_dipole(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
 
     assert len(f.terms[0]) == n_terms
+
+
+@pytest.mark.parametrize(
+    ("core_constant", "integral", "f_ref"),
+    [
+        (
+            np.array([2.869]),
+            np.array(
+                [
+                    [0.95622463, 0.7827277, -0.53222294],
+                    [0.7827277, 1.42895581, 0.23469918],
+                    [-0.53222294, 0.23469918, 0.48381955],
+                ]
+            ),
+            # computed with PL-QChem dipole (format is modified)
+            (
+                np.array(
+                    [
+                        2.869,
+                        0.956224634652776,
+                        0.782727697897828,
+                        -0.532222940905614,
+                        0.956224634652776,
+                        0.782727697897828,
+                        -0.532222940905614,
+                        0.782727697897828,
+                        1.42895581236226,
+                        0.234699175620383,
+                        0.782727697897828,
+                        1.42895581236226,
+                        0.234699175620383,
+                        -0.532222940905614,
+                        0.234699175620383,
+                        0.483819552892797,
+                        -0.532222940905614,
+                        0.234699175620383,
+                        0.483819552892797,
+                    ]
+                ),
+                [
+                    [],
+                    [0, 0],
+                    [0, 2],
+                    [0, 4],
+                    [1, 1],
+                    [1, 3],
+                    [1, 5],
+                    [2, 0],
+                    [2, 2],
+                    [2, 4],
+                    [3, 1],
+                    [3, 3],
+                    [3, 5],
+                    [4, 0],
+                    [4, 2],
+                    [4, 4],
+                    [5, 1],
+                    [5, 3],
+                    [5, 5],
+                ],
+            ),
+        ),
+    ],
+)
+def test_one_particle(core_constant, integral, f_ref):
+    r"""Test that generate_electron_integrals returns the correct values."""
+    f = one_particle(core_constant, integral)
+
+    assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
+    assert np.allclose(f[0], f_ref[0])  # fermionic operators
