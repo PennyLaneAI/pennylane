@@ -31,7 +31,7 @@ from .integrals import (
     gaussian_overlap,
     generate_attraction,
     generate_kinetic,
-    generate_moment,
+    moment_integral,
     generate_overlap,
     generate_repulsion,
     nuclear_attraction,

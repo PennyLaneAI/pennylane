@@ -308,7 +308,7 @@ def generate_overlap(basis_a, basis_b):
     return overlap_integral
 
 
-def _hermite_moment(alpha, beta, t, e, rc):
+def _hermite_moment(alpha, beta, t, e, r):
     r"""Compute Hermite moment integral recursively.
 
     The Hermite moment integral in one dimension is defined as
@@ -317,14 +317,14 @@ def _hermite_moment(alpha, beta, t, e, rc):
 
         \int_{-\infty }^{+\infty} x_C^e \Lambda_t dx,
 
-    where :math:`e` is the multipole moment order, :math:`C` is the origin of the Cartesian
-    coordinates, and :math:`\Lambda_t` is the :math:`t` component of the Hermite Gaussian. The
-    integral can be computed recursively as
+    where :math:`e` is a positive integer, :math:`C` is the origin of the Cartesian
+    coordinates, and :math:`\Lambda_t` is the :math:`t` component of the Hermite Gaussian function.
+    The integral can be computed recursively as
     [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
 
-        M_{t}^{e+1} = t M_{t-1}^{e} + X_PC M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
+        M_{t}^{e+1} = t M_{t-1}^{e} + X_C M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
 
     This integral is zero for :math:`t > e` and
 
@@ -333,14 +333,14 @@ def _hermite_moment(alpha, beta, t, e, rc):
         M_t^0 = \delta _{t0} \sqrt{\frac{\pi}{p}},
 
     where :math:`p = \alpha + \beta` and :math:`\alpha, \beta` are the exponents of the Gaussian
-    functions that construct the Hermite Gaussian :math:`\Lambda`.
+    functions that construct the Hermite Gaussian function :math:`\Lambda`.
 
     Args:
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
-        t (integer): order of the Hermite Gaussian
-        e (integer): order of the multipole moment
-        rc (array[float]): distance between the center of the Hermite Gaussian and the origin
+        t (integer): order of the Hermite Gaussian function
+        e (integer): exponent of the position component
+        r (array[float]): distance between the center of the Hermite Gaussian function and origin
 
     Returns:
         array[float]: expansion coefficients for each Gaussian combination
@@ -351,8 +351,8 @@ def _hermite_moment(alpha, beta, t, e, rc):
     >>> beta =  np.array([3.42525091])
     >>> t = 0
     >>> e = 1
-    >>> rc = 1.5
-    >>> _hermite_moment(alpha, beta, t, e, rc)
+    >>> r = 1.5
+    >>> _hermite_moment(alpha, beta, t, e, r)
     array([1.0157925])
     """
     p = anp.array(alpha + beta)
@@ -364,15 +364,15 @@ def _hermite_moment(alpha, beta, t, e, rc):
     if e == 0 and t == 0:
         return anp.sqrt(anp.pi / p)
     m = (
-        _hermite_moment(alpha, beta, t - 1, e - 1, rc) * t
-        + _hermite_moment(alpha, beta, t, e - 1, rc) * rc
-        + _hermite_moment(alpha, beta, t + 1, e - 1, rc) / (2 * p)
+        _hermite_moment(alpha, beta, t - 1, e - 1, r) * t
+        + _hermite_moment(alpha, beta, t, e - 1, r) * r
+        + _hermite_moment(alpha, beta, t + 1, e - 1, r) / (2 * p)
     )
     return m
 
 
-def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
-    r"""Compute one-dimensional multipole moment integral for two primitive Gaussian functions.
+def gaussian_moment(la, lb, ra, rb, alpha, beta, e, r):
+    r"""Compute the one-dimensional multipole moment integral for two primitive Gaussian functions.
 
     The multipole moment integral in one dimension is defined as
 
@@ -381,8 +381,8 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
         S_{ij}^e = \left \langle G_i | q_C^e | G_j \right \rangle,
 
     where :math:`G` is a Gaussian function at dimension :math:`q = x, y, z` of the Cartesian
-    coordinates system, :math:`e` is the multipole moment order and :math:`C` is the origin of the
-    Cartesian coordinates. The integrals can be evauated as
+    coordinates system, :math:`e` is a positive integer and :math:`C` is the origin of the
+    Cartesian coordinates. The integrals can be evaluated as
     [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
@@ -399,8 +399,8 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
         rb (float): position of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
-        e (integer): order of the multipole moment
-        rc (array[float]): distance between the center of the Hermite Gaussian and the origin
+        e (integer): exponent of the position component
+        r (array[float]): distance between the center of the Hermite Gaussian  function and origin
 
     Returns:
         array[float]: one-dimensional multipole moment integral between primitive Gaussian functions
@@ -412,18 +412,18 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc):
     >>> alpha = np.array([3.42525091])
     >>> beta = np.array([3.42525091])
     >>> e = 1
-    >>> rc = 1.5
-    >>> gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc)
+    >>> r = 1.5
+    >>> gaussian_moment(la, lb, ra, rb, alpha, beta, e, r)
     array([1.0157925])
     """
     s = 0.0
     for t in range(min(la + lb + 1, e + 1)):
-        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * _hermite_moment(alpha, beta, t, e, rc)
+        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * _hermite_moment(alpha, beta, t, e, r)
 
     return s
 
 
-def generate_moment(basis_a, basis_b, e, idx):
+def moment_integral(basis_a, basis_b, e, idx):
     r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
 
     The multipole moment integral for two primitive Gaussian functions is computed as
@@ -435,18 +435,18 @@ def generate_moment(basis_a, basis_b, e, idx):
                    \left \langle G_m | G_n \right \rangle,
 
     where :math:`G_{i-n}` is a one-dimensional Gaussian function, :math:`q = x, y, z` is the
-    dimension at which the integral is evaluated, :math:`C` is the origin of the Cartesian
-    coordinates and :math:`e` is the multipole moment order. For contracted Gaussians, such
+    coordinate at which the integral is evaluated, :math:`C` is the origin of the Cartesian
+    coordinates and :math:`e` is a positive integer. For contracted Gaussians, such
     integrals will be computed over primitive Gaussians, multiplied by the normalized contraction
     coefficients and finally summed over.
 
-    The ``idx`` argument determines the dimension :math:`q` at which the integral is computed. It
+    The ``idx`` argument determines the coordinate :math:`q` at which the integral is computed. It
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
 
     Args:
         basis_a (BasisFunction): first basis function
         basis_b (BasisFunction): second basis function
-        e (integer): order of the multipole moment
+        e (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
     Returns:
@@ -459,11 +459,11 @@ def generate_moment(basis_a, basis_b, e, idx):
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> args = []
     >>> e, idx =  1, 0
-    >>> generate_moment(mol.basis_set[0], mol.basis_set[1], e, idx)(*args)
+    >>> moment_integral(mol.basis_set[0], mol.basis_set[1], e, idx)(*args)
     3.12846324e-01
     """
 
-    def moment_integral(*args):
+    def _moment_integral(*args):
         r"""Normalize and compute the multipole moment integral for two contracted Gaussians.
 
         Args:
@@ -489,7 +489,7 @@ def generate_moment(basis_a, basis_b, e, idx):
 
         p = alpha[:, anp.newaxis] + beta
         q = anp.sqrt(anp.pi / p)
-        rc = (
+        r = (
             alpha[:, anp.newaxis] * ra[:, anp.newaxis, anp.newaxis]
             + beta * rb[:, anp.newaxis, anp.newaxis]
         ) / p
@@ -497,7 +497,7 @@ def generate_moment(basis_a, basis_b, e, idx):
         i, j, k = anp.roll(anp.array([0, 2, 1]), idx)
 
         s = (
-            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, anp.newaxis], beta, e, rc[i])
+            gaussian_moment(la[i], lb[i], ra[i], rb[i], alpha[:, anp.newaxis], beta, e, r[i])
             * expansion(la[j], lb[j], ra[j], rb[j], alpha[:, anp.newaxis], beta, 0)
             * q
             * expansion(la[k], lb[k], ra[k], rb[k], alpha[:, anp.newaxis], beta, 0)
@@ -506,7 +506,7 @@ def generate_moment(basis_a, basis_b, e, idx):
 
         return (na * nb * (ca[:, anp.newaxis] * cb) * s).sum()
 
-    return moment_integral
+    return _moment_integral
 
 
 def _diff2(i, j, ri, rj, alpha, beta):

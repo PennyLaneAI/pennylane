@@ -30,7 +30,7 @@ from pennylane.hf.integrals import (
     gaussian_overlap,
     generate_attraction,
     generate_kinetic,
-    generate_moment,
+    moment_integral,
     generate_overlap,
     generate_repulsion,
     primitive_norm,
@@ -374,13 +374,13 @@ def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
         ),
     ],
 )
-def test_generate_moment(symbols, geometry, e, idx, ref):
+def test_moment_integral(symbols, geometry, e, idx, ref):
     r"""Test that generate_moment function returns a correct value for the moment integral."""
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [geometry] if p.requires_grad]
-    s = generate_moment(basis_a, basis_b, e, idx)(*args)
+    s = moment_integral(basis_a, basis_b, e, idx)(*args)
 
     assert np.allclose(s, ref)
 
