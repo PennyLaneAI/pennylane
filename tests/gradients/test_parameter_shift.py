@@ -311,7 +311,6 @@ class TestParamShift:
         shift rule"""
 
         class RX(qml.RX):
-
             @property
             def parameter_frequencies(self):
                 raise qml.operation.OperatorPropertyUndefined

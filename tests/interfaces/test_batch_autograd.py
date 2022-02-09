@@ -66,7 +66,10 @@ class TestAutogradExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             return execute(
-                [tape], device, gradient_fn=param_shift, gradient_kwargs={"shifts": [(np.pi / 4,)] * 2}
+                [tape],
+                device,
+                gradient_fn=param_shift,
+                gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
             )[0]
 
         res = qml.jacobian(cost)(a, device=dev)
