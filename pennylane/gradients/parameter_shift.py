@@ -171,7 +171,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
     op, p_idx = tape.get_operation(t_idx)
     try:
         # Obtain frequencies, either via custom implementation or from generator eigvals
-        frequencies = op.parameter_frequencies()[p_idx]
+        frequencies = op.parameter_frequencies[p_idx]
         # Create shift rule from frequencies with given shifts
         coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
         # The shift rules do not include a rescaling of the parameter, only shifts.
