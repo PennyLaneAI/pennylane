@@ -718,6 +718,7 @@ class Operation(Operator):
         """
         return [None, 1]
 
+    @property
     def parameter_frequencies(self):
         r"""Returns the frequencies for each operator parameter with respect
         to an expectation value of the form
@@ -734,14 +735,14 @@ class Operation(Operator):
         **Example**
 
         >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
-        >>> op.parameter_frequencies()
+        >>> op.parameter_frequencies
         [(0.5, 1), (0.5, 1), (0.5, 1)]
 
         For operators that define a generator, the parameter frequencies are directly
         related to the eigenvalues of the generator:
 
         >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
-        >>> op.parameter_frequencies()
+        >>> op.parameter_frequencies
         [(1,)]
         >>> gen_eigvals = tuple(np.linalg.eigvals(op.generator[0] * op.generator[1]))
         >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)

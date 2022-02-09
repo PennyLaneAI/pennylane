@@ -55,9 +55,7 @@ class RX(Operation):
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -112,9 +110,7 @@ class RY(Operation):
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -163,9 +159,7 @@ class RZ(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -225,12 +219,10 @@ class PhaseShift(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
+    parameter_frequencies = [(1,)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
-
-    def parameter_frequencies(self):
-        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -299,12 +291,10 @@ class ControlledPhaseShift(Operation):
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
+    parameter_frequencies = [(1,)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
-
-    def parameter_frequencies(self):
-        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -383,9 +373,7 @@ class Rot(Operation):
     num_wires = 1
     num_params = 3
     grad_method = "A"
-
-    def parameter_frequencies(self):
-        return [(1,), (1,), (1,)]
+    parameter_frequencies = [(1,), (1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -467,9 +455,7 @@ class MultiRZ(Operation):
     num_wires = AnyWires
     num_params = 1
     grad_method = "A"
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, theta, n):
@@ -650,8 +636,7 @@ class PauliRot(Operation):
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
 
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -846,12 +831,10 @@ class CRX(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -947,12 +930,10 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1042,12 +1023,10 @@ class CRZ(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1130,12 +1109,10 @@ class CRot(Operation):
     num_params = 3
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+    parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1225,9 +1202,7 @@ class U1(Operation):
     num_params = 1
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1285,9 +1260,7 @@ class U2(Operation):
     num_wires = 1
     num_params = 2
     grad_method = "A"
-
-    def parameter_frequencies(self):
-        return [(1,), (1,)]
+    parameter_frequencies = [(1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1361,9 +1334,7 @@ class U3(Operation):
     num_wires = 1
     num_params = 3
     grad_method = "A"
-
-    def parameter_frequencies(self):
-        return [(1,), (1,), (1,)]
+    parameter_frequencies = [(1,), (1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1437,9 +1408,7 @@ class IsingXX(Operation):
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1500,6 +1469,7 @@ class IsingYY(Operation):
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(1,)]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1508,9 +1478,6 @@ class IsingYY(Operation):
             qml.RY(phi, wires=[wires[0]]),
             qml.CY(wires=wires),
         ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1561,6 +1528,7 @@ class IsingZZ(Operation):
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(1,)]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1569,9 +1537,6 @@ class IsingZZ(Operation):
             qml.RZ(phi, wires=[wires[1]]),
             qml.CNOT(wires=wires),
         ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
 
     @classmethod
     def _matrix(cls, *params):

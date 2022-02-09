@@ -85,9 +85,7 @@ class SingleExcitation(Operation):
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0)]
+    parameter_frequencies = [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -147,9 +145,7 @@ class SingleExcitationPlus(Operation):
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -223,9 +219,7 @@ class SingleExcitationMinus(Operation):
         np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -325,9 +319,7 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0)]
+    parameter_frequencies = [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -422,9 +414,7 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -494,9 +484,7 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
-
-    def parameter_frequencies(self):
-        return [(1,)]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -606,14 +594,12 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
 
     @property
     def grad_recipe(self):
-        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies()[0])
+        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
         return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
-
-    def parameter_frequencies(self):
-        return [(0.5, 1.0, 1.5, 2.0)]
 
     @classmethod
     def _matrix(cls, *params):
