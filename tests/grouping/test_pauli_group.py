@@ -15,15 +15,15 @@
 Unit tests for the :mod:`pauli_group`  functions in ``grouping/pauli.py``.
 """
 import pytest
-from pennylane import Identity, PauliX, PauliY, PauliZ
 
+from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane.grouping import is_commuting, string_to_pauli_word
 from pennylane.grouping.pauli import (
+    partition_pauli_group,
     pauli_group,
     pauli_mult,
     pauli_mult_with_phase,
-    partition_pauli_group,
 )
-from pennylane.grouping import string_to_pauli_word, is_commuting
 
 
 class TestPauliGroup:

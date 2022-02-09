@@ -15,19 +15,19 @@
 Functions for constructing the :math:`n`-qubit Pauli group, and performing the
 group operation (multiplication).
 """
-from functools import lru_cache
 import itertools
+from functools import lru_cache
 from typing import List
 
 import numpy as np
 
 from pennylane import Identity
 from pennylane.grouping.utils import (
+    _wire_map_from_pauli_pair,
+    are_identical_pauli_words,
     binary_to_pauli,
     pauli_to_binary,
     pauli_word_to_string,
-    are_identical_pauli_words,
-    _wire_map_from_pauli_pair,
 )
 
 
