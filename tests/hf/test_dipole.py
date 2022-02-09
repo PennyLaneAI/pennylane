@@ -62,23 +62,22 @@ from pennylane.hf.molecule import Molecule
                 [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=True
             ),
             1,
-            [],
-            [0, 1, 2],
-            [2.869, 1.666, 0.000],  # computed with PL-QChem dipole function
-            # computed with PL-QChem dipole function using OpenFermion and PySCF
+            [0],
+            [1, 2],
+            # computed manually from data obtained with PL-QChem dipole function
+            [2.869 + 2 * 0.95622463, 1.666 + 2 * 0.55538736, 0.000],
+            # computed manually from data obtained with PL-QChem dipole function
             np.array(
                 [
                     [
-                        [0.95622463, 0.7827277, -0.53222294],
-                        [0.7827277, 1.42895581, 0.23469918],
-                        [-0.53222294, 0.23469918, 0.48381955],
+                        [1.42895581, 0.23469918],
+                        [0.23469918, 0.48381955],
                     ],
                     [
-                        [0.55538736, -0.53229398, -0.78262324],
-                        [-0.53229398, 0.3203965, 0.47233426],
-                        [-0.78262324, 0.47233426, 0.79021614],
+                        [0.3203965, 0.47233426],
+                        [0.47233426, 0.79021614],
                     ],
-                    [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 0.0]],
                 ]
             ),
         ),
