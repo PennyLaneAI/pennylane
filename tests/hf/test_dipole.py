@@ -166,3 +166,28 @@ def test_generate_fermionic_dipole(symbols, geometry, core, charge, active, f_re
 
     assert np.allclose(f[0], f_ref[0]) # fermionic coefficients
     assert np.allclose(f[0], f_ref[0]) # fermionic operators
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "core", "active", "n_terms"),
+    [
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
+            ),
+            1,
+            None,
+            None,
+            # number of terms in the x component of the fermionic dipole computed with PL-QChem
+            18,
+        ),
+    ],
+)
+def test_generate_dipole(symbols, geometry, core, charge, active, n_terms):
+    r"""Test that generate_electron_integrals returns the correct values."""
+    mol = Molecule(symbols, geometry, charge=charge)
+    args = [p for p in [geometry] if p.requires_grad]
+    f = generate_dipole(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+
+    assert len(f.terms[0]) == n_terms
