@@ -563,10 +563,9 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The ``OrbitalRotation`` operator does *not* satisfy the
-      four-term parameter-shift rule but a higher-order general parameter-shift rule
-      (with 4 equidistant frequencise :math:`\{0.5, 1, 1.5, 2\}` see,
-      https://arxiv.org/abs/2107.12390)
+    * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
+      :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
+      (see https://arxiv.org/abs/2107.12390).
 
     Args:
         phi (float): rotation angle :math:`\phi`
