@@ -87,12 +87,7 @@ class SingleExcitation(Operation):
     ]
 
     def parameter_frequencies(self):
-        return [
-            (
-                0.5,
-                1,
-            )
-        ]
+        return [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -332,12 +327,7 @@ class DoubleExcitation(Operation):
     generator = [G, -1 / 2]
 
     def parameter_frequencies(self):
-        return [
-            (
-                0.5,
-                1,
-            )
-        ]
+        return [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -623,14 +613,7 @@ class OrbitalRotation(Operation):
         return np.stack([coeffs, np.ones_like(coeffs), shifts]).T
 
     def parameter_frequencies(self):
-        return [
-            (
-                0.5,
-                1.0,
-                1.5,
-                2.0,
-            )
-        ]
+        return [(0.5, 1.0, 1.5, 2.0)]
 
     @classmethod
     def _matrix(cls, *params):
