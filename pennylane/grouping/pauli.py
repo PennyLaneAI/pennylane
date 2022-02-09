@@ -300,9 +300,17 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
      ['YYX'],
      ['YYY']]
     """
-    strings = set()
+    strings = set()  # tracks all the strings that have already been grouped
     groups = []
 
+    # We know that I and Z always commute on a given qubit. The following generates all product
+    # sequences of len(n_qubits) over "FXYZ", with F indicating a free slot that can be swapped for
+    # the product over I and Z, and all other terms fixed to the given X/Y/Z. For example, if
+    # ``n_qubits = 3`` our first value for ``string`` will be ``('F', 'F', 'F')``. We then expand
+    # the product of I and Z over the three free slots, giving
+    # ``['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ']``, which is our first group. The
+    # next element of ``string`` will be ``('F', 'F', 'X')`` which we use to generate our second
+    # group ``['IIX', 'IZX', 'ZIX', 'ZZX']``.
     for string in itertools.product("FXYZ", repeat=n_qubits):
         if string not in strings:
             num_free_slots = string.count("F")
@@ -314,7 +322,7 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
                 commuting_string = list(commuting_string)
                 new_string = tuple(commuting_string.pop(0) if s == "F" else s for s in string)
 
-                if new_string not in strings:
+                if new_string not in strings:  # only add if string has not already been grouped
                     group.append("".join(new_string))
                     strings |= {new_string}
 
