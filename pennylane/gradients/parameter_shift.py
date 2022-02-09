@@ -61,9 +61,6 @@ def _grad_method_validation(method, tape):
         tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
     """
 
-    if "grad_method" not in tape._par_info[0]:
-        tape._update_gradient_info()
-
     diff_methods = {
         idx: info["grad_method"]
         for idx, info in tape._par_info.items()
@@ -661,14 +658,10 @@ def param_shift(
          [ 0.69916862  0.34072424  0.69202359]]
     """
 
-    # perform gradient method validation
     if any(m.return_type is qml.operation.State for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
-
-    _gradient_analysis(tape)
-    gradient_tapes = []
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
@@ -676,18 +669,19 @@ def param_shift(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
+    _gradient_analysis(tape)
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = _grad_method_validation(method, tape)
 
-    all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if all_params_grad_method_zero:
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = _choose_params_with_methods(diff_methods, argnum)
 
     # If there are unsupported operations, call the fallback gradient function
+    gradient_tapes = []
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
     argnum = [i for i, dm in method_map.items() if dm == "A"]
 
