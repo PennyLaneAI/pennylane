@@ -15,6 +15,9 @@
 Functions for constructing the :math:`n`-qubit Pauli group, and performing the
 group operation (multiplication).
 """
+from functools import lru_cache
+import itertools
+from typing import List
 
 import numpy as np
 
@@ -250,3 +253,72 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
             phase *= -1j
 
     return pauli_product, phase
+
+
+@lru_cache()
+def partition_pauli_group(n_qubits: int) -> List[List[str]]:
+    """Partitions the :math:`n`-qubit Pauli group into qubit-wise commuting terms.
+
+    The :math:`n`-qubit Pauli group is composed of :math:`4^{n}` terms that can be partitioned into
+    :math:`3^{n}` qubit-wise commuting groups.
+
+    Args:
+        n_qubits (int): number of qubits
+
+    Returns:
+        List[List[str]]: A collection of qubit-wise commuting groups containing Pauli words as
+        simple strings
+
+    **Example**
+
+    >>> qml.grouping.partition_pauli_group(3)
+    [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
+     ['IIX', 'IZX', 'ZIX', 'ZZX'],
+     ['IIY', 'IZY', 'ZIY', 'ZZY'],
+     ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
+     ['IXX', 'ZXX'],
+     ['IXY', 'ZXY'],
+     ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
+     ['IYX', 'ZYX'],
+     ['IYY', 'ZYY'],
+     ['XII', 'XIZ', 'XZI', 'XZZ'],
+     ['XIX', 'XZX'],
+     ['XIY', 'XZY'],
+     ['XXI', 'XXZ'],
+     ['XXX'],
+     ['XXY'],
+     ['XYI', 'XYZ'],
+     ['XYX'],
+     ['XYY'],
+     ['YII', 'YIZ', 'YZI', 'YZZ'],
+     ['YIX', 'YZX'],
+     ['YIY', 'YZY'],
+     ['YXI', 'YXZ'],
+     ['YXX'],
+     ['YXY'],
+     ['YYI', 'YYZ'],
+     ['YYX'],
+     ['YYY']]
+    """
+    strings = set()
+    groups = []
+
+    for string in itertools.product("FXYZ", repeat=n_qubits):
+        if string not in strings:
+            num_free_slots = string.count("F")
+
+            group = []
+            commuting = itertools.product("IZ", repeat=num_free_slots)
+
+            for commuting_string in commuting:
+                commuting_string = list(commuting_string)
+                new_string = tuple(commuting_string.pop(0) if s == "F" else s for s in string)
+
+                if new_string not in strings:
+                    group.append("".join(new_string))
+                    strings |= {new_string}
+
+            if len(group) > 0:
+                groups.append(group)
+
+    return groups
