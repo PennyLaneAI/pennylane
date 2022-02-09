@@ -43,7 +43,7 @@ class BasisStatePreparation(Operation):
         print(circuit(basis_state)) # [ 1. -1. -1.  1.]
 
     Args:
-        basis_state (array): Input array of shape ``(n,)``, where n is the number of wires
+        basis_state (tensor_like): Input of shape ``(n,)``, where n is the number of wires
             the state preparation acts on.
         wires (Iterable): wires that the template acts on
     """
