@@ -31,7 +31,7 @@ def extract_tensors(x):
         x (.tensor or Sequence): an input tensor or sequence
 
     Yields:
-        tensor: the next tensor in the sequence. if the Input was a single
+        tensor: the next tensor in the sequence. If the input was a single
         tensor, than the tensor is yielded and the iterator completes.
 
     **Example**
@@ -135,7 +135,7 @@ def wrap_arrays(old, new):
 
     Args:
         old (dict): The symbol table to be wrapped. Note that
-            callable classes are ignored; only function are wrapped.
+            callable classes are ignored; only functions are wrapped.
         new (dict): The symbol table that contains the wrapped values.
 
     .. seealso:: :func:`~pennylane.numpy.tensor_wrapper`
