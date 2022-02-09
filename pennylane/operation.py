@@ -676,7 +676,7 @@ class Operation(Operator):
         """
         raise NotImplementedError
 
-    def get_parameter_shift(self, idx, shift=np.pi / 2):
+    def get_parameter_shift(self, idx, shift=None):
         """Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
@@ -684,6 +684,9 @@ class Operation(Operator):
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
+
+        Note that the default value for ``shift`` is None, which is replaced by the
+        default shift :math:`\pi/2`.
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
