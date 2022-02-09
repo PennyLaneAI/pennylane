@@ -592,7 +592,8 @@ class OrbitalRotation(Operation):
     """
     num_wires = 4
     num_params = 1
-    grad_method = "F"
+    grad_method = "A"
+
     generator = [
         qml.math.array(
             [
@@ -616,6 +617,11 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+
+    @property
+    def grad_recipe(self):
+        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies()[0])
+        return np.stack([coeffs, np.ones_like(coeffs), shifts]).T
 
     def parameter_frequencies(self):
         return [
