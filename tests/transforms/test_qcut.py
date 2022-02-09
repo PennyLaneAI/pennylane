@@ -17,10 +17,9 @@ Unit tests for the `pennylane.qcut` package.
 import string
 import sys
 
+import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
-
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 
@@ -849,7 +848,7 @@ class TestGraphToTape:
 
         assert spy.call_count == 1
 
-        
+
 class TestContractTensors:
     """Tests for the contract_tensors function"""
 

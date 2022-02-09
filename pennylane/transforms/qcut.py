@@ -20,10 +20,9 @@ import string
 from functools import partial
 from typing import Sequence, Tuple, Union
 
+import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply
-import pennylane as qml
-
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
@@ -322,6 +321,7 @@ def _find_new_wire(target, wires: Wires) -> int:
     return new_wire
 
 
+# pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding quantum tape. Each node
@@ -362,7 +362,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     )
     wire_map = {w: w for w in wires}
 
-    with QuantumTape() as tape: # pylint: disable=protected-access
+    with QuantumTape() as tape:
         for _, op in ordered_ops:
             original_op_wires = op._wires
             new_wires = [wire_map[w] for w in op.wires]
@@ -379,7 +379,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     return tape
 
-  
+
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""
@@ -521,5 +521,3 @@ def contract_tensors(
     kwargs = {} if use_opt_einsum else {"like": tensors[0]}
 
     return contract(eqn, *tensors, **kwargs)
-
-  
