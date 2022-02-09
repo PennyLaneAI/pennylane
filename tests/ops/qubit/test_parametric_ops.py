@@ -108,7 +108,7 @@ class TestParameterFrequencies:
             # For operations without generator, we only can try and check that the function
             # executes properly, not its return value.
             try:
-                op.parameter_frequencies()
+                op.parameter_frequencies
             except qml.operation.OperatorPropertyUndefined:
                 pytest.skip(f"Operation {op.name} does not have parameter frequencies defined.")
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
@@ -123,7 +123,7 @@ class TestParameterFrequencies:
         gen_eigvals = tuple(np.linalg.eigvalsh(matrix))
         freqs_from_gen = np.abs(coeff) * np.array(qml.gradients.eigvals_to_frequencies(gen_eigvals))
 
-        freqs = op.parameter_frequencies()
+        freqs = op.parameter_frequencies
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
