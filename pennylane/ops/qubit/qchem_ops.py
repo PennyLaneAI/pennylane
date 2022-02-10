@@ -791,6 +791,7 @@ class DoubleExcitationMinus(Operation):
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = coo_matrix(-0.5 * G)
+        return qml.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
