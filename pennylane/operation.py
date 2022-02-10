@@ -580,7 +580,7 @@ class Operator(abc.ABC):
             "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
             UserWarning,
         )
-        return self._matrix()
+        return self.get_matrix()
 
     def get_matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
