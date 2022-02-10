@@ -33,6 +33,14 @@
 
 <h3>Documentation</h3>
 
+* The ``pennylane.numpy`` subpackage is now included in the PennyLane
+  API documentation.
+  [(#2179)](https://github.com/PennyLaneAI/pennylane/pull/2179)
+
+* Improves the documentation of `RotosolveOptimizer` regarding the
+  usage of the passed `substep_optimizer` and its keyword arguments.
+  [(#2160)](https://github.com/PennyLaneAI/pennylane/pull/2160)
+
 <h3>Operator class refactor</h3>
 
 The Operator class has undergone a major refactor with the following changes:
@@ -155,8 +163,9 @@ The Operator class has undergone a major refactor with the following changes:
   for developers.
   [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
 
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes, Josh Izaac, Christina Lee, Maria Schuld, Jay Soni
+Anthony Hayes, Josh Izaac, Christina Lee, Maria Schuld, Jay Soni, David Wierichs
