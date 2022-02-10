@@ -567,7 +567,13 @@ class Operator(abc.ABC):
         r"""Matrix representation of an instantiated operator
         in the computational basis.
 
+        .. warning::
+
+            The ``matrix`` property is deprecated and will be removed in
+            PennyLane version 0.23.
+
         **Example:**
+
         >>> U = qml.RY(0.5, wires=1)
         >>> U.matrix
         >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
@@ -1732,20 +1738,33 @@ class Tensor(Observable):
     def matrix(self):
         r"""Matrix representation of the tensor operator
         in the computational basis.
+
+        .. warning::
+
+            The ``matrix`` property is deprecated and will be removed in
+            PennyLane version 0.23.
+
+        Returns:
+            array: matrix representation
+
         **Example:**
+
         Note that the returned matrix *only includes explicitly
         declared observables* making up the tensor product;
         that is, it only returns the matrix for the specified
         subsystem it is defined for.
+
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
         >>> O.matrix
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
                [ 0,  0, -1,  0],
                [ 0,  0,  0,  1]])
+
         To get the full :math:`2^3\times 2^3` Hermitian matrix
         acting on the 3-qubit system, the identity on wire 1
         must be explicitly included:
+
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
         >>> O.matrix
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
@@ -1756,8 +1775,6 @@ class Tensor(Observable):
                [ 0., -0.,  0., -0., -0.,  1., -0.,  0.],
                [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
                [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
-        Returns:
-            array: matrix representation
         """
         warnings.warn(
             "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
