@@ -22,6 +22,7 @@ import pytest
 from networkx import MultiDiGraph
 from pennylane import numpy as np
 from pennylane.transforms import qcut
+from pennylane.wires import Wires
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -833,20 +834,37 @@ class TestGraphToTape:
             qml.Hadamard(wires=0)
             qml.RX(0.432, wires=0)
             qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
             qml.WireCut(wires=1)
             qml.RZ(0.321, wires=1)
+            qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=2)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(wires=[0]))
 
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
-        spy = mocker.spy(qcut, "_find_new_wire")
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        assert spy.call_count == 1
+        assert tapes[0].wires == Wires([0, 1, "1₁", "1₂"])
+        assert tapes[1].wires == Wires([1, 2, "1₁"])
+
+        for tape in tapes:
+            for i, op in enumerate(tape.operations):
+                if isinstance(op, qcut.MeasureNode):
+                    try:
+                        next_op = tape.operations[i + 1]
+                        if isinstance(next_op, qcut.PrepareNode):
+                            assert op.wires != next_op.wires
+                    except IndexError:
+                        assert len(tape.operations) == i + 1
 
 
 class TestContractTensors:

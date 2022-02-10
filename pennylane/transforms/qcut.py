@@ -16,6 +16,7 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
+import copy
 import string
 from functools import partial
 from typing import Sequence, Tuple, Union
@@ -44,7 +45,8 @@ class PrepareNode(Operation):
     grad_method = None
 
 
-SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+SUBS = "₀₁₂₃₄₅₆₇₈₉"
+SUB = str.maketrans("0123456789", SUBS)
 
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
@@ -304,20 +306,29 @@ def _find_new_wire(target, wires: Wires) -> int:
     """Finds a new wire label that is not in ``wires`` based
     upon a ``target`` label. Subscripts are used to find a
     unique new label."""
+
     if target not in wires:
         return target
 
-    if isinstance(target, (int, str)):
+    ctr = 1
+    subscript_map = {sub: i for i, sub in enumerate(SUBS)}
+
+    # if the target is already subscripted, reset to it's parent integer
+    if isinstance(target, str) and any(char in set(target) for char in set(SUBS)):
+        ctr = subscript_map[target[-1]]
+        target = int(target[0])
         wire_func = partial(_subscripted, target)
+        new_wire = target
+    elif isinstance(target, (int, str)):
+        wire_func = partial(_subscripted, target)
+        new_wire = wire_func(ctr)
     else:
         wire_func = lambda ctr: ctr - 1
-
-    ctr = 1
-    new_wire = wire_func(ctr)
 
     while new_wire in wires:
         ctr += 1
         new_wire = wire_func(ctr)
+
     return new_wire
 
 
@@ -364,18 +375,23 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     with QuantumTape() as tape:
         for _, op in ordered_ops:
-            original_op_wires = op._wires
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
-            op._wires = original_op_wires
 
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
                 measured_wire = op.wires[0]
                 new_wire = _find_new_wire(measured_wire, wires)
                 wires += new_wire
-                wire_map[measured_wire] = new_wire
+                # if a wire has already been updated to a subscripted version
+                # we still want to map *from* the original wire
+                if isinstance(measured_wire, str) and any(
+                    char in set(measured_wire) for char in set(SUBS)
+                ):
+                    wire_map[int(measured_wire[0])] = new_wire
+                else:
+                    wire_map[measured_wire] = new_wire
 
     return tape
 
