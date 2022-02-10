@@ -545,7 +545,7 @@ class DefaultQubit(QubitDevice):
         if unitary in diagonal_in_z_basis:
             return unitary.eigvals()
 
-        return unitary.matrix()
+        return unitary.get_matrix()
 
     @classmethod
     def capabilities(cls):

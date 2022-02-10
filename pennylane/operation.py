@@ -187,7 +187,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     )
     axes = (list(range(n, 2 * n)), op_wire_pos)
 
-    # reshape op.matrix()
+    # reshape op.get_matrix()
     op_matrix_interface = qml.math.convert_like(base_matrix, I)
     mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
     mat_tensordot = qml.math.tensordot(
@@ -562,7 +562,24 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
-    def matrix(self, wire_order=None):
+    @property
+    def matrix(self):
+        r"""Matrix representation of an instantiated operator
+        in the computational basis.
+
+        **Example:**
+        >>> U = qml.RY(0.5, wires=1)
+        >>> U.matrix
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
+        """
+        warnings.warn("The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23", UserWarning)
+        return self._matrix()
+
+    def get_matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -691,7 +708,7 @@ class Operator(abc.ABC):
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                return np.linalg.eigvals(self.matrix())
+                return np.linalg.eigvals(self.get_matrix())
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
@@ -1713,7 +1730,7 @@ class Tensor(Observable):
         **Example**
 
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix()
+        >>> O.get_matrix()
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
                [ 0,  0, -1,  0],
@@ -1724,7 +1741,7 @@ class Tensor(Observable):
         must be explicitly included:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix()
+        >>> O.get_matrix()
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
                [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
@@ -1745,7 +1762,7 @@ class Tensor(Observable):
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix() for i in g]
+            mats = [i.get_matrix() for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -1850,7 +1867,7 @@ class Tensor(Observable):
                 )
             # store the single-qubit ops according to the order of their wires
             idx = wires.index(o.wires)
-            list_of_sparse_ops[idx] = coo_matrix(o.matrix())
+            list_of_sparse_ops[idx] = coo_matrix(o.get_matrix())
 
         return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
 
@@ -2208,7 +2225,7 @@ def operation_derivative(operation) -> np.ndarray:
             trainable parameter
     """
     generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
-    return 1j * prefactor * generator @ operation.matrix()
+    return 1j * prefactor * generator @ operation.get_matrix()
 
 
 @qml.BooleanFn
