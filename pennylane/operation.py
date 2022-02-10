@@ -1189,7 +1189,20 @@ class Operation(Operator):
             self.inverse = not self._inverse
         return self
 
-    def matrix(self, wire_order=None):
+    @property
+    def matrix(self):
+        warnings.warn(
+            "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
+            UserWarning,
+        )
+        op_matrix = self._matrix(*self.parameters)
+
+        if self.inverse:
+            return qml.math.conj(qml.math.T(op_matrix))
+
+        return op_matrix
+
+    def get_matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
