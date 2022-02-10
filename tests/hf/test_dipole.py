@@ -321,6 +321,36 @@ def test_one_particle(core_constant, integral, f_ref):
             # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
             [[0.5 + 0j, -0.5 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
         ),
+        (
+            (np.array([1.0, 1.0]), [[0, 0], [0, 0]]),
+            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [[1.0 + 0j, -1.0 + 0j], [qml.Identity(0), qml.PauliZ(0)]],
+        ),
+        (
+            (np.array([1.0]), [[2, 0, 2, 0]]),
+            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [
+                [-0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
+                [qml.Identity(0), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(2)],
+            ],
+        ),
+        (
+            (np.array([1.0, 1.0]), [[2, 0, 2, 0], [2, 0]]),
+            # obtained with openfermion: jordan_wigner(FermionOperator('0^ 0', 1)) and reformatted
+            [
+                [-0.25 + 0j, 0.25 + 0j, -0.25j, 0.25j, 0.25 + 0j, 0.25 + 0j, -0.25 + 0j, 0.25 + 0j],
+                [
+                    qml.Identity(0),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(2),
+                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(2),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(2),
+                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(2),
+                    qml.PauliZ(0),
+                    qml.PauliZ(0) @ qml.PauliZ(2),
+                    qml.PauliZ(2),
+                ],
+            ],
+        ),
     ],
 )
 def test_qubit_operator(f_operator, q_operator):
