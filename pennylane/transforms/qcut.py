@@ -433,6 +433,46 @@ def contract_tensors(
 CHANGE_OF_BASIS = qml.math.array([[1.0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
 
 
+def _process_tensor(results, n_prep, n_meas):
+    """TODO
+
+    Args:
+        results:
+        n_prep:
+        n_meas:
+
+    Returns:
+
+    """
+    n = n_prep + n_meas
+    dim_meas = 4 ** n_meas
+
+    intermediate_shape = (4,) * n_prep + (dim_meas,)
+    intermediate_tensor = qml.math.reshape(results, intermediate_shape)
+
+    grouped = qml.grouping.partition_pauli_group(n_meas)
+    grouped_flat = [term for group in grouped for term in group]
+    order = qml.math.argsort(grouped_flat)
+
+    if qml.math.get_interface(intermediate_tensor) == "tensorflow":
+        intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
+    else:
+        sl = [slice(None)] * n_prep + [order]
+        intermediate_tensor = intermediate_tensor[sl]
+
+    final_shape = (4,) * n
+    final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
+
+    change_of_basis = qml.math.convert_like(CHANGE_OF_BASIS, intermediate_tensor)
+
+    for i in range(n_prep):
+        axes = [[1], [i]]
+        final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
+
+    final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
+    return final_tensor
+
+
 def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]]) -> List:
     """TODO
 
@@ -450,33 +490,22 @@ def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]
         n = n_prep + n_meas
 
         dim = 4 ** n
-        dim_meas = 4 ** n_meas
+        results_slice = qml.math.stack(results[ctr: dim + ctr])
 
-        intermediate_shape = (4,) * n_prep + (dim_meas,)
+        tensors.append(_process_tensor(results_slice, n_prep, n_meas))
 
-        results_slice = qml.math.stack(results[ctr : dim + ctr])
-        intermediate_tensor = qml.math.reshape(results_slice, intermediate_shape)
-
-        grouped = qml.grouping.partition_pauli_group(n_meas)
-        grouped_flat = [term for group in grouped for term in group]
-        order = qml.math.argsort(grouped_flat)
-
-        if qml.math.get_interface(intermediate_tensor) == "tensorflow":
-            intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
-        else:
-            sl = [slice(None)] * n_prep + [order]
-            intermediate_tensor = intermediate_tensor[sl]
-
-        final_shape = (4,) * n
-        final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
-
-        change_of_basis = qml.math.convert_like(CHANGE_OF_BASIS, intermediate_tensor)
-
-        for i in range(n_prep):
-            axes = [[1], [i]]
-            final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
-
-        final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
-
-        tensors.append(final_tensor)
         ctr += dim
+
+
+def qcut_processing_fn(results: Sequence, communication_graph: MultiDiGraph, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]], use_opt_einsum: bool=False):
+    """TODO
+
+    Args:
+        results:
+        communication_graph:
+        prepare_nodes:
+        measure_nodes:
+    """
+    tensors = _to_tensors(results, prepare_nodes, measure_nodes)
+    result = contract_tensors(tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum)
+    return result
