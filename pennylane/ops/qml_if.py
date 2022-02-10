@@ -9,5 +9,5 @@ class If(Operation):
         self.m_val = m_val
         self.then_op = then_op
         self.else_op = else_op
-        wires = list({m_val.wire} | set(then_op.wires) | set(getattr(else_op, "wires", [])))
+        wires = list({m_val.wires} | set(then_op.wires) | set(getattr(else_op, "wires", [])))
         super().__init__(wires=wires)

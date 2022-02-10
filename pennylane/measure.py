@@ -47,7 +47,6 @@ class MeasurementProcess:
     def __init__(self, return_type, obs=None, wires=None, eigvals=None):
         self.return_type = return_type
         self.obs = obs
-
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
 
@@ -228,13 +227,12 @@ class MidCircuitMP(MeasurementProcess):
      the middle of a circuit. The idea is to provide functionality which
      stores mid circuit results and apply projective operations"""
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
-        self._run_time_value = None
-        self.measured = False  # keeps track of if the measurement has taken place or not
-        super().__init__(self, return_type, obs=None, wires=wires, eigvals=eigvals)
+    def __init__(self, return_type, **kwargs):
+        self.run_time_value = None
+        super().__init__(return_type, **kwargs)
 
 
-def measure(wires):
+def mc_measure(wires):
     """Measures the wires in the computational basis"""
     return MidCircuitMP(MCMeasure, wires=qml.wires.Wires(wires))
 

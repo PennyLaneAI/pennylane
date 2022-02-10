@@ -877,21 +877,28 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if o.inverse:
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                if not supports_inv:
+            if isinstance(o, qml.measure.MidCircuitMP):
+                if not self.supports_observable(operation_name):
                     raise DeviceError(
-                        f"The inverse of gates are not supported on device {self.short_name}"
+                        f"Mid-circuit measurement {operation_name} is not supported on device {self.short_name}"
                     )
-                operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
-                raise DeviceError(
-                    f"Gate {operation_name} not supported on device {self.short_name}"
-                )
+            else:
+                if o.inverse:
+                    # TODO: update when all capabilities keys changed to "supports_inverse_operations"
+                    supports_inv = self.capabilities().get(
+                        "supports_inverse_operations", False
+                    ) or self.capabilities().get("inverse_operations", False)
+                    if not supports_inv:
+                        raise DeviceError(
+                            f"The inverse of gates are not supported on device {self.short_name}"
+                        )
+                    operation_name = o.base_name
+
+                if not self.supports_operation(operation_name):
+                    raise DeviceError(
+                        f"Gate {operation_name} not supported on device {self.short_name}"
+                    )
 
         for o in observables:
             if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:

@@ -25,6 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import Sample
+from pennylane.measure import MidCircuitMP
 
 from .unwrap import UnwrapTape
 
@@ -416,9 +417,9 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
 
-                if self._measurements:
+                if self._measurements and not all([isinstance(m, MidCircuitMP) for m in self._measurements]):
                     raise ValueError(
-                        f"Quantum operation {obj} must occur prior to any measurements."
+                        f"Quantum operation {obj} must occur prior to computing any measurement statistics."
                     )
 
                 # invert the operation if required
@@ -433,6 +434,9 @@ class QuantumTape(AnnotatedQueue):
                     self._prep.append(obj)
                 else:
                     self._ops.append(obj)
+
+            elif isinstance(obj, MidCircuitMP):
+                self._ops.append(obj)
 
             elif isinstance(obj, qml.measure.MeasurementProcess):
                 # measurement process

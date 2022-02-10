@@ -26,6 +26,8 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
+from pennylane.measure import MidCircuitMP
+from pennylane.ops.qml_if import If
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
@@ -140,6 +142,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "If",
     }
 
     observables = {
@@ -212,6 +215,10 @@ class DefaultQubit(QubitDevice):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
+            elif isinstance(operation, MidCircuitMP):
+                self._apply_measurement(self.wires.indices(operation.wires), operation)
+            elif isinstance(operation, If):
+                self._apply_conditional(operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -794,3 +801,38 @@ class DefaultQubit(QubitDevice):
         imag_state = self._imag(flat_state)
         prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob
+
+    def _apply_measurement(self, axes, meas_op):
+        num_qubits = len(self._state.shape)
+        axis = axes[0]
+
+        # get first slice
+        slicer_0 = [slice(None)] * num_qubits
+        slicer_0[axis] = 0
+        sub_0 = self._state[tuple(slicer_0)]
+
+        # get second slice
+        slicer_1 = slicer_0.copy()
+        slicer_1[axis] = 1
+        sub_1 = self._state[tuple(slicer_1)]
+
+        # get norms
+        sub_0_norm = np.linalg.norm(sub_0)
+        sub_1_norm = np.linalg.norm(sub_1)
+
+        # make measurement
+        result = list(np.random.multinomial(1, [sub_0_norm ** 2, sub_1_norm ** 2])).index(1)
+        meas_op.run_time_value = result
+
+    # collapse state and reset qubit
+        if result == 0:
+            collapsed_state = np.stack([sub_0 / sub_0_norm, np.zeros(sub_0.shape)], axis=axis)
+        else:
+            collapsed_state = np.stack([np.zeros(sub_1.shape), sub_1 / sub_1_norm], axis=axis)
+        self._state = collapsed_state
+
+    def _apply_conditional(self, if_op):
+        if if_op.m_val.run_time_value:
+            self._state = self._apply_operation(self._state, if_op.then_op)
+        elif if_op.else_op is not None:
+            self._state = self._apply_operation(self._state, if_op.else_op)

@@ -25,6 +25,7 @@ import autograd
 import pennylane as qml
 from pennylane import Device
 from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
+from pennylane.measure import MidCircuitMP
 
 
 class QNode:
@@ -490,7 +491,6 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        print(self._qfunc_output)
         if not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
@@ -502,10 +502,10 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
-        if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
-            raise qml.QuantumFunctionError(
-                "All measurements must be returned in the order they are measured."
-            )
+        # if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
+        #     raise qml.QuantumFunctionError(
+        #         "All measurements must be returned in the order they are measured."
+        #     )  TEMPORARY COMMENT OUT !!!
 
         for obj in self.tape.operations + self.tape.observables:
 
@@ -591,9 +591,18 @@ class QNode:
         if isinstance(self._qfunc_output, Sequence) or (
             self.tape.is_sampled and self.device._has_partitioned_shots()
         ):
-            return res
+            pass
 
-        return qml.math.squeeze(res)
+        else:
+            res = qml.math.squeeze(res)
+
+        final_res = ()
+        for obj in self._qfunc_output:
+            if isinstance(obj, MidCircuitMP):
+                final_res += (obj.run_time_value,)
+
+        final_res += (res,)
+        return final_res
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
