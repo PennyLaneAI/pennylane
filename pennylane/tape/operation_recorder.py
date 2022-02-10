@@ -14,8 +14,8 @@
 """
 This module contains the :class:`OperationRecorder`.
 """
-from pennylane.queuing import QueuingContext
 
+from pennylane.tapemanager import TapeManager
 from .tape import QuantumTape
 
 
@@ -51,11 +51,11 @@ class OperationRecorder(QuantumTape):
         super()._process_queue()
 
         for obj, info in self._queue.items():
-            QueuingContext.append(obj, **info)
+            TapeManager.append(obj, **info)
 
         # remove the operation recorder from the queuing
         # context
-        QueuingContext.remove(self)
+        TapeManager.remove(self)
 
         new_tape = self.expand(depth=5, stop_at=lambda obj: not isinstance(obj, QuantumTape))
         self.ops = new_tape.operations

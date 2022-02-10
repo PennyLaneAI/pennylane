@@ -24,6 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
 from pennylane.wires import Wires
+from pennylane.tapemanager import TapeManager, QueuingError
 
 
 class MeasurementProcess:
@@ -187,12 +188,12 @@ class MeasurementProcess:
 
         return tape
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=TapeManager):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
             try:
                 context.update_info(self.obs, owner=self)
-            except qml.queuing.QueuingError:
+            except QueuingError:
                 self.obs.queue(context=context)
                 context.update_info(self.obs, owner=self)
 

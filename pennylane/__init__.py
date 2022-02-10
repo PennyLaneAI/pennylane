@@ -23,7 +23,7 @@ import numpy as _np
 from semantic_version import Spec, Version
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.queuing import apply, QueuingContext
+from pennylane.queuing import QueuingContext
 
 import pennylane.fourier
 import pennylane.kernels
@@ -43,6 +43,7 @@ from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
+from pennylane.tapemanager import apply
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *

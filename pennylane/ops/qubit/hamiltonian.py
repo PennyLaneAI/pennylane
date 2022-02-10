@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.operation import Observable, Tensor
-from pennylane.queuing import QueuingError
+from pennylane.tapemanager import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -578,7 +578,7 @@ class Hamiltonian(Observable):
             return self
         raise ValueError(f"Cannot subtract {type(H)} from Hamiltonian")
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=qml.tapemanager.TapeManager):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
             try:

@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 
-from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape
 from pennylane.measure import (
     expval,
     var,
@@ -317,7 +317,7 @@ class TestStatisticsQueuing:
     def test_annotating_obs_return_type(self, stat_func, return_type, op):
         """Test that the return_type related info is updated for a
         measurement"""
-        with AnnotatedQueue() as q:
+        with QuantumTape() as q:
             A = op(0)
             stat_func(A)
 
@@ -326,8 +326,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (A)}
+        assert q.get_info(A) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (A)}
 
     def test_annotating_tensor_hermitian(self, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
@@ -335,7 +335,7 @@ class TestStatisticsQueuing:
 
         mx = np.array([[1, 0], [0, 1]])
 
-        with AnnotatedQueue() as q:
+        with QuantumTape() as q:
             Herm = qml.Hermitian(mx, wires=[1])
             stat_func(Herm)
 
@@ -344,8 +344,8 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(Herm) == {"owner": meas_proc}
-        assert q._get_info(meas_proc) == {"owns": (Herm)}
+        assert q.get_info(Herm) == {"owner": meas_proc}
+        assert q.get_info(meas_proc) == {"owns": (Herm)}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -359,7 +359,7 @@ class TestStatisticsQueuing:
     def test_annotating_tensor_return_type(self, op1, op2, stat_func, return_type):
         """Test that the return_type related info is updated for a measurement
         when called for an Tensor observable"""
-        with AnnotatedQueue() as q:
+        with QuantumTape() as q:
             A = op1(0)
             B = op2(1)
             tensor_op = A @ B
@@ -370,9 +370,9 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
     @pytest.mark.parametrize(
         "op1,op2",
@@ -389,7 +389,7 @@ class TestStatisticsQueuing:
         A = op1(0)
         B = op2(1)
 
-        with AnnotatedQueue() as q:
+        with QuantumTape() as q:
             tensor_op = A @ B
             stat_func(tensor_op)
 
@@ -398,9 +398,9 @@ class TestStatisticsQueuing:
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
-        assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
+        assert q.get_info(A) == {"owner": tensor_op}
+        assert q.get_info(B) == {"owner": tensor_op}
+        assert q.get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
 
 @pytest.mark.parametrize("stat_func", [expval, var, sample])
@@ -426,7 +426,7 @@ class TestBetaProbs:
 
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):
-        with AnnotatedQueue() as q:
+        with QuantumTape() as q:
             probs(wires)
 
         assert len(q.queue) == 1

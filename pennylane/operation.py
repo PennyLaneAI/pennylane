@@ -124,6 +124,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+from pennylane.tapemanager import TapeManager
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -566,7 +567,7 @@ class Operator(abc.ABC):
             return self.decomposition(wires=self.wires)
         return self.decomposition(*self.parameters, wires=self.wires)
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=TapeManager):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
@@ -829,9 +830,9 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        if qml.QueuingContext.recording():
-            current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
-            qml.QueuingContext.update_info(self, inverse=not current_inv)
+        if TapeManager.recording():
+            current_inv = TapeManager.get_info(self).get("inverse", False)
+            TapeManager.update_info(self, inverse=not current_inv)
         else:
             self.inverse = not self._inverse
         return self
@@ -1231,7 +1232,7 @@ class Tensor(Observable):
 
         return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
-    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
+    def queue(self, context=TapeManager, init=False):  # pylint: disable=arguments-differ
         constituents = self.obs
 
         if init:
@@ -1249,7 +1250,7 @@ class Tensor(Observable):
 
             try:
                 context.update_info(o, owner=self)
-            except qml.queuing.QueuingError:
+            except qml.tape.tape.QueuingError:
                 o.queue(context=context)
                 context.update_info(o, owner=self)
             except NotImplementedError:
@@ -1353,20 +1354,20 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if qml.QueuingContext.recording():
-            owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
+        if TapeManager.recording():
+            owning_info = TapeManager.get_info(self)["owns"] + (other,)
 
             # update the annotated queue information
-            qml.QueuingContext.update_info(self, owns=owning_info)
-            qml.QueuingContext.update_info(other, owner=self)
+            TapeManager.update_info(self, owns=owning_info)
+            TapeManager.update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            if qml.QueuingContext.recording():
-                qml.QueuingContext.update_info(other, owner=self)
+            if TapeManager.recording():
+                TapeManager.update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")

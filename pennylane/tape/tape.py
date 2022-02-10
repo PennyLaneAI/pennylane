@@ -15,7 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, deque, defaultdict
+from collections import Counter, defaultdict, OrderedDict, deque
 import contextlib
 import copy
 from threading import RLock
@@ -23,10 +23,12 @@ from threading import RLock
 import numpy as np
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 
+from ..tapemanager import TapeManager, QueuingError
 from .unwrap import UnwrapTape
+
 
 # CV ops still need to support state preparation operations prior to any
 # other operation for PennyLane-SF tests to pass.
@@ -98,7 +100,7 @@ def get_active_tape():
     >>> print(qml.tape.get_active_tape())
     None
     """
-    return QueuingContext.active_context()
+    return TapeManager.active_context()
 
 
 def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
@@ -215,7 +217,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
 
 # pylint: disable=too-many-public-methods
-class QuantumTape(AnnotatedQueue):
+class QuantumTape:
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
     Args:
@@ -301,7 +303,7 @@ class QuantumTape(AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(self, name=None, do_queue=True):
-        super().__init__()
+        self._queue = OrderedDict()
         self.name = name
         self.do_queue = do_queue
         self._prep = []
@@ -343,18 +345,41 @@ class QuantumTape(AnnotatedQueue):
         QuantumTape._lock.acquire()
         try:
             if self.do_queue:
-                QueuingContext.append(self)
-            return super().__enter__()
+                TapeManager.append(self)
+            TapeManager.active_contexts.append(self)
+            return self
         except Exception as _:
             QuantumTape._lock.release()
             raise
 
     def __exit__(self, exception_type, exception_value, traceback):
         try:
-            super().__exit__(exception_type, exception_value, traceback)
+            TapeManager.active_contexts.pop()
             self._process_queue()
         finally:
             QuantumTape._lock.release()
+
+    def append(self, obj, **kwargs):
+        self._queue[obj] = kwargs
+
+    def remove(self, obj):
+        del self._queue[obj]
+
+    def update_info(self, obj, **kwargs):
+        if obj not in self._queue:
+            raise QueuingError(f"Object {obj} not in the queue.")
+
+        self._queue[obj].update(kwargs)
+
+    def get_info(self, obj):
+        if obj not in self._queue:
+            raise QueuingError(f"Object {obj} not in the queue.")
+
+        return self._queue[obj]
+
+    @property
+    def queue(self):
+        return list(self._queue.keys())
 
     @property
     def interface(self):
@@ -376,15 +401,15 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.operations
         [RX(0, wires=[0]), RZ(2, wires=[1])]
         """
-        if QueuingContext.active_context() is not self:
+        if TapeManager.active_context() is not self:
             raise QueuingError(
                 "Cannot stop recording requested tape " "as it is not currently recording."
             )
 
-        active_contexts = QueuingContext._active_contexts
-        QueuingContext._active_contexts = deque()
+        active_contexts = TapeManager.active_contexts
+        TapeManager.active_contexts = deque()
         yield
-        QueuingContext._active_contexts = active_contexts
+        TapeManager.active_contexts = active_contexts
 
     # ========================================================
     # construction methods
