@@ -16,6 +16,7 @@ Unit tests for functions needed for computing the dipole.
 """
 import pennylane as qml
 import pytest
+from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane.hf.dipole import (
     dipole_integrals,
@@ -83,7 +84,7 @@ from pennylane.hf.molecule import Molecule
         ),
     ],
 )
-def test_generate_dipole_integrals(symbols, geometry, core, charge, active, core_ref, int_ref):
+def test_dipole_integrals(symbols, geometry, core, charge, active, core_ref, int_ref):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
@@ -155,7 +156,7 @@ def test_generate_dipole_integrals(symbols, geometry, core, charge, active, core
         ),
     ],
 )
-def test_generate_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
+def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
@@ -166,28 +167,41 @@ def test_generate_fermionic_dipole(symbols, geometry, core, charge, active, f_re
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "charge", "core", "active", "n_terms"),
+    ("symbols", "geometry", "charge", "core", "active", "coeffs", "ops"),
     [
         (
-            ["H", "H", "H"],
-            np.array(
-                [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
-            ),
-            1,
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            0,
             None,
             None,
-            # number of terms in the x component of the fermionic dipole computed with PL-QChem
-            18,
+            # coefficients and operators of the dipole observable computed with
+            # PL-QChem dipole function using OpenFermion and PySCF
+            np.array([0.5, 0.5, -0.5640321, -0.5640321, -0.5640321, -0.5640321, 0.5, 0.5]),
+            [
+                PauliZ(wires=[0]),
+                PauliZ(wires=[1]),
+                PauliY(wires=[0]) @ PauliZ(wires=[1]) @ PauliY(wires=[2]),
+                PauliX(wires=[0]) @ PauliZ(wires=[1]) @ PauliX(wires=[2]),
+                PauliY(wires=[1]) @ PauliZ(wires=[2]) @ PauliY(wires=[3]),
+                PauliX(wires=[1]) @ PauliZ(wires=[2]) @ PauliX(wires=[3]),
+                PauliZ(wires=[2]),
+                PauliZ(wires=[3]),
+            ],
         ),
     ],
 )
-def test_generate_dipole(symbols, geometry, core, charge, active, n_terms):
+def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    f = dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    d = dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    d_ref = qml.Hamiltonian(coeffs, ops)
 
-    assert len(f.terms[0]) == n_terms
+    assert np.allclose(sorted(d.terms[0]), sorted(d_ref.terms[0]))
+    assert qml.Hamiltonian(np.ones(len(d.terms[0])), d.terms[1]).compare(
+        qml.Hamiltonian(np.ones(len(d_ref.terms[0])), d_ref.terms[1])
+    )
 
 
 @pytest.mark.parametrize(
@@ -270,7 +284,7 @@ def test_one_particle(core_constant, integral, f_ref):
         ),
     ],
 )
-def test_generate_qubit_operator(f_operator, q_operator):
+def test_qubit_operator(f_operator, q_operator):
     r"""Test that _generate_qubit_operator returns the correct operator."""
     h = qubit_operator(f_operator)
     h_ref = qml.Hamiltonian(q_operator[0], q_operator[1])
