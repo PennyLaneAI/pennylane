@@ -16,7 +16,7 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 import string
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, List
 
 from networkx import MultiDiGraph, weakly_connected_components
 
@@ -428,3 +428,55 @@ def contract_tensors(
     kwargs = {} if use_opt_einsum else {"like": tensors[0]}
 
     return contract(eqn, *tensors, **kwargs)
+
+
+CHANGE_OF_BASIS = qml.math.array([[1.0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
+
+
+def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]]) -> List:
+    """TODO
+
+    Args:
+        results:
+        prepare_nodes:
+        measure_nodes:
+    """
+    ctr = 0
+    tensors = []
+
+    for p, m in zip(prepare_nodes, measure_nodes):
+        n_prep = len(p)
+        n_meas = len(m)
+        n = n_prep + n_meas
+
+        dim = 4 ** n
+        dim_meas = 4 ** n_meas
+
+        intermediate_shape = (4,) * n_prep + (dim_meas,)
+
+        results_slice = qml.math.stack(results[ctr : dim + ctr])
+        intermediate_tensor = qml.math.reshape(results_slice, intermediate_shape)
+
+        grouped = qml.grouping.partition_pauli_group(n_meas)
+        grouped_flat = [term for group in grouped for term in group]
+        order = qml.math.argsort(grouped_flat)
+
+        if qml.math.get_interface(intermediate_tensor) == "tensorflow":
+            intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
+        else:
+            sl = [slice(None)] * n_prep + [order]
+            intermediate_tensor = intermediate_tensor[sl]
+
+        final_shape = (4,) * n
+        final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
+
+        change_of_basis = qml.math.convert_like(CHANGE_OF_BASIS, intermediate_tensor)
+
+        for i in range(n_prep):
+            axes = [[1], [i]]
+            final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
+
+        final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
+
+        tensors.append(final_tensor)
+        ctr += dim
