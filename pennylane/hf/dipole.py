@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.hamiltonian import _generate_qubit_operator, _return_pauli, simplify
-from pennylane.hf.matrices import generate_moment_matrix
+from pennylane.hf.matrices import moment_matrix
 
 
 def dipole_integrals(mol, core=None, active=None):
@@ -88,15 +88,9 @@ def dipole_integrals(mol, core=None, active=None):
         """
         _, coeffs, _, _, _ = qml.hf.generate_scf(mol)(*args)
 
-        dx = anp.einsum(
-            "qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 0)(*args), coeffs
-        )
-        dy = anp.einsum(
-            "qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 1)(*args), coeffs
-        )
-        dz = anp.einsum(
-            "qr,rs,st->qt", coeffs.T, generate_moment_matrix(mol.basis_set, 1, 2)(*args), coeffs
-        )
+        dx = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0)(*args), coeffs)
+        dy = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1)(*args), coeffs)
+        dz = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs)
 
         core_x, core_y, core_z = anp.array([0]), anp.array([0]), anp.array([0])
 
@@ -157,7 +151,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
     return _fermionic_dipole
 
 
-def dipole(mol, cutoff=1.0e-12, core=None, active=None):
+def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit dipole.
 
     Args:

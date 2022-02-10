@@ -18,8 +18,8 @@ import pennylane as qml
 import pytest
 from pennylane import numpy as np
 from pennylane.hf.dipole import (
-    dipole,
     dipole_integrals,
+    dipole_moment,
     fermionic_dipole,
     one_particle,
     qubit_operator,
@@ -185,7 +185,7 @@ def test_generate_dipole(symbols, geometry, core, charge, active, n_terms):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    f = dipole(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    f = dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
 
     assert len(f.terms[0]) == n_terms
 

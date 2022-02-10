@@ -19,9 +19,9 @@ import autograd.numpy as anp
 from pennylane.hf.integrals import (
     generate_attraction,
     generate_kinetic,
-    generate_moment,
     generate_overlap,
     generate_repulsion,
+    moment_integral,
 )
 
 
@@ -146,12 +146,12 @@ def moment_matrix(basis_functions, e, idx):
                         args_ab = []
                         for arg in args:
                             args_ab.append(arg[[i, j]])
-                        moment_integral = generate_moment(a, b, e, idx)(*args_ab)
+                        integral = moment_integral(a, b, e, idx)(*args_ab)
                     else:
-                        moment_integral = generate_moment(a, b, e, idx)()
+                        integral = moment_integral(a, b, e, idx)()
                     o = anp.zeros((n, n))
                     o[i, j] = o[j, i] = 1.0
-                    matrix = matrix + moment_integral * o
+                    matrix = matrix + integral * o
         return matrix
 
     return _moment_matrix
