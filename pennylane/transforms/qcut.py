@@ -314,8 +314,8 @@ def _find_new_wire(target, wires: Wires) -> int:
 
     # if the target is already subscripted, reset to it's parent integer
     if isinstance(target, str) and any(char in set(target) for char in set(SUBS)):
-        ctr = subscript_map[target[-1]]
-        target = int(target[0])
+        ctr = subscript_map[target[-1]]  # set counter to subscript
+        target = int(target[0])  # set target to parent integer
         wire_func = partial(_subscripted, target)
         new_wire = target
     elif isinstance(target, (int, str)):
@@ -323,6 +323,7 @@ def _find_new_wire(target, wires: Wires) -> int:
         new_wire = wire_func(ctr)
     else:
         wire_func = lambda ctr: ctr - 1
+        new_wire = wire_func(ctr)
 
     while new_wire in wires:
         ctr += 1

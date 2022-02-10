@@ -866,6 +866,21 @@ class TestGraphToTape:
                     except IndexError:
                         assert len(tape.operations) == i + 1
 
+    def test_find_new_wire_edge_cases(self):
+        """
+        Tests new wires are found correctly when target wire does not exist in
+        fragment wires and when target wire is not a string or int
+        """
+        target_not_in_wires = 2
+        wires_1 = Wires([0, 1, "2₁", "a"])
+
+        assert qcut._find_new_wire(target_not_in_wires, wires_1) == target_not_in_wires
+
+        target_not_str_or_int = 0.5
+        wires_2 = Wires([0, 0.5, 1, 2])
+
+        assert qcut._find_new_wire(target_not_str_or_int, wires_2) == 3
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
