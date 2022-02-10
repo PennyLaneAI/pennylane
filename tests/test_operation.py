@@ -153,6 +153,59 @@ class TestOperationConstruction:
         op = DummyOp(x, wires=0)
         assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
+    def test_frequencies_default_single_param(self):
+        """Test that an operation with default parameter frequencies
+        and a single parameter works correctly."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            grad_method = "A"
+            generator = [qml.PauliX, -0.2]
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.parameter_frequencies == (0.4,)
+
+    def test_frequencies_default_multi_param(self):
+        """Test that an operation with default parameter frequencies and multiple
+        parameters raises an error when calling parameter_frequencies."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_params = 3
+            num_wires = 1
+            grad_method = "A"
+
+        x = [0.654, 2.31, 0.1]
+        op = DummyOp(*x, wires=0)
+        with pytest.raises(
+            qml.operation.OperatorPropertyUndefined, match="does not have parameter"
+        ):
+            op.parameter_frequencies
+
+    @pytest.mark.parametrize("num_param", [1, 2])
+    def test_frequencies_parameter_dependent(self, num_param):
+        """Test that an operation with parameter frequencies that depend on
+        its instantiated parameter values works correctly"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_params = num_param
+            num_wires = 1
+            grad_method = "A"
+
+            @property
+            def parameter_frequencies(self):
+                x = self.data
+                return [(0.2, _x) for _x in x]
+
+        x = [0.654, 2.31][:num_param]
+        op = DummyOp(*x, wires=0)
+        f = op.parameter_frequencies
+        for i in range(num_param):
+            assert f[i] == (0.2, x[i])
+
     def test_no_wires_passed(self):
         """Test exception raised if no wires are passed"""
 

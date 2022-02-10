@@ -14,3 +14,4 @@ dask[delayed]==2021.10
 autoray>=0.2.5
 matplotlib==3.4
 black>=21
+opt_einsum==3.3

@@ -14,9 +14,14 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-import numpy as np
-import pennylane as qml
+import string
+import sys
+
 import pytest
+from networkx import MultiDiGraph
+
+import pennylane as qml
+from pennylane import numpy as np
 from pennylane.transforms import qcut
 
 with qml.tape.QuantumTape() as tape:
@@ -730,3 +735,214 @@ class TestFragmentGraph:
 
         assert communication_graph_0.nodes == communication_graph_1.nodes
         assert communication_graph_0.edges == communication_graph_1.edges
+
+
+class TestContractTensors:
+    """Tests for the contract_tensors function"""
+
+    t = [np.arange(4), np.arange(4, 8)]
+    m = [[qcut.MeasureNode(wires=0)], []]
+    p = [[], [qcut.PrepareNode(wires=0)]]
+    edge_dict = {"pair": (m[0][0], p[1][0])}
+    g = MultiDiGraph([(0, 1, edge_dict)])
+    expected_result = np.dot(*t)
+
+    @pytest.mark.parametrize("use_opt_einsum", [False, True])
+    def test_basic(self, use_opt_einsum):
+        """Test that the correct answer is returned for a simple contraction scenario"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        res = qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        assert np.allclose(res, self.expected_result)
+
+    def test_fail_import(self, monkeypatch):
+        """Test if an ImportError is raised when opt_einsum is requested but not installed"""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "opt_einsum", None)
+
+            with pytest.raises(ImportError, match="The opt_einsum package is required"):
+                qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=True)
+
+    def test_run_out_of_symbols(self, monkeypatch):
+        """Test if a ValueError is raised when there are not enough symbols in the
+        use_opt_einsum = False setting"""
+
+        with monkeypatch.context() as m:
+            m.setattr(string, "ascii_letters", "")
+            with pytest.raises(ValueError, match="Set the use_opt_einsum argument to True"):
+                qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=False)
+
+    params = [0.3, 0.5]
+
+    expected_grad_0 = (
+        np.cos(params[0]) * np.cos(params[1])
+        + 2 * np.cos(params[0]) * np.sin(params[0]) * np.cos(params[1]) ** 2
+        + 3 * np.cos(params[0]) * np.sin(params[0]) ** 2 * np.cos(params[1]) ** 3
+    )
+    expected_grad_1 = (
+        -np.sin(params[0]) * np.sin(params[1])
+        - 2 * np.sin(params[0]) ** 2 * np.sin(params[1]) * np.cos(params[1])
+        - 3 * np.sin(params[0]) ** 3 * np.sin(params[1]) * np.cos(params[1]) ** 2
+    )
+    expected_grad = np.array([expected_grad_0, expected_grad_1])
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_autograd(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the autograd interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        def contract(params):
+            t1 = np.asarray([np.sin(params[0]) ** i for i in range(4)])
+            t2 = np.asarray([np.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+            return r
+
+        params = np.array(self.params, requires_grad=True)
+        grad = qml.grad(contract)(params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_torch(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the torch interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import torch
+
+        params = torch.tensor(self.params, requires_grad=True)
+
+        t1 = torch.stack([torch.sin(params[0]) ** i for i in range(4)])
+        t2 = torch.stack([torch.cos(params[1]) ** i for i in range(4)])
+        t = [t1, t2]
+        r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        r.backward()
+        grad = params.grad
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_tf(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the tf interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import tensorflow as tf
+
+        params = tf.Variable(self.params)
+
+        with tf.GradientTape() as tape:
+            t1 = tf.stack([tf.sin(params[0]) ** i for i in range(4)])
+            t2 = tf.stack([tf.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        grad = tape.gradient(r, params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_jax_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_jax(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the jax interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import jax
+        from jax import numpy as np
+
+        params = np.array(self.params)
+
+        def contract(params):
+            t1 = np.stack([np.sin(params[0]) ** i for i in range(4)])
+            t2 = np.stack([np.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+            return r
+
+        grad = jax.grad(contract)(params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_advanced(self, mocker, use_opt_einsum):
+        """Test if the contraction works as expected for a more complicated example based
+        upon the circuit:
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
+            qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+
+            qml.Barrier(wires=0)
+            qml.WireCut(wires=[1, 2, 3])
+
+            qml.QubitUnitary(np.eye(2 ** 1), wires=[0])
+            qml.QubitUnitary(np.eye(2 ** 4), wires=[1, 2, 3, 4])
+
+            qml.WireCut(wires=[1, 2, 3, 4])
+
+            qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
+            qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+        """
+        if use_opt_einsum:
+            opt_einsum = pytest.importorskip("opt_einsum")
+            spy = mocker.spy(opt_einsum, "contract")
+        else:
+            spy = mocker.spy(qml.math, "einsum")
+
+        t = [
+            np.arange(4**8).reshape((4,) * 8),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**2).reshape((4,) * 2),
+        ]
+        m = [
+            [
+                qcut.MeasureNode(wires=3),
+                qcut.MeasureNode(wires=1),
+                qcut.MeasureNode(wires=2),
+                qcut.MeasureNode(wires=3),
+                qcut.MeasureNode(wires=4),
+            ],
+            [
+                qcut.MeasureNode(wires=1),
+                qcut.MeasureNode(wires=2),
+            ],
+            [],
+        ]
+        p = [
+            [
+                qcut.PrepareNode(wires=1),
+                qcut.PrepareNode(wires=2),
+                qcut.PrepareNode(wires=3),
+            ],
+            [
+                qcut.PrepareNode(wires=1),
+                qcut.PrepareNode(wires=2),
+            ],
+            [
+                qcut.PrepareNode(wires=4),
+                qcut.PrepareNode(wires=3),
+            ],
+        ]
+        edges = [
+            (0, 0, 0, {"pair": (m[0][0], p[0][2])}),
+            (0, 1, 0, {"pair": (m[0][1], p[1][0])}),
+            (0, 1, 1, {"pair": (m[0][2], p[1][1])}),
+            (0, 2, 0, {"pair": (m[0][4], p[2][0])}),
+            (0, 2, 1, {"pair": (m[0][3], p[2][1])}),
+            (1, 0, 0, {"pair": (m[1][0], p[0][0])}),
+            (1, 0, 1, {"pair": (m[1][1], p[0][1])}),
+        ]
+        g = MultiDiGraph(edges)
+
+        res = qcut.contract_tensors(t, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        eqn = spy.call_args[0][0]
+        expected_eqn = "abccdegf,deab,fg"
+
+        assert eqn == expected_eqn
+        assert np.allclose(res, np.einsum(eqn, *t))
