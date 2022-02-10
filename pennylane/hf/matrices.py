@@ -106,8 +106,8 @@ def generate_overlap_matrix(basis_functions):
     return overlap
 
 
-def generate_moment_matrix(basis_functions, e, idx):
-    r"""Return a function that computes the multipole moment matrix for a given set of basis functions.
+def moment_matrix(basis_functions, e, idx):
+    r"""Return a function that computes the multipole moment matrix for a set of basis functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
@@ -128,7 +128,7 @@ def generate_moment_matrix(basis_functions, e, idx):
     tensor([[0.0, 0.4627777], [0.4627777, 2.0]], requires_grad=True)
     """
 
-    def moment(*args):
+    def _moment_matrix(*args):
         r"""Construct the multipole moment matrix for a given set of basis functions.
 
         Args:
@@ -138,7 +138,7 @@ def generate_moment_matrix(basis_functions, e, idx):
             array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
-        moment_matrix = anp.zeros((n, n))
+        matrix = anp.zeros((n, n))
         for i, a in enumerate(basis_functions):
             for j, b in enumerate(basis_functions):
                 if i <= j:
@@ -151,10 +151,10 @@ def generate_moment_matrix(basis_functions, e, idx):
                         moment_integral = generate_moment(a, b, e, idx)()
                     o = anp.zeros((n, n))
                     o[i, j] = o[j, i] = 1.0
-                    moment_matrix = moment_matrix + moment_integral * o
-        return moment_matrix
+                    matrix = matrix + moment_integral * o
+        return matrix
 
-    return moment
+    return _moment_matrix
 
 
 def generate_kinetic_matrix(basis_functions):

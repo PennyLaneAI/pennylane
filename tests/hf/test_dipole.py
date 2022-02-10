@@ -18,9 +18,9 @@ import pennylane as qml
 import pytest
 from pennylane import numpy as np
 from pennylane.hf.dipole import (
-    generate_dipole,
-    generate_dipole_integrals,
-    generate_fermionic_dipole,
+    dipole,
+    dipole_integrals,
+    fermionic_dipole,
     one_particle,
     qubit_operator,
 )
@@ -87,7 +87,7 @@ def test_generate_dipole_integrals(symbols, geometry, core, charge, active, core
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    constants, integrals = generate_dipole_integrals(mol, core=core, active=active)(*args)
+    constants, integrals = dipole_integrals(mol, core=core, active=active)(*args)
 
     for i in range(3):  # loop on x, y, z components
         assert np.allclose(constants[i], core_ref[i])
@@ -159,7 +159,7 @@ def test_generate_fermionic_dipole(symbols, geometry, core, charge, active, f_re
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    f = generate_fermionic_dipole(mol, core=core, active=active)(*args)[0]
+    f = fermionic_dipole(mol, core=core, active=active)(*args)[0]
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert np.allclose(f[0], f_ref[0])  # fermionic operators
@@ -185,7 +185,7 @@ def test_generate_dipole(symbols, geometry, core, charge, active, n_terms):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    f = generate_dipole(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    f = dipole(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
 
     assert len(f.terms[0]) == n_terms
 

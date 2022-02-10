@@ -21,10 +21,10 @@ from pennylane.hf.matrices import (
     generate_attraction_matrix,
     generate_core_matrix,
     generate_kinetic_matrix,
-    generate_moment_matrix,
     generate_overlap_matrix,
     generate_repulsion_tensor,
     molecular_density_matrix,
+    moment_matrix,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -170,7 +170,7 @@ def test_moment_matrix(symbols, geometry, alpha, e, idx, s_ref):
     r"""Test that moment_matrix returns the correct matrix."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    s = generate_moment_matrix(mol.basis_set, e, idx)(*args)
+    s = moment_matrix(mol.basis_set, e, idx)(*args)
     assert np.allclose(s, s_ref)
 
 
@@ -190,7 +190,7 @@ def test_moment_matrix_nodiff(symbols, geometry, e, idx, s_ref):
     r"""Test that moment_matrix returns the correct matrix when no differentiable parameter is
     used."""
     mol = Molecule(symbols, geometry)
-    s = generate_moment_matrix(mol.basis_set, e, idx)()
+    s = moment_matrix(mol.basis_set, e, idx)()
     assert np.allclose(s, s_ref)
 
 
@@ -255,8 +255,8 @@ def test_gradient_moment_matrix(symbols, geometry, alpha, coeff, e, idx, g_alpha
     r"""Test that the moment matrix gradients are correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [mol.alpha, mol.coeff]
-    g_alpha = autograd.jacobian(generate_moment_matrix(mol.basis_set, e, idx), argnum=0)(*args)
-    g_coeff = autograd.jacobian(generate_moment_matrix(mol.basis_set, e, idx), argnum=1)(*args)
+    g_alpha = autograd.jacobian(moment_matrix(mol.basis_set, e, idx), argnum=0)(*args)
+    g_coeff = autograd.jacobian(moment_matrix(mol.basis_set, e, idx), argnum=1)(*args)
 
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
