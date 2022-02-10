@@ -347,16 +347,6 @@ def classproperty(func):
 
 
 # =============================================================================
-# Error classes
-# =============================================================================
-
-
-class OperatorPropertyUndefined(Exception):
-    """Generic exception to be used for undefined
-    Operator properties or methods."""
-
-
-# =============================================================================
 # Base Operator class
 # =============================================================================
 
@@ -1176,17 +1166,8 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            op, coeff = self.generator
-            if op is None:
-                raise OperatorPropertyUndefined(
-                    f"Operation {self.name} does not have parameter frequencies."
-                )
-
-            if not isinstance(op, np.ndarray):
-                op = op.matrix
-            gen_eigvals = tuple(np.linalg.eigvals(op))
-            coeff = np.abs(coeff)
-            return tuple(coeff * val for val in qml.gradients.eigvals_to_frequencies(gen_eigvals))
+            gen_eigvals = tuple(self.generator().eigvals())
+            return qml.gradients.eigvals_to_frequencies(gen_eigvals)
 
         raise OperatorPropertyUndefined(
             f"Operation {self.name} does not have parameter frequencies."
