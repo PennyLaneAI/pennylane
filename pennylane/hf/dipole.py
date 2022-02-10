@@ -41,7 +41,7 @@ def dipole_integrals(mol, core=None, active=None):
 
     .. math::
 
-        d_{pq} = \int \phi_p(r)^* r \phi_q(r) dr,,
+        d_{pq} = \int \phi_p(r)^* r \phi_q(r) dr,
 
     The molecular orbitals are constructed as a linear combination of atomic orbitals as
 
@@ -74,8 +74,14 @@ def dipole_integrals(mol, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> generate_dipole_integrals(mol)(*args)
-
+    >>> constants, integrals = dipole_integrals(mol)(*args)
+    >>> print(integrals)
+    (array([[0., 0.],
+            [0., 0.]]),
+     array([[0., 0.],
+            [0., 0.]]),
+     array([[ 0.5      , -0.8270995],
+            [-0.8270995,  0.5      ]]))
     """
 
     def _dipole_integrals(*args):
@@ -85,7 +91,7 @@ def dipole_integrals(mol, core=None, active=None):
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple[array[float]]: tuple containing dipole moment integrals and core/nuclear constants
+            tuple[array[float]]: tuple containing core/nuclear constants and dipole moment integrals
         """
         _, coeffs, _, _, _ = qml.hf.generate_scf(mol)(*args)
 
@@ -118,27 +124,38 @@ def dipole_integrals(mol, core=None, active=None):
 
 
 def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the fermionic dipole.
+    r"""Return a function that computes the fermionic dipole moment.
 
     Args:
         mol (Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the fermionic dipole
+        function: function that computes the fermionic dipole moment
 
     **Example**
 
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> coeffs, ops = fermionic_dipole(mol)(*args)[2]
+    >>> ops
+    [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
 
     def _fermionic_dipole(*args):
-        r"""Compute the fermionic dipole.
+        r"""Compute the fermionic dipole moment.
 
         Args:
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the dipole coefficients and operators
+            tuple(array[float], list[list[int]]): the dipole moment coefficients and operators
         """
         f = []
         constants, integrals = dipole_integrals(mol, core, active)(*args)
@@ -153,27 +170,44 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
 
 def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the qubit dipole.
+    r"""Return a function that computes the qubit dipole moment.
 
     Args:
         mol (Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
+        core (list[int]): indices of the core orbitals
+        active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the qubit dipole
+        function: function that computes the qubit dipole moment
 
     **Example**
 
+    >>> symbols  = ['H', 'H']
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
+    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> args = [alpha]
+    >>> dipole_moment(mol)(*args)[2].terms[1]
+    [PauliZ(wires=[0]),
+     PauliY(wires=[0]) @ PauliZ(wires=[1]) @ PauliY(wires=[2]),
+     PauliX(wires=[0]) @ PauliZ(wires=[1]) @ PauliX(wires=[2]),
+     PauliZ(wires=[1]),
+     PauliY(wires=[1]) @ PauliZ(wires=[2]) @ PauliY(wires=[3]),
+     PauliX(wires=[1]) @ PauliZ(wires=[2]) @ PauliX(wires=[3]),
+     PauliZ(wires=[2]),
+     PauliZ(wires=[3])]
     """
 
     def _dipole(*args):
-        r"""Compute the qubit dipole.
+        r"""Compute the qubit dipole moment.
 
         Args:
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            (list[Hamiltonian]): x, y and z components of the dipole observable
+            (list[Hamiltonian]): x, y and z components of the dipole moment observable
         """
         d = []
         d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
@@ -198,6 +232,11 @@ def one_particle(core_constant, integral, cutoff=1.0e-12):
 
     **Example**
 
+    >>> constant = np.array([1.0])
+    >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
+    >>> coeffs, ops = one_particle(constant, integral)
+    >>> ops
+    [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
     coeffs = anp.array([])
 
@@ -220,15 +259,24 @@ def one_particle(core_constant, integral, cutoff=1.0e-12):
 def qubit_operator(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
+    The fermionic operator is a tuple containing the fermionic coefficients and operators. The
+    one-body fermionic operator :math:`a_2^\dagger a_0` is constructed as [2, 0] and the two-body
+    operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is constructed as [4, 3, 2, 1].
+
     Args:
-        d_ferm tuple(array[float], list[int]): fermionic operator
+        o_ferm tuple(array[float], list[int]): fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
 
     Returns:
         Hamiltonian: Simplified PennyLane Hamiltonian
 
     **Example**
-
+    >>> coeffs = np.array([1.0, 1.0])
+    >>> ops = [[0, 0], [0, 0]]
+    >>> f = (coeffs, ops)
+    >>> print(qubit_operator(f))
+      ((-1+0j)) [Z0]
+    + ((1+0j)) [I0]
     """
     if len(o_ferm[0]) == 0 and len(o_ferm[1]) == 0:
         return qml.Hamiltonian([anp.array([1.0])], [qml.Identity(0)])
