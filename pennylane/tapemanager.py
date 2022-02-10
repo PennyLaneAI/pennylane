@@ -15,10 +15,12 @@
 from collections import deque
 from copy import copy
 
+
 class QueuingError(Exception):
     """Exception that is raised when there is a queuing error"""
 
-class TapeManager(object):
+
+class TapeManager:
 
     _instance = None
 
@@ -28,11 +30,11 @@ class TapeManager(object):
         if cls._instance is None:
             cls._instance = super(TapeManager, cls).__new__(cls)
         return cls._instance
-    
+
     @classmethod
     def recording(cls):
         return bool(cls.active_contexts)
-    
+
     @classmethod
     def active_context(cls):
         return cls.active_contexts[-1] if cls.recording() else None
@@ -56,6 +58,8 @@ class TapeManager(object):
     def get_info(cls, obj):
         if cls.recording():
             return cls.active_context().get_info(obj)
+        return None
+
 
 def apply(op, context=TapeManager):
     """Apply an instantiated operator or measurement to a queuing context.

@@ -23,7 +23,6 @@ from threading import RLock
 import numpy as np
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingContext
 from pennylane.operation import Sample
 
 from ..tapemanager import TapeManager, QueuingError
@@ -705,7 +704,7 @@ class QuantumTape:
         # transform requires that the returned inverted object
         # is automatically queued.
         with QuantumTape._lock:
-            QueuingContext.append(new_tape)
+            TapeManager.append(new_tape)
 
         return new_tape
 

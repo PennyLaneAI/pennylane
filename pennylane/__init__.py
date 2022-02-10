@@ -23,7 +23,6 @@ import numpy as _np
 from semantic_version import Spec, Version
 
 from pennylane.boolean_fn import BooleanFn
-from pennylane.queuing import QueuingContext
 
 import pennylane.fourier
 import pennylane.kernels

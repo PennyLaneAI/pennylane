@@ -21,7 +21,7 @@ import semantic_version
 import torch
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape
 
 COMPLEX_SUPPORT = semantic_version.match(">=1.8.0", torch.__version__)
 
@@ -204,7 +204,7 @@ class _TorchInterface(torch.autograd.Function):
         return (None,) + tuple(vjp)
 
 
-class TorchInterface(AnnotatedQueue):
+class TorchInterface(QuantumTape):
     """Mixin class for applying an Torch interface to a :class:`~.JacobianTape`.
 
     Torch-compatible quantum tape classes can be created via subclassing:

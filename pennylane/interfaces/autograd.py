@@ -21,10 +21,10 @@ import autograd.builtins
 from autograd.numpy.numpy_boxes import ArrayBox
 
 from pennylane import numpy as np
-from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape
 
 
-class AutogradInterface(AnnotatedQueue):
+class AutogradInterface(QuantumTape):
     """Mixin class for applying an autograd interface to a :class:`~.JacobianTape`.
 
     Autograd-compatible quantum tape classes can be created via subclassing:

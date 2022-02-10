@@ -25,10 +25,10 @@ except ImportError:
     from tensorflow.python.eager.tape import should_record as should_record_backprop
 
 
-from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape
 
 
-class TFInterface(AnnotatedQueue):
+class TFInterface(QuantumTape):
     """Mixin class for applying an TensorFlow interface to a :class:`~.JacobianTape`.
 
     TensorFlow-compatible quantum tape classes can be created via subclassing:

@@ -19,11 +19,11 @@ from functools import partial
 import jax
 from jax.experimental import host_callback
 import jax.numpy as jnp
-from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumTape
 from pennylane.operation import Variance, Expectation
 
 
-class JAXInterface(AnnotatedQueue):
+class JAXInterface(QuantumTape):
     """Mixin class for applying an JAX interface to a :class:`~.JacobianTape`.
 
     JAX-compatible quantum tape classes can be created via subclassing:
