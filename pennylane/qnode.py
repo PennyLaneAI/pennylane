@@ -490,6 +490,7 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
+        print(self._qfunc_output)
         if not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:

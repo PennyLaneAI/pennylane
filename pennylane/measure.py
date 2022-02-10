@@ -22,7 +22,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance, MCMeasure
 from pennylane.wires import Wires
 
 
@@ -221,6 +221,22 @@ class MeasurementProcess:
             )
 
         return hash(fingerprint)
+
+
+class MidCircuitMP(MeasurementProcess):
+    """This class handles measurement processes which occur during
+     the middle of a circuit. The idea is to provide functionality which
+     stores mid circuit results and apply projective operations"""
+
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
+        self._run_time_value = None
+        self.measured = False  # keeps track of if the measurement has taken place or not
+        super().__init__(self, return_type, obs=None, wires=wires, eigvals=eigvals)
+
+
+def measure(wires):
+    """Measures the wires in the computational basis"""
+    return MidCircuitMP(MCMeasure, wires=qml.wires.Wires(wires))
 
 
 def expval(op):

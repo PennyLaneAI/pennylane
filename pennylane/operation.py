@@ -165,6 +165,7 @@ class ObservableReturnTypes(Enum):
     Expectation = "expval"
     Probability = "probs"
     State = "state"
+    MCMeasure = "measure"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -188,6 +189,10 @@ of all computational basis states."""
 
 State = ObservableReturnTypes.State
 """Enum: An enumeration which represents returning the state in the computational basis."""
+
+MCMeasure = ObservableReturnTypes.MCMeasure
+"""Enum: An enumeration which represents returning the result of a mid circuit measurement
+of some observable on some or all of the wires in the circuit."""
 
 # =============================================================================
 # Class property
