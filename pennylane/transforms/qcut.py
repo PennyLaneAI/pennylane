@@ -496,6 +496,8 @@ def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]
 
         ctr += dim
 
+    return tensors
+
 
 def qcut_processing_fn(results: Sequence, communication_graph: MultiDiGraph, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]], use_opt_einsum: bool=False):
     """TODO
