@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Parametric operations now have the `parameter_frequencies`
+  method that returns the frequencies with which a parameter
+  enters a circuit when using the operation.
+  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+
+  The frequencies can be used for circuit analysis, optimization
+  via the `RotosolveOptimizer` and differentiation with the
+  parameter-shift rule. They assume that the circuit returns
+  expectation values or probabilities, for a variance
+  measurement the frequencies will differ.
+
 * Continued development of the circuit-cutting compiler:
 
   A method for converting a quantum tape to a directed multigraph that is amenable
@@ -18,9 +29,17 @@
   `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
 
+  A differentiable tensor contraction function `contract_tensors` has been
+  added.
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
+
+* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
+  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
 
@@ -30,6 +49,11 @@
   keyword arguments would throw an error because the documented call
   signature didn't match the function definition.
   [(#1976)](https://github.com/PennyLaneAI/pennylane/pull/1976)
+
+* The operation `OrbitalRotation` previously was wrongfully registered to satisfy
+  the four-term parameter shift rule, it now will be decomposed instead when
+  using the parameter-shift rule.
+  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
 
@@ -168,4 +192,8 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
+<<<<<<< HEAD
 Anthony Hayes, Josh Izaac, Christina Lee, Maria Schuld, Jay Soni, David Wierichs
+=======
+Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, David Wierichs
+>>>>>>> master
