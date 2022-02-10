@@ -64,6 +64,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
     qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
     qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
+    qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
     qml.SingleExcitation(0.123, wires=[0, 3]),
     qml.SingleExcitationPlus(0.123, wires=[0, 3]),
     qml.SingleExcitationMinus(0.123, wires=[0, 3]),
