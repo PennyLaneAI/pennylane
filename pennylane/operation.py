@@ -1250,7 +1250,7 @@ class Tensor(Observable):
 
             try:
                 context.update_info(o, owner=self)
-            except qml.tape.tape.QueuingError:
+            except QueuingError:
                 o.queue(context=context)
                 context.update_info(o, owner=self)
             except NotImplementedError:
