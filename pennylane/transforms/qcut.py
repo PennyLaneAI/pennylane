@@ -16,7 +16,6 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
-import copy
 import string
 from functools import partial
 from typing import Sequence, Tuple, Union
