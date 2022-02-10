@@ -19,7 +19,8 @@ import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.hamiltonian import _generate_qubit_operator, _return_pauli, simplify
+from pennylane.hf.hamiltonian import (_generate_qubit_operator, _return_pauli,
+                                      simplify)
 from pennylane.hf.matrices import moment_matrix
 
 
@@ -230,7 +231,7 @@ def qubit_operator(o_ferm, cutoff=1.0e-12):
 
     """
     if len(o_ferm[0]) == 0 and len(o_ferm[1]) == 0:
-        return qml.Hamiltonian([o_ferm[0]], [qml.Identity(0)])
+        return qml.Hamiltonian([anp.array([1.0])], [qml.Identity(0)])
 
     ops = []
     coeffs = anp.array([])

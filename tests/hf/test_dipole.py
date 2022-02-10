@@ -14,6 +14,7 @@
 """
 Unit tests for functions needed for computing the dipole.
 """
+import autograd
 import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
@@ -202,6 +203,44 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     assert qml.Hamiltonian(np.ones(len(d.terms[0])), d.terms[1]).compare(
         qml.Hamiltonian(np.ones(len(d_ref.terms[0])), d_ref.terms[1])
     )
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "charge", "core", "active", "d_ref"),
+    [
+        (
+            ["H", "H", "H"],
+            np.array(
+                [[0.028, 0.054, 0.0], [0.986, 1.610, 0.0], [1.855, 0.002, 0.0]], requires_grad=False
+            ),
+            1,
+            None,
+            None,
+            0.95655073,  # x component of the dipole moment from PL_QChem
+        ),
+    ],
+)
+def test_expvalD(symbols, geometry, core, charge, active, d_ref):
+    r"""Test that expval(D) is correct."""
+    mol = Molecule(symbols, geometry)
+    args = []
+    dev = qml.device("default.qubit", wires=6)
+
+    def dipole(mol, idx):
+        @qml.qnode(dev)
+        def circuit(*args):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            qml.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
+            qml.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
+            d_qubit = dipole_moment(mol)(*args)[idx]
+            return qml.expval(d_qubit)
+
+        return circuit
+
+    dx = dipole(mol, 0)(*args)
+
+    assert np.allclose(dx, d_ref)
 
 
 @pytest.mark.parametrize(
