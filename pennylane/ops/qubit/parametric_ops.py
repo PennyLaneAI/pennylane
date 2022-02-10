@@ -62,6 +62,7 @@ class RX(Operation):
 
     basis = "X"
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return -0.5 * PauliX(wires=self.wires)
@@ -143,6 +144,7 @@ class RY(Operation):
 
     basis = "Y"
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return -0.5 * PauliY(wires=self.wires)
@@ -220,6 +222,7 @@ class RZ(Operation):
 
     basis = "Z"
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires)
@@ -330,6 +333,7 @@ class PhaseShift(Operation):
 
     basis = "Z"
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -471,6 +475,7 @@ class ControlledPhaseShift(Operation):
 
     basis = "Z"
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return qml.Projector(np.array([1, 1]), wires=self.wires)
@@ -630,6 +635,7 @@ class Rot(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,), (1,), (1,)]
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
@@ -761,6 +767,7 @@ class MultiRZ(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def __init__(self, theta, wires=None, do_queue=True, id=None):
         wires = Wires(wires)
@@ -919,6 +926,7 @@ class PauliRot(Operation):
 
     do_check_domain = False
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
@@ -1209,6 +1217,7 @@ class CRX(Operation):
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
@@ -1358,6 +1367,7 @@ class CRY(Operation):
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
@@ -1500,6 +1510,7 @@ class CRZ(Operation):
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
+    parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
         return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
@@ -1663,6 +1674,7 @@ class CRot(Operation):
 
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
+    parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
@@ -1812,6 +1824,7 @@ class U1(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return qml.Projector(np.array([1]), wires=self.wires)
@@ -1917,6 +1930,7 @@ class U2(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,), (1,)]
 
     def __init__(self, phi, delta, wires, do_queue=True, id=None):
         super().__init__(phi, delta, wires=wires, do_queue=do_queue, id=id)
@@ -2038,6 +2052,7 @@ class U3(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,), (1,), (1,)]
 
     def __init__(self, theta, phi, delta, wires, do_queue=True, id=None):
         super().__init__(theta, phi, delta, wires=wires, do_queue=do_queue, id=id)
@@ -2158,6 +2173,7 @@ class IsingXX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return -0.5 * PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])
@@ -2170,7 +2186,6 @@ class IsingXX(Operation):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.IsingXX.matrix`
 
@@ -2266,6 +2281,7 @@ class IsingYY(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return -0.5 * PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])
@@ -2371,6 +2387,7 @@ class IsingZZ(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         return -0.5 * PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])

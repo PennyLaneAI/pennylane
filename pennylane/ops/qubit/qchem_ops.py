@@ -93,6 +93,8 @@ class SingleExcitation(Operation):
     grad_recipe = four_term_grad_recipe
     """Gradient recipe for the parameter-shift method."""
 
+    parameter_frequencies = [(0.5, 1.0)]
+
     def generator(self):
         w1, w2 = self.wires
         return 0.25 * qml.PauliX(w1) @ qml.PauliY(w2) - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
@@ -172,19 +174,19 @@ class SingleExcitationMinus(Operation):
     r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
-    .. math:: U_-(\phi) = \begin{bmatrix}
-                e^{-i\phi/2} & 0 & 0 & 0 \\
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
                 0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
                 0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                0 & 0 & 0 & e^{-i\phi/2}
+                0 & 0 & 0 & e^{i\phi/2}
             \end{bmatrix}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -202,6 +204,8 @@ class SingleExcitationMinus(Operation):
 
     grad_method = "A"
     """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         w1, w2 = self.wires
@@ -299,29 +303,29 @@ class SingleExcitationMinus(Operation):
 
     def adjoint(self):
         (phi,) = self.parameters
-        return SingleExcitationMinus(-phi, wires=self.wires)
+        return SingleExcitationPlus(-phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₋")
+        return super().label(decimals=decimals, base_label=base_label or "G₊")
 
 
 class SingleExcitationPlus(Operation):
     r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
 
-    .. math:: U_+(\phi) = \begin{bmatrix}
-                e^{i\phi/2} & 0 & 0 & 0 \\
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
                 0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
                 0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                0 & 0 & 0 & e^{i\phi/2}
+                0 & 0 & 0 & e^{-i\phi/2}
             \end{bmatrix}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -339,6 +343,8 @@ class SingleExcitationPlus(Operation):
 
     grad_method = "A"
     """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
 
     def generator(self):
         w1, w2 = self.wires
@@ -436,10 +442,10 @@ class SingleExcitationPlus(Operation):
 
     def adjoint(self):
         (phi,) = self.parameters
-        return SingleExcitationPlus(-phi, wires=self.wires)
+        return SingleExcitationMinus(-phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₊")
+        return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
 class DoubleExcitation(Operation):
@@ -503,6 +509,8 @@ class DoubleExcitation(Operation):
 
     grad_recipe = four_term_grad_recipe
     """Gradient recipe for the parameter-shift method."""
+
+    parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -679,6 +687,8 @@ class DoubleExcitationPlus(Operation):
     grad_method = "A"
     """Gradient computation method."""
 
+    parameter_frequencies = [(1,)]
+
     def generator(self):
         G = -1 * np.eye(16, dtype=np.complex64)
         G[3, 3] = G[12, 12] = 0
@@ -698,7 +708,6 @@ class DoubleExcitationPlus(Operation):
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
         .. seealso:: :meth:`~.DoubleExcitationPlus.matrix`
-
 
         Args:
           phi (tensor_like or float): rotation angle
@@ -773,6 +782,8 @@ class DoubleExcitationMinus(Operation):
     grad_method = "A"
     """Gradient computation method."""
 
+    parameter_frequencies = [(1,)]
+
     def generator(self):
         G = np.eye(16, dtype=np.complex64)
         G[3, 3] = 0
@@ -780,10 +791,6 @@ class DoubleExcitationMinus(Operation):
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
         H = coo_matrix(-0.5 * G)
-        return qml.SparseHamiltonian(H, wires=self.wires)
-
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -853,8 +860,9 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The ``OrbitalRotation`` operator satisfies the four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695)
+    * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
+      :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
+      (see https://arxiv.org/abs/2107.12390).
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -890,8 +898,12 @@ class OrbitalRotation(Operation):
     grad_method = "A"
     """Gradient computation method."""
 
-    grad_recipe = four_term_grad_recipe
-    """Gradient recipe for the parameter-shift method."""
+    parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
+
+    @property
+    def grad_recipe(self):
+        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
+        return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
