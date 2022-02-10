@@ -238,7 +238,7 @@ class TestPartitionPauliGroup:
             ["YYX"],
             ["YYY"],
         ]
-        assert expected == partition_pauli_group(3)
+        assert expected == partition_pauli_group(3.0)
 
     @pytest.mark.parametrize("n", range(1, 9))
     def test_scaling(self, n):
@@ -257,3 +257,11 @@ class TestPartitionPauliGroup:
                     w1 = string_to_pauli_word(s1)
                     w2 = string_to_pauli_word(s2)
                     assert is_commuting(w1, w2)
+
+    def test_pauli_group_invalid_input(self):
+        """Test that invalid inputs to the Pauli group are handled correctly."""
+        with pytest.raises(TypeError, match="Must specify an integer number"):
+            partition_pauli_group("3")
+
+        with pytest.raises(ValueError, match="Number of qubits must be at least 1"):
+            partition_pauli_group(-1)

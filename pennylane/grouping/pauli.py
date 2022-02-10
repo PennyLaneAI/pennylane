@@ -300,6 +300,18 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
      ['YYX'],
      ['YYY']]
     """
+    # Cover the case where n_qubits may be passed as a float
+    if isinstance(n_qubits, float):
+        if n_qubits.is_integer():
+            n_qubits = int(n_qubits)
+
+    # If not an int, or a float representing a int, raise an error
+    if not isinstance(n_qubits, int):
+        raise TypeError("Must specify an integer number of qubits.")
+
+    if n_qubits <= 0:
+        raise ValueError("Number of qubits must be at least 1.")
+
     strings = set()  # tracks all the strings that have already been grouped
     groups = []
 
