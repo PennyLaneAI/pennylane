@@ -46,7 +46,11 @@ single_qubit_decomps = [
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [0.0, -np.pi, -np.pi]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
-    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(), qml.Rot, [-1.0, 2.0, -3.0]),
+    (
+        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(),
+        qml.Rot,
+        [-1.0, 2.0, -3.0],
+    ),
 ]
 
 # A simple quantum function for testing

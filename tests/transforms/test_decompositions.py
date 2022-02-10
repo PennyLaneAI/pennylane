@@ -52,7 +52,11 @@ single_qubit_decomps = [
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [0.0, -np.pi, -np.pi]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
-    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(), qml.Rot, [-1.0, 2.0, -3.0]),
+    (
+        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(),
+        qml.Rot,
+        [-1.0, 2.0, -3.0],
+    ),
 ]
 
 
@@ -120,7 +124,9 @@ class TestQubitUnitaryZYZDecomposition:
             # With TF and RZ, need to cast since can't just unwrap
             obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).get_matrix()
         else:
-            obtained_mat = qml.Rot(*qml.math.unwrap(obtained_gates[0].parameters), wires=0).get_matrix()
+            obtained_mat = qml.Rot(
+                *qml.math.unwrap(obtained_gates[0].parameters), wires=0
+            ).get_matrix()
 
         assert check_matrix_equivalence(obtained_mat, U)
 

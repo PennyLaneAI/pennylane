@@ -576,7 +576,10 @@ class Operator(abc.ABC):
         Returns:
             array: matrix representation
         """
-        warnings.warn("The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23", UserWarning)
+        warnings.warn(
+            "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
+            UserWarning,
+        )
         return self._matrix()
 
     def get_matrix(self, wire_order=None):

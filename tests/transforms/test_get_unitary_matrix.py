@@ -239,7 +239,9 @@ def test_get_unitary_matrix_input_tape_wireorder():
         I, qml.RY(0.543, wires=0).get_matrix() @ qml.RX(0.432, wires=0).get_matrix()
     )
 
-    expected_matrix = np.kron(qml.RX(0.133, wires=1).get_matrix(), I) @ CNOT10 @ part_expected_matrix
+    expected_matrix = (
+        np.kron(qml.RX(0.133, wires=1).get_matrix(), I) @ CNOT10 @ part_expected_matrix
+    )
 
     assert np.allclose(matrix, expected_matrix)
 
