@@ -85,6 +85,7 @@ class SingleExcitation(Operation):
         np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -112,79 +113,6 @@ class SingleExcitation(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "G")
-
-
-class SingleExcitationMinus(Operation):
-    r"""SingleExcitationMinus(phi, wires)
-    Single excitation rotation with negative phase-shift outside the rotation subspace.
-
-    .. math:: U_-(\phi) = \begin{bmatrix}
-                e^{-i\phi/2} & 0 & 0 & 0 \\
-                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
-                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                0 & 0 & 0 & e^{-i\phi/2}
-            \end{bmatrix}.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
-
-    Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wires the operation acts on
-
-    """
-    num_wires = 2
-    num_params = 1
-    grad_method = "A"
-    generator = [
-        np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
-        -1 / 2,
-    ]
-
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
-
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
-
-        interface = qml.math.get_interface(theta)
-
-        if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(-1j * theta / 2)
-        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
-        return mat + s * qml.math.cast_like(off_diag, s)
-
-    @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(-theta / 2, wires=[wires[1], wires[0]]),
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(-theta / 2, wires=[wires[0], wires[1]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-        ]
-        return decomp_ops
-
-    def adjoint(self):
-        (phi,) = self.parameters
-        return SingleExcitationMinus(-phi, wires=self.wires)
-
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
 class SingleExcitationPlus(Operation):
@@ -217,6 +145,7 @@ class SingleExcitationPlus(Operation):
         np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -258,6 +187,80 @@ class SingleExcitationPlus(Operation):
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "G₊")
+
+
+class SingleExcitationMinus(Operation):
+    r"""SingleExcitationMinus(phi, wires)
+    Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{-i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+    num_wires = 2
+    num_params = 1
+    grad_method = "A"
+    generator = [
+        np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
+        -1 / 2,
+    ]
+    parameter_frequencies = [(1,)]
+
+    @classmethod
+    def _matrix(cls, *params):
+        theta = params[0]
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        interface = qml.math.get_interface(theta)
+
+        if interface == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(-1j * theta / 2)
+        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        return mat + s * qml.math.cast_like(off_diag, s)
+
+    @staticmethod
+    def decomposition(theta, wires):
+        decomp_ops = [
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(-theta / 2, wires=[wires[1], wires[0]]),
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(-theta / 2, wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return SingleExcitationMinus(-phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
 class DoubleExcitation(Operation):
@@ -316,6 +319,7 @@ class DoubleExcitation(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+    parameter_frequencies = [(0.5, 1.0)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -410,6 +414,7 @@ class DoubleExcitationPlus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -479,6 +484,7 @@ class DoubleExcitationMinus(Operation):
     G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
     G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
     generator = [G, -1 / 2]
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -535,8 +541,9 @@ class OrbitalRotation(Operation):
 
     * Number of wires: 4
     * Number of parameters: 1
-    * Gradient recipe: The ``OrbitalRotation`` operator satisfies the four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695)
+    * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
+      :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
+      (see https://arxiv.org/abs/2107.12390).
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -563,7 +570,7 @@ class OrbitalRotation(Operation):
     num_wires = 4
     num_params = 1
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
+
     generator = [
         qml.math.array(
             [
@@ -587,12 +594,19 @@ class OrbitalRotation(Operation):
         ),
         -1 / 2,
     ]
+    parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
+
+    @property
+    def grad_recipe(self):
+        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
+        return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
 
     @classmethod
     def _matrix(cls, *params):
-        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
-        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
-        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        r"""This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        """
 
         phi = params[0]
         c = qml.math.cos(phi / 2)

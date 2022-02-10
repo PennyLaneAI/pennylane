@@ -1,5 +1,4 @@
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -227,6 +226,16 @@ def classproperty(func):
         func = classmethod(func)
 
     return ClassPropertyDescriptor(func)
+
+
+# =============================================================================
+# Error classes
+# =============================================================================
+
+
+class OperatorPropertyUndefined(Exception):
+    """Generic exception to be used for undefined
+    Operator properties or methods."""
 
 
 # =============================================================================
@@ -677,7 +686,7 @@ class Operation(Operator):
         multiplier = 0.5 / np.sin(shift)
         a = 1
 
-        # We set the default recipe following:
+        # We set the following default recipe:
         # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
         default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
@@ -691,7 +700,7 @@ class Operation(Operator):
         A length-2 list ``[generator, scaling_factor]``, where
 
         * ``generator`` is an existing PennyLane
-          operation class or :math:`2\times 2` Hermitian array
+          operation class or a Hermitian array
           that acts as the generator of the current operation
 
         * ``scaling_factor`` represents a scaling factor applied
@@ -708,6 +717,57 @@ class Operation(Operator):
         Default is ``[None, 1]``, indicating the operation has no generator.
         """
         return [None, 1]
+
+    @property
+    def parameter_frequencies(self):
+        r"""Returns the frequencies for each operator parameter with respect
+        to an expectation value of the form
+        :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
+
+        These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
+        on the value of the expectation value as the parameters are modified.
+        For more details, please see the :mod:`.pennylane.fourier` module.
+
+        Returns:
+            list[tuple[int or float]]: Tuple of frequencies for each parameter.
+            Note that only non-negative frequency values are returned.
+
+        **Example**
+
+        >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+        >>> op.parameter_frequencies
+        [(0.5, 1), (0.5, 1), (0.5, 1)]
+
+        For operators that define a generator, the parameter frequencies are directly
+        related to the eigenvalues of the generator:
+
+        >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
+        >>> op.parameter_frequencies
+        [(1,)]
+        >>> gen_eigvals = tuple(np.linalg.eigvals(op.generator[0] * op.generator[1]))
+        >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
+        (tensor(1., requires_grad=True),)
+
+        For more details on this relationship, see :func:`.eigvals_to_frequencies`.
+        """
+        if self.num_params == 1:
+            # if the operator has a single parameter, we can query the
+            # generator, and if defined, use its eigenvalues.
+            op, coeff = self.generator
+            if op is None:
+                raise OperatorPropertyUndefined(
+                    f"Operation {self.name} does not have parameter frequencies."
+                )
+
+            if not isinstance(op, np.ndarray):
+                op = op.matrix
+            gen_eigvals = tuple(np.linalg.eigvals(op))
+            coeff = np.abs(coeff)
+            return tuple(coeff * val for val in qml.gradients.eigvals_to_frequencies(gen_eigvals))
+
+        raise OperatorPropertyUndefined(
+            f"Operation {self.name} does not have parameter frequencies."
+        )
 
     @property
     def inverse(self):
