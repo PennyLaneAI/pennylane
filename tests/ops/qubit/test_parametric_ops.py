@@ -106,24 +106,24 @@ class TestOperations:
 class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
-        if op.generator[0] is None:
-            # For operations without generator, we only can try and check that the function
-            # executes properly, not its return value.
-            try:
-                op.parameter_frequencies
-            except qml.operation.OperatorPropertyUndefined:
-                pytest.skip(f"Operation {op.name} does not have parameter frequencies defined.")
+        if not qml.operation.has_gen(op):
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
-        gen, coeff = op.generator
-        if isinstance(gen, np.ndarray):
-            matrix = gen
-        elif hasattr(gen, "matrix"):
-            matrix = gen.matrix
-        else:
-            raise ValueError
 
-        gen_eigvals = tuple(np.linalg.eigvalsh(matrix))
-        freqs_from_gen = np.abs(coeff) * np.array(qml.gradients.eigvals_to_frequencies(gen_eigvals))
+        gen = op.generator()
+
+        try:
+            mat = gen.get_matrix()
+        except (AttributeError, qml.operation.MatrixUndefinedError):
+
+            if isinstance(gen, qml.Hamiltonian):
+                mat = qml.utils.sparse_hamiltonian(gen).toarray()
+            elif isinstance(gen, qml.SparseHamiltonian):
+                mat = gen.sparse_matrix().toarray()
+            else:
+                pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
+
+        gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
+        freqs_from_gen = qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
         freqs = op.parameter_frequencies
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
@@ -1612,7 +1612,7 @@ class TestMultiRZ:
 
         spy = mocker.spy(qml.utils, "pauli_eigs")
 
-        op.generator
+        op.generator()
         spy.assert_not_called()
 
 
