@@ -23,7 +23,7 @@ from pennylane.hf.dipole import (
     dipole_integrals,
     dipole_moment,
     fermionic_dipole,
-    one_particle,
+    fermionic_one,
     qubit_operator,
 )
 from pennylane.hf.molecule import Molecule
@@ -305,9 +305,9 @@ def test_expvalD(symbols, geometry, core, charge, active, d_ref):
         ),
     ],
 )
-def test_one_particle(core_constant, integral, f_ref):
+def test_fermionic_one(core_constant, integral, f_ref):
     r"""Test that generate_electron_integrals returns the correct values."""
-    f = one_particle(core_constant, integral)
+    f = fermionic_one(core_constant, integral)
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert np.allclose(f[0], f_ref[0])  # fermionic operators

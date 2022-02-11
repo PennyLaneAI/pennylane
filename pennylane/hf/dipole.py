@@ -14,7 +14,6 @@
 """
 This module contains the functions needed for computing the dipole moment.
 """
-# pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
@@ -161,7 +160,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
         constants = anp.negative(constants)
 
         for i in range(3):
-            f.append(one_particle(constants[i], integrals[i], cutoff=cutoff))
+            f.append(fermionic_one(constants[i], integrals[i], cutoff=cutoff))
 
         return f
 
@@ -218,7 +217,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     return _dipole
 
 
-def one_particle(core_constant, integral, cutoff=1.0e-12):
+def fermionic_one(core_constant, integral, cutoff=1.0e-12):
     r"""Create a fermionic operator from one-particle molecular orbital integrals.
 
     Args:
@@ -233,7 +232,7 @@ def one_particle(core_constant, integral, cutoff=1.0e-12):
 
     >>> constant = np.array([1.0])
     >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
-    >>> coeffs, ops = one_particle(constant, integral)
+    >>> coeffs, ops = fermionic_one(constant, integral)
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
