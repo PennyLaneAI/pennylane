@@ -15,9 +15,15 @@
 Unit tests for the :mod:`pauli_group`  functions in ``grouping/pauli.py``.
 """
 import pytest
-from pennylane import Identity, PauliX, PauliY, PauliZ
 
-from pennylane.grouping.pauli import pauli_group, pauli_mult, pauli_mult_with_phase
+from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane.grouping import is_commuting, string_to_pauli_word
+from pennylane.grouping.pauli import (
+    partition_pauli_group,
+    pauli_group,
+    pauli_mult,
+    pauli_mult_with_phase,
+)
 
 
 class TestPauliGroup:
@@ -196,3 +202,66 @@ class TestPauliGroup:
         """Test that multiplication including phases works as expected."""
         _, obtained_phase = pauli_mult_with_phase(pauli_word_1, pauli_word_2, wire_map=wire_map)
         assert obtained_phase == expected_phase
+
+
+class TestPartitionPauliGroup:
+    """Tests for the partition_pauli_group function"""
+
+    def test_expected_answer(self):
+        """Test if we get the expected answer for 3 qubits"""
+        expected = [
+            ["III", "IIZ", "IZI", "IZZ", "ZII", "ZIZ", "ZZI", "ZZZ"],
+            ["IIX", "IZX", "ZIX", "ZZX"],
+            ["IIY", "IZY", "ZIY", "ZZY"],
+            ["IXI", "IXZ", "ZXI", "ZXZ"],
+            ["IXX", "ZXX"],
+            ["IXY", "ZXY"],
+            ["IYI", "IYZ", "ZYI", "ZYZ"],
+            ["IYX", "ZYX"],
+            ["IYY", "ZYY"],
+            ["XII", "XIZ", "XZI", "XZZ"],
+            ["XIX", "XZX"],
+            ["XIY", "XZY"],
+            ["XXI", "XXZ"],
+            ["XXX"],
+            ["XXY"],
+            ["XYI", "XYZ"],
+            ["XYX"],
+            ["XYY"],
+            ["YII", "YIZ", "YZI", "YZZ"],
+            ["YIX", "YZX"],
+            ["YIY", "YZY"],
+            ["YXI", "YXZ"],
+            ["YXX"],
+            ["YXY"],
+            ["YYI", "YYZ"],
+            ["YYX"],
+            ["YYY"],
+        ]
+        assert expected == partition_pauli_group(3.0)
+
+    @pytest.mark.parametrize("n", range(1, 9))
+    def test_scaling(self, n):
+        """Test if the number of groups is equal to 3**n"""
+        assert len(partition_pauli_group(n)) == 3**n
+
+    @pytest.mark.parametrize("n", range(1, 6))
+    def test_is_qwc(self, n):
+        """Test if each group contains only qubit-wise commuting terms"""
+        for group in partition_pauli_group(n):
+            size = len(group)
+            for i in range(size):
+                for j in range(i, size):
+                    s1 = group[i]
+                    s2 = group[j]
+                    w1 = string_to_pauli_word(s1)
+                    w2 = string_to_pauli_word(s2)
+                    assert is_commuting(w1, w2)
+
+    def test_invalid_input(self):
+        """Test that invalid inputs are handled correctly."""
+        with pytest.raises(TypeError, match="Must specify an integer number"):
+            partition_pauli_group("3")
+
+        with pytest.raises(ValueError, match="Number of qubits must be at least 1"):
+            partition_pauli_group(-1)
