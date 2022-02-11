@@ -853,8 +853,8 @@ class TestGraphToTape:
 
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        assert tapes[0].wires == Wires([0, 1, "1₁", "1₂"])
-        assert tapes[1].wires == Wires([1, 2, "1₁"])
+        assert tapes[0].wires == Wires([0, 1, 2, 3])
+        assert tapes[1].wires == Wires([1, 2, 0])
 
         for tape in tapes:
             for i, op in enumerate(tape.operations):
@@ -865,21 +865,6 @@ class TestGraphToTape:
                             assert op.wires != next_op.wires
                     except IndexError:
                         assert len(tape.operations) == i + 1
-
-    def test_find_new_wire_edge_cases(self):
-        """
-        Tests new wires are found correctly when target wire does not exist in
-        fragment wires and when target wire is not a string or int
-        """
-        target_not_in_wires = 2
-        wires_1 = Wires([0, 1, "2₁", "a"])
-
-        assert qcut._find_new_wire(target_not_in_wires, wires_1) == target_not_in_wires
-
-        target_not_str_or_int = 0.5
-        wires_2 = Wires([0, 0.5, 1, 2])
-
-        assert qcut._find_new_wire(target_not_str_or_int, wires_2) == 3
 
 
 class TestContractTensors:

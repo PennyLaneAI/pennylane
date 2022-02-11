@@ -300,42 +300,50 @@ def _subscripted(inp: Union[int, str], subscript: int) -> str:
     return str(inp) + str(subscript).translate(SUB)
 
 
-def _find_new_wire(target, wires: Wires):
-    """Finds a new wire label that is not in ``wires`` based
-    upon a ``target`` label. Subscripts are used to find a
-    unique new label."""
+# def _find_new_wire(target, wires: Wires):
+#     """Finds a new wire label that is not in ``wires`` based
+#     upon a ``target`` label. Subscripts are used to find a
+#     unique new label."""
+#
+#     if target not in wires:
+#         return target
+#
+#     ctr = 1
+#     subscript_map = {sub: i for i, sub in enumerate(SUBS)}
+#
+#     # if the target is already subscripted, reset to it's parent integer
+#     if isinstance(target, str) and any(char in set(target) for char in set(SUBS)):
+#         ctr = subscript_map[target[-1]]  # set counter to subscript
+#         target = int(target[0])  # set target to parent integer
+#         wire_func = partial(_subscripted, target)
+#         new_wire = target
+#     elif isinstance(target, (int, str)):
+#         wire_func = partial(_subscripted, target)
+#         new_wire = wire_func(ctr)
+#     else:
+#         wire_func = lambda ctr: ctr - 1
+#         new_wire = wire_func(ctr)
+#
+#     while new_wire in wires:
+#         ctr += 1
+#         new_wire = wire_func(ctr)
+#
+#     return new_wire
 
-    if target not in wires:
-        return target
 
-    ctr = 1
-    subscript_map = {sub: i for i, sub in enumerate(SUBS)}
-
-    # if the target is already subscripted, reset to it's parent integer
-    if isinstance(target, str) and any(char in set(target) for char in set(SUBS)):
-        ctr = subscript_map[target[-1]]  # set counter to subscript
-        target = int(target[0])  # set target to parent integer
-        wire_func = partial(_subscripted, target)
-        new_wire = target
-    elif isinstance(target, (int, str)):
-        wire_func = partial(_subscripted, target)
-        new_wire = wire_func(ctr)
-    else:
-        wire_func = lambda ctr: ctr - 1
-        new_wire = wire_func(ctr)
-
-    while new_wire in wires:
+def _find_new_wire(wires: Wires) -> int:
+    """Finds a new wire label that is not in ``wires``."""
+    ctr = 0
+    while ctr in wires:
         ctr += 1
-        new_wire = wire_func(ctr)
-
-    return new_wire
+    return ctr
 
 
 # pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding quantum tape.
-    
+
     Each node
     in the graph should have an order attribute specifying the topological order of
     the operations. This allows for the support of mid circuit measurements
@@ -374,25 +382,28 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     )
     wire_map = {w: w for w in wires}
 
+    updated = {}
     with QuantumTape() as tape:
         for _, op in ordered_ops:
+            name_and_wire = op.name + str(op.wires)
+
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
 
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
-                measured_wire = op.wires[0]
-                new_wire = _find_new_wire(measured_wire, wires)
-                wires += new_wire
-                # if a wire has already been updated to a subscripted version
-                # we still want to map *from* the original wire
-                if isinstance(measured_wire, str) and any(
-                    char in set(measured_wire) for char in set(SUBS)
-                ):
-                    wire_map[int(measured_wire[0])] = new_wire
-                else:
+                # if a wire has already been updated we still
+                # want to map *from* the original wire
+                if name_and_wire in updated:
+                    new_wire = updated[name_and_wire] + 1
                     wire_map[measured_wire] = new_wire
+                else:
+                    measured_wire = op.wires[0]
+                    new_wire = _find_new_wire(wires)
+                    wires += new_wire
+                    wire_map[measured_wire] = new_wire
+                updated[name_and_wire] = new_wire
 
     return tape
 
