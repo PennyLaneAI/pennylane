@@ -53,7 +53,7 @@ def dipole_integrals(mol, core=None, active=None):
 
         d_{pq} = \sum_{\mu \nu} C_{p \mu} d_{\mu \nu} C_{\nu q},
 
-    where :math:`h_{\mu \nu}` refers to the dipole moment integral in the atomic orbital basis and
+    where :math:`d_{\mu \nu}` refers to the dipole moment integral in the atomic orbital basis and
     :math:`C` is the molecular orbital expansion coefficient matrix.
 
     Args:
@@ -122,7 +122,7 @@ def dipole_integrals(mol, core=None, active=None):
 
 
 def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the fermionic dipole moment.
+    r"""Return a function that computes the fermionic dipole moment observable.
 
     Args:
         mol (Molecule): the molecule object
@@ -131,7 +131,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
         active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the fermionic dipole moment
+        function: function that computes the fermionic dipole moment observable
 
     **Example**
 
@@ -147,7 +147,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
     """
 
     def _fermionic_dipole(*args):
-        r"""Compute the fermionic dipole moment.
+        r"""Compute the fermionic dipole moment observable.
 
         Args:
             args (array[array[float]]): initial values of the differentiable parameters
@@ -168,7 +168,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
 
 def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the qubit dipole moment.
+    r"""Return a function that computes the qubit dipole moment observable.
 
     Args:
         mol (Molecule): the molecule object
@@ -177,7 +177,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
         active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the qubit dipole moment
+        function: function that computes the qubit dipole moment observable
 
     **Example**
 
@@ -199,7 +199,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     """
 
     def _dipole(*args):
-        r"""Compute the qubit dipole moment.
+        r"""Compute the qubit dipole moment observable.
 
         Args:
             args (array[array[float]]): initial values of the differentiable parameters
