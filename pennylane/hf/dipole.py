@@ -269,11 +269,12 @@ def qubit_operator(o_ferm, cutoff=1.0e-12):
         Hamiltonian: Simplified PennyLane Hamiltonian
 
     **Example**
+
     >>> coeffs = np.array([1.0, 1.0])
     >>> ops = [[0, 0], [0, 0]]
     >>> f = (coeffs, ops)
     >>> print(qubit_operator(f))
-      ((-1+0j)) [Z0]
+    ((-1+0j)) [Z0]
     + ((1+0j)) [I0]
     """
     ops = []
