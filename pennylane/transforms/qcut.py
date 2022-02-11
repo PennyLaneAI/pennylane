@@ -430,7 +430,7 @@ def contract_tensors(
     return contract(eqn, *tensors, **kwargs)
 
 
-CHANGE_OF_BASIS = qml.math.array([[1.0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
+CHANGE_OF_BASIS = qml.math.array([[1, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
 
 
 def _process_tensor(results, n_prep, n_meas):
@@ -468,6 +468,9 @@ def _process_tensor(results, n_prep, n_meas):
     for i in range(n_prep):
         axes = [[1], [i]]
         final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
+
+    axes = list(reversed(range(n_prep))) + list(range(n_prep, n))
+    final_tensor = qml.math.transpose(final_tensor, axes=axes)
 
     final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
     return final_tensor
