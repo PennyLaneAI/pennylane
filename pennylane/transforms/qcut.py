@@ -16,7 +16,6 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
-from types import NoneType
 import warnings
 from typing import List, Tuple, Dict, Any, Union
 from dataclasses import dataclass
@@ -221,6 +220,7 @@ class CutConfig:
     """
     Container wrapping partitioning parameters for passing to the automatic cutter.
     """
+    # pylint: disable=too-many-arguments
 
     k: int
     imbalance: float
@@ -265,7 +265,7 @@ class CutConfig:
             assert len(fragment_wires) == len(fragment_gates)
 
     @classmethod
-    def infer_default_configs(  # pylint: disable=too-many-arguments
+    def infer_default_configs(
         cls,
         num_tape_wires,
         num_tape_gates,
@@ -454,7 +454,7 @@ class CutSpec:
     def collect_fragment_wires(gates):
         """Collects wires from a fragment"""
         # TODO: implement this.
-        return set([w for g in gates for w in g.wires])
+        return {w for g in gates for w in g.wires}
 
     @property
     def fragment_wires(self):
