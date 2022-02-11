@@ -19,6 +19,7 @@ import numpy as np
 from scipy.linalg import expm
 
 import pennylane as qml
+from pennylane import numpy as pnp
 
 from gate_data import (
     X,
@@ -33,6 +34,38 @@ from gate_data import (
     DoubleExcitationMinus,
     OrbitalRotation,
 )
+
+
+PARAMETRIZED_QCHEM_OPERATIONS = [
+    qml.SingleExcitation(0.14, wires=[0, 1]),
+    qml.SingleExcitationMinus(0.14, wires=[0, 1]),
+    qml.SingleExcitationPlus(0.14, wires=[0, 1]),
+    qml.DoubleExcitation(0.14, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationMinus(0.14, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationPlus(0.14, wires=[0, 1, 2, 3]),
+    qml.OrbitalRotation(0.14, wires=[0, 1, 2, 3]),
+]
+
+
+class TestParameterFrequencies:
+    @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
+    def test_parameter_frequencies_match_generator(self, op, tol):
+        gen, coeff = op.generator
+        if isinstance(gen, np.ndarray):
+            matrix = gen
+        elif hasattr(gen, "matrix"):
+            matrix = gen.matrix
+        else:
+            raise ValueError
+
+        gen_eigvals = tuple(np.linalg.eigvalsh(coeff * matrix))
+        freqs_from_gen = np.array(
+            sorted(set(np.round(qml.gradients.eigvals_to_frequencies(gen_eigvals), 9)))
+        )
+        freqs_from_gen = freqs_from_gen[freqs_from_gen > 0]
+
+        freqs = op.parameter_frequencies
+        assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
 class TestDecomposition:
@@ -210,9 +243,9 @@ class TestSingleExcitation:
     @pytest.mark.parametrize(
         ("excitation", "phi"),
         [
-            (qml.SingleExcitation, -0.1),
-            (qml.SingleExcitationPlus, 0.2),
-            (qml.SingleExcitationMinus, np.pi / 4),
+            (qml.SingleExcitation, pnp.array(-0.1, requires_grad=True)),
+            (qml.SingleExcitationPlus, pnp.array(0.2, requires_grad=True)),
+            (qml.SingleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
         ],
     )
     def test_autograd_grad(self, diff_method, excitation, phi):
@@ -480,9 +513,9 @@ class TestDoubleExcitation:
     @pytest.mark.parametrize(
         ("excitation", "phi"),
         [
-            (qml.DoubleExcitation, -0.1),
-            (qml.DoubleExcitationPlus, 0.2),
-            (qml.DoubleExcitationMinus, np.pi / 4),
+            (qml.DoubleExcitation, pnp.array(-0.1, requires_grad=True)),
+            (qml.DoubleExcitationPlus, pnp.array(0.2, requires_grad=True)),
+            (qml.DoubleExcitationMinus, pnp.array(np.pi / 4, requires_grad=True)),
         ],
     )
     def test_autograd_grad(self, excitation, phi):
@@ -565,6 +598,21 @@ class TestDoubleExcitation:
 
 class TestOrbitalRotation:
     """Test OrbitalRotation gate operation"""
+
+    def grad_circuit_0(self, phi):
+        qml.PauliX(1)
+        qml.Hadamard(2)
+        qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        return qml.expval(qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3))
+
+    def grad_circuit_1(self, phi):
+        qml.PauliX(0)
+        qml.PauliX(1)
+        qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(3))
+
+    def expected_grad_fn(self, phi):
+        return -0.55 * np.sin(3 * phi / 2) * 3 / 2 - 0.7 * np.sin(phi) + 0.55 / 2 * np.sin(phi / 2)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_matrix(self, phi):
@@ -808,10 +856,10 @@ class TestOrbitalRotation:
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
-        ("phi"),
+        "phi",
         [
-            (-0.1),
-            (0.1),
+            pnp.array(-0.1, requires_grad=True),
+            pnp.array(0.1421, requires_grad=True),
         ],
     )
     def test_autograd_grad(self, phi, diff_method):
@@ -822,20 +870,20 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.autograd", wires=4)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        circuit_0 = qml.QNode(
+            self.grad_circuit_0, dev, interface="autograd", diff_method=diff_method
+        )
+        circuit_1 = qml.QNode(
+            self.grad_circuit_1, dev, interface="autograd", diff_method=diff_method
+        )
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-            return qml.expval(qml.PauliZ(0))
-
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(qml.grad(total)(phi), self.expected_grad_fn(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [(-0.1), (0.1)],
+        [-0.1, 0.1421],
     )
     def test_tf_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
@@ -844,28 +892,22 @@ class TestOrbitalRotation:
         tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit.tf", wires=4)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="tf", diff_method=diff_method)
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
         with tf.GradientTape() as tape:
-            res = circuit(phi_t)
+            res = total(phi_t)
 
         grad = tape.gradient(res, phi_t)
 
-        assert np.allclose(grad, np.sin(phi))
+        assert np.allclose(grad, self.expected_grad_fn(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [
-            (-0.1),
-            (0.1),
-        ],
+        [-0.1, 0.1421],
     )
     def test_jax_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
@@ -878,22 +920,18 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.jax", wires=4)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="jax", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="jax", diff_method=diff_method)
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+        phi_j = jax.numpy.array(phi)
+
+        assert np.allclose(jax.grad(total)(phi_j), self.expected_grad_fn(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [
-            (-0.1),
-            (0.1),
-        ],
+        [-0.1, 0.1421],
     )
     def test_torch_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
@@ -903,19 +941,15 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.torch", wires=4)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="torch", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
-
-        result = circuit(phi_t)
+        result = total(phi_t)
         result.backward()
 
-        assert np.allclose(phi_t.grad, np.sin(phi))
+        assert np.allclose(phi_t.grad, self.expected_grad_fn(phi))
 
 
 label_data = [
