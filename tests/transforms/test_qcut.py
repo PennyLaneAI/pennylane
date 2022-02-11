@@ -1,5 +1,4 @@
 # Copyright 2022 Xanadu Quantum Technologies Inc.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -765,8 +764,8 @@ class TestGraphToTape:
 
     def test_graph_to_tape(self):
         """
-        Tests that a directed multigraph, containing MeasureNodes and
-        PrepareNodes, is correctly converted to a tape
+        Tests that directed multigraphs, containing MeasureNodes and
+        PrepareNodes, are correctly converted to tapes
         """
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.432, wires=0)
@@ -826,8 +825,9 @@ class TestGraphToTape:
 
     def test_mid_circuit_measurement(self, mocker):
         """
-        Tests that a circuit that is fragmented using a mid circuit measurement
-        gives the correct updated wires.
+        Tests a circuit that is fragmented into subgraphs that
+        include mid-circuit measurements, ensuring that the
+        generated circuits apply the deferred measurement principle.
         """
 
         with qml.tape.QuantumTape() as tape:

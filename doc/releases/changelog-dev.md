@@ -30,13 +30,12 @@
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
 
   A method has been added that takes a directed multigraph with `MeasureNode`
-  and `PrepareNode` placeholder nodes and converts them into a tape.
+  and `PrepareNode` placeholder nodes and converts it into a tape.
   [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
 
   A differentiable tensor contraction function `contract_tensors` has been
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
-
 
 <h3>Improvements</h3>
 

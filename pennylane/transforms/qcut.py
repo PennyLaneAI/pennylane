@@ -223,7 +223,6 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     Fragments a graph into a collection of subgraphs as well as returning
     the communication/`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__
     graph. Each node of the communication graph represents a fragment and the edges
-
     denote the flow of qubits between fragments.
 
     Args:
@@ -301,7 +300,7 @@ def _subscripted(inp: Union[int, str], subscript: int) -> str:
     return str(inp) + str(subscript).translate(SUB)
 
 
-def _find_new_wire(target, wires: Wires) -> int:
+def _find_new_wire(target, wires: Wires):
     """Finds a new wire label that is not in ``wires`` based
     upon a ``target`` label. Subscripts are used to find a
     unique new label."""
@@ -335,8 +334,10 @@ def _find_new_wire(target, wires: Wires) -> int:
 # pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
-    Converts a directed multigraph to the corresponding quantum tape. Each node
-    in graph should have an order attribute specifying the topological order of
+    Converts a directed multigraph to the corresponding quantum tape.
+    
+    Each node
+    in the graph should have an order attribute specifying the topological order of
     the operations. This allows for the support of mid circuit measurements
     when speficied as `MeasureNode` within a  directed multigraph.
 
@@ -353,8 +354,8 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     **Example**
 
-    Consider the following where ``graph`` contains a three pairs of :class:`~.MeasureNode` and
-    :class:`~.PrepareNode` which divides the full circuit graph into five subgraphs.
+    Consider the following, where ``graph`` contains three :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
     We can find the circuit fragments by using:
 
     .. code-block:: python
