@@ -496,6 +496,9 @@ def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]
 
         ctr += dim
 
+    if len(results) != ctr:
+        raise ValueError(f"The results argument should be a flat list of length {ctr}")
+
     return tensors
 
 

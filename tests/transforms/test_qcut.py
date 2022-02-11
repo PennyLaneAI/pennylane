@@ -946,3 +946,45 @@ class TestContractTensors:
 
         assert eqn == expected_eqn
         assert np.allclose(res, np.einsum(eqn, *t))
+
+
+class TestQCutProcessingFn:
+    """Tests for the qcut_processing_fn and contained functions"""
+
+    def test_to_tensors(self, monkeypatch):
+        """Test that _to_tensors correctly reshapes the flat list of results into the original
+        tensors according to the supplied prepare_nodes and measure_nodes. Uses a mock function
+        for _process_tensor since we do not need to process the tensors."""
+        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 6]
+        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 1]
+        tensors = [
+            np.arange(4 ** 5).reshape((4,) * 5),
+            np.arange(4 ** 4).reshape((4,) * 4),
+            np.arange(4 ** 4).reshape((4,) * 4),
+            np.arange(4 ** 7).reshape((4,) * 7)
+        ]
+        results = np.concatenate([t.flatten() for t in tensors])
+
+        def mock_process_tensor(r, np, nm):
+            return qml.math.reshape(r, (4,) * (np + nm))
+
+        with monkeypatch.context() as m:
+            m.setattr(qcut, "_process_tensor", mock_process_tensor)
+            tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
+
+        for t1, t2 in zip(tensors, tensors_out):
+            assert np.allclose(t1, t2)
+
+    def test_to_tensors_raises(self):
+        """Tests if a ValueError is raised when a results vector is passed to _to_tensors with a
+        size that is incompatible with the prepare_nodes and measure_nodes arguments"""
+        prepare_nodes = [[None] * 3]
+        measure_nodes = [[None] * 2]
+        tensors = [
+            np.arange(4 ** 5).reshape((4,) * 5),
+            np.arange(4)
+        ]
+        results = np.concatenate([t.flatten() for t in tensors])
+
+        with pytest.raises(ValueError, match="should be a flat list of length 1024"):
+            qcut._to_tensors(results, prepare_nodes, measure_nodes)
