@@ -201,11 +201,23 @@ def test_exception_spin2(electrons, orbitals, msg_match):
             np.array([-0.25, 0.25, -0.25, 0.25]),
             [PauliZ(wires=[0]), PauliZ(wires=[1]), PauliZ(wires=[2]), PauliZ(wires=[3])],
         ),
+        (
+            6,
+            np.array([-0.25, 0.25, -0.25, 0.25, -0.25, 0.25]),
+            [
+                PauliZ(wires=[0]),
+                PauliZ(wires=[1]),
+                PauliZ(wires=[2]),
+                PauliZ(wires=[3]),
+                PauliZ(wires=[4]),
+                PauliZ(wires=[5]),
+            ],
+        ),
     ],
 )
 def test_spin_z(orbitals, coeffs_ref, ops_ref):
-    r"""Tests the correctness of the total spin observable :math:`\hat{S}^2`
-    built by the function `'spin2'`.
+    r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
+    function `'spin_z'`.
     """
     sz = spin_z(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
