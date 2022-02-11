@@ -22,7 +22,6 @@ from pennylane.hf.integrals import (
     _diff2,
     _generate_params,
     _hermite_coulomb,
-    _hermite_moment,
     contracted_norm,
     expansion,
     gaussian_kinetic,
@@ -30,9 +29,10 @@ from pennylane.hf.integrals import (
     gaussian_overlap,
     generate_attraction,
     generate_kinetic,
-    moment_integral,
     generate_overlap,
     generate_repulsion,
+    hermite_moment,
+    moment_integral,
     primitive_norm,
 )
 from pennylane.hf.molecule import Molecule
@@ -323,8 +323,8 @@ def test_gradient_overlap(symbols, geometry, alpha, coeff):
     ],
 )
 def test_hermite_moment(alpha, beta, t, e, rc, ref):
-    r"""Test that _hermite_moment function returns correct values."""
-    assert np.allclose(_hermite_moment(alpha, beta, t, e, rc), ref)
+    r"""Test that hermite_moment function returns correct values."""
+    assert np.allclose(hermite_moment(alpha, beta, t, e, rc), ref)
 
 
 @pytest.mark.parametrize(

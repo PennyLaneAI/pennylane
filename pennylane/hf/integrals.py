@@ -308,7 +308,7 @@ def generate_overlap(basis_a, basis_b):
     return overlap_integral
 
 
-def _hermite_moment(alpha, beta, t, e, r):
+def hermite_moment(alpha, beta, t, e, r):
     r"""Compute Hermite moment integral recursively.
 
     The Hermite moment integral in one dimension is defined as
@@ -352,7 +352,7 @@ def _hermite_moment(alpha, beta, t, e, r):
     >>> t = 0
     >>> e = 1
     >>> r = 1.5
-    >>> _hermite_moment(alpha, beta, t, e, r)
+    >>> hermite_moment(alpha, beta, t, e, r)
     array([1.0157925])
     """
     p = anp.array(alpha + beta)
@@ -364,9 +364,9 @@ def _hermite_moment(alpha, beta, t, e, r):
     if e == 0 and t == 0:
         return anp.sqrt(anp.pi / p)
     m = (
-        _hermite_moment(alpha, beta, t - 1, e - 1, r) * t
-        + _hermite_moment(alpha, beta, t, e - 1, r) * r
-        + _hermite_moment(alpha, beta, t + 1, e - 1, r) / (2 * p)
+        hermite_moment(alpha, beta, t - 1, e - 1, r) * t
+        + hermite_moment(alpha, beta, t, e - 1, r) * r
+        + hermite_moment(alpha, beta, t + 1, e - 1, r) / (2 * p)
     )
     return m
 
@@ -418,7 +418,7 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, r):
     """
     s = 0.0
     for t in range(min(la + lb + 1, e + 1)):
-        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * _hermite_moment(alpha, beta, t, e, r)
+        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * hermite_moment(alpha, beta, t, e, r)
 
     return s
 
