@@ -35,6 +35,42 @@
 
 <h3>Improvements</h3>
 
+* Added a new `partition_pauli_group` function to the `grouping` module for
+  efficiently measuring the `N`-qubit Pauli group with `3 ** N`
+  qubit-wise commuting terms.
+  [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
+  
+  ```pycon
+  >>> qml.grouping.partition_pauli_group(3)
+  [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
+   ['IIX', 'IZX', 'ZIX', 'ZZX'],
+   ['IIY', 'IZY', 'ZIY', 'ZZY'],
+   ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
+   ['IXX', 'ZXX'],
+   ['IXY', 'ZXY'],
+   ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
+   ['IYX', 'ZYX'],
+   ['IYY', 'ZYY'],
+   ['XII', 'XIZ', 'XZI', 'XZZ'],
+   ['XIX', 'XZX'],
+   ['XIY', 'XZY'],
+   ['XXI', 'XXZ'],
+   ['XXX'],
+   ['XXY'],
+   ['XYI', 'XYZ'],
+   ['XYX'],
+   ['XYY'],
+   ['YII', 'YIZ', 'YZI', 'YZZ'],
+   ['YIX', 'YZX'],
+   ['YIY', 'YZY'],
+   ['YXI', 'YXZ'],
+   ['YXX'],
+   ['YXY'],
+   ['YYI', 'YYZ'],
+   ['YYX'],
+   ['YYY']]
+  ```
+
 <h3>Breaking changes</h3>
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
