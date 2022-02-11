@@ -417,13 +417,15 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -451,9 +453,20 @@ class Operator(abc.ABC):
 
         params = self.parameters
 
-        # matrix parameters not rendered
         if len(qml.math.shape(params[0])) != 0:
-            return op_label
+            if cache is None or not isinstance(cache.get('matrices', None), list):
+                return op_label
+            if len(cache['matrices']) == 0:
+                cache['matrices'].append(params[0])
+                return f"{op_label}(M0)"
+
+            for i, mat in enumerate(cache['matrices']):
+                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
+                    return f"{op_label}(M{i})"
+
+            mat_num = len(cache['matrices'])
+            cache['matrices'].append(params[0])
+            return f"{op_label}(M{mat_num})"
 
         def _format(x):
             try:
@@ -864,11 +877,11 @@ class Operation(Operator):
         """Get and set the name of the operator."""
         return self._name + Operation.string_for_inverse if self.inverse else self._name
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         if self.inverse:
             base_label = base_label or self.__class__.__name__
             base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label)
+        return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1200,7 +1213,7 @@ class Tensor(Observable):
         self._args = args
         self.queue(init=True)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.
 
         Args:
@@ -1208,6 +1221,8 @@ class Tensor(Observable):
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
                 Must be same length as ``obs`` attribute.
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings

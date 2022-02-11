@@ -221,8 +221,8 @@ class PhaseShift(Operation):
     generator = [np.array([[0, 0], [0, 1]]), 1]
     parameter_frequencies = [(1,)]
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @classmethod
     def _matrix(cls, *params):
@@ -293,8 +293,8 @@ class ControlledPhaseShift(Operation):
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
     parameter_frequencies = [(1,)]
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @classmethod
     def _matrix(cls, *params):
@@ -591,13 +591,15 @@ class PauliRot(Operation):
                 f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -833,8 +835,8 @@ class CRX(Operation):
     ]
     parameter_frequencies = [(0.5, 1.0)]
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "RX")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RX", cache=cache)
 
     @classmethod
     def _matrix(cls, *params):
@@ -932,8 +934,8 @@ class CRY(Operation):
     ]
     parameter_frequencies = [(0.5, 1.0)]
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "RY")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RY", cache=cache)
 
     @classmethod
     def _matrix(cls, *params):
@@ -1025,8 +1027,8 @@ class CRZ(Operation):
     ]
     parameter_frequencies = [(0.5, 1.0)]
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "RZ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RZ", cache=cache)
 
     @classmethod
     def _matrix(cls, *params):
@@ -1111,8 +1113,8 @@ class CRot(Operation):
     grad_recipe = four_term_grad_recipe * 3
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rot")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rot", cache=cache)
 
     @classmethod
     def _matrix(cls, *params):

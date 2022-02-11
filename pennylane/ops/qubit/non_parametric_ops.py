@@ -48,7 +48,7 @@ class Hadamard(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
 
     @classmethod
@@ -112,7 +112,7 @@ class PauliX(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @classmethod
@@ -177,7 +177,7 @@ class PauliY(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
     @classmethod
@@ -248,7 +248,7 @@ class PauliZ(Observable, Operation):
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
     @classmethod
@@ -447,7 +447,7 @@ class CNOT(Operation):
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @classmethod
@@ -492,7 +492,7 @@ class CZ(Operation):
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
     @classmethod
@@ -544,7 +544,7 @@ class CY(Operation):
         ]
     )
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
     @classmethod
@@ -765,7 +765,7 @@ class CSWAP(Operation):
         ]
     )
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "SWAP"
 
     @classmethod
@@ -831,7 +831,7 @@ class Toffoli(Operation):
         ]
     )
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @classmethod
@@ -986,7 +986,7 @@ class MultiControlledX(Operation):
     def control_wires(self):
         return self._control_wires
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @staticmethod
@@ -1152,7 +1152,7 @@ class Barrier(Operation):
         # pylint: disable=unused-argument
         return []
 
-    def label(self, decimals=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
     def adjoint(self):
@@ -1178,7 +1178,7 @@ class WireCut(Operation):
     def decomposition(self, wires):
         return []
 
-    def label(self, decimals=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return "//"
 
     def adjoint(self):
