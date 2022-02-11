@@ -103,4 +103,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, David Wierichs, Antal Száva
+Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, Antal Száva,
+David Wierichs
