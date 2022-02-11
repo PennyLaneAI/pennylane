@@ -43,10 +43,10 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
     JAX supports the single-precision numbers by default. To enable
     double-precision, add the following code on startup:
 
-    .. code::
+    .. code-block:: python
 
-    from jax.config import config
-    config.update("jax_enable_x64", True)
+        from jax.config import config
+        config.update("jax_enable_x64", True)
 
 
 Construction via the decorator
