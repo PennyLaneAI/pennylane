@@ -1096,11 +1096,11 @@ def simplify_u2(u2):
     if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
         np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
-        return qml.RY(np.pi / 2, u2.wires)
+        return qml.RY(np.pi / 2, wires=u2.wires)
     if np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
         np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
-        return qml.RX(u2.data[1], u2.wires)
+        return qml.RX(u2.data[1], wires=u2.wires)
 
     return u2
 
@@ -1178,7 +1178,7 @@ def two_non_simplified_crot(operation1, operation2):
 
     if control_control and target_target:
         return np.all(
-            np.allcllose(
+            np.allclose(
                 np.matmul(operation1.matrix, operation2.matrix),
                 np.matmul(operation2.matrix, operation1.matrix),
             )
@@ -1187,7 +1187,7 @@ def two_non_simplified_crot(operation1, operation2):
         return True
     elif not control_control and target_target:
         return np.all(
-            np.allcllose(
+            np.allclose(
                 np.matmul(
                     qml.Rot(*operation1.data, wires=operation1.wires).matrix,
                     qml.Rot(*operation2.data, wires=operation2.wires).matrix,
@@ -1239,7 +1239,7 @@ def two_non_simplified_rotations(operation1, operation2):
             if not intersection(operation1.target_wires, operation2.wires):
                 return bool(commutation_map["ctrl"][position[operation2.name]])
             return np.all(
-                np.allcllose(
+                np.allclose(
                     np.matmul(
                         qml.Rot(*operation1.data, wires=operation1.target_wires).matrix,
                         operation2.matrix,
@@ -1255,20 +1255,20 @@ def two_non_simplified_rotations(operation1, operation2):
             if not intersection(operation2.target_wires, operation1.wires):
                 return bool(commutation_map[operation1.name][position["ctrl"]])
             return np.all(
-                np.allcllose(
+                np.allclose(
                     np.matmul(
                         qml.Rot(*operation2.data, wires=operation2.target_wires).matrix,
-                        operation2.matrix,
+                        operation1.matrix,
                     ),
                     np.matmul(
-                        operation2.matrix,
+                        operation1.matrix,
                         qml.Rot(*operation2.data, wires=operation2.target_wires).matrix,
                     ),
                 )
             )
 
         return np.all(
-            np.allcllose(
+            np.allclose(
                 np.matmul(
                     operation1.matrix,
                     operation2.matrix,

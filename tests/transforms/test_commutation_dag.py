@@ -496,6 +496,76 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u2_y_simplified(self, wires, res):
+        """Commutation between U2(2*np.pi, -2*np.pi) and PauliY."""
+        commutation = qml.is_commuting(
+            qml.U2(2 * np.pi, -2 * np.pi, wires=wires[0]), qml.PauliY(wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u2_x_simplified(self, wires, res):
+        """Commutation between U2(np.pi/2, -np.pi/2) and PauliX."""
+        commutation = qml.is_commuting(
+            qml.U2(np.pi / 2, -np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], False),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u2_u2(self, wires, res):
+        """Commutation between U2(0.1, 0.2) and U2(0.3, 0.1)."""
+        commutation = qml.is_commuting(
+            qml.U2(0.1, 0.2, wires=wires[0]), qml.U2(0.3, 0.1, wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], False),
+            ([[0, 1], [1]], False),
+        ],
+    )
+    def test_crot_u2(self, wires, res):
+        """Commutation between CRot(0.1, 0.2, 0.3) and U2(0.4, 0.5)."""
+        commutation = qml.is_commuting(
+            qml.CRot(0.1, 0.2, 0.3, wires=wires[0]), qml.U2(0.4, 0.5, wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0]], False),
+            ([[0, 1], [1]], False),
+        ],
+    )
+    def test_u2_crot(self, wires, res):
+        """Commutation between U2(0.1, 0.2) and CRot(0.3, 0.4, 0.5)."""
+        commutation = qml.is_commuting(
+            qml.U2(0.1, 0.2, wires=wires[1]), qml.CRot(0.3, 0.4, 0.5, wires=wires[0])
+        )
+        assert commutation == res
+
 
 class TestCommutationDAG:
     """Commutation DAG tests."""
