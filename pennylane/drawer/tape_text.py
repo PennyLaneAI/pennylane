@@ -36,7 +36,7 @@ def _add_grouping_symbols(op, layer_str, wire_map):
     return layer_str
 
 
-def _add_op(op, layer_str, wire_map, decimals):
+def _add_op(op, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with ``op`` operation."""
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
 
@@ -44,7 +44,7 @@ def _add_op(op, layer_str, wire_map, decimals):
     for w in control_wires:
         layer_str[wire_map[w]] += "C"
 
-    label = op.label(decimals=decimals).replace("\n", "")
+    label = op.label(decimals=decimals, cache=cache).replace("\n", "")
     for w in op.wires:
         if w not in control_wires:
             layer_str[wire_map[w]] += label
@@ -61,11 +61,11 @@ measurement_label_map = {
 }
 
 
-def _add_measurement(m, layer_str, wire_map, decimals):
+def _add_measurement(m, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with the ``m`` measurement."""
     layer_str = _add_grouping_symbols(m, layer_str, wire_map)
 
-    obs_label = None if m.obs is None else m.obs.label(decimals=decimals).replace("\n", "")
+    obs_label = None if m.obs is None else m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
     meas_label = measurement_label_map[m.return_type](obs_label)
 
     if len(m.wires) == 0:  # state or probability across all wires
@@ -93,8 +93,8 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        cache (dict): Used to store information between recursive calls. Currently only used for
-            numbering nested tapes.
+        cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
+            and ``'matrices'``.
 
     Returns:
         str : String based graphic of the circuit.
@@ -203,7 +203,7 @@ def tape_text(
 
     """
     if cache is None:
-        cache = {"tape_offset": 0}
+        cache = {"tape_offset": 0, 'matrices': []}
     tape_cache = []
 
     wire_map = convert_wire_order(
@@ -241,7 +241,7 @@ def tape_text(
                         layer_str[wire_map[w]] += label
                     tape_cache.append(op)
                 else:
-                    layer_str = add(op, layer_str, wire_map, decimals)
+                    layer_str = add(op, layer_str, wire_map, decimals, cache)
 
             max_label_len = max(len(s) for s in layer_str)
             layer_str = [s.ljust(max_label_len, filler) for s in layer_str]
