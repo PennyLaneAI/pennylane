@@ -216,9 +216,7 @@ class DefaultQubit(QubitDevice):
                 )
 
             if any(w in self._measured for w in operation.wires):
-                raise DeviceError(
-                    f"Cannot perform operation on measured wires."
-                )
+                raise DeviceError("Cannot perform operation on measured wires.")
 
             if isinstance(operation, QubitStateVector):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
@@ -275,8 +273,12 @@ class DefaultQubit(QubitDevice):
                     slicer = [slice(None)] * self.num_wires
                     slicer[m] = branch[i]
                     mask[tuple(slicer)] = True
-        true_state = state * mask.astype(int)  # this is the result of the projection applied to the state
-        false_state = state * np.logical_not(mask).astype(int)  # this is the complement of the projection
+        true_state = state * mask.astype(
+            int
+        )  # this is the result of the projection applied to the state
+        false_state = state * np.logical_not(mask).astype(
+            int
+        )  # this is the complement of the projection
         return self._apply_operation(true_state, op_object.then_op) + false_state
 
     def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
@@ -291,7 +293,9 @@ class DefaultQubit(QubitDevice):
                 slicer = [slice(None)] * self.num_wires
                 slicer[m] = branch[i]
                 mask[tuple(slicer)] = True
-            partial_state = self._apply_operation(state * mask.astype(int), op_object.branches[branch])
+            partial_state = self._apply_operation(
+                state * mask.astype(int), op_object.branches[branch]
+            )
             if sum_state is None:
                 sum_state = partial_state
             else:

@@ -32,6 +32,7 @@ class _MidCircuitMeasure(Operation):
         super().__init__(wires=measured_wire)
 
 
+# pylint: disable=protected-access
 def apply_to_measurement_dependant_values(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
@@ -53,7 +54,7 @@ def apply_to_measurement_dependant_values(fun):
                 arg = _Value(arg)
             partial = partial._merge(arg)
         partial._transform_leaves_inplace(
-            lambda *unwrapped: fun(*unwrapped, **kwargs)
+            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
         )
         return partial
     return wrapper
@@ -64,8 +65,7 @@ T = TypeVar("T")
 
 # pylint: disable=protected-access
 class MeasurementDependantValue(Generic[T]):
-    """
-    A class representing unknown measurement outcomes.
+    """A class representing unknown measurement outcomes.
     Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
 
@@ -87,6 +87,7 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def branches(self):
+        """A dictionary representing all the possible outcomes of the MeasurementDependantValue."""
         branch_dict = {}
         if isinstance(self._zero_case, MeasurementDependantValue):
             for k, v in self._zero_case.branches.items():
@@ -101,6 +102,7 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def measurements(self):
+        """List of all measurements this MeasurementDependantValue depends on."""
         if isinstance(self._zero_case, MeasurementDependantValue):
             return [self._depends_on, *self._zero_case.measurements]
         return [self._depends_on]
@@ -130,28 +132,27 @@ class MeasurementDependantValue(Generic[T]):
         """
         Merge this MeasurementDependantValue with `other`.
 
-        Ex: Merging a MeasurementDependantValue such as
-mid
+        Ex: Merging a MeasurementDependantValue such as:
         .. code-block:: python
 
-            wire_0=0 => 3.4
-            wire_0=1 => 1
+            if wire_0=0 => 3.4
+            if wire_0=1 => 1
 
         with another MeasurementDependantValue:
 
         .. code-block:: python
 
-            f93fjdj3=0 => 100
-            f93fjdj3=1 => 67
+            if wire_1=0 => 100
+            if wire_1=1 => 67
 
         will result in:
 
         .. code-block:: python
 
-            df3jff4t=0,f93fjdj3=0 => 3.4,100
-            df3jff4t=0,f93fjdj3=1 => 3.4,67
-            df3jff4t=1,f93fjdj3=0 => 1,100
-            df3jff4t=1,f93fjdj3=1 => 1,67
+            wire_0=0,wire_1=0 => 3.4,100
+            wire_0=0,wire_1=1 => 3.4,67
+            wire_0=1,wire_1=0 => 1,100
+            wire_0=1,wire_1=1 => 1,67
 
         (note the uuids in the example represent distinct measurements of different qubit.)
 
@@ -217,6 +218,7 @@ class _Value(Generic[T]):
 
     @property
     def values(self):
+        """Values this Leaf node is holding."""
         if len(self._values) == 1:
             return self._values[0]
         return self._values
@@ -270,9 +272,7 @@ def condition(condition_op: Type[Operation]):
         def __init__(self, *args, **kwargs):
             measurement_dependant_op = apply_to_measurement_dependant_values(
                 lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
-            )(
-                *args
-            )
+            )(*args)
             self.branches = measurement_dependant_op.branches
             self.dependant_measurements = measurement_dependant_op.measurements
             super().__init__(*args, **kwargs)
