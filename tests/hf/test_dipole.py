@@ -216,7 +216,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
             1,
             None,
             None,
-            0.95655073,  # x component of the dipole moment from PL-QChem
+            [0.95655073, 0.55522528, 0.0],  # x, y, z components of the dipole moment from PL-QChem
         ),
     ],
 )
@@ -238,9 +238,9 @@ def test_expvalD(symbols, geometry, core, charge, active, d_ref):
 
         return circuit
 
-    dx = dipole(mol, 0)(*args)
-
-    assert np.allclose(dx, d_ref)
+    for i in range(3):  # loop on x, y, z components
+        d = dipole(mol, i)(*args)
+        assert np.allclose(d, d_ref[i])
 
 
 @pytest.mark.parametrize(
