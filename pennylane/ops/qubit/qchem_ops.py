@@ -174,19 +174,19 @@ class SingleExcitationMinus(Operation):
     r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
-    .. math:: U_+(\phi) = \begin{bmatrix}
-                e^{i\phi/2} & 0 & 0 & 0 \\
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
                 0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
                 0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                0 & 0 & 0 & e^{i\phi/2}
+                0 & 0 & 0 & e^{-i\phi/2}
             \end{bmatrix}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -303,29 +303,29 @@ class SingleExcitationMinus(Operation):
 
     def adjoint(self):
         (phi,) = self.parameters
-        return SingleExcitationPlus(-phi, wires=self.wires)
+        return SingleExcitationMinus(-phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₊")
+        return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
 class SingleExcitationPlus(Operation):
     r"""
     Single excitation rotation with positive phase-shift outside the rotation subspace.
 
-    .. math:: U_-(\phi) = \begin{bmatrix}
-                e^{-i\phi/2} & 0 & 0 & 0 \\
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
                 0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
                 0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                0 & 0 & 0 & e^{-i\phi/2}
+                0 & 0 & 0 & e^{i\phi/2}
             \end{bmatrix}.
 
     **Details:**
 
     * Number of wires: 2
     * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -442,10 +442,10 @@ class SingleExcitationPlus(Operation):
 
     def adjoint(self):
         (phi,) = self.parameters
-        return SingleExcitationMinus(-phi, wires=self.wires)
+        return SingleExcitationPlus(-phi, wires=self.wires)
 
     def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₋")
+        return super().label(decimals=decimals, base_label=base_label or "G₊")
 
 
 class DoubleExcitation(Operation):

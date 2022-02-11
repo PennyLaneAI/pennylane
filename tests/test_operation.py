@@ -191,7 +191,9 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             grad_method = "A"
-            generator = [qml.PauliX, -0.2]
+
+            def generator(self):
+                return -0.2 * qml.PauliX(wires=self.wires)
 
         x = 0.654
         op = DummyOp(x, wires=0)

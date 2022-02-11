@@ -50,22 +50,27 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 class TestParameterFrequencies:
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
-        gen, coeff = op.generator
-        if isinstance(gen, np.ndarray):
-            matrix = gen
-        elif hasattr(gen, "matrix"):
-            matrix = gen.matrix
-        else:
-            raise ValueError
+        if not qml.operation.has_gen(op):
+            pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 
-        gen_eigvals = tuple(np.linalg.eigvalsh(coeff * matrix))
-        freqs_from_gen = np.array(
-            sorted(set(np.round(qml.gradients.eigvals_to_frequencies(gen_eigvals), 9)))
-        )
-        freqs_from_gen = freqs_from_gen[freqs_from_gen > 0]
+        gen = op.generator()
+
+        try:
+            mat = gen.get_matrix()
+        except (AttributeError, qml.operation.MatrixUndefinedError):
+
+            if isinstance(gen, qml.Hamiltonian):
+                mat = qml.utils.sparse_hamiltonian(gen).toarray()
+            elif isinstance(gen, qml.SparseHamiltonian):
+                mat = gen.sparse_matrix().toarray()
+            else:
+                pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
+
+        gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
+        freqs_from_gen = qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
 
         freqs = op.parameter_frequencies
-        assert np.allclose(freqs, freqs_from_gen, atol=tol)
+        assert np.allclose(freqs, np.sort(freqs_from_gen), atol=tol)
 
 
 class TestDecomposition:
@@ -995,6 +1000,7 @@ label_data = [
 @pytest.mark.parametrize("op, label1, label2, label3", label_data)
 def test_label_method(op, label1, label2, label3):
     """Test the label method for qchem operations."""
+    print(op)
     assert op.label() == label1
     assert op.label(decimals=2) == label2
     assert op.label(decimals=0) == label3

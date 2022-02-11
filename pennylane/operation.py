@@ -1166,8 +1166,23 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen_eigvals = tuple(self.generator().eigvals())
-            return qml.gradients.eigvals_to_frequencies(gen_eigvals)
+            gen = self.generator()
+
+            try:
+                gen_eigvals = tuple(self.generator().eigvals())
+                return qml.gradients.eigvals_to_frequencies(gen_eigvals)
+
+            except (MatrixUndefinedError, EigvalsUndefinedError):
+
+                if isinstance(gen, qml.Hamiltonian):
+                    mat = qml.utils.sparse_hamiltonian(gen).toarray()
+                    eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
+                    return qml.gradients.eigvals_to_frequencies(eigvals)
+
+                elif isinstance(gen, qml.SparseHamiltonian):
+                    mat = gen.sparse_matrix().toarray()
+                    eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
+                    return qml.gradients.eigvals_to_frequencies(eigvals)
 
         raise OperatorPropertyUndefined(
             f"Operation {self.name} does not have parameter frequencies."
