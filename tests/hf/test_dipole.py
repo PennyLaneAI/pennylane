@@ -216,7 +216,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
             1,
             None,
             None,
-            0.95655073,  # x component of the dipole moment from PL_QChem
+            0.95655073,  # x component of the dipole moment from PL-QChem
         ),
     ],
 )
