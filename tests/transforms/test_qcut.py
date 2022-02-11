@@ -14,8 +14,10 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
+import itertools
 import string
 import sys
+from scipy.stats import unitary_group
 
 import pytest
 from networkx import MultiDiGraph
@@ -48,6 +50,16 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]))
+
+
+def kron(*args):
+    """Multi-argument kronecker product"""
+    if len(args) == 1:
+        return args[0]
+    if len(args) == 2:
+        return np.kron(args[0], args[1])
+    else:
+        return np.kron(args[0], kron(*args[1:]))
 
 
 def compare_nodes(nodes, expected_wires, expected_names):
@@ -988,3 +1000,53 @@ class TestQCutProcessingFn:
 
         with pytest.raises(ValueError, match="should be a flat list of length 1024"):
             qcut._to_tensors(results, prepare_nodes, measure_nodes)
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor(self, n, interface):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        lib = pytest.importorskip(interface)
+
+        U = unitary_group.rvs(2 ** n, random_state=1967)
+
+        # First, create target process tensor
+        I, X, Y, Z = np.eye(2), qml.PauliX.matrix, qml.PauliY.matrix, qml.PauliZ.matrix
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+        states = [np.array([1, 0]), np.array([0, 1]), np.array([1, 1]) / np.sqrt(2),
+                  np.array([1, 1j]) / np.sqrt(2)]
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.grouping.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.grouping.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)

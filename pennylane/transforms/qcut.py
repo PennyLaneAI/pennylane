@@ -430,7 +430,7 @@ def contract_tensors(
     return contract(eqn, *tensors, **kwargs)
 
 
-CHANGE_OF_BASIS = qml.math.array([[1, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
+CHANGE_OF_BASIS = qml.math.array([[1.0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
 
 
 def _process_tensor(results, n_prep, n_meas):
@@ -458,7 +458,7 @@ def _process_tensor(results, n_prep, n_meas):
         intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
     else:
         sl = [slice(None)] * n_prep + [order]
-        intermediate_tensor = intermediate_tensor[sl]
+        intermediate_tensor = intermediate_tensor[tuple(sl)]
 
     final_shape = (4,) * n
     final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
