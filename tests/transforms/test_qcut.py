@@ -799,8 +799,8 @@ class TestExpandFragmentTapes:
         frag_tapes_0 = fragment_configurations[0][0]
         frag_tapes_1 = fragment_configurations[1][0]
 
-        assert len(frag_tapes_0) == 4
-        assert len(frag_tapes_1) == 4
+        assert len(frag_tapes_0) == 3
+        assert len(frag_tapes_1) == 3
 
         frag_0_ops = [
             qml.RX(0.432, wires=[0]),
