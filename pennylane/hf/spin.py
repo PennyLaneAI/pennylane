@@ -180,6 +180,64 @@ def spin2(electrons, orbitals):
     return qubit_operator((s2_coeff, s2_op))
 
 
+def spin_z(orbitals, mapping="jordan_wigner", wires=None):
+    r"""Computes the total spin projection operator :math:`\hat{S}_z` in the Pauli basis.
+
+    The total spin projection operator :math:`\hat{S}_z` is given by
+
+    .. math::
+
+        \hat{S}_z = \sum_{\alpha, \beta} \langle \alpha \vert \hat{s}_z \vert \beta \rangle
+        ~ \hat{c}_\alpha^\dagger \hat{c}_\beta, ~~ \langle \alpha \vert \hat{s}_z
+        \vert \beta \rangle = s_{z_\alpha} \delta_{\alpha,\beta},
+
+    where :math:`s_{z_\alpha} = \pm 1/2` is the spin-projection of the single-particle state
+    :math:`\vert \alpha \rangle`. The operators :math:`\hat{c}^\dagger` and :math:`\hat{c}`
+    are the particle creation and annihilation operators, respectively.
+
+    Args:
+        orbitals (str): Number of *spin* orbitals. If an active space is defined, this is
+            the number of active spin-orbitals.
+        mapping (str): Specifies the transformation to map the fermionic operator to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+            to an observable measurable in a PennyLane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
+            If None, will use identity map (e.g. 0->0, 1->1, ...).
+
+    Returns:
+        pennylane.Hamiltonian: the total spin projection observable :math:`\hat{S}_z`
+
+    **Example**
+
+    >>> orbitals = 4
+    >>> Sz = spin_z(orbitals, mapping="jordan_wigner")
+    >>> print(Sz)
+    (-0.25) [Z0]
+    + (0.25) [Z1]
+    + (-0.25) [Z2]
+    + (0.25) [Z3]
+    """
+
+    if orbitals <= 0:
+        raise ValueError(f"'orbitals' must be greater than 0; got for 'orbitals' {orbitals}")
+
+    r = np.arange(orbitals)
+    sz_orb = np.where(r % 2 == 0, 0.5, -0.5)
+    table = np.vstack([r, r, sz_orb]).T
+
+    sz_coeff = np.array([])
+    sz_op = []
+
+    for i in table:
+        sz_coeff = np.concatenate((sz_coeff, np.array([i[2]])))
+        sz_op.append([int(i[0]), int(i[1])])
+
+    return qubit_operator((sz_coeff, sz_op))
+
+
 def qubit_operator(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
