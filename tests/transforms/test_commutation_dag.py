@@ -34,6 +34,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot(self, wires, res):
+        """Commutation between two CNOTs."""
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -47,6 +48,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_toffoli(self, wires, res):
+        """Commutation between CNOT and Toffoli"""
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.Toffoli(wires=wires[1]))
         assert commutation == res
 
@@ -60,6 +62,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_cz(self, wires, res):
+        """Commutation between CNOT and CZ"""
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CZ(wires=wires[1]))
         assert commutation == res
 
@@ -72,6 +75,8 @@ class TestCommutingFunction:
         ],
     )
     def test_cz_mcz(self, wires, res):
+        """Commutation between CZ and MCZ."""
+
         def z():
             qml.PauliZ(wires=wires[1][1])
 
@@ -91,6 +96,8 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_mcz(self, wires, res):
+        """Commutation between CNOT and MCZ."""
+
         def z():
             qml.PauliZ(wires=wires[1][2])
 
@@ -108,6 +115,7 @@ class TestCommutingFunction:
         ],
     )
     def test_x_cnot(self, wires, res):
+        """Commutation between PauliX and CNOT."""
         commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -120,6 +128,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_x(self, wires, res):
+        """Commutation between CNOT and PauliX."""
         commutation = qml.is_commuting(qml.CNOT(wires=wires[1]), qml.PauliX(wires=wires[0]))
         assert commutation == res
 
@@ -132,6 +141,7 @@ class TestCommutingFunction:
         ],
     )
     def test_x_cy(self, wires, res):
+        """Commutation between PauliX and CY."""
         commutation = qml.is_commuting(qml.PauliX(wires=wires[0]), qml.CY(wires=wires[1]))
         assert commutation == res
 
@@ -145,6 +155,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_cswap(self, wires, res):
+        """Commutation between CNOT and CSWAP."""
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.CSWAP(wires=wires[1]))
         assert commutation == res
 
@@ -155,6 +166,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cswap_cnot(self, wires, res):
+        """Commutation between CSWAP and CNOT."""
         commutation = qml.is_commuting(qml.CSWAP(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -165,6 +177,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cswap_cswap(self, wires, res):
+        """Commutation between CSWAP and CSWAP."""
         commutation = qml.is_commuting(qml.CSWAP(wires=wires[0]), qml.CSWAP(wires=wires[1]))
         assert commutation == res
 
@@ -175,6 +188,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cnot_swap(self, wires, res):
+        """Commutation between CNOT and SWAP."""
         commutation = qml.is_commuting(qml.CNOT(wires=wires[0]), qml.SWAP(wires=wires[1]))
         assert commutation == res
 
@@ -185,6 +199,7 @@ class TestCommutingFunction:
         ],
     )
     def test_swap_cnot(self, wires, res):
+        """Commutation between SWAP and CNOT."""
         commutation = qml.is_commuting(qml.SWAP(wires=wires[0]), qml.CNOT(wires=wires[1]))
         assert commutation == res
 
@@ -197,6 +212,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cz_cswap(self, wires, res):
+        """Commutation between CZ and CSWAP."""
         commutation = qml.is_commuting(qml.CZ(wires=wires[0]), qml.CSWAP(wires=wires[1]))
         assert commutation == res
 
@@ -208,7 +224,8 @@ class TestCommutingFunction:
             ([[0, 3], [0, 1, 2, 3]], True),
         ],
     )
-    def test_cnot_multix(self, wires, res):
+    def test_cnot_multicx(self, wires, res):
+        """Commutation between CNOT and MultiControlledX."""
         commutation = qml.is_commuting(
             qml.CNOT(wires=wires[0]),
             qml.MultiControlledX(
@@ -225,7 +242,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cphase_z(self, wires, res):
-        print(wires)
+        """Commutation between CPhase and PauliZ."""
         commutation = qml.is_commuting(qml.CPhase(0.2, wires=wires[0]), qml.PauliZ(wires=wires[1]))
         assert commutation == res
 
@@ -237,7 +254,10 @@ class TestCommutingFunction:
         ],
     )
     def test_cphase_phase(self, wires, res):
-        commutation = qml.is_commuting(qml.CPhase(0.2, wires=wires[0]), qml.PhaseShift(0.1, wires=wires[1]))
+        """Commutation between CPhase and Phase."""
+        commutation = qml.is_commuting(
+            qml.CPhase(0.2, wires=wires[0]), qml.PhaseShift(0.1, wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -248,6 +268,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cphase_paulix(self, wires, res):
+        """Commutation between CPhase and PauliX."""
         commutation = qml.is_commuting(qml.CPhase(0.2, wires=wires[0]), qml.PauliX(wires=wires[1]))
         assert commutation == res
 
@@ -258,7 +279,8 @@ class TestCommutingFunction:
             ([[0, 1], [1]], True),
         ],
     )
-    def test_cphase_zero_pauli(self, wires, res):
+    def test_cphase_zero_paulix(self, wires, res):
+        """Commutation between CPhase(0.0) and PauliX."""
         commutation = qml.is_commuting(qml.CPhase(0.0, wires=wires[0]), qml.PauliX(wires=wires[1]))
         assert commutation == res
 
@@ -270,6 +292,7 @@ class TestCommutingFunction:
         ],
     )
     def test_crx_pauliz(self, wires, res):
+        """Commutation between CRX(0.1) and PauliZ."""
         commutation = qml.is_commuting(qml.CRX(0.1, wires=wires[0]), qml.PauliZ(wires=wires[1]))
         assert commutation == res
 
@@ -281,6 +304,7 @@ class TestCommutingFunction:
         ],
     )
     def test_crx_zero_pauliz(self, wires, res):
+        """Commutation between CRX(0.0) and PauliZ."""
         commutation = qml.is_commuting(qml.CRX(0.0, wires=wires[0]), qml.PauliZ(wires=wires[1]))
         assert commutation == res
 
@@ -292,6 +316,7 @@ class TestCommutingFunction:
         ],
     )
     def test_crz_paulix(self, wires, res):
+        """Commutation between CRZ(0.1) and PauliX."""
         commutation = qml.is_commuting(qml.CRZ(0.1, wires=wires[0]), qml.PauliX(wires=wires[1]))
         assert commutation == res
 
@@ -303,6 +328,7 @@ class TestCommutingFunction:
         ],
     )
     def test_crz_zero_paulix(self, wires, res):
+        """Commutation between CRZ(0.0) and PauliX."""
         commutation = qml.is_commuting(qml.CRZ(0.0, wires=wires[0]), qml.PauliX(wires=wires[1]))
         assert commutation == res
 
@@ -314,6 +340,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cry_hadamard(self, wires, res):
+        """Commutation between CRY(0.1) and Hadamard."""
         commutation = qml.is_commuting(qml.CRY(0.1, wires=wires[0]), qml.Hadamard(wires=wires[1]))
         assert commutation == res
 
@@ -325,6 +352,7 @@ class TestCommutingFunction:
         ],
     )
     def test_cry_zero_hadamard(self, wires, res):
+        """Commutation between CRY(0.0) and Hadamard."""
         commutation = qml.is_commuting(qml.CRY(0.0, wires=wires[0]), qml.Hadamard(wires=wires[1]))
         assert commutation == res
 
@@ -336,7 +364,10 @@ class TestCommutingFunction:
         ],
     )
     def test_rot_x_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.Rot(np.pi / 2, 0.1, - np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        """Commutation between Rot(np.pi / 2, 0.1, -np.pi / 2) and PauliX."""
+        commutation = qml.is_commuting(
+            qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -347,7 +378,10 @@ class TestCommutingFunction:
         ],
     )
     def test_rot_y_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.Rot(0, 0.1, 0, wires=wires[0]), qml.PauliY(wires=wires[1]))
+        """Commutation between Rot(0, 0.1, 0) and PauliY."""
+        commutation = qml.is_commuting(
+            qml.Rot(0, 0.1, 0, wires=wires[0]), qml.PauliY(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -358,7 +392,10 @@ class TestCommutingFunction:
         ],
     )
     def test_rot_z_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.Rot(0.1, 0, 0.2, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        """Commutation between Rot(0.1, 0.0, 0.2) and PauliZ."""
+        commutation = qml.is_commuting(
+            qml.Rot(0.1, 0, 0.2, wires=wires[0]), qml.PauliZ(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -369,7 +406,10 @@ class TestCommutingFunction:
         ],
     )
     def test_rot_hadamard_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.Rot(np.pi, np.pi/2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1]))
+        """Commutation between Rot(np.pi, np.pi / 2, 0) and Hadamard."""
+        commutation = qml.is_commuting(
+            qml.Rot(np.pi, np.pi / 2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -380,7 +420,10 @@ class TestCommutingFunction:
         ],
     )
     def test_rot_z(self, wires, res):
-        commutation = qml.is_commuting(qml.Rot(0.1, 0.2, 0.3, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        """Commutation between Rot(0.1, 0.2, 0.3) and PauliZ."""
+        commutation = qml.is_commuting(
+            qml.Rot(0.1, 0.2, 0.3, wires=wires[0]), qml.PauliZ(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -391,7 +434,10 @@ class TestCommutingFunction:
         ],
     )
     def test_crot_x_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.CRot(np.pi / 2, 0.1, - np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1]))
+        """Commutation between CRot(np.pi / 2, 0.1, -np.pi / 2) and PauliX."""
+        commutation = qml.is_commuting(
+            qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -402,7 +448,10 @@ class TestCommutingFunction:
         ],
     )
     def test_crot_y_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.CRot(0, 0.1, 0, wires=wires[0]), qml.PauliY(wires=wires[1]))
+        """Commutation between CRot(0, 0.1, 0) and PauliY."""
+        commutation = qml.is_commuting(
+            qml.CRot(0, 0.1, 0, wires=wires[0]), qml.PauliY(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -413,7 +462,10 @@ class TestCommutingFunction:
         ],
     )
     def test_crot_z_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.CRot(0.1, 0, 0.2, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        """Commutation between CRot(0.1, 0, 0.2) and PauliZ."""
+        commutation = qml.is_commuting(
+            qml.CRot(0.1, 0, 0.2, wires=wires[0]), qml.PauliZ(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -424,7 +476,10 @@ class TestCommutingFunction:
         ],
     )
     def test_crot_hadamard_simplified(self, wires, res):
-        commutation = qml.is_commuting(qml.CRot(np.pi, np.pi/2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1]))
+        """Commutation between CRot(np.pi, np.pi / 2, 0) and Hadamard."""
+        commutation = qml.is_commuting(
+            qml.CRot(np.pi, np.pi / 2, 0, wires=wires[0]), qml.Hadamard(wires=wires[1])
+        )
         assert commutation == res
 
     @pytest.mark.parametrize(
@@ -435,8 +490,12 @@ class TestCommutingFunction:
         ],
     )
     def test_crot_z(self, wires, res):
-        commutation = qml.is_commuting(qml.CRot(0.1, 0.2, 0.3, wires=wires[0]), qml.PauliZ(wires=wires[1]))
+        """Commutation between CRot(0.1, 0.2, 0.3) and PauliZ."""
+        commutation = qml.is_commuting(
+            qml.CRot(0.1, 0.2, 0.3, wires=wires[0]), qml.PauliZ(wires=wires[1])
+        )
         assert commutation == res
+
 
 class TestCommutationDAG:
     """Commutation DAG tests."""

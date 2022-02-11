@@ -17,6 +17,7 @@ A transform to obtain the commutation DAG of a quantum circuit.
 import heapq
 from functools import wraps
 from collections import OrderedDict
+from networkx.drawing.nx_pydot import to_pydot
 
 import networkx as nx
 import pennylane as qml
@@ -34,8 +35,8 @@ def get_dag_commutation(circuit):
             or function that applies quantum operations.
 
     Returns:
-         function: Function which accepts the same arguments as the QNode or quantum function.
-         When called, this function will return the commutation DAG representation of the circuit.
+         function: Function which accepts the same arguments as the :class:`qml.QNode`, :class:`qml.tape.QuantumTape`
+         or quantum function. When called, this function will return the commutation DAG representation of the circuit.
 
     **Example**
 
@@ -51,11 +52,26 @@ def get_dag_commutation(circuit):
             qml.RY(-y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-    The circuit before optimization:
+    The commutation dag can be returned by using the following code:
 
     >>> get_dag = get_dag_commutation(circuit)
     >>> theta = np.pi/4
-    >>> get_dag(theta)
+    >>> phi = np.pi/3
+    >>> psi = np.pi/2
+    >>> dag = get_dag(theta, phi, psi)
+
+    You can access all nodes by using the get_nodes function in the form of a list (ID, CommutationDAGNode):
+
+    >>> nodes = dag.get_nodes()
+
+    You can also access specific nodes CommutationDAGNode by using get_node function. From the CommutationDAGNode
+    you can directly access all node attributes.
+
+    >>> second_node = dag.get_node(2)
+    >>> second_operation = second_node.op
+    >>> second_node_successors = second_node.successors
+    >>> second_node_predecessors = second_node.predecessors
+
 
     For more details, see:
 
@@ -1020,13 +1036,13 @@ def simplify_rotation(rot):
         np.mod(rot.data[2], -2 * np.pi), -np.pi / 2
     ):
         return qml.RX(rot.data[1], wires=rot.wires)
-    elif np.allclose(np.mod(rot.data[0], 2 * np.pi), 0) and np.allclose(
+    if np.allclose(np.mod(rot.data[0], 2 * np.pi), 0) and np.allclose(
         np.mod(rot.data[2], 2 * np.pi), 0
     ):
         return qml.RY(rot.data[1], wires=rot.wires)
-    elif np.allclose(np.mod(rot.data[1], 2 * np.pi), 0):
+    if np.allclose(np.mod(rot.data[1], 2 * np.pi), 0):
         return qml.RZ(rot.data[0] + rot.data[2], wires=rot.wires)
-    elif (
+    if (
         np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi)
         and np.allclose(np.mod(rot.data[1], 2 * np.pi), np.pi / 2)
         and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
@@ -1050,13 +1066,13 @@ def simplify_controlled_rotation(crot):
         np.mod(crot.data[2], -2 * np.pi), -np.pi / 2
     ):
         return qml.CRX(crot.data[1], wires=crot.wires)
-    elif np.allclose(np.mod(crot.data[0], 2 * np.pi), 0) and np.allclose(
+    if np.allclose(np.mod(crot.data[0], 2 * np.pi), 0) and np.allclose(
         np.mod(crot.data[2], 2 * np.pi), 0
     ):
         return qml.CRY(crot.data[1], wires=crot.wires)
-    elif np.allclose(np.mod(crot.data[1], 2 * np.pi), 0):
+    if np.allclose(np.mod(crot.data[1], 2 * np.pi), 0):
         return qml.CRZ(crot.data[0] + crot.data[2], wires=crot.wires)
-    elif (
+    if (
         np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi)
         and np.allclose(np.mod(crot.data[1], 2 * np.pi), np.pi / 2)
         and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
@@ -1080,14 +1096,13 @@ def simplify_u2(u2):
     if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
         np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
-        u2_simplified = qml.RY(np.pi / 2, u2.wires)
-    elif np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
+        return qml.RY(np.pi / 2, u2.wires)
+    if np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
         np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
-        u2_simplified = qml.RX(u2.data[1], u2.wires)
-    else:
-        u2_simplified = u2
-    return u2_simplified
+        return qml.RX(u2.data[1], u2.wires)
+
+    return u2
 
 
 def simplify_u3(u3):
@@ -1105,33 +1120,35 @@ def simplify_u3(u3):
         and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
     ):
-        u3_simplified = qml.RZ(u3.data[0], u3.wires)
-    elif (
+        return qml.RZ(u3.data[0], u3.wires)
+    if (
         np.allclose(np.mod(u3.data[2], 2 * np.pi), np.pi / 2)
         and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
     ):
-        u3_simplified = qml.RX(u3.data[1], u3.wires)
-    elif (
+        return qml.RX(u3.data[1], u3.wires)
+    if (
         np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
         and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
     ):
-        u3_simplified = qml.RY(u3.data[0], u3.wires)
-    else:
-        u3_simplified = u3
-    return u3_simplified
+        return qml.RY(u3.data[0], u3.wires)
+
+    return u3
 
 
 def simplify(operation):
-    r"""Simplify a rotation into RX, RY and RZ rotations.
+    r"""Simplify a rotation/ controlled rotation into RX, RY and RZ rotations.
 
     Args:
-        operation (pennylane.Operation): One qubit operation.
+        operation (pennylane.Operation): Rotation or controlled rotation.
 
     Returns:
          qml.operation: Simplified rotation if possible.
     """
+    if operation.name not in ["Rot", "U2", "U3", "CRot"]:
+        raise qml.QuantumFunctionError(f"{operation} is not a Rot, U2, U3 or CRot.")
+
     if operation.name == "Rot":
         return simplify_rotation(operation)
 
@@ -1141,150 +1158,80 @@ def simplify(operation):
     if operation.name == "U3":
         return simplify_u3(operation)
 
-    if operation.name == "CRot":
-        return simplify_controlled_rotation(operation)
+    return simplify_controlled_rotation(operation)
 
 
-def is_commuting(operation1, operation2):
-    r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
-    controlled, targetted part of operation 1 with the controlled, targetted part of operation 2. It supports
-    all PennyLane operations.
+def two_non_simplified_crot(operation1, operation2):
+    r"""Check commutation for two CRot that were not simplified.
 
     Args:
-        operation1 (.Operation): A first quantum operation.
-        operation2 (.Operation): A second quantum operation.
+        operation1 (pennylane.Operation): First operation.
+        operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         bool: True if the operations commute, False otherwise.
-
-    **Example**
-
-    >>> qml.is_commuting(qml.PauliX(wires=0), qml.PauliZ(wires=0))
-    False
+         Bool: True if commutation, False otherwise.
     """
-    # pylint: disable=too-many-branches
-    # pylint: disable=too-many-return-statements
+    # Two non simplified CRot
 
-    not_supported_operations = [
-        "PauliRot",
-        "QubitDensityMatrix",
-        "CVNeuralNetLayers",
-        "ApproxTimeEvolution",
-        "ArbitraryUnitary" "CommutingEvolution",
-        "DisplacementEmbedding",
-        "SqueezingEmbedding",
-    ]
+    control_control = intersection(operation1.control_wires, operation2.control_wires)
+    target_target = intersection(operation1.target_wires, operation2.target_wires)
 
-    if (
-        operation1.name in not_supported_operations
-        or isinstance(operation1, qml.operation.CVOperation)
-        or isinstance(operation1, qml.operation.Channel)
-    ):
-        raise qml.QuantumFunctionError(f"Operation {operation1.name} not supported.")
-    if (
-        operation2.name in not_supported_operations
-        or isinstance(operation2, qml.operation.CVOperation)
-        or isinstance(operation2, qml.operation.Channel)
-    ):
-        raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
+    if control_control and target_target:
+        return np.all(
+            np.allcllose(
+                np.matmul(operation1.matrix, operation2.matrix),
+                np.matmul(operation2.matrix, operation1.matrix),
+            )
+        )
+    elif control_control and not target_target:
+        return True
+    elif not control_control and target_target:
+        return np.all(
+            np.allcllose(
+                np.matmul(
+                    qml.Rot(*operation1.data, wires=operation1.wires).matrix,
+                    qml.Rot(*operation2.data, wires=operation2.wires).matrix,
+                ),
+                np.matmul(
+                    qml.Rot(*operation2.data, wires=operation2.wires).matrix,
+                    qml.Rot(*operation1.data, wires=operation1.wires).matrix,
+                ),
+            )
+        )
+    return False
 
-    # Simplify the rotations if possible
-    if operation1.name in ["U2", "U3", "Rot", "CRot"]:
-        operation1 = simplify(operation1)
 
-    if operation2.name in ["U2", "U3", "Rot", "CRot"]:
-        operation2 = simplify(operation2)
+def simplify_to_identity(operation1, operation2):
+    r"""Check that a parametric operation can be simplified to the identity operator,
+    if it is the case then return commutation relation wiith the second operation.
 
-    # Parametric operation implements identity operator
+    Args:
+        operation1 (pennylane.Operation): First operation.
+        operation2 (pennylane.Operation): Second operation.
+
+    Returns:
+         Bool: True if commutation, False otherwise.
+    """
     if operation1.data and operation1.name != "U2":
         all_zeros = np.allclose(np.mod(operation1.data, 2 * np.pi), 0)
         if all_zeros:
             if operation2.name not in ["Barrier", "WireCut"]:
                 return True
             return False
+    return None
 
-    if operation2.data and operation2.name != "U2":
-        all_zeros = np.allclose(np.mod(operation2.data, 2 * np.pi), 0)
-        if all_zeros:
-            if operation1.name not in ["Barrier", "WireCut"]:
-                return True
-            return False
 
-    # Case 1 operations are disjoints
-    if not intersection(operation1.wires, operation2.wires):
-        return True
+def two_non_simplified_rotations(operation1, operation2):
+    r"""Check commutation for two rotations that were not simplified.
 
-    non_commuting_operations = [
-        "ArbitraryStatePreparation",
-        "BasisStatePreparation",
-        "MottonenStatePreparation",
-        "QubitCarry",
-        "QubitSum",
-        "SingleExcitation",
-        "SingleExcitationMinus",
-        "SingleExcitationPlus",
-        "DoubleExcitation",
-        "DoubleExcitationPlus",
-        "DoubleExcitationMinus",
-        "BasicEntanglerLayers",
-        "GateFabric",
-        "ParticleConservingU1",
-        "ParticleConservingU2",
-        "RandomLayers",
-        "SimplifiedTwoDesign",
-        "StronglyEntanglingLayers",
-        "AllSinglesDoubles",
-        "FermionicDoubleExcitation",
-        "FermionicSingleExcitation",
-        "Grover",
-        "kUpCCGSD",
-        "Permute",
-        "QFT",
-        "QuantumMonteCarlo",
-        "QuantumPhaseEstimation",
-        "UCCSD",
-        "MPS",
-        "TTN",
-        "AmplitudeEmbedding",
-        "AngleEmbedding",
-        "BasisEmbedding",
-        "IQPEmbedding",
-        "QAOAEmbedding",
-    ]
+    Args:
+        operation1 (pennylane.Operation): First operation.
+        operation2 (pennylane.Operation): Second operation.
 
-    if operation1.name or operation2.name in non_commuting_operations:
-        return False
-
-    # Two simplified CRot
-    if operation1.name == "CRot" and operation2.name == "CRot":
-        control_control = intersection(operation1.control_wires, operation2.control_wires)
-        target_target = intersection(operation1.target_wires, operation2.target_wires)
-
-        if control_control and target_target:
-            return np.all(
-                np.allcllose(
-                    np.matmul(operation1.matrix, operation2.matrix),
-                    np.matmul(operation2.matrix, operation1.matrix),
-                )
-            )
-        elif control_control and not target_target:
-            return True
-        elif not control_control and target_target:
-            return np.all(
-                np.allcllose(
-                    np.matmul(
-                        qml.Rot(*operation1.data, wires=operation1.wires).matrix,
-                        qml.Rot(*operation2.data, wires=operation2.wires).matrix,
-                    ),
-                    np.matmul(
-                        qml.Rot(*operation2.data, wires=operation2.wires).matrix,
-                        qml.Rot(*operation1.data, wires=operation1.wires).matrix,
-                    ),
-                )
-            )
-        return False
-
-    # Two simplified rotations
+    Returns:
+         Bool: True if commutation, False otherwise.
+    """
+    # Two non simplified rotations
     if (operation1.name in ["U2", "U3", "Rot", "CRot"]) and (
         operation2.name in ["U2", "U3", "Rot", "CRot"]
     ):
@@ -1332,6 +1279,118 @@ def is_commuting(operation1, operation2):
                 ),
             )
         )
+    return None
+
+
+not_supported_operations = [
+    "PauliRot",
+    "QubitDensityMatrix",
+    "CVNeuralNetLayers",
+    "ApproxTimeEvolution",
+    "ArbitraryUnitary" "CommutingEvolution",
+    "DisplacementEmbedding",
+    "SqueezingEmbedding",
+]
+non_commuting_operations = [
+    "ArbitraryStatePreparation",
+    "BasisStatePreparation",
+    "MottonenStatePreparation",
+    "QubitCarry",
+    "QubitSum",
+    "SingleExcitation",
+    "SingleExcitationMinus",
+    "SingleExcitationPlus",
+    "DoubleExcitation",
+    "DoubleExcitationPlus",
+    "DoubleExcitationMinus",
+    "BasicEntanglerLayers",
+    "GateFabric",
+    "ParticleConservingU1",
+    "ParticleConservingU2",
+    "RandomLayers",
+    "SimplifiedTwoDesign",
+    "StronglyEntanglingLayers",
+    "AllSinglesDoubles",
+    "FermionicDoubleExcitation",
+    "FermionicSingleExcitation",
+    "Grover",
+    "kUpCCGSD",
+    "Permute",
+    "QFT",
+    "QuantumMonteCarlo",
+    "QuantumPhaseEstimation",
+    "UCCSD",
+    "MPS",
+    "TTN",
+    "AmplitudeEmbedding",
+    "AngleEmbedding",
+    "BasisEmbedding",
+    "IQPEmbedding",
+    "QAOAEmbedding",
+]
+
+
+def is_commuting(operation1, operation2):
+    r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
+    controlled, targetted part of operation 1 with the controlled, targetted part of operation 2. It supports
+    most PennyLane operations that are not CV operations.
+
+    Args:
+        operation1 (.Operation): A first quantum operation.
+        operation2 (.Operation): A second quantum operation.
+
+    Returns:
+         bool: True if the operations commute, False otherwise.
+
+    **Example**
+
+    >>> qml.is_commuting(qml.PauliX(wires=0), qml.PauliZ(wires=0))
+    False
+    """
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-return-statements
+
+    if operation1.name in not_supported_operations or isinstance(
+        operation1, (qml.operation.CVOperation, qml.operation.Channel)
+    ):
+        raise qml.QuantumFunctionError(f"Operation {operation1.name} not supported.")
+
+    if operation2.name in not_supported_operations or isinstance(
+        operation2, (qml.operation.CVOperation, qml.operation.Channel)
+    ):
+        raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
+
+    # Simplify the rotations if possible
+    if operation1.name in ["U2", "U3", "Rot", "CRot"]:
+        operation1 = simplify(operation1)
+
+    if operation2.name in ["U2", "U3", "Rot", "CRot"]:
+        operation2 = simplify(operation2)
+
+    if operation1.name == "CRot" and operation2.name == "CRot":
+        return two_non_simplified_crot(operation1, operation2)
+
+    # Parametric operation might implement the identity operator
+    simplify_op_1 = simplify_to_identity(operation1, operation2)
+    if simplify_op_1 is not None:
+        return simplify_op_1
+
+    simplify_op_2 = simplify_to_identity(operation2, operation1)
+    if simplify_op_2 is not None:
+        return simplify_op_2
+
+    # Case 1 operations are disjoints
+    if not intersection(operation1.wires, operation2.wires):
+        return True
+
+    # Operation is in the non commuting list
+    if operation1.name in non_commuting_operations or operation2.name in non_commuting_operations:
+        return False
+
+    # Two simplified rotations:
+    two_non_simplified_rot = two_non_simplified_rotations(operation1, operation2)
+    if two_non_simplified_rot is not None:
+        return two_non_simplified_rot
 
     # Case 2 both operations are controlled
     if operation1.is_controlled and operation2.is_controlled:
@@ -1437,13 +1496,13 @@ def is_commuting(operation1, operation2):
 
 
 def _merge_no_duplicates(*iterables):
-    """Merge K list without duplicate using python heapq ordered merging
+    """Merge K list without duplicate using python heapq ordered merging.
 
     Args:
         *iterables: A list of k sorted lists
 
     Yields:
-        Iterator: List from the merging of the k ones (without duplicates
+        Iterator: List from the merging of the k ones (without duplicates)
     """
     last = object()
     for val in heapq.merge(*iterables):
@@ -1514,9 +1573,9 @@ class CommutationDAGNode:
 
 
 class CommutationDAG:
-    r"""Class to represent a quantum circuit as a directed acyclic graph (DAG).
-
-    **Example:**
+    r"""Class to represent a quantum circuit as a directed acyclic graph (DAG). This class is useful to build the
+    commutation DAG and set up all nodes attributes. The construction of the DAG should be used through the
+    transform :class:`qml.transforms.get_commutation_dag`.
 
     **Reference:**
 
@@ -1615,24 +1674,6 @@ class CommutationDAG:
         """
         return self._multi_graph.edges.data()
 
-    def _update_edges(self):
-
-        max_node_id = len(self._multi_graph) - 1
-        max_node = self.get_node(max_node_id).op
-
-        for current_node_id in range(0, max_node_id):
-            self.get_node(current_node_id).reachable = True
-
-        for prev_node_id in range(max_node_id - 1, -1, -1):
-            if self.get_node(prev_node_id).reachable and not is_commuting(
-                self.get_node(prev_node_id).op, max_node
-            ):
-                self.add_edge(prev_node_id, max_node_id)
-                self._pred_update(max_node_id)
-                list_predecessors = self.get_node(max_node_id).predecessors
-                for pred_id in list_predecessors:
-                    self.get_node(pred_id).reachable = False
-
     def direct_predecessors(self, node_id):
         """Return the direct predecessors of the given node.
 
@@ -1694,6 +1735,37 @@ class CommutationDAG:
         """
         return self._multi_graph
 
+    def draw(self, filename="dag.png"):  # pragma: no cover
+        """Draw the DAG object.
+
+        Args:
+            filename (str): The file name which is in PNG format. Default = 'dag.png'
+        """
+        draw_graph = nx.MultiDiGraph()
+
+        for node in self.get_nodes():
+            wires = ",".join([" " + str(elem) for elem in node[1].op.wires.tolist()])
+            label = (
+                "ID: "
+                + str(node[0])
+                + "\n"
+                + "Op: "
+                + node[1].op.name
+                + "\n"
+                + "Wires: ["
+                + wires[1::]
+                + "]"
+            )
+            draw_graph.add_node(
+                node[0], label=label, color="blue", style="filled", fillcolor="lightblue"
+            )
+
+        for edge in self.get_edges():
+            draw_graph.add_edge(edge[0], edge[1])
+
+        dot = to_pydot(draw_graph)
+        dot.write_png(filename)
+
     def _pred_update(self, node_id):
         self.get_node(node_id).predecessors = []
 
@@ -1717,3 +1789,21 @@ class CommutationDAG:
             self.get_node(node_id).successors = list(
                 _merge_no_duplicates(*self.get_node(node_id).successors)
             )
+
+    def _update_edges(self):
+
+        max_node_id = len(self._multi_graph) - 1
+        max_node = self.get_node(max_node_id).op
+
+        for current_node_id in range(0, max_node_id):
+            self.get_node(current_node_id).reachable = True
+
+        for prev_node_id in range(max_node_id - 1, -1, -1):
+            if self.get_node(prev_node_id).reachable and not is_commuting(
+                self.get_node(prev_node_id).op, max_node
+            ):
+                self.add_edge(prev_node_id, max_node_id)
+                self._pred_update(max_node_id)
+                list_predecessors = self.get_node(max_node_id).predecessors
+                for pred_id in list_predecessors:
+                    self.get_node(pred_id).reachable = False
