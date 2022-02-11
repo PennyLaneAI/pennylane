@@ -28,23 +28,11 @@ PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
     qml.RY(1.434, wires=0),
     qml.RZ(2.774, wires=0),
-    qml.S(wires=0),
-    qml.SX(wires=0),
-    qml.T(wires=0),
-    qml.CNOT(wires=[0, 1]),
-    qml.CZ(wires=[0, 1]),
-    qml.CY(wires=[0, 1]),
-    qml.SWAP(wires=[0, 1]),
-    qml.ISWAP(wires=[0, 1]),
-    qml.SISWAP(wires=[0, 1]),
-    qml.SQISW(wires=[0, 1]),
-    qml.CSWAP(wires=[0, 1, 2]),
     qml.PauliRot(0.123, "Y", wires=0),
     qml.IsingXX(0.123, wires=[0, 1]),
     qml.IsingYY(0.123, wires=[0, 1]),
     qml.IsingZZ(0.123, wires=[0, 1]),
     qml.Rot(0.123, 0.456, 0.789, wires=0),
-    qml.Toffoli(wires=[0, 1, 2]),
     qml.PhaseShift(2.133, wires=0),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
     qml.CPhase(1.777, wires=[0, 2]),
@@ -55,10 +43,6 @@ PARAMETRIZED_OPERATIONS = [
     qml.U1(0.123, wires=0),
     qml.U2(3.556, 2.134, wires=0),
     qml.U3(2.009, 1.894, 0.7789, wires=0),
-    qml.Hadamard(wires=0),
-    qml.PauliX(wires=0),
-    qml.PauliZ(wires=0),
-    qml.PauliY(wires=0),
     qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
     qml.QubitUnitary(np.eye(2) * 1j, wires=0),
     qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
@@ -71,12 +55,34 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+]
+
+NON_PARAMETRIZED_OPERATIONS = [
+    qml.S(wires=0),
+    qml.SX(wires=0),
+    qml.T(wires=0),
+    qml.CNOT(wires=[0, 1]),
+    qml.CZ(wires=[0, 1]),
+    qml.CY(wires=[0, 1]),
+    qml.SWAP(wires=[0, 1]),
+    qml.ISWAP(wires=[0, 1]),
+    qml.SISWAP(wires=[0, 1]),
+    qml.SQISW(wires=[0, 1]),
+    qml.CSWAP(wires=[0, 1, 2]),
+    qml.Toffoli(wires=[0, 1, 2]),
+    qml.Hadamard(wires=0),
+    qml.PauliX(wires=0),
+    qml.PauliZ(wires=0),
+    qml.PauliY(wires=0),
+    qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
     qml.QubitSum(wires=[0, 1, 2]),
 ]
 
+ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
+
 
 class TestOperations:
-    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
         copied_op = copy.copy(op)
@@ -87,7 +93,7 @@ class TestOperations:
         np.testing.assert_allclose(op.matrix, copied_op2.matrix, atol=tol)
         op.inv()
 
-    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
         res1 = np.dot(op.matrix, op_d.matrix)
@@ -95,6 +101,32 @@ class TestOperations:
         np.testing.assert_allclose(res1, np.eye(2 ** len(op.wires)), atol=tol)
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
+
+
+class TestParameterFrequencies:
+    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    def test_parameter_frequencies_match_generator(self, op, tol):
+        if op.generator[0] is None:
+            # For operations without generator, we only can try and check that the function
+            # executes properly, not its return value.
+            try:
+                op.parameter_frequencies
+            except qml.operation.OperatorPropertyUndefined:
+                pytest.skip(f"Operation {op.name} does not have parameter frequencies defined.")
+            pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
+        gen, coeff = op.generator
+        if isinstance(gen, np.ndarray):
+            matrix = gen
+        elif hasattr(gen, "matrix"):
+            matrix = gen.matrix
+        else:
+            raise ValueError
+
+        gen_eigvals = tuple(np.linalg.eigvalsh(matrix))
+        freqs_from_gen = np.abs(coeff) * np.array(qml.gradients.eigvals_to_frequencies(gen_eigvals))
+
+        freqs = op.parameter_frequencies
+        assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
 class TestDecompositions:
