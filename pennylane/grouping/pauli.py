@@ -267,7 +267,7 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
 
     Returns:
         List[List[str]]: A collection of qubit-wise commuting groups containing Pauli words as
-        simple strings
+        strings
 
     **Example**
 
