@@ -350,8 +350,9 @@ class CutConfig:
                 f"got {type(imbalance_tolerance)} with value {imbalance_tolerance}."
             )
 
+        cut_configs = []
+
         if fragment_gates is None and fragment_wires is None:
-            cut_configs = []
 
             # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
             k_lower = int(k_lower or k_lb)
