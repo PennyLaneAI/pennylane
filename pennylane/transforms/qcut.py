@@ -294,43 +294,6 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     return subgraphs, communication_graph
 
 
-def _subscripted(inp: Union[int, str], subscript: int) -> str:
-    """Returns a subscripted version of ``inp`` with an integer
-    subscript."""
-    return str(inp) + str(subscript).translate(SUB)
-
-
-# def _find_new_wire(target, wires: Wires):
-#     """Finds a new wire label that is not in ``wires`` based
-#     upon a ``target`` label. Subscripts are used to find a
-#     unique new label."""
-#
-#     if target not in wires:
-#         return target
-#
-#     ctr = 1
-#     subscript_map = {sub: i for i, sub in enumerate(SUBS)}
-#
-#     # if the target is already subscripted, reset to it's parent integer
-#     if isinstance(target, str) and any(char in set(target) for char in set(SUBS)):
-#         ctr = subscript_map[target[-1]]  # set counter to subscript
-#         target = int(target[0])  # set target to parent integer
-#         wire_func = partial(_subscripted, target)
-#         new_wire = target
-#     elif isinstance(target, (int, str)):
-#         wire_func = partial(_subscripted, target)
-#         new_wire = wire_func(ctr)
-#     else:
-#         wire_func = lambda ctr: ctr - 1
-#         new_wire = wire_func(ctr)
-#
-#     while new_wire in wires:
-#         ctr += 1
-#         new_wire = wire_func(ctr)
-#
-#     return new_wire
-
-
 def _find_new_wire(wires: Wires) -> int:
     """Finds a new wire label that is not in ``wires``."""
     ctr = 0
@@ -344,10 +307,9 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding quantum tape.
 
-    Each node
-    in the graph should have an order attribute specifying the topological order of
-    the operations. This allows for the support of mid circuit measurements
-    when speficied as `MeasureNode` within a  directed multigraph.
+    Each node in the graph should have an order attribute specifying the topological order of
+    the operations. This maintains ordering of operations and allows for the
+    deferred measurement principle to be applied when necessary.
 
     .. note::
 

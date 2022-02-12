@@ -13,6 +13,7 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
+import copy
 import string
 import sys
 
@@ -46,6 +47,25 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.CNOT(wires=[2, 3])
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
+    qml.expval(qml.PauliZ(wires=[0]))
+
+
+# tape containing mid-circuit measurement
+with qml.tape.QuantumTape() as mcm_tape:
+    qml.Hadamard(wires=0)
+    qml.RX(0.432, wires=0)
+    qml.RY(0.543, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.WireCut(wires=1)
+    qml.CNOT(wires=[1, 2])
+    qml.WireCut(wires=1)
+    qml.RZ(0.321, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.Hadamard(wires=2)
+    qml.WireCut(wires=1)
+    qml.CNOT(wires=[1, 2])
+    qml.WireCut(wires=1)
+    qml.CNOT(wires=[0, 1])
     qml.expval(qml.PauliZ(wires=[0]))
 
 
@@ -823,30 +843,13 @@ class TestGraphToTape:
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
 
-    def test_mid_circuit_measurement(self, mocker):
+    def test_mid_circuit_measurement(self):
         """
         Tests a circuit that is fragmented into subgraphs that
         include mid-circuit measurements, ensuring that the
         generated circuits apply the deferred measurement principle.
         """
-
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.WireCut(wires=1)
-            qml.RZ(0.321, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=2)
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(wires=[0]))
-
+        tape = copy.copy(mcm_tape)
         g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
@@ -865,6 +868,46 @@ class TestGraphToTape:
                             assert op.wires != next_op.wires
                     except IndexError:
                         assert len(tape.operations) == i + 1
+
+    def test_mid_circuit_measurements_fragments(self):
+        """
+        Tests a circuit that is fragmented into subgraphs that
+        include mid-circuit measurements are converted to the correct tapes
+        """
+        tape = copy.copy(mcm_tape)
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        with qml.tape.QuantumTape() as tape_0:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        with qml.tape.QuantumTape() as tape_1:
+            qcut.PrepareNode(wires=[1])
+            qml.CNOT(wires=[1, 2])
+            qcut.MeasureNode(wires=[1])
+            qml.Hadamard(wires=[2])
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[0])
+
+        expected_tapes = [tape_0, tape_1]
+
+        for tape, expected_tape in zip(tapes, expected_tapes):
+            compare_tapes(tape, expected_tape)
 
 
 class TestContractTensors:
