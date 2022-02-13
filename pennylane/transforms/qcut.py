@@ -15,10 +15,11 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
+from multiprocessing.sharedctypes import Value
 import string
 import warnings
 from typing import Sequence, Tuple, List, Dict, Any, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 
 from networkx import MultiDiGraph, weakly_connected_components
 import pennylane as qml
@@ -431,70 +432,131 @@ def contract_tensors(
     return contract(eqn, *tensors, **kwargs)
 
 
-@dataclass(frozen=True)
-class CutConfig:
+@dataclass()
+class CutConstraints:
     """
     Container wrapping partitioning parameters for passing to the automatic cutter.
+
+    Args:
+        devices (List[qml.Device]): A list of (or single) device(s), Optional.
+        max_free_wires (int): Number of wires for the largest available device.
+        min_free_wires (int): Number of wires for the smallest available device.
+            Optional, defaults to `max_device_wires`.
+        max_fragments_probed (List[int]): List of potential number of fragments to try for the
+            partitioner. Optional, defaults to probing all valid choices that are derived from
+            the circuit and devices.
+        max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
+            Optional, defaults to unlimited depth.
+        min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
+            Optional, defaults to `max_device_gates`.
     """
 
     # pylint: disable=too-many-arguments
 
-    k: int
-    imbalance: float
-    fragment_wires: List[int] = None
-    fragment_gates: List[int] = None
+    devices: InitVar[List[qml.Device]] = None
+    max_free_wires: int = None
+    min_free_wires: int = None
+    num_fragments_probed: Union[int, List[int], Tuple[int]] = None
+    max_free_gates: int = None
+    min_free_gates: int = None
+    imbalance_tolerance: float = None
+
+    def __post_init__(
+        self,
+        devices,
+    ):
+
+        self.max_free_wires = self.max_free_wires or self.min_free_gates
+        if isinstance(self.num_fragments_probed, int):
+            self.num_fragments_probed = [self.num_fragments_probed]
+        if isinstance(self.num_fragments_probed, (list, tuple)):
+            self.num_fragments_probed = sorted(self.num_fragments_probed)
+            self.k_lower = self.num_fragments_probed[0]
+            self.k_upper = self.num_fragments_probed[-1]
+        else:
+            self.k_lower, self.k_upper = None, None
+
+        if devices is None and self.max_free_wires is None:
+            raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
+
+        if isinstance(devices, qml.Device):
+            devices = (devices,)
+
+        if devices is not None:
+            if not isinstance(devices, (list, tuple)) or any(
+                (not isinstance(d, qml.Device) for d in devices)
+            ):
+                raise ValueError(
+                    f"Argument `devices` must be a list of `Device` instances, got {type(devices)}."
+                )
+            else:
+                device_wire_sizes = [len(d.wires) for d in devices]
+
+                self.max_free_wires = self.max_free_wires or max(device_wire_sizes)
+                self.min_free_wires = self.min_free_wires or min(device_wire_sizes)
+
+    def get_cut_kwargs(
+        self,
+        tape_dag: MultiDiGraph,
+        max_wires_by_fragment: List[int] = None,
+        max_gates_by_fragment: List[int] = None,
+    ):
+        tape_wires = set(tape_dag.edges.data("wire"))
+        assert all((w is not None for w in tape_wires))
+        num_tape_wires = len(tape_wires)
+        num_tape_gates = tape_dag.order()
+        self._validate_dag(
+            num_tape_wires, num_tape_gates, max_wires_by_fragment, max_gates_by_fragment
+        )
+
+        cut_kwargs = self._infer_default_configs(
+            num_tape_wires=num_tape_wires,
+            num_tape_gates=num_tape_gates,
+            max_wires_by_fragment=max_wires_by_fragment,
+            max_gates_by_fragment=max_gates_by_fragment,
+        )
+
+        return cut_kwargs
 
     @staticmethod
-    def infer_imbalance(k, num_wires, num_gates, max_wires, max_gates, imbalance_tolerance=None):
+    def infer_imbalance(k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None):
         """Helper function for determining best imbalance limit."""
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
-        wire_imbalance = max_wires / avg_fragment_wires - 1
-        gate_imbalance = max_gates / avg_fragment_gates - 1
+        wire_imbalance = free_wires / avg_fragment_wires - 1
+        gate_imbalance = free_gates / avg_fragment_gates - 1
         imbalance = min(gate_imbalance, wire_imbalance)
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
         return imbalance
 
-    @staticmethod
-    def validate_params(
+    def _validate_dag(
+        self,
         num_tape_wires,
         num_tape_gates,
-        max_device_wires,
-        max_device_gates,
-        fragment_wires,
-        fragment_gates,
+        max_wires_by_fragment,
+        max_gates_by_fragment,
     ):
         """Helper parameter checker."""
-        assert isinstance(num_tape_wires, int)
-        assert isinstance(num_tape_gates, int)
-        assert isinstance(max_device_wires, int)
-        assert isinstance(max_device_gates, int)
-        if fragment_gates is not None:
-            assert isinstance(fragment_gates, (list, tuple))
-            assert all(isinstance(i, int) for i in fragment_gates)
-            assert all(i <= max_device_gates for i in fragment_gates)
-        if fragment_wires is not None:
-            assert isinstance(fragment_wires, (list, tuple))
-            assert all(isinstance(i, int) for i in fragment_wires)
-            assert all(i <= max_device_wires for i in fragment_wires)
-        if fragment_wires is not None and fragment_gates is not None:
-            assert len(fragment_wires) == len(fragment_gates)
+        if max_wires_by_fragment is not None:
+            assert isinstance(max_wires_by_fragment, (list, tuple))
+            assert all(isinstance(i, int) and i <= num_tape_wires for i in max_wires_by_fragment)
+            if self.max_free_wires is not None:
+                assert all(i <= self.max_free_wires for i in max_wires_by_fragment)
+        if max_gates_by_fragment is not None:
+            assert isinstance(max_gates_by_fragment, (list, tuple))
+            assert all(isinstance(i, int) and i <= num_tape_gates for i in max_gates_by_fragment)
+            if self.max_free_gates is not None:
+                assert all(i <= self.max_free_gates for i in max_gates_by_fragment)
+        if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
+            assert len(max_wires_by_fragment) == len(max_gates_by_fragment)
 
-    @classmethod
-    def infer_default_configs(
-        cls,
+    def _infer_default_configs(
+        self,
         num_tape_wires,
         num_tape_gates,
-        max_device_wires,
-        max_device_gates=None,
-        min_device_wires=None,
-        min_device_gates=None,
-        k_lower=None,
-        k_upper=None,
-        imbalance_tolerance=None,
-        fragment_wires=None,
-        fragment_gates=None,
+        max_wires_by_fragment=None,
+        max_gates_by_fragment=None,
     ):
         """
         Helper function for deriving the best default partitioning parameters for the automatic
@@ -503,13 +565,6 @@ class CutConfig:
         Args:
             num_tape_wires (int): Number of wires in the circuit tape to be partitioned.
             num_tape_gates (int): Number of gates in the circuit tape to be partitioned.
-            max_device_wires (int): Number of wires for the largest available device.
-            max_device_gates (int): Maximum allowed circuit depth for the deepest available device.
-                Optional, defaults to unlimited depth.
-            min_device_wires (int): Number of wires for the smallest available device.
-                Optional, defaults to `max_device_wires`.
-            min_device_gates (int): Maximum allowed circuit depth for the shallowest available device.
-                Optional, defaults to `max_device_gates`.
             k_lower (int): Lowest number of fragments to attempt for the automatic circuit cutter.
                 Optional, defaults to the scenario where each fragment is executed on the largest
                 available device, satisfying both wire and gate constraints.
@@ -532,49 +587,41 @@ class CutConfig:
 
         """
 
-        # Assumes unlimited gate depth if not supplied.
-        max_device_gates = max_device_gates or num_tape_gates
+        # Assumes unlimited width/depth if not supplied.
+        max_free_wires = self.max_free_wires or num_tape_wires
+        max_free_gates = self.max_free_gates or num_tape_gates
 
-        cls.validate_params(
-            num_tape_wires,
-            num_tape_gates,
-            max_device_wires,
-            max_device_gates,
-            fragment_wires,
-            fragment_gates,
-        )
-
-        # Assumes same number of wires/gates across all devices if min_device_* not provided.
-        min_device_wires = min_device_wires or max_device_wires
-        min_device_gates = min_device_gates or max_device_gates
+        # Assumes same number of wires/gates across all devices if min_free_* not provided.
+        min_free_wires = self.min_free_wires or max_free_wires
+        min_free_gates = self.min_free_gates or max_free_gates
 
         # The lower bound of k corresponds to executing each fragment on the largest available device.
         k_lb = 1 + min(
-            (num_tape_wires - 1) // max_device_wires,  # wire limited
-            (num_tape_gates - 1) // max_device_gates,  # gate limited
+            (num_tape_wires - 1) // max_free_wires,  # wire limited
+            (num_tape_gates - 1) // max_free_gates,  # gate limited
         )
         # The upper bound of k corresponds to executing each fragment on the smallest available device.
         k_ub = 1 + max(
-            (num_tape_wires - 1) // min_device_wires,  # wire limited
-            (num_tape_gates - 1) // min_device_gates,  # gate limited
+            (num_tape_wires - 1) // min_free_wires,  # wire limited
+            (num_tape_gates - 1) // min_free_gates,  # gate limited
         )
 
         # The global imbalance tolerance, if not given, defaults to a very loose upper bound:
-        imbalance_tolerance = imbalance_tolerance or k_ub
+        imbalance_tolerance = self.imbalance_tolerance or k_ub
         if not (isinstance(imbalance_tolerance, (float, int)) and imbalance_tolerance >= 0):
             raise ValueError(
                 "The global `imbalance_tolerance` is expected to be a non-negative number, "
                 f"got {type(imbalance_tolerance)} with value {imbalance_tolerance}."
             )
 
-        cut_configs = []
+        cut_kwargs = []
 
-        if fragment_gates is None and fragment_wires is None:
+        if max_gates_by_fragment is None and max_wires_by_fragment is None:
 
             # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
-            k_lower = int(k_lower or k_lb)
+            k_lower = int(self.k_lower or k_lb)
             # k_upper, when supplied by a user, can be higher than k_ub to encourage exploration:
-            k_upper = int(k_upper or k_ub)
+            k_upper = int(self.k_upper or k_ub)
 
             if k_lower < k_lb:
                 warnings.warn(
@@ -609,20 +656,27 @@ class CutConfig:
         else:
             # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
             # return a single partition config.
-            ks = [len(fragment_wires)]
+            ks = [len(max_wires_by_fragment)]
 
         for k in ks:
-            imbalance = cls.infer_imbalance(
+            imbalance = self.infer_imbalance(
                 k,
                 num_tape_wires,
                 num_tape_gates,
-                max_device_wires if fragment_wires is None else max(fragment_wires),
-                max_device_gates if fragment_gates is None else max(fragment_gates),
+                max_free_wires if max_wires_by_fragment is None else max(max_wires_by_fragment),
+                max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
                 imbalance_tolerance,
             )
-            cut_configs.append(cls(k, imbalance, fragment_wires, fragment_gates))
+            cut_kwargs.append(
+                {
+                    "num_fragments": k,
+                    "imbalance": imbalance,
+                    "max_wires_by_fragment": max_wires_by_fragment,
+                    "max_gates_by_fragment": max_gates_by_fragment,
+                }
+            )
 
-        return cut_configs
+        return cut_kwargs
 
 
 @dataclass(frozen=True)
