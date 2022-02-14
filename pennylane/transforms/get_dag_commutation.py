@@ -1116,23 +1116,23 @@ def simplify_u3(u3):
     """
 
     if (
-        np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
-        and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
-        and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
+        np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
+        and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
+        and np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
     ):
-        return qml.RZ(u3.data[0], u3.wires)
+        return qml.PhaseShift(u3.data[1], wires=u3.wires)
     if (
         np.allclose(np.mod(u3.data[2], 2 * np.pi), np.pi / 2)
-        and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
-        and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
+        and np.allclose(np.mod(u3.data[1] + u3.data[2], 2 * np.pi), 0)
+        and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
     ):
-        return qml.RX(u3.data[1], u3.wires)
+        return qml.RX(u3.data[1], wires=u3.wires)
     if (
-        np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
-        and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
-        and np.allclose(np.mod(u3.data[1] + u3.data[1], 2 * np.pi), 0)
+        not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
+        and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
+        and np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
     ):
-        return qml.RY(u3.data[0], u3.wires)
+        return qml.RY(u3.data[0], wires=u3.wires)
 
     return u3
 
@@ -1147,7 +1147,7 @@ def simplify(operation):
          qml.operation: Simplified rotation if possible.
     """
     if operation.name not in ["Rot", "U2", "U3", "CRot"]:
-        raise qml.QuantumFunctionError(f"{operation} is not a Rot, U2, U3 or CRot.")
+        raise qml.QuantumFunctionError(f"{operation.name} is not a Rot, U2, U3 or CRot.")
 
     if operation.name == "Rot":
         return simplify_rotation(operation)
@@ -1189,12 +1189,12 @@ def two_non_simplified_crot(operation1, operation2):
         return np.all(
             np.allclose(
                 np.matmul(
-                    qml.Rot(*operation1.data, wires=operation1.wires).matrix,
-                    qml.Rot(*operation2.data, wires=operation2.wires).matrix,
+                    qml.Rot(*operation1.data, wires=operation1.wires[1]).matrix,
+                    qml.Rot(*operation2.data, wires=operation2.wires[1]).matrix,
                 ),
                 np.matmul(
-                    qml.Rot(*operation2.data, wires=operation2.wires).matrix,
-                    qml.Rot(*operation1.data, wires=operation1.wires).matrix,
+                    qml.Rot(*operation2.data, wires=operation2.wires[1]).matrix,
+                    qml.Rot(*operation1.data, wires=operation1.wires[1]).matrix,
                 ),
             )
         )
@@ -1367,6 +1367,11 @@ def is_commuting(operation1, operation2):
     if operation2.name in ["U2", "U3", "Rot", "CRot"]:
         operation2 = simplify(operation2)
 
+    # Case 1 operations are disjoints
+    if not intersection(operation1.wires, operation2.wires):
+        return True
+
+    # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
         return two_non_simplified_crot(operation1, operation2)
 
@@ -1378,10 +1383,6 @@ def is_commuting(operation1, operation2):
     simplify_op_2 = simplify_to_identity(operation2, operation1)
     if simplify_op_2 is not None:
         return simplify_op_2
-
-    # Case 1 operations are disjoints
-    if not intersection(operation1.wires, operation2.wires):
-        return True
 
     # Operation is in the non commuting list
     if operation1.name in non_commuting_operations or operation2.name in non_commuting_operations:

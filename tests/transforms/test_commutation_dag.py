@@ -19,6 +19,7 @@ from collections import OrderedDict
 from pennylane.wires import Wires
 import pennylane.numpy as np
 import pennylane as qml
+from pennylane.transforms.get_dag_commutation import simplify
 
 
 class TestCommutingFunction:
@@ -565,6 +566,136 @@ class TestCommutingFunction:
             qml.U2(0.1, 0.2, wires=wires[1]), qml.CRot(0.3, 0.4, 0.5, wires=wires[0])
         )
         assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0, 1]], False),
+            ([[0, 1], [1, 0]], False),
+            ([[0, 2], [0, 1]], True),
+            ([[0, 2], [1, 2]], False),
+        ],
+    )
+    def test_crot_crot(self, wires, res):
+        """Commutation between CRot(0.1, 0.2, 0.3) and CRot(0.3, 0.4, 0.5)."""
+        commutation = qml.is_commuting(
+            qml.CRot(0.1, 0.2, 0.3, wires=wires[1]), qml.CRot(0.3, 0.4, 0.5, wires=wires[0])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u3_simplified_z(self, wires, res):
+        """Commutation between U3(0.0, 0.1, 0.0) and PauliZ."""
+        commutation = qml.is_commuting(
+            qml.U3(0.0, 0.1, 0.0, wires=wires[1]), qml.PauliZ(wires=wires[0])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u3_simplified_y(self, wires, res):
+        """Commutation between U3(0.1, 0.0, 0.0) and PauliY."""
+        commutation = qml.is_commuting(
+            qml.U3(0.1, 0.0, 0.0, wires=wires[1]), qml.PauliY(wires=wires[0])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], True),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u3_simplified_x(self, wires, res):
+        """Commutation between U3(0.1, -np.pi/2, np.pi/2) and PauliX."""
+        commutation = qml.is_commuting(
+            qml.U3(0.1, -np.pi / 2, np.pi / 2, wires=wires[0]), qml.PauliX(wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], False),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u3_rot(self, wires, res):
+        """Commutation between U3(0.1, 0.2, 0.3) and Rot(0.3, 0.2, 0.1)."""
+        commutation = qml.is_commuting(
+            qml.U3(0.1, 0.2, 0.3, wires=wires[0]), qml.Rot(0.3, 0.2, 0.1, wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], False),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u3_identity_barrier(self, wires, res):
+        """Commutation between U3(0.0, 0.0, 0.0) and Barrier."""
+        commutation = qml.is_commuting(
+            qml.U3(0.0, 0.0, 0.0, wires=wires[0]), qml.Barrier(wires=wires[1])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0]], False),
+            ([[0], [1]], True),
+        ],
+    )
+    def test_u3_identity_barrier(self, wires, res):
+        """Commutation between Barrier and U3(0.0, 0.0, 0.0)."""
+        commutation = qml.is_commuting(
+            qml.Barrier(wires=wires[1]), qml.U3(0.0, 0.0, 0.0, wires=wires[0])
+        )
+        assert commutation == res
+
+    def test_simplify_not_roations(self):
+        """Test that the simplify function returns a warning when giving a non rotation operation as argument."""
+        id = qml.Identity(wires=0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Identity is not a Rot, U2, U3 or CRot."
+        ):
+            simplify(id)
+
+    def test_operation_1_not_supported(self):
+        """Test that giving a non supported operation raises an error."""
+        rho = np.zeros((2**1, 2**1), dtype=np.complex128)
+        rho[0, 0] = 1
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Operation QubitDensityMatrix not supported."
+        ):
+            qml.is_commuting(qml.QubitDensityMatrix(rho, wires=[0]), qml.PauliX(wires=0))
+
+    def test_operation_2_not_supported(self):
+        """Test that giving a non supported operation raises an error."""
+
+        with pytest.raises(qml.QuantumFunctionError, match="Operation PauliRot not supported."):
+            qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
+
+    def test_non_commuting(self):
+        """Test the function with an operator from the non-commuting list."""
+
+        res = qml.is_commuting(qml.PauliX(wires=0), qml.QFT(wires=[1, 0]))
+        assert res == False
 
 
 class TestCommutationDAG:
