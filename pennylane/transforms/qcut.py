@@ -16,9 +16,9 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 
+import copy
 import string
-from functools import partial
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
@@ -344,8 +344,6 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
-
-    import copy
 
     copy_ordered_ops = copy.deepcopy(ordered_ops)
 
