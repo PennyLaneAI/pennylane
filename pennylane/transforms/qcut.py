@@ -515,7 +515,14 @@ def qcut_processing_fn(results: Sequence, communication_graph: MultiDiGraph, pre
         prepare_nodes:
         measure_nodes:
     """
-    flat_results = list(flatten(results))
+    flat_results = []
+
+    for r in results:
+        if isinstance(r, Sequence):
+            flat_results.extend(r)
+        else:
+            flat_results.append(r)
+
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
     result = contract_tensors(tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum)
     return qml.math.real_if_close(result)
