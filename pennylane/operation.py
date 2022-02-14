@@ -124,6 +124,7 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
+from pennylane import math as qmath
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -245,14 +246,14 @@ class OperatorPropertyUndefined(Exception):
 
 def _process_data(op):
 
-    # Use qml.math.real to take the real part. We may get complex inputs for
+    # Use qmath.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
+        return str([qmath.round(qmath.real(d) % (2 * np.pi), 10) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
+        return str([qmath.round(qmath.real(d) % (4 * np.pi), 10) for d in op.data])
 
     return str(op.data)
 
@@ -475,28 +476,31 @@ class Operator(abc.ABC):
 
         params = self.parameters
 
-        if len(qml.math.shape(params[0])) != 0:
+        if len(qmath.shape(params[0])) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
             # this holds true for all current operations and templates
-            if cache is None or not isinstance(cache.get('matrices', None), list) or len(params) != 1:
+            if (
+                cache is None
+                or not isinstance(cache.get("matrices", None), list)
+                or len(params) != 1
+            ):
                 return op_label
 
-            for i, mat in enumerate(cache['matrices']):
-                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
+            for i, mat in enumerate(cache["matrices"]):
+                if qmath.shape(params[0]) == qmath.shape(mat) and qmath.allclose(params[0], mat):
                     return f"{op_label}(M{i})"
 
             # matrix not in cache
-            mat_num = len(cache['matrices'])
-            cache['matrices'].append(params[0])
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(params[0])
             return f"{op_label}(M{mat_num})"
 
         if decimals is None:
             return op_label
 
         def _format(x):
-                
             try:
-                return format(qml.math.toarray(x), f".{decimals}f")
+                return format(qmath.toarray(x), f".{decimals}f")
             except ValueError:
                 # If the parameter can't be displayed as a float
                 return format(x)
@@ -880,7 +884,7 @@ class Operation(Operator):
         op_matrix = self._matrix(*self.parameters)
 
         if self.inverse:
-            return qml.math.conj(qml.math.T(op_matrix))
+            return qmath.conj(qmath.T(op_matrix))
 
         return op_matrix
 
@@ -889,7 +893,7 @@ class Operation(Operator):
         op_eigvals = self._eigvals(*self.parameters)
 
         if self.inverse:
-            return qml.math.conj(op_eigvals)
+            return qmath.conj(op_eigvals)
 
         return op_eigvals
 
@@ -1836,7 +1840,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        p = [qml.math.toarray(a) for a in self.parameters]
+        p = [qmath.toarray(a) for a in self.parameters]
         if inverse:
             try:
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
@@ -1933,7 +1937,7 @@ def operation_derivative(operation) -> np.ndarray:
 
     if operation.inverse:
         prefactor *= -1
-        generator = qml.math.conj(qml.math.T(generator))
+        generator = qmath.conj(qmath.T(generator))
 
     return 1j * prefactor * generator @ operation.matrix
 
@@ -1986,5 +1990,5 @@ def is_measurement(obj):
 @qml.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
-    according to ``qml.math.requires_grad``."""
-    return any(qml.math.requires_grad(p) for p in obj.parameters)
+    according to ``qmath.requires_grad``."""
+    return any(qmath.requires_grad(p) for p in obj.parameters)

@@ -443,8 +443,8 @@ class DoubleExcitationPlus(Operation):
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G²₊")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
 class DoubleExcitationMinus(Operation):

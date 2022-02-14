@@ -65,7 +65,9 @@ def _add_measurement(m, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with the ``m`` measurement."""
     layer_str = _add_grouping_symbols(m, layer_str, wire_map)
 
-    obs_label = None if m.obs is None else m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
+    obs_label = (
+        None if m.obs is None else m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
+    )
     meas_label = measurement_label_map[m.return_type](obs_label)
 
     if len(m.wires) == 0:  # state or probability across all wires
@@ -79,8 +81,13 @@ def _add_measurement(m, layer_str, wire_map, decimals, cache):
 
 # pylint: disable=too-many-arguments
 def tape_text(
-    tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100,
-    show_matrix_parameters=False, cache=None
+    tape,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=None,
+    max_length=100,
+    show_matrix_parameters=False,
+    cache=None,
 ):
     """Text based diagram for a Quantum Tape.
 
@@ -193,10 +200,10 @@ def tape_text(
     >>> print(tape_text(tape, show_matrix_parameters=True))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
-    M0 = 
+    M0 =
     [[1. 0.]
     [0. 1.]]
-    M1 = 
+    M1 =
     [[1. 0. 0. 0.]
     [0. 1. 0. 0.]
     [0. 0. 1. 0.]
@@ -210,14 +217,14 @@ def tape_text(
     >>> print(tape_text(tape, show_matrix_parameters=True, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
-    M0 = 
+    M0 =
     [[-1. -0. -0.]
     [-0. -1. -0.]
     [-0. -0. -1.]]
-    M1 = 
+    M1 =
     [[1. 0.]
     [0. 1.]]
-    M2 = 
+    M2 =
     [[1. 0. 0. 0.]
     [0. 1. 0. 0.]
     [0. 0. 1. 0.]
@@ -257,8 +264,8 @@ def tape_text(
 
     """
     cache = cache or {}
-    cache.setdefault('tape_offset', 0)
-    cache.setdefault('matrices', [])
+    cache.setdefault("tape_offset", 0)
+    cache.setdefault("matrices", [])
     tape_cache = []
 
     wire_map = convert_wire_order(
@@ -319,13 +326,20 @@ def tape_text(
     cache["tape_offset"] += len(tape_cache)
     for i, nested_tape in enumerate(tape_cache):
         label = f"\nTape:{i+current_tape_offset}"
-        tape_str = tape_text(nested_tape, wire_order, show_all_wires, decimals, max_length, 
-            show_matrix_parameters=False, cache=cache)
+        tape_str = tape_text(
+            nested_tape,
+            wire_order,
+            show_all_wires,
+            decimals,
+            max_length,
+            show_matrix_parameters=False,
+            cache=cache,
+        )
         tape_totals = "\n".join([tape_totals, label, tape_str])
 
     if show_matrix_parameters:
-        mat_str = ''
-        for i, mat in enumerate(cache['matrices']):
+        mat_str = ""
+        for i, mat in enumerate(cache["matrices"]):
             mat_str += f"\nM{i} = \n{mat}"
         return tape_totals + mat_str
 

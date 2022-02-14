@@ -14,57 +14,44 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
-import itertools
-import re
 import pytest
-import functools
-import copy
-import numpy as np
-from numpy.linalg import multi_dot
-from scipy.stats import unitary_group
-from scipy.linalg import expm
-from pennylane import numpy as npp
 
 import pennylane as qml
-from pennylane.wires import Wires
+from pennylane import numpy as np
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    StateZeroProjector,
-    StateOneProjector,
-    CNOT,
-    SWAP,
-    ISWAP,
-    SISWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Toffoli,
-    QFT,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
+densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        qml.BasisState(np.array([0, 1]), wires=0),
+        qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
+        qml.QubitDensityMatrix(denistymat0, wires=0),
+    ],
 )
+def test_adjoint_error_exception(op):
+    with pytest.raises(qml.ops.AdjointError):
+        op.adjoint()
 
 
-class TestOperations:
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.BasisState(np.array([0, 1]), wires=0),
-            qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
-            qml.QubitDensityMatrix(np.array([[1.0, 0.0], [0.0, 0.0]]), wires=0),
-        ],
-    )
-    def test_adjoint_error_exception(self, op, tol):
-        with pytest.raises(qml.ops.AdjointError):
-            op.adjoint()
+@pytest.mark.parametrize(
+    "op, mat, base",
+    [
+        (qml.BasisState(np.array([0, 1]), wires=0), [0, 1], "BasisState"),
+        (qml.QubitStateVector(np.array([1.0, 0.0]), wires=0), [1.0, 0.0], "QubitStateVector"),
+        (qml.QubitDensityMatrix(densitymat0, wires=0), densitymat0, "QubitDensityMatrix"),
+    ],
+)
+def test_labelling_matrix_cache(op, mat, base):
+    """Test state prep matrix parameters interact with labelling matrix cache"""
+
+    assert op.label() == base
+
+    cache = {"matrices": []}
+    assert op.label(cache=cache) == base + "(M0)"
+    assert qml.math.allclose(cache["matrices"][0], mat)
+
+    cache = {"matrices": [0, mat, 0]}
+    assert op.label(cache=cache) == base + "(M1)"
+    assert len(cache["matrices"]) == 3
