@@ -506,7 +506,7 @@ class CutStrategy:
     ):
         """Deriving cutting constraints from given devices and parameters."""
 
-        self.max_free_wires = self.max_free_wires or self.min_free_gates
+        self.max_free_wires = self.max_free_wires or self.min_free_wires
         if isinstance(self.num_fragments_probed, int):
             self.num_fragments_probed = [self.num_fragments_probed]
         if isinstance(self.num_fragments_probed, (list, tuple)):
@@ -600,15 +600,21 @@ class CutStrategy:
         return probed_cuts
 
     @staticmethod
-    def _infer_imbalance(k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None):
+    def _infer_imbalance(
+        k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None
+    ) -> float:
         """Helper function for determining best imbalance limit."""
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
+        assert free_wires >= avg_fragment_wires
+        assert free_gates >= avg_fragment_gates
+
         wire_imbalance = free_wires / avg_fragment_wires - 1
         gate_imbalance = free_gates / avg_fragment_gates - 1
         imbalance = min(gate_imbalance, wire_imbalance)
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
+
         return imbalance
 
     def _validate_dag(
@@ -617,7 +623,7 @@ class CutStrategy:
         num_tape_gates,
         max_wires_by_fragment,
         max_gates_by_fragment,
-    ) -> List[Dict[str, Any]]:
+    ):
         """Helper parameter checker."""
         if max_wires_by_fragment is not None:
             assert isinstance(max_wires_by_fragment, (list, tuple))
@@ -638,7 +644,7 @@ class CutStrategy:
         num_tape_gates,
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
-    ):
+    ) -> List[Dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
         for the a graph partitioner.

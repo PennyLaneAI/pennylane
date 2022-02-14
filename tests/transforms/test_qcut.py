@@ -14,6 +14,7 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
+from multiprocessing.sharedctypes import Value
 import string
 import sys
 
@@ -895,9 +896,9 @@ class TestContractTensors:
             spy = mocker.spy(qml.math, "einsum")
 
         t = [
-            np.arange(4**8).reshape((4,) * 8),
-            np.arange(4**4).reshape((4,) * 4),
-            np.arange(4**2).reshape((4,) * 2),
+            np.arange(4 ** 8).reshape((4,) * 8),
+            np.arange(4 ** 4).reshape((4,) * 4),
+            np.arange(4 ** 2).reshape((4,) * 2),
         ]
         m = [
             [
@@ -946,3 +947,83 @@ class TestContractTensors:
 
         assert eqn == expected_eqn
         assert np.allclose(res, np.einsum(eqn, *t))
+
+
+class TestCutStrategy:
+    """Tests for deriving sensible default CutConfigs."""
+
+    devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
+    tape_dags = [qcut.tape_to_graph(t) for t in [tape, multi_cut_tape]]
+
+    # expected_result = np.dot(*t)
+
+    @pytest.mark.parametrize("devices", [None, 1])
+    def test_not_enough_info(self, devices):
+        with pytest.raises(ValueError):
+            qcut.CutStrategy(devices=devices)
+
+    @pytest.mark.parametrize("devices", [devs[0], devs])
+    @pytest.mark.parametrize("max_free_wires", [None, 3])
+    @pytest.mark.parametrize("min_free_wires", [None, 2])
+    @pytest.mark.parametrize("num_fragments_probed", [None, 2, (2, 4)])
+    def test_init(self, devices, max_free_wires, min_free_wires, num_fragments_probed):
+        """Test the __post_init__ properly sets defaults based on provided info."""
+
+        strategy = qcut.CutStrategy(
+            devices=devices,
+            max_free_wires=max_free_wires,
+            num_fragments_probed=num_fragments_probed,
+        )
+
+        devices = [devices] if not isinstance(devices, list) else devices
+
+        max_dev_wires = max((len(d.wires) for d in devices))
+        assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
+        assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
+
+        if num_fragments_probed is not None:
+            assert (
+                strategy.k_lower == num_fragments_probed
+                if isinstance(num_fragments_probed, int)
+                else min(num_fragments_probed)
+            )
+            assert (
+                strategy.k_upper == num_fragments_probed
+                if isinstance(num_fragments_probed, int)
+                else max(num_fragments_probed)
+            )
+        else:
+            assert strategy.k_lower is None
+            assert strategy.k_upper is None
+
+    @pytest.mark.parametrize("k", [4, 5, 6])
+    def test_infer_wire_imbalance(self, k):
+        """Test that the imbalance is correctly derived under simple circumstances."""
+
+        num_wires = 10
+        num_gates = 10
+        free_wires = 3
+
+        imbalance = qcut.CutStrategy._infer_imbalance(
+            k=k, num_wires=num_wires, num_gates=num_gates, free_wires=free_wires, free_gates=1000
+        )
+
+        avg_size = int(num_wires / k + 1 - 1e-7)
+        assert imbalance == free_wires / avg_size - 1
+
+    # @pytest.mark.parametrize("devices", [devs[0], devs])
+    # # @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
+    # @pytest.mark.parametrize("tape_dag", tape_dags)
+    # # def test_get_cut_kwargs(self, devices, num_fragments_probed, tape_dag):
+    # def test_get_cut_kwargs(self, devices, tape_dag):
+    #     """Test that the cut kwargs can be derived."""
+
+    #     strategy = qcut.CutStrategy(
+    #         devices=devices,
+    #         # num_fragments_probed=num_fragments_probed,
+    #     )
+
+    #     all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag)
+
+    #     assert all_cut_kwargs
+    #     assert all('imbalance' in kwargs and 'num_fragments' in kwargs for kwargs in all_cut_kwargs)
