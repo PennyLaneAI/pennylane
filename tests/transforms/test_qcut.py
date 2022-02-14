@@ -793,16 +793,15 @@ class TestExpandFragmentTapes:
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-
+        
         fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+        frag_tapes_meas = fragment_configurations[0][0]
+        frag_tapes_prep = fragment_configurations[1][0]
 
-        frag_tapes_0 = fragment_configurations[0][0]
-        frag_tapes_1 = fragment_configurations[1][0]
+        assert len(frag_tapes_meas) == 4
+        assert len(frag_tapes_prep) == 4
 
-        assert len(frag_tapes_0) == 3
-        assert len(frag_tapes_1) == 3
-
-        frag_0_ops = [
+        frag_meas_ops = [
             qml.RX(0.432, wires=[0]),
             qml.RY(0.543, wires=[1]),
             qml.CNOT(wires=[0, 1]),
@@ -811,58 +810,58 @@ class TestExpandFragmentTapes:
         ]
 
         with qml.tape.QuantumTape() as tape_00:
-            for op in frag_0_ops:
+            for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_01:
-            for op in frag_0_ops:
-                qml.apply(op)
-            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
-
-        with qml.tape.QuantumTape() as tape_02:
-            for op in frag_0_ops:
-                qml.apply(op)
-            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
-
-        with qml.tape.QuantumTape() as tape_03:
-            for op in frag_0_ops:
+            for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
 
-        frag_0_expected_tapes = [tape_00, tape_01, tape_02, tape_03]
+        with qml.tape.QuantumTape() as tape_02:
+            for op in frag_meas_ops:
+                qml.apply(op)
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
 
-        frag_1_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
+        with qml.tape.QuantumTape() as tape_03:
+            for op in frag_meas_ops:
+                qml.apply(op)
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
+
+        frag_meas_expected_tapes = [tape_00, tape_01, tape_02, tape_03]
+
+        frag_prep_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
 
         with qml.tape.QuantumTape() as tape_10:
             qml.Identity(wires=[1])
-            for op in frag_1_ops:
+            for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.Identity(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_11:
             qml.PauliX(wires=[1])
-            for op in frag_1_ops:
+            for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.Identity(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_12:
             qml.Hadamard(wires=[1])
-            for op in frag_1_ops:
+            for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.Identity(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_13:
             qml.Hadamard(wires=[1])
             qml.S(wires=[1])
-            for op in frag_1_ops:
+            for op in frag_prep_ops:
                 qml.apply(op)
             qml.expval(qml.Identity(wires=[1]))
 
-        frag_1_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
+        frag_prep_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
 
-        for tape_0, exp_tape_0 in zip(frag_tapes_0, frag_0_expected_tapes):
-            compare_tapes(tape_0, exp_tape_0)
+        for tape_meas, exp_tape_meas in zip(frag_tapes_meas, frag_meas_expected_tapes):
+            compare_tapes(tape_meas, exp_tape_meas)
 
-        for tape_1, exp_tape_1 in zip(frag_tapes_1, frag_1_expected_tapes):
-            compare_tapes(tape_1, exp_tape_1)
+        for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
+            compare_tapes(tape_prep, exp_tape_1)
