@@ -490,7 +490,7 @@ class CutStrategy:
 
     """
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
 
     devices: InitVar[Sequence[qml.Device]] = None
     max_free_wires: int = None
@@ -529,18 +529,18 @@ class CutStrategy:
                 raise ValueError(
                     f"Argument `devices` must be a list of `Device` instances, got {type(devices)}."
                 )
-            else:
-                device_wire_sizes = [len(d.wires) for d in devices]
 
-                self.max_free_wires = self.max_free_wires or max(device_wire_sizes)
-                self.min_free_wires = self.min_free_wires or min(device_wire_sizes)
+            device_wire_sizes = [len(d.wires) for d in devices]
+
+            self.max_free_wires = self.max_free_wires or max(device_wire_sizes)
+            self.min_free_wires = self.min_free_wires or min(device_wire_sizes)
 
     def get_cut_kwargs(
         self,
         tape_dag: MultiDiGraph,
         max_wires_by_fragment: Sequence[int] = None,
         max_gates_by_fragment: Sequence[int] = None,
-    ):
+    ) -> List[Dict[str, Any]]:
         """Derive the complete set of arguments, based on a given circuit, for passing to a graph
         partitioner.
 
@@ -579,7 +579,8 @@ class CutStrategy:
                 exploration of other choices will not be made.
 
         Returns:
-            List[str, Any]: The minimal set of kwargs being passed to a graph partitioner method.
+            List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
+                partitioner method.
         """
         tape_wires = set(tape_dag.edges.data("wire"))
         assert all((w is not None for w in tape_wires))
@@ -616,7 +617,7 @@ class CutStrategy:
         num_tape_gates,
         max_wires_by_fragment,
         max_gates_by_fragment,
-    ):
+    ) -> List[Dict[str, Any]]:
         """Helper parameter checker."""
         if max_wires_by_fragment is not None:
             assert isinstance(max_wires_by_fragment, (list, tuple))
@@ -653,7 +654,8 @@ class CutStrategy:
                 exploration of other choices will not be made.
 
         Returns:
-            List[str, Any]: The minimal set of kwargs being passed to a graph partitioner method.
+            List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
+                partitioner method.
         """
 
         # Assumes unlimited width/depth if not supplied.
@@ -748,4 +750,3 @@ class CutStrategy:
             probed_cuts.append(cut_kwargs)
 
         return probed_cuts
-
