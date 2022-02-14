@@ -305,7 +305,7 @@ def _find_new_wire(wires: Wires) -> int:
 # pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
-    Converts a directed multigraph to the corresponding quantum tape.
+    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
     Each node in the graph should have an order attribute specifying the topological order of
     the operations. This maintains ordering of operations and allows for the
