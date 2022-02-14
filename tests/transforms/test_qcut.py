@@ -971,6 +971,31 @@ class TestGraphToTape:
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
 
+    def test_multiple_conversions(self):
+        """
+        Tests that the orignial tape is unaffected by cutting pipeline and can
+        be used multiple times to give consitent output.
+        """
+        # preserve orignal tape data for later comparison
+        copy_tape = copy.copy(mcm_tape)
+
+        g1 = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g1)
+        subgraphs1, communication_graph1 = qcut.fragment_graph(g1)
+
+        tapes1 = [qcut.graph_to_tape(sg) for sg in subgraphs1]
+
+        g2 = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g2)
+        subgraphs2, communication_graph2 = qcut.fragment_graph(g2)
+
+        tapes2 = [qcut.graph_to_tape(sg) for sg in subgraphs2]
+
+        compare_tapes(copy_tape, mcm_tape)
+
+        for tape1, tape2 in zip(tapes1, tapes2):
+            compare_tapes(tape1, tape2)
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""

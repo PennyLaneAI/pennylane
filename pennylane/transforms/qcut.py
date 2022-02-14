@@ -337,6 +337,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
          <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
          <QuantumTape: wires=[1], params=0>]
     """
+
     wires = Wires.all_wires([n.wires for n in graph.nodes])
 
     ordered_ops = sorted(
@@ -344,9 +345,13 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     )
     wire_map = {w: w for w in wires}
 
+    import copy
+
+    copy_ordered_ops = copy.deepcopy(ordered_ops)
+
     updated = {}
     with QuantumTape() as tape:
-        for _, op in ordered_ops:
+        for _, op in copy_ordered_ops:
             name_and_wire = op.name + str(op.wires)
 
             new_wires = [wire_map[w] for w in op.wires]
