@@ -92,6 +92,9 @@
 
 <h3>Documentation</h3>
 
+* Fixes the example for using `qml.sample` with `jax.jit`.
+  [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
+
 * The ``pennylane.numpy`` subpackage is now included in the PennyLane
   API documentation.
   [(#2179)](https://github.com/PennyLaneAI/pennylane/pull/2179)
@@ -104,4 +107,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, David Wierichs
+Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, Antal Száva,
+David Wierichs
