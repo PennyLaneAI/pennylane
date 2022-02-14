@@ -61,15 +61,38 @@ class TestLabelling:
         assert split_str[0][0:2] == "0:"
         assert split_str[1][0:2] == "1:"
 
+    def test_show_all_wires_and_wire_order(self):
+        """Test show_all_wires forces empty wires to display when empty wire is in wire order."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        split_str = draw(circuit, wire_order=[0, "a"], show_all_wires=True)().split("\n")
+        assert split_str[0][0:2] == "0:"
+        assert split_str[1][0:2] == "a:"
+
 
 class TestDecimals:
     """Test the decimals keyword argument."""
 
+    def test_decimals_None(self):
+        """Test that when decimals is ``None``, parameters are omitted."""
+
+        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
+        assert draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
+
     def test_decimals(self):
         """Test decimals keyword makes the operation parameters included to given precision"""
 
-        expected = "    0: ──RX(1.23)─┤  <Z>\n    a: ──RY(2.35)─┤     \n1.234: ──RZ(3.46)─┤     "
-        assert draw(circuit, decimals=2)(1.234, 2.345, 3.456) == expected
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        assert draw(circuit, decimals=1)(1.234, 2.345, 3.456) == expected
+
+    def test_decimals_higher_value(self):
+        """Test all decimals places display when requested value is bigger than number precision."""
+
+        out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤     \n1.234: ──RZ(3.0000)─┤     "
+        assert qml.draw(circuit, decimals=4)(1, 2, 3) == out
 
     def test_decimals_multiparameters(self):
         """Test decimals also displays parameters when the operation has multiple parameters."""
@@ -87,6 +110,11 @@ class TestDecimals:
 
         expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤     \n1.234: ──RZ(3)─┤     "
         assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
+
+    def test_qml_numpy_parameters(self):
+
+        expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
+        assert draw(circuit)(np.array(1), np.array(2), np.array(3)) == expected
 
     def test_torch_parameters(self):
         """Test torch parameters display as normal numbers."""
@@ -111,6 +139,12 @@ class TestDecimals:
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
         out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))
         assert out == expected
+
+    def test_string_decimals(self):
+        """Test displays string valued parameters."""
+
+        expected = "    0: ──RX(x)─┤  <Z>\n    a: ──RY(y)─┤     \n1.234: ──RZ(z)─┤     "
+        assert draw(circuit)("x", "y", "z") == expected
 
 
 class TestMaxLength:
@@ -174,7 +208,11 @@ class TestLayering:
             qml.PauliX(1)
             return qml.expval(qml.PauliZ(0))
 
-        expect = "0: ──X─╭IsingXX────┤  <Z>\n1: ────│─────────X─┤     \n2: ────╰IsingXX────┤     "
+        expect = (
+            "0: ──X─╭IsingXX(1.23)────┤  <Z>\n"
+            "1: ────│───────────────X─┤     \n"
+            "2: ────╰IsingXX(1.23)────┤     "
+        )
         assert draw(circuit)() == expect
 
 
@@ -233,10 +271,10 @@ def test_expansion_strategy():
         return qml.probs(wires=0)
 
     expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
-    assert draw(circuit, expansion_strategy="gradient")(0.5)
+    assert draw(circuit, expansion_strategy="gradient", decimals=None)(0.5)
 
     expected_device = (
         "0: ──H────────MultiRZ──H──H─╭MultiRZ──H──H────────MultiRZ──H──H─╭MultiRZ──H─┤  Probs\n"
         "1: ──MultiRZ──H─────────────╰MultiRZ──H──MultiRZ──H─────────────╰MultiRZ──H─┤       "
     )
-    assert draw(circuit, expansion_strategy="device")(0.5)
+    assert draw(circuit, expansion_strategy="device", decimals=None)(0.5)
