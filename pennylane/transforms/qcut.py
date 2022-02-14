@@ -15,7 +15,6 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
-from multiprocessing.sharedctypes import Value
 import string
 import warnings
 from typing import Sequence, Tuple, List, Dict, Any, Union
@@ -433,30 +432,70 @@ def contract_tensors(
 
 
 @dataclass()
-class CutConstraints:
+class CutStrategy:
     """
-    Container wrapping partitioning parameters for passing to the automatic cutter.
+    A circuit-cutting distribution policy for executing (large) circuits on available (comparably
+    smaller) devices.
 
     Args:
-        devices (List[qml.Device]): A list of (or single) device(s), Optional.
-        max_free_wires (int): Number of wires for the largest available device.
+        devices (Union[qml.Device, Sequence[qml.Device]]): Single, or Sequence of, device(s).
+            Optional only when ``max_free_wires`` is provided.
+        max_free_wires (int): Number of wires for the largest available device. Optional only when
+            ``devices`` is provided where it defaults to the maximum number of wires among
+            ``devices``.
         min_free_wires (int): Number of wires for the smallest available device.
-            Optional, defaults to `max_device_wires`.
-        max_fragments_probed (List[int]): List of potential number of fragments to try for the
-            partitioner. Optional, defaults to probing all valid choices that are derived from
-            the circuit and devices.
+            Optional, defaults to ``max_device_wires``.
+        max_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
+            specifying the potential (range of) number of fragments for the partitioner to attampt.
+            Optional, defaults to probing all valid strategies derivable from the circuit and
+            devices.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
             Optional, defaults to unlimited depth.
         min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
-            Optional, defaults to `max_device_gates`.
+            Optional, defaults to ``max_device_gates``.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from pennylane.transforms import qcut
+
+        dev_a = qml.device('default.qubit', wires=4)
+        dev_b = qml.device('default.qubit', wires=6)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RY(0.9, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(1))
+
+        tape_dag = qcut.tape_to_graph(tape)
+
+    Cut circuit with single-device-based strategy using the default 'kahypar' cutter:
+    >>> cut_strategy = qcut.CutStrategy(devices=dev_a)
+    >>> qcut.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
+
+    Cut circuit with multi-device-based strategy using the default 'kahypar' cutter:
+    >>> cut_strategy = qcut.CutStrategy(devices=(dev_a, dev_b))
+    >>> qcut.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
+
+    Cut circuit with user-supplied strategy using user-supplied partitioning callable:
+    >>> cut_strategy = qcut.CutStrategy(
+            max_free_wires=6,
+            min_free_wires=4,
+            num_fragments_probed=(2, 5),
+        )
+    >>> qcut.cut_circuit(tape_dag, method=my_partitioner, strategy=cut_strategy, **my_kwargs)
+
     """
 
     # pylint: disable=too-many-arguments
 
-    devices: InitVar[List[qml.Device]] = None
+    devices: InitVar[Sequence[qml.Device]] = None
     max_free_wires: int = None
     min_free_wires: int = None
-    num_fragments_probed: Union[int, List[int], Tuple[int]] = None
+    num_fragments_probed: Union[int, Sequence[int]] = None
     max_free_gates: int = None
     min_free_gates: int = None
     imbalance_tolerance: float = None
@@ -465,6 +504,7 @@ class CutConstraints:
         self,
         devices,
     ):
+        """Deriving cutting constraints from given devices and parameters."""
 
         self.max_free_wires = self.max_free_wires or self.min_free_gates
         if isinstance(self.num_fragments_probed, int):
@@ -498,9 +538,49 @@ class CutConstraints:
     def get_cut_kwargs(
         self,
         tape_dag: MultiDiGraph,
-        max_wires_by_fragment: List[int] = None,
-        max_gates_by_fragment: List[int] = None,
+        max_wires_by_fragment: Sequence[int] = None,
+        max_gates_by_fragment: Sequence[int] = None,
     ):
+        """Derive the complete set of arguments, based on a given circuit, for passing to a graph
+        partitioner.
+
+        **Example**
+
+        .. code-block:: python
+
+            import pennylane as qml
+            from pennylane.transforms import qcut
+
+            dev = qml.device('default.qubit', wires=4)
+
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(0.4, wires=0)
+                qml.RY(0.9, wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(1))
+
+            tape_dag = qcut.tape_to_graph(tape)
+
+        Deriving kwargs for a given circuit and feed it to a custom partitioner along with an extra
+        custom parameter:
+        >>> cut_strategy = qcut.CutStrategy(devices=dev)
+        >>> cut_kwargs = cut_strategy.get_cut_kwargs(tape_dag)
+        >>> cut_kwargs.update({'extra_param': 0})
+        >>> my_partitioner(tape_dag, **cut_kwargs)
+
+        Args:
+            tape_dag (MultiDiGraph): Graph representing a tape, typically the output of
+                :func:`tape_to_graph`.
+            max_wires_by_fragment (Sequence[int]): User-predetermined list of wire limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+            max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+
+        Returns:
+            List[str, Any]: The minimal set of kwargs being passed to a graph partitioner method.
+        """
         tape_wires = set(tape_dag.edges.data("wire"))
         assert all((w is not None for w in tape_wires))
         num_tape_wires = len(tape_wires)
@@ -509,17 +589,17 @@ class CutConstraints:
             num_tape_wires, num_tape_gates, max_wires_by_fragment, max_gates_by_fragment
         )
 
-        cut_kwargs = self._infer_default_configs(
+        probed_cuts = self._infer_probed_cuts(
             num_tape_wires=num_tape_wires,
             num_tape_gates=num_tape_gates,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
         )
 
-        return cut_kwargs
+        return probed_cuts
 
     @staticmethod
-    def infer_imbalance(k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None):
+    def _infer_imbalance(k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None):
         """Helper function for determining best imbalance limit."""
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
@@ -551,7 +631,7 @@ class CutConstraints:
         if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
             assert len(max_wires_by_fragment) == len(max_gates_by_fragment)
 
-    def _infer_default_configs(
+    def _infer_probed_cuts(
         self,
         num_tape_wires,
         num_tape_gates,
@@ -559,32 +639,21 @@ class CutConstraints:
         max_gates_by_fragment=None,
     ):
         """
-        Helper function for deriving the best default partitioning parameters for the automatic
-        circuit cutter. Arguments can be either user provided or inferred from devices.
+        Helper function for deriving the minimal set of best default partitioning constraints
+        for the a graph partitioner.
 
         Args:
             num_tape_wires (int): Number of wires in the circuit tape to be partitioned.
             num_tape_gates (int): Number of gates in the circuit tape to be partitioned.
-            k_lower (int): Lowest number of fragments to attempt for the automatic circuit cutter.
-                Optional, defaults to the scenario where each fragment is executed on the largest
-                available device, satisfying both wire and gate constraints.
-                If supplied, can be higher than said default if the the desired k is known.
-            k_upper (int): Largest number of fragments to attempt for the automatic circuit cutter.
-                Optional, defaults to the scenario where each fragment is executed on the smallest
-                available device, satisfying both wire and gate constraints.
-                If supplied, can be higher than said default to encourage exploration.
-            imbalance_tolerance (float): Maximum allowed imbalance for all partition attempts.
-                Can be used to globally override the imbalance constraint parameter.
-                Optional, defaults to a loose upper bound to avoid being too restrictive.
-            fragment_wires (List[int]): User provided predetermined list of fragment wire limits.
-                If supplied, k will be derived from it and exploration of other ks will not be made.
-            fragment_gates (List[int]): User provided predetermined list of fragment gate limits.
-                If supplied, k will be derived from it and exploration of other ks will not be made.
+            max_wires_by_fragment (Sequence[int]): User-predetermined list of wire limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+            max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
 
         Returns:
-            cut_configs (List[CutConfig]): A list of cut configurations for passing to the automatic
-                circuit cutter to attempt.
-
+            List[str, Any]: The minimal set of kwargs being passed to a graph partitioner method.
         """
 
         # Assumes unlimited width/depth if not supplied.
@@ -614,7 +683,7 @@ class CutConstraints:
                 f"got {type(imbalance_tolerance)} with value {imbalance_tolerance}."
             )
 
-        cut_kwargs = []
+        probed_cuts = []
 
         if max_gates_by_fragment is None and max_wires_by_fragment is None:
 
@@ -659,7 +728,7 @@ class CutConstraints:
             ks = [len(max_wires_by_fragment)]
 
         for k in ks:
-            imbalance = self.infer_imbalance(
+            imbalance = self._infer_imbalance(
                 k,
                 num_tape_wires,
                 num_tape_gates,
@@ -667,68 +736,16 @@ class CutConstraints:
                 max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
                 imbalance_tolerance,
             )
-            cut_kwargs.append(
-                {
-                    "num_fragments": k,
-                    "imbalance": imbalance,
-                    "max_wires_by_fragment": max_wires_by_fragment,
-                    "max_gates_by_fragment": max_gates_by_fragment,
-                }
-            )
+            cut_kwargs = {
+                "num_fragments": k,
+                "imbalance": imbalance,
+            }
+            if max_wires_by_fragment is not None:
+                cut_kwargs["max_wires_by_fragment"] = max_wires_by_fragment
+            if max_gates_by_fragment is not None:
+                cut_kwargs["max_gates_by_fragment"] = max_gates_by_fragment
 
-        return cut_kwargs
+            probed_cuts.append(cut_kwargs)
 
+        return probed_cuts
 
-@dataclass(frozen=True)
-class CutSpec:
-    """
-    Container wrapping partitioning results returned from the automatic cutter.
-    NOTE: Incomplete.
-    """
-
-    trial_id: Tuple[int, int]
-    num_wires: int
-    num_gates: int
-    config: CutConfig
-    fragments: Dict[Any, Any]
-    raw_cuts: List[Any]  # i.e. including "hyper-wires"
-    raw_cost: Union[int, float]
-    # mode: str = "wire"
-
-    @property
-    def k(self) -> int:
-        """Property: the number of partitions."""
-        return self.config.k
-
-    @property
-    def cuts(self):
-        """Property: the list of cut edges."""
-        # removes hyperedges, assuming they are at the end of raw_cuts.
-        return self.raw_cuts[: (self.num_gates if self.mode == "gate" else self.num_wires)]
-
-    @property
-    def num_cuts(self) -> int:
-        """Property: the number of cut edges."""
-        return len(self.cuts)
-
-    @property
-    def cost(self) -> int:
-        """Property: cost of circuit cut"""
-        # TODO: should be different for gate cut
-        return self.num_cuts / 2
-
-    @property
-    def fragment_gates(self):
-        """Property: dict of fragment sizes {fragment_id: fragment_size}"""
-        return {k: len(gates) for k, gates in self.fragments.items()}
-
-    @staticmethod
-    def collect_fragment_wires(gates):
-        """Collects wires from a fragment"""
-        # TODO: implement this.
-        return {w for g in gates for w in g.wires}
-
-    @property
-    def fragment_wires(self):
-        """Property: dict of number of wires by fragment {fragment_id: wire_size}"""
-        return {k: len(self.collect_wires(gates)) for k, gates in self.fragments.items()}
