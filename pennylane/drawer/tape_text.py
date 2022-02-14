@@ -79,7 +79,8 @@ def _add_measurement(m, layer_str, wire_map, decimals, cache):
 
 # pylint: disable=too-many-arguments
 def tape_text(
-    tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100, cache=None
+    tape, wire_order=None, show_all_wires=False, decimals=None, max_length=100,
+    show_matrix_parameters=False, cache=None
 ):
     """Text based diagram for a Quantum Tape.
 
@@ -93,6 +94,7 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
+        show_matrix_parameters=False (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
 
@@ -177,6 +179,58 @@ def tape_text(
       1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ────┤           ╰Probs
 
+    Matrix valued parameters are always denoted by `M` followed by an integer corresponding to
+    unique matrices.  The list of unique matrices can be printed at the end of the diagram by
+    selecting ``show_matrix_parameters=True``:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(np.eye(2), wires=0)
+            qml.QubitUnitary(np.eye(2), wires=1)
+            qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
+
+    >>> print(tape_text(tape, show_matrix_parameters=True))
+    0: ──U(M0)─┤ ╭<𝓗(M1)>
+    1: ──U(M0)─┤ ╰<𝓗(M1)>
+    M0 = 
+    [[1. 0.]
+    [0. 1.]]
+    M1 = 
+    [[1. 0. 0. 0.]
+    [0. 1. 0. 0.]
+    [0. 0. 1. 0.]
+    [0. 0. 0. 1.]]
+
+    An existing matrix cache can be passed via the ``cache`` keyword. Note that the dictionary
+    passed to ``cache`` will be modified during execution to contain any new matrices and the
+    tape offset.
+
+    >>> cache = {'matrices': [-np.eye(3)]}
+    >>> print(tape_text(tape, show_matrix_parameters=True, cache=cache))
+    0: ──U(M1)─┤ ╭<𝓗(M2)>
+    1: ──U(M1)─┤ ╰<𝓗(M2)>
+    M0 = 
+    [[-1. -0. -0.]
+    [-0. -1. -0.]
+    [-0. -0. -1.]]
+    M1 = 
+    [[1. 0.]
+    [0. 1.]]
+    M2 = 
+    [[1. 0. 0. 0.]
+    [0. 1. 0. 0.]
+    [0. 0. 1. 0.]
+    [0. 0. 0. 1.]]
+    >>> cache
+    {'matrices': [tensor([[-1., -0., -0.],
+        [-0., -1., -0.],
+        [-0., -0., -1.]], requires_grad=True), tensor([[1., 0.],
+        [0., 1.]], requires_grad=True), tensor([[1., 0., 0., 0.],
+        [0., 1., 0., 0.],
+        [0., 0., 1., 0.],
+        [0., 0., 0., 1.]], requires_grad=True)], 'tape_offset': 0}
+
     When the provided tape has nested tapes inside, this function is called recursively.
     To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
     uses the ``"tape_offset"`` value to determine numbering. Note that the value is updated
@@ -203,7 +257,11 @@ def tape_text(
 
     """
     if cache is None:
-        cache = {"tape_offset": 0, 'matrices': []}
+        cache = {}
+    if 'tape_offset' not in cache:
+        cache['tape_offset'] = 0
+    if 'matrices' not in cache:
+        cache['matrices'] = []
     tape_cache = []
 
     wire_map = convert_wire_order(
@@ -264,7 +322,14 @@ def tape_text(
     cache["tape_offset"] += len(tape_cache)
     for i, nested_tape in enumerate(tape_cache):
         label = f"\nTape:{i+current_tape_offset}"
-        tape_str = tape_text(nested_tape, wire_order, show_all_wires, decimals, max_length, cache)
+        tape_str = tape_text(nested_tape, wire_order, show_all_wires, decimals, max_length, 
+            show_matrix_parameters=False, cache=cache)
         tape_totals = "\n".join([tape_totals, label, tape_str])
+
+    if show_matrix_parameters:
+        mat_str = ''
+        for i, mat in enumerate(cache['matrices']):
+            mat_str += f"\nM{i} = \n{mat}"
+        return tape_totals + mat_str
 
     return tape_totals

@@ -445,17 +445,42 @@ class Operator(abc.ABC):
         >>> op.label()
         "RX⁻¹"
 
+        If the operation has a matrix-valued parameter and a cache dictionary is provided,
+        unique matrices will be cached in the ``'matrices'`` key list. The label will contain
+        the index of the matrix in the ``'matrices'`` list.
+
+        >>> op2 = qml.QubitUnitary(np.eye(2), wires=0)
+        >>> cache = {'matrices': []}
+        >>> op2.label(cache=cache)
+        'U(M0)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+         [0., 1.]], requires_grad=True)]
+        >>> op3 = qml.QubitUnitary(np.eye(4), wires=(0,1))
+        >>> op3.label(cache=cache)
+        'U(M1)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+                [0., 1.]], requires_grad=True),
+        tensor([[1., 0., 0., 0.],
+                [0., 1., 0., 0.],
+                [0., 0., 1., 0.],
+                [0., 0., 0., 1.]], requires_grad=True)]
+
         """
         op_label = base_label or self.__class__.__name__
 
-        if decimals is None or self.num_params == 0:
+        if self.num_params == 0:
             return op_label
 
         params = self.parameters
 
         if len(qml.math.shape(params[0])) != 0:
-            if cache is None or not isinstance(cache.get('matrices', None), list):
+            # assume that if the first parameter is matrix-valued, there is only a single parameter
+            # this holds true for all current operations and templates
+            if cache is None or not isinstance(cache.get('matrices', None), list) or len(params) != 1:
                 return op_label
+            
             if len(cache['matrices']) == 0:
                 cache['matrices'].append(params[0])
                 return f"{op_label}(M0)"
@@ -464,11 +489,16 @@ class Operator(abc.ABC):
                 if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(params[0], mat):
                     return f"{op_label}(M{i})"
 
+            # matrix not in cache
             mat_num = len(cache['matrices'])
             cache['matrices'].append(params[0])
             return f"{op_label}(M{mat_num})"
 
+        if decimals is None:
+            return op_label
+
         def _format(x):
+                
             try:
                 return format(qml.math.toarray(x), f".{decimals}f")
             except ValueError:
