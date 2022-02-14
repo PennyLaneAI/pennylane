@@ -256,12 +256,9 @@ def tape_text(
         New tape offset:  4
 
     """
-    if cache is None:
-        cache = {}
-    if 'tape_offset' not in cache:
-        cache['tape_offset'] = 0
-    if 'matrices' not in cache:
-        cache['matrices'] = []
+    cache = cache or {}
+    cache.setdefault('tape_offset', 0)
+    cache.setdefault('matrices', [])
     tape_cache = []
 
     wire_map = convert_wire_order(
