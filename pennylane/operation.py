@@ -480,10 +480,6 @@ class Operator(abc.ABC):
             # this holds true for all current operations and templates
             if cache is None or not isinstance(cache.get('matrices', None), list) or len(params) != 1:
                 return op_label
-            
-            if len(cache['matrices']) == 0:
-                cache['matrices'].append(params[0])
-                return f"{op_label}(M0)"
 
             for i, mat in enumerate(cache['matrices']):
                 if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(params[0], mat):

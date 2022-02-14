@@ -748,8 +748,8 @@ class GaussianState(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Gaussian")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Gaussian", cache=cache)
 
 
 class FockState(CVOperation):
