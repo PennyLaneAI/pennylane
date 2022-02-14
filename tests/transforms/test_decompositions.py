@@ -35,12 +35,14 @@ from test_optimization.utils import check_matrix_equivalence
 from gate_data import I, Z, S, T, H, X, CNOT, SWAP
 
 single_qubit_decomps = [
-    (I, [0.0, 0.0, 0.0]),
-    (Z, [np.pi / 2, 0.0, np.pi / 2]),
-    (S, [np.pi / 4, 0.0, np.pi / 4]),
-    (T, [np.pi / 8, 0.0, np.pi / 8]),
-    (qml.RZ(0.3, wires=0).matrix, [0.15, 0.0, 0.15]),
-    (qml.RZ(-0.5, wires=0).matrix, [-0.25, 0.0, -0.25]),
+    # First set of gates are diagonal and converted to RZ
+    (I, qml.RZ, [0.0]),
+    (Z, qml.RZ, [np.pi]),
+    (S, qml.RZ, [np.pi / 2]),
+    (T, qml.RZ, [np.pi / 4]),
+    (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
+    (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+    # This is an off-diagonal gate that gets converted to Rot, but one RZ angle is 0
     (
         np.array(
             [
@@ -48,33 +50,40 @@ single_qubit_decomps = [
                 [9.831019270939975e-01 + 0.1830590094588862j, 0],
             ]
         ),
+        qml.Rot,
         [-0.18409714468526372, np.pi, 0.18409714468526372],
     ),
-    (H, [np.pi, np.pi / 2, 0.0]),
-    (X, [np.pi / 2, np.pi, -np.pi / 2]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, [0.2, 0.5, -0.3]),
-    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, [-1.0, 2.0, -3.0]),
+    # Next set of gates are non-diagonal and decomposed as Rots
+    (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
+    (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
+    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, qml.Rot, [-1.0, 2.0, -3.0]),
 ]
 
 
 class TestQubitUnitaryZYZDecomposition:
     """Test that the decompositions are correct."""
 
-    @pytest.mark.parametrize("U,expected_params", single_qubit_decomps)
-    def test_zyz_decomposition(self, U, expected_params):
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_zyz_decomposition(self, U, expected_gate, expected_params):
         """Test that a one-qubit matrix in isolation is correctly decomposed."""
         obtained_gates = zyz_decomposition(U, Wires("a"))
 
         assert len(obtained_gates) == 1
+        assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
+
         assert qml.math.allclose(obtained_gates[0].parameters, expected_params, atol=1e-7)
 
-        obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+        if obtained_gates[0].num_params == 1:
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix
+        else:
+            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
-    @pytest.mark.parametrize("U,expected_params", single_qubit_decomps)
-    def test_zyz_decomposition_torch(self, U, expected_params):
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_zyz_decomposition_torch(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
         torch = pytest.importorskip("torch")
 
@@ -83,17 +92,22 @@ class TestQubitUnitaryZYZDecomposition:
         obtained_gates = zyz_decomposition(U, wire="a")
 
         assert len(obtained_gates) == 1
+        assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
+
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[0].parameters), expected_params, atol=1e-7
         )
 
-        obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+        if obtained_gates[0].num_params == 1:
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix
+        else:
+            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
 
         assert check_matrix_equivalence(obtained_mat, qml.math.unwrap(U), atol=1e-7)
 
-    @pytest.mark.parametrize("U,expected_params", single_qubit_decomps)
-    def test_zyz_decomposition_tf(self, U, expected_params):
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_zyz_decomposition_tf(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
         tf = pytest.importorskip("tensorflow")
 
@@ -102,7 +116,9 @@ class TestQubitUnitaryZYZDecomposition:
         obtained_gates = zyz_decomposition(U, wire="a")
 
         assert len(obtained_gates) == 1
+        assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
+
         assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)
 
         if obtained_gates[0].num_params == 1:
@@ -113,8 +129,8 @@ class TestQubitUnitaryZYZDecomposition:
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
-    @pytest.mark.parametrize("U,expected_params", single_qubit_decomps)
-    def test_zyz_decomposition_jax(self, U, expected_params):
+    @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
+    def test_zyz_decomposition_jax(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
         jax = pytest.importorskip("jax")
 
@@ -129,13 +145,45 @@ class TestQubitUnitaryZYZDecomposition:
         obtained_gates = zyz_decomposition(U, wire="a")
 
         assert len(obtained_gates) == 1
+        assert isinstance(obtained_gates[0], expected_gate)
         assert obtained_gates[0].wires == Wires("a")
 
         assert qml.math.allclose(
             qml.math.unwrap(obtained_gates[0].parameters), expected_params, atol=1e-7
         )
 
-        obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+        if obtained_gates[0].num_params == 1:
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix
+        else:
+            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+
+        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
+
+
+class TestQubitUnitaryZYZDecompositionAbstract:
+    """Test that the decompositions are successful in an abstract setting."""
+
+    @pytest.mark.parametrize("U", [decomp[0] for decomp in single_qubit_decomps])
+    def test_zyz_decomposition_jax_jit(self, U):
+        """Test that a one-qubit operation with JAX and jit is correctly decomposed."""
+        jax = pytest.importorskip("jax")
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
+
+        obtained_gates = jax.jit(zyz_decomposition, static_argnums=1)(U, 0)
+
+        # With jax.jit, we always get a Rot gate back
+        assert len(obtained_gates) == 1
+        assert isinstance(obtained_gates[0], qml.Rot)
+        assert obtained_gates[0].wires == Wires(0)
+
+        obtained_mat = obtained_gates[0].matrix
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 

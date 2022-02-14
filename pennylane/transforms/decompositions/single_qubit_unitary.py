@@ -62,19 +62,20 @@ def _compute_rot_angles(U):
 
     return phi, theta, omega
 
-def _make_rz(U):
-    return partial(qml.RZ, 2 * math.angle(U[1, 1]))
 
-
-def _make_rot(U):
-    return partial(qml.Rot, *_compute_rot_angles(U))
 
 def zyz_decomposition(U, wire):
     r"""Recover the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations.
 
-    Operations will be converted to a :class:`.Rot` gate that implements the original operation
+    Diagonal operations can be converted to a single :class:`.RZ` gate, while non-diagonal
+    operations will be converted to a :class:`.Rot` gate that implements the original operation
     up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
+
+    .. warning:: 
+        
+        This decomposition is compatible with ``jax.jit``, however, all unitaries
+        will be converted to :class:`.Rot` gates, including those that are diagonal.
 
     Args:
         U (tensor): A 2 x 2 unitary matrix.
@@ -82,7 +83,7 @@ def zyz_decomposition(U, wire):
 
     Returns:
         list[qml.Operation]: A ``Rot`` gate on the specified wire that implements ``U``
-        up to a global phase.
+        up to a global phase, or an equivalent ``RZ`` gate if ``U`` is diagonal.
 
     **Example**
 
@@ -105,17 +106,22 @@ def zyz_decomposition(U, wire):
     """
     U = _convert_to_su2(U)
 
+    # If the value of U is abstract as is the case when we use something like
+    # of jax.jit, we can't use the conditional, so simply compute the angles.
     if math.is_abstract(U):
-        interface = math.get_interface(U)
-
-        if interface == "jax":
-            return cond(
-                math.allclose(U[0, 1], 0.0),
-                lambda _: _make_rz, 
-                lambda _: _make_rot,
+        if math.get_interface(U) == "jax":
+                
+            angles = cond(
+                True,
+                lambda x: _compute_rot_angles(x),
+                lambda x: _compute_rot_angles(x),
                 U
-            )(wires=wire)
+            )
+                
+            return [qml.Rot(*angles, wires=wire)]            
 
+    # If the value of U is not abstract, then things are running normally so we
+    # include a conditional statement here to reduce the number of gates.
     if math.allclose(U[0, 1], 0.0):
         return [qml.RZ(2 * math.angle(U[1, 1]), wires=wire)]
 
