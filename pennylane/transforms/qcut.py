@@ -17,7 +17,7 @@ circuits to be distributed across multiple devices.
 """
 import string
 import warnings
-from typing import Sequence, Tuple, List, Dict, Any, Union
+from typing import Sequence, Tuple, List, Dict, Any, Union, ClassVar
 from dataclasses import dataclass, InitVar
 
 from networkx import MultiDiGraph, weakly_connected_components
@@ -500,6 +500,9 @@ class CutStrategy:
     min_free_gates: int = None
     imbalance_tolerance: float = None
 
+    HIGH_NUM_FRAGMENTS: ClassVar[int] = 20
+    HIGH_PARTITION_ATTEMPS: ClassVar[int] = 20
+
     def __post_init__(
         self,
         devices,
@@ -534,6 +537,14 @@ class CutStrategy:
 
             self.max_free_wires = self.max_free_wires or max(device_wire_sizes)
             self.min_free_wires = self.min_free_wires or min(device_wire_sizes)
+
+        if (self.imbalance_tolerance is not None) and not (
+            isinstance(self.imbalance_tolerance, (float, int)) and self.imbalance_tolerance >= 0
+        ):
+            raise ValueError(
+                "The overall `imbalance_tolerance` is expected to be a non-negative number, "
+                f"got {type(self.imbalance_tolerance)} with value {self.imbalance_tolerance}."
+            )
 
     def get_cut_kwargs(
         self,
@@ -582,7 +593,7 @@ class CutStrategy:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
                 partitioner method.
         """
-        tape_wires = set(tape_dag.edges.data("wire"))
+        tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
         assert all((w is not None for w in tape_wires))
         num_tape_wires = len(tape_wires)
         num_tape_gates = tape_dag.order()
@@ -684,12 +695,7 @@ class CutStrategy:
         )
 
         # The global imbalance tolerance, if not given, defaults to a very loose upper bound:
-        imbalance_tolerance = self.imbalance_tolerance or k_ub
-        if not (isinstance(imbalance_tolerance, (float, int)) and imbalance_tolerance >= 0):
-            raise ValueError(
-                "The global `imbalance_tolerance` is expected to be a non-negative number, "
-                f"got {type(imbalance_tolerance)} with value {imbalance_tolerance}."
-            )
+        imbalance_tolerance = k_ub if self.imbalance_tolerance is None else self.imbalance_tolerance
 
         probed_cuts = []
 
@@ -706,17 +712,8 @@ class CutStrategy:
                     f"will override and set `k_lower={k_lb}`."
                 )
                 k_lower = k_lb
-            if k_upper < k_lower:
-                warnings.warn(
-                    f"The provided `k_upper={k_upper}` is less than `k_lower={k_lower}`, "
-                    f"will override and set `k_upper={k_lower}`. "
-                    "Note this will result in only one partitioning attempt, with the number of fragments "
-                    f"fixed at {k_lower}, rather than exploring into higher number of fragments."
-                )
-                k_upper = k_lower
 
-            HIGH_NUM_FRAGMENTS = 20
-            if k_lower > HIGH_NUM_FRAGMENTS:
+            if k_lower > self.HIGH_NUM_FRAGMENTS:
                 warnings.warn(
                     f"The attempted number of fragments seems high with lower bound at {k_lower}, "
                     "are you sure?"
@@ -725,8 +722,7 @@ class CutStrategy:
             # Prepare the list of ks to explore:
             ks = list(range(k_lower, k_upper + 1))
 
-            HIGH_PARTITION_ATTEMPS = 20
-            if len(ks) > HIGH_PARTITION_ATTEMPS:
+            if len(ks) > self.HIGH_PARTITION_ATTEMPS:
                 warnings.warn(
                     f"The numer of partition attempts seems high ({len(ks)}), are you sure?"
                 )

@@ -958,21 +958,26 @@ class TestCutStrategy:
     # expected_result = np.dot(*t)
 
     @pytest.mark.parametrize("devices", [None, 1])
-    def test_not_enough_info(self, devices):
+    @pytest.mark.parametrize("imbalance_tolerance", [None, -1])
+    def test_init_raises(self, devices, imbalance_tolerance):
         with pytest.raises(ValueError):
-            qcut.CutStrategy(devices=devices)
+            qcut.CutStrategy(devices=devices, imbalance_tolerance=imbalance_tolerance)
 
     @pytest.mark.parametrize("devices", [devs[0], devs])
     @pytest.mark.parametrize("max_free_wires", [None, 3])
     @pytest.mark.parametrize("min_free_wires", [None, 2])
     @pytest.mark.parametrize("num_fragments_probed", [None, 2, (2, 4)])
-    def test_init(self, devices, max_free_wires, min_free_wires, num_fragments_probed):
+    @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
+    def test_init(
+        self, devices, max_free_wires, min_free_wires, num_fragments_probed, imbalance_tolerance
+    ):
         """Test the __post_init__ properly sets defaults based on provided info."""
 
         strategy = qcut.CutStrategy(
             devices=devices,
             max_free_wires=max_free_wires,
             num_fragments_probed=num_fragments_probed,
+            imbalance_tolerance=imbalance_tolerance,
         )
 
         devices = [devices] if not isinstance(devices, list) else devices
@@ -980,6 +985,7 @@ class TestCutStrategy:
         max_dev_wires = max((len(d.wires) for d in devices))
         assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
         assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
+        assert strategy.imbalance_tolerance == imbalance_tolerance
 
         if num_fragments_probed is not None:
             assert (
@@ -997,7 +1003,8 @@ class TestCutStrategy:
             assert strategy.k_upper is None
 
     @pytest.mark.parametrize("k", [4, 5, 6])
-    def test_infer_wire_imbalance(self, k):
+    @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
+    def test_infer_wire_imbalance(self, k, imbalance_tolerance):
         """Test that the imbalance is correctly derived under simple circumstances."""
 
         num_wires = 10
@@ -1005,25 +1012,36 @@ class TestCutStrategy:
         free_wires = 3
 
         imbalance = qcut.CutStrategy._infer_imbalance(
-            k=k, num_wires=num_wires, num_gates=num_gates, free_wires=free_wires, free_gates=1000
+            k=k,
+            num_wires=num_wires,
+            num_gates=num_gates,
+            free_wires=free_wires,
+            free_gates=1000,
+            imbalance_tolerance=imbalance_tolerance,
         )
 
         avg_size = int(num_wires / k + 1 - 1e-7)
-        assert imbalance == free_wires / avg_size - 1
+        if imbalance_tolerance is not None:
+            assert imbalance <= imbalance_tolerance
+        else:
+            assert imbalance == free_wires / avg_size - 1
 
-    # @pytest.mark.parametrize("devices", [devs[0], devs])
-    # # @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
-    # @pytest.mark.parametrize("tape_dag", tape_dags)
-    # # def test_get_cut_kwargs(self, devices, num_fragments_probed, tape_dag):
-    # def test_get_cut_kwargs(self, devices, tape_dag):
-    #     """Test that the cut kwargs can be derived."""
+    @pytest.mark.parametrize("devices", [devs[0], devs])
+    @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
+    @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
+    @pytest.mark.parametrize("tape_dag", tape_dags)
+    def test_get_cut_kwargs(self, devices, num_fragments_probed, imbalance_tolerance, tape_dag):
+        """Test that the cut kwargs can be derived."""
 
-    #     strategy = qcut.CutStrategy(
-    #         devices=devices,
-    #         # num_fragments_probed=num_fragments_probed,
-    #     )
+        strategy = qcut.CutStrategy(
+            devices=devices,
+            num_fragments_probed=num_fragments_probed,
+            imbalance_tolerance=imbalance_tolerance,
+        )
 
-    #     all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag)
+        all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag)
 
-    #     assert all_cut_kwargs
-    #     assert all('imbalance' in kwargs and 'num_fragments' in kwargs for kwargs in all_cut_kwargs)
+        assert all_cut_kwargs
+        assert all("imbalance" in kwargs and "num_fragments" in kwargs for kwargs in all_cut_kwargs)
+        if imbalance_tolerance is not None:
+            assert all([kwargs["imbalance"] <= imbalance_tolerance for kwargs in all_cut_kwargs])
