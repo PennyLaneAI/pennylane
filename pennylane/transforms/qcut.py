@@ -25,6 +25,7 @@ from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
+from pennylane.utils import _flatten as flatten
 
 
 class MeasureNode(Operation):
@@ -514,7 +515,7 @@ def qcut_processing_fn(results: Sequence, communication_graph: MultiDiGraph, pre
         prepare_nodes:
         measure_nodes:
     """
-    flat_results = [t for r in results for t in r]
+    flat_results = list(flatten(results))
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
     result = contract_tensors(tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum)
-    return result
+    return qml.math.real_if_close(result)
