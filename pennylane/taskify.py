@@ -22,7 +22,7 @@ from pennylane.devices import TaskQubit
 
 def taskify(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
     """
-    Returns a proxy-qubit device with the device argument as the intiantiable backend.
+    Returns a proxy-qubit device with the device argument as the initiateable backend.
 
     >>> d_dev = qml.device("default.qubit", wires=["a","b",2])
     >>> t_dev = qml.taskify(dev)
