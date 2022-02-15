@@ -1205,7 +1205,7 @@ class Operation(Operator):
                     eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
                     return qml.gradients.eigvals_to_frequencies(eigvals)
 
-                elif isinstance(gen, qml.SparseHamiltonian):
+                if isinstance(gen, qml.SparseHamiltonian):
                     mat = gen.sparse_matrix().toarray()
                     eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
                     return qml.gradients.eigvals_to_frequencies(eigvals)
