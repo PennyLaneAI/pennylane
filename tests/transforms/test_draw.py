@@ -12,582 +12,270 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the draw transform.
+Integration tests for the draw transform
 """
-import functools
 import pytest
+from functools import partial
 
 import pennylane as qml
 from pennylane import numpy as np
 
-
-def test_drawing():
-    """Test circuit drawing"""
-
-    x = np.array(0.1, requires_grad=True)
-    y = np.array([0.2, 0.3], requires_grad=True)
-    z = np.array(0.4, requires_grad=True)
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev, interface="autograd")
-    def circuit(p1, p2=y, **kwargs):
-        qml.RX(p1, wires=0)
-        qml.RY(p2[0] * p2[1], wires=1)
-        qml.RX(kwargs["p3"], wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-    result = qml.draw(circuit)(p1=x, p3=z)
-    expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
-"""
-
-    assert result == expected
+from pennylane.transforms import draw
 
 
-def test_drawing_tf():
-    """Test circuit drawing when using TensorFlow"""
-    tf = pytest.importorskip("tensorflow")
-
-    x = tf.constant(0.1)
-    y = tf.constant([0.2, 0.3])
-    z = tf.Variable(0.4)
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev, interface="tf")
-    def circuit(p1, p2=y, **kwargs):
-        qml.RX(p1, wires=0)
-        qml.RY(p2[0] * p2[1], wires=1)
-        qml.RX(kwargs["p3"], wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-    result = qml.draw(circuit)(p1=x, p3=z)
-    expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
-"""
-
-    assert result == expected
+@qml.qnode(qml.device("default.qubit", wires=(0, "a", 1.234)))
+def circuit(x, y, z):
+    qml.RX(x, wires=0)
+    qml.RY(y, wires="a")
+    qml.RZ(z, wires=1.234)
+    return qml.expval(qml.PauliZ(0))
 
 
-def test_drawing_torch():
-    """Test circuit drawing when using Torch"""
-    torch = pytest.importorskip("torch")
+class TestLabelling:
+    """Test the wire labels."""
 
-    x = torch.tensor(0.1, requires_grad=True)
-    y = torch.tensor([0.2, 0.3], requires_grad=True)
-    z = torch.tensor(0.4, requires_grad=True)
+    def test_any_wire_labels(self):
+        """Test wire labels with different kinds of objects."""
 
-    dev = qml.device("default.qubit", wires=2)
+        split_str = draw(circuit)(1.2, 2.3, 3.4).split("\n")
+        assert split_str[0][0:6] == "    0:"
+        assert split_str[1][0:6] == "    a:"
+        assert split_str[2][0:6] == "1.234:"
 
-    @qml.qnode(dev, interface="torch")
-    def circuit(p1, p2=y, **kwargs):
-        qml.RX(p1, wires=0)
-        qml.RY(p2[0] * p2[1], wires=1)
-        qml.RX(kwargs["p3"], wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+    def test_wire_order(self):
+        """Test wire_order keyword changes order of the wires."""
 
-    result = qml.draw(circuit)(p1=x, p3=z)
-    expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
-"""
+        split_str = draw(circuit, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
+        assert split_str[0][0:6] == "1.234:"
+        assert split_str[1][0:6] == "    a:"
+        assert split_str[2][0:6] == "    0:"
 
-    assert result == expected
+    def test_show_all_wires(self):
+        """Test show_all_wires=True forces empty wires to display."""
 
+        @qml.qnode(qml.device("default.qubit", wires=(0, 1)))
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
 
-def test_drawing_jax():
-    """Test circuit drawing when using JAX"""
-    jax = pytest.importorskip("jax")
-    jnp = jax.numpy
+        split_str = draw(circuit, show_all_wires=True)().split("\n")
+        assert split_str[0][0:2] == "0:"
+        assert split_str[1][0:2] == "1:"
 
-    x = jnp.array(0.1)
-    y = jnp.array([0.2, 0.3])
-    z = jnp.array(0.4)
+    def test_show_all_wires_and_wire_order(self):
+        """Test show_all_wires forces empty wires to display when empty wire is in wire order."""
 
-    dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
 
-    @qml.qnode(dev, interface="jax")
-    def circuit(p1, p2=y, **kwargs):
-        qml.RX(p1, wires=0)
-        qml.RY(p2[0] * p2[1], wires=1)
-        qml.RX(kwargs["p3"], wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-    result = qml.draw(circuit)(p1=x, p3=z)
-    expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
-"""
-
-    assert result == expected
+        split_str = draw(circuit, wire_order=[0, "a"], show_all_wires=True)().split("\n")
+        assert split_str[0][0:2] == "0:"
+        assert split_str[1][0:2] == "a:"
 
 
-def test_drawing_ascii():
-    """Test circuit drawing when using ASCII characters"""
-    from pennylane import numpy as np
+class TestDecimals:
+    """Test the decimals keyword argument."""
 
-    x = np.array(0.1, requires_grad=True)
-    y = np.array([0.2, 0.3], requires_grad=True)
-    z = np.array(0.4, requires_grad=True)
+    def test_decimals_None(self):
+        """Test that when decimals is ``None``, parameters are omitted."""
 
-    dev = qml.device("default.qubit", wires=2)
+        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
+        assert draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
 
-    @qml.qnode(dev, interface="autograd")
-    def circuit(p1, p2=y, **kwargs):
-        qml.RX(p1, wires=0)
-        qml.RY(p2[0] * p2[1], wires=1)
-        qml.RX(kwargs["p3"], wires=0)
-        qml.CNOT(wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+    def test_decimals(self):
+        """Test decimals keyword makes the operation parameters included to given precision"""
 
-    result = qml.draw(circuit, charset="ascii")(p1=x, p3=z)
-    expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
- 1: --RY(0.06)-----------+X--+| <Z @ X> 
-"""
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        assert draw(circuit, decimals=1)(1.234, 2.345, 3.456) == expected
 
-    assert result == expected
+    def test_decimals_higher_value(self):
+        """Test all decimals places display when requested value is bigger than number precision."""
 
+        out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤     \n1.234: ──RZ(3.0000)─┤     "
+        assert qml.draw(circuit, decimals=4)(1, 2, 3) == out
 
-def test_show_all_wires_error():
-    """Test that show_all_wires will raise an error if the provided wire
-    order does not contain all wires on the device"""
+    def test_decimals_multiparameters(self):
+        """Test decimals also displays parameters when the operation has multiple parameters."""
 
-    dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
+        @qml.qnode(qml.device("default.qubit", wires=(0)))
+        def circuit(x):
+            qml.Rot(*x, wires=0)
+            return qml.expval(qml.PauliZ(0))
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.Hadamard(wires=-1)
-        qml.CNOT(wires=[-1, "q2"])
-        return qml.expval(qml.PauliX(wires="q2"))
+        expected = "0: ──Rot(1.2,2.3,3.5)─┤  <Z>"
+        assert draw(circuit, decimals=1)([1.234, 2.345, 3.456]) == expected
 
-    with pytest.raises(ValueError, match="must contain all wires"):
-        qml.draw(circuit, show_all_wires=True, wire_order=[-1, "a"])()
+    def test_decimals_0(self):
+        """Test decimals=0 rounds to integers."""
 
+        expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤     \n1.234: ──RZ(3)─┤     "
+        assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
 
-def test_missing_wire():
-    """Test that wires not specifically mentioned in the wire
-    reordering are appended at the bottom of the circuit drawing"""
+    def test_qml_numpy_parameters(self):
+        """Test numpy parameters display as normal numbers."""
 
-    dev = qml.device("default.qubit", wires=["a", -1, "q2"])
+        expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
+        assert draw(circuit)(np.array(1), np.array(2), np.array(3)) == expected
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.Hadamard(wires=-1)
-        qml.CNOT(wires=["a", "q2"])
-        qml.RX(0.2, wires="a")
-        return qml.expval(qml.PauliX(wires="q2"))
+    def test_torch_parameters(self):
+        """Test torch parameters display as normal numbers."""
 
-    # test one missing wire
-    res = qml.draw(circuit, wire_order=["q2", "a"])()
-    expected = [
-        " q2: ──╭X───────────┤ ⟨X⟩ ",
-        "  a: ──╰C──RX(0.2)──┤     ",
-        " -1: ───H───────────┤     \n",
-    ]
+        torch = pytest.importorskip("torch")
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
+        assert out == expected
 
-    assert res == "\n".join(expected)
+    def test_tensorflow_parameters(self):
+        """Test tensorflow parameters display as normal numbers."""
+        tf = pytest.importorskip("tensorflow")
 
-    # test one missing wire
-    res = qml.draw(circuit, wire_order=["q2", -1])()
-    expected = [
-        " q2: ─────╭X───────────┤ ⟨X⟩ ",
-        " -1: ──H──│────────────┤     ",
-        "  a: ─────╰C──RX(0.2)──┤     \n",
-    ]
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        out = draw(circuit, decimals=1)(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456))
+        assert out == expected
 
-    assert res == "\n".join(expected)
+    def test_jax_parameters(self):
+        """Test jax parameters in tape display as normal numbers."""
+        jnp = pytest.importorskip("jax.numpy")
 
-    # test multiple missing wires
-    res = qml.draw(circuit, wire_order=["q2"])()
-    expected = [
-        " q2: ─────╭X───────────┤ ⟨X⟩ ",
-        " -1: ──H──│────────────┤     ",
-        "  a: ─────╰C──RX(0.2)──┤     \n",
-    ]
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))
+        assert out == expected
 
-    assert res == "\n".join(expected)
+    def test_string_decimals(self):
+        """Test displays string valued parameters."""
+
+        expected = "    0: ──RX(x)─┤  <Z>\n    a: ──RY(y)─┤     \n1.234: ──RZ(z)─┤     "
+        assert draw(circuit)("x", "y", "z") == expected
 
 
-def test_invalid_wires():
-    """Test that an exception is raised if a wire in the wire
-    ordering does not exist on the device"""
-    dev = qml.device("default.qubit", wires=["a", -1, "q2"])
+class TestMaxLength:
+    """Test the max_length keyword."""
 
-    @qml.qnode(dev)
-    def circuit():
-        qml.Hadamard(wires=-1)
-        qml.CNOT(wires=["a", "q2"])
-        qml.RX(0.2, wires="a")
-        return qml.expval(qml.PauliX(wires="q2"))
+    def test_max_length_default(self):
+        """Test max length default to 100."""
 
-    with pytest.raises(ValueError, match="contains wires not contained on the device"):
-        qml.draw(circuit, wire_order=["q2", 5])()
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def long_circuit():
+            for _ in range(100):
+                qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        out = draw(long_circuit)()
+        assert 95 <= max(len(s) for s in out.split("\n")) <= 100
+
+    @pytest.mark.parametrize("ml", [10, 15, 20])
+    def test_setting_max_length(self, ml):
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def long_circuit():
+            for _ in range(10):
+                qml.PauliX(0)
+            return [qml.expval(qml.PauliZ(0)) for _ in range(4)]
+
+        out = draw(long_circuit, max_length=ml)()
+        assert max(len(s) for s in out.split("\n")) <= ml
+
+
+class TestLayering:
+    """Test operations are placed in the correct locations."""
+
+    def test_adjacent_ops(self):
+        """Test non-blocking gates end up on same layer."""
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit():
+            [qml.PauliX(i) for i in range(3)]
+            return [qml.expval(qml.PauliZ(i)) for i in range(3)]
+
+        expected = "0: ──X─┤  <Z>\n1: ──X─┤  <Z>\n2: ──X─┤  <Z>"
+        assert draw(circuit)() == expected
+
+    def test_blocking_ops(self):
+        """Test single qubits gates on the same wire block each other."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circuit():
+            [qml.PauliX(0) for i in range(3)]
+            return qml.expval(qml.PauliZ(0))
+
+        expected = "0: ──X──X──X─┤  <Z>"
+
+    def test_blocking_multiwire_gate(self):
+        """Test gate gets blocked by multi-wire gate."""
+
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def circuit():
+            qml.PauliX(0)
+            qml.IsingXX(1.234, wires=(0, 2))
+            qml.PauliX(1)
+            return qml.expval(qml.PauliZ(0))
+
+        expect = (
+            "0: ──X─╭IsingXX(1.23)────┤  <Z>\n"
+            "1: ────│───────────────X─┤     \n"
+            "2: ────╰IsingXX(1.23)────┤     "
+        )
+        assert draw(circuit)() == expect
 
 
 @pytest.mark.parametrize(
     "transform",
-    [qml.gradients.param_shift(shift=0.2), functools.partial(qml.gradients.param_shift, shift=0.2)],
+    [qml.gradients.param_shift(shift=0.2), partial(qml.gradients.param_shift, shift=0.2)],
 )
 def test_draw_batch_transform(transform):
-    """Test that drawing a batch transform works correctly"""
-    dev = qml.device("default.qubit", wires=1)
+    """Test that drawing a batch transform works correctly."""
 
     @transform
-    @qml.qnode(dev)
+    @qml.qnode(qml.device("default.qubit", wires=1))
     def circuit(x):
         qml.Hadamard(wires=0)
         qml.RX(x, wires=0)
-        return qml.expval(qml.PauliZ(wires=0))
-
-    # the parameter-shift transform will create two circuits; one with x+0.2
-    # and one with x-0.2.
-    res = qml.draw(circuit)(np.array(0.6, requires_grad=True))
-    expected = [" 0: ──H──RX(0.8)──┤ ⟨Z⟩ ", "", " 0: ──H──RX(0.4)──┤ ⟨Z⟩ ", ""]
-    assert res == "\n".join(expected)
-
-
-def test_direct_qnode_integration():
-    """Test that a QNode renders correctly."""
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev)
-    def qfunc(a, w):
-        qml.Hadamard(0)
-        qml.CRX(a, wires=[0, 1])
-        qml.Rot(w[0], w[1], w[2], wires=[1])
-        qml.CRX(-a, wires=[0, 1])
-
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    a, w = 2.3, [1.2, 3.2, 0.7]
-
-    assert qml.draw(qfunc)(a, w) == (
-        " 0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩ \n"
-        + " 1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩ \n"
-    )
-
-    assert qml.draw(qfunc, charset="ascii")(a, w) == (
-        " 0: --H--+C----------------------------+C---------+| <Z @ Z> \n"
-        + " 1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z> \n"
-    )
-
-
-def test_same_wire_multiple_measurements():
-    """Test that drawing a QNode with multiple measurements on certain wires works correctly."""
-    dev = qml.device("default.qubit", wires=4)
-
-    @qml.qnode(dev)
-    def qnode(x, y):
-        qml.RY(x, wires=0)
-        qml.Hadamard(0)
-        qml.RZ(y, wires=0)
-        return [
-            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2])),
-            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[3])),
-        ]
-
-    expected = (
-        " 0: ──RY(1)──H──RZ(2)──╭┤ ⟨X ⊗ X ⊗ X⟩ ╭┤ ⟨X ⊗ X⟩ \n"
-        + " 1: ───────────────────├┤ ⟨X ⊗ X ⊗ X⟩ │┤         \n"
-        + " 2: ───────────────────╰┤ ⟨X ⊗ X ⊗ X⟩ │┤         \n"
-        + " 3: ────────────────────┤             ╰┤ ⟨X ⊗ X⟩ \n"
-    )
-    assert qml.draw(qnode)(1.0, 2.0) == expected
-
-
-def test_same_wire_multiple_measurements_many_obs():
-    """Test that drawing a QNode with multiple measurements on certain
-    wires works correctly when there are more observables than the number of
-    observables for any wire.
-    """
-    dev = qml.device("default.qubit", wires=4)
-
-    @qml.qnode(dev)
-    def qnode(x, y):
-        qml.RY(x, wires=0)
-        qml.Hadamard(0)
-        qml.RZ(y, wires=0)
-        return [
-            qml.expval(qml.PauliZ(0)),
-            qml.expval(qml.PauliZ(1)),
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-        ]
-
-    expected = (
-        " 0: ──RY(0.3)──H──RZ(0.2)──┤ ⟨Z⟩ ┤     ╭┤ ⟨Z ⊗ Z⟩ \n"
-        + " 1: ───────────────────────┤     ┤ ⟨Z⟩ ╰┤ ⟨Z ⊗ Z⟩ \n"
-    )
-    assert qml.draw(qnode)(0.3, 0.2) == expected
-
-
-def test_qubit_circuit_with_max_length_kwdarg():
-    """Test that drawing a QNode with max_length=30 results in
-    correct circuit drawing."""
-    dev = qml.device("default.qubit", wires=3)
-
-    @qml.qnode(dev)
-    def qnode():
-        for i in range(3):
-            qml.Hadamard(wires=i)
-            qml.RX(i * 0.1, wires=i)
-            qml.RY(i * 0.1, wires=i)
-            qml.RZ(i * 0.1, wires=i)
         return qml.expval(qml.PauliZ(0))
 
-        expected = (
-            " 0: ──H──RX(0)────RY(0)────RZ\n"
-            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
-            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
-            + " \n"
-            + " (0)────┤ ⟨Z⟩ \n"
-            + " (0.1)──┤     \n"
-            + " (0.2)──┤     \n"
-        )
-        assert qml.draw(qnode, max_length=30)() == expected
+    expected = "0: ──H──RX(0.8)─┤  <Z>\n\n0: ──H──RX(0.4)─┤  <Z>"
+    assert draw(circuit, decimals=1)(np.array(0.6, requires_grad=True)) == expected
 
 
-def test_qubit_circuit_with_max_length_kwdarg():
-    """Test that drawing a QNode with max_length=30 results in
-    correct circuit drawing."""
-    dev = qml.device("default.qubit", wires=3)
+def test_nested_tapes():
+    """Test nested tapes inside the qnode."""
 
-    @qml.qnode(dev)
-    def qnode():
-        for i in range(3):
-            qml.Hadamard(wires=i)
-            qml.RX(i * 0.1, wires=i)
-            qml.RY(i * 0.1, wires=i)
-            qml.RZ(i * 0.1, wires=i)
-        return qml.expval(qml.PauliZ(0))
-
-        expected = (
-            " 0: ──H──RX(0)────RY(0)────RZ\n"
-            + " 1: ──H──RX(0.1)──RY(0.1)──RZ\n"
-            + " 2: ──H──RX(0.2)──RY(0.2)──RZ\n"
-            + " \n"
-            + " (0)────┤ ⟨Z⟩ \n"
-            + " (0.1)──┤     \n"
-            + " (0.2)──┤     \n"
-        )
-        assert qml.draw(qnode, max_length=30)() == expected
-
-
-def test_qubit_circuit_length_under_max_length_kwdarg():
-    """Test that a qubit circuit with a circuit length less than the max_length renders correctly."""
-    dev = qml.device("default.qubit", wires=3)
-
-    @qml.qnode(dev)
-    def qnode():
-        for i in range(3):
-            qml.Hadamard(wires=i)
-            qml.RX(i * 0.1, wires=i)
-            qml.RY(i * 0.1, wires=i)
-            qml.RZ(i * 0.1, wires=i)
-        return qml.expval(qml.PauliZ(0))
-
-        expected = (
-            " 0: ──H──RX(0)────RY(0)────RZ(0)────┤ ⟨Z⟩\n"
-            + " 1: ──H──RX(0.1)──RY(0.1)──RZ(0.1)──┤    \n"
-            + " 2: ──H──RX(0.2)──RY(0.2)──RZ(0.2)──┤    \n"
-        )
-        assert qml.draw(qnode, max_length=60)() == expected
-
-
-def test_matrix_parameter_template():
-    """Assert draw method handles templates with matrix valued parameters."""
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev)
+    @qml.qnode(qml.device("default.qubit", wires=1))
     def circuit():
-        qml.AmplitudeEmbedding(np.array([0, 1]), wires=0)
-        return qml.state()
+        with qml.tape.QuantumTape() as tape1:
+            qml.PauliX(0)
+            with qml.tape.QuantumTape() as tape2:
+                qml.PauliY(0)
+        with qml.tape.QuantumTape() as tape3:
+            qml.PauliZ(0)
+            with qml.tape.QuantumTape() as tape4:
+                qml.PauliX(0)
+        return qml.expval(qml.PauliZ(0))
 
-    expected = " 0: ──AmplitudeEmbedding(M0)──┤ State \nM0 =\n[0.+0.j 1.+0.j]\n"
-    assert qml.draw(circuit)() == expected
+    expected = (
+        "0: ──Tape:0──Tape:1─┤  <Z>\n\n"
+        "Tape:0\n0: ──X──Tape:2─┤  \n\n"
+        "Tape:2\n0: ──Y─┤  \n\n"
+        "Tape:1\n0: ──Z──Tape:3─┤  \n\n"
+        "Tape:3\n0: ──X─┤  "
+    )
 
-
-class TestWireOrdering:
-    """Tests for wire ordering functionality"""
-
-    def test_default_ordering(self):
-        """Test that the default wire ordering matches the device"""
-
-        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=["a", "q2"])
-            qml.RX(0.2, wires="a")
-            return qml.expval(qml.PauliX(wires="q2"))
-
-        res = qml.draw(circuit)()
-        expected = [
-            "  a: ─────╭C──RX(0.2)──┤     ",
-            " -1: ──H──│────────────┤     ",
-            " q2: ─────╰X───────────┤ ⟨X⟩ \n",
-        ]
-
-        assert res == "\n".join(expected)
-
-    def test_wire_reordering(self):
-        """Test that wires are correctly reordered"""
-
-        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=["a", "q2"])
-            qml.RX(0.2, wires="a")
-            return qml.expval(qml.PauliX(wires="q2"))
-
-        res = qml.draw(circuit, wire_order=["q2", "a", -1])()
-        expected = [
-            " q2: ──╭X───────────┤ ⟨X⟩ ",
-            "  a: ──╰C──RX(0.2)──┤     ",
-            " -1: ───H───────────┤     \n",
-        ]
-
-        assert res == "\n".join(expected)
-
-    def test_include_empty_wires(self):
-        """Test that empty wires are correctly included"""
-
-        dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=[-1, "q2"])
-            return qml.expval(qml.PauliX(wires="q2"))
-
-        res = qml.draw(circuit, show_all_wires=True)()
-        expected = [
-            " -1: ──H──╭C──┤     ",
-            "  a: ─────│───┤     ",
-            " q2: ─────╰X──┤ ⟨X⟩ ",
-            "  0: ─────────┤     \n",
-        ]
-
-        assert res == "\n".join(expected)
-
-    def test_show_all_wires_error(self):
-        """Test that show_all_wires will raise an error if the provided wire
-        order does not contain all wires on the device"""
-
-        dev = qml.device("default.qubit", wires=[-1, "a", "q2", 0])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=[-1, "q2"])
-            return qml.expval(qml.PauliX(wires="q2"))
-
-        with pytest.raises(ValueError, match="must contain all wires"):
-            qml.draw(circuit, show_all_wires=True, wire_order=[-1, "a"])()
-
-    def test_missing_wire(self):
-        """Test that wires not specifically mentioned in the wire
-        reordering are appended at the bottom of the circuit drawing"""
-
-        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=["a", "q2"])
-            qml.RX(0.2, wires="a")
-            return qml.expval(qml.PauliX(wires="q2"))
-
-        # test one missing wire
-        res = qml.draw(circuit, wire_order=["q2", "a"])()
-        expected = [
-            " q2: ──╭X───────────┤ ⟨X⟩ ",
-            "  a: ──╰C──RX(0.2)──┤     ",
-            " -1: ───H───────────┤     \n",
-        ]
-
-        assert res == "\n".join(expected)
-
-        # test one missing wire
-        res = qml.draw(circuit, wire_order=["q2", -1])()
-        expected = [
-            " q2: ─────╭X───────────┤ ⟨X⟩ ",
-            " -1: ──H──│────────────┤     ",
-            "  a: ─────╰C──RX(0.2)──┤     \n",
-        ]
-
-        assert res == "\n".join(expected)
-
-        # test multiple missing wires
-        res = qml.draw(circuit, wire_order=["q2"])()
-        expected = [
-            " q2: ─────╭X───────────┤ ⟨X⟩ ",
-            " -1: ──H──│────────────┤     ",
-            "  a: ─────╰C──RX(0.2)──┤     \n",
-        ]
-
-        assert res == "\n".join(expected)
-
-    def test_invalid_wires(self):
-        """Test that an exception is raised if a wire in the wire
-        ordering does not exist on the device"""
-        dev = qml.device("default.qubit", wires=["a", -1, "q2"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=["a", "q2"])
-            qml.RX(0.2, wires="a")
-            return qml.expval(qml.PauliX(wires="q2"))
-
-        with pytest.raises(ValueError, match="contains wires not contained on the device"):
-            res = qml.draw(circuit, wire_order=["q2", 5])()
-
-    def test_no_ops_draws(self):
-        """Test that a QNode with no operations still draws correctly"""
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def qnode():
-            return qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]))
-
-        res = qml.draw(qnode)()
-        expected = [
-            " 0: ──╭┤ ⟨X ⊗ X ⊗ X⟩ \n",
-            " 1: ──├┤ ⟨X ⊗ X ⊗ X⟩ \n",
-            " 2: ──╰┤ ⟨X ⊗ X ⊗ X⟩ \n",
-        ]
-
-        assert res == "".join(expected)
+    assert draw(circuit)() == expected
 
 
-class TestOpsIntegration:
-    """Integration tests for drawing specific operations and templates"""
+def test_expansion_strategy():
+    """Test expansion strategy keyword modifies tape expansion."""
 
-    def test_approx_time_evolution(self):
-        """Test that a QNode with the ApproxTimeEvolution template draws
-        correctly when having the expansion strategy set."""
-        H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
+    H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
-        def circuit(t):
-            qml.ApproxTimeEvolution(H, t, 2)
-            return qml.probs(wires=0)
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(t):
+        qml.ApproxTimeEvolution(H, t, 2)
+        return qml.probs(wires=0)
 
-        res = qml.draw(circuit, expansion_strategy="device")(0.5)
-        expected = [
-            " 0: ──H────────RZ(0.5)──H──H──╭RZ(0.25)──H──H────────RZ(0.5)──H──H──╭RZ(0.25)──H──┤ Probs \n",
-            " 1: ──RZ(0.5)──H──────────────╰RZ(0.25)──H──RZ(0.5)──H──────────────╰RZ(0.25)──H──┤       \n",
-        ]
+    expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
+    assert draw(circuit, expansion_strategy="gradient", decimals=None)(0.5)
 
-        assert res == "".join(expected)
+    expected_device = (
+        "0: ──H────────MultiRZ──H──H─╭MultiRZ──H──H────────MultiRZ──H──H─╭MultiRZ──H─┤  Probs\n"
+        "1: ──MultiRZ──H─────────────╰MultiRZ──H──MultiRZ──H─────────────╰MultiRZ──H─┤       "
+    )
+    assert draw(circuit, expansion_strategy="device", decimals=None)(0.5)
