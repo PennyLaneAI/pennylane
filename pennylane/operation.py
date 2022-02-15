@@ -1168,8 +1168,8 @@ class Operation(Operator):
         # where we express a positive and a negative shift by default
         default_param_shift = [
             [multiplier, a, shift],
-            [-multiplier, a, -shift],
-        ]  # pylint: disable=invalid-unary-operand-type
+            [-multiplier, a, -shift],  # pylint: disable=invalid-unary-operand-type
+        ]
         return default_param_shift
 
     @property
