@@ -1000,7 +1000,6 @@ label_data = [
 @pytest.mark.parametrize("op, label1, label2, label3", label_data)
 def test_label_method(op, label1, label2, label3):
     """Test the label method for qchem operations."""
-    print(op)
     assert op.label() == label1
     assert op.label(decimals=2) == label2
     assert op.label(decimals=0) == label3
