@@ -1758,7 +1758,29 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
+    @property
     def eigvals(self):
+        """Return the eigenvalues of the specified tensor product observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible.
+
+        .. warning::
+
+            The ``eigvals`` property is deprecated and will be removed in
+            PennyLane version 0.23.
+
+        Returns:
+            array[float]: array containing the eigenvalues of the tensor product
+            observable
+        """
+        warnings.warn(
+            "The 'eigvals' property is deprecated, and will be replaced with a method 'eigvals()' in v0.23",
+            UserWarning,
+        )
+        return self.get_eigvals()
+
+    def get_eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
         This method uses pre-stored eigenvalues for standard observables where
