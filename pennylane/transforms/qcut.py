@@ -524,13 +524,7 @@ def qcut_processing_fn(
         prepare_nodes:
         measure_nodes:
     """
-    flat_results = []
-
-    for r in results:
-        if isinstance(r, Sequence):
-            flat_results.extend(r)
-        else:
-            flat_results.append(r)
+    flat_results = qml.math.concatenate(results)
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
     result = contract_tensors(

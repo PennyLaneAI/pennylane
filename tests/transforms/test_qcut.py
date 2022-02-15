@@ -1095,7 +1095,7 @@ class TestQCutProcessingFn:
         t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
         t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
 
-        res = np.concatenate([t1, t2.flatten(), t3])
+        res = [t1, t2.flatten(), t3]
         p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
         m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
@@ -1122,7 +1122,7 @@ class TestQCutProcessingFn:
             t2 = x**2 * np.arange(16).reshape((4, 4))
             t3 = np.sin(x * np.pi / 2) * np.arange(4)
 
-            res = np.concatenate([t1, t2.flatten(), t3])
+            res = [t1, t2.flatten(), t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
@@ -1157,7 +1157,7 @@ class TestQCutProcessingFn:
             t2 = x**2 * tf.range(16, dtype=tf.float64)
             t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
 
-            res = tf.concat([t1, t2, t3], axis=0)
+            res = [t1, t2, t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
@@ -1194,7 +1194,7 @@ class TestQCutProcessingFn:
             t2 = x**2 * torch.arange(16)
             t3 = torch.sin(x * np.pi / 2) * torch.arange(4)
 
-            res = torch.cat([t1, t2, t3], axis=0)
+            res = [t1, t2, t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
@@ -1234,7 +1234,7 @@ class TestQCutProcessingFn:
             t2 = x**2 * jnp.arange(16).reshape((4, 4))
             t3 = jnp.sin(x * np.pi / 2) * jnp.arange(4)
 
-            res = jnp.concatenate([t1, t2.flatten(), t3])
+            res = [t1, t2.flatten(), t3]
             p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
             m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
 
