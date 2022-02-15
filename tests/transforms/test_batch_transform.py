@@ -467,7 +467,6 @@ class TestBatchTransform:
             wrapper = self.default_qnode_wrapper(qnode, targs, tkwargs)
             assert targs == (a,)
             assert tkwargs == {}
-            print("custom wrapper called")
             return wrapper
 
         @my_transform(a)
