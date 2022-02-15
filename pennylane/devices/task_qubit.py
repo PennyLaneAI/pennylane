@@ -305,6 +305,7 @@ class TaskQubit(DefaultQubit):
         with cm:
             results = []
             try:
+                # get client for this thread
                 with worker_client() as client:
                     for circuit in circuits:
                         results.append(
@@ -315,7 +316,8 @@ class TaskQubit(DefaultQubit):
                                 circuit,
                             )
                         )
-            except:
+            except Exception:
+                # get the worker currently running this task
                 client = dask.distributed.get_client()
                 for circuit in circuits:
                     results.append(
@@ -332,7 +334,7 @@ class TaskQubit(DefaultQubit):
             try:
                 with worker_client() as client:
                     res = client.gather(results)
-            except:
+            except Exception:
                 client = dask.distributed.get_client()
                 res = client.gather(results)
             return res
@@ -423,8 +425,8 @@ def taskify(func, futures=False):
         def client_submit_async(*args, **kwargs):
             return client.submit(func, *args, **kwargs)
 
-    except Exception as e:
-        raise RuntimeError("No running Dask client detected.") from e
+    except Exception as ex:
+        raise RuntimeError("No running Dask client detected.") from ex
 
     return client_submit_sync if not futures else client_submit_async
 
@@ -440,7 +442,7 @@ def untaskify(futures):
         def client_gather():
             return client.gather(futures)
 
-    except Exception as e:
-        raise RuntimeError("No running Dask client detected.") from e
+    except Exception as ex:
+        raise RuntimeError("No running Dask client detected.") from ex
 
     return client_gather
