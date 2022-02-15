@@ -110,7 +110,7 @@ class Hermitian(Observable):
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
-        Hmat = self.matrix()
+        Hmat = self.get_matrix()
         Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
@@ -119,7 +119,7 @@ class Hermitian(Observable):
 
         return Hermitian._eigs[Hkey]
 
-    def eigvals(self):
+    def get_eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where

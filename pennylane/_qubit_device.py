@@ -773,7 +773,7 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.get_eigvals(), dtype=self.R_DTYPE)
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
@@ -799,7 +799,7 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.get_eigvals(), dtype=self.R_DTYPE)
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
@@ -843,7 +843,7 @@ class QubitDevice(Device):
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             try:
-                samples = observable.eigvals()[indices]
+                samples = observable.get_eigvals()[indices]
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
