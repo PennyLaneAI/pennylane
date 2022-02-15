@@ -18,11 +18,9 @@
       qml.CRX(-a, wires=[0, 1])
       return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
   ```
-  ```
-    >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
-    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
-  ```
+  >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
+  0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
+  1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
 
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
