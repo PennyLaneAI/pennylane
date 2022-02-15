@@ -1089,7 +1089,7 @@ class Operation(Operator):
         raise NotImplementedError
 
     def get_parameter_shift(self, idx, shift=None):
-        """Multiplier and shift for the given parameter, based on its gradient recipe.
+        r"""Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
             idx (int): parameter index

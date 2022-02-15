@@ -17,7 +17,78 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import _gradient_analysis
+from pennylane.gradients.parameter_shift import (
+    _choose_params_with_methods,
+    _grad_method_validation,
+    _gradient_analysis,
+)
+
+
+class TestGradMethodValidation:
+    """Test the helper function _grad_method_validation, which is a
+    reduced copy of the eponymous method of ``JacobianTape``."""
+
+    @pytest.mark.parametrize("method", ["analytic", "best"])
+    def test_with_nondiff_parameters(self, method):
+        """Test that trainable parameters without grad_method
+        are detected correctly, raising an exception."""
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.expval(qml.PauliZ(0))
+        _gradient_analysis(tape)
+        tape._par_info[1]["grad_method"] = None
+        with pytest.raises(ValueError, match="Cannot differentiate with respect"):
+            _grad_method_validation(method, tape)
+
+    def test_with_numdiff_parameters_and_analytic(self):
+        """Test that trainable parameters with numerical grad_method ``"F"``
+        together with ``method="analytic"`` raises an exception."""
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.expval(qml.PauliZ(0))
+        _gradient_analysis(tape)
+        tape._par_info[1]["grad_method"] = "F"
+        with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
+            _grad_method_validation("analytic", tape)
+
+
+class TestChooseParamsWithMethods:
+    """Test the helper function _choose_params_with_methods, which is a
+    reduced copy of the eponymous method of ``JacobianTape``."""
+
+    all_diff_methods = [
+        ["A"] * 2,
+        [None, "A", "F", "A"],
+        ["F"],
+        ["0", "A"],
+    ]
+
+    @pytest.mark.parametrize("diff_methods", all_diff_methods)
+    def test_without_argnum(self, diff_methods):
+        """Test that the method returns all diff_methods when
+        used with ``argnum=None``."""
+        chosen = _choose_params_with_methods(diff_methods, None)
+        assert chosen == dict(enumerate(diff_methods))
+
+    @pytest.mark.parametrize(
+        "diff_methods, argnum, expected",
+        zip(all_diff_methods, [1, 2, 0, 0], [{1: "A"}, {2: "F"}, {0: "F"}, {0: "0"}]),
+    )
+    def test_with_integer_argnum(self, diff_methods, argnum, expected):
+        """Test that the method returns the correct single diff_method when
+        used with an integer ``argnum``."""
+        chosen = _choose_params_with_methods(diff_methods, argnum)
+        assert chosen == expected
+
+    @pytest.mark.parametrize("diff_methods", all_diff_methods[:2] + [[]])
+    def test_warning_with_empty_argnum(self, diff_methods):
+        """Test that the method raises a warning when an empty iterable
+        is passed as ``argnum``."""
+        with pytest.warns(UserWarning, match="No trainable parameters were specified"):
+            chosen = _choose_params_with_methods(diff_methods, [])
+        assert chosen == dict()
 
 
 class TestGradAnalysis:
@@ -239,7 +310,7 @@ class TestParamShift:
         assert res.size == 0
         assert np.all(res == np.array([[]]))
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -256,7 +327,7 @@ class TestParamShift:
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
-    def test_y0_provided(self, mocker):
+    def test_y0_provided(self):
         """Test that if the original tape output is provided, then
         the tape is executed only once using the current parameter
         values."""
@@ -335,6 +406,39 @@ class TestParamShift:
         assert len(tapes) == 2
         assert tapes[0].operations[0].data[0] == 0
         assert tapes[1].operations[0].data[0] == 2 * x
+
+        grad = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, -np.sin(x))
+
+    @pytest.mark.parametrize("shifts", [None, [(0.1, 0.3, 0.5)]])
+    def test_default_two_term_rule(self, shifts):
+        """Test that the default two-term shift rule is used if no
+        other information is available to obtain the shift rule."""
+
+        class RX(qml.RX):
+            @property
+            def parameter_frequencies(self):
+                raise qml.operation.OperatorPropertyUndefined
+
+            def generator(self):
+                raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
+
+        x = np.array(0.654, requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tapes, fn = qml.gradients.param_shift(tape, shifts=shifts)
+
+        assert len(tapes) == 2
+        if shifts is None:
+            assert tapes[0].operations[0].data[0] == x + np.pi / 2
+            assert tapes[1].operations[0].data[0] == x - np.pi / 2
+        else:
+            assert tapes[0].operations[0].data[0] == x + shifts[0][0]
+            assert tapes[1].operations[0].data[0] == x - shifts[0][0]
 
         grad = fn(dev.batch_execute(tapes))
         assert np.allclose(grad, -np.sin(x))
