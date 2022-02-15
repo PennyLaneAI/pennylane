@@ -23,7 +23,7 @@ from pennylane.hf.matrices import moment_matrix
 
 
 def dipole_integrals(mol, core=None, active=None):
-    r"""Return a function that computes the dipole moment integrals in the molecular orbital basis.
+    r"""Return a function that computes the dipole moment integrals over the molecular orbitals.
 
     These integrals are required to construct the dipole operator in the second-quantized form
 
@@ -31,30 +31,30 @@ def dipole_integrals(mol, core=None, active=None):
 
         D = \sum_{pq} d_{pq} c_p^{\dagger} c_q + D_n,
 
-    where :math:`d_{pq}` is the moment integral, :math:`c^{\dagger}` and :math:`c` are the creation
-    and annihilation operators, respectively, and :math:`D_n` is the contribution of the nuclei to
-    the dipole operator.
-
-    The integrals can be computed by integrating over molecular orbitals :math:`\phi` as
+    where the coefficients :math:`d_{pq}` are given by the integral over molecular orbitals
+    :math:`\phi`
 
     .. math::
 
-        d_{pq} = \int \phi_p(r)^* r \phi_q(r) dr,
+        d_{pq} = \int \phi_p^*(r) r \phi_q(r) dr,
 
-    The molecular orbitals are constructed as a linear combination of atomic orbitals as
+    :math:`c^{\dagger}` and :math:`c` are the creation and annihilation operators, respectively, and
+    :math:`D_n` is the contribution of the nuclei to the dipole operator.
+
+    The molecular orbitals are represented as a linear combination of atomic orbitals as
 
     .. math::
 
-        \phi_i = \sum_{\nu}c_{\nu}^i \chi_{\nu}.
+        \phi_i(r) = \sum_{\nu}c_{\nu}^i \chi_{\nu}(r).
 
-    The dipole moment integral can be written in the molecular orbital basis as
+    Using this equation the dipole moment integral :math:`d_{pq}` can be written as
 
     .. math::
 
         d_{pq} = \sum_{\mu \nu} C_{p \mu} d_{\mu \nu} C_{\nu q},
 
-    where :math:`d_{\mu \nu}` refers to the dipole moment integral in the atomic orbital basis and
-    :math:`C` is the molecular orbital expansion coefficient matrix.
+    where :math:`d_{\mu \nu}` is the dipole moment integral over the atomic orbitals and :math:`C`
+    is the molecular orbital expansion coefficient matrix.
 
     Args:
         mol (Molecule): the molecule object
@@ -89,7 +89,8 @@ def dipole_integrals(mol, core=None, active=None):
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple[array[float]]: tuple containing core/nuclear constants and dipole moment integrals
+            tuple[array[float]]: tuple containing the contributions due to the core orbitals and the
+            nuclei and the dipole moment integrals
         """
         _, coeffs, _, _, _ = qml.hf.generate_scf(mol)(*args)
 
@@ -122,16 +123,16 @@ def dipole_integrals(mol, core=None, active=None):
 
 
 def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
-    r"""Return a function that computes the fermionic dipole moment observable.
+    r"""Return a function that builds the fermionic dipole moment observable.
 
     Args:
         mol (Molecule): the molecule object
-        cutoff (float): cutoff value for discarding the negligible electronic integrals
+        cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the fermionic dipole moment observable
+        function: function that builds the fermionic dipole moment observable
 
     **Example**
 
@@ -147,13 +148,14 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
     """
 
     def _fermionic_dipole(*args):
-        r"""Compute the fermionic dipole moment observable.
+        r"""Build the fermionic dipole moment observable.
 
         Args:
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple(array[float], list[list[int]]): the dipole moment coefficients and operators
+            tuple(array[float], list[list[int]]): the dipole moment coefficients and the indices of
+            the spin orbitals the creation and annihilation operators act on
         """
         f = []
         constants, integrals = dipole_integrals(mol, core, active)(*args)
@@ -172,7 +174,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
 
     Args:
         mol (Molecule): the molecule object
-        cutoff (float): cutoff value for discarding the negligible electronic integrals
+        cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
@@ -223,7 +225,7 @@ def fermionic_one(core_constant, integral, cutoff=1.0e-12):
     Args:
         core_constant (array[float]): the contribution of the core orbitals and nuclei
         integral (array[float]): the one-particle molecular orbital integrals
-        cutoff (float): cutoff value for discarding the negligible terms
+        cutoff (float): cutoff value for discarding the negligible integrals
 
     Returns:
         tuple(array[float], list[int]): fermionic coefficients and operators

@@ -85,7 +85,7 @@ from pennylane.hf.molecule import Molecule
         ),
     ],
 )
-def test_dipole_integrals(symbols, geometry, core, charge, active, core_ref, int_ref):
+def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int_ref):
     r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
