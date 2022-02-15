@@ -402,4 +402,4 @@ def test_hermitian_labelling_w_cache():
 
     cache = {"matrices": [Z, Y, X]}
     op.label(cache=cache) == "𝓗(M2)"
-    assert len(cache) == 3
+    assert len(cache["matrices"]) == 3

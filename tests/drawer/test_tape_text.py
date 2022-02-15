@@ -324,7 +324,7 @@ with qml.tape.QuantumTape() as tape_matrices:
     qml.expval(qml.Hermitian(np.eye(2), wires=0))
 
 
-class TestShowMatrixParameters:
+class TestShowMatrices:
     """Test the handling of matrix-valued parameters."""
 
     def test_default_no_matrix_parameters(self):
@@ -337,7 +337,7 @@ class TestShowMatrixParameters:
 
         assert tape_text(tape_matrices) == expected
 
-    def test_show_matrix_parameters(self):
+    def test_show_matrices(self):
         """Test matrices included when requested."""
 
         expected = (
@@ -347,7 +347,7 @@ class TestShowMatrixParameters:
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
-        assert tape_text(tape_matrices, show_matrix_parameters=True) == expected
+        assert tape_text(tape_matrices, show_matrices=True) == expected
 
     def test_matrix_parameters_provided_cache(self):
         """Providing an existing matrix cache determines numbering order of matrices.
@@ -363,7 +363,7 @@ class TestShowMatrixParameters:
             "M2 = \n[1.0, 0.0]"
         )
 
-        assert tape_text(tape_matrices, show_matrix_parameters=True, cache=cache) == expected
+        assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
         assert cache["matrices"][2] == [1.0, 0.0]
 
 
