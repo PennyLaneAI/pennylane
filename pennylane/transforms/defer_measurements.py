@@ -35,7 +35,7 @@ def defer_measurements(tape):
                         for i, wire_val in enumerate(branch):
                             if wire_val and flipped[i] or not wire_val and not flipped[i]:
                                 qml.RZ(math.pi, wires=control[i])
-                        ctrl(op.construct_op, control=control)()
+                        ctrl(lambda: apply(op.then_op), control=control)()
                 for i, flip in enumerate(flipped):
                     if flip:
                         qml.RZ(math.pi, wires=control[i])
@@ -43,11 +43,11 @@ def defer_measurements(tape):
             elif op.__class__.__name__ == "_ConditionOp":
                 control = op.dependant_measurements
                 flipped = [False] * len(control)
-                for branch, value in op.branches.items():
+                for branch, branch_op in op.branches.items():
                     for i, wire_val in enumerate(branch):
                         if wire_val and flipped[i] or not wire_val and not flipped[i]:
                             qml.RZ(math.pi, wires=control[i])
-                    ctrl(lambda: new_tape.append(value), control=control)()
+                    ctrl(lambda: apply(branch_op), control=control)()
                 flip_wires = []
                 for i, flip in enumerate(flipped):
                     if flip:

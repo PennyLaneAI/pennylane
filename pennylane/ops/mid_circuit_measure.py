@@ -252,15 +252,8 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
         measured_qubit = expr
 
         def __init__(self, *args, **kwargs):
-            self.then_op = then_op
-            self.args = args
-            self.kwargs = kwargs
-            # self.then_op = then_op(*args, do_queue=False, **kwargs)
+            self.then_op = then_op(*args, do_queue=False, **kwargs)
             super().__init__(*args, **kwargs)
-
-
-        def construct_op(self):
-            return self.then_op(*self.args, **self.kwargs)
 
     return _IfOp
 
