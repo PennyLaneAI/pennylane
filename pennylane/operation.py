@@ -685,11 +685,37 @@ class Operator(abc.ABC):
         """
         raise EigvalsUndefinedError
 
+    @property
     def eigvals(self):
+        r"""Eigenvalues of an instantiated operator.
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
+
+        .. warning::
+
+            The ``eigvals`` property is deprecated and will be removed in
+            PennyLane version 0.23.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        warnings.warn(
+            "The 'eigvals' property is deprecated, and will be replaced with a method 'eigvals()' in v0.23",
+            UserWarning,
+        )
+        return self.get_eigvals()
+
+    def get_eigvals(self):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
-        the operator can be reconstructed as
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
+        can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
 
@@ -701,8 +727,8 @@ class Operator(abc.ABC):
             When eigenvalues are not explicitly defined, they are computed automatically from the matrix representation.
             Currently, this computation is *not* differentiable.
 
-        A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and
-        cannot be inferred from the matrix representation.
+        A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
+        inferred from the matrix representation.
 
         .. seealso:: :meth:`~.Operator.compute_eigvals`
 
@@ -1276,7 +1302,7 @@ class Operation(Operator):
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
     def eigvals(self):
-        op_eigvals = super().eigvals()
+        op_eigvals = super().get_eigvals()
 
         if self.inverse:
             return qml.math.conj(op_eigvals)

@@ -298,7 +298,7 @@ class DefaultQubitTorch(DefaultQubit):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return self._asarray(unitary.eigvals(), dtype=self.C_DTYPE)
+            return self._asarray(unitary.get_eigvals(), dtype=self.C_DTYPE)
         return self._asarray(unitary.get_matrix(), dtype=self.C_DTYPE)
 
     def sample_basis_states(self, number_of_states, state_probability):
