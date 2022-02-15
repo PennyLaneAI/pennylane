@@ -17,10 +17,10 @@ Unit tests for the `pennylane.qcut` package.
 import itertools
 import string
 import sys
-from scipy.stats import unitary_group
 
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -970,10 +970,10 @@ class TestQCutProcessingFn:
         prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 6]
         measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 1]
         tensors = [
-            np.arange(4 ** 5).reshape((4,) * 5),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 7).reshape((4,) * 7)
+            np.arange(4**5).reshape((4,) * 5),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**7).reshape((4,) * 7),
         ]
         results = np.concatenate([t.flatten() for t in tensors])
 
@@ -992,10 +992,7 @@ class TestQCutProcessingFn:
         size that is incompatible with the prepare_nodes and measure_nodes arguments"""
         prepare_nodes = [[None] * 3]
         measure_nodes = [[None] * 2]
-        tensors = [
-            np.arange(4 ** 5).reshape((4,) * 5),
-            np.arange(4)
-        ]
+        tensors = [np.arange(4**5).reshape((4,) * 5), np.arange(4)]
         results = np.concatenate([t.flatten() for t in tensors])
 
         with pytest.raises(ValueError, match="should be a flat list of length 1024"):
@@ -1007,7 +1004,7 @@ class TestQCutProcessingFn:
         """Test if the tensor returned by _process_tensor is equal to the expected value"""
         lib = pytest.importorskip(interface)
 
-        U = unitary_group.rvs(2 ** n, random_state=1967)
+        U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
         I, X, Y, Z = np.eye(2), qml.PauliX.matrix, qml.PauliY.matrix, qml.PauliZ.matrix
@@ -1027,8 +1024,12 @@ class TestQCutProcessingFn:
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
         dev = qml.device("default.qubit", wires=n)
-        states = [np.array([1, 0]), np.array([0, 1]), np.array([1, 1]) / np.sqrt(2),
-                  np.array([1, 1j]) / np.sqrt(2)]
+        states = [
+            np.array([1, 0]),
+            np.array([0, 1]),
+            np.array([1, 1]) / np.sqrt(2),
+            np.array([1, 1j]) / np.sqrt(2),
+        ]
 
         @qml.qnode(dev)
         def f(state, measurement):
@@ -1078,8 +1079,12 @@ class TestQCutProcessingFn:
         ### Find the result using qcut_processing_fn
         I, X, Y, Z = np.eye(2), qml.PauliX.matrix, qml.PauliY.matrix, qml.PauliZ.matrix
         meas_basis = [I, Z, X, Y]
-        states_pure = [np.array([1, 0]), np.array([0, 1]), np.array([1, 1]) / np.sqrt(2),
-                       np.array([1, 1j]) / np.sqrt(2)]
+        states_pure = [
+            np.array([1, 0]),
+            np.array([0, 1]),
+            np.array([1, 1]) / np.sqrt(2),
+            np.array([1, 1j]) / np.sqrt(2),
+        ]
         states = [np.outer(s.conj(), s) for s in states_pure]
         zero_proj = states[0]
 
@@ -1087,8 +1092,7 @@ class TestQCutProcessingFn:
         u2 = qml.RY(y, wires=0).matrix
         u3 = qml.RX(z, wires=0).matrix
         t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
-        t2 = np.array(
-            [[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
+        t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
         t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
 
         res = np.concatenate([t1, t2.flatten(), t3])
@@ -1115,7 +1119,7 @@ class TestQCutProcessingFn:
 
         def f(x):
             t1 = x * np.arange(4)
-            t2 = x ** 2 * np.arange(16).reshape((4, 4))
+            t2 = x**2 * np.arange(16).reshape((4, 4))
             t3 = np.sin(x * np.pi / 2) * np.arange(4)
 
             res = np.concatenate([t1, t2.flatten(), t3])
@@ -1131,7 +1135,9 @@ class TestQCutProcessingFn:
             return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
 
         grad = qml.grad(f)(x)
-        expected_grad = (3 * x ** 2 * np.sin(x * np.pi / 2) + x ** 3 * np.cos(x * np.pi / 2) * np.pi / 2) * f(1)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
 
         assert np.allclose(grad, expected_grad)
 
@@ -1148,7 +1154,7 @@ class TestQCutProcessingFn:
         def f(x):
             x = tf.cast(x, dtype=tf.float64)
             t1 = x * tf.range(4, dtype=tf.float64)
-            t2 = x ** 2 * tf.range(16, dtype=tf.float64)
+            t2 = x**2 * tf.range(16, dtype=tf.float64)
             t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
 
             res = tf.concat([t1, t2, t3], axis=0)
@@ -1167,7 +1173,9 @@ class TestQCutProcessingFn:
             res = f(x)
 
         grad = tape.gradient(res, x)
-        expected_grad = (3 * x ** 2 * np.sin(x * np.pi / 2) + x ** 3 * np.cos(x * np.pi / 2) * np.pi / 2) * f(1)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
 
         assert np.allclose(grad, expected_grad)
 
@@ -1183,7 +1191,7 @@ class TestQCutProcessingFn:
 
         def f(x):
             t1 = x * torch.arange(4)
-            t2 = x ** 2 * torch.arange(16)
+            t2 = x**2 * torch.arange(16)
             t3 = torch.sin(x * np.pi / 2) * torch.arange(4)
 
             res = torch.cat([t1, t2, t3], axis=0)
@@ -1204,7 +1212,9 @@ class TestQCutProcessingFn:
 
         x_ = x.detach().numpy()
         f1 = f(torch.tensor(1, dtype=torch.float64))
-        expected_grad = (3 * x_ ** 2 * np.sin(x_ * np.pi / 2) + x_ ** 3 * np.cos(x_ * np.pi / 2) * np.pi / 2) * f1
+        expected_grad = (
+            3 * x_**2 * np.sin(x_ * np.pi / 2) + x_**3 * np.cos(x_ * np.pi / 2) * np.pi / 2
+        ) * f1
 
         assert np.allclose(grad.detach().numpy(), expected_grad)
 
@@ -1221,7 +1231,7 @@ class TestQCutProcessingFn:
 
         def f(x):
             t1 = x * jnp.arange(4)
-            t2 = x ** 2 * jnp.arange(16).reshape((4, 4))
+            t2 = x**2 * jnp.arange(16).reshape((4, 4))
             t3 = jnp.sin(x * np.pi / 2) * jnp.arange(4)
 
             res = jnp.concatenate([t1, t2.flatten(), t3])
@@ -1237,6 +1247,8 @@ class TestQCutProcessingFn:
             return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
 
         grad = jax.grad(f)(x)
-        expected_grad = (3 * x ** 2 * np.sin(x * np.pi / 2) + x ** 3 * np.cos(x * np.pi / 2) * np.pi / 2) * f(1)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
 
         assert np.allclose(grad, expected_grad)

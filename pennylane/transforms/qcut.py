@@ -16,7 +16,7 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 import string
-from typing import Sequence, Tuple, List
+from typing import List, Sequence, Tuple
 
 from networkx import MultiDiGraph, weakly_connected_components
 
@@ -446,7 +446,7 @@ def _process_tensor(results, n_prep, n_meas):
 
     """
     n = n_prep + n_meas
-    dim_meas = 4 ** n_meas
+    dim_meas = 4**n_meas
 
     intermediate_shape = (4,) * n_prep + (dim_meas,)
     intermediate_tensor = qml.math.reshape(results, intermediate_shape)
@@ -477,7 +477,11 @@ def _process_tensor(results, n_prep, n_meas):
     return final_tensor
 
 
-def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]]) -> List:
+def _to_tensors(
+    results: Sequence,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+) -> List:
     """TODO
 
     Args:
@@ -493,8 +497,8 @@ def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]
         n_meas = len(m)
         n = n_prep + n_meas
 
-        dim = 4 ** n
-        results_slice = qml.math.stack(results[ctr: dim + ctr])
+        dim = 4**n
+        results_slice = qml.math.stack(results[ctr : dim + ctr])
 
         tensors.append(_process_tensor(results_slice, n_prep, n_meas))
 
@@ -506,7 +510,13 @@ def _to_tensors(results: Sequence, prepare_nodes: Sequence[Sequence[PrepareNode]
     return tensors
 
 
-def qcut_processing_fn(results: Sequence, communication_graph: MultiDiGraph, prepare_nodes: Sequence[Sequence[PrepareNode]], measure_nodes: Sequence[Sequence[MeasureNode]], use_opt_einsum: bool=False):
+def qcut_processing_fn(
+    results: Sequence,
+    communication_graph: MultiDiGraph,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+    use_opt_einsum: bool = False,
+):
     """TODO
 
     Args:
@@ -524,5 +534,7 @@ def qcut_processing_fn(results: Sequence, communication_graph: MultiDiGraph, pre
             flat_results.append(r)
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
-    result = contract_tensors(tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum)
+    result = contract_tensors(
+        tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
+    )
     return result
