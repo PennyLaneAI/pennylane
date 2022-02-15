@@ -61,6 +61,11 @@
 
 <h3>Improvements</h3>
 
+* The `gradients` module has been streamlined and special-purpose functions
+  moved closer to their use cases. This does not change the behaviour for
+  users in any way.
+  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
+
 * Added a new `partition_pauli_group` function to the `grouping` module for
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
