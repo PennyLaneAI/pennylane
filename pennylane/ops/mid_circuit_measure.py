@@ -107,6 +107,11 @@ class MeasurementDependantValue(Generic[T]):
             return [self._depends_on, *self._zero_case.measurements]
         return [self._depends_on]
 
+    def logical_not(self):
+        """Perform a logical not on the MeasurementDependantValue.
+        """
+        return apply_to_measurement_dependant_values(lambda x: not x)(self)
+
     # define all mathematical __dunder__ methods https://docs.python.org/3/library/operator.html
     def __add__(self, other: Any):
         return apply_to_measurement_dependant_values(lambda x, y: x + y)(self, other)
@@ -125,6 +130,12 @@ class MeasurementDependantValue(Generic[T]):
 
     def __rand__(self, other: Any):
         return apply_to_measurement_dependant_values(lambda x, y: y and x)(self, other)
+
+    def __or__(self, other: Any):
+        return apply_to_measurement_dependant_values(lambda x, y: x or y)(self, other)
+
+    def __ror__(self, other: Any):
+        return apply_to_measurement_dependant_values(lambda x, y: y or x)(self, other)
 
     def __str__(self):
         measurements = self.measurements
