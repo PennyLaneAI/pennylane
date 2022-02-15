@@ -959,9 +959,14 @@ class TestCutStrategy:
 
     @pytest.mark.parametrize("devices", [None, 1])
     @pytest.mark.parametrize("imbalance_tolerance", [None, -1])
-    def test_init_raises(self, devices, imbalance_tolerance):
+    @pytest.mark.parametrize("num_fragments_probed", [None, 0])
+    def test_init_raises(self, devices, imbalance_tolerance, num_fragments_probed):
         with pytest.raises(ValueError):
-            qcut.CutStrategy(devices=devices, imbalance_tolerance=imbalance_tolerance)
+            qcut.CutStrategy(
+                devices=devices,
+                num_fragments_probed=num_fragments_probed,
+                imbalance_tolerance=imbalance_tolerance,
+            )
 
     @pytest.mark.parametrize("devices", [devs[0], devs])
     @pytest.mark.parametrize("max_free_wires", [None, 3])
@@ -1045,3 +1050,49 @@ class TestCutStrategy:
         assert all("imbalance" in kwargs and "num_fragments" in kwargs for kwargs in all_cut_kwargs)
         if imbalance_tolerance is not None:
             assert all([kwargs["imbalance"] <= imbalance_tolerance for kwargs in all_cut_kwargs])
+
+    @pytest.mark.parametrize(
+        "num_fragments_probed", [1, qcut.CutStrategy.HIGH_NUM_FRAGMENTS + 1, (2, 100)]
+    )
+    def test_get_cut_kwargs_warnings(self, num_fragments_probed):
+        """Test the 3 situations where the get_cut_kwargs pops out a warning."""
+        strategy = qcut.CutStrategy(
+            max_free_wires=2,
+            num_fragments_probed=num_fragments_probed,
+        )
+        k = num_fragments_probed
+        k_lower = k if isinstance(k, int) else k[0]
+        assert strategy.k_lower == k_lower
+
+        with pytest.warns(UserWarning):
+            _ = strategy.get_cut_kwargs(self.tape_dags[1])
+
+    @pytest.mark.parametrize("max_wires_by_fragment", [None, [2, 3]])
+    @pytest.mark.parametrize("max_gates_by_fragment", [[20, 30], [20, 30, 40]])
+    def test_by_fragment_sizes(self, max_wires_by_fragment, max_gates_by_fragment):
+        """Test that the user provided by-fragment limits properly propagates."""
+        strategy = qcut.CutStrategy(
+            min_free_wires=2,
+        )
+        if (
+            max_wires_by_fragment
+            and max_gates_by_fragment
+            and len(max_wires_by_fragment) != len(max_gates_by_fragment)
+        ):
+            with pytest.raises(AssertionError):
+                cut_kwargs = strategy.get_cut_kwargs(
+                    self.tape_dags[1],
+                    max_wires_by_fragment=max_wires_by_fragment,
+                    max_gates_by_fragment=max_gates_by_fragment,
+                )
+            return
+
+        cut_kwargs = strategy.get_cut_kwargs(
+            self.tape_dags[1],
+            max_wires_by_fragment=max_wires_by_fragment,
+            max_gates_by_fragment=max_gates_by_fragment,
+        )
+        assert len(cut_kwargs) == 1
+
+        cut_kwargs = cut_kwargs[0]
+        assert cut_kwargs["num_fragments"] == len(max_wires_by_fragment or max_gates_by_fragment)

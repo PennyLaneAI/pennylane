@@ -516,6 +516,8 @@ class CutStrategy:
             self.num_fragments_probed = sorted(self.num_fragments_probed)
             self.k_lower = self.num_fragments_probed[0]
             self.k_upper = self.num_fragments_probed[-1]
+            if self.k_lower <= 0:
+                raise ValueError("`num_fragments_probed` must be positive int(s)")
         else:
             self.k_lower, self.k_upper = None, None
 
@@ -638,14 +640,14 @@ class CutStrategy:
         """Helper parameter checker."""
         if max_wires_by_fragment is not None:
             assert isinstance(max_wires_by_fragment, (list, tuple))
-            assert all(isinstance(i, int) and i <= num_tape_wires for i in max_wires_by_fragment)
-            if self.max_free_wires is not None:
-                assert all(i <= self.max_free_wires for i in max_wires_by_fragment)
+            assert all(isinstance(i, int) and i > 0 for i in max_wires_by_fragment)
+            # if self.max_free_wires is not None:
+            #     assert all(i <= self.max_free_wires for i in max_wires_by_fragment)
         if max_gates_by_fragment is not None:
             assert isinstance(max_gates_by_fragment, (list, tuple))
-            assert all(isinstance(i, int) and i <= num_tape_gates for i in max_gates_by_fragment)
-            if self.max_free_gates is not None:
-                assert all(i <= self.max_free_gates for i in max_gates_by_fragment)
+            assert all(isinstance(i, int) and i > 0 for i in max_gates_by_fragment)
+            # if self.max_free_gates is not None:
+            #     assert all(i <= self.max_free_gates for i in max_gates_by_fragment)
         if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
             assert len(max_wires_by_fragment) == len(max_gates_by_fragment)
 
@@ -684,7 +686,7 @@ class CutStrategy:
         min_free_gates = self.min_free_gates or max_free_gates
 
         # The lower bound of k corresponds to executing each fragment on the largest available device.
-        k_lb = 1 + min(
+        k_lb = 1 + max(
             (num_tape_wires - 1) // max_free_wires,  # wire limited
             (num_tape_gates - 1) // max_free_gates,  # gate limited
         )
@@ -702,9 +704,9 @@ class CutStrategy:
         if max_gates_by_fragment is None and max_wires_by_fragment is None:
 
             # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
-            k_lower = int(self.k_lower or k_lb)
+            k_lower = self.k_lower if self.k_lower is not None else k_lb
             # k_upper, when supplied by a user, can be higher than k_ub to encourage exploration:
-            k_upper = int(self.k_upper or k_ub)
+            k_upper = self.k_upper if self.k_upper is not None else k_ub
 
             if k_lower < k_lb:
                 warnings.warn(
@@ -729,7 +731,7 @@ class CutStrategy:
         else:
             # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
             # return a single partition config.
-            ks = [len(max_wires_by_fragment)]
+            ks = [len(max_wires_by_fragment or max_gates_by_fragment)]
 
         for k in ks:
             imbalance = self._infer_imbalance(
