@@ -433,16 +433,27 @@ def contract_tensors(
 CHANGE_OF_BASIS = qml.math.array([[1.0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
 
 
-def _process_tensor(results, n_prep, n_meas):
-    """TODO
+def _process_tensor(results, n_prep: int, n_meas: int):
+    """Convert a flat slice of execution results into a tensor.
+
+    This function performs the following steps:
+
+    - Reshapes ``results`` into the shape ``(4,) * n_prep + (dim_meas,)``
+    - Shuffles the final axis to follow the standard product over measurement settings. E.g., for
+      ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
+      will be the result of ``qml.grouping.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      YY.
+    - Reshapes into the target final shape ``(4,) * (n_prep + n_meas)``
+    - Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from the
+      |0>, |1>, |+>, |+i> basis to the I, X, Y, Z basis.
 
     Args:
-        results:
-        n_prep:
-        n_meas:
+        results (array-like): the input execution results
+        n_prep (int): the number of preparation nodes in the corresponding circuit fragment
+        n_meas (int): the number of measurement nodes in the corresponding circuit fragment
 
     Returns:
-
+        array-like: the corresponding fragment tensor
     """
     n = n_prep + n_meas
     dim_meas = 4**n_meas
@@ -477,16 +488,29 @@ def _process_tensor(results, n_prep, n_meas):
 
 
 def _to_tensors(
-    results: Sequence,
+    results,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
 ) -> List:
-    """TODO
+    """Process a flat list of execution results into the tensors of circuit fragments.
+
+    This function slices ``results`` according to the expected size of fragment tensors derived from
+    the ``prepare_nodes`` and ``measure_nodes`` and then passes onto ``_process_tensor`` for further
+    transformation.
 
     Args:
-        results:
-        prepare_nodes:
-        measure_nodes:
+        results (array-like): A collection of execution results corresponding to the
+            expansion of circuit fragments in the communication graph over measurement and
+            preparation nodes. These results are processed into tensors by this function.
+        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of preparation indices in
+            each tensor
+        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of measurement indices in
+            each tensor
+
+    Returns:
+        List[array-like]: the tensors for each circuit fragment in the communication graph
     """
     ctr = 0
     tensors = []
