@@ -19,6 +19,7 @@ class TestMidCircuitMeasurements:
             return qml.probs(wires=0)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def teleportation_circuit(rads):
 
             # Create Alice's secret qubit state
@@ -54,6 +55,7 @@ class TestMidCircuitMeasurements:
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def runtime_circuit():
             qml.Hadamard(wires=0)
             m0 = qml.mid_measure(0)
@@ -69,6 +71,7 @@ class TestMidCircuitMeasurements:
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
+        @qml.defer_measurements
         def runtime_circuit():
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=1)
