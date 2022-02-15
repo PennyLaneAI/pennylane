@@ -1283,7 +1283,7 @@ class Operation(Operator):
             "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
             UserWarning,
         )
-        op_matrix = self._matrix(*self.parameters)
+        op_matrix = self.get_matrix()
 
         if self.inverse:
             return qml.math.conj(qml.math.T(op_matrix))
