@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the taskify interface with devices.
+Tests for the taskify interface with with jax as INTERFACE.
 """
 import pennylane as qml
 import numpy as np
@@ -23,9 +23,6 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 jax = pytest.importorskip("jax", minversion="0.2")
-torch = pytest.importorskip("torch", minversion="1.8")
-tf = pytest.importorskip("tensorflow", minversion="2.4")
-
 dist = pytest.importorskip("dask.distributed")
 
 
@@ -40,10 +37,7 @@ dist = pytest.importorskip("dask.distributed")
 @pytest.mark.parametrize(
     "INTERFACE",
     [
-        ("tf", lambda x: tf.Variable(x)),
-        ("torch", lambda x: torch.tensor(x, requires_grad=True)),
         ("jax", lambda x: jax.numpy.array(x)),
-        ("autograd", lambda x: qml.numpy.array(x, requires_grad=True)),
     ],
 )
 def test_taskify_func(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
@@ -79,12 +73,9 @@ def test_taskify_func(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
     res_task = qml.taskify(circuit_task)(p)
     res_task_f = qml.taskify(circuit_task, futures=True)(p)
 
-    if INTERFACE[0] == "torch":
-        assert np.allclose(res.detach(), res_task.detach(), atol=tol, rtol=0)
-        assert np.allclose(res.detach(), res_task_f.result().detach(), atol=tol, rtol=0)
-    else:
-        assert np.allclose(res, res_task, atol=tol, rtol=0)
-        assert np.allclose(res, res_task_f.result(), atol=tol, rtol=0)
+    assert np.allclose(res, res_task, atol=tol, rtol=0)
+    assert np.allclose(res, res_task_f.result(), atol=tol, rtol=0)
+    client.close()
 
 
 @pytest.mark.parametrize(
@@ -98,8 +89,6 @@ def test_taskify_func(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
 @pytest.mark.parametrize(
     "INTERFACE",
     [
-        ("tf", lambda x: tf.Variable(x)),
-        ("torch", lambda x: torch.tensor(x, requires_grad=True)),
         ("jax", lambda x: jax.numpy.array(x)),
     ],
 )
@@ -136,12 +125,9 @@ def test_taskify_device(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
     res_task = qml.taskify(circuit_task)(p)
     res_task_f = qml.taskify(circuit_task, futures=True)(p)
 
-    if INTERFACE[0] == "torch":
-        assert np.allclose(res.detach(), res_task.detach(), atol=tol, rtol=0)
-        assert np.allclose(res.detach(), res_task_f.result().detach(), atol=tol, rtol=0)
-    else:
-        assert np.allclose(res, res_task, atol=tol, rtol=0)
-        assert np.allclose(res, res_task_f.result(), atol=tol, rtol=0)
+    assert np.allclose(res, res_task, atol=tol, rtol=0)
+    assert np.allclose(res, res_task_f.result(), atol=tol, rtol=0)
+    client.close()
 
 
 @pytest.mark.parametrize(
@@ -155,8 +141,6 @@ def test_taskify_device(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
 @pytest.mark.parametrize(
     "INTERFACE",
     [
-        ("tf", lambda x: tf.Variable(x)),
-        ("torch", lambda x: torch.tensor(x, requires_grad=True)),
         ("jax", lambda x: jax.numpy.array(x)),
     ],
 )
@@ -192,17 +176,17 @@ def test_untaskify_result(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
     res = circuit(p)
     res_task_f = qml.taskify(circuit_task, futures=True)(p)
 
-    if INTERFACE[0] == "torch":
-        assert np.allclose(res.detach(), qml.untaskify(res_task_f)().detach(), atol=tol, rtol=0)
-    else:
-        assert np.allclose(res, qml.untaskify(res_task_f)(), atol=tol, rtol=0)
+    assert np.allclose(res, qml.untaskify(res_task_f)(), atol=tol, rtol=0)
+    client.close()
 
 
-# def test_taskify_result_noclient():
-#     """Test untaskify exception throwing"""
-#     with pytest.raises(RuntimeError) as excinfo1:
-#         f = qml.taskify(lambda _: "This will fail")([])
-#     with pytest.raises(RuntimeError) as excinfo2:
-#         f = qml.untaskify(lambda _: "This will fail")([])
-#     assert "No running Dask client" in str(excinfo1.value)
-#     assert "No running Dask client" in str(excinfo2.value)
+@pytest.mark.parametrize(
+    "METHOD",
+    [qml.taskify, qml.untaskify],
+)
+def test_taskify_result_noclient(METHOD):
+    """Test untaskify exception throwing"""
+    with pytest.raises(RuntimeError) as ex:
+        f = METHOD(lambda _: "This will fail")([])
+
+    assert "No running Dask client detected." in str(ex.value)

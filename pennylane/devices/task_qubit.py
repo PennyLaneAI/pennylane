@@ -15,6 +15,8 @@
 a given qubit type for run on a background scheduler.
 """
 from typing import List, Union, Iterable
+from concurrent.futures import CancelledError
+
 from contextlib import nullcontext
 import pennylane as qml
 from pennylane import DeviceError
@@ -316,7 +318,7 @@ class TaskQubit(DefaultQubit):
                                 circuit,
                             )
                         )
-            except Exception:
+            except:
                 # get the worker currently running this task
                 client = dask.distributed.get_client()
                 for circuit in circuits:
@@ -334,7 +336,7 @@ class TaskQubit(DefaultQubit):
             try:
                 with worker_client() as client:
                     res = client.gather(results)
-            except Exception:
+            except:
                 client = dask.distributed.get_client()
                 res = client.gather(results)
             return res
