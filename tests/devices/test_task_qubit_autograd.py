@@ -12,77 +12,86 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the accessibility of the Task-Qubit device with Pyjax interface
+Tests for the accessibility of the Task-Qubit device with autograd interface
 """
 import pennylane as qml
 import numpy as np
 import pytest
 import os
+from typing import List, Tuple, Dict
 
 # Ensure GPU devices disabled if available
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-jax = pytest.importorskip("jax", minversion="0.2")
 dist = pytest.importorskip("dask.distributed")
 
 
 @pytest.mark.parametrize(
     "BACKEND",
     [
-        ("default.qubit", "parameter-shift"),
-        ("default.qubit", "backprop"),
+        ("default.qubit.autograd", "parameter-shift"),
+        ("default.qubit.autograd", "backprop"),
         ("lightning.qubit", "parameter-shift"),
     ],
 )
-def test_integration_jax(dask_setup_teardown, BACKEND, tol=1e-5):
-    """Test that the execution of task.qubit is possible and agrees with general use of default.qubit.jax"""
+def test_integration_autograd(dask_setup_teardown, BACKEND, tol=1e-5):
+    """Test that the execution of task.qubit is possible and agrees with general use of default.qubit.autograd"""
     tol = 1e-5
     wires = 3
-    dev_jax = qml.device("default.qubit.jax", wires=wires)
+    dev = qml.device("default.qubit.autograd", wires=wires)
     dev_task = qml.device("task.qubit", wires=wires, backend=BACKEND[0])
-    p_jax = jax.numpy.array(np.random.rand(4))
+    p = qml.numpy.array(np.random.rand(4), requires_grad=True)
 
     # Pull address from fixture
     client = dist.Client(address=dask_setup_teardown)
 
-    @qml.qnode(dev_jax, cache=False, interface="jax", diff_method=BACKEND[1])
-    def circuit_jax(x):
+    @qml.qnode(dev, cache=False, interface="autograd", diff_method=BACKEND[1])
+    def circuit(x):
         for i in range(0, 4, 2):
             qml.RX(x[i], wires=0)
             qml.RY(x[i + 1], wires=1)
         for i in range(2):
             qml.CNOT(wires=[i, i + 1])
-        return qml.expval(qml.PauliZ(0))
+        return [qml.expval(qml.PauliZ(i)) for i in range(wires)]
 
-    @qml.qnode(dev_task, cache=False, interface="jax", diff_method=BACKEND[1])
+    @qml.qnode(dev_task, cache=False, interface="autograd", diff_method=BACKEND[1])
     def circuit_task(x):
         for i in range(0, 4, 2):
             qml.RX(x[i], wires=0)
             qml.RY(x[i + 1], wires=1)
         for i in range(2):
             qml.CNOT(wires=[i, i + 1])
-        return qml.expval(qml.PauliZ(0))
+        return [qml.expval(qml.PauliZ(i)) for i in range(wires)]
 
-    res_jax = circuit_jax(p_jax)
-    res_task = client.submit(circuit_task, p_jax).result()
+    res = circuit(p)
+    res_task = client.submit(circuit_task, p).result()
 
-    grads = jax.grad(circuit_jax, argnums=(0))
-    gres_jax = grads(p_jax)
+    g_res = qml.jacobian(circuit)(p)
 
     def grad_task(params):
-        grads = jax.grad(circuit_task, argnums=(0))
-        gres_jax = grads(params)
-        return gres_jax
+        gres_task = qml.jacobian(circuit_task)(params)
+        return gres_task
 
     client.scatter([1, 2, 3], broadcast=True)
     gres_task = client.submit(
         grad_task,
-        p_jax,
+        p,
     ).result()
     client.close()
 
-    assert jax.numpy.allclose(res_jax, res_task, atol=tol, rtol=0)
-    assert jax.numpy.allclose(gres_jax, gres_task, atol=tol, rtol=0)
+    assert qml.numpy.allclose(res, res_task, atol=tol, rtol=0)
+    assert qml.numpy.allclose(g_res, gres_task, atol=tol, rtol=0)
+
+
+def test_autograd_serialization(dask_setup_teardown):
+    "Test the serialization of qml.numpy.tensor datatypes"
+    arr = qml.numpy.array(np.random.rand(4), requires_grad=True)
+    client = dist.Client(address=dask_setup_teardown)
+
+    # Serialize as part of client submission
+    c_arr_future = client.scatter(arr, broadcast=True)
+    c_arr = c_arr_future.result()
+
+    assert qml.numpy.allclose(arr, c_arr)
 
 
 def test_instance_vs_class_method(dask_setup_teardown):
@@ -104,7 +113,7 @@ def test_instance_vs_class_method(dask_setup_teardown):
             "autograd": "default.qubit.autograd",
             "jax": "default.qubit.jax",
         },
-        "passthru_interface": "jax",
+        "passthru_interface": "autograd",
     }
 
     expected_cap_cls = {
@@ -120,7 +129,7 @@ def test_instance_vs_class_method(dask_setup_teardown):
         "passthru_devices": {},
         "is_proxy": True,
     }
-    dev_task = qml.device("task.qubit", wires=1, backend="default.qubit.jax")
+    dev_task = qml.device("task.qubit", wires=1, backend="default.qubit.autograd")
     assert qml.devices.task_qubit.TaskQubit.capabilities() == expected_cap_cls
     assert dev_task.capabilities() == expected_cap_instance
     assert dev_task.capabilities() != qml.devices.task_qubit.TaskQubit.capabilities()
