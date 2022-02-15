@@ -423,7 +423,7 @@ class TestEigenval:
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
         exp = np.linalg.eigvals(op.get_matrix())
-        res = op.eigvals()
+        res = op.get_eigvals()
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
@@ -431,12 +431,12 @@ class TestEigenval:
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = siswap_op(wires=[0, 1])
         exp = np.linalg.eigvals(op.get_matrix())
-        res = op.eigvals()
+        res = op.get_eigvals()
         assert np.allclose(res, exp)
 
     def test_sx_eigenvals(self):
         """Tests that the SX eigenvalues are correct."""
-        evals = qml.SX(wires=0).eigvals()
+        evals = qml.SX(wires=0).get_eigvals()
         expected = np.linalg.eigvals(qml.SX(wires=0).get_matrix())
         assert np.allclose(evals, expected)
 

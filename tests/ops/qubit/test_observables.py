@@ -130,7 +130,7 @@ class TestSimpleObservables:
     def test_eigvals(self, obs, mat, eigs, tol):
         """Test eigenvalues of standard observables are correct"""
         obs = obs(wires=0)
-        res = obs.eigvals()
+        res = obs.get_eigvals()
         assert np.allclose(res, eigs, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
@@ -190,7 +190,7 @@ class TestHermitian:
 
         key = tuple(observable_1.flatten().tolist())
 
-        qml.Hermitian(observable_1, 0).eigvals()
+        qml.Hermitian(observable_1, 0).get_eigvals()
         assert np.allclose(
             qml.Hermitian._eigs[key]["eigval"], observable_1_eigvals, atol=tol, rtol=0
         )
@@ -205,7 +205,7 @@ class TestHermitian:
 
         key_2 = tuple(observable_2.flatten().tolist())
 
-        qml.Hermitian(observable_2, 0).eigvals()
+        qml.Hermitian(observable_2, 0).get_eigvals()
         assert np.allclose(
             qml.Hermitian._eigs[key_2]["eigval"], observable_2_eigvals, atol=tol, rtol=0
         )
@@ -221,12 +221,12 @@ class TestHermitian:
         """Tests that the eigvals method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
 
-        qml.Hermitian(observable, 0).eigvals()
+        qml.Hermitian(observable, 0).get_eigvals()
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-        qml.Hermitian(observable, 0).eigvals()
+        qml.Hermitian(observable, 0).get_eigvals()
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
@@ -373,7 +373,7 @@ class TestProjector:
     def test_projector_eigvals(self, basis_state, tol):
         """Tests that the eigvals property of the Projector class returns the correct results."""
         num_wires = len(basis_state)
-        eigvals = qml.Projector(basis_state, wires=range(num_wires)).eigvals()
+        eigvals = qml.Projector(basis_state, wires=range(num_wires)).get_eigvals()
 
         if basis_state[0] == 0:
             observable = np.array([[1, 0], [0, 0]])

@@ -679,10 +679,10 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert np.array_equal(t.eigvals(), np.kron([1, -1], [1, -1]))
+        assert np.array_equal(t.get_eigvals(), np.kron([1, -1], [1, -1]))
 
         # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals_cache, t.eigvals())
+        assert np.array_equal(t._eigvals_cache, t.get_eigvals())
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
@@ -692,7 +692,7 @@ class TestTensor:
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
         t = Tensor(X, Herm)
         d = np.kron(np.array([1.0, -1.0]), np.array([-1.0, 1.0, 1.0, 1.0]))
-        t = t.eigvals()
+        t = t.get_eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity(self, tol):
@@ -701,7 +701,7 @@ class TestTensor:
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
         d = np.kron(np.array([1.0, -1.0]), np.array([1.0, 1.0]))
-        t = t.eigvals()
+        t = t.get_eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity_and_hermitian(self, tol):
@@ -709,7 +709,7 @@ class TestTensor:
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4, 5])
-        res = O.eigvals()
+        res = O.get_eigvals()
         expected = np.kron(np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -782,7 +782,7 @@ class TestTensor:
         U = reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
-        expected = np.diag(O.eigvals())
+        expected = np.diag(O.get_eigvals())
 
         # once diagonalized by U, the result should be a diagonal
         # matrix of the eigenvalues.
@@ -1211,7 +1211,7 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.EigvalsUndefinedError):
             MyOp.compute_eigvals()
         with pytest.raises(qml.operation.EigvalsUndefinedError):
-            op.eigvals()
+            op.get_eigvals()
 
     def test_diaggates_undefined(self):
         """Tests that custom error is raised in the default diagonalizing gates representation."""
