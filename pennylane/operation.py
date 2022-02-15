@@ -1818,7 +1818,7 @@ class Tensor(Observable):
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.get_eigvals())
 
         return self._eigvals_cache
 
