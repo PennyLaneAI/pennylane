@@ -33,6 +33,9 @@
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
 
+  The postprocessing function for the `cut_circuit` transform has been added.
+  [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
+
 <h3>Improvements</h3>
 
 * Added a new `partition_pauli_group` function to the `grouping` module for
