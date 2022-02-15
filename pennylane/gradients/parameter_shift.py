@@ -116,7 +116,7 @@ def _choose_params_with_methods(diff_methods, argnum):
             "No trainable parameters were specified for computing the Jacobian.",
             UserWarning,
         )
-        return dict()
+        return {}
 
     return {idx: diff_methods[idx] for idx in argnum}
 

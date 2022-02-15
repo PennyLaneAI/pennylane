@@ -88,7 +88,7 @@ class TestChooseParamsWithMethods:
         is passed as ``argnum``."""
         with pytest.warns(UserWarning, match="No trainable parameters were specified"):
             chosen = _choose_params_with_methods(diff_methods, [])
-        assert chosen == dict()
+        assert chosen == {}
 
 
 class TestGradAnalysis:
