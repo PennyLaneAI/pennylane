@@ -93,9 +93,6 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
-        "_MidCircuitMeasure",
-        "_IfOp",
-        "_ConditionOp",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -164,12 +161,8 @@ class DefaultQubit(QubitDevice):
         # state as an array of dimension [2]*wires.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
-        self._measured = []
 
         self._apply_ops = {
-            "_MidCircuitMeasure": self._apply_mid_circuit_measure,
-            "_IfOp": self._apply_if_op,
-            "_ConditionOp": self._apply_condition_op,
             "PauliX": self._apply_x,
             "PauliY": self._apply_y,
             "PauliZ": self._apply_z,
@@ -215,9 +208,6 @@ class DefaultQubit(QubitDevice):
                     f"on a {self.short_name} device."
                 )
 
-            if any(w in self._measured for w in operation.wires):
-                raise DeviceError("Cannot perform operation on measured wires.")
-
             if isinstance(operation, QubitStateVector):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
@@ -246,72 +236,17 @@ class DefaultQubit(QubitDevice):
 
         if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.base_name](
-                state, axes, inverse=operation.inverse, op_object=operation
-            )
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._get_unitary_matrix(operation)
 
         if operation in diagonal_in_z_basis:
             return self._apply_diagonal_unitary(state, matrix, wires)
         if len(wires) <= 2:
-            # einsum is faster for small gates
+            # Einsum is faster for small gates
             return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
-
-    def _apply_if_op(self, state, axes, op_object=None, **kwargs):
-        """
-        Decompose the state vector into a sum of two components `true_state` and `false_state`.
-        `true_state` is the sum of all the projections where the branch expression evaluates to true, and `false_state`
-        is the sum of the other branches. Apply the op to `true_state` and resum with `false_state`.
-        """
-        mask = np.zeros(state.shape, dtype=bool)
-        for branch in op_object.branches.keys():
-            if op_object.branches[branch]:
-                for i, m in enumerate(op_object.dependant_measurements):
-                    slicer = [slice(None)] * self.num_wires
-                    slicer[m] = branch[i]
-                    mask[tuple(slicer)] = True
-        true_state = state * mask.astype(
-            int
-        )  # this is the result of the projection applied to the state
-        false_state = state * np.logical_not(mask).astype(
-            int
-        )  # this is the complement of the projection
-        return self._apply_operation(true_state, op_object.then_op) + false_state
-
-    def _apply_condition_op(self, state, axes, op_object=None, **kwargs):
-        """
-        Decompose the state vector into a sum of projected state vectors (one for each branch). and apply the op to the
-        corresponding branch, and then re-sum.
-        """
-        sum_state = None
-        for branch in op_object.branches.keys():
-            mask = np.zeros(state.shape, dtype=bool)
-            for i, m in enumerate(op_object.dependant_measurements):
-                slicer = [slice(None)] * self.num_wires
-                slicer[m] = branch[i]
-                mask[tuple(slicer)] = True
-            partial_state = self._apply_operation(
-                state * mask.astype(int), op_object.branches[branch]
-            )
-            if sum_state is None:
-                sum_state = partial_state
-            else:
-                sum_state += partial_state
-        return sum_state
-
-    def _apply_mid_circuit_measure(self, state, axes, op_object=None, **kwargs):
-        """
-        Mark the measured wire as "measured", but do nothing to the state. Thanks to deferred measurement principle,
-        we can delay the actual measurement until the end. (but still restrict what operations can be performed on
-        this wire).
-        """
-
-        # don't actually change the state (deferred measurement principle)
-        self._measured.append(op_object.measured_wire)
-        return state
 
     def _apply_x(self, state, axes, **kwargs):
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
@@ -370,13 +305,13 @@ class DefaultQubit(QubitDevice):
         state_z = self._apply_z(state, axes)
         return SQRT2INV * (state_x + state_z)
 
-    def _apply_s(self, state, axes, inverse=False, **kwargs):
+    def _apply_s(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, 1j, inverse)
 
-    def _apply_t(self, state, axes, inverse=False, **kwargs):
+    def _apply_t(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, TPHASE, inverse)
 
-    def _apply_sx(self, state, axes, inverse=False, **kwargs):
+    def _apply_sx(self, state, axes, inverse=False):
         """Apply the Square Root X gate.
 
         Args:
@@ -498,7 +433,7 @@ class DefaultQubit(QubitDevice):
         state_z = self._apply_z(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_z], axis=axes[0])
 
-    def _apply_phase(self, state, axes, parameters, inverse=False, **kwargs):
+    def _apply_phase(self, state, axes, parameters, inverse=False):
         """Applies a phase onto the 1 index along the axis specified in ``axes``.
 
         Args:
@@ -560,7 +495,7 @@ class DefaultQubit(QubitDevice):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
                     coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), "complex128")
+                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
                         qml.math.gather(qml.math.conj(self.state), coo.row)
@@ -640,7 +575,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
+        state = np.zeros(2**self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
@@ -664,7 +599,7 @@ class DefaultQubit(QubitDevice):
 
         # Return the full density matrix by using numpy tensor product
         if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), 0)
+            density_matrix = self._tensordot(state, self._conj(state), axes=0)
             density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
             return density_matrix
 
@@ -679,7 +614,7 @@ class DefaultQubit(QubitDevice):
 
         return density_matrix
 
-    def _apply_state_vector(self, state, device_wires, **kwargs):
+    def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 
         Args:
@@ -717,11 +652,11 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
-    def _apply_basis_state(self, state, wires, **kwargs):
+    def _apply_basis_state(self, state, wires):
         """Initialize the state vector in a specified computational basis state.
 
         Args:
@@ -748,7 +683,7 @@ class DefaultQubit(QubitDevice):
 
         self._state = self._create_basis_state(num)
 
-    def _apply_unitary(self, state, mat, wires, **kwargs):
+    def _apply_unitary(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         Args:
@@ -775,7 +710,7 @@ class DefaultQubit(QubitDevice):
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
 
-    def _apply_unitary_einsum(self, state, mat, wires, **kwargs):
+    def _apply_unitary_einsum(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 
         This function uses einsum instead of tensordot. This approach is only
@@ -816,7 +751,7 @@ class DefaultQubit(QubitDevice):
 
         return self._einsum(einsum_indices, mat, state)
 
-    def _apply_diagonal_unitary(self, state, phases, wires, **kwargs):
+    def _apply_diagonal_unitary(self, state, phases, wires):
         r"""Apply multiplication of a phase vector to subsystems of the quantum state.
 
         This represents the multiplication with diagonal gates in a more efficient manner.
@@ -848,7 +783,6 @@ class DefaultQubit(QubitDevice):
         # init the state vector to |00..0>
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
-        self._measured = []
 
     def analytic_probability(self, wires=None):
 
@@ -858,5 +792,5 @@ class DefaultQubit(QubitDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
+        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob
