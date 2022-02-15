@@ -48,12 +48,9 @@ def defer_measurements(tape):
                         if wire_val and flipped[i] or not wire_val and not flipped[i]:
                             qml.RZ(math.pi, wires=control[i])
                     ctrl(lambda: apply(branch_op), control=control)()
-                flip_wires = []
                 for i, flip in enumerate(flipped):
                     if flip:
-                        flip_wires.append(control[i])
                         qml.RZ(math.pi, wires=control[i])
-
 
             else:
                 apply(op)
