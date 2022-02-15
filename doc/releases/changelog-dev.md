@@ -33,6 +33,11 @@
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
 
+  A class `CutStrategy` which acts as an interface and coorditates device/user
+  constraints with circuit execution requirements to come up with the best sets
+  of graph partitioning parameters.
+  [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+
 <h3>Improvements</h3>
 
 * Added a new `partition_pauli_group` function to the `grouping` module for
