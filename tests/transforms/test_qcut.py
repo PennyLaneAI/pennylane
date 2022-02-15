@@ -950,7 +950,7 @@ class TestContractTensors:
 
 
 class TestCutStrategy:
-    """Tests for deriving sensible default CutConfigs."""
+    """Tests for class CutStrategy"""
 
     devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
     tape_dags = [qcut.tape_to_graph(t) for t in [tape, multi_cut_tape]]
@@ -961,6 +961,7 @@ class TestCutStrategy:
     @pytest.mark.parametrize("imbalance_tolerance", [None, -1])
     @pytest.mark.parametrize("num_fragments_probed", [None, 0])
     def test_init_raises(self, devices, imbalance_tolerance, num_fragments_probed):
+        """Test if ill-initialized instances throw errors."""
         with pytest.raises(ValueError):
             qcut.CutStrategy(
                 devices=devices,

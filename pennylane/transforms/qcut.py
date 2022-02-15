@@ -599,9 +599,7 @@ class CutStrategy:
         assert all((w is not None for w in tape_wires))
         num_tape_wires = len(tape_wires)
         num_tape_gates = tape_dag.order()
-        self._validate_dag(
-            num_tape_wires, num_tape_gates, max_wires_by_fragment, max_gates_by_fragment
-        )
+        self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
             num_tape_wires=num_tape_wires,
@@ -630,10 +628,8 @@ class CutStrategy:
 
         return imbalance
 
-    def _validate_dag(
-        self,
-        num_tape_wires,
-        num_tape_gates,
+    @staticmethod
+    def _validate_input(
         max_wires_by_fragment,
         max_gates_by_fragment,
     ):
@@ -641,13 +637,9 @@ class CutStrategy:
         if max_wires_by_fragment is not None:
             assert isinstance(max_wires_by_fragment, (list, tuple))
             assert all(isinstance(i, int) and i > 0 for i in max_wires_by_fragment)
-            # if self.max_free_wires is not None:
-            #     assert all(i <= self.max_free_wires for i in max_wires_by_fragment)
         if max_gates_by_fragment is not None:
             assert isinstance(max_gates_by_fragment, (list, tuple))
             assert all(isinstance(i, int) and i > 0 for i in max_gates_by_fragment)
-            # if self.max_free_gates is not None:
-            #     assert all(i <= self.max_free_gates for i in max_gates_by_fragment)
         if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
             assert len(max_wires_by_fragment) == len(max_gates_by_fragment)
 
