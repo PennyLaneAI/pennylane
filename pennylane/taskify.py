@@ -14,6 +14,8 @@
 """
 This module contains functionality to enable task-based workflows with devices.
 """
+from typing import Union
+
 import pennylane as qml
 from pennylane.devices import TaskQubit
 
