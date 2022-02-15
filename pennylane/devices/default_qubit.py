@@ -310,7 +310,7 @@ class DefaultQubit(QubitDevice):
         """
 
         # don't actually change the state (deferred measurement principle)
-        self._measured.append(op_object.measure_var)
+        self._measured.append(op_object.measured_wire)
         return state
 
     def _apply_x(self, state, axes, **kwargs):

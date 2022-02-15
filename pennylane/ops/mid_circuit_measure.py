@@ -8,7 +8,6 @@ from typing import Union, Any, TypeVar, Generic, Callable, Type
 
 from pennylane.operation import Operation
 
-
 def mid_measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
@@ -17,9 +16,8 @@ def mid_measure(wire):
 
         m0 = qml.Measure(0)
     """
-    wire_id = wire
-    _MidCircuitMeasure(wire_id, wire)
-    return MeasurementDependantValue(wire_id, 0, 1)
+    _MidCircuitMeasure(wire)
+    return MeasurementDependantValue(wire, _Value(0), _Value(1))
 
 
 class _MidCircuitMeasure(Operation):
@@ -29,35 +27,36 @@ class _MidCircuitMeasure(Operation):
 
     num_wires = 1
 
-    def __init__(self, measure_var, wires=None):
-        self.measure_var = measure_var
-        self.runtime_value = None
-        super().__init__(wires=wires)
+    def __init__(self, measured_wire):
+        self.measured_wire = measured_wire
+        super().__init__(wires=measured_wire)
 
 
 # pylint: disable=protected-access
 def apply_to_measurement_dependant_values(fun):
     """
     Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
+    (fun should be a "pure" function)
 
     Ex:
 
     .. code-block:: python
 
         m0 = qml.mid_measure(0)
-        m0_sin = qml.apply_to_measurement_dependant_values(np.sin)(m0)
+        m0_sin = qml.apply_to_measurement_dependant_value(np.sin)(m0)
     """
 
     @functools.wraps(fun)
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
+            if not isinstance(arg, MeasurementDependantValue):
+                arg = _Value(arg)
             partial = partial._merge(arg)
         partial._transform_leaves_inplace(
             lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
         )
         return partial
-
     return wrapper
 
 
@@ -70,26 +69,21 @@ class MeasurementDependantValue(Generic[T]):
     Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
 
-    supports python __dunder__ mathematical operations. As well as arbitrary functions using qml.apply_to_outcome
+    supports python __dunder__ mathematical operations. As well as arbitrary functions using
+    qml.apply_to_measurement_dependant_value.
     """
 
-    __slots__ = ("_dependent_on", "_zero_case", "_one_case")
+    __slots__ = ("_depends_on", "_zero_case", "_one_case")
 
     def __init__(
         self,
-        measurement_id: str,
-        zero_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
-        one_case: Union["MeasurementDependantValue[T]", "_Value[T]", T],
+        wire_id: str,
+        zero_case: Union["MeasurementDependantValue[T]", "_Value[T]"],
+        one_case: Union["MeasurementDependantValue[T]", "_Value[T]"],
     ):
-        self._dependent_on = measurement_id
-        if isinstance(zero_case, (MeasurementDependantValue, _Value)):
-            self._zero_case = zero_case
-        else:
-            self._zero_case = _Value(zero_case)
-        if isinstance(one_case, (MeasurementDependantValue, _Value)):
-            self._one_case = one_case
-        else:
-            self._one_case = _Value(one_case)
+        self._depends_on = wire_id
+        self._zero_case = zero_case
+        self._one_case = one_case
 
     @property
     def branches(self):
@@ -98,6 +92,7 @@ class MeasurementDependantValue(Generic[T]):
         if isinstance(self._zero_case, MeasurementDependantValue):
             for k, v in self._zero_case.branches.items():
                 branch_dict[(0, *k)] = v
+            # if _zero_case is a MeaurementDependantValue, then _one_case is too.
             for k, v in self._one_case.branches.items():
                 branch_dict[(1, *k)] = v
         else:
@@ -109,8 +104,8 @@ class MeasurementDependantValue(Generic[T]):
     def measurements(self):
         """List of all measurements this MeasurementDependantValue depends on."""
         if isinstance(self._zero_case, MeasurementDependantValue):
-            return [self._dependent_on, *self._zero_case.measurements]
-        return [self._dependent_on]
+            return [self._depends_on, *self._zero_case.measurements]
+        return [self._depends_on]
 
     # define all mathematical __dunder__ methods https://docs.python.org/3/library/operator.html
     def __add__(self, other: Any):
@@ -129,63 +124,59 @@ class MeasurementDependantValue(Generic[T]):
         measurements = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append(
-                ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))])
-                + " => "
-                + str(v)
-            )
+            lines.append("if " + ",".join([f"wire_{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
         return "\n".join(lines)
 
-    def _merge(self, other: Union["MeasurementDependantValue", "_Value", Any]):
+
+    def _merge(self, other: Union["MeasurementDependantValue", "_Value"]):
         """
         Merge this MeasurementDependantValue with `other`.
 
-        Ex: Merging a MeasurementDependantValue such as
-
+        Ex: Merging a MeasurementDependantValue such as:
         .. code-block:: python
 
-            df3jff4t=0 => 3.4
-            df3jff4t=1 => 1
+            if wire_0=0 => 3.4
+            if wire_0=1 => 1
 
         with another MeasurementDependantValue:
 
         .. code-block:: python
 
-            f93fjdj3=0 => 100
-            f93fjdj3=1 => 67
+            if wire_1=0 => 100
+            if wire_1=1 => 67
 
         will result in:
 
         .. code-block:: python
 
-            df3jff4t=0,f93fjdj3=0 => 3.4,100
-            df3jff4t=0,f93fjdj3=1 => 3.4,67
-            df3jff4t=1,f93fjdj3=0 => 1,100
-            df3jff4t=1,f93fjdj3=1 => 1,67
+            wire_0=0,wire_1=0 => 3.4,100
+            wire_0=0,wire_1=1 => 3.4,67
+            wire_0=1,wire_1=0 => 1,100
+            wire_0=1,wire_1=1 => 1,67
 
         (note the uuids in the example represent distinct measurements of different qubit.)
 
         """
         if isinstance(other, MeasurementDependantValue):
-            if self._dependent_on == other._dependent_on:
+            if self._depends_on == other._depends_on:
                 return MeasurementDependantValue(
-                    self._dependent_on,
+                    self._depends_on,
                     self._zero_case._merge(other._zero_case),
                     self._one_case._merge(other._one_case),
                 )
-            if self._dependent_on < other._dependent_on:
+            if self._depends_on < other._depends_on:
                 return MeasurementDependantValue(
-                    self._dependent_on,
+                    self._depends_on,
                     self._zero_case._merge(other),
                     self._one_case._merge(other),
                 )
             return MeasurementDependantValue(
-                other._dependent_on,
+                other._depends_on,
                 self._merge(other._zero_case),
                 self._merge(other._one_case),
             )
         return MeasurementDependantValue(
-            self._dependent_on,
+            self._depends_on,
             self._zero_case._merge(other),
             self._one_case._merge(other),
         )
@@ -209,17 +200,15 @@ class _Value(Generic[T]):
     def __init__(self, *values):
         self._values = values
 
-    def _merge(self, other):
+    def _merge(self, other: Union["MeasurementDependantValue", "_Value"]):
         """
         Works with MeasurementDependantValue._merge
         """
         if isinstance(other, MeasurementDependantValue):
             return MeasurementDependantValue(
-                other._dependent_on, self._merge(other._zero_case), self._merge(other._one_case)
+                other._depends_on, self._merge(other._zero_case), self._merge(other._one_case)
             )
-        if isinstance(other, _Value):
-            return _Value(*self._values, *other._values)
-        return _Value(*self._values, other)
+        return _Value(*self._values, *other._values)
 
     def _transform_leaves_inplace(self, fun):
         """
