@@ -186,7 +186,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     )
     axes = (list(range(n, 2 * n)), op_wire_pos)
 
-    # reshape op.matrix()
+    # reshape op.get_matrix()
     op_matrix_interface = qml.math.convert_like(base_matrix, I)
     mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
     mat_tensordot = qml.math.tensordot(
@@ -561,7 +561,33 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
-    def matrix(self, wire_order=None):
+    @property
+    def matrix(self):
+        r"""Matrix representation of an instantiated operator
+        in the computational basis.
+
+        .. warning::
+
+            The ``matrix`` property is deprecated and will be removed in
+            an upcoming release.
+
+        **Example:**
+
+        >>> U = qml.RY(0.5, wires=1)
+        >>> U.matrix
+        >>> array([[ 0.96891242+0.j, -0.24740396+0.j],
+                   [ 0.24740396+0.j,  0.96891242+0.j]])
+
+        Returns:
+            array: matrix representation
+        """
+        warnings.warn(
+            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
+            UserWarning,
+        )
+        return self.get_matrix()
+
+    def get_matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -659,11 +685,37 @@ class Operator(abc.ABC):
         """
         raise EigvalsUndefinedError
 
+    @property
     def eigvals(self):
+        r"""Eigenvalues of an instantiated operator.
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
+
+        .. warning::
+
+            The ``eigvals`` property is deprecated and will be removed in
+            an upcoming release.
+
+        **Example:**
+
+        >>> U = qml.RZ(0.5, wires=1)
+        >>> U.eigvals
+        >>> array([0.96891242-0.24740396j, 0.96891242+0.24740396j])
+
+        Returns:
+            array: eigvals representation
+        """
+        warnings.warn(
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            UserWarning,
+        )
+        return self.get_eigvals()
+
+    def get_eigvals(self):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
-        the operator can be reconstructed as
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`, the operator
+        can be reconstructed as
 
         .. math:: O = U \Sigma U^{\dagger},
 
@@ -675,8 +727,8 @@ class Operator(abc.ABC):
             When eigenvalues are not explicitly defined, they are computed automatically from the matrix representation.
             Currently, this computation is *not* differentiable.
 
-        A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and
-        cannot be inferred from the matrix representation.
+        A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
+        inferred from the matrix representation.
 
         .. seealso:: :meth:`~.Operator.compute_eigvals`
 
@@ -690,7 +742,7 @@ class Operator(abc.ABC):
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                return np.linalg.eigvals(self.matrix())
+                return np.linalg.eigvals(self.get_matrix())
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
@@ -1237,7 +1289,16 @@ class Operation(Operator):
             self.inverse = not self._inverse
         return self
 
-    def matrix(self, wire_order=None):
+    @property
+    def matrix(self):
+        op_matrix = super().matrix
+
+        if self.inverse:
+            return qml.math.conj(qml.math.T(op_matrix))
+
+        return op_matrix
+
+    def get_matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
@@ -1248,8 +1309,8 @@ class Operation(Operator):
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-    def eigvals(self):
-        op_eigvals = super().eigvals()
+    def get_eigvals(self):
+        op_eigvals = super().get_eigvals()
 
         if self.inverse:
             return qml.math.conj(op_eigvals)
@@ -1703,7 +1764,7 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    def eigvals(self):
+    def get_eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
         This method uses pre-stored eigenvalues for standard observables where
@@ -1741,7 +1802,7 @@ class Tensor(Observable):
                     # Subgroup g contains only non-standard observables.
                     for ns_ob in g:
                         # loop through all non-standard observables
-                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.eigvals())
+                        self._eigvals_cache = np.kron(self._eigvals_cache, ns_ob.get_eigvals())
 
         return self._eigvals_cache
 
@@ -1761,7 +1822,7 @@ class Tensor(Observable):
 
         return diag_gates
 
-    def matrix(self, wire_order=None):
+    def get_matrix(self, wire_order=None):
         r"""Matrix representation of the Tensor operator
         in the computational basis.
 
@@ -1779,7 +1840,7 @@ class Tensor(Observable):
         **Example**
 
         >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix()
+        >>> O.get_matrix()
         array([[ 1,  0,  0,  0],
                [ 0, -1,  0,  0],
                [ 0,  0, -1,  0],
@@ -1790,7 +1851,7 @@ class Tensor(Observable):
         must be explicitly included:
 
         >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix()
+        >>> O.get_matrix()
         array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
                [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
                [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
@@ -1811,7 +1872,7 @@ class Tensor(Observable):
         U_list = []
         for _, g in itertools.groupby(self.obs, lambda x: x.wires.labels):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix() for i in g]
+            mats = [i.get_matrix() for i in g]
 
             if len(mats) > 1:
                 # multiply all unitaries together before appending
@@ -1916,7 +1977,7 @@ class Tensor(Observable):
                 )
             # store the single-qubit ops according to the order of their wires
             idx = wires.index(o.wires)
-            list_of_sparse_ops[idx] = coo_matrix(o.matrix())
+            list_of_sparse_ops[idx] = coo_matrix(o.get_matrix())
 
         return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
 
@@ -2274,7 +2335,7 @@ def operation_derivative(operation) -> np.ndarray:
             trainable parameter
     """
     generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
-    return 1j * prefactor * generator @ operation.matrix()
+    return 1j * prefactor * generator @ operation.get_matrix()
 
 
 @qml.BooleanFn

@@ -140,7 +140,7 @@ def get_unitary_matrix(circuit, wire_order=None):
 
         for op in tape.operations:
 
-            U = op.matrix(wire_order=wire_order)
+            U = op.get_matrix(wire_order=wire_order)
 
             # add to total matrix if there are multiple ops
             unitary_matrix = qml.math.dot(U, unitary_matrix)
