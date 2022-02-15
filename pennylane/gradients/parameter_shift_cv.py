@@ -183,7 +183,10 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shifts (list[tuple[int or float]]): TODO
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -286,7 +289,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shifts (list[tuple[int or float]]): TODO
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -480,7 +486,10 @@ def param_shift_cv(
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shifts (list[tuple[int or float]]): TODO
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
