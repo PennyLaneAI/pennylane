@@ -120,6 +120,12 @@ class MeasurementDependantValue(Generic[T]):
     def __rmul__(self, other: Any):
         return apply_to_measurement_dependant_values(lambda x, y: y * x)(self, other)
 
+    def __and__(self, other: Any):
+        return apply_to_measurement_dependant_values(lambda x, y: x and y)(self, other)
+
+    def __rand__(self, other: Any):
+        return apply_to_measurement_dependant_values(lambda x, y: y and x)(self, other)
+
     def __str__(self):
         measurements = self.measurements
         lines = []
@@ -246,8 +252,15 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
         measured_qubit = expr
 
         def __init__(self, *args, **kwargs):
-            self.then_op = then_op(*args, do_queue=False, **kwargs)
+            self.then_op = then_op
+            self.args = args
+            self.kwargs = kwargs
+            # self.then_op = then_op(*args, do_queue=False, **kwargs)
             super().__init__(*args, **kwargs)
+
+
+        def construct_op(self):
+            return self.then_op(*self.args, **self.kwargs)
 
     return _IfOp
 

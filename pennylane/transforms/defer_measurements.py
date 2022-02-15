@@ -38,12 +38,7 @@ def defer_measurements(tape):
                                 flip_wires.append(control[i])
                         if flip_wires:
                             qml.RZ(math.pi, wires=flip_wires)
-                        op_class = op.then_op.__class__
-                        if op.data:
-                            controlled_op = ctrl(op_class, control=control)(*op.data, wires=op.wires)
-
-                        else:
-                            controlled_op = ctrl(op_class, control=control)(wires=op.wires)
+                        controlled_op = ctrl(op.construct_op, control=control)()
                 flip_wires = []
                 for i, flip in enumerate(flipped):
                     if flip:
