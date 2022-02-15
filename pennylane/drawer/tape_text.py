@@ -86,7 +86,7 @@ def tape_text(
     show_all_wires=False,
     decimals=None,
     max_length=100,
-    show_matrix_parameters=False,
+    show_matrices=False,
     cache=None,
 ):
     """Text based diagram for a Quantum Tape.
@@ -101,7 +101,7 @@ def tape_text(
             Default ``None`` will omit parameters from operation labels.
         max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
             begin anew beneath the previous lines.
-        show_matrix_parameters=False (bool): show matrix valued parameters below all circuit diagrams
+        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
         cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
             and ``'matrices'``.
 
@@ -188,7 +188,7 @@ def tape_text(
 
     Matrix valued parameters are always denoted by `M` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
-    selecting ``show_matrix_parameters=True``:
+    selecting ``show_matrices=True``:
 
     .. code-block:: python
 
@@ -197,7 +197,7 @@ def tape_text(
             qml.QubitUnitary(np.eye(2), wires=1)
             qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
 
-    >>> print(tape_text(tape, show_matrix_parameters=True))
+    >>> print(tape_text(tape, show_matrices=True))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -214,7 +214,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(tape_text(tape, show_matrix_parameters=True, cache=cache))
+    >>> print(tape_text(tape, show_matrices=True, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -332,12 +332,12 @@ def tape_text(
             show_all_wires,
             decimals,
             max_length,
-            show_matrix_parameters=False,
+            show_matrices=False,
             cache=cache,
         )
         tape_totals = "\n".join([tape_totals, label, tape_str])
 
-    if show_matrix_parameters:
+    if show_matrices:
         mat_str = ""
         for i, mat in enumerate(cache["matrices"]):
             mat_str += f"\nM{i} = \n{mat}"
