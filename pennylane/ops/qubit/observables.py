@@ -119,7 +119,7 @@ class Hermitian(Observable):
 
         return Hermitian._eigs[Hkey]
 
-    def eigvals(self):
+    def get_eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
