@@ -14,7 +14,7 @@ def mid_measure(wire):
 
     .. code-block:: python
 
-        m0 = qml.Measure(0)
+        m0 = qml.mid_measure(0)
     """
     _MidCircuitMeasure(wire)
     return MeasurementDependantValue(wire, _Value(0), _Value(1))
