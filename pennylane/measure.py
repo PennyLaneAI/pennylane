@@ -18,6 +18,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import warnings
 
 import numpy as np
 
@@ -121,7 +122,45 @@ class MeasurementProcess:
             return self.obs.wires
         return self._wires
 
+    @property
     def eigvals(self):
+        r"""Eigenvalues associated with the measurement process.
+
+        .. warning::
+            The ``eigvals`` property is deprecated and will be removed in
+            an upcoming release.
+
+        If the measurement process has an associated observable,
+        the eigenvalues will correspond to this observable. Otherwise,
+        they will be the eigenvalues provided when the measurement
+        process was instantiated.
+
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
+
+        **Example:**
+
+        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m.get_eigvals()
+        array([1, -1])
+
+        Returns:
+            array: eigvals representation
+        """
+        warnings.warn(
+            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
+            UserWarning,
+        )
+
+        if self.obs is not None:
+            try:
+                return self.obs.get_eigvals()
+            except qml.operation.EigvalsUndefinedError:
+                pass
+
+        return self._eigvals
+
+    def get_eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
         If the measurement process has an associated observable,

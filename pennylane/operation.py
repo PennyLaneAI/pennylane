@@ -569,7 +569,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``matrix`` property is deprecated and will be removed in
-            PennyLane version 0.23.
+            an upcoming release.
 
         **Example:**
 
@@ -694,7 +694,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``eigvals`` property is deprecated and will be removed in
-            PennyLane version 0.23.
+            an upcoming release.
 
         **Example:**
 
@@ -1768,7 +1768,7 @@ class Tensor(Observable):
         .. warning::
 
             The ``eigvals`` property is deprecated and will be removed in
-            PennyLane version 0.23.
+            an upcoming release.
 
         Returns:
             array[float]: array containing the eigenvalues of the tensor product
@@ -1846,7 +1846,7 @@ class Tensor(Observable):
         .. warning::
 
             The ``matrix`` property is deprecated and will be removed in
-            PennyLane version 0.23.
+            an upcoming release.
 
         Returns:
             array: matrix representation
