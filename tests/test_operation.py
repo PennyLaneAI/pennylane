@@ -1793,12 +1793,13 @@ class TestDeprecationWarnings:
 
     def test_matrix_deprecation(self):
         """Test that the Operator.matrix property raises a deprecation warning"""
-        op = qml.RX(0.5, wires=0)
+        op = qml.RX(0.5, wires=0).inv()
 
         with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
             m1 = op.matrix
 
         assert np.allclose(m1, op.get_matrix())
+        assert np.allclose(m1, qml.RX.compute_matrix(-0.5))
 
     def test_matrix_tensor_deprecation(self):
         """Test that the Tensor.matrix property raises a deprecation warning"""
