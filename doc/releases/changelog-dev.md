@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* A new task-based device, `task.qubit` has been released. This allows offloading of multiple quantum circuits and workflows over all available cores. The following example demonstrates fow to create task-based circuit evaluations, submitting them to the available queue:
+* A new task-based device, `task.qubit` has been released. This allows offloading of multiple quantum circuits and workflows over all available cores. The following example demonstrates how to create task-based circuit evaluations, submitting them to the available queue:
 
   ```python 
     import pennylane as qml
@@ -45,10 +45,30 @@
     >>> print(qml.untaskify(results)())
     [<tf.Tensor: shape=(3,), dtype=float64, numpy=array([0., 0., 0.])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.16661672, -0.07170375, -0.00387164])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([ 0.94292007, -0.14209482, -0.0072056 ])>]
   ```
-* For subclasses of `Operator` where it is known before instantiation, the `num_params` is reverted back to being a 
-  static property. This allows to programmatically know the number of parameters before an operator is 
-  instantiated without changing the user interface.
-  [(#2099)](https://github.com/PennyLaneAI/pennylane/issues/2099)
+  [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1866)
+
+* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
+  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
+  deprecation of the `charset` keyword, and minor cosmetic changes.
+  [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
+
+  ```
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(*w, wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
+  0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
+  1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
+
+* Parametric operations now have the `parameter_frequencies`
+  method that returns the frequencies with which a parameter
+  enters a circuit when using the operation.
+  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
@@ -144,6 +164,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
-Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann,  Lee J. O'Riordan, Jay Soni, 
-Antal Száva, David Wierichs, Shaoming Zhang
+Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Maria Fernanda Morris, Lee J. O'Riordan, Antal Száva,
+David Wierichs
+

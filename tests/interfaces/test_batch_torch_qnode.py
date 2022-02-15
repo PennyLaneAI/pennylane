@@ -105,23 +105,20 @@ class TestQNode:
         y = torch.tensor([0.2, 0.3], requires_grad=True)
         z = torch.tensor(0.4, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="torch")
+        @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(p1, p2=y, **kwargs):
             qml.RX(p1, wires=0)
             qml.RY(p2[0] * p2[1], wires=1)
             qml.RX(kwargs["p3"], wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         circuit(p1=x, p3=z)
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──┤ Probs  
- 1: ──RY(0.06)───────────╰X──┤ Var[Z] 
-"""
+        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤  <Z>\n" "1: ──RY(0.06)───────────╰X─┤  <Z>"
 
         assert result == expected
 
