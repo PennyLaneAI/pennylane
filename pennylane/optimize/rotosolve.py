@@ -113,6 +113,7 @@ class RotosolveOptimizer:
     Args:
         substep_optimizer (str or callable): Optimizer to use for the substeps of Rotosolve
             that carries out a univariate (i.e., single-parameter) global optimization.
+            *Only used if there are more than one frequency for a given parameter.*
             It must take as inputs:
 
             - A function ``fn`` that maps scalars to scalars,
@@ -142,11 +143,14 @@ class RotosolveOptimizer:
             callable. For ``substep_optimizer="shgo"``, the original keyword arguments of
             the SciPy implementation are available, for ``substep_optimizer="brute"`` the
             keyword arguments ``ranges``, ``Ns`` and ``num_steps`` are useful.
+            *Only used if there are more than one frequency for a given parameter.*
 
     For each parameter, a purely classical one-dimensional global optimization over the
-    interval :math:`(-\pi,\pi]` is performed, which is replaced by a closed-form expression for
-    the optimal value if the :math:`d\text{th}` parametrized gate has only two eigenvalues. In this
-    case, the optimal value :math:`\theta^*_d` is given by
+    interval :math:`(-\pi,\pi]` is performed, which is replaced automatically by a
+    closed-form expression for the optimal value if the :math:`d\text{th}` parametrized
+    gate has only two eigenvalues. This means that ``substep_optimizer`` and
+    ``substep_kwargs`` will not be used for these parameters.
+    In this case, the optimal value :math:`\theta^*_d` is given analytically by
 
     .. math::
 
@@ -158,12 +162,13 @@ class RotosolveOptimizer:
     where :math:`\left<H\right>_{\theta_d}` is the expectation value of the objective function
     restricted to only depend on the parameter :math:`\theta_d`.
 
-    .. warning ::
+    .. warning::
 
         The built-in one-dimensional optimizers ``"brute"`` and ``"shgo"`` for the substeps
         of a Rotosolve optimization step use the interval :math:`(-\pi,\pi]`, rescaled with
         the inverse smallest frequency as default domain to optimize over. For complicated
-        cost functions, this domain might not be suitable for the substep optimization.
+        cost functions, this domain might not be suitable for the substep optimization and
+        an appropriate range should be passed via ``bounds`` in ``substep_kwargs``.
 
     The algorithm is described in further detail in
     `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_,

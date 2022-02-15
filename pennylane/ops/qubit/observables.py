@@ -216,7 +216,7 @@ class Projector(Observable):
 
         **Example:**
 
-        >>> qml.Projector([0, 1,0], wires=(0,1,2)).label()
+        >>> qml.Projector([0, 1, 0], wires=(0, 1, 2)).label()
         '|010⟩⟨010|'
 
         """

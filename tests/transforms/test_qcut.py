@@ -1,4 +1,3 @@
-#
 # Copyright 2022 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +13,16 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-import numpy as np
+import copy
+import string
+import sys
+
 import pennylane as qml
 import pytest
+from networkx import MultiDiGraph
+from pennylane import numpy as np
 from pennylane.transforms import qcut
+from pennylane.wires import Wires
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -45,8 +50,27 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.expval(qml.PauliZ(wires=[0]))
 
 
+# tape containing mid-circuit measurement
+with qml.tape.QuantumTape() as mcm_tape:
+    qml.Hadamard(wires=0)
+    qml.RX(0.432, wires=0)
+    qml.RY(0.543, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.WireCut(wires=1)
+    qml.CNOT(wires=[1, 2])
+    qml.WireCut(wires=1)
+    qml.RZ(0.321, wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.Hadamard(wires=2)
+    qml.WireCut(wires=1)
+    qml.CNOT(wires=[1, 2])
+    qml.WireCut(wires=1)
+    qml.CNOT(wires=[0, 1])
+    qml.expval(qml.PauliZ(wires=[0]))
+
+
 def compare_nodes(nodes, expected_wires, expected_names):
-    """Helper function to comper nodes of directed multigraph"""
+    """Helper function to compare nodes of directed multigraph"""
 
     for node, exp_wire in zip(nodes, expected_wires):
         assert node.wires.tolist() == exp_wire
@@ -56,12 +80,12 @@ def compare_nodes(nodes, expected_wires, expected_names):
 
 
 def compare_fragment_nodes(node_data, expected_data):
-    """Helper function to comper nodes of fragment graphs"""
+    """Helper function to compare nodes of fragment graphs"""
 
     expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
 
     for data in node_data:
-        # The exact ordering of node data within the list varies on each call
+        # The exact ordering of node_data varies on each call
         assert (data[0].name, data[0].wires, data[1]) in expected
 
 
@@ -71,7 +95,7 @@ def compare_fragment_edges(edge_data, expected_data):
     expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
 
     for data in edge_data:
-        # The exact ordering of edge data within the list varies on each call
+        # The exact ordering of edge_data varies on each call
         assert (data[0].name, data[1].name, data[2]) in expected
 
 
@@ -80,12 +104,17 @@ def compare_tapes(tape, expected_tape):
     Helper function to compare tapes
     """
 
-    assert tape.wires.tolist() == expected_tape.wires.tolist()
+    assert set(tape.wires) == set(expected_tape.wires)
     assert tape.get_parameters() == expected_tape.get_parameters()
 
     for op, exp_op in zip(tape.operations, expected_tape.operations):
-        assert op.name == exp_op.name
-        assert op.wires.tolist() == exp_op.wires.tolist()
+        if (
+            op.name == "PrepareNode"
+        ):  # The exact ordering of PrepareNodes w.r.t wires varies on each call
+            assert exp_op.name == "PrepareNode"
+        else:
+            assert op.name == exp_op.name
+            assert op.wires.tolist() == exp_op.wires.tolist()
 
     for meas, exp_meas in zip(tape.measurements, expected_tape.measurements):
         assert meas.return_type.name == exp_meas.return_type.name
@@ -560,7 +589,7 @@ class TestReplaceWireCut:
 
 class TestFragmentGraph:
     """
-    Tests that a cut graph is fragmented into subgraph correctly
+    Tests that a cut graph is fragmented into subgraphs correctly
     """
 
     def test_subgraphs_of_multi_wirecut(self):
@@ -643,7 +672,7 @@ class TestFragmentGraph:
 
     def test_communication_graph(self):
         """
-        Tests that the communication graph containse the correct nodes and edges
+        Tests that the communication graph contains the correct nodes and edges
         """
 
         g = qcut.tape_to_graph(multi_cut_tape)
@@ -723,14 +752,58 @@ class TestFragmentGraph:
         for subgraph, expected_e in zip(subgraphs, expected_edges):
             compare_fragment_edges(list(subgraph.edges(data=True)), expected_e)
 
+    def test_communication_graph_persistence(self):
+        """
+        Tests that when `fragment_graph` is repeatedly applied the
+        communication graph is the same each time.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs_0, communication_graph_0 = qcut.fragment_graph(g)
+        subgraphs_1, communication_graph_1 = qcut.fragment_graph(g)
+
+        assert communication_graph_0.nodes == communication_graph_1.nodes
+        assert communication_graph_0.edges == communication_graph_1.edges
+
 
 class TestGraphToTape:
+    """Tests that directed multigraphs are correctly converted to tapes"""
+
     def test_graph_to_tape(self):
         """
-        Tests that a directed multigraph is correctly converted to a tape
+        Tests that directed multigraphs, containing MeasureNodes and
+        PrepareNodes, are correctly converted to tapes
         """
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires=[0, "a"])
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.WireCut(wires="a")
+            qml.CNOT(wires=["a", 2])
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires=2)
+            qml.CNOT(wires=[2, 3])
+            qml.RY(0.543, wires=2)
+            qml.RZ(0.876, wires=3)
+            qml.expval(qml.PauliZ(wires=[0]))
 
-        g = qcut.tape_to_graph(multi_cut_tape)
+        g = qcut.tape_to_graph(tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
@@ -742,31 +815,163 @@ class TestGraphToTape:
 
         with qml.tape.QuantumTape() as tape_1:
             qml.RY(0.543, wires=["a"])
+            qcut.MeasureNode(wires=["a"])
+
+        with qml.tape.QuantumTape() as tape_2:
             qcut.PrepareNode(wires=[0])
+            qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=[0, "a"])
             qml.RZ(0.24, wires=[0])
             qml.RZ(0.133, wires=["a"])
             qcut.MeasureNode(wires=["a"])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        with qml.tape.QuantumTape() as tape_2:
+        with qml.tape.QuantumTape() as tape_3:
             qcut.PrepareNode(wires=["a"])
             qml.CNOT(wires=["a", 2])
             qml.RX(0.432, wires=["a"])
             qcut.MeasureNode(wires=[2])
 
-        with qml.tape.QuantumTape() as tape_3:
+        with qml.tape.QuantumTape() as tape_4:
             qcut.PrepareNode(wires=[2])
             qml.CNOT(wires=[2, 3])
             qml.RY(0.543, wires=[2])
             qml.RZ(0.876, wires=[3])
 
-        expected_tapes = [tape_0, tape_1, tape_2, tape_3]
+        expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
 
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
 
+    def test_mid_circuit_measurement(self):
+        """
+        Tests a circuit that is fragmented into subgraphs that
+        include mid-circuit measurements, ensuring that the
+        generated circuits apply the deferred measurement principle.
+        """
+        tape = copy.copy(mcm_tape)
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
 
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        assert tapes[0].wires == Wires([0, 1, 2, 3])
+        assert tapes[1].wires == Wires([1, 2, 0])
+
+        for tape in tapes:
+            for i, op in enumerate(tape.operations):
+                if isinstance(op, qcut.MeasureNode):
+                    try:
+                        next_op = tape.operations[i + 1]
+                        if isinstance(next_op, qcut.PrepareNode):
+                            assert op.wires != next_op.wires
+                    except IndexError:
+                        assert len(tape.operations) == i + 1
+
+    def test_mid_circuit_measurements_fragments(self):
+        """
+        Tests a circuit that is fragmented into subgraphs that
+        include mid-circuit measurements are converted to the correct tapes
+        """
+        tape = copy.copy(mcm_tape)
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        with qml.tape.QuantumTape() as tape_0:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        with qml.tape.QuantumTape() as tape_1:
+            qcut.PrepareNode(wires=[1])
+            qml.CNOT(wires=[1, 2])
+            qcut.MeasureNode(wires=[1])
+            qml.Hadamard(wires=[2])
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[0])
+
+        expected_tapes = [tape_0, tape_1]
+
+        for tape, expected_tape in zip(tapes, expected_tapes):
+            compare_tapes(tape, expected_tape)
+
+    def test_non_unique_node_order(self):
+        """
+        Tests a fragment graph which contains operation nodes whose `order`
+        attribute is non-unique is correctly converted to tape
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.WireCut(wires=[0, "a"])
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.WireCut(wires="a")
+            qml.CNOT(wires=["a", 2])
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires=2)
+            qml.CNOT(wires=[2, 3])
+            qml.RY(0.543, wires=2)
+            qml.RZ(0.876, wires=3)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        with qml.tape.QuantumTape() as tape_0:
+            qml.RX(0.432, wires=[0])
+            qcut.MeasureNode(wires=[0])
+
+        with qml.tape.QuantumTape() as tape_1:
+            qml.RY(0.543, wires=["a"])
+            qcut.MeasureNode(wires=["a"])
+
+        with qml.tape.QuantumTape() as tape_2:
+            qcut.PrepareNode(wires=[0])
+            qcut.PrepareNode(wires=["a"])
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.24, wires=[0])
+            qml.RZ(0.133, wires=["a"])
+            qcut.MeasureNode(wires=["a"])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        with qml.tape.QuantumTape() as tape_3:
+            qcut.PrepareNode(wires=["a"])
+            qml.CNOT(wires=["a", 2])
+            qml.RX(0.432, wires=["a"])
+            qcut.MeasureNode(wires=[2])
+
+        with qml.tape.QuantumTape() as tape_4:
+            qcut.PrepareNode(wires=[2])
+            qml.CNOT(wires=[2, 3])
+            qml.RY(0.543, wires=[2])
+            qml.RZ(0.876, wires=[3])
+
+        expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
+
+        for tape, expected_tape in zip(tapes, expected_tapes):
+            compare_tapes(tape, expected_tape)
+
+            
 class TestExpandFragmentTapes:
     """
     Tests that fragment tapes are correctly expanded to all configurations
@@ -865,3 +1070,240 @@ class TestExpandFragmentTapes:
 
         for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
             compare_tapes(tape_prep, exp_tape_1)
+
+    def test_multiple_conversions(self):
+        """
+        Tests that the orignial tape is unaffected by cutting pipeline and can
+        be used multiple times to give consitent output.
+        """
+        # preserve orignal tape data for later comparison
+        copy_tape = copy.copy(mcm_tape)
+
+        g1 = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g1)
+        subgraphs1, communication_graph1 = qcut.fragment_graph(g1)
+
+        tapes1 = [qcut.graph_to_tape(sg) for sg in subgraphs1]
+
+        g2 = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g2)
+        subgraphs2, communication_graph2 = qcut.fragment_graph(g2)
+
+        tapes2 = [qcut.graph_to_tape(sg) for sg in subgraphs2]
+
+        compare_tapes(copy_tape, mcm_tape)
+
+        for tape1, tape2 in zip(tapes1, tapes2):
+            compare_tapes(tape1, tape2)
+
+
+class TestContractTensors:
+    """Tests for the contract_tensors function"""
+
+    t = [np.arange(4), np.arange(4, 8)]
+    m = [[qcut.MeasureNode(wires=0)], []]
+    p = [[], [qcut.PrepareNode(wires=0)]]
+    edge_dict = {"pair": (m[0][0], p[1][0])}
+    g = MultiDiGraph([(0, 1, edge_dict)])
+    expected_result = np.dot(*t)
+
+    @pytest.mark.parametrize("use_opt_einsum", [False, True])
+    def test_basic(self, use_opt_einsum):
+        """Test that the correct answer is returned for a simple contraction scenario"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        res = qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        assert np.allclose(res, self.expected_result)
+
+    def test_fail_import(self, monkeypatch):
+        """Test if an ImportError is raised when opt_einsum is requested but not installed"""
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "opt_einsum", None)
+
+            with pytest.raises(ImportError, match="The opt_einsum package is required"):
+                qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=True)
+
+    def test_run_out_of_symbols(self, monkeypatch):
+        """Test if a ValueError is raised when there are not enough symbols in the
+        use_opt_einsum = False setting"""
+
+        with monkeypatch.context() as m:
+            m.setattr(string, "ascii_letters", "")
+            with pytest.raises(ValueError, match="Set the use_opt_einsum argument to True"):
+                qcut.contract_tensors(self.t, self.g, self.p, self.m, use_opt_einsum=False)
+
+    params = [0.3, 0.5]
+
+    expected_grad_0 = (
+        np.cos(params[0]) * np.cos(params[1])
+        + 2 * np.cos(params[0]) * np.sin(params[0]) * np.cos(params[1]) ** 2
+        + 3 * np.cos(params[0]) * np.sin(params[0]) ** 2 * np.cos(params[1]) ** 3
+    )
+    expected_grad_1 = (
+        -np.sin(params[0]) * np.sin(params[1])
+        - 2 * np.sin(params[0]) ** 2 * np.sin(params[1]) * np.cos(params[1])
+        - 3 * np.sin(params[0]) ** 3 * np.sin(params[1]) * np.cos(params[1]) ** 2
+    )
+    expected_grad = np.array([expected_grad_0, expected_grad_1])
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_autograd(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the autograd interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        def contract(params):
+            t1 = np.asarray([np.sin(params[0]) ** i for i in range(4)])
+            t2 = np.asarray([np.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+            return r
+
+        params = np.array(self.params, requires_grad=True)
+        grad = qml.grad(contract)(params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_torch_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_torch(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the torch interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import torch
+
+        params = torch.tensor(self.params, requires_grad=True)
+
+        t1 = torch.stack([torch.sin(params[0]) ** i for i in range(4)])
+        t2 = torch.stack([torch.cos(params[1]) ** i for i in range(4)])
+        t = [t1, t2]
+        r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        r.backward()
+        grad = params.grad
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_tf_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_tf(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the tf interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import tensorflow as tf
+
+        params = tf.Variable(self.params)
+
+        with tf.GradientTape() as tape:
+            t1 = tf.stack([tf.sin(params[0]) ** i for i in range(4)])
+            t2 = tf.stack([tf.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+
+        grad = tape.gradient(r, params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.usefixtures("skip_if_no_jax_support")
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_basic_grad_jax(self, use_opt_einsum):
+        """Test if the basic contraction is differentiable using the jax interface"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        import jax
+        from jax import numpy as np
+
+        params = np.array(self.params)
+
+        def contract(params):
+            t1 = np.stack([np.sin(params[0]) ** i for i in range(4)])
+            t2 = np.stack([np.cos(params[1]) ** i for i in range(4)])
+            t = [t1, t2]
+            r = qcut.contract_tensors(t, self.g, self.p, self.m, use_opt_einsum=use_opt_einsum)
+            return r
+
+        grad = jax.grad(contract)(params)
+
+        assert np.allclose(grad, self.expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_advanced(self, mocker, use_opt_einsum):
+        """Test if the contraction works as expected for a more complicated example based
+        upon the circuit:
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
+            qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+
+            qml.Barrier(wires=0)
+            qml.WireCut(wires=[1, 2, 3])
+
+            qml.QubitUnitary(np.eye(2 ** 1), wires=[0])
+            qml.QubitUnitary(np.eye(2 ** 4), wires=[1, 2, 3, 4])
+
+            qml.WireCut(wires=[1, 2, 3, 4])
+
+            qml.QubitUnitary(np.eye(2 ** 3), wires=[0, 1, 2])
+            qml.QubitUnitary(np.eye(2 ** 2), wires=[3, 4])
+        """
+        if use_opt_einsum:
+            opt_einsum = pytest.importorskip("opt_einsum")
+            spy = mocker.spy(opt_einsum, "contract")
+        else:
+            spy = mocker.spy(qml.math, "einsum")
+
+        t = [
+            np.arange(4**8).reshape((4,) * 8),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**2).reshape((4,) * 2),
+        ]
+        m = [
+            [
+                qcut.MeasureNode(wires=3),
+                qcut.MeasureNode(wires=1),
+                qcut.MeasureNode(wires=2),
+                qcut.MeasureNode(wires=3),
+                qcut.MeasureNode(wires=4),
+            ],
+            [
+                qcut.MeasureNode(wires=1),
+                qcut.MeasureNode(wires=2),
+            ],
+            [],
+        ]
+        p = [
+            [
+                qcut.PrepareNode(wires=1),
+                qcut.PrepareNode(wires=2),
+                qcut.PrepareNode(wires=3),
+            ],
+            [
+                qcut.PrepareNode(wires=1),
+                qcut.PrepareNode(wires=2),
+            ],
+            [
+                qcut.PrepareNode(wires=4),
+                qcut.PrepareNode(wires=3),
+            ],
+        ]
+        edges = [
+            (0, 0, 0, {"pair": (m[0][0], p[0][2])}),
+            (0, 1, 0, {"pair": (m[0][1], p[1][0])}),
+            (0, 1, 1, {"pair": (m[0][2], p[1][1])}),
+            (0, 2, 0, {"pair": (m[0][4], p[2][0])}),
+            (0, 2, 1, {"pair": (m[0][3], p[2][1])}),
+            (1, 0, 0, {"pair": (m[1][0], p[0][0])}),
+            (1, 0, 1, {"pair": (m[1][1], p[0][1])}),
+        ]
+        g = MultiDiGraph(edges)
+
+        res = qcut.contract_tensors(t, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        eqn = spy.call_args[0][0]
+        expected_eqn = "abccdegf,deab,fg"
+
+        assert eqn == expected_eqn
+        assert np.allclose(res, np.einsum(eqn, *t))
+

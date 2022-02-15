@@ -51,12 +51,9 @@ class AmplitudeDamping(Channel):
         gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -114,12 +111,9 @@ class GeneralizedAmplitudeDamping(Channel):
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 2
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -169,12 +163,9 @@ class PhaseDamping(Channel):
         gamma (float): phase damping probability
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -230,13 +221,10 @@ class DepolarizingChannel(Channel):
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -281,13 +269,10 @@ class BitFlip(Channel):
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -350,12 +335,9 @@ class ResetError(Channel):
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 2
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 2
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -503,13 +485,10 @@ class PhaseFlip(Channel):
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -540,6 +519,7 @@ class QubitChannel(Channel):
         K_list (list[array[complex]]): List of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = None
 
@@ -568,10 +548,6 @@ class QubitChannel(Channel):
         Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
-
-    @property
-    def num_params(self):
-        return 1
 
     @classmethod
     def _kraus_matrices(cls, *params):
@@ -656,12 +632,9 @@ class ThermalRelaxationError(Channel):
         tg (float): the gate time for relaxation error.
         wires (Sequence[int] or int): the wire the channel acts on
     """
+    num_params = 4
     num_wires = 1
     grad_method = "F"
-
-    @property
-    def num_params(self):
-        return 4
 
     @classmethod
     def _kraus_matrices(cls, *params):

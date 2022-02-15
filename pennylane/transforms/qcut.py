@@ -15,10 +15,13 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
+import copy
+import string
 import itertools
 from itertools import product
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import Hadamard, Identity, PauliX, PauliY, PauliZ, S, apply, expval
 from pennylane.grouping import string_to_pauli_word
@@ -43,6 +46,10 @@ class PrepareNode(Operation):
     grad_method = None
 
 
+SUBS = "₀₁₂₃₄₅₆₇₈₉"
+SUB = str.maketrans("0123456789", SUBS)
+
+
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     """
     Replace a :class:`~.WireCut` node in the graph with a :class:`~.MeasureNode`
@@ -59,8 +66,6 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
         wire_cut = qml.WireCut(wires=0)
 
         with qml.tape.QuantumTape() as tape:
@@ -71,8 +76,8 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
     We can find the circuit graph and remove the wire cut node using:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_node(wire_cut, graph)
+    >>> graph = qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.replace_wire_cut_node(wire_cut, graph)
     """
     predecessors = graph.pred[node]
     successors = graph.succ[node]
@@ -128,8 +133,6 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
         wire_cut_0 = qml.WireCut(wires=0)
         wire_cut_1 = qml.WireCut(wires=1)
         multi_wire_cut = qml.WireCut(wires=[0, 1])
@@ -146,9 +149,8 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
 
     We can find the circuit graph and remove all the wire cut nodes using:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(graph)
-
+    >>> graph = qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.replace_wire_cut_nodes(graph)
     """
     for op in list(graph.nodes):
         if isinstance(op, WireCut):
@@ -175,8 +177,8 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
         tape (QuantumTape): tape to be converted into a directed multigraph
 
     Returns:
-        graph (MultiDiGraph): a directed multigraph that captures the circuit
-        structure of the input tape
+        MultiDiGraph: a directed multigraph that captures the circuit structure
+        of the input tape
 
     **Example**
 
@@ -192,7 +194,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     Its corresponding circuit graph can be found using
 
-    >>> tape_to_graph(tape)
+    >>> qml.transforms.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
@@ -220,26 +222,24 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
-    Fragments a cut graph into a collection of subgraphs as well as returning
-    the communication/quotient graph.
+    Fragments a graph into a collection of subgraphs as well as returning
+    the communication/`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__
+    graph. Each node of the communication graph represents a fragment and the edges
+    denote the flow of qubits between fragments.
 
     Args:
         graph (MultiDiGraph): directed multigraph containing measure and prepare
             nodes at cut locations
 
     Returns:
-        subgraphs, communication_graph (Tuple[Tuple[MultiDiGraph], MultiDiGraph]):
-        the subgraphs of the cut graph and the communication graph where each
-        node represents a fragment and edges denote the flow of qubits between
-        fragments
+        Tuple[Tuple[MultiDiGraph], MultiDiGraph]: the subgraphs of the cut graph
+        and the communication graph.
 
     **Example**
 
-    Consider the following circuit with a manually-placed wire cut:
+    Consider the following circuit with manually-placed wire cuts:
 
     .. code-block:: python
-
-        from pennylane.transforms import qcut
 
         wire_cut_0 = qml.WireCut(wires=0)
         wire_cut_1 = qml.WireCut(wires=1)
@@ -258,9 +258,9 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     We can find the corresponding graph, remove all the wire cut nodes, and
     find the subgraphs and communication graph by using:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(graph)
-    >>> qcut.fragment_graph(g)
+    >>> graph = qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.replace_wire_cut_nodes(graph)
+    >>> qml.transforms.fragment_graph(graph)
     ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,
@@ -268,29 +268,30 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
      <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e26a0>)
     """
 
-    edges = list(graph.edges)
+    graph_copy = graph.copy()
+
     cut_edges = []
 
-    for node1, node2, _ in edges:
+    for node1, node2, wire in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
-            cut_edges.append((node1, node2))
-            graph.remove_edge(node1, node2)
+            cut_edges.append((node1, node2, wire))
+            graph_copy.remove_edge(node1, node2, key=wire)
 
-    subgraph_nodes = weakly_connected_components(graph)
-    subgraphs = tuple(graph.subgraph(n) for n in subgraph_nodes)
+    subgraph_nodes = weakly_connected_components(graph_copy)
+    subgraphs = tuple(graph_copy.subgraph(n) for n in subgraph_nodes)
 
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
-    for node1, node2 in cut_edges:
+    for node1, node2, wire in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
                 start_fragment = i
             if subgraph.has_node(node2):
                 end_fragment = i
 
-        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2, wire))
 
     return subgraphs, communication_graph
 
@@ -303,50 +304,42 @@ def _find_new_wire(wires: Wires) -> int:
     return ctr
 
 
+# pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
-    Converts a directed multigraph to the corresponding quantum tape.
+    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
+
+    Each node in the graph should have an order attribute specifying the topological order of
+    the operations. This maintains ordering of operations and allows for the
+    deferred measurement principle to be applied when necessary.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :doc:`transforms </code/qml_transforms>` page for more details.
 
     Args:
-        graph (MultiDiGraph): directed multigraph containing measure to be
-            converted to a tape
+        graph (MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
-        tape (QuantumTape): the quantum tape corresponding to the input
+        QuantumTape: the quantum tape corresponding to the input graph
 
     **Example**
 
-    Consider the following ... :
+    Consider the following, where ``graph`` contains three :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
+    We can find the circuit fragments by using:
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
-        wire_cut_0 = qml.WireCut(wires=0)
-        wire_cut_1 = qml.WireCut(wires=1)
-        multi_wire_cut = qml.WireCut(wires=[0, 1])
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.apply(wire_cut_0)
-            qml.RY(0.5, wires=0)
-            qml.apply(wire_cut_1)
-            qml.CNOT(wires=[0, 1])
-            qml.apply(multi_wire_cut)
-            qml.RZ(0.6, wires=1)
-            qml.expval(qml.PauliZ(0))
-
-    We can find the subgraphs and corresponding tapes by using:
-
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(graph)
-    >>> subgraphs, communication_graph = qcut.fragment_graph(graph)
-    >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-    >>> tapes
-    [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
-     <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
-     <QuantumTape: wires=[1], params=0>]
+        >>> subgraphs, communication_graph = qml.transforms.fragment_graph(graph)
+        >>> tapes = [qml.transforms.graph_to_tape(sg) for sg in subgraphs]
+        >>> tapes
+        [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
+         <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
+         <QuantumTape: wires=[1], params=0>]
     """
+
     wires = Wires.all_wires([n.wires for n in graph.nodes])
 
     ordered_ops = sorted(
@@ -354,17 +347,30 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     )
     wire_map = {w: w for w in wires}
 
+    copy_ordered_ops = copy.deepcopy(ordered_ops)
+
+    updated = {}
     with QuantumTape() as tape:
-        for _, op in ordered_ops:
+        for _, op in copy_ordered_ops:
+            name_and_wire = op.name + str(op.wires)
+
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
 
             if isinstance(op, MeasureNode):
-                measured_wire = op.wires[0]
-                new_wire = _find_new_wire(wires)
-                wires += new_wire
-                wire_map[measured_wire] = new_wire
+                assert len(op.wires) == 1
+                # if a wire has already been updated we still
+                # want to map *from* the original wire
+                if name_and_wire in updated:
+                    new_wire = updated[name_and_wire] + 1
+                    wire_map[measured_wire] = new_wire
+                else:
+                    measured_wire = op.wires[0]
+                    new_wire = _find_new_wire(wires)
+                    wires += new_wire
+                    wire_map[measured_wire] = new_wire
+                updated[name_and_wire] = new_wire
 
     return tape
 
@@ -602,3 +608,142 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
                 groups.append(group)
 
     return groups
+
+def _get_symbol(i):
+    """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
+    51."""
+    if i >= len(string.ascii_letters):
+        raise ValueError(
+            "Set the use_opt_einsum argument to True when applying more than "
+            f"{len(string.ascii_letters)} wire cuts to a circuit"
+        )
+    return string.ascii_letters[i]
+
+
+# pylint: disable=too-many-branches
+def contract_tensors(
+    tensors: Sequence,
+    communication_graph: MultiDiGraph,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+    use_opt_einsum: bool = False,
+):
+    r"""Contract tensors according to the edges specified in the communication graph.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Consider the three tensors :math:`T^{(1)}`, :math:`T^{(2)}`, and :math:`T^{(3)}`, along with
+    their contraction equation
+
+    .. math::
+
+        \sum_{ijklmn} T^{(1)}_{ij,km} T^{(2)}_{kl,in} T^{(3)}_{mn,jl}
+
+    Each tensor is the result of the tomography of a circuit fragment and has some indices
+    corresponding to state preparations (marked by the indices before the comma) and some indices
+    corresponding to measurements (marked by the indices after the comma).
+
+    An equivalent representation of the contraction equation is to use a directed multigraph known
+    as the communication/quotient graph. In the communication graph, each tensor is assigned a node
+    and edges are added between nodes to mark a contraction along an index. The communication graph
+    resulting from the above contraction equation is a complete directed graph.
+
+    In the communication graph provided by :func:`fragment_graph`, edges are composed of
+    :class:`PrepareNode` and :class:`MeasureNode` pairs. To correctly map back to the contraction
+    equation, we must keep track of the order of preparation and measurement indices in each tensor.
+    This order is specified in the ``prepare_nodes`` and ``measure_nodes`` arguments.
+
+    Args:
+        tensors (Sequence): the tensors to be contracted
+        communication_graph (MultiDiGraph): the communication graph determining connectivity between
+            the tensors
+        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of preparation indices in
+            each tensor
+        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of measurement indices in
+            each tensor
+        use_opt_einsum (bool): Determines whether to use the
+            `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
+            for tensor contractions of large networks but must be installed separately using, e.g.,
+            ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            differentiable contraction.
+
+    Returns:
+        float or array-like: the result of contracting the tensor network
+
+    **Example**
+
+    We first set up the tensors and their corresponding :class:`~.PrepareNode` and
+    :class:`~.MeasureNode` orderings:
+    
+        import networkx as nx
+        import numpy as np
+
+        tensors = [np.arange(4), np.arange(4, 8)]
+        prep = [[], [qcut.PrepareNode(wires=0)]]
+        meas = [[qcut.MeasureNode(wires=0)], []]
+
+    The communication graph describing edges in the tensor network must also be constructed:
+
+    .. code-block:: python
+
+        graph = nx.MultiDiGraph([(0, 1, {"pair": (meas[0][0], prep[1][0])})])
+
+    The network can then be contracted using:
+
+    >>> qml.transforms.contract_tensors(tensors, graph, prep, meas)
+    38
+    """
+    # pylint: disable=import-outside-toplevel
+    if use_opt_einsum:
+        try:
+            from opt_einsum import contract, get_symbol
+        except ImportError as e:
+            raise ImportError(
+                "The opt_einsum package is required when use_opt_einsum is set to "
+                "True in the contract_tensors function. This package can be "
+                "installed using:\npip install opt_einsum"
+            ) from e
+    else:
+        contract = qml.math.einsum
+        get_symbol = _get_symbol
+
+    ctr = 0
+    tensor_indxs = [""] * len(communication_graph.nodes)
+
+    meas_map = {}
+
+    for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes)):
+        predecessors = communication_graph.pred[node]
+
+        for p in prep:
+            for _, pred_edges in predecessors.items():
+                for pred_edge in pred_edges.values():
+                    meas_op, prep_op = pred_edge["pair"]
+
+                    if p is prep_op:
+                        symb = get_symbol(ctr)
+                        ctr += 1
+                        tensor_indxs[i] += symb
+                        meas_map[meas_op] = symb
+
+    for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes)):
+        successors = communication_graph.succ[node]
+
+        for m in meas:
+            for _, succ_edges in successors.items():
+                for succ_edge in succ_edges.values():
+                    meas_op, _ = succ_edge["pair"]
+
+                    if m is meas_op:
+                        symb = meas_map[meas_op]
+                        tensor_indxs[i] += symb
+
+    eqn = ",".join(tensor_indxs)
+    kwargs = {} if use_opt_einsum else {"like": tensors[0]}
+
+    return contract(eqn, *tensors, **kwargs)

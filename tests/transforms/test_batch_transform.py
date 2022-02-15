@@ -135,7 +135,7 @@ class TestBatchTransform:
         assert isinstance(res, float)
         assert not np.allclose(res, 0)
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             qml.grad(circuit)(0.5)
 
     def test_use_qnode_execution_options(self, mocker):
@@ -555,8 +555,10 @@ class TestBatchTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
-        weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
-        x = tf.Variable(0.543, dtype=tf.float64)
+        weights_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = np.array(0.543, requires_grad=True)
+        weights = tf.Variable(weights_np, dtype=tf.float64)
+        x = tf.Variable(x_np, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = self.my_transform(qnode, weights)(x)
@@ -564,7 +566,8 @@ class TestBatchTransformGradients:
         assert np.allclose(res, self.expval(x, weights))
 
         grad = tape.gradient(res, [x, weights])
-        expected = qml.grad(self.expval)(x.numpy(), weights.numpy())
+        expected = qml.grad(self.expval)(x_np, weights_np)
+        assert len(grad) == len(expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
     def test_differentiable_torch(self, diff_method):
@@ -598,14 +601,17 @@ class TestBatchTransformGradients:
         def cost(x, weights):
             return self.my_transform(qnode, weights, max_diff=1)(x)
 
-        weights = jax.numpy.array([0.1, 0.2])
-        x = jax.numpy.array(0.543)
+        weights_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = np.array(0.543, requires_grad=True)
+        weights = jax.numpy.array(weights_np)
+        x = jax.numpy.array(x_np)
 
         res = cost(x, weights)
         assert np.allclose(res, self.expval(x, weights))
 
         grad = jax.grad(cost, argnums=[0, 1])(x, weights)
-        expected = qml.grad(self.expval)(np.array(x), np.array(weights))
+        expected = qml.grad(self.expval)(x_np, weights_np)
+        assert len(grad) == len(expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
     def test_batch_transforms_qnode(self, diff_method, mocker):

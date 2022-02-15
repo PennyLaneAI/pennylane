@@ -104,15 +104,15 @@ def tape_text(
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0,1,2))
+            qml.QFT(wires=(0, 1, 2))
             qml.RX(1.234, wires=0)
             qml.RY(1.234, wires=1)
             qml.RZ(1.234, wires=2)
-            qml.Toffoli(wires=(0,1,"aux"))
+            qml.Toffoli(wires=(0, 1, "aux"))
 
             qml.expval(qml.PauliZ("aux"))
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
-            qml.probs(wires=(0,1,2,"aux"))
+            qml.probs(wires=(0, 1, 2, "aux"))
 
     >>> print(tape_text(tape))
       0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z] ╭Probs
@@ -169,7 +169,7 @@ def tape_text(
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
-    >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0,1,2], show_all_wires=True))
+    >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
       a: ─────────────┤
       b: ─────────────┤
     aux: ──────────╭X─┤  <Z>      ╭Probs

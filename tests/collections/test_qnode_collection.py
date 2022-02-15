@@ -195,7 +195,7 @@ class TestEvalation:
         the Autograd interface"""
         qnode1, qnode2 = qnodes
 
-        params = [0.5643, -0.45]
+        params = np.array([0.5643, -0.45], requires_grad=True)
         qc = qml.QNodeCollection([qnode1, qnode2])
         cost_qc = lambda params: np.sum(qc(params))
         grad_qc = qml.grad(cost_qc)
@@ -206,7 +206,7 @@ class TestEvalation:
         res = grad_qc(params)
         expected = grad_expected(params)
 
-        assert np.all(res == expected)
+        assert len(res) != 0 and np.all(res == expected)
 
     @pytest.mark.parametrize("interface", ["torch"])
     def test_eval_torch(self, qnodes, skip_if_no_torch_support, parallel, interface):
@@ -249,7 +249,11 @@ class TestEvalation:
         qc = qml.QNodeCollection([qnode1, qnode2])
         params = [0.5643, -0.45]
 
-        res = qc(params, parallel=parallel).numpy()
+        if parallel:
+            with pytest.warns(UserWarning, match="Parallel execution of QNodeCollections is an"):
+                res = qc(params, parallel=parallel).numpy()
+        else:
+            res = qc(params, parallel=parallel).numpy()
         expected = onp.vstack([qnode1(params), qnode2(params)])
         assert np.all(res == expected)
 
