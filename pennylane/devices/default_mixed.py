@@ -214,12 +214,12 @@ class DefaultMixed(QubitDevice):
             unitary, returns a 1D array representing the matrix diagonal.
         """
         if operation in diagonal_in_z_basis:
-            return operation.eigvals
+            return operation.eigvals()
 
         if isinstance(operation, Channel):
-            return operation.kraus_matrices
+            return operation.kraus_matrices()
 
-        return [operation.matrix]
+        return [operation.matrix()]
 
     def _apply_channel(self, kraus, wires):
         r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the

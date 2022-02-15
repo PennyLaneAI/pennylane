@@ -88,34 +88,84 @@ class QubitCarry(Operation):
     1
     """
     num_wires = 4
-    num_params = 0
-    _mat = np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-        ]
-    )
+    """int: Number of wires that the operator acts on."""
 
-    @classmethod
-    def _matrix(cls, *params):
-        return QubitCarry._mat
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
-    def decomposition(wires):
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitCarry.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> qml.QubitCarry.compute_matrix()
+        [[1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0]
+         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
+         [0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0]
+         [0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            ]
+        )
+
+    @staticmethod
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. seealso:: :meth:`~.QubitCarry.decomposition`.
+
+        Args:
+            wires (Iterable[Any], Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition of the operator
+
+        **Example:**
+
+        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
+
+        """
         decomp_ops = [
             qml.Toffoli(wires=wires[1:]),
             qml.CNOT(wires=[wires[1], wires[2]]),
@@ -128,7 +178,7 @@ class QubitSum(Operation):
     r"""QubitSum(wires)
     Apply a ``QubitSum`` operation on three input wires.
 
-    This operation performs the transformation:
+    This operation performs the following transformation:
 
     .. math::
         |a\rangle |b\rangle |c\rangle \rightarrow |a\rangle |b\rangle |a\oplus b\oplus c\rangle
@@ -182,29 +232,71 @@ class QubitSum(Operation):
     1
     """
     num_wires = 3
+    """int: Number of wires that the operator acts on."""
+
     num_params = 0
-    _mat = np.array(
-        [
-            [1, 0, 0, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 1, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 1, 0, 0],
-            [0, 0, 0, 0, 1, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-        ]
-    )
+    """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Σ")
 
-    @classmethod
-    def _matrix(cls, *params):
-        return QubitSum._mat
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.QubitSum.matrix`
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> qml.QubitSum.compute_matrix()
+        [[1 0 0 0 0 0 0 0]
+         [0 1 0 0 0 0 0 0]
+         [0 0 0 1 0 0 0 0]
+         [0 0 1 0 0 0 0 0]
+         [0 0 0 0 0 1 0 0]
+         [0 0 0 0 1 0 0 0]
+         [0 0 0 0 0 0 1 0]
+         [0 0 0 0 0 0 0 1]]
+        """
+        return np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
 
     @staticmethod
-    def decomposition(wires):
+    def compute_decomposition(wires):
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. seealso:: :meth:`~.QubitSum.decomposition`.
+
+        Args:
+            wires (Iterable[Any], Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition of the operator
+
+        **Example:**
+
+        >>> qml.QubitSum.compute_decomposition((0,1,2))
+        [CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
+
+        """
         decomp_ops = [
             qml.CNOT(wires=[wires[1], wires[2]]),
             qml.CNOT(wires=[wires[0], wires[2]]),

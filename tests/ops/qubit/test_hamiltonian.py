@@ -522,8 +522,8 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.Hamiltonian(coeffs, ops)
-        assert np.allclose(H.terms[0], coeffs)
-        assert H.terms[1] == list(ops)
+        assert np.allclose(H.terms()[0], coeffs)
+        assert H.terms()[1] == list(ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -757,6 +757,18 @@ class TestHamiltonian:
             )
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+
+    def test_terms(self):
+        """Tests that the terms representation is returned correctly."""
+        coeffs = pnp.array([1.0, 2.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1)]
+        h = qml.Hamiltonian(coeffs, ops)
+        c, o = h.terms()
+        assert isinstance(c, tuple)
+        assert isinstance(o, list)
+        assert all(isinstance(item, np.ndarray) for item in c)
+        assert all(item.requires_grad for item in c)
+        assert all(isinstance(item, qml.operation.Operator) for item in o)
 
 
 class TestHamiltonianCoefficients:
