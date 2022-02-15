@@ -190,7 +190,7 @@ ar.register_function(
 def _round_tf(tensor, decimals=0):
     """Implement a TensorFlow version of np.round"""
     tf = _i("tf")
-    tol = 10 ** decimals
+    tol = 10**decimals
     return tf.round(tensor * tol) / tol
 
 
@@ -287,6 +287,14 @@ def _scatter_element_add_tf(tensor, index, value):
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
 
+def _transpose_tf(a, axes=None):
+    import tensorflow as tf
+
+    return tf.transpose(a, perm=axes)
+
+
+ar.register_function("tensorflow", "transpose", _transpose_tf)
+
 # -------------------------------- Torch --------------------------------- #
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
@@ -336,7 +344,7 @@ ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 def _round_torch(tensor, decimals=0):
     """Implement a Torch version of np.round"""
     torch = _i("torch")
-    tol = 10 ** decimals
+    tol = 10**decimals
     return torch.round(tensor * tol) / tol
 
 

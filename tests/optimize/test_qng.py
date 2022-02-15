@@ -104,6 +104,7 @@ class TestOptimize:
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
 
+    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_step_and_cost_with_grad_fn_split_input(self, tol):
         """Test that the correct cost and update is returned via the step_and_cost
         method for the QNG optimizer when providing an explicit grad_fn.
@@ -278,6 +279,7 @@ class TestOptimize:
         assert np.allclose(cost_fn(theta), -1.41421356, atol=tol, rtol=0)
         assert len(recwarn) == 0
 
+    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and

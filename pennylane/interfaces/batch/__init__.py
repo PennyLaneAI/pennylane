@@ -29,13 +29,18 @@ import pennylane as qml
 INTERFACE_NAMES = {
     "NumPy": (None,),
     "Autograd": ("autograd", "numpy"),  # for backwards compatibility
-    "JAX": ("jax", "JAX"),
+    "JAX": ("jax", "jax-jit", "jax-python", "JAX"),
     "PyTorch": ("torch", "pytorch"),
     "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
 }
 """dict[str, str]: maps allowed interface strings to the name of the interface"""
 
 SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
+
+
+class InterfaceUnsupportedError(NotImplementedError):
+    """Exception raised when features not supported by an interface are
+    attempted to be used."""
 
 
 @contextlib.contextmanager
@@ -203,6 +208,7 @@ def execute(
     override_shots=False,
     expand_fn="device",
     max_expansion=10,
+    device_batch_transform=True,
 ):
     """Execute a batch of tapes on a device in an autodifferentiable-compatible manner.
 
@@ -239,6 +245,10 @@ def execute(
             executed on a device. Expansion occurs when an operation or measurement is not
             supported, and results in a gate decomposition. If any operations in the decomposition
             remain unsupported by the device, another expansion occurs.
+        device_batch_transform (bool): Whether to apply any batch transforms defined by the device
+            (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
+            of the device batch transform is to expand out Hamiltonian measurements into
+            constituent terms if not supported on the device.
 
     Returns:
         list[list[float]]: A nested list of tape results. Each element in
@@ -300,6 +310,11 @@ def execute(
     """
     gradient_kwargs = gradient_kwargs or {}
 
+    if device_batch_transform:
+        tapes, batch_fn = qml.transforms.map_batch_transform(device.batch_transform, tapes)
+    else:
+        batch_fn = lambda res: res
+
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
@@ -310,15 +325,22 @@ def execute(
         expand_fn = lambda tape: device.expand_fn(tape, max_expansion=max_expansion)
 
     if gradient_fn is None:
+        # don't unwrap if it's an interface device
+        if "passthru_interface" in device.capabilities():
+            return batch_fn(
+                cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+            )
         with qml.tape.Unwrap(*tapes):
             res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
                 tapes
             )
 
-        return res
+        return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
-        return cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+        return batch_fn(
+            cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+        )
 
     # the default execution function is batch_execute
     execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
@@ -373,7 +395,7 @@ def execute(
         elif interface in INTERFACE_NAMES["PyTorch"]:
             from .torch import execute as _execute
         elif interface in INTERFACE_NAMES["JAX"]:
-            from .jax import execute as _execute
+            _execute = _get_jax_execute_fn(interface, tapes)
         else:
             raise ValueError(
                 f"Unknown interface {interface}. Supported "
@@ -391,4 +413,22 @@ def execute(
         tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=max_diff, mode=_mode
     )
 
-    return res
+    return batch_fn(res)
+
+
+def _get_jax_execute_fn(interface, tapes):
+    """Auxiliary function to determine the execute function to use with the JAX
+    interface."""
+
+    # The most general JAX interface was sepcified, automatically determine if
+    # support for jitting is needed by swapping to "jax-jit" or "jax-python"
+    if interface == "jax":
+        from .jax import get_jax_interface_name
+
+        interface = get_jax_interface_name(tapes)
+
+    if interface == "jax-jit":
+        from .jax_jit import execute as _execute
+    else:
+        from .jax import execute as _execute
+    return _execute

@@ -65,6 +65,41 @@ def test_barrier_adjoint():
     assert my_circuit()[0] == 1.0
 
 
+def test_wirecut_adjoint():
+    """Check that the adjoint for the WireCut is working"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        adjoint(qml.WireCut)(wires=0)
+        return qml.state()
+
+    assert np.isclose(my_circuit()[0], 1.0)
+
+
+def test_identity_adjoint():
+    """Check that the adjoint for Identity is working"""
+    dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @qml.qnode(dev)
+    def circuit():
+        identity()
+        qml.adjoint(identity)()
+        return qml.state()
+
+    def identity():
+        qml.PauliX(wires=0)
+        qml.Identity(0)
+        qml.CNOT(wires=[0, 1])
+
+    assert circuit()[0] == 1.0
+
+    queue = circuit.tape.queue
+
+    assert queue[1].name == "Identity"
+    assert queue[4].name == "Identity"
+
+
 def test_nested_adjoint():
     """Test that adjoint works when nested with other adjoints"""
     dev = qml.device("default.qubit", wires=1)
@@ -229,7 +264,7 @@ class TestTemplateIntegration:
 
         weights = np.array([1, 0, 1])
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
@@ -278,7 +313,7 @@ class TestTemplateIntegration:
         weights = np.random.random(template.shape(2, 3))
 
         res = circuit(features, weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -296,7 +331,7 @@ class TestTemplateIntegration:
 
         features = np.array([1.0, 2.0, 3.0])
         res = circuit(features)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -321,7 +356,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -346,7 +381,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -364,7 +399,7 @@ class TestTemplateIntegration:
 
         weights = [np.random.random(s) for s in template.shape(2, 3)]
         res = circuit(weights[0], *weights[1:])
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -385,7 +420,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.5)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
@@ -402,7 +437,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -419,7 +454,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.6)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -436,7 +471,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.6)
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -476,7 +511,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit([[[0.6, 0.8]]])
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)

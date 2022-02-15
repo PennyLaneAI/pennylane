@@ -170,10 +170,10 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([0.0, 1.0])
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
@@ -184,10 +184,10 @@ class TestQNodeIntegration:
         expected = jnp.array([0.0, 1.0])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
@@ -198,10 +198,10 @@ class TestQNodeIntegration:
         expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, diff_method=None, interface="jax")
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
@@ -468,7 +468,7 @@ class TestPassthruIntegration:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit.jax", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b, c):
@@ -691,7 +691,7 @@ class TestOps:
 
         param = 0.3
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros(wires ** 2))
+        assert jnp.allclose(res, jnp.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop

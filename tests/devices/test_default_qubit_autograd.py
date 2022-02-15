@@ -280,7 +280,10 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    @pytest.mark.parametrize(
+        "x, shift",
+        [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
+    )
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
@@ -422,7 +425,7 @@ class TestOps:
 
         param = np.array(0.3, requires_grad=True)
         res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros(wires ** 2))
+        assert np.allclose(res, np.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop

@@ -28,6 +28,36 @@ PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
     qml.RY(1.434, wires=0),
     qml.RZ(2.774, wires=0),
+    qml.PauliRot(0.123, "Y", wires=0),
+    qml.IsingXX(0.123, wires=[0, 1]),
+    qml.IsingYY(0.123, wires=[0, 1]),
+    qml.IsingZZ(0.123, wires=[0, 1]),
+    qml.Rot(0.123, 0.456, 0.789, wires=0),
+    qml.PhaseShift(2.133, wires=0),
+    qml.ControlledPhaseShift(1.777, wires=[0, 2]),
+    qml.CPhase(1.777, wires=[0, 2]),
+    qml.MultiRZ(0.112, wires=[1, 2, 3]),
+    qml.CRX(0.836, wires=[2, 3]),
+    qml.CRY(0.721, wires=[2, 3]),
+    qml.CRZ(0.554, wires=[2, 3]),
+    qml.U1(0.123, wires=0),
+    qml.U2(3.556, 2.134, wires=0),
+    qml.U3(2.009, 1.894, 0.7789, wires=0),
+    qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
+    qml.QubitUnitary(np.eye(2) * 1j, wires=0),
+    qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
+    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
+    qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
+    qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
+    qml.SingleExcitation(0.123, wires=[0, 3]),
+    qml.SingleExcitationPlus(0.123, wires=[0, 3]),
+    qml.SingleExcitationMinus(0.123, wires=[0, 3]),
+    qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+]
+
+NON_PARAMETRIZED_OPERATIONS = [
     qml.S(wires=0),
     qml.SX(wires=0),
     qml.T(wires=0),
@@ -39,43 +69,20 @@ PARAMETRIZED_OPERATIONS = [
     qml.SISWAP(wires=[0, 1]),
     qml.SQISW(wires=[0, 1]),
     qml.CSWAP(wires=[0, 1, 2]),
-    qml.PauliRot(0.123, "Y", wires=0),
-    qml.IsingXX(0.123, wires=[0, 1]),
-    qml.IsingYY(0.123, wires=[0, 1]),
-    qml.IsingZZ(0.123, wires=[0, 1]),
-    qml.Rot(0.123, 0.456, 0.789, wires=0),
     qml.Toffoli(wires=[0, 1, 2]),
-    qml.PhaseShift(2.133, wires=0),
-    qml.ControlledPhaseShift(1.777, wires=[0, 2]),
-    qml.CPhase(1.777, wires=[0, 2]),
-    qml.MultiRZ(0.112, wires=[1, 2, 3]),
-    qml.CRX(0.836, wires=[2, 3]),
-    qml.CRY(0.721, wires=[2, 3]),
-    qml.CRZ(0.554, wires=[2, 3]),
-    qml.U1(0.123, wires=0),
-    qml.U2(3.556, 2.134, wires=0),
-    qml.U3(2.009, 1.894, 0.7789, wires=0),
     qml.Hadamard(wires=0),
     qml.PauliX(wires=0),
     qml.PauliZ(wires=0),
     qml.PauliY(wires=0),
-    qml.CRot(0.123, 0.456, 0.789, wires=[0, 1]),
-    qml.QubitUnitary(np.eye(2) * 1j, wires=0),
-    qml.DiagonalQubitUnitary(np.array([1.0, 1.0j]), wires=1),
-    qml.ControlledQubitUnitary(np.eye(2) * 1j, wires=[0], control_wires=[2]),
     qml.MultiControlledX(control_wires=[0, 1], wires=2, control_values="01"),
-    qml.SingleExcitation(0.123, wires=[0, 3]),
-    qml.SingleExcitationPlus(0.123, wires=[0, 3]),
-    qml.SingleExcitationMinus(0.123, wires=[0, 3]),
-    qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
-    qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
-    qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
     qml.QubitSum(wires=[0, 1, 2]),
 ]
 
+ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
+
 
 class TestOperations:
-    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
         copied_op = copy.copy(op)
@@ -86,7 +93,7 @@ class TestOperations:
         np.testing.assert_allclose(op.matrix, copied_op2.matrix, atol=tol)
         op.inv()
 
-    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
         res1 = np.dot(op.matrix, op_d.matrix)
@@ -94,6 +101,32 @@ class TestOperations:
         np.testing.assert_allclose(res1, np.eye(2 ** len(op.wires)), atol=tol)
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
+
+
+class TestParameterFrequencies:
+    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    def test_parameter_frequencies_match_generator(self, op, tol):
+        if op.generator[0] is None:
+            # For operations without generator, we only can try and check that the function
+            # executes properly, not its return value.
+            try:
+                op.parameter_frequencies
+            except qml.operation.OperatorPropertyUndefined:
+                pytest.skip(f"Operation {op.name} does not have parameter frequencies defined.")
+            pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
+        gen, coeff = op.generator
+        if isinstance(gen, np.ndarray):
+            matrix = gen
+        elif hasattr(gen, "matrix"):
+            matrix = gen.matrix
+        else:
+            raise ValueError
+
+        gen_eigvals = tuple(np.linalg.eigvalsh(matrix))
+        freqs_from_gen = np.abs(coeff) * np.array(qml.gradients.eigvals_to_frequencies(gen_eigvals))
+
+        freqs = op.parameter_frequencies
+        assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
 class TestDecompositions:
@@ -345,6 +378,7 @@ class TestCorrectness:
     def test_isingzz(self, tol):
         """Test that the IsingZZ operation is correct"""
         assert np.allclose(qml.IsingZZ._matrix(0), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingZZ._eigvals(0), np.diagonal(np.identity(4)), atol=tol, rtol=0)
 
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
@@ -356,9 +390,31 @@ class TestCorrectness:
 
         param = np.pi / 2
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
 
         param = np.pi
         assert np.allclose(qml.IsingZZ._matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingZZ._eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
+        )
+
+    def test_isingzz_matrix_tf(self, tol):
+        """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
+        different logic for this framework"""
+        tf = pytest.importorskip("tensorflow")
+
+        def get_expected(theta):
+            neg_imag = np.exp(-1j * theta / 2)
+            plus_imag = np.exp(1j * theta / 2)
+            expected = np.array(
+                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
+            )
+            return expected
+
+        param = tf.Variable(np.pi)
+        assert np.allclose(qml.IsingZZ._matrix(param), get_expected(np.pi), atol=tol, rtol=0)
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -530,7 +586,7 @@ class TestGrad:
 
     for phi in phis:
         for device, method in device_methods:
-            configuration.append([device, method, phi])
+            configuration.append([device, method, npp.array(phi, requires_grad=True)])
 
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
@@ -554,13 +610,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -589,13 +645,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -624,7 +680,7 @@ class TestGrad:
 
         phi = npp.array(0.1, requires_grad=True)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -663,13 +719,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -710,13 +766,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -np.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -np.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * np.sin(phi / 2)
                 * np.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -755,7 +811,7 @@ class TestGrad:
 
         phi = jnp.array(0.1)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -786,13 +842,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -827,13 +883,13 @@ class TestGrad:
 
         expected = (
             0.5
-            * (1 / norm ** 2)
+            * (1 / norm**2)
             * (
-                -tf.sin(phi) * (psi_0 ** 2 + psi_1 ** 2 - psi_2 ** 2 - psi_3 ** 2)
+                -tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
                 + 2
                 * tf.sin(phi / 2)
                 * tf.cos(phi / 2)
-                * (-(psi_0 ** 2) - psi_1 ** 2 + psi_2 ** 2 + psi_3 ** 2)
+                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
             )
         )
 
@@ -866,7 +922,7 @@ class TestGrad:
 
         phi = tf.Variable(0.1, dtype=tf.complex128)
 
-        expected = (1 / norm ** 2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
+        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         with tf.GradientTape() as tape:
             result = circuit(phi)
@@ -1128,7 +1184,7 @@ class TestPauliRot:
         assert decomp_ops[4].wires == Wires([2])
         assert decomp_ops[4].data[0] == -np.pi / 2
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability(self, angle, pauli_word, tol):
         """Test that differentiation of PauliRot works."""
@@ -1148,7 +1204,7 @@ class TestPauliRot:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_decomposition_integration(self, angle, tol):
         """Test that the decompositon of PauliRot yields the same results."""
 
@@ -1333,7 +1389,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_differentiability(self, angle, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -1353,7 +1409,7 @@ class TestMultiRZ:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     def test_decomposition_integration(self, angle, tol):
         """Test that the decompositon of MultiRZ yields the same results."""
 
@@ -1413,10 +1469,10 @@ label_data = [
     (qml.MultiRZ(1.23456, wires=0), "MultiRZ", "MultiRZ\n(1.23)", "MultiRZ\n(1)", "MultiRZ⁻¹\n(1)"),
     (
         qml.PauliRot(1.2345, "XYZ", wires=(0, 1, 2)),
-        "R(XYZ)",
-        "R(XYZ)\n(1.23)",
-        "R(XYZ)\n(1)",
-        "R(XYZ)⁻¹\n(1)",
+        "RXYZ",
+        "RXYZ\n(1.23)",
+        "RXYZ\n(1)",
+        "RXYZ⁻¹\n(1)",
     ),
     (
         qml.PhaseShift(1.2345, wires=0),

@@ -116,9 +116,6 @@ class TestQubitUnitaryZYZDecomposition:
         assert obtained_gates[0].wires == Wires("a")
         assert qml.math.allclose(qml.math.unwrap(obtained_gates[0].parameters), expected_params)
 
-        print(qml.math.unwrap(obtained_gates[0].parameters))
-        print(expected_params)
-
         if obtained_gates[0].num_params == 1:
             # With TF and RZ, need to cast since can't just unwrap
             obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).matrix

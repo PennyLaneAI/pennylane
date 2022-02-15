@@ -17,6 +17,7 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import cmath
+import warnings
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -43,12 +44,9 @@ class Hadamard(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     eigvals = pauli_eigs(1)
     matrix = np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "H"
@@ -109,13 +107,10 @@ class PauliX(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "X"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, 1], [1, 0]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "X"
@@ -177,13 +172,10 @@ class PauliY(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Y"
     eigvals = pauli_eigs(1)
     matrix = np.array([[0, -1j], [1j, 0]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
@@ -251,13 +243,10 @@ class PauliZ(Observable, Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
     eigvals = pauli_eigs(1)
     matrix = np.array([[1, 0], [0, -1]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
@@ -307,13 +296,10 @@ class S(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
     op_eigvals = np.array([1, 1j])
     op_matrix = np.array([[1, 0], [0, 1j]])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -329,7 +315,9 @@ class S(Operation):
         return decomp_ops
 
     def adjoint(self):
-        return S(wires=self.wires).inv()
+        op = S(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
     def single_qubit_rot_angles(self):
         # S = RZ(\pi/2) RY(0) RZ(0)
@@ -354,13 +342,10 @@ class T(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "Z"
     op_matrix = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])
     op_eigvals = np.array([1, cmath.exp(1j * np.pi / 4)])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -376,7 +361,9 @@ class T(Operation):
         return decomp_ops
 
     def adjoint(self):
-        return T(wires=self.wires).inv()
+        op = T(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
     def single_qubit_rot_angles(self):
         # T = RZ(\pi/4) RY(0) RZ(0)
@@ -401,13 +388,10 @@ class SX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 0
     basis = "X"
     op_matrix = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
     op_eigvals = np.array([1, 1j])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -428,7 +412,9 @@ class SX(Operation):
         return decomp_ops
 
     def adjoint(self):
-        return SX(wires=self.wires).inv()
+        op = SX(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
@@ -457,15 +443,12 @@ class CNOT(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
-    @property
-    def num_params(self):
-        return 0
-
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -504,13 +487,10 @@ class CZ(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "Z"
     eigvals = np.array([1, 1, 1, -1])
     matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Z"
@@ -553,6 +533,7 @@ class CY(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "Y"
     matrix = np.array(
         [
@@ -562,10 +543,6 @@ class CY(Operation):
             [0, 0, 1j, 0],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "Y"
@@ -607,12 +584,9 @@ class SWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     basis = "X"
     matrix = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -654,12 +628,9 @@ class ISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     op_matrix = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
     op_eigvals = np.array([1j, -1j, 1, 1])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -682,7 +653,9 @@ class ISWAP(Operation):
         return decomp_ops
 
     def adjoint(self):
-        return ISWAP(wires=self.wires).inv()
+        op = ISWAP(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
 
 class SISWAP(Operation):
@@ -705,6 +678,7 @@ class SISWAP(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
+    num_params = 0
     op_matrix = np.array(
         [
             [1, 0, 0, 0],
@@ -714,10 +688,6 @@ class SISWAP(Operation):
         ]
     )
     op_eigvals = np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
-
-    @property
-    def num_params(self):
-        return 0
 
     @classmethod
     def _matrix(cls, *params):
@@ -746,7 +716,9 @@ class SISWAP(Operation):
         return decomp_ops
 
     def adjoint(self):
-        return SISWAP(wires=self.wires).inv()
+        op = SISWAP(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
 
 
 SQISW = SISWAP
@@ -779,6 +751,7 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
+    num_params = 0
     matrix = np.array(
         [
             [1, 0, 0, 0, 0, 0, 0, 0],
@@ -791,10 +764,6 @@ class CSWAP(Operation):
             [0, 0, 0, 0, 0, 0, 0, 1],
         ]
     )
-
-    @property
-    def num_params(self):
-        return 0
 
     def label(self, decimals=None, base_label=None):
         return base_label or "SWAP"
@@ -847,6 +816,7 @@ class Toffoli(Operation):
         wires (Sequence[int]): the subsystem the gate acts on
     """
     num_wires = 3
+    num_params = 0
     basis = "X"
     matrix = np.array(
         [
@@ -861,12 +831,8 @@ class Toffoli(Operation):
         ]
     )
 
-    @property
-    def num_params(self):
-        return 0
-
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @classmethod
     def _matrix(cls, *params):
@@ -912,12 +878,15 @@ class MultiControlledX(Operation):
     * Gradient recipe: None
 
     Args:
-        control_wires (Union[Wires, Sequence[int], or int]): the control wire(s)
-        wires (Union[Wires or int]): a single target wire the operation acts on
+        control_wires (Union[Wires, Sequence[int], or int]): Deprecated way to indicate the control wires.
+            Now users should use "wires" to indicate both the control wires and the target wire.
+        wires (Union[Wires, Sequence[int], or int]): control wire(s) followed by a single target wire where
+            the operation acts on
         control_values (str): a string of bits representing the state of the control
             qubits to control on (default is the all 1s state)
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of Toffoli gates
+
 
     .. note::
 
@@ -942,20 +911,10 @@ class MultiControlledX(Operation):
         Note that the state of the work wires before and after the decomposition takes place is
         unchanged.
 
-    **Example**
-
-    The ``MultiControlledX`` operation (sometimes called a mixed-polarity
-    multi-controlled Toffoli) is a commonly-encountered case of the
-    :class:`~.pennylane.ControlledQubitUnitary` operation wherein the applied
-    unitary is the Pauli X (NOT) gate. It can be used in the same manner as
-    ``ControlledQubitUnitary``, but there is no need to specify a matrix
-    argument:
-
-    >>> qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values='1110')
-
     """
     is_self_inverse = True
     num_wires = AnyWires
+    num_params = 0
     grad_method = None
 
     # pylint: disable=too-many-arguments
@@ -968,12 +927,29 @@ class MultiControlledX(Operation):
         work_wires=None,
         do_queue=True,
     ):
-        wires = Wires(wires)
-        control_wires = Wires(control_wires)
-        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        if wires is None:
+            raise ValueError("Must specify the wires where the operation acts on")
+        if control_wires is None:
+            if len(wires) > 1:
+                control_wires = Wires(wires[:-1])
+                wires = Wires(wires[-1])
+            else:
+                raise ValueError(
+                    "MultiControlledX: wrong number of wires. 1 wire given. Need at least 2."
+                )
+        else:
+            wires = Wires(wires)
+            control_wires = Wires(control_wires)
 
-        if len(wires) != 1:
-            raise ValueError("MultiControlledX accepts a single target wire.")
+            warnings.warn(
+                "The control_wires keyword will be removed soon. Use wires = (control_wires,target_wire). See the documentation for more information.",
+                category=UserWarning,
+            )
+
+            if len(wires) != 1:
+                raise ValueError("MultiControlledX accepts a single target wire.")
+
+        work_wires = Wires([]) if work_wires is None else Wires(work_wires)
 
         if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
             [control_wires, work_wires]
@@ -998,10 +974,6 @@ class MultiControlledX(Operation):
 
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
-    @property
-    def num_params(self):
-        return 0
-
     def _matrix(self, *params):
         if self._CX is None:
             self._CX = block_diag(
@@ -1015,7 +987,7 @@ class MultiControlledX(Operation):
         return self._control_wires
 
     def label(self, decimals=None, base_label=None):
-        return base_label or "⊕"
+        return base_label or "X"
 
     @staticmethod
     def _parse_control_values(control_wires, control_values):
@@ -1134,23 +1106,19 @@ class MultiControlledX(Operation):
 
         gates = [
             MultiControlledX(
-                control_wires=first_part,
-                wires=work_wire,
+                wires=first_part + work_wire,
                 work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire,
-                wires=target_wire,
+                wires=second_part + work_wire + target_wire,
                 work_wires=first_part,
             ),
             MultiControlledX(
-                control_wires=first_part,
-                wires=work_wire,
+                wires=first_part + work_wire,
                 work_wires=second_part + target_wire,
             ),
             MultiControlledX(
-                control_wires=second_part + work_wire,
-                wires=target_wire,
+                wires=second_part + work_wire + target_wire,
                 work_wires=first_part,
             ),
         ]
@@ -1186,3 +1154,32 @@ class Barrier(Operation):
 
     def label(self, decimals=None):
         return "||"
+
+    def adjoint(self):
+        return Barrier(wires=self.wires)
+
+
+class WireCut(Operation):
+    r"""WireCut(wires)
+    The wire cut operator, used to manually mark locations for wire cuts.
+
+    **Details:**
+
+    * Number of wires: AnyWires
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wires the operation acts on
+    """
+    num_wires = AnyWires
+    grad_method = None
+
+    # pylint: disable=unused-argument
+    def decomposition(self, wires):
+        return []
+
+    def label(self, decimals=None):
+        return "//"
+
+    def adjoint(self):
+        return WireCut(wires=self.wires)

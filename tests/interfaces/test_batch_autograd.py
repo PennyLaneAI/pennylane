@@ -167,6 +167,36 @@ class TestAutogradExecuteUnitTests:
         spy_gradients.assert_called()
 
 
+class TestBatchTransformExecution:
+    """Tests to ensure batch transforms can be correctly executed
+    via qml.execute and map_batch_transform"""
+
+    def test_no_batch_transform(self, mocker):
+        """Test that batch transforms can be disabled and enabled"""
+        dev = qml.device("default.qubit", wires=2, shots=100000)
+
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        x = 0.6
+        y = 0.2
+
+        with qml.tape.JacobianTape() as tape:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        spy = mocker.spy(dev, "batch_transform")
+
+        with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+            qml.execute([tape], dev, None, device_batch_transform=False)
+
+        spy.assert_not_called()
+
+        res = qml.execute([tape], dev, None, device_batch_transform=True)
+        spy.assert_called()
+        assert np.allclose(res[0], np.cos(y), atol=0.1)
+
+
 class TestCaching:
     """Test for caching behaviour"""
 
@@ -290,7 +320,7 @@ class TestCaching:
         expected_runs = 1  # forward pass
         expected_runs += 2 * N  # Jacobian
         expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N ** 2  # Hessian off-diagonal
+        expected_runs += 4 * N**2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
@@ -434,10 +464,12 @@ class TestAutogradExecuteIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.jacobian(cost)(a, b, device=dev)
-        assert res.shape == (2, 2)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (2,)
+        assert res[1].shape == (2,)
 
-        expected = [[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_tape_no_parameters(self, execute_kwargs, tol):
         """Test that a tape with no parameters is correctly
@@ -505,11 +537,12 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(lambda a, b: cost(2 * a, b))
         jac = jac_fn(a, b)
-        expected = [
-            [-2 * np.sin(2 * a), 0],
-            [2 * np.sin(2 * a) * np.sin(b), -np.cos(2 * a) * np.cos(b)],
-        ]
-        assert np.allclose(jac, expected, atol=tol, rtol=0)
+        expected = (
+            [-2 * np.sin(2 * a), 2 * np.sin(2 * a) * np.sin(b)],
+            [0, -np.cos(2 * a) * np.cos(b)],
+        )
+        assert isinstance(jac, tuple) and len(jac) == 2
+        assert all(np.allclose(_j, _e, atol=tol, rtol=0) for _j, _e in zip(jac, expected))
 
     def test_classical_processing(self, execute_kwargs, tol):
         """Test classical processing within the quantum tape"""
@@ -521,14 +554,17 @@ class TestAutogradExecuteIntegration:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             return execute([tape], device, **execute_kwargs)[0]
 
         dev = qml.device("default.qubit", wires=2)
         res = qml.jacobian(cost)(a, b, c, device=dev)
-        assert res.shape == (1, 2)
+        # Only two arguments are trainable
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (1,)
+        assert res[1].shape == (1,)
 
     def test_no_trainable_parameters(self, execute_kwargs, tol):
         """Test evaluation and Jacobian if there are no trainable parameters"""
@@ -548,13 +584,14 @@ class TestAutogradExecuteIntegration:
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
-        res = qml.jacobian(cost)(a, b, device=dev)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            res = qml.jacobian(cost)(a, b, device=dev)
         assert len(res) == 0
 
         def loss(a, b):
             return np.sum(cost(a, b, device=dev))
 
-        with pytest.warns(UserWarning, match="Output seems independent"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.grad(loss)(a, b)
 
         assert np.allclose(res, 0)
@@ -662,19 +699,27 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        assert res.shape == (2, 2, 2)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (2, 2)
+        assert res[1].shape == (2, 2)
 
-        expected = np.array(
-            [
-                [[-np.sin(x) / 2, 0], [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2]],
+        expected = (
+            np.array(
                 [
-                    [np.sin(x) / 2, 0],
-                    [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-                ],
-            ]
+                    [-np.sin(x) / 2, np.sin(x) / 2],
+                    [-np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0],
+                    [-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2],
+                ]
+            ),
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_ragged_differentiation(self, execute_kwargs, tol):
         """Tests correct output shape and evaluation for a tape
@@ -704,14 +749,16 @@ class TestAutogradExecuteIntegration:
 
         jac_fn = qml.jacobian(cost)
         res = jac_fn(x, y, device=dev)
-        expected = np.array(
-            [
-                [-np.sin(x), 0],
-                [-np.sin(x) * np.cos(y) / 2, -np.cos(x) * np.sin(y) / 2],
-                [np.cos(y) * np.sin(x) / 2, np.cos(x) * np.sin(y) / 2],
-            ]
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
+
+        expected = (
+            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
     def test_sampling(self, execute_kwargs):
         """Test sampling works as expected"""
@@ -963,10 +1010,14 @@ class TestOverridingShots:
 
         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
         assert dev.shots is None
-        assert len(res) == 3
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert np.allclose(np.mean(res, axis=0), expected, atol=0.1, rtol=0)
+        assert all(
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+        )
 
 
 execute_kwargs = [
