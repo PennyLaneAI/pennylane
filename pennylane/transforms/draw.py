@@ -317,7 +317,7 @@ def draw(
             return "\n\n".join(res)
 
         return tape_text(
-            qnode.tape,
+            qnode.qtape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
