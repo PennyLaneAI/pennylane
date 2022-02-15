@@ -12,3 +12,4 @@ semantic_version==2.6
 dask[delayed]
 autoray
 matplotlib
+opt_einsum

@@ -598,6 +598,19 @@ class OrbitalRotation(Operation):
 
     @property
     def grad_recipe(self):
+        r"""tuple(list[list[float]]): Gradient recipe for the
+        parameter-shift method.
+
+        This is a tuple with one nested list per operation parameter. For
+        parameter :math:`\phi_k`, the nested list contains elements of the form
+        :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+        term, resulting in a gradient recipe of
+
+        .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+
+        Since the ``OrbitalRotation`` operation has four parameter frequencies, this
+        corresponds to a parameter-shift rule with eight terms.
+        """
         coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
         return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
 

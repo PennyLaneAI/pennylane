@@ -55,9 +55,53 @@
   `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
 
+  A differentiable tensor contraction function `contract_tensors` has been
+  added.
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+
 <h3>Improvements</h3>
 
+* Added a new `partition_pauli_group` function to the `grouping` module for
+  efficiently measuring the `N`-qubit Pauli group with `3 ** N`
+  qubit-wise commuting terms.
+  [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
+  
+  ```pycon
+  >>> qml.grouping.partition_pauli_group(3)
+  [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
+   ['IIX', 'IZX', 'ZIX', 'ZZX'],
+   ['IIY', 'IZY', 'ZIY', 'ZZY'],
+   ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
+   ['IXX', 'ZXX'],
+   ['IXY', 'ZXY'],
+   ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
+   ['IYX', 'ZYX'],
+   ['IYY', 'ZYY'],
+   ['XII', 'XIZ', 'XZI', 'XZZ'],
+   ['XIX', 'XZX'],
+   ['XIY', 'XZY'],
+   ['XXI', 'XXZ'],
+   ['XXX'],
+   ['XXY'],
+   ['XYI', 'XYZ'],
+   ['XYX'],
+   ['XYY'],
+   ['YII', 'YIZ', 'YZI', 'YZZ'],
+   ['YIX', 'YZX'],
+   ['YIY', 'YZY'],
+   ['YXI', 'YXZ'],
+   ['YXX'],
+   ['YXY'],
+   ['YYI', 'YYZ'],
+   ['YYX'],
+   ['YYY']]
+  ```
+
 <h3>Breaking changes</h3>
+
+* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
+  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
 
@@ -69,6 +113,9 @@
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
+
+* Fixes the example for using `qml.sample` with `jax.jit`.
+  [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
 
 * The ``pennylane.numpy`` subpackage is now included in the PennyLane
   API documentation.
@@ -82,4 +129,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Anthony Hayes, Josh Izaac, David Wierichs
+Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, Antal Száva,
+David Wierichs
