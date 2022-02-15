@@ -309,7 +309,7 @@ def generate_overlap(basis_a, basis_b):
 
 
 def hermite_moment(alpha, beta, t, e, r):
-    r"""Compute Hermite moment integral recursively.
+    r"""Compute the Hermite moment integral recursively.
 
     The Hermite moment integral in one dimension is defined as
 
@@ -340,10 +340,10 @@ def hermite_moment(alpha, beta, t, e, r):
         beta (array[float]): exponent of the second Gaussian function
         t (integer): order of the Hermite Gaussian function
         e (integer): exponent of the position component
-        r (array[float]): distance between the center of the Hermite Gaussian function and origin
+        r (array[float]): distance between the center of the Hermite Gaussian function and the origin
 
     Returns:
-        array[float]: expansion coefficients for each Gaussian combination
+        array[float]: the Hermite moment integral
 
     **Example**
 
@@ -371,7 +371,7 @@ def hermite_moment(alpha, beta, t, e, r):
     return m
 
 
-def gaussian_moment(la, lb, ra, rb, alpha, beta, e, r):
+def gaussian_moment(li, lj, ri, rj, alpha, beta, e, r):
     r"""Compute the one-dimensional multipole moment integral for two primitive Gaussian functions.
 
     The multipole moment integral in one dimension is defined as
@@ -393,10 +393,10 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, r):
     moment integral, respectively, that can be computed recursively.
 
     Args:
-        la (integer): angular momentum for the first Gaussian function
-        lb (integer): angular momentum for the second Gaussian function
-        ra (float): position of the first Gaussian function
-        rb (float): position of the second Gaussian function
+        li (integer): angular momentum for the left Gaussian function
+        lj (integer): angular momentum for the right Gaussian function
+        ri (float): position of the first Gaussian function
+        rj (float): position of the second Gaussian function
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         e (integer): exponent of the position component
@@ -407,18 +407,18 @@ def gaussian_moment(la, lb, ra, rb, alpha, beta, e, r):
 
     **Example**
 
-    >>> la, lb = 0, 0
-    >>> ra, rb = np.array([2.0]), np.array([2.0])
+    >>> li, lj = 0, 0
+    >>> ri, rj = np.array([2.0]), np.array([2.0])
     >>> alpha = np.array([3.42525091])
     >>> beta = np.array([3.42525091])
     >>> e = 1
     >>> r = 1.5
-    >>> gaussian_moment(la, lb, ra, rb, alpha, beta, e, r)
+    >>> gaussian_moment(li, lj, ri, rj, alpha, beta, e, r)
     array([1.0157925])
     """
     s = 0.0
-    for t in range(min(la + lb + 1, e + 1)):
-        s = s + expansion(la, lb, ra, rb, alpha, beta, t) * hermite_moment(alpha, beta, t, e, r)
+    for t in range(min(li + lj + 1, e + 1)):
+        s = s + expansion(li, lj, ri, rj, alpha, beta, t) * hermite_moment(alpha, beta, t, e, r)
 
     return s
 
