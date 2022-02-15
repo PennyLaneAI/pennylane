@@ -19,6 +19,7 @@ import warnings
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
+
 def _grad_method_validation(method, tape):
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods.
