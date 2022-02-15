@@ -35,6 +35,42 @@
 
 <h3>Improvements</h3>
 
+* Added a new `partition_pauli_group` function to the `grouping` module for
+  efficiently measuring the `N`-qubit Pauli group with `3 ** N`
+  qubit-wise commuting terms.
+  [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
+  
+  ```pycon
+  >>> qml.grouping.partition_pauli_group(3)
+  [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
+   ['IIX', 'IZX', 'ZIX', 'ZZX'],
+   ['IIY', 'IZY', 'ZIY', 'ZZY'],
+   ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
+   ['IXX', 'ZXX'],
+   ['IXY', 'ZXY'],
+   ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
+   ['IYX', 'ZYX'],
+   ['IYY', 'ZYY'],
+   ['XII', 'XIZ', 'XZI', 'XZZ'],
+   ['XIX', 'XZX'],
+   ['XIY', 'XZY'],
+   ['XXI', 'XXZ'],
+   ['XXX'],
+   ['XXY'],
+   ['XYI', 'XYZ'],
+   ['XYX'],
+   ['XYY'],
+   ['YII', 'YIZ', 'YZI', 'YZZ'],
+   ['YIX', 'YZX'],
+   ['YIY', 'YZY'],
+   ['YXI', 'YXZ'],
+   ['YXX'],
+   ['YXY'],
+   ['YYI', 'YYZ'],
+   ['YYX'],
+   ['YYY']]
+  ```
+
 <h3>Breaking changes</h3>
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
@@ -56,6 +92,9 @@
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
+
+* Fixes the example for using `qml.sample` with `jax.jit`.
+  [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
 
 * The ``pennylane.numpy`` subpackage is now included in the PennyLane
   API documentation.
@@ -192,8 +231,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
-Anthony Hayes, Josh Izaac, Christina Lee, Maria Schuld, Jay Soni, David Wierichs
-=======
-Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, David Wierichs
->>>>>>> master
+Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
+Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
+David Wierichs
