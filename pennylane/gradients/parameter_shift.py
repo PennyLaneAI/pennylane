@@ -27,8 +27,10 @@ from .general_shift_rules import _process_shifts
 
 
 NONINVOLUTORY_OBS = {
-    "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
-    "SparseHamiltonian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
+    "Hermitian": lambda obs: obs.__class__(obs.get_matrix() @ obs.get_matrix(), wires=obs.wires),
+    "SparseHamiltonian": lambda obs: obs.__class__(
+        obs.get_matrix() @ obs.get_matrix(), wires=obs.wires
+    ),
     "Projector": lambda obs: obs,
 }
 """Dict[str, callable]: mapping from a non-involutory observable name

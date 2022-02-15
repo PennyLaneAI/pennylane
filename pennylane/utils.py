@@ -161,7 +161,7 @@ def sparse_hamiltonian(H, wires=None):
                     f"Can only sparsify Hamiltonians whose constituent observables consist of "
                     f"(tensor products of) single-qubit operators; got {op}."
                 )
-            obs.append(scipy.sparse.coo_matrix(o.matrix()))
+            obs.append(scipy.sparse.coo_matrix(o.get_matrix()))
 
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
@@ -465,7 +465,7 @@ def get_generator(op, return_matrix=False):
         s *= -1.0
 
     if return_matrix:
-        obs = obs.matrix()
+        obs = obs.get_matrix()
 
         if op.inverse:
             obs = qml.math.conj(qml.math.T(obs))
