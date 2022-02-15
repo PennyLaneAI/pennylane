@@ -189,7 +189,9 @@ class MeasurementProcess:
 
         with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals())
+            MeasurementProcess(
+                self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
+            )
 
         return tape
 
