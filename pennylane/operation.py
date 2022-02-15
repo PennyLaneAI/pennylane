@@ -1289,15 +1289,6 @@ class Operation(Operator):
             self.inverse = not self._inverse
         return self
 
-    @property
-    def matrix(self):
-        op_matrix = super().matrix
-
-        if self.inverse:
-            return qml.math.conj(qml.math.T(op_matrix))
-
-        return op_matrix
-
     def get_matrix(self, wire_order=None):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
