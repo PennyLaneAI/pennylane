@@ -1,29 +1,107 @@
 :orphan:
 
-# Release 0.21.0-dev (development release)
+# Release 0.22.0-dev (development release)
 
 <h3>New features since last release</h3>
 
+* Parametric operations now have the `parameter_frequencies`
+  method that returns the frequencies with which a parameter
+  enters a circuit when using the operation.
+  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+
+  The frequencies can be used for circuit analysis, optimization
+  via the `RotosolveOptimizer` and differentiation with the
+  parameter-shift rule. They assume that the circuit returns
+  expectation values or probabilities, for a variance
+  measurement the frequencies will differ.
+
+* Continued development of the circuit-cutting compiler:
+
+  A method for converting a quantum tape to a directed multigraph that is amenable
+  to graph partitioning algorithms for circuit cutting has been added.
+  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
+
+  A method to replace `WireCut` nodes in a directed multigraph with `MeasureNode`
+  and `PrepareNode` placeholders has been added.
+  [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
+
+  A method has been added that takes a directed multigraph with `MeasureNode` and
+  `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
+  [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
+
+  A differentiable tensor contraction function `contract_tensors` has been
+  added.
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+
 <h3>Improvements</h3>
+
+* Added a new `partition_pauli_group` function to the `grouping` module for
+  efficiently measuring the `N`-qubit Pauli group with `3 ** N`
+  qubit-wise commuting terms.
+  [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
+  
+  ```pycon
+  >>> qml.grouping.partition_pauli_group(3)
+  [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
+   ['IIX', 'IZX', 'ZIX', 'ZZX'],
+   ['IIY', 'IZY', 'ZIY', 'ZZY'],
+   ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
+   ['IXX', 'ZXX'],
+   ['IXY', 'ZXY'],
+   ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
+   ['IYX', 'ZYX'],
+   ['IYY', 'ZYY'],
+   ['XII', 'XIZ', 'XZI', 'XZZ'],
+   ['XIX', 'XZX'],
+   ['XIY', 'XZY'],
+   ['XXI', 'XXZ'],
+   ['XXX'],
+   ['XXY'],
+   ['XYI', 'XYZ'],
+   ['XYX'],
+   ['XYY'],
+   ['YII', 'YIZ', 'YZI', 'YZZ'],
+   ['YIX', 'YZX'],
+   ['YIY', 'YZY'],
+   ['YXI', 'YXZ'],
+   ['YXX'],
+   ['YXY'],
+   ['YYI', 'YYZ'],
+   ['YYX'],
+   ['YYY']]
+  ```
 
 <h3>Breaking changes</h3>
 
+* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
+  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
+
+<h3>Deprecations</h3>
+
 <h3>Bug fixes</h3>
 
-* Fixes a bug in `classical_jacobian` when used with Torch, where the
-  Jacobian of the preprocessing was also computed for non-trainable
-  parameters.
-  [(#2020)](https://github.com/PennyLaneAI/pennylane/pull/2020)
-
-* Fixes a bug in queueing of the `two_qubit_decomposition` method that
-  originally led to circuits with >3 two-qubit unitaries failing when passed
-  through the `unitary_to_rot` optimization transform.
-  [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
+* The operation `OrbitalRotation` previously was wrongfully registered to satisfy
+  the four-term parameter shift rule, it now will be decomposed instead when
+  using the parameter-shift rule.
+  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
+
+* Fixes the example for using `qml.sample` with `jax.jit`.
+  [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
+
+* The ``pennylane.numpy`` subpackage is now included in the PennyLane
+  API documentation.
+  [(#2179)](https://github.com/PennyLaneAI/pennylane/pull/2179)
+
+* Improves the documentation of `RotosolveOptimizer` regarding the
+  usage of the passed `substep_optimizer` and its keyword arguments.
+  [(#2160)](https://github.com/PennyLaneAI/pennylane/pull/2160)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, David Wierichs
+Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, Antal Száva,
+David Wierichs

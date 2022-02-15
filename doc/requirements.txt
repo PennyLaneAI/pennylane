@@ -13,10 +13,10 @@ semantic_version==2.6
 scipy
 docutils==0.16
 sphinx==3.5.3
-sphinx-automodapi
+sphinx-automodapi==0.13
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
-tensorflow==2.5.2
+tensorflow==2.5.3
 tensornetwork==0.3
 toml
 torch==1.9.0+cpu

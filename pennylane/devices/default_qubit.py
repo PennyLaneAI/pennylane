@@ -495,7 +495,7 @@ class DefaultQubit(QubitDevice):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
                     coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
-                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), "complex128")
+                    Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
                         qml.math.gather(qml.math.conj(self.state), coo.row)
@@ -576,7 +576,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
+        state = np.zeros(2**self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
@@ -600,7 +600,7 @@ class DefaultQubit(QubitDevice):
 
         # Return the full density matrix by using numpy tensor product
         if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), 0)
+            density_matrix = self._tensordot(state, self._conj(state), axes=0)
             density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
             return density_matrix
 
@@ -653,7 +653,7 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
@@ -790,5 +790,8 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        prob = self.marginal_prob(self._abs(self._flatten(self._state)) ** 2, wires)
+        flat_state = self._flatten(self._state)
+        real_state = self._real(flat_state)
+        imag_state = self._imag(flat_state)
+        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob

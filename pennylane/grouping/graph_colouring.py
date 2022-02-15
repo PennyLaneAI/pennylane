@@ -63,7 +63,7 @@ def largest_first(binary_observables, adj):
     rows = adj.sum(axis=0)
     ind = np.argsort(rows)[::-1]
     m_array = adj[ind, :][:, ind]
-    colours = dict()
+    colours = {}
     c_vec = np.zeros(n_terms, dtype=int)
     k = 0
     for i in range(n_terms):
@@ -117,7 +117,7 @@ def recursive_largest_first(binary_observables, adj):  # pylint:disable=too-many
 
     n_terms = np.shape(adj)[0]
     terms = [binary_observables[i] for i in range(n_terms)]
-    colours = dict()
+    colours = {}
     c_vec = np.zeros(n_terms, dtype=int)
     uncoloured = set(np.arange(n_terms))
     coloured = set()

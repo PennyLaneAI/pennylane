@@ -151,7 +151,8 @@ class TestParamShift:
         with qml.tape.JacobianTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        tapes, _ = qml.gradients.param_shift(tape)
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            tapes, _ = qml.gradients.param_shift(tape)
         assert not tapes
 
     def test_all_parameters_independent(self):
@@ -196,21 +197,45 @@ class TestParamShift:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
 
-    def test_no_trainable_parameters(self):
-        """Test that if the tape has no trainable parameters, no
-        subroutines are called and the returned Jacobian is empty"""
-        with qml.tape.JacobianTape() as tape:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliZ(0))
-
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_no_trainable_params_qnode(self, interface):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
-        tape.trainable_params = {}
 
-        tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 0
+        @qml.qnode(dev, interface=interface)
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        res = fn(dev.batch_execute(tapes))
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = qml.gradients.param_shift(tape)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
         assert res.size == 0
         assert np.all(res == np.array([[]]))
 
@@ -352,7 +377,7 @@ class TestParameterShiftRule:
         """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
-        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.tape.JacobianTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
@@ -415,7 +440,7 @@ class TestParameterShiftRule:
         """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qml.tape.JacobianTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)

@@ -280,6 +280,25 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize(
+        "x, shift",
+        [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
+    )
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(qml.jacobian(circuit)(x), 0.0)
+        assert qml.math.isclose(qml.jacobian(qml.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(qml.grad(qml.grad(circuit))(x), -1.0)
+
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_autograd_interface_gradient(self, operation, diff_method, tol):
@@ -406,7 +425,7 @@ class TestOps:
 
         param = np.array(0.3, requires_grad=True)
         res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros(wires ** 2))
+        assert np.allclose(res, np.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop

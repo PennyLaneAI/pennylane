@@ -210,7 +210,7 @@ class TestTransformObservable:
     def test_first_order_transform(self, tol):
         """Test that a first order observable is transformed correctly"""
         # create a symmetric transformation
-        Z = np.arange(3 ** 2).reshape(3, 3)
+        Z = np.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
         obs = qml.X(0)
@@ -227,7 +227,7 @@ class TestTransformObservable:
     def test_second_order_transform(self, tol):
         """Test that a second order observable is transformed correctly"""
         # create a symmetric transformation
-        Z = np.arange(3 ** 2).reshape(3, 3)
+        Z = np.arange(3**2).reshape(3, 3)
         Z = Z.T + Z
 
         obs = qml.NumberOperator(0)
@@ -251,7 +251,7 @@ class TestTransformObservable:
         wires = qml.wires.Wires([0, "a", 2])
         ndim = 1 + 2 * len(wires)
 
-        Z = np.arange(ndim ** 2).reshape(ndim, ndim)
+        Z = np.arange(ndim**2).reshape(ndim, ndim)
         Z = Z.T + Z
 
         obs = qml.NumberOperator(0)
@@ -270,6 +270,48 @@ class TestTransformObservable:
 
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_no_trainable_params_qnode(self, interface):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(weights):
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            return qml.expval(qml.X(0))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_cv(circuit)(weights)
+
+        assert res == ()
+
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.gaussian", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            qml.expval(qml.X(0))
+
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = qml.gradients.param_shift_cv(tape, dev)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
+        assert res.size == 0
+        assert np.all(res == np.array([[]]))
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
@@ -786,14 +828,14 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 1}
 
         res = tape.execute(dev)
-        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         tapes, fn = qml.gradients.finite_diff(tape)
         grad_F = fn(dev.batch_execute(tapes))
 
-        expected = np.array([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(grad_F, expected, atol=tol, rtol=0)
 
     def test_expval_and_variance(self, tol):
@@ -947,7 +989,7 @@ class TestVarianceQuantumGradients:
         tape.trainable_params = {0, 1}
         tapes, fn = param_shift_cv(tape, dev)
         grad = fn(dev.batch_execute(tapes))
-        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
 

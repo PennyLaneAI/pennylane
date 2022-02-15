@@ -21,15 +21,16 @@ requirements = [
     "numpy",
     "scipy",
     "networkx",
+    "retworkx",
     "autograd",
     "toml",
     "appdirs",
     "semantic_version==2.6",
     "autoray",
     "cachetools",
-    "pennylane-lightning>=0.18",
+    "pennylane-lightning>=0.21",
     "dask",
-    "distributed"
+    "distributed",
 ]
 
 info = {

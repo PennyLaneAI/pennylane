@@ -135,7 +135,7 @@ class TestBatchTransform:
         assert isinstance(res, float)
         assert not np.allclose(res, 0)
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             qml.grad(circuit)(0.5)
 
     def test_use_qnode_execution_options(self, mocker):
@@ -555,8 +555,10 @@ class TestBatchTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 
-        weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
-        x = tf.Variable(0.543, dtype=tf.float64)
+        weights_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = np.array(0.543, requires_grad=True)
+        weights = tf.Variable(weights_np, dtype=tf.float64)
+        x = tf.Variable(x_np, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
             res = self.my_transform(qnode, weights)(x)
@@ -564,7 +566,8 @@ class TestBatchTransformGradients:
         assert np.allclose(res, self.expval(x, weights))
 
         grad = tape.gradient(res, [x, weights])
-        expected = qml.grad(self.expval)(x.numpy(), weights.numpy())
+        expected = qml.grad(self.expval)(x_np, weights_np)
+        assert len(grad) == len(expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
 
     def test_differentiable_torch(self, diff_method):
@@ -574,15 +577,17 @@ class TestBatchTransformGradients:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
-        weights = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
-        x = torch.tensor(0.543, requires_grad=True, dtype=torch.float64)
+        weights_np = np.array([0.1, 0.2], requires_grad=True)
+        weights = torch.tensor(weights_np, requires_grad=True, dtype=torch.float64)
+        x_np = np.array(0.543, requires_grad=True)
+        x = torch.tensor(x_np, requires_grad=True, dtype=torch.float64)
 
         res = self.my_transform(qnode, weights)(x)
         expected = self.expval(x.detach().numpy(), weights.detach().numpy())
         assert np.allclose(res.detach().numpy(), expected)
 
         res.backward()
-        expected = qml.grad(self.expval)(x.detach().numpy(), weights.detach().numpy())
+        expected = qml.grad(self.expval)(x_np, weights_np)
         assert np.allclose(x.grad, expected[0])
         assert np.allclose(weights.grad, expected[1])
 
@@ -596,12 +601,111 @@ class TestBatchTransformGradients:
         def cost(x, weights):
             return self.my_transform(qnode, weights, max_diff=1)(x)
 
-        weights = jax.numpy.array([0.1, 0.2])
-        x = jax.numpy.array(0.543)
+        weights_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = np.array(0.543, requires_grad=True)
+        weights = jax.numpy.array(weights_np)
+        x = jax.numpy.array(x_np)
 
         res = cost(x, weights)
         assert np.allclose(res, self.expval(x, weights))
 
         grad = jax.grad(cost, argnums=[0, 1])(x, weights)
-        expected = qml.grad(self.expval)(np.array(x), np.array(weights))
+        expected = qml.grad(self.expval)(x_np, weights_np)
+        assert len(grad) == len(expected)
         assert all(np.allclose(g, e) for g, e in zip(grad, expected))
+
+    def test_batch_transforms_qnode(self, diff_method, mocker):
+        """Test that batch transforms can be applied to a QNode
+        without affecting device batch transforms"""
+        if diff_method == "backprop":
+            pytest.skip("Test only supports finite shots")
+
+        dev = qml.device("default.qubit", wires=2, shots=100000)
+
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        weights = np.array([0.5, 0.3], requires_grad=True)
+
+        @qml.gradients.param_shift
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "batch_transform")
+
+        res = circuit(weights)
+        spy.assert_called()
+        assert np.allclose(res, [0, -np.sin(weights[1])], atol=0.1)
+
+
+class TestMapBatchTransform:
+    """Tests for the map_batch_transform function"""
+
+    def test_result(self, mocker):
+        """Test that it correctly applies the transform to be mapped"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+        x = 0.6
+        y = 0.7
+
+        with qml.tape.JacobianTape() as tape1:
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H)
+
+        with qml.tape.JacobianTape() as tape2:
+            qml.Hadamard(wires=0)
+            qml.CRX(x, wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+            qml.expval(H + 0.5 * qml.PauliY(0))
+
+        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        tapes, fn = qml.transforms.map_batch_transform(
+            qml.transforms.hamiltonian_expand, [tape1, tape2]
+        )
+
+        spy.assert_called()
+        assert len(tapes) == 5
+
+        res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
+        expected = [np.cos(y), 0.5 + 0.5 * np.cos(x) - 0.5 * np.sin(x / 2)]
+
+        assert np.allclose(fn(res), expected)
+
+    def test_differentiation(self):
+        """Test that an execution using map_batch_transform can be differentiated"""
+        dev = qml.device("default.qubit", wires=2)
+        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
+
+        weights = np.array([0.6, 0.8], requires_grad=True)
+
+        def cost(weights):
+            with qml.tape.JacobianTape() as tape1:
+                qml.RX(weights[0], wires=0)
+                qml.RY(weights[1], wires=1)
+                qml.CNOT(wires=[0, 1])
+                qml.expval(H)
+
+            with qml.tape.JacobianTape() as tape2:
+                qml.Hadamard(wires=0)
+                qml.CRX(weights[0], wires=[0, 1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(H + 0.5 * qml.PauliY(0))
+
+            tapes, fn = qml.transforms.map_batch_transform(
+                qml.transforms.hamiltonian_expand, [tape1, tape2]
+            )
+            res = qml.execute(tapes, dev, qml.gradients.param_shift, device_batch_transform=False)
+            return np.sum(fn(res))
+
+        res = cost(weights)
+        x, y = weights
+        expected = np.cos(y) + 0.5 + 0.5 * np.cos(x) - 0.5 * np.sin(x / 2)
+        assert np.allclose(res, expected)
+
+        res = qml.grad(cost)(weights)
+        expected = [-0.5 * np.sin(x) - 0.25 * np.cos(x / 2), -np.sin(y)]
+        assert np.allclose(res, expected)

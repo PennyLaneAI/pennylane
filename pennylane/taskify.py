@@ -20,6 +20,7 @@ from typing import Dict, List, Union
 import pennylane as qml
 from pennylane.devices import TaskQubit
 
+
 def taskify(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
     """
     Returns a proxy-qubit device with the device argument as the intiantiable backend.
@@ -28,10 +29,11 @@ def taskify(dev: qml.Device, return_future: bool = False, gen_report: Union[bool
     >>> t_dev = qml.taskify(dev)
     >>> <TaskQubit device (wires=3, shots=None) at 0x7f66fcbbeee0>
     """
-    return TaskQubit(dev.wires, 
-                    shots=dev.shots, 
-                    analytic=None, 
-                    backend=dev.short_name, 
-                    gen_report=gen_report, 
-                    future=return_future
+    return TaskQubit(
+        dev.wires,
+        shots=dev.shots,
+        analytic=None,
+        backend=dev.short_name,
+        gen_report=gen_report,
+        future=return_future,
     )

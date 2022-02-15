@@ -36,7 +36,7 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
         test_interface = "something"
         expected_error = (
-            fr"Unknown interface {test_interface}\. Interface must be "
+            rf"Unknown interface {test_interface}\. Interface must be "
             r"one of \['autograd', 'torch', 'tf', 'jax'\]\."
         )
 
@@ -542,7 +542,9 @@ class TestValidation:
         if method == "best":
             spy.assert_called_once()
 
-    @pytest.mark.parametrize("par", [None, 1, 1.1, np.array(1.2)])
+    @pytest.mark.parametrize(
+        "par", [None, 1, 1.1, np.array(1.2), pnp.array(1.3, requires_grad=True)]
+    )
     def test_diff_method_none(self, par):
         """Test if diff_method=None works as intended."""
         dev = qml.device("default.qubit", wires=1)
@@ -556,13 +558,23 @@ class TestValidation:
 
         grad = qml.grad(qn)
 
-        # Raise error in all cases
+        # Raise error in cases 1 and 5, as non-trainable parameters do not trigger differentiation.
+        # Raise warning in cases 1-4 as there a no trainable parameters.
         # Case 1: No input
         # Case 2: int input
         # Case 3: float input
         # Case 4: numpy input
-        with pytest.raises(TypeError) as exp:
-            grad() if par is None else grad(par)
+        # Case 5: differentiable tensor input
+        if par is None:
+            with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+                with pytest.raises(TypeError) as exp:
+                    grad()
+        elif hasattr(par, "requires_grad"):
+            with pytest.raises(TypeError) as exp:
+                grad(par)
+        else:
+            with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+                grad(par)
 
     def test_diff_method_none_no_qnode_param(self):
         """Test if diff_method=None works as intended."""
@@ -578,7 +590,8 @@ class TestValidation:
         grad = qml.grad(qn)
 
         # No differentiation required. No error raised.
-        grad()
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            grad()
 
     def test_unrecognized_keyword_arguments_validation(self):
         """Tests that a UserWarning is raised when unrecognized keyword arguments are provided."""
@@ -725,8 +738,8 @@ class TestTapeConstruction:
         assert qn.diff_options["h"] == 1e-8
         assert qn.diff_options["order"] == 2
 
-        x = 0.12
-        y = 0.54
+        x = pnp.array(0.12, requires_grad=True)
+        y = pnp.array(0.54, requires_grad=True)
 
         spy = mocker.spy(JacobianTape, "expand")
         res = qn(x, y)
@@ -1222,10 +1235,10 @@ class TestMutability:
         np.testing.assert_allclose(res, np.cos(x), atol=tol, rtol=0)
 
         # test differentiability
-        grad = qml.grad(circuit)(0.5)
+        grad = qml.grad(circuit, argnum=0)(0.5)
         np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
 
-        grad = qml.grad(circuit)(-0.5)
+        grad = qml.grad(circuit, argnum=0)(-0.5)
         np.testing.assert_allclose(grad, -np.sin(-0.5), atol=tol, rtol=0)
 
     def test_immutable(self, mocker, tol):
@@ -1261,7 +1274,8 @@ class TestMutability:
         np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
 
         # test differentiability. The circuit will assume an RZ gate
-        grad = qml.grad(circuit)(-0.5)
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            grad = qml.grad(circuit, argnum=0)(-0.5)
         np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
 
 
@@ -1449,9 +1463,9 @@ def test_finitediff_float32(tol):
 
     shape = qml.templates.StronglyEntanglingLayers.shape(n_wires=n_wires, n_layers=n_layers)
 
-    rng = np.random.default_rng(seed=42)
-    params = rng.random(shape)
-    params_f32 = np.array(params, dtype=np.float32)
+    rng = pnp.random.default_rng(seed=42)
+    params = rng.random(shape, requires_grad=True)
+    params_f32 = pnp.array(params, dtype=np.float32, requires_grad=True)
 
     dev = qml.device("default.qubit", n_wires)
 

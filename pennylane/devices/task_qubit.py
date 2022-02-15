@@ -188,7 +188,8 @@ class TaskQubit(QubitDevice):
             raise Exception("Unsupported device backend.")
 
     def __str__(self):
-        return super().__str__()+("\n"
+        return super().__str__() + (
+            "\n"
             f"Backend: {self._backend}\n"
             f"Futures: {self._future}\n"
             f"Report: {self._gen_report}"

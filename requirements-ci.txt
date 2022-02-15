@@ -3,6 +3,7 @@ scipy
 cvxpy
 cvxopt
 networkx
+retworkx
 tensornetwork==0.3
 autograd
 toml
@@ -11,3 +12,4 @@ semantic_version==2.6
 dask[complete]
 autoray
 matplotlib
+opt_einsum

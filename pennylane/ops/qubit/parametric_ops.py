@@ -51,13 +51,11 @@ class RX(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 1
     basis = "X"
     grad_method = "A"
     generator = [PauliX, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -108,13 +106,11 @@ class RY(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 1
     basis = "Y"
     grad_method = "A"
     generator = [PauliY, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -159,13 +155,11 @@ class RZ(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 1
     basis = "Z"
     grad_method = "A"
     generator = [PauliZ, -1 / 2]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -221,13 +215,11 @@ class PhaseShift(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 1
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -295,13 +287,11 @@ class ControlledPhaseShift(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
+    num_params = 1
     basis = "Z"
     grad_method = "A"
     generator = [np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), 1]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ")
@@ -381,11 +371,9 @@ class Rot(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 3
     grad_method = "A"
-
-    @property
-    def num_params(self):
-        return 3
+    parameter_frequencies = [(1,), (1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -465,11 +453,9 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = "A"
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, theta, n):
@@ -577,6 +563,7 @@ class PauliRot(Operation):
     0.8775825618903724
     """
     num_wires = AnyWires
+    num_params = 2
     do_check_domain = False
     grad_method = "A"
 
@@ -604,10 +591,6 @@ class PauliRot(Operation):
                 f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
-    @property
-    def num_params(self):
-        return 2
-
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
 
@@ -623,14 +606,14 @@ class PauliRot(Operation):
 
         >>> op = qml.PauliRot(0.1, "XYY", wires=(0,1,2))
         >>> op.label()
-        'R(XYY)'
+        'RXYY'
         >>> op.label(decimals=2)
-        'R(XYY)\n(0.10)'
+        'RXYY\n(0.10)'
         >>> op.label(base_label="PauliRot")
         'PauliRot\n(0.10)'
 
         """
-        op_label = base_label or ("R(" + self.parameters[1] + ")")
+        op_label = base_label or ("R" + self.parameters[1])
 
         if self.inverse:
             op_label += "⁻¹"
@@ -652,6 +635,8 @@ class PauliRot(Operation):
             bool: Whether the Pauli word has correct structure.
         """
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
+
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -837,6 +822,7 @@ class CRX(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
+    num_params = 1
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -845,10 +831,7 @@ class CRX(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RX")
@@ -938,6 +921,7 @@ class CRY(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
+    num_params = 1
     basis = "Y"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -946,10 +930,7 @@ class CRY(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RY")
@@ -1033,6 +1014,7 @@ class CRZ(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
+    num_params = 1
     basis = "Z"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1041,10 +1023,7 @@ class CRZ(Operation):
         np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "RZ")
@@ -1127,12 +1106,10 @@ class CRot(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
     num_wires = 2
+    num_params = 3
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
-
-    @property
-    def num_params(self):
-        return 3
+    parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Rot")
@@ -1222,12 +1199,10 @@ class U1(Operation):
         wires (Sequence[int] or int): the wire the operation acts on
     """
     num_wires = 1
+    num_params = 1
     grad_method = "A"
     generator = [np.array([[0, 0], [0, 1]]), 1]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1283,11 +1258,9 @@ class U2(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
     num_wires = 1
+    num_params = 2
     grad_method = "A"
-
-    @property
-    def num_params(self):
-        return 2
+    parameter_frequencies = [(1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1359,11 +1332,9 @@ class U3(Operation):
         wires (Sequence[int] or int): the subsystem the gate acts on
     """
     num_wires = 1
+    num_params = 3
     grad_method = "A"
-
-    @property
-    def num_params(self):
-        return 3
+    parameter_frequencies = [(1,), (1,), (1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1430,16 +1401,14 @@ class IsingXX(Operation):
         wires (int): the subsystem the gate acts on
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
 
     generator = [
         np.array([[0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0], [1, 0, 0, 0]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @classmethod
     def _matrix(cls, *params):
@@ -1494,15 +1463,13 @@ class IsingYY(Operation):
         wires (int): the subsystem the gate acts on
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
     generator = [
         np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1555,15 +1522,13 @@ class IsingZZ(Operation):
         wires (int): the subsystem the gate acts on
     """
     num_wires = 2
+    num_params = 1
     grad_method = "A"
     generator = [
         np.array([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]),
         -1 / 2,
     ]
-
-    @property
-    def num_params(self):
-        return 1
+    parameter_frequencies = [(1,)]
 
     @staticmethod
     def decomposition(phi, wires):
@@ -1584,6 +1549,18 @@ class IsingZZ(Operation):
         neg_phase = qml.math.exp(-1.0j * phi / 2)
 
         return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
+
+    @classmethod
+    def _eigvals(cls, *params):
+        phi = params[0]
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.stack([neg_phase, pos_phase, pos_phase, neg_phase])
 
     def adjoint(self):
         (phi,) = self.parameters

@@ -51,12 +51,9 @@ class Hermitian(Observable):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
     num_wires = AnyWires
+    num_params = 1
     grad_method = "F"
     _eigs = {}
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -143,11 +140,8 @@ class SparseHamiltonian(Observable):
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
     """
     num_wires = AllWires
+    num_params = 1
     grad_method = None
-
-    @property
-    def num_params(self):
-        return 1
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
@@ -187,6 +181,7 @@ class Projector(Observable):
         wires (Iterable): wires that the projector acts on
     """
     num_wires = AnyWires
+    num_params = 1
 
     def __init__(self, basis_state, wires, do_queue=True):
         wires = Wires(wires)
@@ -208,10 +203,6 @@ class Projector(Observable):
 
         super().__init__(basis_state, wires=wires, do_queue=do_queue)
 
-    @property
-    def num_params(self):
-        return 1
-
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
 
@@ -225,7 +216,7 @@ class Projector(Observable):
 
         **Example:**
 
-        >>> qml.Projector([0, 1,0], wires=(0,1,2)).label()
+        >>> qml.Projector([0, 1, 0], wires=(0, 1, 2)).label()
         '|010⟩⟨010|'
 
         """
