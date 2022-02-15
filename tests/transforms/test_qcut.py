@@ -954,8 +954,6 @@ class TestCutStrategy:
     devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
     tape_dags = [qcut.tape_to_graph(t) for t in [tape, multi_cut_tape]]
 
-    # expected_result = np.dot(*t)
-
     @pytest.mark.parametrize("devices", [None, 1, devs[0]])
     @pytest.mark.parametrize("imbalance_tolerance", [None, -1])
     @pytest.mark.parametrize("num_fragments_probed", [None, 0])
