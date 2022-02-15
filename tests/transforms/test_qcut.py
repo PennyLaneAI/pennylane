@@ -962,7 +962,11 @@ class TestCutStrategy:
     def test_init_raises(self, devices, imbalance_tolerance, num_fragments_probed):
         """Test if ill-initialized instances throw errors."""
 
-        if isinstance(devices, qml.Device) and imbalance_tolerance is None and num_fragments_probed is None:
+        if (
+            isinstance(devices, qml.Device)
+            and imbalance_tolerance is None
+            and num_fragments_probed is None
+        ):
             return  # skip the only valid combination
 
         with pytest.raises(ValueError):
