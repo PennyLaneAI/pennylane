@@ -582,7 +582,7 @@ class Operator(abc.ABC):
             array: matrix representation
         """
         warnings.warn(
-            "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
+            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
             UserWarning,
         )
         return self.get_matrix()
@@ -706,7 +706,7 @@ class Operator(abc.ABC):
             array: eigvals representation
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated, and will be replaced with a method 'eigvals()' in v0.23",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
             UserWarning,
         )
         return self.get_eigvals()
@@ -1280,7 +1280,7 @@ class Operation(Operator):
     @property
     def matrix(self):
         warnings.warn(
-            "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
+            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
             UserWarning,
         )
         op_matrix = self.get_matrix()
@@ -1775,7 +1775,7 @@ class Tensor(Observable):
             observable
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated, and will be replaced with a method 'eigvals()' in v0.23",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
             UserWarning,
         )
         return self.get_eigvals()
@@ -1881,7 +1881,7 @@ class Tensor(Observable):
                [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
         """
         warnings.warn(
-            "The 'matrix' property is deprecated, and will be replaced with a method 'matrix()' in v0.23",
+            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
             UserWarning,
         )
         return self.get_matrix()
