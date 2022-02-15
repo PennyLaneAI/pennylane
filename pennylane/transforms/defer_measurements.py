@@ -23,9 +23,13 @@ from pennylane.tape import QuantumTape
 def defer_measurements(tape):
 
     with QuantumTape() as new_tape:
+        measured_wires = []
         for op in tape.queue:
+            if any([wire in measured_wires for wire in op.wires]):
+                raise ValueError("cannot reuse measured wires.")
+
             if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-                pass
+                measured_wires.append(op.measured_wire)
 
             elif op.__class__.__name__ == "_IfOp":
                 control = op.dependant_measurements
