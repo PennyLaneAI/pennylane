@@ -144,11 +144,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
-Thomas Bromley, Anthony Hayes, Josh Izaac, Maria Fernanda Morris, Antal Száva,
-David Wierichs
-=======
 Juan Miguel Arrazola, Ali Asadi, Esther Cruz, Christian Gogolin, Christina Lee, Olivia Di Matteo, Diego Guala,
 Anthony Hayes, Edward Jiang, Josh Izaac, Ankit Khandelwal, Korbinian Kottmann,  Lee J. O'Riordan, Jay Soni, 
 Antal Száva, David Wierichs, Shaoming Zhang
->>>>>>> bb7ade6af2ba7052f648731bfdb4bd91f4eb852b
