@@ -1728,3 +1728,61 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
+
+
+class TestDeprecationWarnings:
+    """Tests for various deprecation warnings"""
+
+    def test_matrix_deprecation(self):
+        """Test that the Operator.matrix property raises a deprecation warning"""
+        op = qml.RX(0.5, wires=0)
+
+        with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
+            m1 = op.matrix
+
+        assert np.allclose(m1, op.get_matrix())
+
+    def test_matrix_tensor_deprecation(self):
+        """Test that the Tensor.matrix property raises a deprecation warning"""
+        op = qml.PauliZ(0) @ qml.PauliY(1)
+
+        with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
+            m1 = op.matrix
+
+        assert np.allclose(m1, op.get_matrix())
+
+    def test_eigvals_deprecation(self):
+        """Test that the Operator.eigvals property raises a deprecation warning"""
+        op = qml.RX(0.5, wires=0)
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())
+
+    def test_eigvals_observable_deprecation(self):
+        """Test that the Observable.eigvals property raises a deprecation warning"""
+        op = qml.PauliX(0)
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())
+
+    def test_eigvals_measurement_deprecation(self):
+        """Test that the MeasurementProcess.eigvals property raises a deprecation warning"""
+        op = qml.expval(qml.PauliX(0))
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())
+
+    def test_eigvals_tensor_deprecation(self):
+        """Test that the Tensor.matrix property raises a deprecation warning"""
+        op = qml.PauliZ(0) @ qml.PauliY(1)
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())

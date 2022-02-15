@@ -148,17 +148,10 @@ class MeasurementProcess:
             array: eigvals representation
         """
         warnings.warn(
-            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
             UserWarning,
         )
-
-        if self.obs is not None:
-            try:
-                return self.obs.get_eigvals()
-            except qml.operation.EigvalsUndefinedError:
-                pass
-
-        return self._eigvals
+        return self.get_eigvals()
 
     def get_eigvals(self):
         r"""Eigenvalues associated with the measurement process.

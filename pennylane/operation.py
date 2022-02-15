@@ -1279,11 +1279,7 @@ class Operation(Operator):
 
     @property
     def matrix(self):
-        warnings.warn(
-            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
-            UserWarning,
-        )
-        op_matrix = self.get_matrix()
+        op_matrix = super().matrix
 
         if self.inverse:
             return qml.math.conj(qml.math.T(op_matrix))
@@ -1301,7 +1297,7 @@ class Operation(Operator):
 
         return expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
 
-    def eigvals(self):
+    def get_eigvals(self):
         op_eigvals = super().get_eigvals()
 
         if self.inverse:
@@ -1758,28 +1754,6 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    @property
-    def eigvals(self):
-        """Return the eigenvalues of the specified tensor product observable.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible.
-
-        .. warning::
-
-            The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release.
-
-        Returns:
-            array[float]: array containing the eigenvalues of the tensor product
-            observable
-        """
-        warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
-            UserWarning,
-        )
-        return self.get_eigvals()
-
     def get_eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
@@ -1837,54 +1811,6 @@ class Tensor(Observable):
             diag_gates.extend(o.diagonalizing_gates())
 
         return diag_gates
-
-    @property
-    def matrix(self):
-        r"""Matrix representation of the tensor operator
-        in the computational basis.
-
-        .. warning::
-
-            The ``matrix`` property is deprecated and will be removed in
-            an upcoming release.
-
-        Returns:
-            array: matrix representation
-
-        **Example:**
-
-        Note that the returned matrix *only includes explicitly
-        declared observables* making up the tensor product;
-        that is, it only returns the matrix for the specified
-        subsystem it is defined for.
-
-        >>> O = qml.PauliZ(0) @ qml.PauliZ(2)
-        >>> O.matrix
-        array([[ 1,  0,  0,  0],
-               [ 0, -1,  0,  0],
-               [ 0,  0, -1,  0],
-               [ 0,  0,  0,  1]])
-
-        To get the full :math:`2^3\times 2^3` Hermitian matrix
-        acting on the 3-qubit system, the identity on wire 1
-        must be explicitly included:
-
-        >>> O = qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2)
-        >>> O.matrix
-        array([[ 1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.],
-               [ 0., -1.,  0., -0.,  0., -0.,  0., -0.],
-               [ 0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.],
-               [ 0., -0.,  0., -1.,  0., -0.,  0., -0.],
-               [ 0.,  0.,  0.,  0., -1., -0., -0., -0.],
-               [ 0., -0.,  0., -0., -0.,  1., -0.,  0.],
-               [ 0.,  0.,  0.,  0., -0., -0., -1., -0.],
-               [ 0., -0.,  0., -0., -0.,  0., -0.,  1.]])
-        """
-        warnings.warn(
-            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
-            UserWarning,
-        )
-        return self.get_matrix()
 
     def get_matrix(self, wire_order=None):
         r"""Matrix representation of the Tensor operator
