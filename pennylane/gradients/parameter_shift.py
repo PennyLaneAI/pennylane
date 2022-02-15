@@ -23,6 +23,7 @@ import pennylane as qml
 
 from .gradient_transform import gradient_transform
 from .finite_difference import finite_diff, generate_shifted_tapes
+from .general_shift_rules import _process_shifts
 
 
 NONINVOLUTORY_OBS = {
@@ -183,22 +184,9 @@ def _get_operation_recipe(tape, t_idx, shifts):
         else:
             use_shift = shifts[0]
 
-        return _process_gradient_recipe(op.get_parameter_shift(p_idx, shift=use_shift))
+        recipe = np.array(op.get_parameter_shift(p_idx, shift=use_shift)).T
 
-
-def _process_gradient_recipe(gradient_recipe, tol=1e-10):
-    """Utility function to process gradient recipes.
-    Discards all terms in a recipe with small coefficients and
-    sorts the remaining terms according to the absolute value
-    of the parameter shift.
-    """
-    gradient_recipe = np.array(gradient_recipe).T
-    # remove all small coefficients, shifts, and multipliers
-    gradient_recipe[np.abs(gradient_recipe) < tol] = 0
-    # remove columns where the coefficients are 0
-    gradient_recipe = gradient_recipe[:, ~(gradient_recipe[0] == 0)]
-    # sort columns according to abs(shift)
-    return gradient_recipe[:, np.argsort(np.abs(gradient_recipe)[-1])]
+        return _process_shifts(recipe, no_duplicates=True)
 
 
 def _gradient_analysis(tape, use_graph=True):
@@ -294,7 +282,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         arg_idx = argnum.index(idx)
         recipe = gradient_recipes[arg_idx]
         if recipe is not None:
-            recipe = _process_gradient_recipe(recipe)
+            recipe = _process_shifts(np.array(recipe).T)
         else:
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
