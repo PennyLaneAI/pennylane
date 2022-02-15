@@ -458,7 +458,7 @@ class TestExpectationQuantumGradients:
         grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
-        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 

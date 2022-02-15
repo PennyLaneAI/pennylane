@@ -731,7 +731,6 @@ class Operator(abc.ABC):
     @abc.abstractmethod
     def num_wires(self):
         """Number of wires the operator acts on."""
-        pass
 
     @property
     def name(self):
