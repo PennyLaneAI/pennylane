@@ -1086,7 +1086,7 @@ class Operation(Operator):
         if self.num_params == 0:
             return None
         try:
-            self.parameter_frequencies
+            self.parameter_frequencies # pylint:disable=pointless-statement
             return "A"
         except OperatorPropertyUndefined:
             return "F"
