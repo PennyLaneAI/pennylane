@@ -1166,7 +1166,10 @@ class Operation(Operator):
         # We set the following default recipe:
         # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
-        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
+        default_param_shift = [
+            [multiplier, a, shift],
+            [-multiplier, a, -shift],
+        ]  # pylint: disable=invalid-unary-operand-type
         return default_param_shift
 
     @property
@@ -1204,7 +1207,7 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen = self.generator()
+            gen = self.generator()  # pylint: disable=assignment-from-no-return
 
             try:
                 gen_eigvals = tuple(self.generator().eigvals())
@@ -1642,7 +1645,7 @@ class Tensor(Observable):
 
     def __copy__(self):
         cls = self.__class__
-        copied_op = cls.__new__(cls)
+        copied_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
         return copied_op
@@ -1909,7 +1912,7 @@ class Tensor(Observable):
                 return 1
         return 0
 
-    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
+    def sparse_matrix(self, wires=None):  # pylint: disable=arguments-differ
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
