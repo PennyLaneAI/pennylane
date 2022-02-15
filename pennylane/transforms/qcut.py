@@ -25,7 +25,6 @@ from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
-from pennylane.utils import _flatten as flatten
 
 
 class MeasureNode(Operation):
