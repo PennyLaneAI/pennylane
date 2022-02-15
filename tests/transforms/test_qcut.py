@@ -14,7 +14,6 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-from multiprocessing.sharedctypes import Value
 import string
 import sys
 
@@ -896,9 +895,9 @@ class TestContractTensors:
             spy = mocker.spy(qml.math, "einsum")
 
         t = [
-            np.arange(4 ** 8).reshape((4,) * 8),
-            np.arange(4 ** 4).reshape((4,) * 4),
-            np.arange(4 ** 2).reshape((4,) * 2),
+            np.arange(4**8).reshape((4,) * 8),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**2).reshape((4,) * 2),
         ]
         m = [
             [
@@ -957,11 +956,15 @@ class TestCutStrategy:
 
     # expected_result = np.dot(*t)
 
-    @pytest.mark.parametrize("devices", [None, 1])
+    @pytest.mark.parametrize("devices", [None, 1, devs[0]])
     @pytest.mark.parametrize("imbalance_tolerance", [None, -1])
     @pytest.mark.parametrize("num_fragments_probed", [None, 0])
     def test_init_raises(self, devices, imbalance_tolerance, num_fragments_probed):
         """Test if ill-initialized instances throw errors."""
+
+        if isinstance(devices, qml.Device) and imbalance_tolerance is None and num_fragments_probed is None:
+            return  # skip the only valid combination
+
         with pytest.raises(ValueError):
             qcut.CutStrategy(
                 devices=devices,
