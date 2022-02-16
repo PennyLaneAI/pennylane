@@ -38,8 +38,6 @@ class Aux:
     def __repr__(self):
         return f"Aux({self.base_wire},{self.count})"
 
-ok = Aux(5, 1)
-
 
 @qfunc_transform
 def extend_qubits(tape):
@@ -59,19 +57,20 @@ def extend_qubits(tape):
             if op.wires[0] not in measured_wires.keys():
                 if op.wires[0] in altered_wires:
                     measured_wires[op.wires[0]] = 0
-                    op._wires = Wires([("aux", op.wires[0], 0)])
+                    op._wires = Wires([Aux(op.wires[0])])
             else:
                 wire = op.wires[0]
-                op._wires = Wires([("aux", wire, measured_wires[wire])])
+                op._wires = Wires([Aux(wire, measured_wires[wire])])
                 measured_wires[wire] += 1
         else:
             for wire in op.wires:
                 new_wires = []
-                altered_wires.add(wire)
                 if wire in measured_wires.keys():
-                    new_wires.append(("aux", wire, measured_wires[wire]))
+                    new_wires.append(Aux(wire, measured_wires[wire]))
+                    altered_wires.add(Aux(wire, measured_wires[wire]))
                 else:
                     new_wires.append(wire)
+                    altered_wires.add(wire)
                 op._wires = Wires(new_wires)
 
         new_ops_reversed.append(op)
