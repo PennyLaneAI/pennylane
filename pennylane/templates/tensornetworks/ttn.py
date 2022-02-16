@@ -166,43 +166,61 @@ class TTN(Operation):
         id=None,
     ):
 
-        self.ind_gates = compute_indices(wires, n_block_wires)
+        ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
         shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
-        self.n_params_block = n_params_block
-        self.n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
-        self.block = block
+        n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
 
         if shape == ():
-            self.template_weights = np.random.rand(n_params_block, int(self.n_blocks))
+            template_weights = np.random.rand(n_params_block, int(n_blocks))
 
         else:
-            if shape[0] != self.n_blocks:
+            if shape[0] != n_blocks:
                 raise ValueError(
-                    f"Weights tensor must have first dimension of length {self.n_blocks}; got {shape[0]}"
+                    f"Weights tensor must have first dimension of length {n_blocks}; got {shape[0]}"
                 )
-            if shape[-1] != self.n_params_block:
+            if shape[-1] != n_params_block:
                 raise ValueError(
-                    f"Weights tensor must have last dimension of length {self.n_params_block}; got {shape[-1]}"
+                    f"Weights tensor must have last dimension of length {n_params_block}; got {shape[-1]}"
                 )
 
-        self.template_weights = template_weights
+        self._hyperparameters = {"ind_gates": ind_gates, "block": block}
 
         super().__init__(template_weights, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
-        with qml.tape.QuantumTape() as tape:
-            if self.block.__code__.co_argcount > 2:
-                for idx, w in enumerate(self.ind_gates):
-                    self.block(*self.template_weights[idx], wires=w)
-            elif self.block.__code__.co_argcount == 2:
-                for idx, w in enumerate(self.ind_gates):
-                    self.block(self.template_weights[idx], wires=w)
-            else:
-                for idx, w in enumerate(self.ind_gates):
-                    self.block(wires=w)
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, block, ind_gates
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators.
 
-        return tape
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.TTN.decomposition`.
+
+        Args:
+            weights (list[tensor_like]): list containing the weights for all blocks
+            wires (Iterable): wires that the template acts on
+            block (Callable): quantum circuit that defines a block
+            ind_gates (array): array of wire indices
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+        if block.__code__.co_argcount > 2:
+            for idx, w in enumerate(ind_gates):
+                op_list.append(block(*weights[idx], wires=w))
+        elif block.__code__.co_argcount == 2:
+            for idx, w in enumerate(ind_gates):
+                op_list.append(block(weights[idx], wires=w))
+        else:
+            for idx, w in enumerate(ind_gates):
+                op_list.append(block(wires=w))
+
+        return op_list
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):

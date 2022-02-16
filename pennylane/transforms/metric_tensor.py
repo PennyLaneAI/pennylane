@@ -24,25 +24,6 @@ from pennylane.circuit_graph import LayerData
 
 from .batch_transform import batch_transform
 
-# This dictionary maps generators to their controlled gate equivalent.
-# It is equivalent to using ``controlled`` on the generators, but this
-# approach via registering specific generators allows us to guarantee
-# unitary circuits for ``allow_nonunitary=False``
-_GEN_TO_CGEN = {
-    qml.PauliX: qml.CNOT,
-    qml.PauliY: qml.CY,
-    qml.PauliZ: qml.CZ,
-}
-
-# In contrast to the above, this dictionary maps *operators* to controlled
-# generator gates, skipping over the step of retrieving the generator from
-# the original operation and identifying it as a gate. It replaces matrix
-# arithmetics that otherwise would be required at this point.
-_OP_TO_CGEN = {
-    # PhaseShift is the same as RZ up to a global phase
-    qml.PhaseShift: qml.CZ,
-}
-
 
 def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
@@ -409,26 +390,9 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            gen, s = op.generator
-            if op.inverse:
-                s = -s
-            w = op.wires
+            obs, s = qml.utils.get_generator(op)
+            obs_list[-1].append(obs)
             coeffs_list[-1].append(s)
-
-            # get the observable corresponding to the generator of the current operation
-            if isinstance(gen, np.ndarray):
-                # generator is a Hermitian matrix
-                obs_list[-1].append(qml.Hermitian(gen, w))
-
-            elif issubclass(gen, qml.operation.Observable):
-                # generator is an existing PennyLane operation
-                obs_list[-1].append(gen(w))
-
-            else:
-                raise qml.QuantumFunctionError(
-                    f"Can't generate metric tensor, generator {gen}"
-                    "has no corresponding observable"
-                )
 
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
@@ -483,21 +447,22 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     generator but ``allow_nonunitary=False``, the operation ``op`` should have been decomposed
     before, leading to a ``ValueError``.
     """
-    gen, _ = op.generator
+    op_to_cgen = {
+        qml.RX: qml.CNOT,
+        qml.RY: qml.CY,
+        qml.RZ: qml.CZ,
+        qml.PhaseShift: qml.CZ,  # PhaseShift is the same as RZ up to a global phase
+    }
+
     try:
-        if isinstance(gen, np.ndarray):
-            cgen = _OP_TO_CGEN[op.__class__]
-        else:
-            cgen = _GEN_TO_CGEN.get(gen, None)
-            if cgen is None:
-                cgen = _OP_TO_CGEN[op.__class__]
+        cgen = op_to_cgen[op.__class__]
         return cgen(wires=[aux_wire, *op.wires])
 
     except KeyError as e:
         if allow_nonunitary:
-            if (not isinstance(gen, np.ndarray)) and issubclass(gen, qml.operation.Observable):
-                gen = gen.matrix
-            return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
+            gen, coeff = qml.utils.get_generator(op, return_matrix=True)
+            return qml.ControlledQubitUnitary(coeff * gen, control_wires=aux_wire, wires=op.wires)
+
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "
             "deactivated via allow_nonunitary=False."
@@ -651,7 +616,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         idx = 0
         for prob, obs in zip(diag_res, obs_list):
             for o in obs:
-                l = qml.math.cast(o.eigvals, dtype=np.float64)
+                l = qml.math.cast(o.get_eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
                 expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))

@@ -813,7 +813,7 @@ class TestCircuitDrawerIntegration:
                 qml.CNOT(wires=[0, 2])
                 with qml.tape.QuantumTape():
                     qml.QuantumPhaseEstimation(
-                        qml.PauliY.matrix, target_wires=[1], estimation_wires=[2]
+                        qml.PauliY.compute_matrix(), target_wires=[1], estimation_wires=[2]
                     )
                     qml.CNOT(wires=[1, 2])
             qml.Hadamard(1)

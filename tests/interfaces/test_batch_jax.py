@@ -548,7 +548,7 @@ class TestJaxExecuteIntegration:
         """Test that the jax interface works correctly
         with a matrix parameter"""
         a = jnp.array(0.1)
-        U = qml.RY(a, wires=0).matrix
+        U = qml.RY(a, wires=0).get_matrix()
 
         def cost(U, device):
             with qml.tape.JacobianTape() as tape:

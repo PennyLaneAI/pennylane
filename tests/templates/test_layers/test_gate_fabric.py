@@ -765,9 +765,9 @@ def circuit_decomposed(weights):
     include_pi_param = qml.math.array(np.pi, like=qml.math._multi_dispatch(weights))
     for layer in range(weights.shape[0]):
         for idx in range(weights.shape[1]):
-            qml.OrbitalRotation.decomposition(include_pi_param, wires=qwires[idx])
-            qml.DoubleExcitation.decomposition(weights[layer][idx][0], wires=qwires[idx])
-            qml.OrbitalRotation.decomposition(weights[layer][idx][1], wires=qwires[idx])
+            qml.OrbitalRotation.compute_decomposition(include_pi_param, wires=qwires[idx])
+            qml.DoubleExcitation.compute_decomposition(weights[layer][idx][0], wires=qwires[idx])
+            qml.OrbitalRotation.compute_decomposition(weights[layer][idx][1], wires=qwires[idx])
 
     return qml.expval(qml.PauliZ(0))
 

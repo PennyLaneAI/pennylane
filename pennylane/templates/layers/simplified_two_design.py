@@ -129,35 +129,64 @@ class SimplifiedTwoDesign(Operation):
     def num_params(self):
         return 2
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        initial_layer_weights, weights, wires
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            # initial rotations
-            for i in range(len(self.wires)):
-                qml.RY(self.parameters[0][i], wires=self.wires[i])
 
-            for layer in range(self.n_layers):
 
-                # even layer of entanglers
-                even_wires = [self.wires[i : i + 2] for i in range(0, len(self.wires) - 1, 2)]
-                for i, wire_pair in enumerate(even_wires):
-                    qml.CZ(wires=wire_pair)
-                    qml.RY(self.parameters[1][layer, i, 0], wires=wire_pair[0])
-                    qml.RY(self.parameters[1][layer, i, 1], wires=wire_pair[1])
+        .. seealso:: :meth:`~.SimplifiedTwoDesign.decomposition`.
 
-                # odd layer of entanglers
-                odd_wires = [self.wires[i : i + 2] for i in range(1, len(self.wires) - 1, 2)]
-                for i, wire_pair in enumerate(odd_wires):
-                    qml.CZ(wires=wire_pair)
-                    qml.RY(
-                        self.parameters[1][layer, len(self.wires) // 2 + i, 0], wires=wire_pair[0]
-                    )
-                    qml.RY(
-                        self.parameters[1][layer, len(self.wires) // 2 + i, 1], wires=wire_pair[1]
-                    )
+        Args:
+            initial_layer_weights (tensor_like): weight tensor for the initial rotation block
+            weights (tensor_like): tensor of rotation angles for the layers
+            wires (Any or Iterable[Any]): wires that the operator acts on
 
-        return tape
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> qml.SimplifiedTwoDesign.compute_decomposition(initial_layer_weights, weights, wires=["a", "b", "c"])
+        [RY(tensor(3.1416), wires=['a']), RY(tensor(3.1416), wires=['b']), RY(tensor(3.1416), wires=['c']),
+        CZ(wires=['a', 'b']),
+        RY(tensor(0.), wires=['a']), RY(tensor(3.1416), wires=['b']),
+        CZ(wires=['b', 'c']),
+        RY(tensor(0.), wires=['b']), RY(tensor(3.1416), wires=['c']),
+        CZ(wires=['a', 'b']),
+        RY(tensor(3.1416), wires=['a']), RY(tensor(0.), wires=['b']),
+        CZ(wires=['b', 'c']),
+        RY(tensor(3.1416), wires=['b']), RY(tensor(0.), wires=['c'])]
+        """
+
+        n_layers = qml.math.shape(weights)[0]
+        op_list = []
+
+        # initial rotations
+        for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+            op_list.append(qml.RY(initial_layer_weights[i], wires=wires[i]))
+
+        for layer in range(n_layers):
+
+            # even layer of entanglers
+            even_wires = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)]
+            for i, wire_pair in enumerate(even_wires):
+                op_list.append(qml.CZ(wires=wire_pair))
+                op_list.append(qml.RY(weights[layer, i, 0], wires=wire_pair[0]))
+                op_list.append(qml.RY(weights[layer, i, 1], wires=wire_pair[1]))
+
+            # odd layer of entanglers
+            odd_wires = [wires[i : i + 2] for i in range(1, len(wires) - 1, 2)]
+            for i, wire_pair in enumerate(odd_wires):
+                op_list.append(qml.CZ(wires=wire_pair))
+                op_list.append(qml.RY(weights[layer, len(wires) // 2 + i, 0], wires=wire_pair[0]))
+                op_list.append(qml.RY(weights[layer, len(wires) // 2 + i, 1], wires=wire_pair[1]))
+
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):

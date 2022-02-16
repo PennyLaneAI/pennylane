@@ -26,8 +26,52 @@ from pennylane.transforms.qmc import (
     quantum_monte_carlo,
 )
 from pennylane.templates.subroutines.qmc import _make_V, _make_Z, make_Q
-from pennylane.templates.state_preparations.mottonen import _uniform_rotation_dagger as r_unitary
 from pennylane.wires import Wires
+
+
+def r_unitary(gate, alpha, control_wires, target_wire):
+    r"""Applies a uniformly-controlled rotation to the target qubit.
+
+    A uniformly-controlled rotation is a sequence of multi-controlled
+    rotations, each of which is conditioned on the control qubits being in a different state.
+
+    For example, a uniformly-controlled rotation with two control qubits describes a sequence of
+    four multi-controlled rotations, each applying the rotation only if the control qubits
+    are in states :math:`|00\rangle`, :math:`|01\rangle`, :math:`|10\rangle`, and :math:`|11\rangle`, respectively.
+
+    To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
+    a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
+    angles alpha have to be converted into a set of non-controlled rotation angles theta.
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
+
+    Args:
+        gate (.Operation): gate to be applied, needs to have exactly one parameter
+        alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
+        control_wires (array[int]): wires that act as control
+        target_wire (int): wire that acts as target
+    """
+
+    theta = qml.templates.state_preparations.mottonen.compute_theta(alpha)
+
+    gray_code_rank = len(control_wires)
+
+    if gray_code_rank == 0:
+        if qml.math.all(theta[..., 0] != 0.0):
+            gate(theta[..., 0], wires=[target_wire])
+        return
+
+    code = qml.templates.state_preparations.mottonen.gray_code(gray_code_rank)
+    num_selections = len(code)
+
+    control_indices = [
+        int(np.log2(int(code[i], 2) ^ int(code[(i + 1) % num_selections], 2)))
+        for i in range(num_selections)
+    ]
+
+    for i, control_index in enumerate(control_indices):
+        if qml.math.all(theta[..., i] != 0.0):
+            gate(theta[..., i], wires=[target_wire])
+        qml.CNOT(wires=[control_wires[control_index], target_wire])
 
 
 def get_unitary(circ, n_wires):

@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the measure module"""
+from _pytest.nodes import Node
 import pytest
 import numpy as np
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
+from pennylane.operation import DecompositionUndefinedError
 
 from pennylane.queuing import AnnotatedQueue
 from pennylane.measure import (
@@ -453,11 +455,11 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
         m = MeasurementProcess(Expectation, obs=obs)
 
-        assert np.all(m.eigvals == np.array([1, 2, 3]))
+        assert np.all(m.get_eigvals() == np.array([1, 2, 3]))
 
         # changing the observable data should be reflected
         obs.data = [np.diag([5, 6, 7])]
-        assert np.all(m.eigvals == np.array([5, 6, 7]))
+        assert np.all(m.get_eigvals() == np.array([5, 6, 7]))
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
@@ -477,11 +479,10 @@ class TestProperties:
 
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
-        the eigvals property on the associated measurement process
-        to be None"""
+        the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
         m = MeasurementProcess(Expectation, obs=obs)
-        assert m.eigvals is None
+        assert m.get_eigvals() is None
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
@@ -518,7 +519,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == [0, 1]
-        assert np.all(tape.measurements[0].eigvals == np.array([1, -1, -1, 1]))
+        assert np.all(tape.measurements[0].get_eigvals() == np.array([1, -1, -1, 1]))
 
     def test_expand_hermitian(self, tol):
         """Test the expansion of an hermitian observable"""
@@ -542,15 +543,33 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == ["a"]
-        assert np.all(tape.measurements[0].eigvals == np.array([0, 5]))
+        assert np.all(tape.measurements[0].get_eigvals() == np.array([0, 5]))
 
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
-        m = MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1]))
+        with pytest.raises(DecompositionUndefinedError):
+            MeasurementProcess(Probability, wires=qml.wires.Wires([0, 1])).expand()
 
-        with pytest.raises(NotImplementedError, match="Cannot expand"):
-            m.expand()
+
+class TestDiagonalizingGates:
+    def test_no_expansion(self):
+        """Test a measurement that has no expansion"""
+        m = qml.sample()
+
+        assert m.diagonalizing_gates() == []
+
+    def test_obs_diagonalizing_gates(self):
+        """Test diagonalizing_gates method with and observable."""
+        m = qml.expval(qml.PauliY(0))
+
+        res = m.diagonalizing_gates()
+
+        assert len(res) == 3
+
+        expected_classes = [qml.PauliZ, qml.S, qml.Hadamard]
+        for op, c in zip(res, expected_classes):
+            assert isinstance(op, c)
 
 
 class TestState:
