@@ -326,7 +326,7 @@ def hermite_moment(alpha, beta, t, e, r):
 
         M_{t}^{e+1} = t M_{t-1}^{e} + X_C M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
 
-    This integral is zero for :math:`t > e` and
+    This integral is zero for :math:`t > e` and the base case solution is
 
     .. math::
 
@@ -348,7 +348,7 @@ def hermite_moment(alpha, beta, t, e, r):
     **Example**
 
     >>> alpha = np.array([3.42525091])
-    >>> beta =  np.array([3.42525091])
+    >>> beta = np.array([3.42525091])
     >>> t = 0
     >>> e = 1
     >>> r = 1.5
@@ -400,7 +400,7 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, e, r):
         alpha (array[float]): exponent of the first Gaussian function
         beta (array[float]): exponent of the second Gaussian function
         e (integer): exponent of the position component
-        r (array[float]): distance between the center of the Hermite Gaussian  function and origin
+        r (array[float]): distance between the center of the Hermite Gaussian function and origin
 
     Returns:
         array[float]: one-dimensional multipole moment integral between primitive Gaussian functions
