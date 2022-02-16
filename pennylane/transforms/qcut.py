@@ -403,7 +403,7 @@ def expand_fragment_tapes(
 
     Returns:
         Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
-        tapes corresponding to each configration, the preparation nodes and
+        tapes corresponding to each configuration, the preparation nodes and
         the measurement nodes.
 
     **Example**
