@@ -15,17 +15,17 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
-import functools
+from functools import reduce
 
 import pytest
 import numpy as np
+from pennylane import numpy as pnp
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-import pennylane.queuing
-from pennylane.operation import Tensor, operation_derivative
+from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
-from gate_data import I, X, Y, Rotx, Roty, Rotz, CRotx, CRoty, CRotz, CNOT, Rot3, Rphi
+from gate_data import I, X, CNOT
 from pennylane.wires import Wires
 
 
@@ -117,6 +117,36 @@ class TestOperatorConstruction:
         op.name = "MyOp"
         assert op.name == "MyOp"
 
+    def test_default_hyperparams(self):
+        """Tests that the hyperparams attribute is defined for all operations."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+        class MyOpOverwriteInit(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires):
+                pass
+
+        op = MyOp(wires=0)
+        assert op.hyperparameters == {}
+
+        op = MyOpOverwriteInit(wires=0)
+        assert op.hyperparameters == {}
+
+    def test_custom_hyperparams(self):
+        """Tests that an operation can add custom hyperparams."""
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+
+            def __init__(self, wires, basis_state=None):
+                self._hyperparameters = {"basis_state": basis_state}
+
+        state = [0, 1, 0]
+        assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
@@ -161,7 +191,9 @@ class TestOperationConstruction:
             r"""Dummy custom operation"""
             num_wires = 1
             grad_method = "A"
-            generator = [qml.PauliX, -0.2]
+
+            def generator(self):
+                return -0.2 * qml.PauliX(wires=self.wires)
 
         x = 0.654
         op = DummyOp(x, wires=0)
@@ -395,7 +427,6 @@ class TestInverse:
     """Test inverse of operations"""
 
     def test_operation_inverse_using_dummy_operation(self):
-
         some_param = 0.5
 
         class DummyOp(qml.operation.Operation):
@@ -648,10 +679,10 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert np.array_equal(t.eigvals, np.kron([1, -1], [1, -1]))
+        assert np.array_equal(t.get_eigvals(), np.kron([1, -1], [1, -1]))
 
         # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals_cache, t.eigvals)
+        assert np.array_equal(t._eigvals_cache, t.get_eigvals())
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
@@ -661,7 +692,7 @@ class TestTensor:
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
         t = Tensor(X, Herm)
         d = np.kron(np.array([1.0, -1.0]), np.array([-1.0, 1.0, 1.0, 1.0]))
-        t = t.eigvals
+        t = t.get_eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity(self, tol):
@@ -670,7 +701,7 @@ class TestTensor:
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
         d = np.kron(np.array([1.0, -1.0]), np.array([1.0, 1.0]))
-        t = t.eigvals
+        t = t.get_eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity_and_hermitian(self, tol):
@@ -678,7 +709,7 @@ class TestTensor:
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4, 5])
-        res = O.eigvals
+        res = O.get_eigvals()
         expected = np.kron(np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -723,14 +754,14 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        O_mat = O.matrix
+        O_mat = O.get_matrix()
         diag_gates = O.diagonalizing_gates()
 
         # group the diagonalizing gates based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(diag_gates, lambda x: x.wires.tolist()):
             # extract the matrices of each diagonalizing gate
-            mats = [i.matrix for i in g]
+            mats = [i.get_matrix() for i in g]
 
             # Need to revert the order in which the matrices are applied such that they adhere to the order
             # of matrix multiplication
@@ -748,10 +779,10 @@ class TestTensor:
         # since the test is assuming consecutive wires for each observable
         # in the tensor product, it is sufficient to Kronecker product
         # the entire list.
-        U = functools.reduce(np.kron, U_list)
+        U = reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
-        expected = np.diag(O.eigvals)
+        expected = np.diag(O.get_eigvals())
 
         # once diagonalized by U, the result should be a diagonal
         # matrix of the eigenvalues.
@@ -763,19 +794,44 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        res = O.matrix
-        expected = np.kron(qml.PauliY._matrix(), H)
-        expected = np.kron(qml.PauliX._matrix(), expected)
+        res = O.get_matrix()
+        expected = reduce(np.kron, [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), H])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_multiplication_matrix(self, tol):
+    def test_matrix_wire_order_not_implemented(self):
+        """Test that an exception is raised if a wire_order is passed to the matrix method"""
+        O = qml.PauliX(0) @ qml.PauliY(1)
+        with pytest.raises(NotImplementedError, match="wire_order"):
+            O.get_matrix(wire_order=[1, 0])
+
+    def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
+        """Tests that a warning is raised if the wires the factors in
+        the tensor product act on have partial overlaps."""
+        H = np.diag([1, 2, 3, 4])
+        O1 = qml.PauliX(0) @ qml.Hermitian(H, [0, 1])
+        O2 = qml.Hermitian(H, [0, 1]) @ qml.PauliY(1)
+
+        for O in (O1, O2):
+            with pytest.warns(UserWarning, match="partially overlapping"):
+                O.get_matrix()
+
+    def test_tensor_matrix_too_large_warning(self, tol):
+        """Tests that a warning is raised if wires occur in multiple of the
+        factors in the tensor product, leading to a wrongly-sized matrix."""
+        O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
+        with pytest.warns(UserWarning, match="The size of the returned matrix"):
+            O.get_matrix()
+
+    @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
+    def test_multiplication_matrix(self, tol, classes):
         """If using the ``@`` operator on two observables acting on the
         same wire, the tensor class should treat this as matrix multiplication."""
-        O = qml.PauliX(0) @ qml.PauliX(0)
+        c1, c2 = classes
+        O = c1(0) @ c2(0)
 
-        res = O.matrix
-        expected = qml.PauliX._matrix() @ qml.PauliX._matrix()
+        res = O.get_matrix()
+        expected = c1.compute_matrix() @ c2.compute_matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -1103,257 +1159,76 @@ class TestTensorObservableOperations:
             tensor - A
 
 
-class TestDecomposition:
-    """Test for operation decomposition"""
+# Dummy class inheriting from Operator
+class MyOp(Operator):
+    num_wires = 1
 
-    def test_decomposition_with_int_wire(self):
-        """Test that the decomposition of a non-parametrized Operation works
-        when we simply pass an integer as a wire without further specification."""
-        decomp_1 = qml.PauliRot.decomposition(0.1, "X", 1)
-        decomp_2 = qml.PauliRot.decomposition(0.1, "X", [1])
-        expected_decomp = qml.PauliRot.decomposition(0.1, "X", wires=1)
 
-        for obtained_1, obtained_2, expected in zip(decomp_1, decomp_2, expected_decomp):
-            assert obtained_1.name == expected.name
-            assert np.allclose(obtained_1.parameters, expected.parameters)
-            assert obtained_2.name == expected.name
-            assert np.allclose(obtained_2.parameters, expected.parameters)
+# Dummy class inheriting from Operation
+class MyGate(Operation):
+    num_wires = 1
 
-    def test_U1_decomposition(self):
-        """Test the decomposition of the U1 gate provides the equivalent phase shift gate"""
-        phi = 0.432
-        res = qml.U1(phi, wires=0).decompose()
 
-        assert len(res) == 1
-        assert res[0].name == "PhaseShift"
-        assert res[0].parameters == [phi]
+op = MyOp(wires=1)
+gate = MyGate(wires=1)
 
-    def test_rotation_decomposition(self):
-        """Test the decomposition of the abritrary single
-        qubit rotation"""
-        phi = 0.432
-        theta = 0.654
-        omega = -5.43
 
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.Rot.decomposition(phi, theta, omega, wires=0)
+class TestDefaultRepresentations:
+    """Tests that the default representations raise custom errors"""
 
-        assert len(rec.queue) == 3
+    def test_decomposition_undefined(self):
+        """Tests that custom error is raised in the default decomposition representation."""
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            MyOp.compute_decomposition(wires=[1])
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            op.decomposition()
 
-        assert rec.queue[0].name == "RZ"
-        assert rec.queue[0].parameters == [phi]
+    def test_matrix_undefined(self):
+        """Tests that custom error is raised in the default matrix representation."""
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            MyOp.compute_matrix()
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.get_matrix()
 
-        assert rec.queue[1].name == "RY"
-        assert rec.queue[1].parameters == [theta]
+    def test_terms_undefined(self):
+        """Tests that custom error is raised in the default terms representation."""
+        with pytest.raises(qml.operation.TermsUndefinedError):
+            MyOp.compute_terms(wires=[1])
+        with pytest.raises(qml.operation.TermsUndefinedError):
+            op.terms()
 
-        assert rec.queue[2].name == "RZ"
-        assert rec.queue[2].parameters == [omega]
+    def test_sparse_matrix_undefined(self):
+        """Tests that custom error is raised in the default sparse matrix representation."""
+        with pytest.raises(NotImplementedError):
+            MyOp(wires="a").sparse_matrix(wire_order=["a", "b"])
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            MyOp.compute_sparse_matrix()
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            op.sparse_matrix()
 
-    def test_crx_decomposition(self):
-        """Test the decomposition of the controlled X
-        qubit rotation"""
-        phi = 0.432
+    def test_eigvals_undefined(self):
+        """Tests that custom error is raised in the default eigenvalue representation."""
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            MyOp.compute_eigvals()
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            op.get_eigvals()
 
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.CRX.decomposition(phi, wires=[0, 1])
+    def test_diaggates_undefined(self):
+        """Tests that custom error is raised in the default diagonalizing gates representation."""
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            MyOp.compute_diagonalizing_gates(wires=[1])
+        with pytest.raises(qml.operation.DiagGatesUndefinedError):
+            op.diagonalizing_gates()
 
-        assert len(rec.queue) == 6
+    def test_adjoint_undefined(self):
+        """Tests that custom error is raised in the default adjoint representation."""
+        with pytest.raises(qml.operation.AdjointUndefinedError):
+            gate.adjoint()
 
-        assert rec.queue[0].name == "RZ"
-        assert rec.queue[0].parameters == [np.pi / 2]
-        assert rec.queue[0].wires == Wires([1])
-
-        assert rec.queue[1].name == "RY"
-        assert rec.queue[1].parameters == [phi / 2]
-        assert rec.queue[1].wires == Wires([1])
-
-        assert rec.queue[2].name == "CNOT"
-        assert rec.queue[2].parameters == []
-        assert rec.queue[2].wires == Wires([0, 1])
-
-        assert rec.queue[3].name == "RY"
-        assert rec.queue[3].parameters == [-phi / 2]
-        assert rec.queue[3].wires == Wires([1])
-
-        assert rec.queue[4].name == "CNOT"
-        assert rec.queue[4].parameters == []
-        assert rec.queue[4].wires == Wires([0, 1])
-
-        assert rec.queue[5].name == "RZ"
-        assert rec.queue[5].parameters == [-np.pi / 2]
-        assert rec.queue[5].wires == Wires([1])
-
-    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
-    def test_crx_decomposition_correctness(self, phi, tol):
-        """Test that the decomposition of the controlled X
-        qubit rotation is correct"""
-
-        expected = CRotx(phi)
-
-        obtained = (
-            np.kron(I, Rotz(-np.pi / 2))
-            @ CNOT
-            @ np.kron(I, Roty(-phi / 2))
-            @ CNOT
-            @ np.kron(I, Roty(phi / 2))
-            @ np.kron(I, Rotz(np.pi / 2))
-        )
-        assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
-    def test_cry_decomposition(self):
-        """Test the decomposition of the controlled Y
-        qubit rotation"""
-        phi = 0.432
-
-        operation_wires = [0, 1]
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.CRY.decomposition(phi, wires=operation_wires)
-
-        assert len(rec.queue) == 4
-
-        assert rec.queue[0].name == "RY"
-        assert rec.queue[0].parameters == [phi / 2]
-        assert rec.queue[0].wires == Wires([1])
-
-        assert rec.queue[1].name == "CNOT"
-        assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == Wires(operation_wires)
-
-        assert rec.queue[2].name == "RY"
-        assert rec.queue[2].parameters == [-phi / 2]
-        assert rec.queue[2].wires == Wires([1])
-
-        assert rec.queue[3].name == "CNOT"
-        assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == Wires(operation_wires)
-
-    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
-    def test_cry_decomposition_correctness(self, phi, tol):
-        """Test that the decomposition of the controlled Y
-        qubit rotation is correct"""
-
-        def U3(theta, phi, lam):
-            return Rphi(phi) @ Rphi(lam) @ Rot3(lam, theta, -lam)
-
-        expected = CRoty(phi)
-        obtained = CNOT @ np.kron(I, U3(-phi / 2, 0, 0)) @ CNOT @ np.kron(I, U3(phi / 2, 0, 0))
-        assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
-    def test_crz_decomposition(self):
-        """Test the decomposition of the controlled Z
-        qubit rotation"""
-        phi = 0.432
-
-        operation_wires = [0, 1]
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.CRZ.decomposition(phi, wires=operation_wires)
-
-        assert len(rec.queue) == 4
-
-        assert rec.queue[0].name == "PhaseShift"
-        assert rec.queue[0].parameters == [phi / 2]
-        assert rec.queue[0].wires == Wires([1])
-
-        assert rec.queue[1].name == "CNOT"
-        assert rec.queue[1].parameters == []
-        assert rec.queue[1].wires == Wires(operation_wires)
-
-        assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [-phi / 2]
-        assert rec.queue[2].wires == Wires([1])
-
-        assert rec.queue[3].name == "CNOT"
-        assert rec.queue[3].parameters == []
-        assert rec.queue[3].wires == Wires(operation_wires)
-
-    @pytest.mark.parametrize("phi", [0.03236 * i for i in range(5)])
-    def test_crz_decomposition_correctness(self, phi, tol):
-        """Test that the decomposition of the controlled Z
-        qubit rotation is correct"""
-
-        expected = CRotz(phi)
-
-        obtained = CNOT @ np.kron(I, Rphi(-phi / 2)) @ CNOT @ np.kron(I, Rphi(phi / 2))
-        assert np.allclose(expected, obtained, atol=tol, rtol=0)
-
-    def test_U2_decomposition(self):
-        """Test the U2 decomposition is correct"""
-        phi = 0.432
-        lam = 0.654
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.U2.decomposition(phi, lam, wires=0)
-
-        assert len(rec.queue) == 3
-
-        assert rec.queue[0].name == "Rot"
-        assert rec.queue[0].parameters == [lam, np.pi / 2, -lam]
-
-        assert rec.queue[1].name == "PhaseShift"
-        assert rec.queue[1].parameters == [lam]
-
-        assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [phi]
-
-    def test_U3_decomposition(self):
-        """Test the U3 decomposition is correct"""
-        theta = 0.654
-        phi = 0.432
-        lam = 0.654
-
-        with pennylane.tape.OperationRecorder() as rec:
-            qml.U3.decomposition(theta, phi, lam, wires=0)
-
-        assert len(rec.queue) == 3
-
-        assert rec.queue[0].name == "Rot"
-        assert rec.queue[0].parameters == [lam, theta, -lam]
-
-        assert rec.queue[1].name == "PhaseShift"
-        assert rec.queue[1].parameters == [lam]
-
-        assert rec.queue[2].name == "PhaseShift"
-        assert rec.queue[2].parameters == [phi]
-
-    def test_basis_state_decomposition(self, monkeypatch):
-        """Test the decomposition of BasisState calls the
-        BasisStatePreparation template"""
-        n = np.array([1, 0, 1, 1])
-        wires = [0, 1, 2, 3]
-        call_args = []
-
-        # We have to patch BasisStatePreparation where it is loaded
-        monkeypatch.setattr(
-            qml.ops.qubit.state_preparation,
-            "BasisStatePreparation",
-            lambda *args: call_args.append(args),
-        )
-        qml.BasisState(n, wires=wires).decompose()
-
-        assert len(call_args) == 1
-        assert np.array_equal(call_args[0][0], n)
-        assert np.array_equal(call_args[0][1], wires)
-
-    def test_qubit_state_vector_decomposition(self, monkeypatch):
-        """Test the decomposition of QubitStateVector calls the
-        MottonenStatePreparation template"""
-        state = np.array([1 / 2, 1j / np.sqrt(2), 0, -1 / 2])
-        wires = [0, 1]
-        call_args = []
-
-        # We have to patch MottonenStatePreparation where it is loaded
-        monkeypatch.setattr(
-            qml.ops.qubit.state_preparation,
-            "MottonenStatePreparation",
-            lambda *args: call_args.append(args),
-        )
-        qml.QubitStateVector(state, wires=wires).decompose()
-
-        assert len(call_args) == 1
-        assert np.array_equal(call_args[0][0], state)
-        assert np.array_equal(call_args[0][1], wires)
+    def test_generator_undefined(self):
+        """Tests that custom error is raised in the default generator representation."""
+        with pytest.raises(qml.operation.GeneratorUndefinedError):
+            gate.generator()
 
 
 class TestChannel:
@@ -1367,25 +1242,27 @@ class TestChannel:
             num_wires = 1
             grad_method = "F"
 
-            def _kraus_matrices(self, *params):
-                p = params[0]
+            @staticmethod
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
         op = DummyOp(0.1, wires=0)
-        assert np.all(op.kraus_matrices[0] == expected)
+        assert np.all(op.kraus_matrices()[0] == expected)
 
 
 class TestOperationDerivative:
     """Tests for operation_derivative function"""
 
     def test_no_generator_raise(self):
-        """Tests if the function raises a ValueError if the input operation has no generator"""
+        """Tests if the function raises an exception if the input operation has no generator"""
         op = qml.Rot(0.1, 0.2, 0.3, wires=0)
 
-        with pytest.raises(ValueError, match="Operation Rot does not have a generator"):
+        with pytest.raises(
+            qml.operation.GeneratorUndefinedError, match="Operation Rot does not have a generator"
+        ):
             operation_derivative(op)
 
     def test_multiparam_raise(self):
@@ -1393,7 +1270,8 @@ class TestOperationDerivative:
         parameters"""
 
         class RotWithGen(qml.Rot):
-            generator = [np.zeros((2, 2)), 1]
+            def generator(self):
+                return qml.Hermitian(np.zeros((2, 2)), wires=self.wires)
 
         op = RotWithGen(0.1, 0.2, 0.3, wires=0)
 
@@ -1488,7 +1366,6 @@ class TestCVOperation:
 
 
 class TestCriteria:
-
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qml.RX(0.3, wires=1)
     cnot = qml.CNOT(wires=[1, 0])
@@ -1553,3 +1430,360 @@ class TestCriteria:
         assert not both(self.cnot)
         assert not both(self.rot)
         assert not both(self.exp)
+
+
+class TestExpandMatrix:
+    """Tests for the expand_matrix helper function."""
+
+    def test_no_expansion(self):
+        """Tests the case where the original matrix is not changed"""
+        base_matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
+        res = qml.operation.expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
+        assert np.allclose(base_matrix, res)
+
+    def test_permutation(self):
+        """Tests the case where the original matrix is permuted"""
+        base_matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
+        res = qml.operation.expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0])
+
+        expected = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
+        assert np.allclose(expected, res)
+
+    def test_expansion(self):
+        """Tests the case where the original matrix is expanded"""
+        base_matrix = np.array([[0, 1], [1, 0]])
+        res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[0, 2])
+        expected = np.array([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+        assert np.allclose(expected, res)
+
+        res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[2, 0])
+        expected = np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
+        assert np.allclose(expected, res)
+
+    def test_autograd(self, tol):
+        """Tests differentiation in autograd by checking how a specific element of the expanded matrix depends on the
+        canonical matrix."""
+
+        def func(mat):
+            res = qml.operation.expand_matrix(mat, wires=[2], wire_order=[0, 2])
+            return res[0, 1]
+
+        base_matrix = pnp.array([[0.0, 1.0], [1.0, 0.0]], requires_grad=True)
+        grad_fn = qml.grad(func)
+        gradient = grad_fn(base_matrix)
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = np.array([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_torch(self, tol):
+        """Tests differentiation in torch by checking how a specific element of the expanded matrix depends on the
+        canonical matrix."""
+        torch = pytest.importorskip("torch")
+
+        base_matrix = torch.tensor([[0.0, 1.0], [1.0, 0.0]], requires_grad=True)
+        res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[0, 2])
+        element = res[0, 1]
+        element.backward()
+        gradient = base_matrix.grad
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = torch.tensor([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_jax(self, tol):
+        """Tests differentiation in jax by checking how a specific element of the expanded matrix depends on the
+        canonical matrix."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        def func(mat):
+            res = qml.operation.expand_matrix(mat, wires=[2], wire_order=[0, 2])
+            return res[0, 1]
+
+        base_matrix = jnp.array([[0.0, 1.0], [1.0, 0.0]])
+        grad_fn = jax.grad(func)
+        gradient = grad_fn(base_matrix)
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = np.array([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_tf(self, tol):
+        """Tests differentiation in TensorFlow by checking how a specific element of the expanded matrix depends on the
+        canonical matrix."""
+        tf = pytest.importorskip("tensorflow")
+
+        base_matrix = tf.Variable([[0.0, 1.0], [1.0, 0.0]])
+        with tf.GradientTape() as tape:
+            res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[0, 2])
+            element = res[0, 1]
+
+        gradient = tape.gradient(element, base_matrix)
+
+        # the entry should propagate from position (0, 1) in the original tensor
+        expected = tf.constant([[0.0, 1.0], [0.0, 0.0]])
+        assert np.allclose(gradient, expected, atol=tol)
+
+    def test_expand_one(self, tol):
+        """Test that a 1 qubit gate correctly expands to 3 qubits."""
+        U = np.array(
+            [
+                [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
+                [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
+            ]
+        )
+        # test applied to wire 0
+        res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
+        expected = np.kron(np.kron(U, I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 4
+        res = qml.operation.expand_matrix(U, [4], [0, 4, 9])
+        expected = np.kron(np.kron(I, U), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 9
+        res = qml.operation.expand_matrix(U, [9], [0, 4, 9])
+        expected = np.kron(np.kron(I, I), U)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_two_consecutive_wires(self, tol):
+        """Test that a 2 qubit gate on consecutive wires correctly
+        expands to 4 qubits."""
+        U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
+
+        # test applied to wire 0+1
+        res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
+        expected = np.kron(np.kron(U2, I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 1+2
+        res = qml.operation.expand_matrix(U2, [1, 2], [0, 1, 2, 3])
+        expected = np.kron(np.kron(I, U2), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 2+3
+        res = qml.operation.expand_matrix(U2, [2, 3], [0, 1, 2, 3])
+        expected = np.kron(np.kron(I, I), U2)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_two_reversed_wires(self, tol):
+        """Test that a 2 qubit gate on reversed consecutive wires correctly
+        expands to 4 qubits."""
+        # CNOT with target on wire 1
+        res = qml.operation.expand_matrix(CNOT, [1, 0], [0, 1, 2, 3])
+        rows = np.array([0, 2, 1, 3])
+        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_three_consecutive_wires(self, tol):
+        """Test that a 3 qubit gate on consecutive
+        wires correctly expands to 4 qubits."""
+        U_toffoli = np.diag([1 for i in range(8)])
+        U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+        # test applied to wire 0,1,2
+        res = qml.operation.expand_matrix(U_toffoli, [0, 1, 2], [0, 1, 2, 3])
+        expected = np.kron(U_toffoli, I)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 1,2,3
+        res = qml.operation.expand_matrix(U_toffoli, [1, 2, 3], [0, 1, 2, 3])
+        expected = np.kron(I, U_toffoli)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_three_nonconsecutive_ascending_wires(self, tol):
+        """Test that a 3 qubit gate on non-consecutive but ascending
+        wires correctly expands to 4 qubits."""
+        U_toffoli = np.diag([1 for i in range(8)])
+        U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+        # test applied to wire 0,2,3
+        res = qml.operation.expand_matrix(U_toffoli, [0, 2, 3], [0, 1, 2, 3])
+        expected = (
+            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            @ np.kron(I, U_toffoli)
+            @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 0,1,3
+        res = qml.operation.expand_matrix(U_toffoli, [0, 1, 3], [0, 1, 2, 3])
+        expected = (
+            np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
+            @ np.kron(U_toffoli, I)
+            @ np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
+        """Test that a 3 qubit gate on non-consecutive non-ascending
+        wires correctly expands to 4 qubits"""
+        U_toffoli = np.diag([1 for i in range(8)])
+        U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
+        # test applied to wire 3, 1, 2
+        res = qml.operation.expand_matrix(U_toffoli, [3, 1, 2], [0, 1, 2, 3])
+        # change the control qubit on the Toffoli gate
+        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
+        expected = np.kron(I, U_toffoli[:, rows][rows])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # test applied to wire 3, 0, 2
+        res = qml.operation.expand_matrix(U_toffoli, [3, 0, 2], [0, 1, 2, 3])
+        # change the control qubit on the Toffoli gate
+        rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
+        expected = (
+            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            @ np.kron(I, U_toffoli[:, rows][rows])
+            @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_expand_matrix_usage_in_operator_class(self, tol):
+        """Tests that the method is used correctly by defining a dummy operator and
+        checking the permutation/expansion."""
+
+        base_matrix = np.array([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
+
+        permuted_matrix = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
+
+        expanded_matrix = np.array(
+            [
+                [1, 2, 0, 0, 3, 4, 0, 0],
+                [5, 6, 0, 0, 7, 8, 0, 0],
+                [0, 0, 1, 2, 0, 0, 3, 4],
+                [0, 0, 5, 6, 0, 0, 7, 8],
+                [9, 10, 0, 0, 11, 12, 0, 0],
+                [13, 14, 0, 0, 15, 16, 0, 0],
+                [0, 0, 9, 10, 0, 0, 11, 12],
+                [0, 0, 13, 14, 0, 0, 15, 16],
+            ]
+        )
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 2
+
+            def compute_matrix(*params, **hyperparams):
+                return base_matrix
+
+        op = DummyOp(wires=[0, 2])
+        assert np.allclose(op.get_matrix(), base_matrix, atol=tol)
+        assert np.allclose(op.get_matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
+        assert np.allclose(op.get_matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
+
+
+def test_docstring_example_of_operator_class(tol):
+    """Tests an example of how to create an operator which is used in the
+    Operator class docstring, as well as in the 'adding_operators'
+    page in the developer guide."""
+
+    import pennylane as qml
+
+    class FlipAndRotate(qml.operation.Operation):
+
+        num_wires = qml.operation.AnyWires
+        grad_method = "A"
+
+        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, do_queue=True, id=None):
+
+            if do_flip and wire_flip is None:
+                raise ValueError("Expected a wire to flip; got None.")
+
+            shape = qml.math.shape(angle)
+            if len(shape) > 1:
+                raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
+
+            self._hyperparameters = {"do_flip": do_flip}
+
+            all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
+            super().__init__(angle, wires=all_wires, do_queue=do_queue, id=id)
+
+        @property
+        def num_params(self):
+            return 1
+
+        @staticmethod
+        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+            op_list = []
+            if do_flip:
+                op_list.append(qml.PauliX(wires=wires[1]))
+            op_list.append(qml.RX(angle, wires=wires[0]))
+            return op_list
+
+        def adjoint(self):
+            return FlipAndRotate(
+                -self.parameters[0],
+                self.wires[0],
+                self.wires[1],
+                do_flip=self.hyperparameters["do_flip"],
+            )
+
+    dev = qml.device("default.qubit", wires=["q1", "q2", "q3"])
+
+    @qml.qnode(dev)
+    def circuit(angle):
+        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
+        return qml.expval(qml.PauliZ("q1"))
+
+    a = np.array(3.14)
+    res = circuit(a)
+    expected = -0.9999987318946099
+    assert np.allclose(res, expected, atol=tol)
+
+
+class TestDeprecationWarnings:
+    """Tests for various deprecation warnings"""
+
+    def test_matrix_deprecation(self):
+        """Test that the Operator.matrix property raises a deprecation warning"""
+        op = qml.RX(0.5, wires=0).inv()
+
+        with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
+            m1 = op.matrix
+
+        assert np.allclose(m1, op.get_matrix())
+        assert np.allclose(m1, qml.RX.compute_matrix(-0.5))
+
+    def test_matrix_tensor_deprecation(self):
+        """Test that the Tensor.matrix property raises a deprecation warning"""
+        op = qml.PauliZ(0) @ qml.PauliY(1)
+
+        with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
+            m1 = op.matrix
+
+        assert np.allclose(m1, op.get_matrix())
+
+    def test_eigvals_deprecation(self):
+        """Test that the Operator.eigvals property raises a deprecation warning"""
+        op = qml.RX(0.5, wires=0)
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())
+
+    def test_eigvals_observable_deprecation(self):
+        """Test that the Observable.eigvals property raises a deprecation warning"""
+        op = qml.PauliX(0)
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())
+
+    def test_eigvals_measurement_deprecation(self):
+        """Test that the MeasurementProcess.eigvals property raises a deprecation warning"""
+        op = qml.expval(qml.PauliX(0))
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())
+
+    def test_eigvals_tensor_deprecation(self):
+        """Test that the Tensor.matrix property raises a deprecation warning"""
+        op = qml.PauliZ(0) @ qml.PauliY(1)
+
+        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
+            m1 = op.eigvals
+
+        assert np.allclose(m1, op.get_eigvals())

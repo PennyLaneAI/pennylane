@@ -15,16 +15,20 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
+
+import copy
 import string
 from typing import Sequence, Tuple
 
 from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
+from pennylane import apply
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
+from pennylane.wires import Wires
 
 
 class MeasureNode(Operation):
@@ -285,6 +289,79 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
         communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2, wire))
 
     return subgraphs, communication_graph
+
+
+def _find_new_wire(wires: Wires) -> int:
+    """Finds a new wire label that is not in ``wires``."""
+    ctr = 0
+    while ctr in wires:
+        ctr += 1
+    return ctr
+
+
+# pylint: disable=protected-access
+def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+    """
+    Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
+
+    Each node in the graph should have an order attribute specifying the topological order of
+    the operations.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        graph (MultiDiGraph): directed multigraph to be converted to a tape
+
+    Returns:
+        QuantumTape: the quantum tape corresponding to the input graph
+
+    **Example**
+
+    Consider the following, where ``graph`` contains :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
+    We can find the circuit fragments by using:
+
+    .. code-block:: python
+
+        >>> subgraphs, communication_graph = qml.transforms.fragment_graph(graph)
+        >>> tapes = [qml.transforms.graph_to_tape(sg) for sg in subgraphs]
+        >>> tapes
+        [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
+         <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
+         <QuantumTape: wires=[1], params=0>]
+    """
+
+    wires = Wires.all_wires([n.wires for n in graph.nodes])
+
+    ordered_ops = sorted(
+        [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
+    )
+    wire_map = {w: w for w in wires}
+    reverse_wire_map = {v: k for k, v in wire_map.items()}
+
+    copy_ops = [copy.copy(op) for _, op in ordered_ops]
+
+    with QuantumTape() as tape:
+        for op in copy_ops:
+            new_wires = [wire_map[w] for w in op.wires]
+            op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
+            apply(op)
+
+            if isinstance(op, MeasureNode):
+                assert len(op.wires) == 1
+                measured_wire = op.wires[0]
+
+                new_wire = _find_new_wire(wires)
+                wires += new_wire
+
+                original_wire = reverse_wire_map[measured_wire]
+                wire_map[original_wire] = new_wire
+                reverse_wire_map[new_wire] = original_wire
+
+    return tape
 
 
 def _get_symbol(i):
