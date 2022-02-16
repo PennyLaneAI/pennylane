@@ -118,16 +118,16 @@ def make_mid_circuit_measurements_terminal(tape):
 def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
 
     with QuantumTape() as new_tape:
-        measured_wires = []
+        measured_wires = {}
         for op in tape.queue:
-            if any([wire in measured_wires for wire in op.wires]):
+            if any([wire in measured_wires.keys() for wire in op.values()]):
                 raise ValueError("cannot reuse measured wires.")
 
             if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-                measured_wires.append(op.wires[0])
+                measured_wires[op.measurement_id] = op.wires[0]
 
             elif op.__class__.__name__ == "_IfOp":
-                control = op.dependant_measurements
+                control = [measured_wires[m_id] for m_id in op.dependant_measurements]
                 flipped = [False] * len(control)
                 for branch, value in op.branches.items():
                     if value:
@@ -135,20 +135,20 @@ def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
                             if wire_val and flipped[i] or not wire_val and not flipped[i]:
                                 qml.PauliX(control[i])
                                 flipped[i] = not flipped[i]
-                        ctrl(lambda: apply(op.then_op), control=control)()
+                        ctrl(lambda: apply(op.then_op), control=Wires(control))()
                 for i, flip in enumerate(flipped):
                     if flip:
                         qml.PauliX(control[i])
 
             elif op.__class__.__name__ == "_ConditionOp":
-                control = op.dependant_measurements
+                control = [measured_wires[m_id] for m_id in op.dependant_measurements]
                 flipped = [False] * len(control)
                 for branch, branch_op in op.branches.items():
                     for i, wire_val in enumerate(branch):
                         if wire_val and flipped[i] or not wire_val and not flipped[i]:
                             qml.PauliX(control[i])
                             flipped[i] = not flipped[i]
-                    ctrl(lambda: apply(branch_op), control=control)()
+                    ctrl(lambda: apply(branch_op), control=Wires(control))()
                 for i, flip in enumerate(flipped):
                     if flip:
                         qml.PauliX(control[i])
