@@ -390,7 +390,13 @@ def expand_fragment_tapes(
     tape: QuantumTape,
 ) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
     """
-    Expands a fragment tape into a tape for each configuration.
+    Expands a fragment tape into a collection of tapes for each configuration of
+    :class:`MeasureNode` and :class:`PrepareNode` operations.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
 
     Args:
         tape (QuantumTape): the fragment tape to be expanded.
