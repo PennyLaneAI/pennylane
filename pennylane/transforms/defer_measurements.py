@@ -22,17 +22,25 @@ from pennylane.tape import QuantumTape
 @qfunc_transform
 def extend_qubits(tape):
 
+    measured_wires = []
+
     ops = []
     for op in tape.queue:
         ops.append(op)
 
     new_ops_reversed = []
     for op in reversed(ops):
+
+        if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
+            measured_wires.append(op.measured_wire)
+
         new_ops_reversed.append(op)
 
     with QuantumTape() as new_tape:
         for op in reversed(new_ops_reversed):
             apply(op)
+
+    return new_tape
 
 
 @qfunc_transform
