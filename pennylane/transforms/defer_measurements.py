@@ -21,8 +21,8 @@ from pennylane.tape import QuantumTape
 
 class Aux:
     """
-    A wire label for a new wire holding the state of the `self.base_wire` just before it was mid-circuit measured,
-    for the `self.count`th time.
+    A wire label for a wire holding the state of the `self.base_wire` just before it was mid-circuit measured,
+    for the `self.count` time.
     """
 
     def __init__(self, wire_or_aux, count=0):
@@ -54,8 +54,8 @@ class WireRemapper:
         self._altered_wires = set()
         self._measured_wires = {}
 
-    def mark_altered(self, w):
-        self._altered_wires.add(w)
+    def mark_altered(self, wire):
+        self._altered_wires.add(wire)
 
     def get_mapped(self, base_wire):
         assert not isinstance(base_wire, Aux)
