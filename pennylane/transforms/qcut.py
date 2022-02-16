@@ -440,7 +440,7 @@ def expand_fragment_tapes(
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
 
-    wire_map = {mn.wires.tolist()[0]: i for i, mn in enumerate(measure_nodes)}
+    wire_map = {mn.wires[0]: i for i, mn in enumerate(measure_nodes)}
 
     n_qubits = len(measure_nodes)
     if n_qubits >= 1:
