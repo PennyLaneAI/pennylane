@@ -442,19 +442,19 @@ def expand_fragment_tapes(
 
     wire_map = {mn.wires[0]: i for i, mn in enumerate(measure_nodes)}
 
-    n_qubits = len(measure_nodes)
-    if n_qubits >= 1:
+    n_meas = len(measure_nodes)
+    if n_meas >= 1:
         measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
     else:
         measure_combinations = [
             [""]
-        ]  # this helps `product()` give the desired effect in following loop
+        ]
 
     tapes = []
 
     for prepare_settings in product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes)):
         for measure_group in measure_combinations:
-            if n_qubits >= 1:
+            if n_meas >= 1:
                 group = [
                     string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group
                 ]
