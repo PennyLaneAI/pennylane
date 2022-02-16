@@ -24,7 +24,25 @@
 
   See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
   and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
-  for additional information.
+  for theoretical background information.
+
+* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
+  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
+  deprecation of the `charset` keyword, and minor cosmetic changes.
+  [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
+
+  ```
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(*w, wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
+  0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
+  1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
 
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
@@ -257,6 +275,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
+Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, 
 Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
+
