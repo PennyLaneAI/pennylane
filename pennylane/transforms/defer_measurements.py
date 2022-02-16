@@ -34,9 +34,11 @@ def extend_qubits(tape):
 
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
             if op.wires[0] not in measured_wires.keys():
-                measured_wires[op.wires[0]] = 1
+                measured_wires[op.wires[0]] = 0
             else:
-                measured_wires[op.wires[0]] += 1
+                wire = op.wires[0]
+                op._wires = Wires([("aux", wire, measured_wires[wire])])
+                measured_wires[wire] += 1
         else:
             for i, wire in enumerate(op.wires):
                 new_wires = []
