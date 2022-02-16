@@ -100,10 +100,10 @@ def dipole_integrals(mol, core=None, active=None):
 
         core_x, core_y, core_z = anp.array([0]), anp.array([0]), anp.array([0])
 
-        for i in range(len(mol.symbols)):  # nuclear contributions
-            core_x = core_x + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
-            core_y = core_y + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
-            core_z = core_z + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
+        # for i in range(len(mol.symbols)):  # nuclear contributions
+        #     core_x = core_x + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
+        #     core_y = core_y + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
+        #     core_z = core_z + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
 
         if core is None and active is None:
             return (core_x, core_y, core_z), (dx, dy, dz)
@@ -159,10 +159,28 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
         """
         f = []
         constants, integrals = dipole_integrals(mol, core, active)(*args)
-        constants = anp.negative(constants)
+        # constants = anp.negative(constants)
+
+        nuc_constant = [anp.array([0]), anp.array([0]), anp.array([0])]
+        for i in range(len(mol.symbols)):  # nuclear contributions
+            nuc_constant[0] = (
+                nuc_constant[0] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
+            )
+            nuc_constant[1] = (
+                nuc_constant[1] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
+            )
+            nuc_constant[2] = (
+                nuc_constant[2] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
+            )
 
         for i in range(3):
-            f.append(fermionic_one(constants[i], integrals[i], cutoff=cutoff))
+            # f.append(fermionic_one(constants[i], integrals[i], cutoff=cutoff))
+            f_coeffs, f_ops = fermionic_one(constants[i], integrals[i], cutoff=cutoff)
+
+            f_coeffs = anp.concatenate((nuc_constant[i], f_coeffs * (-1)))
+            f_ops = [[]] + f_ops
+
+            f.append((f_coeffs, f_ops))
 
         return f
 
@@ -212,7 +230,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
         d = []
         d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
-            d.append(qubit_operator(i, cutoff=cutoff) * (-1))
+            d.append(qubit_operator(i, cutoff=cutoff))
 
         return d
 
