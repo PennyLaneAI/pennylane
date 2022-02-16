@@ -78,11 +78,11 @@ class MeasurementDependantValue(Generic[T]):
 
     def __init__(
         self,
-        wire_id: str,
+        measurement_id: str,
         zero_case: Union["MeasurementDependantValue[T]", "_Value[T]"],
         one_case: Union["MeasurementDependantValue[T]", "_Value[T]"],
     ):
-        self._depends_on = wire_id
+        self._depends_on = measurement_id
         self._zero_case = zero_case
         self._one_case = one_case
 
@@ -142,7 +142,7 @@ class MeasurementDependantValue(Generic[T]):
         measurements = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append("if " + ",".join([f"wire_{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+            lines.append("if " + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
         return "\n".join(lines)
 
 
