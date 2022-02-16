@@ -515,3 +515,32 @@ class TestTemplateIntegration:
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
+
+
+def test_op_that_overwrites_expand():
+    """Tests the adjoint method applied on an operation that overwrites the expand method.
+
+    .. note::
+        This is a discontinued practice, since all operators should define their decomposition
+        in decomposition() or compute_decomposition(). Once the new standard is established
+        everywhere, we can remove the "if isinstance(new_ops, QuantumTape)" check in
+        the adjoint method.
+    """
+    dev = qml.device("default.qubit", wires=3)
+
+    class MyOp(qml.operation.Operation):
+        num_wires = 1
+
+        def expand(self):
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(0.1, wires=self.wires)
+            return tape
+
+    @qml.qnode(dev)
+    def circuit():
+        MyOp(wires=[0])
+        qml.adjoint(MyOp)(wires=[0])
+        return qml.state()
+
+    res = circuit()
+    assert len(np.nonzero(res)) == 1

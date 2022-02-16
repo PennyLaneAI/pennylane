@@ -215,52 +215,75 @@ class kUpCCGSD(Operation):
         if delta_sz not in [-1, 0, 1]:
             raise ValueError(f"Requires delta_sz to be one of ±1 or 0; got {delta_sz}.")
 
-        self.k = k
-
-        self.s_wires = generalized_singles(list(wires), delta_sz)
-        self.d_wires = generalized_pair_doubles(list(wires))
+        s_wires = generalized_singles(list(wires), delta_sz)
+        d_wires = generalized_pair_doubles(list(wires))
 
         shape = qml.math.shape(weights)
         if shape != (
             k,
-            len(self.s_wires) + len(self.d_wires),
+            len(s_wires) + len(d_wires),
         ):
             raise ValueError(
-                f"Weights tensor must be of shape {(k, len(self.s_wires) + len(self.d_wires),)}; got {shape}."
+                f"Weights tensor must be of shape {(k, len(s_wires) + len(d_wires),)}; got {shape}."
             )
 
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
-
+        init_state = qml.math.toarray(init_state)
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
-        self.init_state_flipped = np.flip(init_state)
-
+        self._hyperparameters = {
+            "init_state": init_state,
+            "s_wires": s_wires,
+            "d_wires": d_wires,
+            "k": k,
+        }
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, s_wires, d_wires, k, init_state
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            qml.BasisEmbedding(self.init_state_flipped, wires=self.wires)
-            weights = self.parameters[0]
 
-            for layer in range(self.k):
-                for i, (w1, w2) in enumerate(self.d_wires):
+
+        .. seealso:: :meth:`~.kUpCCGSD.decomposition`.
+
+        Args:
+            weights (tensor_like): tensor containing the parameters entering the Z rotation
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            k (int): number of times UpCCGSD unitary is repeated
+            s_wires (Iterable[Any]): single excitation wires
+            d_wires (Iterable[Any]): double excitation wires
+            init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+                HF state.
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        init_state_flipped = np.flip(init_state)
+        op_list = []
+
+        op_list.append(qml.BasisEmbedding(init_state_flipped, wires=wires))
+
+        for layer in range(k):
+            for i, (w1, w2) in enumerate(d_wires):
+                op_list.append(
                     qml.FermionicDoubleExcitation(
-                        weights[layer][len(self.s_wires) + i], wires1=w1, wires2=w2
+                        weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
                     )
+                )
 
-                for j, s_wires_ in enumerate(self.s_wires):
-                    qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
+            for j, s_wires_ in enumerate(s_wires):
+                op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
-        return tape
+        return op_list
 
     @staticmethod
     def shape(k, n_wires, delta_sz):
