@@ -341,7 +341,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     wire_map = {w: w for w in wires}
     reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    copy_ordered_ops = copy.deepcopy(ordered_ops)
+    copy_ordered_ops = copy.copy(ordered_ops)
 
     with QuantumTape() as tape:
         for _, op in copy_ordered_ops:
