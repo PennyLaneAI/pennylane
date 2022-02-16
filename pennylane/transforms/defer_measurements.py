@@ -17,7 +17,7 @@ from pennylane.wires import Wires
 import pennylane as qml
 from pennylane.transforms import qfunc_transform, ctrl
 from pennylane.queuing import apply
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, get_active_tape
 
 class Aux:
     """

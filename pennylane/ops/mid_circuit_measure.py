@@ -5,7 +5,7 @@ Mid-circuit measurements and associated operations.
 import functools
 
 from typing import Union, Any, TypeVar, Generic, Callable, Type
-
+import uuid
 from pennylane.operation import Operation
 
 def mid_measure(wire):
@@ -16,8 +16,9 @@ def mid_measure(wire):
 
         m0 = qml.Measure(0)
     """
-    _MidCircuitMeasure(wire)
-    return MeasurementDependantValue(wire, _Value(0), _Value(1))
+    measurement_id = uuid.uuid4()[:8]
+    _MidCircuitMeasure(wire, measurement_id)
+    return MeasurementDependantValue(measurement_id, _Value(0), _Value(1))
 
 
 class _MidCircuitMeasure(Operation):
@@ -27,7 +28,8 @@ class _MidCircuitMeasure(Operation):
 
     num_wires = 1
 
-    def __init__(self, wires):
+    def __init__(self, wires, measurement_id):
+        self.measurement_id = measurement_id
         super().__init__(wires=wires)
 
 
