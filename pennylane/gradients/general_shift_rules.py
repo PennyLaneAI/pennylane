@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 
 
-def _process_shifts(rule, tol=1e-10, no_duplicates=False):
+def process_shifts(rule, tol=1e-10, no_duplicates=False):
     """Utility function to process gradient rules.
 
     Args:
@@ -254,7 +254,7 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
         # array, with coefficients on the first row and shifts on the second row.
         rule = qml.math.stack(combined_rules).T
 
-    return _process_shifts(rule, tol=1e-10)
+    return process_shifts(rule, tol=1e-10)
 
 
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
@@ -312,7 +312,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     for f, s, o in zip(frequencies, shifts, orders):
         rule = generate_shift_rule(f, shifts=s, order=o)
-        rules.append(_process_shifts(rule).T)
+        rules.append(process_shifts(rule).T)
 
     combined_rules = []
 

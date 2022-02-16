@@ -23,7 +23,7 @@ import pennylane as qml
 
 from .gradient_transform import gradient_transform
 from .finite_difference import finite_diff, generate_shifted_tapes
-from .general_shift_rules import _process_shifts
+from .general_shift_rules import process_shifts
 
 
 NONINVOLUTORY_OBS = {
@@ -104,7 +104,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
 
         recipe = np.array(op.get_parameter_shift(p_idx, shift=use_shift)).T
 
-        return _process_shifts(recipe, no_duplicates=True)
+        return process_shifts(recipe, no_duplicates=True)
 
 
 def _gradient_analysis(tape, use_graph=True):
@@ -203,7 +203,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         arg_idx = argnum.index(idx)
         recipe = gradient_recipes[arg_idx]
         if recipe is not None:
-            recipe = _process_shifts(np.array(recipe).T)
+            recipe = process_shifts(np.array(recipe).T)
         else:
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
