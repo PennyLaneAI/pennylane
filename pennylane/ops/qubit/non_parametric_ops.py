@@ -1850,9 +1850,6 @@ class MultiControlledX(Operation):
     def control_wires(self):
         return self.wires[:~0]
 
-    def label(self, decimals=None, base_label=None):
-        return base_label or "X"
-
     def adjoint(self):
         return MultiControlledX(
             control_wires=self.wires[:-1],

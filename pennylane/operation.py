@@ -105,7 +105,6 @@ import numpy as np
 from numpy.linalg import multi_dot
 
 import pennylane as qml
-from pennylane import math as qmath
 from pennylane.wires import Wires
 
 from .utils import pauli_eigs
@@ -354,14 +353,14 @@ def classproperty(func):
 
 def _process_data(op):
 
-    # Use qmath.real to take the real part. We may get complex inputs for
+    # Use qml.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qml.state) requires complex typed inputs.
     if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
-        return str([qmath.round(qmath.real(d) % (2 * np.pi), 10) for d in op.data])
+        return str([qml.math.round(qml.math.real(d) % (2 * np.pi), 10) for d in op.data])
 
     if op.name in ("CRX", "CRY", "CRZ", "CRot"):
-        return str([qmath.round(qmath.real(d) % (4 * np.pi), 10) for d in op.data])
+        return str([qml.math.round(qml.math.real(d) % (4 * np.pi), 10) for d in op.data])
 
     return str(op.data)
 
@@ -857,7 +856,7 @@ class Operator(abc.ABC):
 
         params = self.parameters
 
-        if len(qmath.shape(params[0])) != 0:
+        if len(qml.math.shape(params[0])) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
             # this holds true for all current operations and templates
             if (
@@ -868,7 +867,9 @@ class Operator(abc.ABC):
                 return op_label
 
             for i, mat in enumerate(cache["matrices"]):
-                if qmath.shape(params[0]) == qmath.shape(mat) and qmath.allclose(params[0], mat):
+                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(
+                    params[0], mat
+                ):
                     return f"{op_label}(M{i})"
 
             # matrix not in cache
@@ -881,7 +882,7 @@ class Operator(abc.ABC):
 
         def _format(x):
             try:
-                return format(qmath.toarray(x), f".{decimals}f")
+                return format(qml.math.toarray(x), f".{decimals}f")
             except ValueError:
                 # If the parameter can't be displayed as a float
                 return format(x)
@@ -1332,7 +1333,7 @@ class Operation(Operator):
         op_eigvals = super().get_eigvals()
 
         if self.inverse:
-            return qmath.conj(op_eigvals)
+            return qml.math.conj(op_eigvals)
 
         return op_eigvals
 
@@ -2266,7 +2267,7 @@ class CVOperation(CV, Operation):
         Returns:
             array[float]: :math:`\tilde{U}`, the Heisenberg picture representation of the linear transformation
         """
-        p = [qmath.toarray(a) for a in self.parameters]
+        p = [qml.math.toarray(a) for a in self.parameters]
         if inverse:
             try:
                 # TODO: expand this for the new par domain class, for non-unitary matrices.
