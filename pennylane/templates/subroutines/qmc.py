@@ -344,7 +344,7 @@ class QuantumMonteCarlo(Operation):
             )
 
         self._target_wires = target_wires
-        
+
         target_wires = list(target_wires)
         estimation_wires = list(estimation_wires)
         wires = target_wires + estimation_wires

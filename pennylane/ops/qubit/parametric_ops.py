@@ -472,7 +472,7 @@ class ControlledPhaseShift(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-    
+
     is_controlled = "PhaseShift"
     basis = "Z"
     grad_method = "A"
@@ -1218,7 +1218,7 @@ class CRX(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
-    
+
     is_controlled = "RX"
     basis = "X"
     grad_method = "A"
@@ -1691,7 +1691,7 @@ class CRot(Operation):
     num_wires = 2
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
-    
+
     is_controlled = "Rot"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
