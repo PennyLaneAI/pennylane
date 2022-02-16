@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import Hadamard, Identity, PauliX, PauliY, PauliZ, S, apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import AnyWires, Expectation, Operation, Operator, Tensor
+from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape, stop_recording
 from pennylane.wires import Wires
