@@ -20,6 +20,10 @@ from pennylane.queuing import apply
 from pennylane.tape import QuantumTape
 
 class Aux:
+    """
+    A wire label for a new wire holding the state of the `self.base_wire` just before it was mid-circuit measured,
+    for the `self.count`th time.
+    """
 
     def __init__(self, wire_or_aux, count=0):
         if isinstance(wire_or_aux, Aux):
@@ -72,7 +76,7 @@ class WireRemapper:
                 self._measured_wires[base_wire] = 0
                 return Aux(base_wire)
             else:
-                self._altered_wires.add(base_wire)
+                # self._altered_wires.add(base_wire)  # not sure if this should be here?
                 return base_wire
         else:
             if Aux(base_wire, self._measured_wires[base_wire]) in self._altered_wires:
@@ -81,7 +85,7 @@ class WireRemapper:
 
 
 
-def mid_circuit_measurements_are_terminal(tape):
+def make_mid_circuit_measurements_terminal(tape):
 
     ops = []
     for op in tape.queue:
@@ -94,7 +98,7 @@ def mid_circuit_measurements_are_terminal(tape):
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
             wire = op.wires[0]
             mapped_wire = wr.mark_measured_and_get_mapped(wire)
-            op._wires = Wires[mapped_wire]
+            op._wires = Wires([mapped_wire])
         else:
             new_wires = []
             for wire in op.wires:
@@ -110,7 +114,7 @@ def mid_circuit_measurements_are_terminal(tape):
     return new_tape
 
 
-def defer_measurements_on_terminal_tape(tape):
+def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
 
     with QuantumTape() as new_tape:
         measured_wires = []
@@ -155,6 +159,6 @@ def defer_measurements_on_terminal_tape(tape):
 
 @qfunc_transform
 def defer_measurements(tape):
-    tape = mid_circuit_measurements_are_terminal(tape)
-    tape = defer_measurements_on_terminal_tape(tape)
+    tape = make_mid_circuit_measurements_terminal(tape)
+    tape = defer_measurements_on_mid_circuit_measured_terminal_tape(tape)
     return tape
