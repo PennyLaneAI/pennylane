@@ -136,6 +136,6 @@ def simple_defer_measurements(tape):
 
 @qfunc_transform
 def defer_measurements(tape):
-    new_tape = mid_circuit_measurements_are_terminal(tape)
-    second_tape = simple_defer_measurements(new_tape)
-    return second_tape
+    tape = mid_circuit_measurements_are_terminal(tape)
+    tape = simple_defer_measurements(tape)
+    return tape
