@@ -14,11 +14,11 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import numpy as np
+
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.wires import Wires
-
-import numpy as np
 
 try:
     import jax.numpy as jnp

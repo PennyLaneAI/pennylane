@@ -23,10 +23,10 @@ from math import cos, sin, sqrt
 
 import pytest
 import numpy as np
-import pennylane as qml
-
 from scipy.linalg import block_diag
 from flaky import flaky
+
+import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
