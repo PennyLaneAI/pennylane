@@ -971,6 +971,31 @@ class TestGraphToTape:
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
 
+    def test_multiple_conversions(self):
+        """
+        Tests that the orignial tape is unaffected by cutting pipeline and can
+        be used multiple times to give consitent output.
+        """
+        # preserve orignal tape data for later comparison
+        copy_tape = copy.copy(mcm_tape)
+
+        g1 = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g1)
+        subgraphs1, communication_graph1 = qcut.fragment_graph(g1)
+
+        tapes1 = [qcut.graph_to_tape(sg) for sg in subgraphs1]
+
+        g2 = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g2)
+        subgraphs2, communication_graph2 = qcut.fragment_graph(g2)
+
+        tapes2 = [qcut.graph_to_tape(sg) for sg in subgraphs2]
+
+        compare_tapes(copy_tape, mcm_tape)
+
+        for tape1, tape2 in zip(tapes1, tapes2):
+            compare_tapes(tape1, tape2)
+
             
 class TestExpandFragmentTapes:
     """
@@ -1003,7 +1028,7 @@ class TestExpandFragmentTapes:
         frag_tapes_meas = fragment_configurations[0][0]
         frag_tapes_prep = fragment_configurations[1][0]
 
-        assert len(frag_tapes_meas) == 4
+        assert len(frag_tapes_meas) == 3
         assert len(frag_tapes_prep) == 4
 
         frag_meas_ops = [
@@ -1018,23 +1043,24 @@ class TestExpandFragmentTapes:
             for op in frag_meas_ops:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
+
+        # with qml.tape.QuantumTape() as tape_01:
+        #     for op in frag_meas_ops:
+        #         qml.apply(op)
+        #     qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_01:
             for op in frag_meas_ops:
                 qml.apply(op)
-            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_02:
             for op in frag_meas_ops:
                 qml.apply(op)
-            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
-
-        with qml.tape.QuantumTape() as tape_03:
-            for op in frag_meas_ops:
-                qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
 
-        frag_meas_expected_tapes = [tape_00, tape_01, tape_02, tape_03]
+        frag_meas_expected_tapes = [tape_00, tape_01, tape_02]
 
         frag_prep_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
 
@@ -1070,32 +1096,26 @@ class TestExpandFragmentTapes:
 
         for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
             compare_tapes(tape_prep, exp_tape_1)
-
-    def test_multiple_conversions(self):
+            
+    def test_multi_qubit_expansion(self):
         """
-        Tests that the orignial tape is unaffected by cutting pipeline and can
-        be used multiple times to give consitent output.
+        Tests that a circuit with multiple MeasureNodes on a single wire gives
+        the correct expansion
         """
-        # preserve orignal tape data for later comparison
-        copy_tape = copy.copy(mcm_tape)
+        
+        g = qcut.tape_to_graph(mcm_tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+        # This gives 2 fragment tapes and each contains 2 MeasureNode and 
+        # PrepareNode pairs. This gives 2*2*16 = 64 measurement combinations. 
+        # Since there are 4 preparations stares for each we thus have 64*4 = 256
+        # tapes in total. 
+        fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+        
+        import pdb; pdb.set_trace()
 
-        g1 = qcut.tape_to_graph(mcm_tape)
-        qcut.replace_wire_cut_nodes(g1)
-        subgraphs1, communication_graph1 = qcut.fragment_graph(g1)
-
-        tapes1 = [qcut.graph_to_tape(sg) for sg in subgraphs1]
-
-        g2 = qcut.tape_to_graph(mcm_tape)
-        qcut.replace_wire_cut_nodes(g2)
-        subgraphs2, communication_graph2 = qcut.fragment_graph(g2)
-
-        tapes2 = [qcut.graph_to_tape(sg) for sg in subgraphs2]
-
-        compare_tapes(copy_tape, mcm_tape)
-
-        for tape1, tape2 in zip(tapes1, tapes2):
-            compare_tapes(tape1, tape2)
-
+        
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""

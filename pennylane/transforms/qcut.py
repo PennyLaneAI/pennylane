@@ -444,8 +444,9 @@ def expand_fragment_tapes(
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
     wire_map = {mn.wires.tolist()[0]: i for i, mn in enumerate(measure_nodes)}
-
-    prepare_combinations = product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes))
+    # wire_map = [{mn.wires.tolist()[0]: 0} for mn in measure_nodes]
+        
+    # prepare_combinations = product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes))
     # pauli_group_strs = partition_pauli_group(len(measure_nodes))
     # measure_combinations = [string_to_pauli_word(obs) for comb in pauli_group_strs for obs in comb]
     n_qubits = len(measure_nodes)
@@ -457,19 +458,22 @@ def expand_fragment_tapes(
     # MEASURE_SETTINGS = [meas_map[x] for b in pauli_group_strs for x in b]
     # measure_combinations = product(range(len(MEASURE_SETTINGS)), repeat=len(measure_nodes))
     tapes = []
-    # if measure_nodes == []:
-    #     import pdb; pdb.set_trace()
+
     for measure_group in measure_combinations:
         prepare_combinations = product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes))
-        for prepare_settings, measure_settings in product(prepare_combinations, measure_group):
+        if any(isinstance(e, str) for e in measure_group):
+            group = [string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group]
+        else:
+            group = []
+        for prepare_settings, measure_settings in product(prepare_combinations, [measure_group]):
             prepare_mapping = {n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)}
 
-            comb_ops = [
-                string_to_pauli_word(obs, wire_map=wire_map)
-                for comb in measure_settings
-                for obs in comb
-            ]
-            measure_mapping = {n: s for n, s in zip(measure_nodes, comb_ops)}
+            # if any(isinstance(e, str) for e in measure_settings):
+            #     comb_ops = [string_to_pauli_word(obs, wire_map=wire_map[i]) for i, obs in enumerate(measure_settings)]
+            # else: 
+            #     comb_ops = []
+            
+            # measure_mapping = {n: s for n, s in zip(measure_nodes, comb_ops)}
             meas = []
 
             with QuantumTape() as tape_:
@@ -482,46 +486,45 @@ def expand_fragment_tapes(
                     else:
                         apply(op)
 
-                with stop_recording():
-                    tens_ops = []
-                    for op in meas:
-                        meas_op = measure_mapping[op]
-                        tens_ops.append(meas_op)
-
-                    op_tensor = Tensor(*tens_ops)
-
-                if len(tape.measurements) > 0:
-                    for m in tape.measurements:
-                        if m.return_type is not Expectation:
-                            raise ValueError("Only expectation values supported for now")
-                        with stop_recording():
-                            m_obs = obs_map[m.obs.name](wires=m.obs.wires)
-                            if isinstance(m_obs, Tensor):
-                                terms = m_obs.obs
-                                for t in terms:
-                                    if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
+                for meas_op in group:
+                    with stop_recording():
+                        tens_ops = [meas_op]
+                        # for op in meas:
+                        #     tens_ops.append(meas_op)
+                        op_tensor = Tensor(*tens_ops)
+                    
+                    if len(tape.measurements) > 0:
+                        for m in tape.measurements:
+                            if m.return_type is not Expectation:
+                                raise ValueError("Only expectation values supported for now")
+                            with stop_recording():
+                                m_obs = obs_map[m.obs.name](wires=m.obs.wires)
+                                if isinstance(m_obs, Tensor):
+                                    terms = m_obs.obs
+                                    for t in terms:
+                                        if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
+                                            raise ValueError("Only tensor products of Paulis for now")
+                                    op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
+                                    m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
+                                    all_wires = sorted(op_tensor_wires + m_obs_wires)
+                                    all_terms = [t[1] for t in all_wires]
+                                    full_tensor = Tensor(*all_terms)
+                                else:
+                                    if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
                                         raise ValueError("Only tensor products of Paulis for now")
-                                op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
-                                m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
-                                all_wires = sorted(op_tensor_wires + m_obs_wires)
-                                all_terms = [t[1] for t in all_wires]
-                                full_tensor = Tensor(*all_terms)
-                            else:
-                                if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
-                                    raise ValueError("Only tensor products of Paulis for now")
 
-                                op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
-                                m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
-                                all_wires = sorted(op_tensor_wires + m_obs_wires)
-                                all_terms = [t[1] for t in all_wires]
-                                full_tensor = Tensor(*all_terms)
-                        expval(full_tensor)
-                elif len(op_tensor.name) > 0:
-                    expval(op_tensor)
-                else:
-                    expval(Identity(tape.wires[0]))
+                                    op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
+                                    m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
+                                    all_wires = sorted(op_tensor_wires + m_obs_wires)
+                                    all_terms = [t[1] for t in all_wires]
+                                    full_tensor = Tensor(*all_terms)
+                            expval(full_tensor)
+                    elif len(op_tensor.name) > 0:
+                        expval(op_tensor)
+                    else:
+                        expval(Identity(tape.wires[0]))
 
-            tapes.append(tape_)
+                tapes.append(tape_)
 
     return tapes, prepare_nodes, measure_nodes
 
