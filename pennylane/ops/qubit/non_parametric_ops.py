@@ -1790,9 +1790,9 @@ class MultiControlledX(Operation):
 
         super().__init__(wires=total_wires, do_queue=do_queue)
 
-  def label(self, decimals=None, base_label=None, cache=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
-        
+
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(

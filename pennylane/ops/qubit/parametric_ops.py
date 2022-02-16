@@ -1677,7 +1677,7 @@ class CRot(Operation):
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
-    
+
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 

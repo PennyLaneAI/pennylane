@@ -877,10 +877,10 @@ class FockState(CVOperation):
     num_wires = 1
     grad_method = None
 
-def __init__(self, n, wires, do_queue=True, id=None):
+    def __init__(self, n, wires, do_queue=True, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
-def label(self, decimals=None, base_label=None, cache=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
@@ -1403,7 +1403,6 @@ class FockStateProjector(CVObservable):
 
     grad_method = None
     ev_order = None
-
 
     def __init__(self, n, wires, do_queue=True, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
