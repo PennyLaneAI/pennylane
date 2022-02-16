@@ -16,8 +16,8 @@ This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
 import copy
-import string
 import itertools
+import string
 from itertools import product
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -439,41 +439,34 @@ def expand_fragment_tapes(
 
     """
     obs_map = {"Identity": Identity, "PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
-    # meas_map = {"I": Identity, "X": PauliX, "Y": PauliY, "Z": PauliZ}
 
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
+
     wire_map = {mn.wires.tolist()[0]: i for i, mn in enumerate(measure_nodes)}
-    # wire_map = [{mn.wires.tolist()[0]: 0} for mn in measure_nodes]
-        
-    # prepare_combinations = product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes))
-    # pauli_group_strs = partition_pauli_group(len(measure_nodes))
-    # measure_combinations = [string_to_pauli_word(obs) for comb in pauli_group_strs for obs in comb]
+
     n_qubits = len(measure_nodes)
     if n_qubits >= 1:
         measure_combinations = partition_pauli_group(len(measure_nodes))
     else:
-        measure_combinations = [((),)] # this helps `product()` give the desired effect in following loop
-        # measure_combinations = product(range(len(prepare_nodes)), repeat=len(measure_nodes))
-    # MEASURE_SETTINGS = [meas_map[x] for b in pauli_group_strs for x in b]
-    # measure_combinations = product(range(len(MEASURE_SETTINGS)), repeat=len(measure_nodes))
+        measure_combinations = [
+            [""]
+        ]  # this helps `product()` give the desired effect in following loop
+
     tapes = []
 
-    for measure_group in measure_combinations:
-        prepare_combinations = product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes))
-        if any(isinstance(e, str) for e in measure_group):
-            group = [string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group]
-        else:
-            group = []
-        for prepare_settings, measure_settings in product(prepare_combinations, [measure_group]):
-            prepare_mapping = {n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)}
+    for prepare_settings in product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes)):
+        for measure_group in measure_combinations:
+            if n_qubits >= 1:
+                group = [
+                    string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group
+                ]
+            else:
+                group = []
 
-            # if any(isinstance(e, str) for e in measure_settings):
-            #     comb_ops = [string_to_pauli_word(obs, wire_map=wire_map[i]) for i, obs in enumerate(measure_settings)]
-            # else: 
-            #     comb_ops = []
-            
-            # measure_mapping = {n: s for n, s in zip(measure_nodes, comb_ops)}
+            prepare_mapping = {
+                n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+            }
             meas = []
 
             with QuantumTape() as tape_:
@@ -488,11 +481,8 @@ def expand_fragment_tapes(
 
                 for meas_op in group:
                     with stop_recording():
-                        tens_ops = [meas_op]
-                        # for op in meas:
-                        #     tens_ops.append(meas_op)
-                        op_tensor = Tensor(*tens_ops)
-                    
+                        op_tensor = Tensor(meas_op)
+
                     if len(tape.measurements) > 0:
                         for m in tape.measurements:
                             if m.return_type is not Expectation:
@@ -503,8 +493,12 @@ def expand_fragment_tapes(
                                     terms = m_obs.obs
                                     for t in terms:
                                         if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
-                                            raise ValueError("Only tensor products of Paulis for now")
-                                    op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
+                                            raise ValueError(
+                                                "Only tensor products of Paulis for now"
+                                            )
+                                    op_tensor_wires = [
+                                        (t.wires.tolist()[0], t) for t in op_tensor.obs
+                                    ]
                                     m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
                                     all_wires = sorted(op_tensor_wires + m_obs_wires)
                                     all_terms = [t[1] for t in all_wires]
@@ -513,7 +507,9 @@ def expand_fragment_tapes(
                                     if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
                                         raise ValueError("Only tensor products of Paulis for now")
 
-                                    op_tensor_wires = [(t.wires.tolist()[0], t) for t in op_tensor.obs]
+                                    op_tensor_wires = [
+                                        (t.wires.tolist()[0], t) for t in op_tensor.obs
+                                    ]
                                     m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
                                     all_wires = sorted(op_tensor_wires + m_obs_wires)
                                     all_terms = [t[1] for t in all_wires]
@@ -612,6 +608,7 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
 
     return groups
 
+
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""
@@ -682,7 +679,7 @@ def contract_tensors(
 
     We first set up the tensors and their corresponding :class:`~.PrepareNode` and
     :class:`~.MeasureNode` orderings:
-    
+
         import networkx as nx
         import numpy as np
 

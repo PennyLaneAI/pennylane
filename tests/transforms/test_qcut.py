@@ -122,6 +122,17 @@ def compare_tapes(tape, expected_tape):
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
 
+def compare_measurements(meas1, meas2):
+    """
+    Helper function to compare measurements
+    """
+    assert meas1.return_type.name == meas2.return_type.name
+    obs1 = meas1.obs
+    obs2 = meas2.obs
+    assert np.array(obs1.name == obs2.name).all()
+    assert obs1.wires.tolist() == obs2.wires.tolist()
+
+
 class TestTapeToGraph:
     """
     Tests conversion of tapes to graph representations that are amenable to
@@ -996,7 +1007,7 @@ class TestGraphToTape:
         for tape1, tape2 in zip(tapes1, tapes2):
             compare_tapes(tape1, tape2)
 
-            
+
 class TestExpandFragmentTapes:
     """
     Tests that fragment tapes are correctly expanded to all configurations
@@ -1023,7 +1034,7 @@ class TestExpandFragmentTapes:
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-        
+
         fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
         frag_tapes_meas = fragment_configurations[0][0]
         frag_tapes_prep = fragment_configurations[1][0]
@@ -1044,11 +1055,6 @@ class TestExpandFragmentTapes:
                 qml.apply(op)
             qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
             qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
-
-        # with qml.tape.QuantumTape() as tape_01:
-        #     for op in frag_meas_ops:
-        #         qml.apply(op)
-        #     qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
 
         with qml.tape.QuantumTape() as tape_01:
             for op in frag_meas_ops:
@@ -1096,26 +1102,75 @@ class TestExpandFragmentTapes:
 
         for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
             compare_tapes(tape_prep, exp_tape_1)
-            
+
     def test_multi_qubit_expansion(self):
         """
         Tests that a circuit with multiple MeasureNodes on a single wire gives
         the correct expansion
         """
-        
+
         g = qcut.tape_to_graph(mcm_tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-        # This gives 2 fragment tapes and each contains 2 MeasureNode and 
-        # PrepareNode pairs. This gives 2*2*16 = 64 measurement combinations. 
-        # Since there are 4 preparations stares for each we thus have 64*4 = 256
-        # tapes in total. 
+        # Here we have 2 fragment tapes, each containing 2 MeasureNode and
+        # PrepareNode pairs. This give 3**2 = 9 groups of Pauli measurements
+        # and 4**2 = 16 preparations and thus 9*16 = 144 tapes per fragment.
         fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
-        
-        import pdb; pdb.set_trace()
 
-        
+        for fragment in fragment_configurations:
+            assert len(fragment[0]) == 144
+
+        # expected_pauli_strings = [
+        #     ["II", "IZ", "ZI", "ZZ"],
+        #     ["IX", "ZX"],
+        #     ["IY", "ZY"],
+        #     ["XI", "XZ"],
+        #     ["XX"],
+        #     ["XY"],
+        #     ["YI", "YZ"],
+        #     ["YX"],
+        #     ["YY"],
+        # ]
+
+        frag_1_tapes = fragment_configurations[0][0]
+        frag_2_tapes = fragment_configurations[0][0]
+
+        expected_meas = [
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2])),
+            ],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[2])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2])),
+            ],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2])),
+            ],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2])),
+            ],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]))],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]))],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2])),
+            ],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]))],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]))],
+        ]
+
+        # import pdb; pdb.set_trace()
+        # for exp_i, i in product(range(len(expected_obs)), range(16)):
+        #     exp_meas = expected_meas[exp_i]
+        #     for _ in range(i):
+        #         measurements = measurements
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
@@ -1326,4 +1381,3 @@ class TestContractTensors:
 
         assert eqn == expected_eqn
         assert np.allclose(res, np.einsum(eqn, *t))
-
