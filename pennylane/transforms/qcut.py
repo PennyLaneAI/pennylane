@@ -20,8 +20,9 @@ import copy
 import string
 from typing import Sequence, Tuple
 
-import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
+
+import pennylane as qml
 from pennylane import apply
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Operation, Operator, Tensor

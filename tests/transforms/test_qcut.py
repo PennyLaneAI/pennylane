@@ -17,9 +17,10 @@ import copy
 import string
 import sys
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
