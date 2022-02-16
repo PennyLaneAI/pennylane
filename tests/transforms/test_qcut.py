@@ -910,68 +910,6 @@ class TestGraphToTape:
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
 
-    def test_non_unique_node_order(self):
-        """
-        Tests a fragment graph which contains operation nodes whose `order`
-        attribute is non-unique is correctly converted to tape
-        """
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires="a")
-            qml.WireCut(wires=[0, "a"])
-            qml.CNOT(wires=[0, "a"])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires="a")
-            qml.WireCut(wires="a")
-            qml.CNOT(wires=["a", 2])
-            qml.RX(0.432, wires="a")
-            qml.WireCut(wires=2)
-            qml.CNOT(wires=[2, 3])
-            qml.RY(0.543, wires=2)
-            qml.RZ(0.876, wires=3)
-            qml.expval(qml.PauliZ(wires=[0]))
-
-        g = qcut.tape_to_graph(tape)
-        qcut.replace_wire_cut_nodes(g)
-        subgraphs, communication_graph = qcut.fragment_graph(g)
-
-        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-
-        with qml.tape.QuantumTape() as tape_0:
-            qml.RX(0.432, wires=[0])
-            qcut.MeasureNode(wires=[0])
-
-        with qml.tape.QuantumTape() as tape_1:
-            qml.RY(0.543, wires=["a"])
-            qcut.MeasureNode(wires=["a"])
-
-        with qml.tape.QuantumTape() as tape_2:
-            qcut.PrepareNode(wires=[0])
-            qcut.PrepareNode(wires=["a"])
-            qml.CNOT(wires=[0, "a"])
-            qml.RZ(0.24, wires=[0])
-            qml.RZ(0.133, wires=["a"])
-            qcut.MeasureNode(wires=["a"])
-            qml.expval(qml.PauliZ(wires=[0]))
-
-        with qml.tape.QuantumTape() as tape_3:
-            qcut.PrepareNode(wires=["a"])
-            qml.CNOT(wires=["a", 2])
-            qml.RX(0.432, wires=["a"])
-            qcut.MeasureNode(wires=[2])
-
-        with qml.tape.QuantumTape() as tape_4:
-            qcut.PrepareNode(wires=[2])
-            qml.CNOT(wires=[2, 3])
-            qml.RY(0.543, wires=[2])
-            qml.RZ(0.876, wires=[3])
-
-        expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
-
-        for tape, expected_tape in zip(tapes, expected_tapes):
-            compare_tapes(tape, expected_tape)
-
     def test_multiple_conversions(self):
         """
         Tests that the original tape is unaffected by cutting pipeline and can
