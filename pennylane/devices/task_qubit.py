@@ -26,7 +26,6 @@ from .._version import __version__
 try:
     import dask
     from dask.distributed import worker_client, performance_report
-    import dask
 
     # Ensure tasks are scheduled on processes rather than threads
     dask.config.set(scheduler="processes")
@@ -80,7 +79,7 @@ class TaskQubit(DefaultQubit):
 
     **Short name:** ``task.qubit``
 
-    This device provides a pure-state qubit simulator wrapping both ``"default.qubit"`` and ``"lightning.qubit"``,
+    This device provides a pure-state qubit simulator wrapping both ``default.qubit`` and ``lightning.qubit``,
     and written to allow batched offloading to a Dask scheduler. The ``task.qubit`` device works with the Autograd,
     TensorFlow, PyTorch and (non-JIT) JAX interfaces. Currently, support exists for both parameter-shift and
     backpropagation differentation methods; adjoint support is not currently enabled.
@@ -99,7 +98,8 @@ class TaskQubit(DefaultQubit):
             to a result. This allows building of dependent workflows, but currently only works with
             explicit calls to `device.batch_execute` with a PennyLane native device type such as
             (`default.qubit`, `lightning.qubit`).
-        gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance report based on the tasks that were run.
+        gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance
+            report based on the tasks that were run.
 
     **Example**
 
@@ -134,8 +134,8 @@ class TaskQubit(DefaultQubit):
     >>> print(qml.taskify(f_submit)(weights))
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
 
-    For self-encapsulated workflows, the task-based `:func:`qml.taskify <pennylane.taskify>` command can also be employed, which will allow automatic offloading using the
-    batch execute support in PennyLane devices. As an example:
+    For self-encapsulated workflows, the task-based `:func:`qml.taskify <pennylane.taskify>` command can also be employed,
+    which will allow automatic offloading using the batch execute support in PennyLane devices. As an example:
 
     .. code-block:: python3
 
@@ -212,7 +212,7 @@ class TaskQubit(DefaultQubit):
     * Simply evaluating multiple circuits using the `batch_execute` pipeline for forward mode.
     * Allowing circuit executions that spawn multiple additional tapes to the `batch_execute` pipeline (such as parameter-shift).
     * Gradient methods such as backprop becomes trickier: in this instance, we are simply queueing the entire end-to-end pipeline on the worker in a data-parallel manner. There is no automatic inherent distribution in this instance, as we are simply relying on the task-based executor to run our job on the available workers.
-    * For mixed client-worker computations, validated depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit the a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the data locality rules of the Dask.distributed runtime http://distributed.dask.org/en/stable/locality.html
+    * For mixed client-worker computations, validated depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the data locality rules of the Dask.distributed runtime http://distributed.dask.org/en/stable/locality.html
 
     """
 
@@ -316,6 +316,11 @@ class TaskQubit(DefaultQubit):
                                 circuit,
                             )
                         )
+
+                    if self._future:
+                        return results
+                    res = client.gather(results)
+
             except Exception:  # pylint: disable=bare-except
                 client = dask.distributed.get_client()
                 for circuit in circuits:
@@ -328,14 +333,10 @@ class TaskQubit(DefaultQubit):
                         )
                     )
 
-            if self._future:
-                return results
-            try:
-                with worker_client() as client:
-                    res = client.gather(results)
-            except Exception:  # pylint: disable=bare-except
-                client = dask.distributed.get_client()
+                if self._future:
+                    return results
                 res = client.gather(results)
+
             return res
 
     @ProxyHybridMethod
@@ -396,7 +397,7 @@ class TaskQubit(DefaultQubit):
 
 def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
     """
-    Returns a proxy-qubit device with the device argument as the intiantiable backend.
+    Returns a proxy-qubit device with the device argument as the initiateable backend.
 
     >>> d_dev = qml.device("default.qubit", wires=["a","b",2])
     >>> t_dev = qml.taskify_dev(dev)
