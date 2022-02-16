@@ -45,7 +45,6 @@
     >>> print(qml.untaskify(results)())
     [<tf.Tensor: shape=(3,), dtype=float64, numpy=array([0., 0., 0.])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.16661672, -0.07170375, -0.00387164])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([ 0.94292007, -0.14209482, -0.0072056 ])>]
   ```
-  [(#1866)](https://github.com/PennyLaneAI/pennylane/pull/1866)
 
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 

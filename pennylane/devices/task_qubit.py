@@ -306,7 +306,6 @@ class TaskQubit(DefaultQubit):
         with cm:
             results = []
             try:
-                # get client for this thread
                 with worker_client() as client:
                     for circuit in circuits:
                         results.append(
@@ -317,8 +316,7 @@ class TaskQubit(DefaultQubit):
                                 circuit,
                             )
                         )
-            except:  # pylint: disable=bare-except
-                # get the worker currently running this task
+            except Exception:  # pylint: disable=bare-except
                 client = dask.distributed.get_client()
                 for circuit in circuits:
                     results.append(
@@ -335,7 +333,7 @@ class TaskQubit(DefaultQubit):
             try:
                 with worker_client() as client:
                     res = client.gather(results)
-            except:  # pylint: disable=bare-except
+            except Exception:  # pylint: disable=bare-except
                 client = dask.distributed.get_client()
                 res = client.gather(results)
             return res
