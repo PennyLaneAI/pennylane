@@ -42,10 +42,10 @@ class Aux:
         return False
 
     def __str__(self):
-        return f"Aux({self.base_wire},{self.count})"
+        return f"Aux({repr(self.base_wire)},{repr(self.count)})"
 
     def __repr__(self):
-        return f"Aux({self.base_wire},{self.count})"
+        return f"Aux({repr(self.base_wire)},{repr(self.count)})"
 
 
 class WireRemapper:
@@ -94,7 +94,7 @@ def make_mid_circuit_measurements_terminal(tape):
     wr = WireRemapper()
     new_ops_reversed = []
     for op in reversed(ops):
-
+        # need to work in the reverse direction for this tape transform
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
             wire = op.wires[0]
             mapped_wire = wr.mark_measured_and_get_mapped(wire)
@@ -107,6 +107,7 @@ def make_mid_circuit_measurements_terminal(tape):
 
         new_ops_reversed.append(op)
 
+    # reverse the tape back to original form
     with QuantumTape() as new_tape:
         for op in reversed(new_ops_reversed):
             apply(op)
