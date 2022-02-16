@@ -120,6 +120,8 @@ def test_instance_vs_class_method(dask_setup_teardown):
         "is_proxy": True,
     }
     dev_task = qml.device("task.qubit", wires=1, backend="default.qubit.tf")
+
     assert qml.devices.task_qubit.TaskQubit.capabilities() == expected_cap_cls
     assert dev_task.capabilities() == expected_cap_instance
     assert dev_task.capabilities() != qml.devices.task_qubit.TaskQubit.capabilities()
+    client.close()

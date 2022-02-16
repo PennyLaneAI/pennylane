@@ -358,7 +358,7 @@ class TaskQubit(DefaultQubit):
         return capabilities
 
     @capabilities.instancemethod
-    def capabilities(self):
+    def capabilities(self):  # pragma: no cover
         return self._backend_cls.capabilities()
 
     @staticmethod
@@ -372,7 +372,8 @@ class TaskQubit(DefaultQubit):
         return dev.execute(circuit)
 
     def execute(self, circuit, **kwargs):
-        self.batch_execute([circuit])
+        res = self.batch_execute([circuit])
+        return res[0] if len(res) == 1 else None
 
     @staticmethod
     def _str_dynamic(base_dev, **kwargs):

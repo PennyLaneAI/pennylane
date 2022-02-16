@@ -15,10 +15,8 @@
 Tests for the accessibility of the Task-Qubit device
 """
 import pennylane as qml
-import numpy as np
 import pytest
-import os
-from pennylane.devices.task_qubit import TaskQubit, ProxyHybridMethod
+from pennylane.devices.task_qubit import ProxyHybridMethod
 from pathlib import Path
 
 dist = pytest.importorskip("dask.distributed")
@@ -37,9 +35,30 @@ def test_unsupported_backend(dask_setup_teardown, BACKEND, tol=1e-5):
     client = dist.Client(address=dask_setup_teardown)
 
     with pytest.raises(qml.DeviceError) as excinfo:
-        dev_task = qml.device("task.qubit", wires=wires, backend=BACKEND)
+        qml.device("task.qubit", wires=wires, backend=BACKEND)
 
+    client.close()
     assert "Unsupported device backend" in str(excinfo.value)
+
+
+def test_defines_correct_capabilities():
+    """Test that the device defines the right capabilities"""
+
+    cap = qml.devices.task_qubit.TaskQubit.capabilities()
+    capabilities = {
+        "model": "qubit",
+        "supports_finite_shots": False,
+        "supports_tensor_observables": True,
+        "returns_probs": False,
+        "returns_state": False,
+        "supports_reversible_diff": False,
+        "supports_inverse_operations": False,
+        "supports_analytic_computation": False,
+        "provides_adjoint_method": True,
+        "passthru_devices": {},
+        "is_proxy": True,
+    }
+    assert cap == capabilities
 
 
 @pytest.mark.parametrize(
@@ -64,7 +83,7 @@ def test_perf_report(dask_setup_teardown, PERF_REPORT):
         return qml.expval(qml.PauliZ(0))
 
     arr = qml.numpy.random.rand(2, requires_grad=True)
-    res = client.submit(qml.grad(circuit), arr).result()
+    client.submit(qml.grad(circuit), arr).result()
     rep = Path("dask-report.html") if isinstance(PERF_REPORT, bool) else Path(f"{PERF_REPORT}")
     rep_exists = rep.is_file()
     if rep_exists:
@@ -93,8 +112,37 @@ def test_return_future(dask_setup_teardown):
     arr = qml.numpy.random.rand(3, requires_grad=True)
     res = circuit(arr)
     future = dev_task.batch_execute([circuit.tape])
+
     assert isinstance(future[0], dist.client.Future)
     assert qml.numpy.allclose(future[0].result(), res)
+    client.close()
+
+
+def test_execute_return_future(dask_setup_teardown):
+    """Test return of futures from device"""
+    wires = 2
+    client = dist.Client(address=dask_setup_teardown)
+    dev_task = qml.device("task.qubit", wires=wires, backend="default.qubit", future=True)
+
+    @qml.qnode(
+        dev_task, cache=False, interface="autograd", diff_method="backprop"
+    )  # caching must be disabled due to proxy interface
+    def circuit(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=0)
+        qml.RZ(x[2], wires=0)
+        qml.RZ(x[0], wires=1)
+        qml.RX(x[1], wires=1)
+        qml.RY(x[2], wires=1)
+        return [qml.expval(qml.PauliZ(i)) for i in range(2)]
+
+    arr = qml.numpy.random.rand(3, requires_grad=True)
+    res = circuit(arr)
+    future = dev_task.execute(circuit.tape)
+
+    assert isinstance(future, dist.client.Future)
+    assert qml.numpy.allclose(future.result(), res)
+    client.close()
 
 
 def test_str_repr_output():

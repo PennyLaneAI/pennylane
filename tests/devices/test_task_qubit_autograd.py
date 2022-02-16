@@ -18,7 +18,6 @@ import pennylane as qml
 import numpy as np
 import pytest
 import os
-from typing import List, Tuple, Dict
 
 # Ensure GPU devices disabled if available
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -92,6 +91,7 @@ def test_autograd_serialization(dask_setup_teardown):
     c_arr = c_arr_future.result()
 
     assert qml.numpy.allclose(arr, c_arr)
+    client.close()
 
 
 def test_instance_vs_class_method(dask_setup_teardown):
@@ -133,3 +133,4 @@ def test_instance_vs_class_method(dask_setup_teardown):
     assert qml.devices.task_qubit.TaskQubit.capabilities() == expected_cap_cls
     assert dev_task.capabilities() == expected_cap_instance
     assert dev_task.capabilities() != qml.devices.task_qubit.TaskQubit.capabilities()
+    client.close()
