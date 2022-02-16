@@ -434,10 +434,10 @@ In addition, specific additions to the code base must also be reflected in the
 introductory quickstarts:
 
 * **Operations**: new operations should be added to the :doc:`/introduction/operations` quickstart
-  located at ``doc/introduction/operations.rst``.
+  located at ``doc/introduction/operations.rst``. For more details, see :doc:`../adding_operators`.
 
 * **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
-  located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_templates`.
+  located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
 * **Optimizers**: new optimizers should be added to the :doc:`/introduction/optimizers` quickstart,
   located at ``doc/introduction/optimizers.rst``.

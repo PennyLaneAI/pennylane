@@ -360,7 +360,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_matrix",
         [
-            (PauliX(0), {0: 0}, PauliX.matrix),
+            (PauliX(0), {0: 0}, PauliX(0).get_matrix()),
             (Identity(0), {0: 0}, np.eye(2)),
             (
                 PauliZ(0) @ PauliY(1),
@@ -378,7 +378,7 @@ class TestGroupingUtils:
                 np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
             ),
             (Identity(0), {0: 0, 1: 1}, np.eye(4)),
-            (PauliX(2), None, PauliX.matrix),
+            (PauliX(2), None, PauliX(2).get_matrix()),
             (
                 PauliX(2),
                 {0: 0, 1: 1, 2: 2},

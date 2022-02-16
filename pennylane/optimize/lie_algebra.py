@@ -251,7 +251,7 @@ class LieAlgebraOptimizer:
         ) = self.get_su_n_operators(restriction)
         self.exact = exact
         self.trottersteps = trottersteps
-        self.coeffs, self.observables = self.hamiltonian.terms
+        self.coeffs, self.observables = self.hamiltonian.terms()
         self.stepsize = stepsize
 
     def step(self):

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the adjoint transform."""
-
+from collections.abc import Sequence
 from functools import wraps
+import pennylane as qml
 from pennylane.tape import QuantumTape, stop_recording
 
 
@@ -118,23 +119,26 @@ def adjoint(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         with stop_recording(), QuantumTape() as tape:
-            fn(*args, **kwargs)
+            res = fn(*args, **kwargs)
 
         if not tape.operations:
             # we called op.expand(): get the outputted tape
-            tape = fn(*args, **kwargs)
+            tape = res
 
         adjoint_ops = []
         for op in reversed(tape.operations):
             try:
                 new_op = op.adjoint()
                 adjoint_ops.append(new_op)
-            except NotImplementedError:
+            except qml.operation.AdjointUndefinedError:
                 # Expand the operation and adjoint the result.
                 new_ops = adjoint(op.expand)()
 
                 if isinstance(new_ops, QuantumTape):
                     new_ops = new_ops.operations
+
+                if not isinstance(new_ops, Sequence):
+                    new_ops = [new_ops]
 
                 adjoint_ops.extend(new_ops)
 
