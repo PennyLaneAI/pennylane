@@ -19,11 +19,34 @@ from pennylane.transforms import qfunc_transform, ctrl
 from pennylane.queuing import apply
 from pennylane.tape import QuantumTape
 
+class Aux:
+
+    def __init__(self, wire_or_aux, count=0):
+        if isinstance(wire_or_aux, Aux):
+            self.base_wire = wire_or_aux.base_wire
+            self.count = wire_or_aux.count + count + 1
+        else:
+            self.base_wire = wire_or_aux
+            self.count = count
+
+    def __hash__(self):
+        return hash((Aux, self.base_wire, self.count))
+
+    def __str__(self):
+        return f"Aux({self.base_wire},{self.count})"
+
+    def __repr__(self):
+        return f"Aux({self.base_wire},{self.count})"
+
+ok = Aux(5, 1)
+
 
 @qfunc_transform
 def extend_qubits(tape):
 
     measured_wires = {}
+
+    altered_wires = set()
 
     ops = []
     for op in tape.queue:
@@ -34,14 +57,17 @@ def extend_qubits(tape):
 
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
             if op.wires[0] not in measured_wires.keys():
-                measured_wires[op.wires[0]] = 0
+                if op.wires[0] in altered_wires:
+                    measured_wires[op.wires[0]] = 0
+                    op._wires = Wires([("aux", op.wires[0], 0)])
             else:
                 wire = op.wires[0]
                 op._wires = Wires([("aux", wire, measured_wires[wire])])
                 measured_wires[wire] += 1
         else:
-            for i, wire in enumerate(op.wires):
+            for wire in op.wires:
                 new_wires = []
+                altered_wires.add(wire)
                 if wire in measured_wires.keys():
                     new_wires.append(("aux", wire, measured_wires[wire]))
                 else:
