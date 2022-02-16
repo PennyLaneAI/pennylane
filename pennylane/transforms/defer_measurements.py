@@ -32,6 +32,11 @@ class Aux:
     def __hash__(self):
         return hash((Aux, self.base_wire, self.count))
 
+    def __eq__(self, other):
+        if isinstance(other, Aux):
+            return self.base_wire == other.base_wire and self.count == other.count
+        return False
+
     def __str__(self):
         return f"Aux({self.base_wire},{self.count})"
 
