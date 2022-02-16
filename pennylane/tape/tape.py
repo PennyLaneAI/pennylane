@@ -15,7 +15,7 @@
 This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods
-from collections import Counter, deque, defaultdict
+from collections import Counter, deque, defaultdict, OrderedDict
 import contextlib
 import copy
 from threading import RLock
@@ -219,6 +219,7 @@ class QuantumTape(AnnotatedQueue):
     """A quantum tape recorder, that records, validates and executes variational quantum programs.
 
     Args:
+        queue (Iterable): iterable of tape contents
         name (str): a name given to the quantum tape
         do_queue (bool): Whether to queue this tape in a parent tape context.
 
@@ -300,8 +301,7 @@ class QuantumTape(AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(self, name=None, do_queue=True):
-        super().__init__()
+    def __init__(self, queue=None, name=None, do_queue=True):
         self.name = name
         self.do_queue = do_queue
         self._prep = []
@@ -335,6 +335,15 @@ class QuantumTape(AnnotatedQueue):
         """list[.Observable]: subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires."""
         self._obs_sharing_wires_id = []
+
+        if queue is None:
+            self._queue = OrderedDict()
+        else:
+            if isinstance(queue, (OrderedDict, dict)):
+                self._queue = queue
+            else:
+                self._queue = OrderedDict({i: {} for i in queue})
+            self._process_queue()
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
