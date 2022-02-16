@@ -44,8 +44,7 @@ class Aux:
         return f"Aux({self.base_wire},{self.count})"
 
 
-@qfunc_transform
-def extend_qubits(tape):
+def mid_circuit_measurements_are_terminal(tape):
 
     measured_wires = {}
 
@@ -92,8 +91,7 @@ def extend_qubits(tape):
     return new_tape
 
 
-@qfunc_transform
-def defer_measurements(tape):
+def simple_defer_measurements(tape):
 
     with QuantumTape() as new_tape:
         measured_wires = []
@@ -111,12 +109,12 @@ def defer_measurements(tape):
                     if value:
                         for i, wire_val in enumerate(branch):
                             if wire_val and flipped[i] or not wire_val and not flipped[i]:
-                                qml.PauliX(wires=control[i])
+                                qml.PauliX(control[i])
                                 flipped[i] = not flipped[i]
                         ctrl(lambda: apply(op.then_op), control=control)()
                 for i, flip in enumerate(flipped):
                     if flip:
-                        qml.PauliX(wires=control[i])
+                        qml.PauliX(control[i])
 
             elif op.__class__.__name__ == "_ConditionOp":
                 control = op.dependant_measurements
@@ -124,14 +122,20 @@ def defer_measurements(tape):
                 for branch, branch_op in op.branches.items():
                     for i, wire_val in enumerate(branch):
                         if wire_val and flipped[i] or not wire_val and not flipped[i]:
-                            qml.PauliX(wires=control[i])
+                            qml.PauliX(control[i])
                             flipped[i] = not flipped[i]
                     ctrl(lambda: apply(branch_op), control=control)()
                 for i, flip in enumerate(flipped):
                     if flip:
-                        qml.PauliX(wires=control[i])
+                        qml.PauliX(control[i])
 
             else:
                 apply(op)
 
     return new_tape
+
+@qfunc_transform
+def defer_measurements(tape):
+    new_tape = mid_circuit_measurements_are_terminal(tape)
+    second_tape = simple_defer_measurements(new_tape)
+    return second_tape
