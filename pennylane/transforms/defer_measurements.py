@@ -46,14 +46,12 @@ class Aux:
 
 def mid_circuit_measurements_are_terminal(tape):
 
-    measured_wires = {}
-
-    altered_wires = set()
-
     ops = []
     for op in tape.queue:
         ops.append(op)
 
+    measured_wires = {}
+    altered_wires = set()
     new_ops_reversed = []
     for op in reversed(ops):
 
