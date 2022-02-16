@@ -54,24 +54,29 @@ def extend_qubits(tape):
     for op in reversed(ops):
 
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-            if op.wires[0] not in measured_wires.keys():
-                if op.wires[0] in altered_wires:
-                    measured_wires[op.wires[0]] = 0
-                    op._wires = Wires([Aux(op.wires[0])])
+            wire = op.wires[0]
+            if wire not in measured_wires.keys():
+                if wire in altered_wires:
+                    measured_wires[wire] = 0
+                    op._wires = Wires([Aux(wire)])
+                    altered_wires.add(Aux(wire))
+                else:
+                    altered_wires.add(wire)
             else:
-                wire = op.wires[0]
+                if Aux(wire, measured_wires[wire]) in altered_wires:
+                    measured_wires[wire] += 1
                 op._wires = Wires([Aux(wire, measured_wires[wire])])
-                measured_wires[wire] += 1
+                altered_wires.add(Aux(wire, measured_wires[wire]))
         else:
+            new_wires = []
             for wire in op.wires:
-                new_wires = []
                 if wire in measured_wires.keys():
                     new_wires.append(Aux(wire, measured_wires[wire]))
                     altered_wires.add(Aux(wire, measured_wires[wire]))
                 else:
                     new_wires.append(wire)
                     altered_wires.add(wire)
-                op._wires = Wires(new_wires)
+            op._wires = Wires(new_wires)
 
         new_ops_reversed.append(op)
 
