@@ -120,7 +120,7 @@ def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
     with QuantumTape() as new_tape:
         measured_wires = {}
         for op in tape.queue:
-            if any([wire in measured_wires.keys() for wire in op.values()]):
+            if any([wire in measured_wires.values() for wire in op.wires]):
                 raise ValueError("cannot reuse measured wires.")
 
             if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
@@ -160,6 +160,7 @@ def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
 
 @qfunc_transform
 def defer_measurements(tape):
-    tape = make_mid_circuit_measurements_terminal(tape)
-    tape = defer_measurements_on_mid_circuit_measured_terminal_tape(tape)
-    return tape
+    active_tape = get_active_tape()
+    with get_active_tape().stop_recording():
+        tape = make_mid_circuit_measurements_terminal(tape)
+    defer_measurements_on_mid_circuit_measured_terminal_tape(tape)

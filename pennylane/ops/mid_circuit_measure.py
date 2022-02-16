@@ -16,7 +16,7 @@ def mid_measure(wire):
 
         m0 = qml.Measure(0)
     """
-    measurement_id = uuid.uuid4()[:8]
+    measurement_id = str(uuid.uuid4())[:8]
     _MidCircuitMeasure(wire, measurement_id)
     return MeasurementDependantValue(measurement_id, _Value(0), _Value(1))
 
