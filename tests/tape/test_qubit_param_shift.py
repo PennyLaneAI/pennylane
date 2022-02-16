@@ -16,8 +16,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.tape import QubitParamShiftTape
-from pennylane.measure import MeasurementProcess
 
 
 class TestGradMethod:
@@ -145,7 +145,7 @@ class TestParameterShiftRule:
         """Tests that the automatic gradient of a arbitrary Euler-angle-parameterized gate is correct."""
         spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
         dev = qml.device("default.qubit", wires=1)
-        params = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with QubitParamShiftTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
@@ -203,7 +203,7 @@ class TestParameterShiftRule:
         gate is correct."""
         spy = mocker.spy(QubitParamShiftTape, "parameter_shift")
         dev = qml.device("default.qubit", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         with QubitParamShiftTape() as tape:
             qml.QubitStateVector(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)
@@ -710,7 +710,7 @@ class TestHessian:
             G(b, wires=[0, 1])
             return qml.expval(qml.PauliX(0))
 
-        b = 0.123
+        b = pnp.array(0.123, requires_grad=True)
 
         res = circuit(b)
         assert np.allclose(res, -np.cos(b / 2), atol=tol, rtol=0)

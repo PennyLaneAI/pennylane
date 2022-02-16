@@ -445,7 +445,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
     # Special case: all-identity Pauli
     if pauli_string == "I" * len(wire_map):
         first_wire = list(wire_map.keys())[0]
-        return Identity(wire_map[first_wire])
+        return Identity(first_wire)
 
     pauli_word = None
 
@@ -514,7 +514,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # Special case: the identity Pauli
     if pauli_names == ["Identity"]:
-        return np.eye(2 ** n_qubits)
+        return np.eye(2**n_qubits)
 
     # If there is more than one qubit, we must go through the wire map wire
     # by wire and pick out the relevant matrices

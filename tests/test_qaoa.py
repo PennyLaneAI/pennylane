@@ -1868,7 +1868,9 @@ class TestCycles:
         bitstrings = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_bitstrings = ((cost(bitstring).numpy(), bitstring) for bitstring in bitstrings)
+        energies_bitstrings = (
+            (cost(np.array(bitstring)).numpy(), bitstring) for bitstring in bitstrings
+        )
 
         for energy, bs in energies_bitstrings:
 
@@ -1919,7 +1921,7 @@ class TestCycles:
         states = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_states = ((cost(state).numpy(), state) for state in states)
+        energies_states = ((cost(np.array(state)).numpy(), state) for state in states)
 
         # We now have the energies of each bitstring/state. We also want to calculate the net flow of
         # the corresponding edges
@@ -1981,7 +1983,9 @@ class TestCycles:
         bitstrings = itertools.product([0, 1], repeat=wires)
 
         # Calculate the corresponding energies
-        energies_bitstrings = ((cost(bitstring).numpy(), bitstring) for bitstring in bitstrings)
+        energies_bitstrings = (
+            (cost(np.array(bitstring)).numpy(), bitstring) for bitstring in bitstrings
+        )
 
         def find_simple_cycle(list_of_edges):
             """Returns True if list_of_edges contains a permutation corresponding to a simple cycle"""

@@ -99,13 +99,13 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2 ** 3))
+    data = np.random.random((batch_size, 2**3))
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 2 ** 3)
+    assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
 
     # check the results against individually executed circuits (no batching)
@@ -114,6 +114,41 @@ def test_mottonenstate_preparation(mocker):
         qml.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
         return qml.probs(wires=[0, 1, 2])
+
+    indiv_res = []
+    for state, weight in zip(data, weights):
+        indiv_res.append(circuit2(state, weight))
+    assert np.allclose(res, indiv_res)
+
+
+def test_basis_state_preparation(mocker):
+    """Test that batching works for BasisStatePreparation"""
+    dev = qml.device("default.qubit", wires=4)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(data, weights):
+        qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
+        return qml.probs(wires=[0, 1, 2, 3])
+
+    batch_size = 5
+
+    # create random batched basis states
+    data = np.random.randint(2, size=(batch_size, 4))
+    weights = np.random.random((batch_size, 10, 4, 3))
+
+    spy = mocker.spy(circuit.device, "batch_execute")
+    res = circuit(data, weights)
+    assert res.shape == (batch_size, 2**4)
+    assert len(spy.call_args[0][0]) == batch_size
+
+    # check the results against individually executed circuits (no batching)
+    @qml.qnode(dev)
+    def circuit2(data, weights):
+        qml.templates.BasisStatePreparation(data, wires=[0, 1, 2, 3])
+        qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2, 3])
+        return qml.probs(wires=[0, 1, 2, 3])
 
     indiv_res = []
     for state, weight in zip(data, weights):
@@ -172,14 +207,15 @@ def test_jax(diff_method, tol):
 
 
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
-def test_jax_jit(diff_method, tol):
+@pytest.mark.parametrize("interface", ["jax", "jax-jit"])
+def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
-    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         qml.RX(x, wires=0)
         qml.RY(0.1, wires=1)
@@ -342,3 +378,18 @@ def test_initial_unbatched_parameter():
 
     with pytest.raises(ValueError, match="Parameter 0.2 does not contain a batch"):
         circuit(x, y)
+
+
+def test_no_batch_param_error():
+    """Test that the right error is thrown when there is nothing to batch"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    x = [0.2, 0.6, 3]
+    with pytest.raises(ValueError, match="There are no operations to transform"):
+        circuit(x)
