@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import Sample
+from pennylane.operation import DecompositionUndefinedError, Sample
 
 from .unwrap import UnwrapTape
 
@@ -195,7 +195,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
-                except NotImplementedError:
+                except DecompositionUndefinedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
                     getattr(new_tape, queue).append(obj)
@@ -656,7 +656,7 @@ class QuantumTape(AnnotatedQueue):
         for idx, op in enumerate(self._ops):
             try:
                 self._ops[idx] = op.adjoint()
-            except NotImplementedError:
+            except qml.operation.AdjointUndefinedError:
                 op.inverse = not op.inverse
 
         self._ops = list(reversed(self._ops))
@@ -1007,11 +1007,11 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
+            # some observables do not have diagonalizing gates,
+            # in which case we just don't append any
             try:
-                # some observables do not have diagonalizing gates,
-                # in which case we just don't append any
                 rotation_gates.extend(observable.diagonalizing_gates())
-            except NotImplementedError:
+            except qml.operation.DiagGatesUndefinedError:
                 pass
 
         return rotation_gates
@@ -1130,7 +1130,7 @@ class QuantumTape(AnnotatedQueue):
             max_length=max_length,
         )
 
-    def to_openqasm(self, wires=None, rotations=True, measure_all=True):
+    def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.
 
         Measurements are assumed to be performed on all qubits in the computational basis. An
@@ -1150,6 +1150,7 @@ class QuantumTape(AnnotatedQueue):
                 measured wires such that they are in the eigenbasis of the circuit observables.
             measure_all (bool): whether to perform a computational basis measurement on all qubits
                 or just those specified in the tape
+            precision (int): decimal digits to display for parameters
 
         Returns:
             str: OpenQASM serialization of the circuit
@@ -1200,7 +1201,11 @@ class QuantumTape(AnnotatedQueue):
             if op.num_params > 0:
                 # If the operation takes parameters, construct a string
                 # with parameter values.
-                params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
+                if precision is not None:
+                    params = "(" + ",".join([f"{p:.{precision}}" for p in op.parameters]) + ")"
+                else:
+                    # use default precision
+                    params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
 
             qasm_str += f"{gate}{params} {wire_labels};\n"
 
@@ -1267,6 +1272,7 @@ class QuantumTape(AnnotatedQueue):
 
         tape._update()
         tape.trainable_params = self.trainable_params.copy()
+        tape._output_dim = self.output_dim
 
         return tape
 

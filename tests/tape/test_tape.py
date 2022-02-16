@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -262,6 +262,16 @@ class TestConstruction:
             qml.sample(qml.PauliZ(wires=0))
 
         assert tape.is_sampled
+
+    def test_repr(self):
+        """Test the string representation"""
+
+        with QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+
+        s = tape.__repr__()
+        expected = "<QuantumTape: wires=[0], params=1>"
+        assert s == expected
 
 
 class TestGraph:
@@ -859,7 +869,7 @@ class TestExpand:
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same
@@ -1255,6 +1265,9 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
+
         # since the copy is shallow, mutating the parameters
         # on one tape will affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
@@ -1298,6 +1311,9 @@ class TestTapeCopying:
         assert tape.wires == copied_tape.wires
         assert tape.data == copied_tape.data
 
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
+
         # Since they have unique operations, mutating the parameters
         # on one tape will *not* affect the parameters on another tape
         new_params = [np.array([0, 0]), 0.2]
@@ -1327,6 +1343,9 @@ class TestTapeCopying:
         assert copied_tape.observables != tape.observables
         assert copied_tape.measurements != tape.measurements
         assert copied_tape.operations[0] is not tape.operations[0]
+
+        # check that the output dim is identical
+        assert tape.output_dim == copied_tape.output_dim
 
         # The underlying operation data has also been copied
         assert copied_tape.operations[0].wires is not tape.operations[0].wires

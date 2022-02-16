@@ -70,7 +70,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     This Hamiltonian can then be used in defining VQE problems using :class:`~.ExpvalCost`.
     """
     n = int(np.log2(len(H)))
-    N = 2 ** n
+    N = 2**n
 
     if H.shape != (N, N):
         raise ValueError(
@@ -85,7 +85,7 @@ def decompose_hamiltonian(H, hide_identity=False):
     coeffs = []
 
     for term in itertools.product(paulis, repeat=n):
-        matrices = [i._matrix() for i in term]
+        matrices = [i.compute_matrix() for i in term]
         coeff = np.trace(functools.reduce(np.kron, matrices) @ H) / N
         coeff = np.real_if_close(coeff).item()
 
@@ -147,7 +147,7 @@ def sparse_hamiltonian(H, wires=None):
         wires = qml.wires.Wires(wires)
 
     n = len(wires)
-    matrix = scipy.sparse.coo_matrix((2 ** n, 2 ** n), dtype="complex128")
+    matrix = scipy.sparse.coo_matrix((2**n, 2**n), dtype="complex128")
 
     coeffs = qml.math.toarray(H.data)
 
@@ -161,7 +161,7 @@ def sparse_hamiltonian(H, wires=None):
                     f"Can only sparsify Hamiltonians whose constituent observables consist of "
                     f"(tensor products of) single-qubit operators; got {op}."
                 )
-            obs.append(scipy.sparse.coo_matrix(o.matrix))
+            obs.append(scipy.sparse.coo_matrix(o.get_matrix()))
 
         mat = [scipy.sparse.eye(2, format="coo")] * n
 
@@ -305,7 +305,13 @@ def pauli_eigs(n):
 
 
 def expand(matrix, original_wires, expanded_wires):
-    r"""Expand a an operator matrix to more wires.
+    r"""Expand an operator matrix to more wires.
+
+    .. note::
+
+        This function has essentially the same behaviour as :func:`.operation.expand_matrix`, but is not
+        fully differentiable.
+
 
     Args:
         matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
@@ -326,7 +332,7 @@ def expand(matrix, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(matrix) != (2 ** N, 2 ** N):
+    if qml.math.shape(matrix) != (2**N, 2**N):
         raise ValueError(
             "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
         )
@@ -338,7 +344,7 @@ def expand(matrix, original_wires, expanded_wires):
 
     if D > 0:
         extra_dims = [2] * (2 * D)
-        identity = qml.math.reshape(qml.math.eye(2 ** D), extra_dims)
+        identity = qml.math.reshape(qml.math.eye(2**D), extra_dims)
 
         if interface == "tensorflow":
             identity = qml.math.cast_like(identity, tensor)
@@ -366,7 +372,7 @@ def expand(matrix, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices + M), tuple(wire_indices + M)
     )
 
-    return qml.math.reshape(expanded_tensor, (2 ** M, 2 ** M))
+    return qml.math.reshape(expanded_tensor, (2**M, 2**M))
 
 
 def expand_vector(vector, original_wires, expanded_wires):
@@ -391,7 +397,7 @@ def expand_vector(vector, original_wires, expanded_wires):
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if qml.math.shape(vector) != (2 ** N,):
+    if qml.math.shape(vector) != (2**N,):
         raise ValueError("Vector parameter must be of length 2**len(original_wires)")
 
     dims = [2] * N
@@ -399,7 +405,7 @@ def expand_vector(vector, original_wires, expanded_wires):
 
     if D > 0:
         extra_dims = [2] * D
-        ones = qml.math.ones(2 ** D).reshape(extra_dims)
+        ones = qml.math.ones(2**D).reshape(extra_dims)
         expanded_tensor = qml.math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
@@ -416,4 +422,52 @@ def expand_vector(vector, original_wires, expanded_wires):
         expanded_tensor, tuple(original_indices), tuple(wire_indices)
     )
 
-    return qml.math.reshape(expanded_tensor, 2 ** M)
+    return qml.math.reshape(expanded_tensor, 2**M)
+
+
+def get_generator(op, return_matrix=False):
+    """Utility function to help return the generator of an operation.
+
+    This utility function is used to abstract away the API differences
+    between different operators that could be returned as
+    generators, including ``SparseHamiltonian``, ``Hamiltonian``,
+    ``Observable``, ``Tensor``, and ``Hermitian``.
+
+    This utility function should be removed once the aforementioned classes
+    no longer differ in behaviour.
+    """
+    gen = op.generator()
+
+    if op.num_params != 1:
+        raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
+
+    if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
+        obs = gen
+        s = 1.0
+
+    elif isinstance(gen, qml.operation.Observable):
+        gen = 1.0 * gen  # convert to a qml.Hamiltonian
+
+        if len(gen.ops) == 1:
+            # case where the Hamiltonian is a single Pauli word
+            obs = gen.ops[0]
+            s = gen.coeffs[0]
+        else:
+            # otherwise, we convert to a sparse array
+            H = qml.utils.sparse_hamiltonian(gen)
+            obs = qml.SparseHamiltonian(H, wires=gen.wires)
+            s = 1.0
+
+    else:
+        raise qml.QuantumFunctionError(f"Generator {gen} is not an observable")
+
+    if op.inverse:
+        s *= -1.0
+
+    if return_matrix:
+        obs = obs.get_matrix()
+
+        if op.inverse:
+            obs = qml.math.conj(qml.math.T(obs))
+
+    return obs, s

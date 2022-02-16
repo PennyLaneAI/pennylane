@@ -23,7 +23,7 @@ class TestDecomposition:
     def test_expected_tape(self):
         """Tests if QuantumPhaseEstimation populates the tape as expected for a fixed example"""
 
-        m = qml.RX(0.3, wires=0).matrix
+        m = qml.RX(0.3, wires=0).get_matrix()
 
         op = qml.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
         tape = op.expand()
@@ -38,8 +38,8 @@ class TestDecomposition:
         assert len(tape2.queue) == len(tape.queue)
         assert all([op1.name == op2.name for op1, op2 in zip(tape.queue, tape2.queue)])
         assert all([op1.wires == op2.wires for op1, op2 in zip(tape.queue, tape2.queue)])
-        assert np.allclose(tape.queue[1].matrix, tape2.queue[1].matrix)
-        assert np.allclose(tape.queue[3].matrix, tape2.queue[3].matrix)
+        assert np.allclose(tape.queue[1].get_matrix(), tape2.queue[1].get_matrix())
+        assert np.allclose(tape.queue[3].get_matrix(), tape2.queue[3].get_matrix())
 
     @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
     def test_phase_estimated(self, phase):
@@ -49,7 +49,7 @@ class TestDecomposition:
 
         for wires in wire_range:
             dev = qml.device("default.qubit", wires=wires)
-            m = qml.RX(phase, wires=0).matrix
+            m = qml.RX(phase, wires=0).get_matrix()
             target_wires = [0]
             estimation_wires = range(1, wires)
 
@@ -140,13 +140,13 @@ class TestDecomposition:
             qml.Hadamard(wires=0)
             qml.PauliX(wires=1)
             qml.QuantumPhaseEstimation(
-                qml.PauliX.matrix,
+                qml.PauliX.compute_matrix(),
                 target_wires=[0],
                 estimation_wires=[1, 2],
             )
 
             qml.adjoint(qml.QuantumPhaseEstimation)(
-                qml.PauliX.matrix,
+                qml.PauliX.compute_matrix(),
                 target_wires=[0],
                 estimation_wires=[1, 2],
             )

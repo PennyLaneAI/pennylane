@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the functionality to perform differentiable Hartree-Fock calculations.
+This subpackage provides the functionality to perform differentiable
+Hartree-Fock calculations.
 """
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
@@ -20,6 +21,7 @@ from .hamiltonian import (
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
     generate_hamiltonian,
+    simplify,
 )
 from .hartree_fock import generate_scf, hf_energy, nuclear_energy
 from .integrals import (
@@ -44,3 +46,12 @@ from .matrices import (
     molecular_density_matrix,
 )
 from .molecule import Molecule
+from .tapering import (
+    clifford,
+    generate_paulis,
+    generate_symmetries,
+    get_generators,
+    optimal_sector,
+    transform_hamiltonian,
+    transform_hf,
+)

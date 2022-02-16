@@ -620,9 +620,11 @@ class Device(abc.ABC):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
-        obs_on_same_wire = len(
-            circuit._obs_sharing_wires  # pylint: disable=protected-access
-        ) > 0 and not self.supports_observable("Hamiltonian")
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+        obs_on_same_wire &= not any(
+            isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
+        )
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -815,8 +817,8 @@ class Device(abc.ABC):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
 
-            if operation.endswith(Operation.string_for_inverse):
-                in_ops = operation[: -len(Operation.string_for_inverse)] in self.operations
+            if operation.endswith(".inv"):
+                in_ops = operation[:-4] in self.operations
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
                     "supports_inverse_operations", False
@@ -847,8 +849,8 @@ class Device(abc.ABC):
         if isinstance(observable, str):
 
             # This check regards observables that are also operations
-            if observable.endswith(Operation.string_for_inverse):
-                return self.supports_operation(observable[: -len(Operation.string_for_inverse)])
+            if observable.endswith(".inv"):
+                return self.supports_operation(observable[:-4])
 
             return observable in self.observables
 

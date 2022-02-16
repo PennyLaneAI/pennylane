@@ -70,6 +70,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
+    "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
@@ -330,7 +331,7 @@ class TestGatesQubit:
 
         res = circuit()
 
-        expected = np.zeros([2 ** n_wires])
+        expected = np.zeros([2**n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
@@ -421,6 +422,8 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
+        if not dev.supports_operation(op):
+            pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
 
@@ -547,6 +550,7 @@ class TestInverseGatesQubit:
 
         res = circuit()
 
+        print(rnd_state)
         mat = func(gamma)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2

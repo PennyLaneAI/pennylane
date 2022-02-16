@@ -16,6 +16,7 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.tape import JacobianTape, QuantumTape
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable
@@ -710,7 +711,7 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         assert res.shape == (1, 2)
 
-        expected = np.array([2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_output_values(self, tol):
@@ -730,7 +731,7 @@ class TestJacobianCVIntegration:
         res = tape.jacobian(dev)
         assert res.shape == (2, 2)
 
-        expected = np.array([[0, 0], [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[0, 0], [2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_trainable_measurement(self, tol):
@@ -872,5 +873,6 @@ class TestObservableWithObjectReturnType:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        assert np.isclose(qnode(0.2).item().val, reference_qnode(0.2))
-        assert np.isclose(qml.jacobian(qnode)(0.2).item().val, qml.jacobian(reference_qnode)(0.2))
+        par = pnp.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))

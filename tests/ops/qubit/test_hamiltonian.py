@@ -522,8 +522,8 @@ class TestHamiltonian:
         """Tests that the Hamiltonian object is created with
         the correct attributes"""
         H = qml.Hamiltonian(coeffs, ops)
-        assert np.allclose(H.terms[0], coeffs)
-        assert H.terms[1] == list(ops)
+        assert np.allclose(H.terms()[0], coeffs)
+        assert H.terms()[1] == list(ops)
 
     @pytest.mark.parametrize("coeffs, ops", invalid_hamiltonians)
     def test_hamiltonian_invalid_init_exception(self, coeffs, ops):
@@ -550,8 +550,21 @@ class TestHamiltonian:
         assert set(H.wires) == set([w for op in H.ops for w in op.wires])
 
     def test_label(self):
+        """Tests the label method of Hamiltonian when <=3 coefficients."""
         H = qml.Hamiltonian((-0.8,), (qml.PauliZ(0),))
         assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+
+    def test_label_many_coefficients(self):
+        """Tests the label method of Hamiltonian when >3 coefficients."""
+        H = (
+            0.1 * qml.PauliX(0)
+            + 0.1 * qml.PauliY(1)
+            + 0.3 * qml.PauliZ(0) @ qml.PauliX(1)
+            + 0.4 * qml.PauliX(3)
+        )
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗"
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_str))
     def test_hamiltonian_str(self, terms, string):
@@ -744,6 +757,18 @@ class TestHamiltonian:
             )
 
         assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+
+    def test_terms(self):
+        """Tests that the terms representation is returned correctly."""
+        coeffs = pnp.array([1.0, 2.0], requires_grad=True)
+        ops = [qml.PauliX(0), qml.PauliZ(1)]
+        h = qml.Hamiltonian(coeffs, ops)
+        c, o = h.terms()
+        assert isinstance(c, tuple)
+        assert isinstance(o, list)
+        assert all(isinstance(item, np.ndarray) for item in c)
+        assert all(item.requires_grad for item in c)
+        assert all(isinstance(item, qml.operation.Operator) for item in o)
 
 
 class TestHamiltonianCoefficients:
@@ -1236,8 +1261,8 @@ class TestHamiltonianDifferentiation:
     def test_trainable_coeffs_paramshift(self, simplify, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
+        param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -1273,8 +1298,8 @@ class TestHamiltonianDifferentiation:
     def test_nontrainable_coeffs_paramshift(self):
         """Test the parameter-shift method if the coefficients are explicitly set non-trainable
         by not passing them to the qnode."""
-        coeffs = np.array([-0.05, 0.17])
-        param = np.array(1.7)
+        coeffs = pnp.array([-0.05, 0.17], requires_grad=False)
+        param = pnp.array(1.7, requires_grad=True)
 
         # differentiating a circuit with measurement expval(H)
         @qml.qnode(dev, diff_method="parameter-shift")
@@ -1644,31 +1669,5 @@ class TestHamiltonianDifferentiation:
         with pytest.raises(
             qml.QuantumFunctionError,
             match="Adjoint differentiation method does not support Hamiltonian observables",
-        ):
-            grad_fn(coeffs, param)
-
-    @pytest.mark.xfail
-    def test_not_supported_by_reverse_differentiation(self):
-        """Test that error is raised when attempting the reverse differentiation method."""
-        dev = qml.device("default.qubit", wires=2)
-
-        coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
-        param = pnp.array(1.7, requires_grad=True)
-
-        @qml.qnode(dev, diff_method="reversible")
-        def circuit(coeffs, param):
-            qml.RX(param, wires=0)
-            qml.RY(param, wires=0)
-            return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
-
-        grad_fn = qml.grad(circuit)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Reverse differentiation method does not support Hamiltonian observables",
         ):
             grad_fn(coeffs, param)

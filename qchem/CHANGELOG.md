@@ -1,4 +1,4 @@
-# Release 0.21.0-dev
+# Release 0.22.0-dev
 
 <h3>New features</h3>
 
@@ -11,6 +11,21 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+# Release 0.21.0
+
+<h3>Bug fixes</h3>
+
+* Fixes a bug in PennyLane-Qchem where an error is raised because Psi4 cannot parse atomic
+  coordinates entered as `pennylane.numpy.tensor` type. The bug is fixed by converting the atomic
+  coordinates to `numpy.ndarray` in `qml.qchem.meanfield` before importing them to openfermion.
+  [(#2108)](https://github.com/PennyLaneAI/pennylane/pull/2108)
+
+<h3>Contributors</h3>
+
+This release contains contributions from (in alphabetical order):
+
+Alain Delgado Gran, Soran Jahangiri
 
 # Release 0.19.0
 

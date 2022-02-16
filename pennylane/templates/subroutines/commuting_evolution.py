@@ -68,12 +68,12 @@ class CommutingEvolution(Operation):
         time (int or float): The time of evolution, namely the parameter :math:`t` in :math:`e^{- i H t}`.
 
     Keyword args:
-        frequencies (list[int or float]): The unique positive differences between eigenvalues in
+        frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
             the spectrum of the Hamiltonian. If the frequencies are not given, the cost function
             partial derivative will be computed using the standard two-term shift rule applied to
             the constituent Pauli words in the Hamiltonian individually.
 
-        shifts (list[int or float]): The parameter shifts to use in obtaining the
+        shifts (tuple[int or float]): The parameter shifts to use in obtaining the
             generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
     .. UsageDetails::
@@ -90,7 +90,7 @@ class CommutingEvolution(Operation):
             coeffs = [1, -1]
             obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
-            frequencies = [2,4]
+            frequencies = (2,4)
 
             @qml.qnode(dev)
             def circuit(time):
@@ -102,9 +102,7 @@ class CommutingEvolution(Operation):
         0.6536436208636115
     """
 
-    num_params = 3
     num_wires = AnyWires
-    par_domain = "R"
     grad_method = None
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, do_queue=True, id=None):
@@ -124,25 +122,48 @@ class CommutingEvolution(Operation):
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
-        self.hamiltonian = hamiltonian
-        self.num_params = len(hamiltonian.data) + 1
-        self.frequencies = frequencies
-        self.shifts = shifts
+        self._hyperparameters = {
+            "hamiltonian": hamiltonian,
+            "frequencies": frequencies,
+            "shifts": shifts,
+        }
 
-        super().__init__(time, *hamiltonian.data, wires=hamiltonian.wires, do_queue=do_queue, id=id)
+        super().__init__(
+            time, *hamiltonian.parameters, wires=hamiltonian.wires, do_queue=do_queue, id=id
+        )
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        *time_and_coeffs, wires, hamiltonian, **kwargs
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators.
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        Args:
+            time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
+                variable
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
+            frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
+                the spectrum of the Hamiltonian.
+            shifts (tuple[int or float]): The parameter shifts to use in obtaining the
+                generalized parameter shift rules. If unspecified, equidistant shifts are used.
+
+        .. seealso:: :meth:`~.CommutingEvolution.decomposition`.
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
-        time = self.parameters[0]
-
-        return qml.templates.ApproxTimeEvolution(hamiltonian, time, 1).expand()
+        hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)
+        return qml.templates.ApproxTimeEvolution(hamiltonian, time_and_coeffs[1], 1).decomposition()
 
     def adjoint(self):  # pylint: disable=arguments-differ
 
-        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hamiltonian.ops)
+        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
         time = self.parameters[0]
-        frequencies = self.frequencies
-        shifts = self.shifts
+        frequencies = self.hyperparameters["frequencies"]
+        shifts = self.hyperparameters["shifts"]
 
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)

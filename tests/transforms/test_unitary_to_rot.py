@@ -27,14 +27,16 @@ from pennylane.transforms import unitary_to_rot
 
 from gate_data import I, Z, S, T, H, X, CNOT
 
+from test_optimization.utils import check_matrix_equivalence
+
 single_qubit_decomps = [
     # First set of gates are diagonal and converted to RZ
     (I, qml.RZ, [0.0]),
     (Z, qml.RZ, [np.pi]),
     (S, qml.RZ, [np.pi / 2]),
     (T, qml.RZ, [np.pi / 4]),
-    (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-    (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+    (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
+    (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
     # Next set of gates are non-diagonal and decomposed as Rots
     (
         np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
@@ -43,8 +45,12 @@ single_qubit_decomps = [
     ),
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [0.0, -np.pi, -np.pi]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, qml.Rot, [-1.0, 2.0, -3.0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+    (
+        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(),
+        qml.Rot,
+        [-1.0, 2.0, -3.0],
+    ),
 ]
 
 # A simple quantum function for testing
@@ -80,7 +86,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform ignores QubitUnitary instances that are too big
         to decompose."""
 
-        tof = qml.Toffoli(wires=[0, 1, 2]).matrix
+        tof = qml.Toffoli(wires=[0, 1, 2]).get_matrix()
 
         def qfunc():
             qml.QubitUnitary(H, wires="a")
@@ -437,6 +443,28 @@ test_two_qubit_unitaries = [
         ],
     ],
 ]
+
+
+@pytest.mark.parametrize("num_reps", [1, 2, 3, 4, 5])
+def test_unitary_to_rot_multiple_two_qubit(num_reps):
+    """Test that numerous two-qubit unitaries can be decomposed sequentially."""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    U = np.array(test_two_qubit_unitaries[1], dtype=np.complex128)
+
+    def my_circuit():
+        for rep in range(num_reps):
+            qml.QubitUnitary(U, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0))
+
+    original_qnode = qml.QNode(my_circuit, dev)
+    transformed_qnode = qml.QNode(unitary_to_rot(my_circuit), dev)
+
+    original_matrix = qml.transforms.get_unitary_matrix(original_qnode)()
+    transformed_matrix = qml.transforms.get_unitary_matrix(transformed_qnode)()
+
+    assert check_matrix_equivalence(original_matrix, transformed_matrix, atol=1e-7)
 
 
 class TestTwoQubitUnitaryDifferentiability:

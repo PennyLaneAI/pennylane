@@ -46,6 +46,7 @@ from pennylane.ops import *
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
+from pennylane.templates.tensornetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
@@ -53,6 +54,7 @@ from pennylane.qnode import QNode, qnode
 import pennylane.qnode_old
 from pennylane.transforms import (
     adjoint,
+    adjoint_metric_tensor,
     batch_params,
     batch_transform,
     draw,

@@ -53,13 +53,6 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
   forward pass by iteratively applying the inverse (adjoint) gate. This method is similar to
   ``"backprop"``, but has significantly lower memory usage and a similar runtime.
 
-* ``"reversible"``: Use a form of backpropagation that takes advantage of the unitary or reversible
-  nature of quantum computation.
-
-  This method is similar to the ``adjoint`` method, but has a slightly larger time overhead and a similar
-  memory overhead. Compared to the parameter-shift rule, the reversible method can be faster or slower,
-  depending on the density and location of parametrized gates in a circuit.
-
 Hardware-compatible differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -129,8 +122,8 @@ tensor([[-0.04673668, -0.09442394, -0.14409127],
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
 ``qml.grad()`` if using Autograd, ``loss.backward()`` for PyTorch, or ``tape.gradient()`` for TensorFlow).
-This is because gradient transforms do not take into account classical processing, and only support
-gradients of quantum components.
+This is because gradient transforms do not take into account classical computation nodes, and only
+support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
 
@@ -141,7 +134,7 @@ The bridge between the quantum and classical worlds is provided in PennyLane via
 Currently, there are four built-in interfaces: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
 <interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. These
 interfaces make each of these libraries quantum-aware, allowing quantum circuits to be treated just
-like any other operation.
+like any other operation. Any interface can be chosen with any device.
 
 In PennyLane, an interface is declared when creating a :class:`QNode <pennylane.QNode>`, e.g.,
 
@@ -159,6 +152,11 @@ This will allow native numerical objects of the specified library (NumPy arrays,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
 optimization of arbitrary hybrid circuits.
+
+When specifying an interface, the objects of the chosen framework are converted
+into NumPy objects and are passed to a device in most cases. Exceptions include
+cases when the devices support end-to-end computations in a framework. Such
+devices may be referred to as backpropagation or passthru devices.
 
 See the links below for walkthroughs of each specific interface:
 

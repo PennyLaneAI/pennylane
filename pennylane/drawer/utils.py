@@ -35,7 +35,7 @@ def convert_wire_order(ops, wire_order=None, show_all_wires=False):
     """Creates the mapping between wire labels and place in order.
 
     Args:
-        ops Iterable[~.Operator]: a list of operations
+        ops Iterable[.Operator]: a list of operations
         wire_order Sequence[Any]: the order (from top to bottom) to print the wires
 
     Keyword Args:

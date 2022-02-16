@@ -16,14 +16,15 @@ import pytest
 import numpy as np
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane.transforms.classical_jacobian import classical_jacobian
 
-a = -2.1
-b = 0.71
-w = np.array([0.3, 2.3, 0.1])
-x = np.array([0.3, 2.3, 0.1])
-y = np.array([[1.0, 2.0], [4.0, 5.0]])
-z = np.array([2.1, -0.3, 0.62, 0.89])
+a = pnp.array(-2.1, requires_grad=True)
+b = pnp.array(0.71, requires_grad=True)
+w = pnp.array([0.3, 2.3, 0.1], requires_grad=True)
+x = pnp.array([0.3, 2.3, 0.1], requires_grad=True)
+y = pnp.array([[1.0, 2.0], [4.0, 5.0]], requires_grad=True)
+z = pnp.array([2.1, -0.3, 0.62, 0.89], requires_grad=True)
 
 
 def circuit_0(a):
@@ -36,7 +37,7 @@ def circuit_1(a, b):
     qml.RX(qml.math.sin(a), wires=0)
     qml.RZ(a / 3, wires=0)
     qml.CNOT(wires=[0, 1])
-    qml.RY(b ** 2, wires=1)
+    qml.RY(b**2, wires=1)
     qml.RZ(1 / b, wires=1)
     return qml.expval(qml.PauliZ(0))
 
@@ -92,7 +93,7 @@ class_jacs = [
                 0.0,
             ]
         ),
-        np.array([0.0, 0.0, 2 * b, -1 / (b ** 2)]),
+        np.array([0.0, 0.0, 2 * b, -1 / (b**2)]),
     ),
     (np.eye(len(x)),),
     (
@@ -128,14 +129,10 @@ def test_autograd_without_argnum(circuit, args, expected_jac, diff_method):
     qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
-    # NOTE: We use stacking to replicate qml.jacobian behaviour for equal-shaped inputs
     arg_shapes = [qml.math.shape(arg) for arg in args]
     if len(args) == 1:
         # For a single argument, the Jacobian is unpacked
         assert np.allclose(jac, expected_jac[0])
-    elif all(sh == arg_shapes[0] for sh in arg_shapes[1:]):
-        expected_jac = qml.math.stack(expected_jac).T
-        assert np.allclose(jac, expected_jac)
     else:
         assert len(jac) == len(expected_jac)
         for _jac, _expected_jac in zip(jac, expected_jac):
@@ -176,13 +173,21 @@ def test_tf_without_argnum(circuit, args, expected_jac, diff_method):
 def test_torch_without_argnum(circuit, args, expected_jac, diff_method):
     r"""Test ``classical_jacobian`` with ``argnum=None`` and Torch."""
     torch = pytest.importorskip("torch")
-    args = tuple((torch.tensor(arg) for arg in args))
+    args = tuple((torch.tensor(arg, requires_grad=True) for arg in args))
     dev = qml.device("default.qubit", wires=2)
     qnode = qml.QNode(circuit, dev, interface="torch", diff_method=diff_method)
     jac = classical_jacobian(qnode)(*args)
 
     assert len(jac) == len(expected_jac)
     for _jac, _expected_jac in zip(jac, expected_jac):
+        assert np.allclose(_jac, _expected_jac)
+
+    # also test with an untrainable argument
+    args[0].requires_grad = False
+    jac = classical_jacobian(qnode)(*args)
+
+    assert len(jac) == len(expected_jac) - 1
+    for _jac, _expected_jac in zip(jac, expected_jac[1:]):
         assert np.allclose(_jac, _expected_jac)
 
 
@@ -260,6 +265,7 @@ def test_autograd_with_single_list_argnum(circuit, args, expected_jac, argnum, d
     qnode = qml.QNode(circuit, dev, interface="autograd", diff_method=diff_method)
     jac = classical_jacobian(qnode, argnum=argnum)(*args)
     expected_jac = (expected_jac[argnum[0]],)
+
     assert len(jac) == 1
     assert np.allclose(jac[0], expected_jac[0])
 

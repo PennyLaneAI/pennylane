@@ -307,7 +307,7 @@ def meanfield(
     path_to_file = os.path.join(outpath.strip(), filename)
 
     geometry = [
-        [symbol, tuple(coordinates[3 * i : 3 * i + 3] * bohr_angs)]
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
         for i, symbol in enumerate(symbols)
     ]
 
@@ -667,7 +667,7 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
     Returns:
         (bool): True if equivalent
     """
-    coeffs, ops = pennylane_qubit_operator.terms
+    coeffs, ops = pennylane_qubit_operator.terms()
     return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops, wires=wires)
 
 

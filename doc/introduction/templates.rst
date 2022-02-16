@@ -171,6 +171,28 @@ like VQE to perform quantum chemistry simulations.
 
         <div style='clear:both'></div>
 
+.. _intro_ref_temp_tn:
+
+Tensor networks
+-------------------------
+
+Tensor-network templates create quantum circuit architectures where circuit blocks
+can be broadcast with the shape and connectivity of tensor networks.
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.MPS.html
+    :description: Matrix Product State
+    :figure: ../_static/templates/tensornetworks/MPS_template.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.TTN.html
+    :description: Tree Tensor Network
+    :figure: ../_static/templates/tensornetworks/TTN_template.png
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
 .. _intro_ref_temp_qchem:
 
 Other subroutines
@@ -229,7 +251,7 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: ../_static/templates/subroutines/qft.svg
 
 .. customgalleryitem::
-    :link: :link: ../code/api/pennylane.CommutingEvolution.html
+    :link: ../code/api/pennylane.CommutingEvolution.html
     :description: CommutingEvolution
     :figure: ../_static/templates/subroutines/commuting_evolution.png
 
@@ -359,7 +381,7 @@ statement:
 
 As suggested by the camel-case naming, built-in templates in PennyLane are classes. Classes are more complex
 data structures than functions, since they can define properties and methods of templates (such as gradient
-recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
+recipes or matrix representations). Consult the :ref:`Contributing operators <contributing_operators>`
 page to learn how to code up your own template class, and how to add it to the PennyLane template library.
 
 Layering Function

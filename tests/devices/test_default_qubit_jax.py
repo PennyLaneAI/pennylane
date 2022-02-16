@@ -1,3 +1,16 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import pytest
 
 jax = pytest.importorskip("jax", minversion="0.2")
@@ -151,6 +164,47 @@ class TestQNodeIntegration:
 
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
+    def test_probs_jax(self, tol):
+        """Test that returning probs works with jax"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @qml.qnode(dev, interface="jax", diff_method=None)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs(wires=0)
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([0.0, 1.0])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax", diff_method=None)
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs(wires=0)
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_custom_shots_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit when using custom shot vector"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
+
+        @jax.jit
+        @qml.qnode(dev, diff_method=None, interface="jax")
+        def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs(wires=0)
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
@@ -414,7 +468,7 @@ class TestPassthruIntegration:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit.jax", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b, c):
@@ -487,7 +541,23 @@ class TestPassthruIntegration:
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(jax.grad(circuit)(x), 0.0)
+        assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
+
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
@@ -621,7 +691,7 @@ class TestOps:
 
         param = 0.3
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros(wires ** 2))
+        assert jnp.allclose(res, jnp.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop

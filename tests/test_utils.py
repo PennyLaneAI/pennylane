@@ -22,7 +22,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.queuing
 import pennylane.utils as pu
 import scipy.sparse
 
@@ -132,7 +131,9 @@ class TestDecomposition:
         linear combination of Pauli matrices"""
         decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
 
-        linear_comb = sum([decomposed_coeff[i] * o.matrix for i, o in enumerate(decomposed_obs)])
+        linear_comb = sum(
+            [decomposed_coeff[i] * o.get_matrix() for i, o in enumerate(decomposed_obs)]
+        )
         assert np.allclose(hamiltonian, linear_comb)
 
 
@@ -380,7 +381,7 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pu.pauli_eigs.cache_clear()
         pu.pauli_eigs(depth)
-        total_runs = sum([2 ** x for x in range(depth)])
+        total_runs = sum([2**x for x in range(depth)])
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pu.pauli_eigs.cache_info()
 
 

@@ -96,14 +96,14 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
         else:
             stop_at &= device.stopping_condition
 
-    def expand_fn(tape, _depth=depth, **kwargs):
+    def expand_fn(tape, depth=depth, **kwargs):
 
         with qml.tape.stop_recording():
 
             if stop_at is None:
-                tape = tape.expand(depth=_depth)
+                tape = tape.expand(depth=depth)
             elif not all(stop_at(op) for op in tape.operations):
-                tape = tape.expand(depth=_depth, stop_at=stop_at)
+                tape = tape.expand(depth=depth, stop_at=stop_at)
             else:
                 return tape
 
@@ -138,6 +138,29 @@ expand_multipar = create_expand_fn(
     depth=10,
     stop_at=not_tape | is_measurement | has_nopar | has_gen,
     docstring=_expand_multipar_doc,
+)
+
+_expand_trainable_multipar_doc = """Expand out a tape so that all its trainable
+operations have a single parameter.
+
+This is achieved by decomposing all trainable operations that do not have
+a generator, up to maximum depth ``depth``.
+For a sufficient ``depth``, it should always be possible to obtain a tape containing
+only single-parameter operations.
+
+Args:
+    tape (.QuantumTape): the input tape to expand
+    depth (int) : the maximum expansion depth
+    **kwargs: additional keyword arguments are ignored
+
+Returns:
+    .QuantumTape: the expanded tape
+"""
+
+expand_trainable_multipar = create_expand_fn(
+    depth=10,
+    stop_at=not_tape | is_measurement | has_nopar | (~is_trainable) | has_gen,
+    docstring=_expand_trainable_multipar_doc,
 )
 
 
@@ -200,22 +223,15 @@ def _custom_decomp_context(custom_decomps):
         if isinstance(obj, str):
             obj = getattr(qml, obj)
 
-        original_decomp_method = obj.decompose
-
-        # This is the method that will override the operations .decompose method
-        def new_decomp_method(self):
-            with NonQueuingTape():
-                if self.num_params == 0:
-                    return fn(self.wires)
-                return fn(*self.parameters, self.wires)
+        original_decomp_method = obj.decomposition
 
         try:
-            # Explicitly set the new .decompose method
-            obj.decompose = new_decomp_method
+            # Explicitly set the new compute_decomposition method
+            obj.compute_decomposition = staticmethod(fn)
             yield
 
         finally:
-            obj.decompose = original_decomp_method
+            obj.compute_decomposition = original_decomp_method
 
     # Loop through the decomposition dictionary and create all the contexts
     try:

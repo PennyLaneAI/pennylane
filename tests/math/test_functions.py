@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
+from functools import partial
 import itertools
 import numpy as onp
 import pytest
@@ -28,6 +29,7 @@ tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+sci = pytest.importorskip("scipy")
 
 
 class TestGetMultiTensorbox:
@@ -60,6 +62,15 @@ class TestGetMultiTensorbox:
 
         with pytest.warns(UserWarning, match="Consider replacing Autograd with vanilla NumPy"):
             fn._multi_dispatch([x, y])
+
+    @pytest.mark.filterwarnings("error:Contains tensors of types {.+}; dispatch will prioritize")
+    def test_no_warning_scipy_and_autograd(self):
+        """Test that no warning is raised if the sequence of tensors contains
+        SciPy sparse matrices and autograd tensors."""
+        x = sci.sparse.eye(3)
+        y = np.array([0.5, 0.1])
+
+        fn._multi_dispatch([x, y])
 
     def test_return_tensorflow_box(self):
         """Test that TensorFlow is correctly identified as the dispatching library."""
@@ -312,7 +323,8 @@ class TestConcatenate:
     """Tests for the concatenate function"""
 
     def test_concatenate_array(self):
-        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        """Test that concatenate, called without the axis arguments,
+        concatenates across the 0th dimension"""
         t1 = [0.6, 0.1, 0.6]
         t2 = np.array([0.1, 0.2, 0.3])
         t3 = onp.array([5.0, 8.0, 101.0])
@@ -322,7 +334,8 @@ class TestConcatenate:
         assert np.all(res == np.concatenate([t1, t2, t3]))
 
     def test_concatenate_jax(self):
-        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+        """Test that concatenate, called without the axis arguments,
+        concatenates across the 0th dimension"""
         t1 = jnp.array([5.0, 8.0, 101.0])
         t2 = jnp.array([0.6, 0.1, 0.6])
         t3 = jnp.array([0.1, 0.2, 0.3])
@@ -330,8 +343,9 @@ class TestConcatenate:
         res = fn.concatenate([t1, t2, t3])
         assert jnp.all(res == jnp.concatenate([t1, t2, t3]))
 
-    def test_stack_tensorflow(self):
-        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+    def test_concatenate_tensorflow(self):
+        """Test that concatenate, called without the axis arguments,
+        concatenates across the 0th dimension"""
         t1 = tf.constant([0.6, 0.1, 0.6])
         t2 = tf.Variable([0.1, 0.2, 0.3])
         t3 = onp.array([5.0, 8.0, 101.0])
@@ -340,8 +354,9 @@ class TestConcatenate:
         assert isinstance(res, tf.Tensor)
         assert np.all(res.numpy() == np.concatenate([t1.numpy(), t2.numpy(), t3]))
 
-    def test_stack_torch(self):
-        """Test that concatenate, called without the axis arguments, concatenates across the 0th dimension"""
+    def test_concatenate_torch(self):
+        """Test that concatenate, called without the axis arguments,
+        concatenates across the 0th dimension"""
         t1 = onp.array([5.0, 8.0, 101.0], dtype=np.float64)
         t2 = torch.tensor([0.6, 0.1, 0.6], dtype=torch.float64)
         t3 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64)
@@ -353,7 +368,7 @@ class TestConcatenate:
     @pytest.mark.parametrize(
         "t1", [onp.array([[1], [2]]), torch.tensor([[1], [2]]), tf.constant([[1], [2]])]
     )
-    def test_stack_axis(self, t1):
+    def test_concatenate_axis(self, t1):
         """Test that passing the axis argument allows for concatenating along
         a different axis"""
         t2 = onp.array([[3], [4]])
@@ -536,7 +551,9 @@ class TestDot:
 
 
 class TestTensordotTorch:
-    """Tests for the tensor product function in torch."""
+    """Tests for the tensor product function in torch.
+    This test is required because the functionality of tensordot for Torch
+    is being patched in PennyLane, as compared to autoray."""
 
     v1 = torch.tensor([0.1, 0.5, -0.9, 1.0, -4.2, 0.1], dtype=torch.float64)
     v2 = torch.tensor([4.3, -1.2, 8.2, 0.6, -4.2, -11.0], dtype=torch.float64)
@@ -752,6 +769,89 @@ class TestTensordotTorch:
         assert fn.allclose(fn.tensordot(self.T1, M, axes=[axes1, axes2]), expected)
 
 
+class TestTensordotDifferentiability:
+
+    v0 = np.array([0.1, 5.3, -0.9, 1.1])
+    v1 = np.array([0.5, -1.7, -2.9, 0.0])
+    v2 = np.array([-0.4, 9.1, 1.6])
+    exp_shapes = ((len(v0), len(v2), len(v0)), (len(v0), len(v2), len(v2)))
+    exp_jacs = (np.zeros(exp_shapes[0]), np.zeros(exp_shapes[1]))
+    for i in range(len(v0)):
+        exp_jacs[0][i, :, i] = v2
+    for i in range(len(v2)):
+        exp_jacs[1][:, i, i] = v0
+
+    def test_autograd(self):
+        """Tests differentiability of tensordot with Autograd."""
+        v0 = np.array(self.v0, requires_grad=True)
+        v1 = np.array(self.v1, requires_grad=True)
+        v2 = np.array(self.v2, requires_grad=True)
+
+        # Test inner product
+        jac = qml.jacobian(partial(fn.tensordot, axes=[0, 0]), argnum=(0, 1))(v0, v1)
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = qml.jacobian(partial(fn.tensordot, axes=0), argnum=(0, 1))(v0, v2)
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+    def test_torch(self):
+        """Tests differentiability of tensordot with Torch."""
+        jac_fn = torch.autograd.functional.jacobian
+
+        v0 = torch.tensor(self.v0, requires_grad=True, dtype=torch.float64)
+        v1 = torch.tensor(self.v1, requires_grad=True, dtype=torch.float64)
+        v2 = torch.tensor(self.v2, requires_grad=True, dtype=torch.float64)
+
+        # Test inner product
+        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), (v0, v1))
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = jac_fn(partial(fn.tensordot, axes=0), (v0, v2))
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+    def test_jax(self):
+        """Tests differentiability of tensordot with JAX."""
+        jac_fn = jax.jacobian
+
+        v0 = jnp.array(self.v0)
+        v1 = jnp.array(self.v1)
+        v2 = jnp.array(self.v2)
+
+        # Test inner product
+        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), argnums=(0, 1))(v0, v1)
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = jac_fn(partial(fn.tensordot, axes=0), argnums=(0, 1))(v0, v2)
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+    def test_tensorflow(self):
+        """Tests differentiability of tensordot with TensorFlow."""
+
+        def jac_fn(func, args):
+            with tf.GradientTape() as tape:
+                out = func(*args)
+            return tape.jacobian(out, args)
+
+        v0 = tf.Variable(self.v0, dtype=tf.float64)
+        v1 = tf.Variable(self.v1, dtype=tf.float64)
+        v2 = tf.Variable(self.v2, dtype=tf.float64)
+
+        # Test inner product
+        jac = jac_fn(partial(fn.tensordot, axes=[[0], [0]]), (v0, v1))
+        assert all(fn.allclose(jac[i], _v) for i, _v in enumerate([v1, v0]))
+
+        # Test outer product
+        jac = jac_fn(partial(fn.tensordot, axes=0), (v0, v2))
+        assert all(fn.shape(jac[i]) == self.exp_shapes[i] for i in [0, 1])
+        assert all(fn.allclose(jac[i], self.exp_jacs[i]) for i in [0, 1])
+
+
 # the following test data is of the form
 # [original shape, axis to expand, new shape]
 expand_dims_test_data = [
@@ -963,10 +1063,8 @@ class TestRequiresGrad:
 
         t.requires_grad = False
         s.requires_grad = False
-
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             qml.grad(cost_fn)(t, s)
-
         assert res == [False, False]
 
     def test_torch(self):
@@ -1352,14 +1450,14 @@ class TestScatterElementAdd:
         x = np.array(self.x, requires_grad=True)
         y = np.array(self.y, requires_grad=True)
 
-        def cost(weights):
+        def cost(*weights):
             return fn.scatter_element_add(weights[0], self.index, weights[1] ** 2)
 
-        res = cost([x, y])
+        res = cost(x, y)
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
-        grad = qml.grad(lambda weights: cost(weights)[self.index[0], self.index[1]])([x, y])
+        grad = qml.grad(lambda *weights: cost(*weights)[self.index[0], self.index[1]])(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1370,7 +1468,7 @@ class TestScatterElementAdd:
         y = np.array(self.y, requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
         assert isinstance(res, np.ndarray)
@@ -1387,7 +1485,7 @@ class TestScatterElementAdd:
         y = np.array([0.56, 0.3], requires_grad=True)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, [(0, 1), (1, 2)], weight_1**2)
 
         res = cost_multi(x, y)
         assert isinstance(res, np.ndarray)
@@ -1406,7 +1504,7 @@ class TestScatterElementAdd:
         y = tf.Variable(self.y)
 
         with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, self.index, y ** 2)
+            res = fn.scatter_element_add(x, self.index, y**2)
             loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, tf.Tensor)
@@ -1421,7 +1519,7 @@ class TestScatterElementAdd:
         x = torch.tensor(self.x, requires_grad=True)
         y = torch.tensor(self.y, requires_grad=True)
 
-        res = fn.scatter_element_add(x, self.index, y ** 2)
+        res = fn.scatter_element_add(x, self.index, y**2)
         loss = res[self.index[0], self.index[1]]
 
         assert isinstance(res, torch.Tensor)
@@ -1454,7 +1552,7 @@ class TestScatterElementAdd:
         y = jnp.array(self.y)
 
         def cost_multi(weight_0, weight_1):
-            return fn.scatter_element_add(weight_0, self.index, weight_1 ** 2)
+            return fn.scatter_element_add(weight_0, self.index, weight_1**2)
 
         res = cost_multi(x, y)
         assert isinstance(res, jax.interpreters.xla.DeviceArray)
@@ -1482,20 +1580,20 @@ class TestScatterElementAddMultiValue:
         x = np.array(self.x, requires_grad=True)
         y = np.array(self.y, requires_grad=True)
 
-        def cost(weights):
+        def cost(*weights):
             return fn.scatter_element_add(
                 weights[0], self.indices, [fn.sin(weights[1] / 2), weights[1] ** 2]
             )
 
-        res = cost([x, y])
+        res = cost(x, y)
         assert isinstance(res, np.ndarray)
         assert fn.allclose(res, self.expected_val)
 
         scalar_cost = (
-            lambda weights: cost(weights)[self.indices[0][0], self.indices[1][0]]
-            + cost(weights)[self.indices[0][1], self.indices[1][1]]
+            lambda *weights: cost(*weights)[self.indices[0][0], self.indices[1][0]]
+            + cost(*weights)[self.indices[0][1], self.indices[1][1]]
         )
-        grad = qml.grad(scalar_cost)([x, y])
+        grad = qml.grad(scalar_cost)(x, y)
         assert fn.allclose(grad[0], self.expected_grad_x)
         assert fn.allclose(grad[1], self.expected_grad_y)
 
@@ -1506,7 +1604,7 @@ class TestScatterElementAddMultiValue:
         y = tf.Variable(self.y)
 
         with tf.GradientTape() as tape:
-            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y ** 2])
+            res = fn.scatter_element_add(x, self.indices, [tf.sin(y / 2), y**2])
             loss = (
                 res[self.indices[0][0], self.indices[1][0]]
                 + res[self.indices[0][1], self.indices[1][1]]
@@ -1527,7 +1625,7 @@ class TestScatterElementAddMultiValue:
 
         values = torch.zeros(2)
         values[0] += torch.sin(y / 2)
-        values[1] += y ** 2
+        values[1] += y**2
         res = fn.scatter_element_add(x, self.indices, values)
         loss = (
             res[self.indices[0][0], self.indices[1][0]]
@@ -1841,41 +1939,45 @@ def test_block_diag(tensors):
 
 class TestBlockDiagDiffability:
 
-    expected = lambda self, x, y: np.array(
+    expected = lambda self, x, y: (
         [
-            [[-np.sin(x * y) * y, -np.sin(x * y) * x], [0, 0], [0, 0]],
-            [[0, 0], [1.0, 0.0], [0, 1.2]],
-            [[0, 0], [2 * x, -1 / 3], [-1 / y, x / y ** 2]],
-        ]
+            [-np.sin(x * y) * y, 0, 0],
+            [0, 1.0, 0],
+            [0, 2 * x, -1 / y],
+        ],
+        [
+            [-np.sin(x * y) * x, 0, 0],
+            [0, 0.0, 1.2],
+            [0, -1 / 3, x / y**2],
+        ],
     )
 
     def test_autograd(self):
         """Tests for differentiating the block diagonal function with autograd."""
         tensors = lambda x, y: [
             np.array([[fn.cos(x * y)]]),
-            np.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+            np.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
         ]
         f = lambda x, y: fn.block_diag(tensors(x, y))
-        x, y = 0.2, 1.5
+        x, y = np.array([0.2, 1.5], requires_grad=True)
         res = qml.jacobian(f)(x, y)
         exp = self.expected(x, y)
-        # Transposes in the following because autograd behaves strangely
-        assert fn.allclose(res[:, :, 0].T, exp[:, :, 0])
-        assert fn.allclose(res[:, :, 1].T, exp[:, :, 1])
+        assert fn.allclose(res[0], exp[0])
+        assert fn.allclose(res[1], exp[1])
 
     def test_jax(self):
         """Tests for differentiating the block diagonal function with JAX."""
         jax = pytest.importorskip("jax")
         tensors = lambda x, y: [
             jnp.array([[fn.cos(x * y)]]),
-            jnp.array([[x, 1.2 * y], [x ** 2 - y / 3, -x / y]]),
+            jnp.array([[x, 1.2 * y], [x**2 - y / 3, -x / y]]),
         ]
         f = lambda x, y: fn.block_diag(tensors(x, y))
         x, y = 0.2, 1.5
         res = jax.jacobian(f, argnums=[0, 1])(x, y)
         exp = self.expected(x, y)
-        assert fn.allclose(exp[:, :, 0], res[0])
-        assert fn.allclose(exp[:, :, 1], res[1])
+        assert fn.allclose(exp[0], res[0])
+        assert fn.allclose(exp[1], res[1])
 
     def test_tf(self):
         """Tests for differentiating the block diagonal function with Tensorflow."""
@@ -2015,12 +2117,16 @@ class TestUnwrap:
             unwrapped_params = qml.math.unwrap(params)
             return np.sum(np.sin(params[0] * params[2])) + params[1]
 
-        values = [onp.array([0.1, 0.2]), np.tensor(0.1, dtype=np.float64), np.tensor([0.5, 0.2])]
-        grad = qml.grad(cost_fn)(*values)
+        values = [
+            onp.array([0.1, 0.2]),
+            np.tensor(0.1, dtype=np.float64, requires_grad=True),
+            np.tensor([0.5, 0.2], requires_grad=True),
+        ]
+        grad = qml.grad(cost_fn, argnum=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
-        assert all(not isinstance(a, ArrayBox) for a in unwrapped_params)
+        assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward_nested(self):
         """Test that a sequence of Autograd values is properly unwrapped
@@ -2157,3 +2263,126 @@ class TestSortFunction:
         result = fn.sort(input)
 
         assert all(result == test_output)
+
+
+ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
+
+
+class TestSafeSqueeze:
+    """Test the safe version of squeeze that allows to specify
+    axes of size bigger than one without raising an error and that
+    allows to exclude axes."""
+
+    input_shapes = [
+        (2, 5, 3),
+        (1, 1, 9, 1),
+        (1, 1),
+        (5, 1),
+        (),
+    ]
+
+    @pytest.mark.parametrize(
+        "shape, expected_shape",
+        list(zip(input_shapes, [(2, 5, 3), (9,), (), (5,), ()])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_without_kwargs(self, ones_fn, shape, expected_shape):
+        """Test squeezing without specifying axes."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor)
+        assert fn.shape(squeezed) == expected_shape
+
+    # Skipping the first and last input shape
+    @pytest.mark.parametrize(
+        "shape, axis, expected_shape",
+        list(zip(input_shapes[1:4], [3, -2, 1], [(1, 1, 9), (1,), (5,)])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_axis_of_size_one(self, ones_fn, shape, axis, expected_shape):
+        """Test squeezing a single axis with size one."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, axis",
+        list(zip(input_shapes[:2], [1, 2])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_axis_of_any_size(self, ones_fn, shape, axis):
+        """Test squeezing a single axis of any size."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == shape
+
+    # Skipping the first and last input shape
+    @pytest.mark.parametrize(
+        "shape, axis, expected_shape",
+        list(zip(input_shapes[1:4], [(0, 1, -1), [1, -2], {1}], [(9,), (), (5,)])),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_multiple_axes_of_size_one(self, ones_fn, shape, axis, expected_shape):
+        """Test squeezing multiple axes with size one."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, axis, expected_shape",
+        list(
+            zip(
+                input_shapes,
+                [(2, 1), (0, 1, 2), [0], {0, 1}, []],
+                [(2, 5, 3), (9, 1), (1,), (5,), ()],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_multiple_axes_of_any_size(self, ones_fn, shape, axis, expected_shape):
+        """Test squeezing multiple axes with any size."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, axis=axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, exclude_axis, expected_shape",
+        list(
+            zip(
+                input_shapes[:4],
+                [-1, -3, 0, 1],
+                [(2, 5, 3), (1, 9), (1,), (5, 1)],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_single_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
+        """Tests squeezing with the kwarg exclude_axis and a single axis to ignore
+        while squeezing."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, exclude_axis=exclude_axis)
+        assert fn.shape(squeezed) == expected_shape
+
+    @pytest.mark.parametrize(
+        "shape, exclude_axis, expected_shape",
+        list(
+            zip(
+                input_shapes,
+                [(0,), (-2, 3), [1], {-1, -2}, []],
+                [(2, 5, 3), (9, 1), (1,), (5, 1), ()],
+            )
+        ),
+    )
+    @pytest.mark.parametrize("ones_fn", ones_functions)
+    def test_with_multiple_exclude_axis(self, ones_fn, shape, exclude_axis, expected_shape):
+        """Tests squeezing with the kwarg exclude_axis and multiple axes to ignore
+        while squeezing."""
+
+        tensor = ones_fn(shape)
+        squeezed = fn.safe_squeeze(tensor, exclude_axis=exclude_axis)
+        assert fn.shape(squeezed) == expected_shape

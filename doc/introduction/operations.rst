@@ -45,14 +45,14 @@ Qubit operations
 .. _intro_ref_ops_qgates:
 
 Non-parametric Ops
-^^^^^^^^^^^^^^^^^^ 
+^^^^^^^^^^^^^^^^^^
 
 
 :html:`<div class="summary-table">`
 
 .. autosummary::
     :nosignatures:
-    
+
     ~pennylane.Identity
     ~pennylane.Hadamard
     ~pennylane.PauliX
@@ -72,6 +72,7 @@ Non-parametric Ops
     ~pennylane.Toffoli
     ~pennylane.MultiControlledX
     ~pennylane.Barrier
+    ~pennylane.WireCut
 
 :html:`</div>`
 
@@ -170,6 +171,7 @@ Qubit state preparation
 
     ~pennylane.BasisState
     ~pennylane.QubitStateVector
+    ~pennylane.QubitDensityMatrix
 
 :html:`</div>`
 
@@ -259,7 +261,7 @@ CV Gates
 
 .. autosummary::
     :nosignatures:
-    
+
     ~pennylane.Identity
     ~pennylane.Beamsplitter
     ~pennylane.ControlledAddition
@@ -317,4 +319,3 @@ CV observables
     ~pennylane.X
 
 :html:`</div>`
-
