@@ -886,9 +886,6 @@ class Operator(abc.ABC):
                 # If the parameter can't be displayed as a float
                 return format(x)
 
-        if self.num_params == 1:
-            return op_label + f"\n({_format(params[0])})"
-
         param_string = ",\n".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
 
