@@ -19,18 +19,17 @@ circuits to be distributed across multiple devices.
 import copy
 import string
 from itertools import product
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple
+
+from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
-from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import Hadamard, Identity, PauliX, PauliY, PauliZ, S, apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import AnyWires, Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
-
 from pennylane.tape import QuantumTape, stop_recording
-
 from pennylane.wires import Wires
 
 
@@ -46,10 +45,6 @@ class PrepareNode(Operation):
 
     num_wires = 1
     grad_method = None
-
-
-SUBS = "₀₁₂₃₄₅₆₇₈₉"
-SUB = str.maketrans("0123456789", SUBS)
 
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
@@ -347,7 +342,6 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
-
     reverse_wire_map = {v: k for k, v in wire_map.items()}
 
     copy_ops = [copy.copy(op) for _, op in ordered_ops]
@@ -593,6 +587,9 @@ def contract_tensors(
     We first set up the tensors and their corresponding :class:`~.PrepareNode` and
     :class:`~.MeasureNode` orderings:
 
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
         import networkx as nx
         import numpy as np
 

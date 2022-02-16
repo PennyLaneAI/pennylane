@@ -1,4 +1,5 @@
 # Copyright 2022 Xanadu Quantum Technologies Inc.
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -17,9 +18,10 @@ import copy
 import string
 import sys
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
