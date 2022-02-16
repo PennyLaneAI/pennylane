@@ -323,12 +323,11 @@ def _observable_mult(obs_a, obs_b):
     """
     o = []
     c = []
-    for i in range(len(obs_a.terms[0])):
-        for j in range(len(obs_b.terms[0])):
-            op, phase = qml.grouping.pauli_mult_with_phase(obs_a.terms[1][i], obs_b.terms[1][j])
+    for i in range(len(obs_a.terms()[0])):
+        for j in range(len(obs_b.terms()[0])):
+            op, phase = qml.grouping.pauli_mult_with_phase(obs_a.terms()[1][i], obs_b.terms()[1][j])
             o.append(op)
-            c.append(phase * obs_a.terms[0][i] * obs_b.terms[0][j])
-
+            c.append(phase * obs_a.terms()[0][i] * obs_b.terms()[0][j])
     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
@@ -406,13 +405,13 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     u = clifford(generators, paulix_ops)
     h = _observable_mult(_observable_mult(u, h), u)
 
-    val = np.ones(len(h.terms[0])) * complex(1.0)
+    val = np.ones(len(h.terms()[0])) * complex(1.0)
 
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
     paulix_wires = [x.wires[0] for x in paulix_ops]
     for idx, w in enumerate(paulix_wires):
-        for i in range(len(h.terms[0])):
-            s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+        for i in range(len(h.terms()[0])):
+            s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
             if s[w] == "X":
                 val[i] *= paulix_sector[idx]
 
@@ -420,8 +419,9 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
     wires_tap = [i for i in h.wires if i not in paulix_wires]
     wiremap_tap = dict(zip(wires_tap, range(len(wires_tap) + 1)))
 
-    for i in range(len(h.terms[0])):
-        s = qml.grouping.pauli_word_to_string(h.terms[1][i], wire_map=wiremap)
+    for i in range(len(h.terms()[0])):
+        s = qml.grouping.pauli_word_to_string(h.terms()[1][i], wire_map=wiremap)
+
         wires = [x for x in h.wires if x not in paulix_wires]
         o.append(
             qml.grouping.string_to_pauli_word(
@@ -429,7 +429,7 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
             )
         )
 
-    c = anp.multiply(val, h.terms[0])
+    c = anp.multiply(val, h.terms()[0])
     c = qml.math.stack(c)
 
     return simplify(qml.Hamiltonian(c, o))

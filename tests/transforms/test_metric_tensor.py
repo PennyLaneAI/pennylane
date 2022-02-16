@@ -264,7 +264,7 @@ class TestMetricTensor:
             qml.RX(a[1], wires=0)
             qml.RY(a[0], wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.PhaseShift(b, wires=1)
+            qml.U1(b, wires=1)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliX(1))
 
         circuit = qml.QNode(circuit, dev)
@@ -590,13 +590,13 @@ class TestMetricTensor:
 
         tapes, proc_fn = qml.metric_tensor(tape, approx="block-diag")
         assert len(tapes) == 4
-        assert [len(tape.operations) for tape in tapes] == [2, 4, 5, 6]
+        assert [len(tape.operations) for tape in tapes] == [3, 5, 4, 5]
         assert [len(tape.measurements) for tape in tapes] == [1] * 4
         expected_ops = [
-            [qml.Hadamard, qml.QubitUnitary],
-            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.QubitUnitary],
-            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.QubitUnitary],
-            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ, qml.QubitUnitary],
+            [qml.Hadamard, qml.Hadamard, qml.Hadamard],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.Hadamard, qml.Hadamard],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX],
+            [qml.Hadamard, qml.Hadamard, qml.IsingXX, qml.IsingXX, qml.IsingZZ],
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
@@ -1200,13 +1200,13 @@ def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
     operation with generator object that is not an observable"""
     with monkeypatch.context() as m:
-        m.setattr("pennylane.RX.generator", [qml.RX, 1])
+        m.setattr("pennylane.RX.generator", lambda self: qml.RX(0.1, wires=0))
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.5, requires_grad=True), wires=0)
             qml.expval(qml.PauliX(0))
 
-        with pytest.raises(qml.QuantumFunctionError, match="no corresponding observable"):
+        with pytest.raises(qml.QuantumFunctionError, match="is not an observable"):
             qml.metric_tensor(tape, approx="block-diag")
 
 
@@ -1279,16 +1279,19 @@ def test_error_generator_not_registered(allow_nonunitary, monkeypatch):
             with pytest.raises(ValueError, match="Generator for operation"):
                 qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
 
+    class RX(qml.RX):
+        def generator(self):
+            return qml.Hadamard(self.wires)
+
     @qml.qnode(dev)
     def circuit(x, z):
-        qml.RX(x, wires="wire1")
+        RX(x, wires="wire1")
         qml.RZ(z, wires="wire1")
         return qml.expval(qml.PauliZ("wire2"))
 
     with monkeypatch.context() as m:
         exp_fn = lambda tape, *args, **kwargs: tape
         m.setattr("pennylane.transforms.metric_tensor.expand_fn", exp_fn)
-        m.setattr("pennylane.RX.generator", [qml.Hadamard, 1.0])
 
         if allow_nonunitary:
             qml.metric_tensor(circuit, approx=None, allow_nonunitary=allow_nonunitary)(x, z)

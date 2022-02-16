@@ -223,22 +223,15 @@ def _custom_decomp_context(custom_decomps):
         if isinstance(obj, str):
             obj = getattr(qml, obj)
 
-        original_decomp_method = obj.decompose
-
-        # This is the method that will override the operations .decompose method
-        def new_decomp_method(self):
-            with NonQueuingTape():
-                if self.num_params == 0:
-                    return fn(self.wires)
-                return fn(*self.parameters, self.wires)
+        original_decomp_method = obj.decomposition
 
         try:
-            # Explicitly set the new .decompose method
-            obj.decompose = new_decomp_method
+            # Explicitly set the new compute_decomposition method
+            obj.compute_decomposition = staticmethod(fn)
             yield
 
         finally:
-            obj.decompose = original_decomp_method
+            obj.compute_decomposition = original_decomp_method
 
     # Loop through the decomposition dictionary and create all the contexts
     try:

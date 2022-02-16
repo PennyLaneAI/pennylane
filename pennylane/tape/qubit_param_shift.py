@@ -236,7 +236,7 @@ class QubitParamShiftTape(JacobianTape):
                 # We need to calculate d<A^2>/dp; to do so, we replace the
                 # involutory observables A in the queue with A^2.
                 obs = pdA2_tape._measurements[i].obs
-                A = obs.matrix
+                A = obs.get_matrix()
 
                 obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
                 pdA2_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)

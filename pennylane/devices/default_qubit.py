@@ -454,8 +454,8 @@ class DefaultQubit(QubitDevice):
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a
-         ``SparseHamiltonian`` object, the expectation value is computed directly for the full
-         Hamiltonian, which leads to faster execution.
+        ``Hamiltonian`` or ``SparseHamiltonian`` object, the expectation value is computed directly
+        from the sparse matrix representation, which leads to faster execution.
 
         Args:
             observable (~.Observable): a PennyLane observable
@@ -516,7 +516,7 @@ class DefaultQubit(QubitDevice):
                 if observable.name == "Hamiltonian":
                     Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
-                    Hmat = observable.matrix
+                    Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
                 res = coo_matrix.dot(
@@ -543,9 +543,9 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.eigvals
+            return unitary.get_eigvals()
 
-        return unitary.matrix
+        return unitary.get_matrix()
 
     @classmethod
     def capabilities(cls):

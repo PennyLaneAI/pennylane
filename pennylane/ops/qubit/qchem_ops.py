@@ -18,6 +18,7 @@ from quantum chemistry applications.
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import math
 import numpy as np
+from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -33,7 +34,7 @@ four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class SingleExcitation(Operation):
-    r"""SingleExcitation(phi, wires)
+    r"""
     Single excitation rotation.
 
     .. math:: U(\phi) = \begin{bmatrix}
@@ -58,6 +59,9 @@ class SingleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -78,31 +82,82 @@ class SingleExcitation(Operation):
     """
 
     num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
+    """Gradient computation method."""
+
     grad_recipe = four_term_grad_recipe
-    generator = [
-        np.array([[0, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 0]]),
-        -1 / 2,
-    ]
+    """Gradient recipe for the parameter-shift method."""
+
     parameter_frequencies = [(0.5, 1.0)]
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    def generator(self):
+        w1, w2 = self.wires
+        return 0.25 * qml.PauliX(w1) @ qml.PauliY(w2) - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitation.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.9689, -0.2474,  0.0000],
+                [ 0.0000,  0.2474,  0.9689,  0.0000],
+                [ 0.0000,  0.0000,  0.0000,  1.0000]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
 
         mat = qml.math.diag([1, c, c, 1])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def decomposition(theta, wires):
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.SingleExcitation.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
+        [CNOT(wires=[0, 1]), CRY(1.23, wires=[1, 0]), CNOT(wires=[0, 1])]
+
+        """
         decomp_ops = [
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
@@ -115,82 +170,8 @@ class SingleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G")
 
 
-class SingleExcitationPlus(Operation):
-    r"""SingleExcitationPlus(phi, wires)
-    Single excitation rotation with positive phase-shift outside the rotation subspace.
-
-    .. math:: U_+(\phi) = \begin{bmatrix}
-                e^{i\phi/2} & 0 & 0 & 0 \\
-                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
-                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
-                0 & 0 & 0 & e^{i\phi/2}
-            \end{bmatrix}.
-
-    **Details:**
-
-    * Number of wires: 2
-    * Number of parameters: 1
-    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
-      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
-
-    Args:
-        phi (float): rotation angle :math:`\phi`
-        wires (Sequence[int] or int): the wires the operation acts on
-
-    """
-    num_wires = 2
-    num_params = 1
-    grad_method = "A"
-    generator = [
-        np.array([[-1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, -1]]),
-        -1 / 2,
-    ]
-    parameter_frequencies = [(1,)]
-
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
-
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
-
-        interface = qml.math.get_interface(theta)
-
-        if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
-            c = qml.math.cast_like(c, 1j)
-            s = qml.math.cast_like(s, 1j)
-
-        e = qml.math.exp(1j * theta / 2)
-        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
-        return mat + s * qml.math.cast_like(off_diag, s)
-
-    @staticmethod
-    def decomposition(theta, wires):
-        decomp_ops = [
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(theta / 2, wires=[wires[1], wires[0]]),
-            qml.PauliX(wires=wires[0]),
-            qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(theta / 2, wires=[wires[0], wires[1]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-        ]
-        return decomp_ops
-
-    def adjoint(self):
-        (phi,) = self.parameters
-        return SingleExcitationPlus(-phi, wires=self.wires)
-
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₊")
-
-
 class SingleExcitationMinus(Operation):
-    r"""SingleExcitationMinus(phi, wires)
+    r"""
     Single excitation rotation with negative phase-shift outside the rotation subspace.
 
     .. math:: U_-(\phi) = \begin{bmatrix}
@@ -210,47 +191,112 @@ class SingleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     """
     num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "A"
-    generator = [
-        np.array([[1, 0, 0, 0], [0, 0, -1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]]),
-        -1 / 2,
-    ]
+    """Gradient computation method."""
+
     parameter_frequencies = [(1,)]
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    def generator(self):
+        w1, w2 = self.wires
+        return (
+            -0.25 * qml.Identity(w1)
+            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w2)
+            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
+            - 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
+        )
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-        interface = qml.math.get_interface(theta)
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitationMinus.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitationMinus.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689-0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(-1j * theta / 2)
+        e = qml.math.exp(-1j * phi / 2)
         mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), theta)
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
         return mat + s * qml.math.cast_like(off_diag, s)
 
     @staticmethod
-    def decomposition(theta, wires):
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.SingleExcitationMinus.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
+        [PauliX(wires=[0]),
+        PauliX(wires=[1]),
+        ControlledPhaseShift(-0.615, wires=[1, 0]),
+        PauliX(wires=[0]),
+        PauliX(wires=[1]),
+        ControlledPhaseShift(-0.615, wires=[0, 1]),
+        CNOT(wires=[0, 1]),
+        CRY(1.23, wires=[1, 0]),
+        CNOT(wires=[0, 1])]
+
+        """
         decomp_ops = [
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(-theta / 2, wires=[wires[1], wires[0]]),
+            qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
             qml.PauliX(wires=wires[0]),
             qml.PauliX(wires=wires[1]),
-            qml.ControlledPhaseShift(-theta / 2, wires=[wires[0], wires[1]]),
+            qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(theta, wires=[wires[1], wires[0]]),
+            qml.CRY(phi, wires=[wires[1], wires[0]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
@@ -263,8 +309,147 @@ class SingleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G₋")
 
 
+class SingleExcitationPlus(Operation):
+    r"""
+    Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+
+    """
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
+
+    def generator(self):
+        w1, w2 = self.wires
+        return (
+            0.25 * qml.Identity(w1)
+            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w2)
+            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w2)
+            + 0.25 * qml.PauliZ(w1) @ qml.PauliZ(w2)
+        )
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitationPlus.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.SingleExcitationPlus.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689+0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689+0.2474j]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
+
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+
+        e = qml.math.exp(1j * phi / 2)
+        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
+        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
+        return mat + s * qml.math.cast_like(off_diag, s)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.SingleExcitationPlus.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
+        [PauliX(wires=[0]),
+        PauliX(wires=[1]),
+        ControlledPhaseShift(0.615, wires=[1, 0]),
+        PauliX(wires=[0]),
+        PauliX(wires=[1]),
+        ControlledPhaseShift(0.615, wires=[0, 1]),
+        CNOT(wires=[0, 1]),
+        CRY(1.23, wires=[1, 0]),
+        CNOT(wires=[0, 1])]
+
+        """
+        decomp_ops = [
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
+            qml.PauliX(wires=wires[0]),
+            qml.PauliX(wires=wires[1]),
+            qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.CRY(phi, wires=[wires[1], wires[0]]),
+            qml.CNOT(wires=[wires[0], wires[1]]),
+        ]
+        return decomp_ops
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return SingleExcitationPlus(-phi, wires=self.wires)
+
+    def label(self, decimals=None, base_label=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₊")
+
+
 class DoubleExcitation(Operation):
-    r"""DoubleExcitation(phi, wires)
+    r"""
     Double excitation rotation.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -291,6 +476,9 @@ class DoubleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -311,22 +499,55 @@ class DoubleExcitation(Operation):
         circuit(0.1)
     """
     num_wires = 4
-    num_params = 1
-    grad_method = "A"
-    grad_recipe = four_term_grad_recipe
+    """int: Number of wires that the operator acts on."""
 
-    G = np.zeros((16, 16), dtype=np.complex64)
-    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-    generator = [G, -1 / 2]
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
+    grad_recipe = four_term_grad_recipe
+    """Gradient recipe for the parameter-shift method."""
+
     parameter_frequencies = [(0.5, 1.0)]
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    def generator(self):
+        w0, w1, w2, w3 = self.wires
+        coeffs = [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625]
+        obs = [
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliX(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliX(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliX(w2) @ qml.PauliX(w3),
+            qml.PauliY(w0) @ qml.PauliX(w1) @ qml.PauliY(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliX(w2) @ qml.PauliY(w3),
+            qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
+        ]
+        return qml.Hamiltonian(coeffs, obs)
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
 
         mat = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 12), -s)
@@ -334,7 +555,57 @@ class DoubleExcitation(Operation):
         return mat
 
     @staticmethod
-    def decomposition(theta, wires):
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
+
+        For the source of this decomposition, see page 17 of
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.DoubleExcitation.compute_decomposition(1.23, wires=(0,1,2,3))
+        [CNOT(wires=[2, 3]),
+        CNOT(wires=[0, 2]),
+        Hadamard(wires=[3]),
+        Hadamard(wires=[0]),
+        CNOT(wires=[2, 3]),
+        CNOT(wires=[0, 1]),
+        RY(0.15375, wires=[1]),
+        RY(-0.15375, wires=[0]),
+        CNOT(wires=[0, 3]),
+        Hadamard(wires=[3]),
+        CNOT(wires=[3, 1]),
+        RY(0.15375, wires=[1]),
+        RY(-0.15375, wires=[0]),
+        CNOT(wires=[2, 1]),
+        CNOT(wires=[2, 0]),
+        RY(-0.15375, wires=[1]),
+        RY(0.15375, wires=[0]),
+        CNOT(wires=[3, 1]),
+        Hadamard(wires=[3]),
+        CNOT(wires=[0, 3]),
+        RY(-0.15375, wires=[1]),
+        RY(0.15375, wires=[0]),
+        CNOT(wires=[0, 1]),
+        CNOT(wires=[2, 0]),
+        Hadamard(wires=[0]),
+        Hadamard(wires=[3]),
+        CNOT(wires=[0, 2]),
+        CNOT(wires=[2, 3])]
+
+        """
         # This decomposition is the "upside down" version of that on p17 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
             qml.CNOT(wires=[wires[2], wires[3]]),
@@ -343,22 +614,22 @@ class DoubleExcitation(Operation):
             qml.Hadamard(wires=wires[0]),
             qml.CNOT(wires=[wires[2], wires[3]]),
             qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.RY(theta / 8, wires=wires[1]),
-            qml.RY(-theta / 8, wires=wires[0]),
+            qml.RY(phi / 8, wires=wires[1]),
+            qml.RY(-phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[0], wires[3]]),
             qml.Hadamard(wires=wires[3]),
             qml.CNOT(wires=[wires[3], wires[1]]),
-            qml.RY(theta / 8, wires=wires[1]),
-            qml.RY(-theta / 8, wires=wires[0]),
+            qml.RY(phi / 8, wires=wires[1]),
+            qml.RY(-phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[2], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
-            qml.RY(-theta / 8, wires=wires[1]),
-            qml.RY(theta / 8, wires=wires[0]),
+            qml.RY(-phi / 8, wires=wires[1]),
+            qml.RY(phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[3], wires[1]]),
             qml.Hadamard(wires=wires[3]),
             qml.CNOT(wires=[wires[0], wires[3]]),
-            qml.RY(-theta / 8, wires=wires[1]),
-            qml.RY(theta / 8, wires=wires[0]),
+            qml.RY(-phi / 8, wires=wires[1]),
+            qml.RY(phi / 8, wires=wires[0]),
             qml.CNOT(wires=[wires[0], wires[1]]),
             qml.CNOT(wires=[wires[2], wires[0]]),
             qml.Hadamard(wires=wires[0]),
@@ -378,7 +649,7 @@ class DoubleExcitation(Operation):
 
 
 class DoubleExcitationPlus(Operation):
-    r"""DoubleExcitationPlus(phi, wires)
+    r"""
     Double excitation rotation with positive phase-shift outside the rotation subspace.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -403,34 +674,59 @@ class DoubleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 4
-    num_params = 1
-    grad_method = "A"
+    """int: Number of wires that the operator acts on."""
 
-    G = -1 * np.eye(16, dtype=np.complex64)
-    G[3, 3] = 0
-    G[12, 12] = 0
-    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-    generator = [G, -1 / 2]
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
     parameter_frequencies = [(1,)]
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    def generator(self):
+        G = -1 * np.eye(16, dtype=np.complex64)
+        G[3, 3] = G[12, 12] = 0
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+        H = coo_matrix(-0.5 * G)
+        return qml.SparseHamiltonian(H, wires=self.wires)
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-        interface = qml.math.get_interface(theta)
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitationPlus.matrix`
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(1j * theta / 2)
+        e = qml.math.exp(1j * phi / 2)
 
         mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 3), c)
@@ -448,7 +744,7 @@ class DoubleExcitationPlus(Operation):
 
 
 class DoubleExcitationMinus(Operation):
-    r"""DoubleExcitationMinus(phi, wires)
+    r"""
     Double excitation rotation with negative phase-shift outside the rotation subspace.
 
     This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
@@ -473,34 +769,58 @@ class DoubleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = 4
-    num_params = 1
-    grad_method = "A"
+    """int: Number of wires that the operator acts on."""
 
-    G = np.eye(16, dtype=np.complex64)
-    G[3, 3] = 0
-    G[12, 12] = 0
-    G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
-    G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-    generator = [G, -1 / 2]
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
     parameter_frequencies = [(1,)]
 
-    @classmethod
-    def _matrix(cls, *params):
-        theta = params[0]
+    def generator(self):
+        G = np.eye(16, dtype=np.complex64)
+        G[3, 3] = 0
+        G[12, 12] = 0
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+        H = coo_matrix(-0.5 * G)
+        return qml.SparseHamiltonian(H, wires=self.wires)
 
-        c = qml.math.cos(theta / 2)
-        s = qml.math.sin(theta / 2)
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
-        interface = qml.math.get_interface(theta)
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitationMinus.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+
+        interface = qml.math.get_interface(phi)
 
         if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+            phi = qml.math.cast_like(phi, 1j)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(-1j * theta / 2)
+        e = qml.math.exp(-1j * phi / 2)
         mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
         mat = qml.math.scatter_element_add(mat, (3, 3), c)
         mat = qml.math.scatter_element_add(mat, (3, 12), -s)
@@ -517,7 +837,7 @@ class DoubleExcitationMinus(Operation):
 
 
 class OrbitalRotation(Operation):
-    r"""OrbitalRotation(phi, wires)
+    r"""
     Spin-adapted spatial orbital rotation.
 
     For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
@@ -548,6 +868,9 @@ class OrbitalRotation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -568,32 +891,14 @@ class OrbitalRotation(Operation):
                 0.        +0.j])
     """
     num_wires = 4
-    num_params = 1
-    grad_method = "A"
+    """int: Number of wires that the operator acts on."""
 
-    generator = [
-        qml.math.array(
-            [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, -1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, -1j, 0, 0, -1j, 0, 0, 0, 0, 0, 0],
-                [0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0],
-                [0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1j, 0],
-                [0, 0, 0, 0, 0, 0, 1j, 0, 0, 1j, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 1j, 0, 0, 0, 0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1j, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            ]
-        ),
-        -1 / 2,
-    ]
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
 
     @property
@@ -614,14 +919,38 @@ class OrbitalRotation(Operation):
         coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
         return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
 
-    @classmethod
-    def _matrix(cls, *params):
-        r"""This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
-        where the sign flip is to adjust for the opposite convention used by authors for naming wires.
-        Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
-        """
+    def generator(self):
+        w0, w1, w2, w3 = self.wires
+        return (
+            0.25 * qml.PauliX(w0) @ qml.PauliY(w2)
+            - 0.25 * qml.PauliY(w0) @ qml.PauliX(w2)
+            + 0.25 * qml.PauliX(w1) @ qml.PauliY(w3)
+            - 0.25 * qml.PauliY(w1) @ qml.PauliX(w3)
+        )
 
-        phi = params[0]
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.OrbitalRotation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+        """
+        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
@@ -660,7 +989,41 @@ class OrbitalRotation(Operation):
         return U
 
     @staticmethod
-    def decomposition(phi, wires):
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
+
+        For the source of this decomposition, see page 18 of
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.OrbitalRotation.compute_decomposition(1.23, wires=(0,1,2,3))
+        [Hadamard(wires=[3]),
+        Hadamard(wires=[2]),
+        CNOT(wires=[3, 1]),
+        CNOT(wires=[2, 0]),
+        RY(0.615, wires=[3]),
+        RY(0.615, wires=[2]),
+        RY(0.615, wires=[1]),
+        RY(0.615, wires=[0]),
+        CNOT(wires=[3, 1]),
+        CNOT(wires=[2, 0]),
+        Hadamard(wires=[3]),
+        Hadamard(wires=[2])]
+
+        """
         # This decomposition is the "upside down" version of that on p18 of https://arxiv.org/abs/2104.05695
         decomp_ops = [
             qml.Hadamard(wires=wires[3]),

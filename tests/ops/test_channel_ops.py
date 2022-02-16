@@ -57,7 +57,7 @@ class TestChannels:
         else:
             op = [ops(p, wires=0)]
         for operation in op:
-            K_list = operation.kraus_matrices
+            K_list = operation.kraus_matrices()
             K_arr = np.array(K_list)
             Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
             assert np.allclose(Kraus_sum, np.eye(K_list[0].shape[0]), atol=tol, rtol=0)
@@ -69,8 +69,8 @@ class TestAmplitudeDamping:
     def test_gamma_zero(self, tol):
         """Test gamma=0 gives correct Kraus matrices"""
         op = channel.AmplitudeDamping
-        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
-        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[1], np.zeros((2, 2)), atol=tol, rtol=0)
 
     def test_gamma_arbitrary(self, tol):
         """Test gamma=0.1 gives correct Kraus matrices"""
@@ -79,11 +79,11 @@ class TestAmplitudeDamping:
             np.array([[1.0, 0.0], [0.0, 0.9486833]]),
             np.array([[0.0, 0.31622777], [0.0, 0.0]]),
         ]
-        assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+        assert np.allclose(op(0.1, wires=0).kraus_matrices(), expected, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
         with pytest.raises(ValueError, match="gamma must be between"):
-            channel.AmplitudeDamping(1.5, wires=0).kraus_matrices
+            channel.AmplitudeDamping(1.5, wires=0).kraus_matrices()
 
 
 class TestGeneralizedAmplitudeDamping:
@@ -92,8 +92,10 @@ class TestGeneralizedAmplitudeDamping:
     def test_gamma_p_zero(self, tol):
         """Test p=0, gamma=0 gives correct Kraus matrices"""
         op = channel.GeneralizedAmplitudeDamping
-        assert np.allclose(op(0, 0, wires=0).kraus_matrices[0], np.zeros((2, 2)), atol=tol, rtol=0)
-        assert np.allclose(op(0, 0, wires=0).kraus_matrices[2], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(
+            op(0, 0, wires=0).kraus_matrices()[0], np.zeros((2, 2)), atol=tol, rtol=0
+        )
+        assert np.allclose(op(0, 0, wires=0).kraus_matrices()[2], np.eye(2), atol=tol, rtol=0)
 
     def test_gamma_p_arbitrary(self, tol):
         """Test arbitrary p and gamma values give correct first Kraus matrix"""
@@ -101,19 +103,19 @@ class TestGeneralizedAmplitudeDamping:
         op = channel.GeneralizedAmplitudeDamping
         # check K0 for gamma=0.1, p =0.1
         expected_K0 = np.array([[0.31622777, 0.0], [0.0, 0.3]])
-        assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(0.1, 0.1, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
         # check K3 for gamma=0.1, p=0.5
         expected_K3 = np.array([[0.0, 0.0], [0.2236068, 0.0]])
-        assert np.allclose(op(0.1, 0.5, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0)
+        assert np.allclose(op(0.1, 0.5, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
         with pytest.raises(ValueError, match="gamma must be between"):
-            channel.GeneralizedAmplitudeDamping(1.5, 0.0, wires=0).kraus_matrices
+            channel.GeneralizedAmplitudeDamping(1.5, 0.0, wires=0).kraus_matrices()
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be between"):
-            channel.GeneralizedAmplitudeDamping(0.0, 1.5, wires=0).kraus_matrices
+            channel.GeneralizedAmplitudeDamping(0.0, 1.5, wires=0).kraus_matrices()
 
 
 class TestPhaseDamping:
@@ -122,8 +124,8 @@ class TestPhaseDamping:
     def test_gamma_zero(self, tol):
         """Test gamma=0 gives correct Kraus matrices"""
         op = channel.PhaseDamping
-        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
-        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[1], np.zeros((2, 2)), atol=tol, rtol=0)
 
     def test_gamma_arbitrary(self, tol):
         """Test gamma=0.1 gives correct Kraus matrices"""
@@ -132,11 +134,11 @@ class TestPhaseDamping:
             np.array([[1.0, 0.0], [0.0, 0.9486833]]),
             np.array([[0.0, 0.0], [0.0, 0.31622777]]),
         ]
-        assert np.allclose(op(0.1, wires=0).kraus_matrices, expected, atol=tol, rtol=0)
+        assert np.allclose(op(0.1, wires=0).kraus_matrices(), expected, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
         with pytest.raises(ValueError, match="gamma must be between"):
-            channel.PhaseDamping(1.5, wires=0).kraus_matrices
+            channel.PhaseDamping(1.5, wires=0).kraus_matrices()
 
 
 class TestBitFlip:
@@ -148,10 +150,10 @@ class TestBitFlip:
         op = channel.BitFlip
 
         expected_K0 = np.sqrt(1 - p) * np.eye(2)
-        assert np.allclose(op(p, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p) * X
-        assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_bitflip(self, angle, tol):
@@ -173,7 +175,7 @@ class TestBitFlip:
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be between"):
-            channel.BitFlip(1.5, wires=0).kraus_matrices
+            channel.BitFlip(1.5, wires=0).kraus_matrices()
 
 
 class TestPhaseFlip:
@@ -185,10 +187,10 @@ class TestPhaseFlip:
         op = channel.PhaseFlip
 
         expected_K0 = np.sqrt(1 - p) * np.eye(2)
-        assert np.allclose(op(p, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p) * Z
-        assert np.allclose(op(p, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_phaseflip(self, angle, tol):
@@ -210,7 +212,7 @@ class TestPhaseFlip:
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be between"):
-            channel.PhaseFlip(1.5, wires=0).kraus_matrices
+            channel.PhaseFlip(1.5, wires=0).kraus_matrices()
 
 
 class TestDepolarizingChannel:
@@ -219,15 +221,15 @@ class TestDepolarizingChannel:
     def test_p_zero(self, tol):
         """Test p=0 gives correct Kraus matrices"""
         op = channel.DepolarizingChannel
-        assert np.allclose(op(0, wires=0).kraus_matrices[0], np.eye(2), atol=tol, rtol=0)
-        assert np.allclose(op(0, wires=0).kraus_matrices[1], np.zeros((2, 2)), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[0], np.eye(2), atol=tol, rtol=0)
+        assert np.allclose(op(0, wires=0).kraus_matrices()[1], np.zeros((2, 2)), atol=tol, rtol=0)
 
     def test_p_arbitrary(self, tol):
         """Test p=0.1 gives correct Kraus matrices"""
         p = 0.1
         op = channel.DepolarizingChannel
         expected = np.sqrt(p / 3) * X
-        assert np.allclose(op(0.1, wires=0).kraus_matrices[1], expected, atol=tol, rtol=0)
+        assert np.allclose(op(0.1, wires=0).kraus_matrices()[1], expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_depolarizing(self, angle, tol):
@@ -249,7 +251,7 @@ class TestDepolarizingChannel:
 
     def test_p_invalid_parameter(self):
         with pytest.raises(ValueError, match="p must be between"):
-            channel.DepolarizingChannel(1.5, wires=0).kraus_matrices
+            channel.DepolarizingChannel(1.5, wires=0).kraus_matrices()
 
 
 class TestResetError:
@@ -261,31 +263,31 @@ class TestResetError:
         op = channel.ResetError
 
         expected_K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0)
 
         expected_K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
         expected_K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices()[2], expected_K2, atol=tol, rtol=0)
 
         expected_K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0)
 
         expected_K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
-        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices[4], expected_K4, atol=tol, rtol=0)
+        assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices()[4], expected_K4, atol=tol, rtol=0)
 
     def test_p0_invalid_parameter(self):
         with pytest.raises(ValueError, match="p_0 must be between"):
-            channel.ResetError(1.5, 0.0, wires=0).kraus_matrices
+            channel.ResetError(1.5, 0.0, wires=0).kraus_matrices()
 
     def test_p1_invalid_parameter(self):
         with pytest.raises(ValueError, match="p_1 must be between"):
-            channel.ResetError(0.0, 1.5, wires=0).kraus_matrices
+            channel.ResetError(0.0, 1.5, wires=0).kraus_matrices()
 
     def test_p0_p1_sum_not_normalized(self):
         with pytest.raises(ValueError, match="must be between"):
-            channel.ResetError(1.0, 1.0, wires=0).kraus_matrices
+            channel.ResetError(1.0, 1.0, wires=0).kraus_matrices()
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_reset_error(self, angle, tol):
@@ -363,14 +365,14 @@ class TestPauliError:
         expected_Ks = [np.eye(2**5), np.zeros((2**5, 2**5))]
         c = channel.PauliError("XXXXX", 0, wires=[0, 1, 2, 3, 4])
 
-        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+        assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
 
     def test_p_one(self, tol):
         """Test resulting Kraus matrices for p=1"""
         expected_Ks = [np.zeros((2**5, 2**5)), np.flip(np.eye(2**5), axis=1)]
         c = channel.PauliError("XXXXX", 1, wires=[0, 1, 2, 3, 4])
 
-        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+        assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
 
     OPERATORS = ["X", "XY", "ZX"]
     WIRES = [[1], [0, 1], [3, 1]]
@@ -415,7 +417,7 @@ class TestPauliError:
         """Test sevaral resulting kraus matrices for sevaral configurations"""
         c = channel.PauliError(operators, 0.5, wires=wires)
 
-        assert np.allclose(c.kraus_matrices, expected_Ks, atol=tol, rtol=0)
+        assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
 
 
 class TestQubitChannel:
@@ -427,7 +429,7 @@ class TestQubitChannel:
             np.array([[1.0, 0.0], [0.0, 0.9486833]]),
             np.array([[0.0, 0.31622777], [0.0, 0.0]]),
         ]
-        out = channel.QubitChannel(K_list1, wires=0).kraus_matrices
+        out = channel.QubitChannel(K_list1, wires=0).kraus_matrices()
 
         # verify equivalent to input matrices
         assert np.allclose(out, K_list1, atol=tol, rtol=0)
@@ -499,32 +501,32 @@ class TestThermalRelaxationError:
 
         expected_K0 = np.sqrt(pid) * np.eye(2)
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0
         )
 
         expected_K1 = np.sqrt(pz) * np.array([[1, 0], [0, -1]])
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0
         )
 
         expected_K2 = np.sqrt(pr0) * np.array([[1, 0], [0, 0]])
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[2], expected_K2, atol=tol, rtol=0
         )
 
         expected_K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0
         )
 
         expected_K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[4], expected_K4, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[4], expected_K4, atol=tol, rtol=0
         )
 
         expected_K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[5], expected_K5, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[5], expected_K5, atol=tol, rtol=0
         )
 
     @pytest.mark.parametrize(
@@ -570,43 +572,43 @@ class TestThermalRelaxationError:
 
         expected_K0 = np.sqrt(e0) * v0.reshape(2, 2, order="F")
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[0], expected_K0, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[0], expected_K0, atol=tol, rtol=0
         )
 
         expected_K1 = np.sqrt(e1) * v1.reshape(2, 2, order="F")
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[1], expected_K1, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0
         )
 
         expected_K2 = np.sqrt(e2) * v2.reshape(2, 2, order="F")
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[2], expected_K2, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[2], expected_K2, atol=tol, rtol=0
         )
 
         expected_K3 = np.sqrt(e3) * v3.reshape(2, 2, order="F")
         assert np.allclose(
-            op(pe, t1, t2, tg, wires=0).kraus_matrices[3], expected_K3, atol=tol, rtol=0
+            op(pe, t1, t2, tg, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0
         )
 
     def test_pe_invalid_parameter(self):
         with pytest.raises(ValueError, match="pe must be between"):
-            channel.ThermalRelaxationError(1.5, 100e-6, 100e-6, 20e-9, wires=0).kraus_matrices
+            channel.ThermalRelaxationError(1.5, 100e-6, 100e-6, 20e-9, wires=0).kraus_matrices()
 
     def test_T2_g_2T1_invalid_parameter(self):
         with pytest.raises(ValueError, match="Invalid T_2 relaxation time parameter"):
-            channel.ThermalRelaxationError(0.3, 100e-6, np.inf, 20e-9, wires=0).kraus_matrices
+            channel.ThermalRelaxationError(0.3, 100e-6, np.inf, 20e-9, wires=0).kraus_matrices()
 
     def test_T1_le_0_invalid_parameter(self):
         with pytest.raises(ValueError, match="Invalid T_1 relaxation time parameter"):
-            channel.ThermalRelaxationError(0.3, -50e-6, np.inf, 20e-9, wires=0).kraus_matrices
+            channel.ThermalRelaxationError(0.3, -50e-6, np.inf, 20e-9, wires=0).kraus_matrices()
 
     def test_T2_le_0_invalid_parameter(self):
         with pytest.raises(ValueError, match="Invalid T_2 relaxation time parameter"):
-            channel.ThermalRelaxationError(0.3, 100e-6, 0, 20e-9, wires=0).kraus_matrices
+            channel.ThermalRelaxationError(0.3, 100e-6, 0, 20e-9, wires=0).kraus_matrices()
 
     def test_tg_le_0_invalid_parameter(self):
         with pytest.raises(ValueError, match="Invalid gate_time"):
-            channel.ThermalRelaxationError(0.3, 100e-6, 100e-6, -20e-9, wires=0).kraus_matrices
+            channel.ThermalRelaxationError(0.3, 100e-6, 100e-6, -20e-9, wires=0).kraus_matrices()
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_thermal_relaxation_error(self, angle, tol):

@@ -487,8 +487,8 @@ def test_vjp_is_unwrapped_for_param_shift():
         num_wires = 1
         num_params = 1
 
-        @classmethod
-        def _matrix(cls, *params):
+        @staticmethod
+        def compute_matrix(*params):
             z = params[0]
 
             if np.all(z == 0):
