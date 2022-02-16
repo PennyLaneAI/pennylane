@@ -72,16 +72,17 @@ def _get_operation_recipe(tape, t_idx, shifts):
     - If ``parameter_frequencies`` yield a result, the frequencies are
       used to construct the general parameter-shift rule via
       ``qml.gradients.generate_shift_rule``
+
     - If ``parameter_frequencies`` raises an error (because the operation
       has no custom ``parameter_frequencies`` and no ``generator`` is defined),
-      the ``get_parameter_shift`` method of the operation is used.
+      the :meth:`.Operator.get_parameter_shift` method is used.
       If in turn no custom version of ``get_parameter_shift`` is defined
       and the operation does not have a ``grad_recipe``, the two-term
       parameter-shift rule is assumed.
 
     That is, a default to the two-term rule only is returned if no custom
     ``parameter_frequencies``, ``generator``, ``get_parameter_shift``,
-     and ``grad_recipe`` are defined.
+    and ``grad_recipe`` are defined.
     """
     op, p_idx = tape.get_operation(t_idx)
     try:

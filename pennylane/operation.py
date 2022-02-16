@@ -1145,12 +1145,13 @@ class Operation(Operator):
 
         Args:
             idx (int): parameter index
+            shift (float or None): The shift value to use for the two-term
+                parameter-shift rule. This is only used if the operation
+                does not have :attr:`Operator.grad_recipe` defined. If ``None``,
+                a shift value of :math:`\pi/2` is used.
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
-
-        Note that the default value for ``shift`` is None, which is replaced by the
-        default shift :math:`\pi/2`.
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]

@@ -8,11 +8,9 @@
   `qml.gradients.param_shift`.
   [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
 
-  If an operation has `parameter_frequencies` defined (also see
-  the next feature entry) and calling
-  this method does not raise an error, the operation will be
-  considered to have an analytic differentiation method registered,
-  namely via the parameter-shift rule.
+  If an operation has `parameter_frequencies` defined, the operation
+  will be considered to have an analytic differentiation method
+  registered, namely via the parameter-shift rule.
   The frequencies are then used to obtain the shift rule for the
   operation.
 
@@ -47,7 +45,6 @@
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
   enters a circuit when using the operation.
-  Also see the previous feature.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
   The frequencies can be used for circuit analysis, optimization
