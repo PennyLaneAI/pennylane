@@ -1208,7 +1208,7 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen = self.generator()  # pylint: disable=assignment-from-no-return
+            gen = self.generator()
 
             try:
                 gen_eigvals = tuple(self.generator().eigvals())
