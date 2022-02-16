@@ -91,7 +91,7 @@ def mid_circuit_measurements_are_terminal(tape):
     return new_tape
 
 
-def simple_defer_measurements(tape):
+def defer_measurements_on_terminal_tape(tape):
 
     with QuantumTape() as new_tape:
         measured_wires = []
@@ -137,5 +137,5 @@ def simple_defer_measurements(tape):
 @qfunc_transform
 def defer_measurements(tape):
     tape = mid_circuit_measurements_are_terminal(tape)
-    tape = simple_defer_measurements(tape)
+    tape = defer_measurements_on_terminal_tape(tape)
     return tape
