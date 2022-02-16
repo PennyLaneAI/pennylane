@@ -47,15 +47,15 @@ class Aux:
 class WireRemapper:
 
     def __init__(self):
-        self.altered_wires = set()
-        self.measured_wires = {}
+        self._altered_wires = set()
+        self._measured_wires = {}
 
     def mark_altered(self, w):
-        self.altered_wires.add(w)
+        self._altered_wires.add(w)
 
     def get_mapped(self, base_wire):
-        if base_wire in self.measured_wires.keys():
-            return Aux(base_wire, self.measured_wires[base_wire])
+        if base_wire in self._measured_wires.keys():
+            return Aux(base_wire, self._measured_wires[base_wire])
         return base_wire
 
     def get_mapped_and_mark_altered(self, base_wire):
@@ -64,17 +64,17 @@ class WireRemapper:
         return remapped
 
     def measured(self, wire):
-        if wire not in self.measured_wires.keys():
-            if wire in self.altered_wires:
-                self.measured_wires[wire] = 0
+        if wire not in self._measured_wires.keys():
+            if wire in self._altered_wires:
+                self._measured_wires[wire] = 0
                 return Aux(wire)
             else:
-                self.altered_wires.add(wire)
+                self._altered_wires.add(wire)
                 return wire
         else:
-            if Aux(wire, self.measured_wires[wire]) in self.altered_wires:
-                self.measured_wires[wire] += 1
-                return Aux(wire, self.measured_wires[wire])
+            if Aux(wire, self._measured_wires[wire]) in self._altered_wires:
+                self._measured_wires[wire] += 1
+                return Aux(wire, self._measured_wires[wire])
 
 
 
