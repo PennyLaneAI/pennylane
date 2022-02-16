@@ -66,22 +66,19 @@ class QFT(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        wires = qml.wires.Wires(wires)
+        self.hyperparameters["n_wires"] = len(wires)
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
     @property
     def num_params(self):
         return 0
 
-    @property
-    def matrix(self):
-        # Redefine the property here to allow for a custom _matrix signature
-        mat = self._matrix(len(self.wires))
-        if self.inverse:
-            mat = mat.conj()
-        return mat
-
-    @classmethod
+    @staticmethod
     @functools.lru_cache()
-    def _matrix(cls, num_wires):
-        dimension = 2**num_wires
+    def compute_matrix(n_wires):  # pylint: disable=arguments-differ
+        dimension = 2**n_wires
 
         mat = np.zeros((dimension, dimension), dtype=np.complex128)
         omega = np.exp(2 * np.pi * 1j / dimension)
@@ -93,9 +90,28 @@ class QFT(Operation):
         return mat / np.sqrt(dimension)
 
     @staticmethod
-    def decomposition(wires):
-        num_wires = len(wires)
-        shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
+    def compute_decomposition(wires, n_wires):  # pylint: disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.QFT.decomposition`.
+
+        Args:
+            wires (Iterable, Wires): wires that the operator acts on
+            n_wires (int): number of wires or ``len(wires)``
+
+        Returns:
+            list[Operator]: decomposition of the operator
+
+        **Example:**
+
+        >>> qml.QubitCarry.compute_decomposition((0,1,2,4))
+        [Toffoli(wires=[1, 2, 4]), CNOT(wires=[1, 2]), Toffoli(wires=[0, 2, 4])]
+
+        """
+        shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
         decomp_ops = []
         for i, wire in enumerate(wires):
@@ -105,8 +121,8 @@ class QFT(Operation):
                 op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
 
-        first_half_wires = wires[: num_wires // 2]
-        last_half_wires = wires[-(num_wires // 2) :]
+        first_half_wires = wires[: n_wires // 2]
+        last_half_wires = wires[-(n_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
             swap = qml.SWAP(wires=[wire1, wire2])

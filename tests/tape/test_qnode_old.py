@@ -412,9 +412,9 @@ class TestValidation:
             basis = "X"
             grad_method = "F"
 
-            @classmethod
-            def _matrix(cls, *params):
-                return qml.RX._matrix(*params)
+            @staticmethod
+            def compute_matrix(*params):
+                return qml.RX.compute_matrix(*params)
 
         dev = qml.device("default.mixed", wires=3, shots=None)
         dev.operations.add("MyRX")
@@ -826,11 +826,10 @@ class TestTapeConstruction:
 
     def test_draw_transform(self):
         """Test circuit drawing"""
-        from pennylane import numpy as anp
 
-        x = anp.array(0.1, requires_grad=True)
-        y = anp.array([0.2, 0.3], requires_grad=True)
-        z = anp.array(0.4, requires_grad=True)
+        x = pnp.array(0.1, requires_grad=True)
+        y = pnp.array([0.2, 0.3], requires_grad=True)
+        z = pnp.array(0.4, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -843,46 +842,16 @@ class TestTapeConstruction:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         result = draw(circuit)(p1=x, p3=z)
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
-"""
-
-        assert result == expected
-
-    def test_draw_transform_ascii(self):
-        """Test circuit drawing when using ASCII characters"""
-        from pennylane import numpy as anp
-
-        x = anp.array(0.1, requires_grad=True)
-        y = anp.array([0.2, 0.3], requires_grad=True)
-        z = anp.array(0.4, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, interface="autograd")
-        def circuit(p1, p2, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        result = draw(circuit, charset="ascii")(p1=x, p2=y, p3=z)
-        expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
- 1: --RY(0.06)-----------+X--+| <Z @ X> 
-"""
+        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤ ╭<Z@X>\n" "1: ──RY(0.06)───────────╰X─┤ ╰<Z@X>"
 
         assert result == expected
 
     def test_drawing(self):
         """Test circuit drawing"""
-        from pennylane import numpy as anp
 
-        x = anp.array(0.1, requires_grad=True)
-        y = anp.array([0.2, 0.3], requires_grad=True)
-        z = anp.array(0.4, requires_grad=True)
+        x = pnp.array(0.1, requires_grad=True)
+        y = pnp.array([0.2, 0.3], requires_grad=True)
+        z = pnp.array(0.4, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -896,7 +865,8 @@ class TestTapeConstruction:
 
         circuit(p1=x, p3=z)
 
-        result = circuit.draw()
+        with pytest.warns(UserWarning, match="The QNode.draw method has been deprecated."):
+            result = circuit.draw()
         expected = """\
  0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
  1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
@@ -924,7 +894,8 @@ class TestTapeConstruction:
 
         circuit(p1=x, p3=z)
 
-        result = circuit.draw(charset="ascii")
+        with pytest.warns(UserWarning, match="The QNode.draw method has been deprecated."):
+            result = circuit.draw(charset="ascii")
         expected = """\
  0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
  1: --RY(0.06)-----------+X--+| <Z @ X> 

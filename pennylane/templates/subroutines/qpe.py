@@ -74,7 +74,7 @@ class QuantumPhaseEstimation(Operation):
 
             phase = 5
             target_wires = [0]
-            unitary = qml.RX(phase, wires=0).matrix
+            unitary = qml.RX(phase, wires=0).get_matrix()
 
         The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. An example is
         shown below using a register of five phase-estimation qubits:
@@ -108,15 +108,19 @@ class QuantumPhaseEstimation(Operation):
     grad_method = None
 
     def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
-        self.target_wires = list(target_wires)
-        self.estimation_wires = list(estimation_wires)
+        target_wires = list(target_wires)
+        estimation_wires = list(estimation_wires)
+        wires = target_wires + estimation_wires
 
-        wires = self.target_wires + self.estimation_wires
-
-        if any(wire in self.target_wires for wire in self.estimation_wires):
+        if any(wire in target_wires for wire in estimation_wires):
             raise qml.QuantumFunctionError(
                 "The target wires and estimation wires must be different"
             )
+
+        self._hyperparameters = {
+            "target_wires": target_wires,
+            "estimation_wires": estimation_wires,
+        }
 
         super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
 
@@ -124,31 +128,52 @@ class QuantumPhaseEstimation(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
-        unitary = self.parameters[0]
+    @staticmethod
+    def compute_decomposition(
+        unitary, wires, target_wires, estimation_wires
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators.
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
+
+        Args:
+            unitary (array): the phase estimation unitary, specified as a matrix
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            target_wires (Any or Iterable[Any]): the target wires to apply the unitary
+            estimation_wires (Any or Iterable[Any]): the wires to be used for phase
+                estimation
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+
         unitary_powers = [unitary]
 
-        for _ in range(len(self.estimation_wires) - 1):
+        for _ in range(len(estimation_wires) - 1):
             new_power = unitary_powers[-1] @ unitary_powers[-1]
             unitary_powers.append(new_power)
 
-        with qml.tape.QuantumTape() as tape:
-            for wire in self.estimation_wires:
-                Hadamard(wire)
-                ControlledQubitUnitary(
-                    unitary_powers.pop(), control_wires=wire, wires=self.target_wires
-                )
+        op_list = []
 
-            qml.templates.QFT(wires=self.estimation_wires).inv()
+        for wire in estimation_wires:
+            op_list.append(Hadamard(wire))
+            op_list.append(
+                ControlledQubitUnitary(unitary_powers.pop(), control_wires=wire, wires=target_wires)
+            )
 
-        if self.inverse:
-            tape.inv()
+        op_list.append(qml.templates.QFT(wires=estimation_wires).inv())
 
-        return tape
+        return op_list
 
     def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = QuantumPhaseEstimation(
-            *self.parameters, target_wires=self.target_wires, estimation_wires=self.estimation_wires
+            self.parameters[0],
+            target_wires=self.hyperparameters["target_wires"],
+            estimation_wires=self.hyperparameters["estimation_wires"],
         )
         adjoint_op.inverse = not self.inverse
         return adjoint_op

@@ -15,8 +15,8 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
+
 import copy
-import itertools
 import string
 from itertools import product
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
@@ -28,7 +28,9 @@ from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import AnyWires, Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
+
 from pennylane.tape import QuantumTape, stop_recording
+
 from pennylane.wires import Wires
 
 
@@ -310,8 +312,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
     Each node in the graph should have an order attribute specifying the topological order of
-    the operations. This maintains ordering of operations and allows for the
-    deferred measurement principle to be applied when necessary.
+    the operations.
 
     .. note::
 
@@ -326,7 +327,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     **Example**
 
-    Consider the following, where ``graph`` contains three :class:`~.MeasureNode` and
+    Consider the following, where ``graph`` contains :class:`~.MeasureNode` and
     :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
     We can find the circuit fragments by using:
 
@@ -347,30 +348,26 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     )
     wire_map = {w: w for w in wires}
 
-    copy_ordered_ops = copy.deepcopy(ordered_ops)
+    reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    updated = {}
+    copy_ops = [copy.copy(op) for _, op in ordered_ops]
+
     with QuantumTape() as tape:
-        for _, op in copy_ordered_ops:
-            name_and_wire = op.name + str(op.wires)
-
+        for op in copy_ops:
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
 
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
-                # if a wire has already been updated we still
-                # want to map *from* the original wire
-                if name_and_wire in updated:
-                    new_wire = updated[name_and_wire] + 1
-                    wire_map[measured_wire] = new_wire
-                else:
-                    measured_wire = op.wires[0]
-                    new_wire = _find_new_wire(wires)
-                    wires += new_wire
-                    wire_map[measured_wire] = new_wire
-                updated[name_and_wire] = new_wire
+                measured_wire = op.wires[0]
+
+                new_wire = _find_new_wire(wires)
+                wires += new_wire
+
+                original_wire = reverse_wire_map[measured_wire]
+                wire_map[original_wire] = new_wire
+                reverse_wire_map[new_wire] = original_wire
 
     return tape
 
@@ -447,7 +444,7 @@ def expand_fragment_tapes(
 
     n_qubits = len(measure_nodes)
     if n_qubits >= 1:
-        measure_combinations = partition_pauli_group(len(measure_nodes))
+        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
     else:
         measure_combinations = [
             [""]
@@ -523,90 +520,6 @@ def expand_fragment_tapes(
                 tapes.append(tape_)
 
     return tapes, prepare_nodes, measure_nodes
-
-
-def partition_pauli_group(n_qubits: int) -> List[List[str]]:
-    """Partitions the :math:`n`-qubit Pauli group into qubit-wise commuting terms.
-    The :math:`n`-qubit Pauli group is composed of :math:`4^{n}` terms that can be partitioned into
-    :math:`3^{n}` qubit-wise commuting groups.
-    Args:
-        n_qubits (int): number of qubits
-    Returns:
-        List[List[str]]: A collection of qubit-wise commuting groups containing Pauli words as
-        simple strings
-    **Example**
-    >>> qml.grouping.partition_pauli_group(3)
-    [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
-     ['IIX', 'IZX', 'ZIX', 'ZZX'],
-     ['IIY', 'IZY', 'ZIY', 'ZZY'],
-     ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
-     ['IXX', 'ZXX'],
-     ['IXY', 'ZXY'],
-     ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
-     ['IYX', 'ZYX'],
-     ['IYY', 'ZYY'],
-     ['XII', 'XIZ', 'XZI', 'XZZ'],
-     ['XIX', 'XZX'],
-     ['XIY', 'XZY'],
-     ['XXI', 'XXZ'],
-     ['XXX'],
-     ['XXY'],
-     ['XYI', 'XYZ'],
-     ['XYX'],
-     ['XYY'],
-     ['YII', 'YIZ', 'YZI', 'YZZ'],
-     ['YIX', 'YZX'],
-     ['YIY', 'YZY'],
-     ['YXI', 'YXZ'],
-     ['YXX'],
-     ['YXY'],
-     ['YYI', 'YYZ'],
-     ['YYX'],
-     ['YYY']]
-    """
-    # Cover the case where n_qubits may be passed as a float
-    if isinstance(n_qubits, float):
-        if n_qubits.is_integer():
-            n_qubits = int(n_qubits)
-
-    # If not an int, or a float representing a int, raise an error
-    if not isinstance(n_qubits, int):
-        raise TypeError("Must specify an integer number of qubits.")
-
-    if n_qubits <= 0:
-        raise ValueError("Number of qubits must be at least 1.")
-
-    strings = set()  # tracks all the strings that have already been grouped
-    groups = []
-
-    # We know that I and Z always commute on a given qubit. The following generates all product
-    # sequences of len(n_qubits) over "FXYZ", with F indicating a free slot that can be swapped for
-    # the product over I and Z, and all other terms fixed to the given X/Y/Z. For example, if
-    # ``n_qubits = 3`` our first value for ``string`` will be ``('F', 'F', 'F')``. We then expand
-    # the product of I and Z over the three free slots, giving
-    # ``['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ']``, which is our first group. The
-    # next element of ``string`` will be ``('F', 'F', 'X')`` which we use to generate our second
-    # group ``['IIX', 'IZX', 'ZIX', 'ZZX']``.
-
-    for string in itertools.product("FXYZ", repeat=n_qubits):
-        if string not in strings:
-            num_free_slots = string.count("F")
-
-            group = []
-            commuting = itertools.product("IZ", repeat=num_free_slots)
-
-            for commuting_string in commuting:
-                commuting_string = list(commuting_string)
-                new_string = tuple(commuting_string.pop(0) if s == "F" else s for s in string)
-
-                if new_string not in strings:  # only add if string has not already been grouped
-                    group.append("".join(new_string))
-                    strings |= {new_string}
-
-            if len(group) > 0:
-                groups.append(group)
-
-    return groups
 
 
 def _get_symbol(i):

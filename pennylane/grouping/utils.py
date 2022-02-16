@@ -506,7 +506,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # If there is only a single qubit, we can return the matrix directly
     if n_qubits == 1:
-        return pauli_word.matrix
+        return pauli_word.get_matrix()
 
     # There may be more than one qubit in the Pauli but still only
     # one of them with anything acting on it, so take that into account
@@ -523,7 +523,8 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:
             op_idx = pauli_word.wires.labels.index(wire_label)
-            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).matrix
+            # compute_matrix() only works because we work with Paulis here
+            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).compute_matrix()
 
     return reduce(np.kron, pauli_mats)
 
