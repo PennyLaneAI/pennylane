@@ -95,11 +95,11 @@ def pattern_matching(tape, pattern_tapes):
                     # Loop over all possible qubits configurations given the first match constrains
                     for not_fixed_qubits_conf in not_fixed_qubits_confs:
                         for not_fixed_qubits_conf_permuted in itertools.permutations(
-                                not_fixed_qubits_conf
+                            not_fixed_qubits_conf
                         ):
                             not_fixed_qubits_conf_permuted = list(not_fixed_qubits_conf_permuted)
                             for first_match_qubits_conf in _first_match_qubits(
-                                    node_c[1], node_p[1], pattern_dag.num_wires
+                                node_c[1], node_p[1], pattern_dag.num_wires
                             ):
                                 # Qubits mapping between circuit and template
                                 qubits_conf = _merge_first_match_permutation(
@@ -165,7 +165,7 @@ def pattern_matching(tape, pattern_tapes):
                     template_inverse = group.template_config
 
                     pred = group.pred_block
-                    
+
                     # Choose the first configuration
                     qubit = group.qubit_config[0]
                     # First add all the predecessors of the given match.
@@ -183,7 +183,7 @@ def pattern_matching(tape, pattern_tapes):
                         wires_t = group.template_dag.get_node(index).wires
                         wires_c = [qubit[x] for x in wires_t]
                         wires = [all_qubits[x] for x in wires_c]
-                        
+
                         node = group.template_dag.get_node(index)
                         inst = copy.deepcopy(node.op)
                         inst._wires = Wires(wires)
@@ -415,7 +415,7 @@ class ForwardMatch:
     """
 
     def __init__(
-            self, circuit_dag, pattern_dag, node_id_c, node_id_p, wires, control_wires, target_wires
+        self, circuit_dag, pattern_dag, node_id_c, node_id_p, wires, control_wires, target_wires
     ):
         """
         Create a ForwardMatch class with necessary arguments.
@@ -640,9 +640,9 @@ class ForwardMatch:
 
                 # Necessary but not sufficient conditions for a match to happen.
                 if (
-                        len(self.wires[label]) != len(node_template.wires)
-                        or set(self.wires[label]) != set(node_template.wires)
-                        or node_circuit.op.name != node_template.op.name
+                    len(self.wires[label]) != len(node_template.wires)
+                    or set(self.wires[label]) != set(node_template.wires)
+                    or node_circuit.op.name != node_template.op.name
                 ):
                     continue
 
@@ -650,13 +650,13 @@ class ForwardMatch:
                 # Check if the operations are the same.
                 if _compare_operation_without_qubits(node_circuit, node_template):
                     if _compare_qubits(
-                            node_circuit,
-                            self.wires[label],
-                            self.target_wires[label],
-                            self.control_wires[label],
-                            node_template.wires,
-                            node_template.control_wires,
-                            node_template.target_wires,
+                        node_circuit,
+                        self.wires[label],
+                        self.target_wires[label],
+                        self.control_wires[label],
+                        node_template.wires,
+                        node_template.control_wires,
+                        node_template.target_wires,
                     ):
                         # Check if the qubit, clbit configuration are compatible for a match,
                         self.circuit_matched_with[label] = [i]
@@ -672,7 +672,7 @@ class ForwardMatch:
                         # If the potential successors to visit are blocked or match, it is removed.
                         for potential_id in potential:
                             if self.circuit_blocked[potential_id] | (
-                                    self.circuit_matched_with[potential_id] != []
+                                self.circuit_matched_with[potential_id] != []
                             ):
                                 potential.remove(potential_id)
 
@@ -726,7 +726,7 @@ class MatchingScenarios:
     """
 
     def __init__(
-            self, circuit_matched, circuit_blocked, template_matched, template_blocked, matches, counter
+        self, circuit_matched, circuit_blocked, template_matched, template_blocked, matches, counter
     ):
         """
         Create a MatchingScenarios class with necessary arguments.
@@ -785,19 +785,19 @@ class BackwardMatch:
     """
 
     def __init__(
-            self,
-            circuit_dag,
-            pattern_dag,
-            qubits_conf,
-            forward_matches,
-            circuit_matched,
-            circuit_blocked,
-            pattern_matched,
-            node_id_c,
-            node_id_p,
-            wires,
-            control_wires,
-            target_wires,
+        self,
+        circuit_dag,
+        pattern_dag,
+        qubits_conf,
+        forward_matches,
+        circuit_matched,
+        circuit_blocked,
+        pattern_matched,
+        node_id_c,
+        node_id_p,
+        wires,
+        control_wires,
+        target_wires,
     ):
         """
         Create a ForwardMatch class with necessary arguments.
@@ -910,7 +910,7 @@ class BackwardMatch:
         gate_indices = self._gate_indices(self.circuit_matched, self.circuit_blocked)
 
         number_of_gate_to_match = (
-                self.pattern_dag.size - (self.node_id_p - 1) - len(self.forward_matches)
+            self.pattern_dag.size - (self.node_id_p - 1) - len(self.forward_matches)
         )
 
         # While the scenario stack is not empty.
@@ -934,8 +934,8 @@ class BackwardMatch:
             # candidates in the circuit. Or if number of gate left to match is the same as
             # the length of the backward part of the match.
             if (
-                    counter_scenario > len(gate_indices)
-                    or len(match_backward) == number_of_gate_to_match
+                counter_scenario > len(gate_indices)
+                or len(match_backward) == number_of_gate_to_match
             ):
                 matches_scenario.sort(key=lambda x: x[0])
                 match_store_list.append(Match(matches_scenario, self.qubits_conf))
@@ -979,9 +979,9 @@ class BackwardMatch:
                 target_wires2 = self.pattern_dag.get_node(template_id).target_wires
                 # Necessary but not sufficient conditions for a match to happen.
                 if (
-                        len(wires1) != len(wires2)
-                        or set(wires1) != set(wires2)
-                        or node_circuit.op.name != node_template.op.name
+                    len(wires1) != len(wires2)
+                    or set(wires1) != set(wires2)
+                    or node_circuit.op.name != node_template.op.name
                 ):
                     continue
 
@@ -989,13 +989,13 @@ class BackwardMatch:
                 # also check if the operation are the same.
                 if _compare_operation_without_qubits(node_circuit, node_template):
                     if _compare_qubits(
-                            node_circuit,
-                            wires1,
-                            control_wires1,
-                            target_wires1,
-                            wires2,
-                            control_wires2,
-                            target_wires2,
+                        node_circuit,
+                        wires1,
+                        control_wires1,
+                        target_wires1,
+                        wires2,
+                        control_wires2,
+                        target_wires2,
                     ):
 
                         # If there is a match the attributes are copied.
@@ -1045,7 +1045,7 @@ class BackwardMatch:
 
                         # First option greedy match.
                         if ([self.node_id_p, self.node_id_c] in new_matches_scenario_match) and (
-                                condition or not match_backward
+                            condition or not match_backward
                         ):
                             template_matched_match[template_id] = [circuit_id]
                             circuit_matched_match[circuit_id] = [template_id]
@@ -1098,7 +1098,7 @@ class BackwardMatch:
                         break
 
                 if ([self.node_id_p, self.node_id_c] in new_matches_scenario_block_s) and (
-                        condition_not_greedy or not match_backward
+                    condition_not_greedy or not match_backward
                 ):
                     new_matching_scenario = MatchingScenarios(
                         circuit_matched_block_s,
@@ -1215,7 +1215,7 @@ class BackwardMatch:
                             break
 
                     if ([self.node_id_p, self.node_id_c] in matches_scenario_nomatch) and (
-                            condition_block or not match_backward
+                        condition_block or not match_backward
                     ):
                         new_matching_scenario = MatchingScenarios(
                             circuit_matched_nomatch,
@@ -1232,7 +1232,7 @@ class BackwardMatch:
         # Store the matches with maximal length.
         for scenario in match_store_list:
             if (len(scenario.match) == length) and not any(
-                    scenario.match == x.match for x in self.match_final
+                scenario.match == x.match for x in self.match_final
             ):
                 self.match_final.append(scenario)
 
@@ -1274,6 +1274,7 @@ class MaximalMatches:
             if not present:
                 self.max_match_list.append(Match(sorted(matches.match), matches.qubit))
 
+
 class SubstitutionConfig:
     """
     Class to store the configuration of a given match substitution, which circuit
@@ -1282,12 +1283,12 @@ class SubstitutionConfig:
     """
 
     def __init__(
-            self,
-            circuit_config,
-            template_config,
-            pred_block,
-            qubit_config,
-            template_dag,
+        self,
+        circuit_config,
+        template_config,
+        pred_block,
+        qubit_config,
+        template_dag,
     ):
         self.template_dag = template_dag
         self.circuit_config = circuit_config
@@ -1494,13 +1495,13 @@ class TemplateSubstitution:
                 continue
             index_a = self.substitution_list.index(scenario_a)
             circuit_a = scenario_a.circuit_config
-            for scenario_b in self.substitution_list[index_a + 1::]:
+            for scenario_b in self.substitution_list[index_a + 1 : :]:
                 if scenario_b in remove_list:
                     continue
                 index_b = self.substitution_list.index(scenario_b)
                 circuit_b = scenario_b.circuit_config
                 if (set(circuit_a) & list_predecessors[index_b]) and (
-                        set(circuit_b) & list_predecessors[index_a]
+                    set(circuit_b) & list_predecessors[index_a]
                 ):
                     remove_list.append(scenario_b)
 
@@ -1564,6 +1565,4 @@ class TemplateSubstitution:
             circuit_list = circuit_list + elem.circuit_config + elem.pred_block
 
         # Unmatched gates that are not predecessors of any group of matches.
-        self.unmatched_list = sorted(
-            list(set(range(0, self.circuit_dag.size)) - set(circuit_list))
-        )
+        self.unmatched_list = sorted(list(set(range(0, self.circuit_dag.size)) - set(circuit_list)))

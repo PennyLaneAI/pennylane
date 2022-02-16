@@ -1732,7 +1732,7 @@ class CommutationDAG:
             int: Number of nodes in the DAG.
         """
         return len(self._multi_graph)
-      
+
     def draw(self, filename="dag.png"):  # pragma: no cover
         """Draw the DAG object.
 
