@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
+from pennylane.wires import Wires
+
 import pennylane as qml
 from pennylane.transforms import qfunc_transform, ctrl
 from pennylane.queuing import apply
 from pennylane.tape import QuantumTape
 
 
-
 @qfunc_transform
 def extend_qubits(tape):
 
-    measured_wires = []
+    measured_wires = {}
 
     ops = []
     for op in tape.queue:
@@ -32,7 +33,18 @@ def extend_qubits(tape):
     for op in reversed(ops):
 
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-            measured_wires.append(op.measured_wire)
+            if op.wires[0] not in measured_wires.keys():
+                measured_wires[op.wires[0]] = 1
+            else:
+                measured_wires[op.wires[0]] += 1
+        else:
+            for i, wire in enumerate(op.wires):
+                new_wires = []
+                if wire in measured_wires.keys():
+                    new_wires.append(("aux", wire, measured_wires[wire]))
+                else:
+                    new_wires.append(wire)
+                op._wires = Wires(new_wires)
 
         new_ops_reversed.append(op)
 
@@ -53,7 +65,7 @@ def defer_measurements(tape):
                 raise ValueError("cannot reuse measured wires.")
 
             if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-                measured_wires.append(op.measured_wire)
+                measured_wires.append(op.wires[0])
 
             elif op.__class__.__name__ == "_IfOp":
                 control = op.dependant_measurements

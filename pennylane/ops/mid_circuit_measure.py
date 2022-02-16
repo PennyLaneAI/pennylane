@@ -27,9 +27,8 @@ class _MidCircuitMeasure(Operation):
 
     num_wires = 1
 
-    def __init__(self, measured_wire):
-        self.measured_wire = measured_wire
-        super().__init__(wires=measured_wire)
+    def __init__(self, wires):
+        super().__init__(wires=wires)
 
 
 # pylint: disable=protected-access
