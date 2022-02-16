@@ -58,12 +58,12 @@ class WireRemapper:
             return Aux(base_wire, self._measured_wires[base_wire])
         return base_wire
 
-    def get_mapped_and_mark_altered(self, base_wire):
+    def mark_altered_and_get_mapped(self, base_wire):
         remapped = self.get_mapped(base_wire)
         self.mark_altered(remapped)
         return remapped
 
-    def measured(self, wire):
+    def mark_measured_and_get_mapped(self, wire):
         if wire not in self._measured_wires.keys():
             if wire in self._altered_wires:
                 self._measured_wires[wire] = 0
