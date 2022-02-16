@@ -1825,30 +1825,30 @@ class MultiControlledX(Operation):
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
-            The canonical matrix is the textbook matrix representation that does not consider wires.
-            Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-            .. seealso:: :meth:`~.MultiControlledX.matrix`
+        .. seealso:: :meth:`~.MultiControlledX.matrix`
 
-            Args:
-                control_wires (Any or Iterable[Any]): wires to place controls on
-                control_values (str): string of bits determining the controls
+        Args:
+            control_wires (Any or Iterable[Any]): wires to place controls on
+            control_values (str): string of bits determining the controls
 
-            Returns:
-               tensor_like: matrix representation
+        Returns:
+           tensor_like: matrix representation
 
-            **Example**
+        **Example**
 
-            >>> qml.MultiControlledX.compute_matrix([0], '1')
-            [[1. 0. 0. 0.]
-             [0. 1. 0. 0.]
-             [0. 0. 0. 1.]
-             [0. 0. 1. 0.]]
-            >>> qml.MultiControlledX.compute_matrix([1], '0')
-            [[0. 1. 0. 0.]
-             [1. 0. 0. 0.]
-             [0. 0. 1. 0.]
-             [0. 0. 0. 1.]]
+        >>> qml.MultiControlledX.compute_matrix([0], '1')
+        [[1. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 1.]
+         [0. 0. 1. 0.]]
+        >>> qml.MultiControlledX.compute_matrix([1], '0')
+        [[0. 1. 0. 0.]
+         [1. 0. 0. 0.]
+         [0. 0. 1. 0.]
+         [0. 0. 0. 1.]]
 
         """
         if control_values is None:
