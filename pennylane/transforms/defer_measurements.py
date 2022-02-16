@@ -17,6 +17,24 @@ from pennylane.transforms import qfunc_transform, ctrl
 from pennylane.queuing import apply
 from pennylane.tape import QuantumTape
 
+
+
+@qfunc_transform
+def extend_qubits(tape):
+
+    ops = []
+    for op in tape.queue:
+        ops.append(op)
+
+    new_ops_reversed = []
+    for op in reversed(ops):
+        new_ops_reversed.append(op)
+
+    with QuantumTape() as new_tape:
+        for op in reversed(new_ops_reversed):
+            apply(op)
+
+
 @qfunc_transform
 def defer_measurements(tape):
 
@@ -37,6 +55,7 @@ def defer_measurements(tape):
                         for i, wire_val in enumerate(branch):
                             if wire_val and flipped[i] or not wire_val and not flipped[i]:
                                 qml.PauliX(wires=control[i])
+                                flipped[i] = not flipped[i]
                         ctrl(lambda: apply(op.then_op), control=control)()
                 for i, flip in enumerate(flipped):
                     if flip:
@@ -49,6 +68,7 @@ def defer_measurements(tape):
                     for i, wire_val in enumerate(branch):
                         if wire_val and flipped[i] or not wire_val and not flipped[i]:
                             qml.PauliX(wires=control[i])
+                            flipped[i] = not flipped[i]
                     ctrl(lambda: apply(branch_op), control=control)()
                 for i, flip in enumerate(flipped):
                     if flip:
