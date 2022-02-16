@@ -44,10 +44,6 @@ class PrepareNode(Operation):
     grad_method = None
 
 
-SUBS = "₀₁₂₃₄₅₆₇₈₉"
-SUB = str.maketrans("0123456789", SUBS)
-
-
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     """
     Replace a :class:`~.WireCut` node in the graph with a :class:`~.MeasureNode`
@@ -308,8 +304,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
     Each node in the graph should have an order attribute specifying the topological order of
-    the operations. This maintains ordering of operations and allows for the
-    deferred measurement principle to be applied when necessary.
+    the operations.
 
     .. note::
 
@@ -324,7 +319,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     **Example**
 
-    Consider the following, where ``graph`` contains three :class:`~.MeasureNode` and
+    Consider the following, where ``graph`` contains :class:`~.MeasureNode` and
     :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
     We can find the circuit fragments by using:
 
@@ -344,31 +339,26 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
+    reverse_wire_map = {v: k for k, v in wire_map.items()}
 
     copy_ordered_ops = copy.deepcopy(ordered_ops)
 
-    updated = {}
     with QuantumTape() as tape:
         for _, op in copy_ordered_ops:
-            name_and_wire = op.name + str(op.wires)
-
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
 
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
-                # if a wire has already been updated we still
-                # want to map *from* the original wire
-                if name_and_wire in updated:
-                    new_wire = updated[name_and_wire] + 1
-                    wire_map[measured_wire] = new_wire
-                else:
-                    measured_wire = op.wires[0]
-                    new_wire = _find_new_wire(wires)
-                    wires += new_wire
-                    wire_map[measured_wire] = new_wire
-                updated[name_and_wire] = new_wire
+                measured_wire = op.wires[0]
+
+                new_wire = _find_new_wire(wires)
+                wires += new_wire
+
+                original_wire = reverse_wire_map[measured_wire]
+                wire_map[original_wire] = new_wire
+                reverse_wire_map[new_wire] = original_wire
 
     return tape
 
