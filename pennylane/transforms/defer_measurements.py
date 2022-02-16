@@ -84,34 +84,18 @@ def mid_circuit_measurements_are_terminal(tape):
     for op in tape.queue:
         ops.append(op)
 
-    measured_wires = {}
-    altered_wires = set()
+    wr = WireRemapper()
     new_ops_reversed = []
     for op in reversed(ops):
 
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
             wire = op.wires[0]
-            if wire not in measured_wires.keys():
-                if wire in altered_wires:
-                    measured_wires[wire] = 0
-                    op._wires = Wires([Aux(wire)])
-                    altered_wires.add(Aux(wire))
-                else:
-                    altered_wires.add(wire)
-            else:
-                if Aux(wire, measured_wires[wire]) in altered_wires:
-                    measured_wires[wire] += 1
-                op._wires = Wires([Aux(wire, measured_wires[wire])])
-                altered_wires.add(Aux(wire, measured_wires[wire]))
+            mapped_wire = wr.mark_measured_and_get_mapped(wire)
+            op._wires = Wires[mapped_wire]
         else:
             new_wires = []
             for wire in op.wires:
-                if wire in measured_wires.keys():
-                    new_wires.append(Aux(wire, measured_wires[wire]))
-                    altered_wires.add(Aux(wire, measured_wires[wire]))
-                else:
-                    new_wires.append(wire)
-                    altered_wires.add(wire)
+                new_wires.append(wr.mark_altered_and_get_mapped(wire))
             op._wires = Wires(new_wires)
 
         new_ops_reversed.append(op)
