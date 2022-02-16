@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 
 
-def process_shifts(rule, tol=1e-10, no_duplicates=False):
+def process_shifts(rule, tol=1e-10, check_duplicates=True):
     """Utility function to process gradient rules.
 
     Args:
@@ -30,8 +30,8 @@ def process_shifts(rule, tol=1e-10, no_duplicates=False):
             the second row contains the shift values.
         tol (float): floating point tolerance used when comparing shifts/coefficients
             Terms with coefficients below ``tol`` will be removed.
-        no_duplicates (bool): whether the input ``rule`` is guaranteed to not
-            have duplicate shift values in its second row.
+        check_duplicates (bool): whether to check the input ``rule`` for duplicate
+            shift values in its second row.
 
     This utility function accepts coefficients and shift values, and performs the following
     processing:
@@ -51,7 +51,7 @@ def process_shifts(rule, tol=1e-10, no_duplicates=False):
     # remove columns where the coefficients are 0
     rule = rule[:, ~(rule[0] == 0)]
 
-    if not no_duplicates:
+    if check_duplicates:
         # determine unique shifts
         round_decimals = int(-np.log10(tol))
         rounded_rule = np.round(rule[-1], round_decimals)

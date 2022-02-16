@@ -104,7 +104,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
 
         recipe = np.array(op.get_parameter_shift(p_idx, shift=use_shift)).T
 
-        return process_shifts(recipe, no_duplicates=True)
+        return process_shifts(recipe, check_duplicates=False)
 
 
 def _gradient_analysis(tape, use_graph=True):
