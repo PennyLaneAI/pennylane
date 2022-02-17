@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
-def _grad_method_validation(method, tape):
+def grad_method_validation(method, tape):
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods.
 
@@ -69,7 +69,7 @@ def _grad_method_validation(method, tape):
     return tuple(diff_methods.values())
 
 
-def _choose_params_with_methods(diff_methods, argnum):
+def choose_grad_methods(diff_methods, argnum):
     """Chooses the trainable parameters to use for computing the Jacobian
     by returning a map of their indices and differentiation methods.
 
