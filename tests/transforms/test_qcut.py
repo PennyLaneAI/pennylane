@@ -17,11 +17,11 @@ Unit tests for the `pennylane.qcut` package.
 import copy
 import string
 import sys
-
-import pytest
-from networkx import MultiDiGraph
+from itertools import product
 
 import pennylane as qml
+import pytest
+from networkx import MultiDiGraph
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
@@ -121,6 +121,17 @@ def compare_tapes(tape, expected_tape):
         assert meas.return_type.name == exp_meas.return_type.name
         assert meas.obs.name == exp_meas.obs.name
         assert meas.wires.tolist() == exp_meas.wires.tolist()
+
+
+def compare_measurements(meas1, meas2):
+    """
+    Helper function to compare measurements
+    """
+    assert meas1.return_type.name == meas2.return_type.name
+    obs1 = meas1.obs
+    obs2 = meas2.obs
+    assert np.array(obs1.name == obs2.name).all()
+    assert obs1.wires.tolist() == obs2.wires.tolist()
 
 
 class TestTapeToGraph:
@@ -1083,40 +1094,35 @@ class TestExpandFragmentTapes:
         for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
             compare_tapes(tape_prep, exp_tape_1)
 
-    def test_multi_qubit_expansion(self):
+    def test_multi_qubit_expansion_measurements(self):
         """
         Tests that a circuit with multiple MeasureNodes on a single wire gives
-        the correct expansion
+        the correct measurements after expansion
         """
 
-        g = qcut.tape_to_graph(mcm_tape)
-        qcut.replace_wire_cut_nodes(g)
-        subgraphs, communication_graph = qcut.fragment_graph(g)
-        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-        # Here we have 2 fragment tapes, each containing 2 MeasureNode and
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        # Here we have a fragment tape containing 2 MeasureNode and
         # PrepareNode pairs. This give 3**2 = 9 groups of Pauli measurements
-        # and 4**2 = 16 preparations and thus 9*16 = 144 tapes per fragment.
-        fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+        # and 4**2 = 16 preparations and thus 9*16 = 144 tapes.
+        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        frag_tapes = fragment_configurations[0]
 
-        for fragment in fragment_configurations:
-            assert len(fragment[0]) == 144
+        assert len(frag_tapes) == 144
 
-        # expected_pauli_strings = [
-        #     ["II", "IZ", "ZI", "ZZ"],
-        #     ["IX", "ZX"],
-        #     ["IY", "ZY"],
-        #     ["XI", "XZ"],
-        #     ["XX"],
-        #     ["XY"],
-        #     ["YI", "YZ"],
-        #     ["YX"],
-        #     ["YY"],
-        # ]
-
-        frag_1_tapes = fragment_configurations[0][0]
-        frag_2_tapes = fragment_configurations[0][0]
-
-        expected_meas = [
+        all_expected_groups = [
             [
                 qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1])),
                 qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2])),
@@ -1145,11 +1151,65 @@ class TestExpandFragmentTapes:
             [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]))],
         ]
 
-        # import pdb; pdb.set_trace()
-        # for exp_i, i in product(range(len(expected_obs)), range(16)):
-        #     exp_meas = expected_meas[exp_i]
-        #     for _ in range(i):
-        #         measurements = measurements
+        all_measurements = [tape.measurements for tape in frag_tapes]
+
+        # The 9 unique measurements are repeated 16 times since there are 4**2
+        # prepareations. This list prepares the indexing.
+        index_list = []
+        for i in range(len(frag_tapes)):
+            if i % 9 == 0:
+                c = 0
+            index_list.append((c, i))
+            c += 1
+
+        for exp_i, i in index_list:
+            expected_group = all_expected_groups[exp_i]
+            group = all_measurements[i]
+            for measurement, expected_measurement in zip(expected_group, group):
+                compare_measurements(measurement, expected_measurement)
+
+    def test_multi_qubit_expansion_preparation(self):
+        """
+        Tests that a circuit with multiple MeasureNodes on a single wire gives
+        the correct preparation after expansion
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        frag_tapes = fragment_configurations[0]
+
+        prep_ops = [[qml.Identity], [qml.PauliX], [qml.Hadamard], [qml.Hadamard, qml.S]]
+        prep_combos = list(product(prep_ops, prep_ops))
+        expected_preps = [pc for pc in prep_combos for _ in range(9)]
+
+        for ep, tape in zip(expected_preps, frag_tapes):
+            wire2_ops = [op for op in tape.operations if op.wires == Wires(2)]
+            wire3_ops = [op for op in tape.operations if op.wires == Wires(3)]
+
+            wire2_exp = ep[0]
+            wire3_exp = ep[1]
+
+            wire2_prep_ops = wire2_ops[: len(wire2_exp)]
+            wire3_prep_ops = wire3_ops[: len(wire2_exp)]
+
+            for wire2_prep_op, wire2_exp_op in zip(wire2_prep_ops, wire2_exp):
+                assert type(wire2_prep_op) == wire2_exp_op
+
+            for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp):
+                assert type(wire3_prep_op) == wire3_exp_op
 
 
 class TestContractTensors:
