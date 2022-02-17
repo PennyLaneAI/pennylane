@@ -441,7 +441,8 @@ def test_hamiltonian_error(coeffs, obs, init_state, tol):
     "operation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]
 )
 def test_generalize_prob_not_hermitian(operation):
-    """Test that the Operation or Observables has a diagonalizing_gates attribute."""
+    """Test that Operators that do not have a diagonalizing_gates representation cannot
+    be used in probability measurements."""
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -453,7 +454,7 @@ def test_generalize_prob_not_hermitian(operation):
 
     with pytest.raises(
         qml.QuantumFunctionError,
-        match="has not diagonalizing_gates attribute: cannot be used to rotate the probability",
+        match="does not define diagonalizing gates : cannot be used to rotate the probability",
     ):
         circuit()
 

@@ -812,7 +812,9 @@ class TestNewVQE:
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
             circuit()
 
     def test_error_sample_measurement(self):

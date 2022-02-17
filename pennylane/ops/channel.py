@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-arguments
 """
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
@@ -22,7 +23,7 @@ from pennylane.operation import AnyWires, Channel
 
 
 class AmplitudeDamping(Channel):
-    r"""AmplitudeDamping(gamma, wires)
+    r"""
     Single-qubit amplitude damping error channel.
 
     Interaction with the environment can lead to changes in the state populations of a qubit.
@@ -50,15 +51,33 @@ class AmplitudeDamping(Channel):
     Args:
         gamma (float): amplitude damping probability
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        gamma = params[0]
+    def __init__(self, gamma, wires, do_queue=True, id=None):
+        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the AmplitudeDamping channel.
+
+        Args:
+            gamma (float): amplitude damping probability
+
+        Returns:
+            list(array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.AmplitudeDamping.compute_kraus_matrices(0.5)
+        [array([[1., 0.], [0., 0.70710678]]),
+         array([[0., 0.70710678], [0., 0.]])]
+        """
         if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
@@ -68,7 +87,7 @@ class AmplitudeDamping(Channel):
 
 
 class GeneralizedAmplitudeDamping(Channel):
-    r"""GeneralizedAmplitudeDamping(gamma, p, wires)
+    r"""
     Single-qubit generalized amplitude damping error channel.
 
     This channel models the exchange of energy between a qubit and its environment
@@ -110,15 +129,36 @@ class GeneralizedAmplitudeDamping(Channel):
         gamma (float): amplitude damping probability
         p (float): excitation probability
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        gamma, p = params
+    def __init__(self, gamma, p, wires, do_queue=True, id=None):
+        super().__init__(gamma, p, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the GeneralizedAmplitudeDamping channel.
+
+        Args:
+            gamma (float): amplitude damping probability
+            p (float): excitation probability
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.GeneralizedAmplitudeDamping.compute_kraus_matrices(0.3, 0.6)
+        [array([[0.77459667, 0.        ], [0.        , 0.64807407]]),
+         array([[0.        , 0.42426407], [0.        , 0.        ]]),
+         array([[0.52915026, 0.        ], [0.        , 0.63245553]]),
+         array([[0.        , 0.        ], [0.34641016, 0.        ]])]
+        """
         if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
@@ -133,7 +173,7 @@ class GeneralizedAmplitudeDamping(Channel):
 
 
 class PhaseDamping(Channel):
-    r"""PhaseDamping(gamma, wires)
+    r"""
     Single-qubit phase damping error channel.
 
     Interaction with the environment can lead to loss of quantum information changes without any
@@ -167,10 +207,25 @@ class PhaseDamping(Channel):
     num_wires = 1
     grad_method = "F"
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        gamma = params[0]
+    def __init__(self, gamma, wires, do_queue=True, id=None):
+        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the PhaseDamping channel.
+
+        Args:
+            gamma (float): phase damping probability
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.PhaseDamping.compute_kraus_matrices(0.5)
+        [array([[1.        , 0.        ], [0.        , 0.70710678]]),
+         array([[0.        , 0.        ], [0.        , 0.70710678]])]
+        """
         if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be between [0,1].")
 
@@ -180,7 +235,7 @@ class PhaseDamping(Channel):
 
 
 class DepolarizingChannel(Channel):
-    r"""DepolarizingChannel(p, wires)
+    r"""
     Single-qubit symmetrically depolarizing error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -220,16 +275,36 @@ class DepolarizingChannel(Channel):
     Args:
         p (float): Each Pauli gate is applied with probability :math:`\frac{p}{3}`
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        p = params[0]
+    def __init__(self, p, wires, do_queue=True, id=None):
+        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+        r"""Kraus matrices representing the depolarizing channel.
+
+        Args:
+            p (float): each Pauli gate is applied with probability :math:`\frac{p}{3}`
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.DepolarizingChannel.compute_kraus_matrices(0.5)
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
+         array([[0.        , 0.40824829], [0.40824829, 0.        ]]),
+         array([[0.+0.j        , 0.-0.40824829j], [0.+0.40824829j, 0.+0.j        ]]),
+         array([[ 0.40824829,  0.        ], [ 0.        , -0.40824829]])]
+        """
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
@@ -241,7 +316,7 @@ class DepolarizingChannel(Channel):
 
 
 class BitFlip(Channel):
-    r"""BitFlip(p, wires)
+    r"""
     Single-qubit bit flip (Pauli :math:`X`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -268,16 +343,34 @@ class BitFlip(Channel):
     Args:
         p (float): The probability that a bit flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        p = params[0]
+    def __init__(self, p, wires, do_queue=True, id=None):
+        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the BitFlip channel.
+
+        Args:
+            p (float): probability that a bit flip error occurs
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.BitFlip.compute_kraus_matrices(0.5)
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
+         array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
+        """
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
@@ -287,7 +380,7 @@ class BitFlip(Channel):
 
 
 class ResetError(Channel):
-    r"""ResetError(p_0, p_1, wires)
+    r"""
     Single-qubit Reset error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -334,15 +427,37 @@ class ResetError(Channel):
         p_0 (float): The probability that a reset to 0 error occurs.
         p_1 (float): The probability that a reset to 1 error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        p_0, p_1 = params[0], params[1]
+    def __init__(self, p0, p1, wires, do_queue=True, id=None):
+        super().__init__(p0, p1, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the ResetError channel.
+
+        Args:
+            p_0 (float): probability that a reset to 0 error occurs
+            p_1 (float): probability that a reset to 1 error occurs
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.ResetError.compute_kraus_matrices(0.2, 0.3)
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
+         array([[0.4472136, 0.       ], [0.       , 0.       ]]),
+         array([[0.       , 0.4472136], [0.       , 0.       ]]),
+         array([[0.        , 0.        ], [0.54772256, 0.        ]]),
+         array([[0.        , 0.        ], [0.        , 0.54772256]])]
+        """
         if not 0.0 <= p_0 <= 1.0:
             raise ValueError("p_0 must be between [0,1]")
 
@@ -361,7 +476,7 @@ class ResetError(Channel):
 
 
 class PauliError(Channel):
-    r"""PauliError(operators, p, wires)
+    r"""
     Pauli operator error channel for an arbitrary number of qubits.
 
     This channel is modelled by the following Kraus matrices:
@@ -393,11 +508,14 @@ class PauliError(Channel):
         operators (str): The Pauli operators acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     **Example:**
 
     >>> pe = PauliError("X", 0.5, wires=0)
-    >>> km = pe.kraus_matrices
+    >>> km = pe.kraus_matrices()
     >>> km[0]
     array([[0.70710678, 0.        ],
            [0.        , 0.70710678]])
@@ -405,20 +523,14 @@ class PauliError(Channel):
         array([[0.        , 0.70710678],
                [0.70710678, 0.        ]])
     """
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
 
     num_params = 2
-    num_wires = AnyWires
-    par_domain = "L"
+    """int: Number of trainable parameters that the operator depends on."""
 
-    ops = {
-        "X": np.array([[0, 1], [1, 0]]),
-        "Y": np.array([[0, -1j], [1j, 0]]),
-        "Z": np.array([[1, 0], [0, -1]]),
-    }
-
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-        operators, p = params[0], params[1]
+    def __init__(self, operators, p, wires=None, do_queue=True, id=None):
+        super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
 
         # check if the specified operators are legal
         if not all(c in "XYZ" for c in operators):
@@ -439,25 +551,44 @@ class PauliError(Channel):
                 f"The resulting Kronecker matrices will have dimensions {2**(nq)} x {2**(nq)}.\nThis equals {2**nq*2**nq*8/1024**3} GB of physical memory for each matrix."
             )
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        operators, p = params[0], params[1]
+    @staticmethod
+    def compute_kraus_matrices(operators, p):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the PauliError channel.
 
+        Args:
+            operators (str): the Pauli operators acting on the specified (groups of) wires
+            p (float): probability of the operator being applied
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.PauliError.compute_kraus_matrices("X", 0.5)
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
+         array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
+        """
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
         K0 = np.sqrt(1 - p) * np.eye(2**nq)
 
+        ops = {
+            "X": np.array([[0, 1], [1, 0]]),
+            "Y": np.array([[0, -1j], [1j, 0]]),
+            "Z": np.array([[1, 0], [0, -1]]),
+        }
+
         # K1 is composed by Kraus matrices of operators
         K1 = np.sqrt(p) * np.array([1])
         for op in operators[::-1]:
-            K1 = np.kron(cls.ops[op], K1)
+            K1 = np.kron(ops[op], K1)
 
         return [K0, K1]
 
 
 class PhaseFlip(Channel):
-    r"""PhaseFlip(p, wires)
+    r"""
     Single-qubit bit flip (Pauli :math:`Z`) error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -484,16 +615,34 @@ class PhaseFlip(Channel):
     Args:
         p (float): The probability that a phase flip error occurs.
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "A"
     grad_recipe = ([[1, 0, 1], [-1, 0, 0]],)
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        p = params[0]
+    def __init__(self, p, wires, do_queue=True, id=None):
+        super().__init__(p, wires=wires, do_queue=do_queue, id=id)
 
+    @staticmethod
+    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the PhaseFlip channel.
+
+        Args:
+            p (float): the probability that a phase flip error occurs
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.PhaseFlip.compute_kraus_matrices(0.5)
+        [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
+         array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
+        """
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be between [0,1]")
 
@@ -503,7 +652,7 @@ class PhaseFlip(Channel):
 
 
 class QubitChannel(Channel):
-    r"""QubitChannel(K_list, wires)
+    r"""
     Apply an arbitrary fixed quantum channel.
 
     Kraus matrices that represent the fixed channel are provided
@@ -516,16 +665,18 @@ class QubitChannel(Channel):
     * Gradient recipe: None
 
     Args:
-        K_list (list[array[complex]]): List of Kraus matrices
+        K_list (list[array[complex]]): list of Kraus matrices
         wires (Union[Wires, Sequence[int], or int]): the wire(s) the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, *params, wires=None, do_queue=True):
-        super().__init__(*params, wires=wires, do_queue=do_queue)
-        K_list = params[0]
+    def __init__(self, K_list, wires=None, do_queue=True, id=None):
+        super().__init__(K_list, wires=wires, do_queue=do_queue, id=id)
 
         # check all Kraus matrices are square matrices
         if not all(K.shape[0] == K.shape[1] for K in K_list):
@@ -549,14 +700,28 @@ class QubitChannel(Channel):
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        K_list = params[0]
+    @staticmethod
+    def compute_kraus_matrices(K_list):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the QubitChannel channel.
+
+        Args:
+            K_list (list[array[complex]]): list of Kraus matrices
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> K_list = qml.PhaseFlip(0.5, wires=0).kraus_matrices()
+        >>> res = qml.QubitChannel.compute_kraus_matrices(K_list)
+        >>> all(np.allclose(r, k) for r, k  in zip(res, K_list))
+        True
+        """
         return K_list
 
 
 class ThermalRelaxationError(Channel):
-    r"""ThermalRelaxationError(pe, t1, t2, tg, wires)
+    r"""
     Thermal relaxation error channel.
 
     This channel is modelled by the following Kraus matrices:
@@ -626,22 +791,43 @@ class ThermalRelaxationError(Channel):
     * Number of parameters: 4
 
     Args:
-        pe (float): exited state population. Must be between ``0`` and ``1``.
-        t1 (float): the :math:`T_1` relaxation constant.
-        t2 (float): the :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`.
-        tg (float): the gate time for relaxation error.
+        pe (float): exited state population. Must be between ``0`` and ``1``
+        t1 (float): the :math:`T_1` relaxation constant
+        t2 (float): the :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`
+        tg (float): the gate time for relaxation error
         wires (Sequence[int] or int): the wire the channel acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 4
     num_wires = 1
     grad_method = "F"
 
-    @classmethod
-    def _kraus_matrices(cls, *params):
-        pe = params[0]
-        t1 = params[1]
-        t2 = params[2]
-        tg = params[3]
+    def __init__(self, pe, t1, t2, tq, wires, do_queue=True, id=None):
+        super().__init__(pe, t1, t2, tq, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ
+        """Kraus matrices representing the ThermalRelaxationError channel.
+
+        Args:
+            pe (float): exited state population. Must be between ``0`` and ``1``
+            t1 (float): the :math:`T_1` relaxation constant
+            t2 (float): The :math:`T_2` dephasing constant. Must be less than :math:`2 T_1`
+            tg (float): the gate time for relaxation error
+
+        Returns:
+            list (array): list of Kraus matrices
+
+        **Example**
+
+        >>> qml.ThermalRelaxationError.compute_kraus_matrices(0.1, 1.2, 1.3, 0.1)
+        [array([[0.        , 0.        ], [0.08941789, 0.        ]]),
+         array([[0.        , 0.26825366], [0.        , 0.        ]]),
+         array([[-0.12718544,  0.        ], [ 0.        ,  0.13165421]]),
+         array([[0.98784022, 0.        ], [0.        , 0.95430977]])]
+        """
         if not 0.0 <= pe <= 1.0:
             raise ValueError("pe must be between 0 and 1.")
         if tg < 0:

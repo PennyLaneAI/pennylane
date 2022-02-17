@@ -142,10 +142,11 @@ class AllSinglesDoubles(Operation):
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
 
-        # we can extract the numpy representation here since hf_state can never be differentiable
-        self.hf_state = qml.math.toarray(hf_state)
-        self.singles = singles
-        self.doubles = doubles
+        self._hyperparameters = {
+            "hf_state": qml.math.toarray(hf_state),
+            "singles": singles,
+            "doubles": doubles,
+        }
 
         if hf_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'hf_state' must be integers; got {hf_state.dtype}")
@@ -156,21 +157,44 @@ class AllSinglesDoubles(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, hf_state, singles, doubles
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        weights = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            BasisState(self.hf_state, wires=self.wires)
 
-            for i, d_wires in enumerate(self.doubles):
-                qml.DoubleExcitation(weights[len(self.singles) + i], wires=d_wires)
+        .. seealso:: :meth:`~.AllSinglesDoubles.decomposition`.
 
-            for j, s_wires in enumerate(self.singles):
-                qml.SingleExcitation(weights[j], wires=s_wires)
+        Args:
+            weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
+                angles entering the :class:`~.pennylane.SingleExcitation` and
+                :class:`~.pennylane.DoubleExcitation` operations, in that order
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+                Hartree-Fock state. ``hf_state`` is used to initialize the wires.
+            singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits
+                the :class:`~.pennylane.SingleExcitation` operations act on
+            doubles (Sequence[Sequence]): sequence of lists with the indices of the four qubits
+                the :class:`~.pennylane.DoubleExcitation` operations act on
 
-        return tape
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        op_list.append(BasisState(hf_state, wires=wires))
+
+        for i, d_wires in enumerate(doubles):
+            op_list.append(qml.DoubleExcitation(weights[len(singles) + i], wires=d_wires))
+
+        for j, s_wires in enumerate(singles):
+            op_list.append(qml.SingleExcitation(weights[j], wires=s_wires))
+
+        return op_list
 
     @staticmethod
     def shape(singles, doubles):

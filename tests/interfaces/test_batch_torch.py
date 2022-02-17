@@ -44,14 +44,14 @@ class TestTorchExecuteUnitTests:
             [tape],
             dev,
             gradient_fn=param_shift,
-            gradient_kwargs={"shift": np.pi / 4},
+            gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
             interface="torch",
         )[0]
 
         res.backward()
 
         for args in spy.call_args_list:
-            assert args[1]["shift"] == np.pi / 4
+            assert args[1]["shift"] == [(np.pi / 4,)] * 2
 
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform

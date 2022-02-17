@@ -27,7 +27,7 @@ from .matrix_ops import QubitUnitary
 
 
 class Hermitian(Observable):
-    r"""Hermitian(A, wires)
+    r"""
     An arbitrary Hermitian observable.
 
     For a Hermitian matrix :math:`A`, the expectation command returns the value
@@ -49,18 +49,46 @@ class Hermitian(Observable):
     Args:
         A (array): square hermitian matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = "F"
     _eigs = {}
+
+    def __init__(self, A, wires, do_queue=True, id=None):
+        super().__init__(A, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    @classmethod
-    def _matrix(cls, *params):
-        A = qml.math.asarray(params[0])
+    @staticmethod
+    def compute_matrix(A):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Hermitian.matrix`
+
+        Args:
+            A (tensor_like): hermitian matrix
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> A = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> qml.Hermitian.compute_matrix(A)
+        [[ 6.+0.j  1.-2.j]
+         [ 1.+2.j -1.+0.j]]
+        """
+        A = qml.math.asarray(A)
 
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -82,7 +110,7 @@ class Hermitian(Observable):
         Returns:
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
-        Hmat = self.matrix
+        Hmat = self.get_matrix()
         Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
         if Hkey not in Hermitian._eigs:
@@ -91,8 +119,7 @@ class Hermitian(Observable):
 
         return Hermitian._eigs[Hkey]
 
-    @property
-    def eigvals(self):
+    def get_eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
 
         This method uses pre-stored eigenvalues for standard observables where
@@ -103,21 +130,49 @@ class Hermitian(Observable):
         """
         return self.eigendecomposition["eigval"]
 
+    @staticmethod
+    def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.Hermitian.diagonalizing_gates`.
+
+        Args:
+            eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"]
+            wires (Iterable[Any], Wires): wires that the operator acts on
+        Returns:
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> A = np.array([[-6, 2 + 1j], [2 - 1j, 0]])
+        >>> _, evecs = np.linalg.eigh(A)
+        >>> qml.Hermitian.compute_diagonalizing_gates(evecs, wires=[0])
+        [QubitUnitary(tensor([[-0.94915323-0.j,  0.2815786 +0.1407893j ],
+                              [ 0.31481445-0.j,  0.84894846+0.42447423j]], requires_grad=True), wires=[0])]
+
+        """
+        return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
+
     def diagonalizing_gates(self):
         """Return the gate set that diagonalizes a circuit according to the
         specified Hermitian observable.
 
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
         Returns:
             list: list containing the gates diagonalizing the Hermitian observable
         """
-        return [QubitUnitary(self.eigendecomposition["eigvec"].conj().T, wires=list(self.wires))]
+        # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
+        return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
 class SparseHamiltonian(Observable):
-    r"""SparseHamiltonian(H)
+    r"""
     A Hamiltonian represented directly as a sparse matrix in coordinate list (COO) format.
 
     .. warning::
@@ -138,27 +193,95 @@ class SparseHamiltonian(Observable):
     Args:
         H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
+        wires (Sequence[int] or int): the wire(s) the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AllWires
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
+
+    def __init__(self, H, wires=None, do_queue=True, id=None):
+        if not isinstance(H, coo_matrix):
+            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "𝓗")
 
-    @classmethod
-    def _matrix(cls, *params):
-        A = params[0]
-        if not isinstance(A, coo_matrix):
-            raise TypeError("Observable must be a scipy sparse coo_matrix.")
-        return A
+    @staticmethod
+    def compute_matrix(H):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
-    def diagonalizing_gates(self):
-        return []
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SparseHamiltonian.matrix`
+
+
+        This method returns a dense matrix. For a sparse matrix representation, see
+        :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
+
+        Args:
+            H (scipy.sparse.coo_matrix): sparse matrix used to create the operator
+
+        Returns:
+            array: dense matrix
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_matrix(H)
+        >>> res
+        [[ 6.+0.j  1.-2.j]
+         [ 1.+2.j -1.+0.j]]
+        >>> type(res)
+        <class 'numpy.ndarray'>
+        """
+        return H.toarray()
+
+    @staticmethod
+    def compute_sparse_matrix(H):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SparseHamiltonian.sparse_matrix`
+
+        This method returns a sparse matrix. For a dense matrix representation, see
+        :meth:`~.SparseHamiltonian.compute_matrix`.
+
+        Args:
+            H (scipy.sparse.coo_matrix): sparse matrix used to create the operator
+
+        Returns:
+            scipy.sparse.coo_matrix: sparse matrix
+
+        **Example**
+
+        >>> from scipy.sparse import coo_matrix
+        >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
+        >>> H = coo_matrix(H)
+        >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
+        >>> res
+        (0, 0)	(6+0j)
+        (0, 1)	(1-2j)
+        (1, 0)	(1+2j)
+        (1, 1)	(-1+0j)
+        >>> type(res)
+        <class 'scipy.sparse.coo_matrix'>
+        """
+        return H
 
 
 class Projector(Observable):
-    r"""Projector(basis_state, wires)
+    r"""
     Observable corresponding to the computational basis state projector :math:`P=\ket{i}\bra{i}`.
 
     The expectation of this observable returns the value
@@ -179,11 +302,15 @@ class Projector(Observable):
     Args:
         basis_state (tensor-like): binary input of shape ``(n, )``
         wires (Iterable): wires that the projector acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_wires = AnyWires
     num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, basis_state, wires, do_queue=True):
+    def __init__(self, basis_state, wires, do_queue=True, id=None):
         wires = Wires(wires)
         shape = qml.math.shape(basis_state)
 
@@ -201,7 +328,7 @@ class Projector(Observable):
         if not set(basis_state).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {basis_state}")
 
-        super().__init__(basis_state, wires=wires, do_queue=do_queue)
+        super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -226,23 +353,89 @@ class Projector(Observable):
         basis_string = "".join(str(int(i)) for i in self.parameters[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
 
-    @classmethod
-    def _eigvals(cls, *params):
-        """Eigenvalues of the specific projector operator.
+    @staticmethod
+    def compute_matrix(basis_state):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Projector.matrix`
+
+        Args:
+            basis_state (Iterable): basis state to project on
 
         Returns:
-            array: eigenvalues of the projector observable in the computational basis
+            ndarray: matrix
+
+        **Example**
+
+        >>> qml.Projector.compute_matrix([0, 1])
+        [[0. 0. 0. 0.]
+         [0. 1. 0. 0.]
+         [0. 0. 0. 0.]
+         [0. 0. 0. 0.]]
         """
-        w = np.zeros(2 ** len(params[0]))
-        idx = int("".join(str(i) for i in params[0]), 2)
+        m = np.zeros((2 ** len(basis_state), 2 ** len(basis_state)))
+        idx = int("".join(str(i) for i in basis_state), 2)
+        m[idx, idx] = 1
+        return m
+
+    @staticmethod
+    def compute_eigvals(basis_state):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.Projector.eigvals`
+
+        Args:
+            basis_state (Iterable): basis state to project on
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> qml.Projector.compute_eigvals([0, 1])
+        [0. 1. 0. 0.]
+        """
+        w = np.zeros(2 ** len(basis_state))
+        idx = int("".join(str(i) for i in basis_state), 2)
         w[idx] = 1
         return w
 
-    def diagonalizing_gates(self):
-        """Return the gate set that diagonalizes a circuit according to the
-        specified Projector observable.
+    @staticmethod
+    def compute_diagonalizing_gates(
+        basis_state, wires
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        .. seealso:: :meth:`~.Projector.diagonalizing_gates`.
+
+        Args:
+            basis_state (Iterable): basis state that the operator projects on
+            wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
-            list: list containing the gates diagonalizing the projector observable
+            list[.Operator]: list of diagonalizing gates
+
+        **Example**
+
+        >>> qml.Projector.compute_diagonalizing_gates([0, 1, 0, 0], wires=[0, 1])
+        []
         """
         return []

@@ -47,8 +47,8 @@ class AmplitudeEmbedding(Operation):
         gradients with respect to the features cannot be computed by PennyLane.
 
     Args:
-        features (tensor_like): input tensor of dimension ``(2^n,)``, or less if `pad_with` is specified
-        wires (Iterable): wires that the template acts on
+        features (tensor_like): input tensor of dimension ``(2^len(wires),)``, or less if `pad_with` is specified
+        wires (Any or Iterable[Any]): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
 
@@ -126,7 +126,6 @@ class AmplitudeEmbedding(Operation):
         wires = Wires(wires)
         self.pad_with = pad_with
         self.normalize = normalize
-
         features = self._preprocess(features, wires, pad_with, normalize)
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
@@ -137,12 +136,30 @@ class AmplitudeEmbedding(Operation):
     def adjoint(self):  # pylint: disable=arguments-differ
         return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
-            QubitStateVector(self.parameters[0], wires=self.wires)
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        return tape
+
+
+        .. seealso:: :meth:`~.AmplitudeEmbedding.decomposition`.
+
+        Args:
+            features (tensor_like): input tensor of dimension ``(2^len(wires),)``
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> features = torch.tensor([1., 0., 0., 0.])
+        >>> qml.AmplitudeEmbedding.compute_decomposition(features, wires=["a", "b"])
+        [QubitStateVector(tensor([1., 0., 0., 0.]), wires=['a', 'b'])]
+        """
+        return [QubitStateVector(features, wires=wires)]
 
     @staticmethod
     def _preprocess(features, wires, pad_with, normalize):
