@@ -386,6 +386,49 @@ def _prep_iplus_state(wire):
 PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
 
 
+def _get_measurements():
+    for meas_op in group:
+        with stop_recording():
+            op_tensor = Tensor(meas_op)
+
+        if len(tape.measurements) > 0:
+            for m in tape.measurements:
+                if m.return_type is not Expectation:
+                    raise ValueError("Only expectation values supported for now")
+                with stop_recording():
+                    m_obs = obs_map[m.obs.name](wires=m.obs.wires)
+                    if isinstance(m_obs, Tensor):
+                        terms = m_obs.obs
+                        for t in terms:
+                            if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
+                                raise ValueError(
+                                    "Only tensor products of Paulis for now"
+                                )
+                        op_tensor_wires = [
+                            (t.wires.tolist()[0], t) for t in op_tensor.obs
+                        ]
+                        m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
+                        all_wires = sorted(op_tensor_wires + m_obs_wires)
+                        all_terms = [t[1] for t in all_wires]
+                        full_tensor = Tensor(*all_terms)
+                    else:
+                        if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
+                            raise ValueError("Only tensor products of Paulis for now")
+
+                        op_tensor_wires = [
+                            (t.wires.tolist()[0], t) for t in op_tensor.obs
+                        ]
+                        m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
+                        all_wires = sorted(op_tensor_wires + m_obs_wires)
+                        all_terms = [t[1] for t in all_wires]
+                        full_tensor = Tensor(*all_terms)
+                expval(full_tensor)
+        elif len(op_tensor.name) > 0:
+            expval(op_tensor)
+        else:
+            expval(Identity(tape.wires[0]))
+
+
 def expand_fragment_tapes(
     tape: QuantumTape,
 ) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
@@ -473,46 +516,11 @@ def expand_fragment_tapes(
                     elif not isinstance(op, MeasureNode):
                         apply(op)
 
-                for meas_op in group:
-                    with stop_recording():
-                        op_tensor = Tensor(meas_op)
+                with qml.tape.stop_recording():
+                    measurements = _get_measurements(group, tape.measurements)
 
-                    if len(tape.measurements) > 0:
-                        for m in tape.measurements:
-                            if m.return_type is not Expectation:
-                                raise ValueError("Only expectation values supported for now")
-                            with stop_recording():
-                                m_obs = obs_map[m.obs.name](wires=m.obs.wires)
-                                if isinstance(m_obs, Tensor):
-                                    terms = m_obs.obs
-                                    for t in terms:
-                                        if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
-                                            raise ValueError(
-                                                "Only tensor products of Paulis for now"
-                                            )
-                                    op_tensor_wires = [
-                                        (t.wires.tolist()[0], t) for t in op_tensor.obs
-                                    ]
-                                    m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
-                                    all_wires = sorted(op_tensor_wires + m_obs_wires)
-                                    all_terms = [t[1] for t in all_wires]
-                                    full_tensor = Tensor(*all_terms)
-                                else:
-                                    if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
-                                        raise ValueError("Only tensor products of Paulis for now")
-
-                                    op_tensor_wires = [
-                                        (t.wires.tolist()[0], t) for t in op_tensor.obs
-                                    ]
-                                    m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
-                                    all_wires = sorted(op_tensor_wires + m_obs_wires)
-                                    all_terms = [t[1] for t in all_wires]
-                                    full_tensor = Tensor(*all_terms)
-                            expval(full_tensor)
-                    elif len(op_tensor.name) > 0:
-                        expval(op_tensor)
-                    else:
-                        expval(Identity(tape.wires[0]))
+                for meas in measurements:
+                    apply(meas)
 
                 tapes.append(tape_)
 
