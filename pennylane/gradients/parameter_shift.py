@@ -27,7 +27,7 @@ from .gradient_transform import (
     _choose_params_with_methods,
 )
 from .finite_difference import finite_diff, generate_shifted_tapes
-from .general_shift_rules import _process_shifts
+from .general_shift_rules import process_shifts
 
 
 NONINVOLUTORY_OBS = {
@@ -76,16 +76,17 @@ def _get_operation_recipe(tape, t_idx, shifts):
     - If ``parameter_frequencies`` yield a result, the frequencies are
       used to construct the general parameter-shift rule via
       ``qml.gradients.generate_shift_rule``
+
     - If ``parameter_frequencies`` raises an error (because the operation
       has no custom ``parameter_frequencies`` and no ``generator`` is defined),
-      the ``get_parameter_shift`` method of the operation is used.
+      the :meth:`.Operator.get_parameter_shift` method is used.
       If in turn no custom version of ``get_parameter_shift`` is defined
       and the operation does not have a ``grad_recipe``, the two-term
       parameter-shift rule is assumed.
 
     That is, a default to the two-term rule only is returned if no custom
     ``parameter_frequencies``, ``generator``, ``get_parameter_shift``,
-     and ``grad_recipe`` are defined.
+    and ``grad_recipe`` are defined.
     """
     op, p_idx = tape.get_operation(t_idx)
     try:
@@ -107,7 +108,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
 
         recipe = np.array(op.get_parameter_shift(p_idx, shift=use_shift)).T
 
-        return _process_shifts(recipe, no_duplicates=True)
+        return process_shifts(recipe, check_duplicates=False)
 
 
 def _gradient_analysis(tape, use_graph=True):
@@ -206,7 +207,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         arg_idx = argnum.index(idx)
         recipe = gradient_recipes[arg_idx]
         if recipe is not None:
-            recipe = _process_shifts(np.array(recipe).T)
+            recipe = process_shifts(np.array(recipe).T)
         else:
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)

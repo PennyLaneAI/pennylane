@@ -4,33 +4,30 @@
 
 <h3>New features since last release</h3>
 
-* The general parameter-shift rule is now automatically used by
-  `qml.gradients.param_shift`.
-  [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
+* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
+  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
+  deprecation of the `charset` keyword, and minor cosmetic changes.
+  [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
 
-  If an operation has `parameter_frequencies` defined (also see
-  the next feature entry) and calling
-  this method does not raise an error, the operation will be
-  considered to have an analytic differentiation method registered,
-  namely via the parameter-shift rule.
-  The frequencies are then used to obtain the shift rule for the
-  operation.
-
-  If `parameter_frequencies` raises an error although the operation
-  is registered to have an analytic derivative, the `grad_recipe`
-  property of an operation will be used instead, if defined.
-  If it is not defined, the standard two-term shift rule will
-  be used.
-
-  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
-  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
-  for additional information.
+  ```
+  @qml.qnode(qml.device('lightning.qubit', wires=2))
+  def circuit(a, w):
+      qml.Hadamard(0)
+      qml.CRX(a, wires=[0, 1])
+      qml.Rot(*w, wires=[1])
+      qml.CRX(-a, wires=[0, 1])
+      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+  ```
+  >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
+  0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
+  1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
 
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
-  enters a circuit when using the operation.
-  Also see the previous feature.
+  enters a circuit. In addition, the general parameter-shift
+  rule is now automatically used by `qml.gradients.param_shift`.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+  [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
@@ -39,7 +36,21 @@
   measurement the frequencies will differ.
 
   By default, the frequencies will be obtained from the
-  `generator` property, if it is defined.
+  `generator` property (if it is defined).
+
+  When using `qml.gradients.param_shift`, the parameter frequencies
+  are used to obtain the shift rule for the operation.
+
+  For operations that are registered to have an analytic gradient
+  method but that do not provide parameter frequencies, the
+  `grad_recipe` of the operation will be used for differentiation
+  instead. If there is no `grad_recipe`, the standard two-term shift
+  rule will be used.
+
+  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
+  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
+  for theoretical background information on the general
+  parameter-shift rule.
 
 * Continued development of the circuit-cutting compiler:
 
@@ -54,6 +65,10 @@
   A method has been added that takes a directed multigraph with `MeasureNode` and
   `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
   [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
+
+  A method has been added that takes a directed multigraph with `MeasureNode`
+  and `PrepareNode` placeholder nodes and converts it into a tape.
+  [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
 
   A differentiable tensor contraction function `contract_tensors` has been
   added.
@@ -265,3 +280,4 @@ This release contains contributions from (in alphabetical order):
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
 Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
+

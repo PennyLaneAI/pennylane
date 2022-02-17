@@ -1145,6 +1145,10 @@ class Operation(Operator):
 
         Args:
             idx (int): parameter index
+            shift (float or None): The shift value to use for the two-term
+                parameter-shift rule. This is only used if the operation
+                does not have :attr:`Operator.grad_recipe` defined. If ``None``,
+                a shift value of :math:`\pi/2` is used.
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
@@ -1207,7 +1211,7 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen = self.generator()  # pylint: disable=assignment-from-no-return
+            gen = self.generator()
 
             try:
                 gen_eigvals = tuple(self.generator().eigvals())
@@ -1912,7 +1916,7 @@ class Tensor(Observable):
                 return 1
         return 0
 
-    def sparse_matrix(self, wires=None):  # pylint: disable=arguments-renamed
+    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
