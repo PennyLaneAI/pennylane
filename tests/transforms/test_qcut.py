@@ -1115,7 +1115,7 @@ class TestExpandFragmentTapes:
             for measurement, expected_measurement in zip(expected_group, group):
                 compare_measurements(measurement, expected_measurement)
 
-    def test__multi_qubit_expansion_preparation(self):
+    def test_multi_qubit_expansion_preparation(self):
         """
         Tests that a circuit with multiple MeasureNodes on a single wire gives
         the correct preparation after expansion
