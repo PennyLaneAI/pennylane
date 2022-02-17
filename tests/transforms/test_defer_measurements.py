@@ -4,6 +4,28 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
+class TestQNode:
+
+    @pytest.mark.xfail(reason="TODO: check why shape doesn't match (perhaps because it's a tape transform)")
+    def test_simple_decorated(self):
+        dev = qml.device('default.qubit', wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def transformed_circuit():
+            m = qml.mid_measure(1)
+            return qml.expval(qml.PauliZ(0))
+
+        res1 = circuit()
+        res2 = transformed_circuit()
+        assert res1 == res2
+        assert isinstance(res1, type(res2))
+        assert res1.shape == res2.shape
+
 class TestMidCircuitMeasurements:
     """Tests mid circuit measurements"""
 

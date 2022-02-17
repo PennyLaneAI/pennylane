@@ -21,6 +21,7 @@ from typing import Union, Any, TypeVar, Generic, Callable, Type
 import uuid
 from pennylane.operation import Operation
 
+
 def mid_measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
@@ -44,6 +45,7 @@ class _MidCircuitMeasure(Operation):
     def __init__(self, wires, measurement_id):
         self.measurement_id = measurement_id
         super().__init__(wires=wires)
+
 
 T = TypeVar("T")
 
@@ -86,8 +88,14 @@ class MeasurementDependantValue(Generic[T]):
         measurements = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append("if " + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+            lines.append(
+                "if "
+                + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))])
+                + " => "
+                + str(v)
+            )
         return "\n".join(lines)
+
 
 def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
     """
