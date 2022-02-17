@@ -24,8 +24,6 @@ from .channel import *
 from .mid_circuit_measure import (
     mid_measure,
     if_then,
-    condition,
-    apply_to_measurement_dependant_values,
 )
 
 from .cv import __all__ as _cv__all__
