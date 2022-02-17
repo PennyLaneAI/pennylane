@@ -285,7 +285,8 @@ def generate_overlap(basis_a, basis_b):
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
 
-        args_a, args_b = zip(*args)
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
@@ -440,7 +441,8 @@ def generate_kinetic(basis_a, basis_b):
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
         """
-        args_a, args_b = zip(*args)
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
@@ -646,10 +648,12 @@ def generate_attraction(r, basis_a, basis_b):
         """
         if r.requires_grad:
             coor = args[0]
-            args_a, args_b = zip(*args[1:])
+            args_a = [arg[0] for arg in args[1:]]
+            args_b = [arg[1] for arg in args[1:]]
         else:
             coor = r
-            args_a, args_b = zip(*args)
+            args_a = [arg[0] for arg in args]
+            args_b = [arg[1] for arg in args]
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
@@ -788,7 +792,10 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions
         """
-        args_a, args_b, args_c, args_d = zip(*args)
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
+        args_c = [arg[2] for arg in args]
+        args_d = [arg[3] for arg in args]
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
