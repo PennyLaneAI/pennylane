@@ -16,6 +16,7 @@ Unit tests for the `pennylane.qcut` package.
 import copy
 import string
 import sys
+from itertools import product
 
 import pennylane as qml
 import pytest
@@ -1175,6 +1176,49 @@ class TestExpandFragmentTapes:
             group = all_measurements[i]
             for measurement, expected_measurement in zip(expected_group, group):
                 compare_measurements(measurement, expected_measurement)
+
+    def test__multi_qubit_expansion_preparation(self):
+        """
+        Tests that a circuit with multiple MeasureNodes on a single wire gives
+        the correct preparation after expansion
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        frag_tapes = fragment_configurations[0]
+
+        prep_ops = [[qml.Identity], [qml.PauliX], [qml.Hadamard], [qml.Hadamard, qml.S]]
+        prep_combos = list(product(prep_ops, prep_ops))
+        expected_preps = [pc for pc in prep_combos for _ in range(9)]
+
+        for ep, tape in zip(expected_preps, frag_tapes):
+            wire2_ops = [op for op in tape.operations if op.wires == Wires(2)]
+            wire3_ops = [op for op in tape.operations if op.wires == Wires(3)]
+
+            wire2_exp = ep[0]
+            wire3_exp = ep[1]
+
+            wire2_prep_ops = wire2_ops[: len(wire2_exp)]
+            wire3_prep_ops = wire3_ops[: len(wire2_exp)]
+
+            for wire2_prep_op, wire2_exp_op in zip(wire2_prep_ops, wire2_exp):
+                assert type(wire2_prep_op) == wire2_exp_op
+
+            for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp):
+                assert type(wire3_prep_op) == wire3_exp_op
 
 
 class TestContractTensors:
