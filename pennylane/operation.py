@@ -552,16 +552,9 @@ class Operator(abc.ABC):
         return cls._lock
 
     def _cache_method(self, method):
-        def key(*params, **hyperparameters):
-            wires = hyperparameters.pop("wires", Wires([]))
-            return hash(
-                (
-                    tuple(wires.tolist()),
-                    str(hyperparameters.values()),
-                    str(params),
-                )
-            )
-
+        def key(*params, **hyperparams):
+            wires = hyperparams.pop("wires", Wires([]))
+            return hash((tuple(wires.tolist()), str(hyperparams.values()), str(params)))
 
         return cachetools.cached(cache=self.cache, lock=self.lock, key=key)(method)
 
@@ -927,7 +920,7 @@ class Operator(abc.ABC):
 
         self.data = list(params)  #: list[Any]: parameters of the operator
 
-        if self.interface not in ("tensorflow", "jax"):
+        if self.interface not in ("tensorflow", "torch", "jax"):
             self.enable_caching()
 
         if do_queue:
@@ -988,9 +981,8 @@ class Operator(abc.ABC):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        return self.compute_decomposition(
-            *self.parameters, wires=self.wires, **self.hyperparameters
-        )
+        res = self.compute_decomposition(*self.parameters, wires=self.wires, **self.hyperparameters)
+        return res
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
@@ -1305,9 +1297,11 @@ class Operation(Operator):
             .JacobianTape: quantum tape
         """
         tape = qml.tape.QuantumTape(do_queue=False)
+        ops = self.decomposition()
 
         with tape:
-            self.decomposition()
+            # cached operations do not get queued to the tape automatically!
+            [qml.apply(op) for op in ops]
 
         if not self.data:
             # original operation has no trainable parameters
