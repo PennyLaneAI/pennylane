@@ -550,7 +550,6 @@ class TestInverseGatesQubit:
 
         res = circuit()
 
-        print(rnd_state)
         mat = func(gamma)
         mat = mat.conj().T
         expected = np.abs(mat @ rnd_state) ** 2

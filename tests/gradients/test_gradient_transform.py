@@ -76,7 +76,8 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shift=np.pi / 4)
+        shifts = [(np.pi / 4,), (np.pi / 3,)]
+        grad_fn = qml.gradients.param_shift(circuit, shifts=shifts)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -85,7 +86,7 @@ class TestGradientTransformIntegration:
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        assert spy.call_args[0][2] == np.pi / 4
+        assert spy.call_args[0][2] == shifts
 
     def test_expansion(self, mocker, tol):
         """Test that a gradient transform correctly
