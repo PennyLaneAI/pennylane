@@ -21,7 +21,11 @@ import numpy as np
 
 import pennylane as qml
 
-from .gradient_transform import gradient_transform
+from .gradient_transform import (
+    gradient_transform,
+    grad_method_validation,
+    choose_grad_methods,
+)
 from .finite_difference import finite_diff, generate_shifted_tapes
 from .general_shift_rules import process_shifts
 
@@ -588,17 +592,12 @@ def param_shift(
 
     _gradient_analysis(tape)
     method = "analytic" if fallback_fn is None else "best"
-
-    # TODO: replace the JacobianTape._grad_method_validation
-    # functionality before deprecation.
-    diff_methods = tape._grad_method_validation(method)
+    diff_methods = grad_method_validation(method, tape)
 
     if all(g == "0" for g in diff_methods):
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # TODO: replace the JacobianTape._choose_params_with_methods
-    # functionality before deprecation.
-    method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
+    method_map = choose_grad_methods(diff_methods, argnum)
 
     # If there are unsupported operations, call the fallback gradient function
     gradient_tapes = []

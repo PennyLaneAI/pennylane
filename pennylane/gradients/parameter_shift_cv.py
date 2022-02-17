@@ -23,7 +23,11 @@ import numpy as np
 
 import pennylane as qml
 
-from .gradient_transform import gradient_transform
+from .gradient_transform import (
+    gradient_transform,
+    grad_method_validation,
+    choose_grad_methods,
+)
 from .finite_difference import finite_diff, generate_shifted_tapes
 from .parameter_shift import expval_param_shift, _get_operation_recipe
 from .general_shift_rules import process_shifts
@@ -646,7 +650,6 @@ def param_shift_cv(
         )
 
     _gradient_analysis(tape)
-
     gradient_tapes = []
     shapes = []
     fns = []
@@ -666,16 +669,13 @@ def param_shift_cv(
         shapes.append(len(data[0]))
         fns.append(data[1])
 
-    # TODO: replace the JacobianTape._grad_method_validation
-    # functionality before deprecation.
-    diff_methods = tape._grad_method_validation("analytic" if fallback_fn is None else "best")
+    method = "analytic" if fallback_fn is None else "best"
+    diff_methods = grad_method_validation(method, tape)
     all_params_grad_method_zero = all(g == "0" for g in diff_methods)
     if all_params_grad_method_zero:
         return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # TODO: replace the JacobianTape._choose_params_with_methods
-    # functionality before deprecation.
-    method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
+    method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(m.return_type is qml.operation.Variance for m in tape.measurements)
 
     unsupported_params = []
