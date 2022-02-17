@@ -464,16 +464,13 @@ def expand_fragment_tapes(
             prepare_mapping = {
                 n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
-            meas = []
 
             with QuantumTape() as tape_:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
                         prepare_mapping[op](w)
-                    elif isinstance(op, MeasureNode):
-                        meas.append(op)
-                    else:
+                    elif not isinstance(op, MeasureNode):
                         apply(op)
 
                 for meas_op in group:
