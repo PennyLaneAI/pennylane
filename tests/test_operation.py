@@ -183,6 +183,64 @@ class TestOperationConstruction:
         op = DummyOp(x, wires=0)
         assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
 
+    def test_default_grad_method_with_frequencies(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if ``parameter_frequencies`` are present.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+            @property
+            def parameter_frequencies(self):
+                return [(0.4, 1.2)]
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "A"
+
+    def test_default_grad_method_with_generator(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if a generator is present to determine parameter_frequencies from.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+            def generator(self):
+                return -0.2 * qml.PauliX(wires=self.wires)
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "A"
+
+    def test_default_grad_method_numeric(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if no information is present to deduce an analytic gradient method.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "F"
+
+    def test_default_grad_no_param(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if an operation does not have a parameter.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        assert op.grad_method is None
+
     def test_frequencies_default_single_param(self):
         """Test that an operation with default parameter frequencies
         and a single parameter works correctly."""
