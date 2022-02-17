@@ -286,46 +286,55 @@ def test_expvalD(symbols, geometry, core, charge, active, d_ref):
 def test_gradient_expvalD():
     r"""Test that the gradient of expval(D) computed with ``autograd.grad`` is equal to the value
     obtained with the finite difference method."""
-    symbols = ["H", "H"]
-    geometry = (
-        np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
-        / 0.529177210903
-    )
+    symbols = ["H", "H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [1.0, 2.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
     alpha = np.array(
-        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        [
+            [3.42525091, 0.62391373, 0.1688554],
+            [3.42525091, 0.62391373, 0.1688554],
+            [3.42525091, 0.62391373, 0.1688554],
+        ],
         requires_grad=True,
     )
-    idx = 0  # the x component of the dipole moment is tested
 
-    mol = Molecule(symbols, geometry, alpha=alpha)
-    args = [alpha]
-    dev = qml.device("default.qubit", wires=4)
+    mol = Molecule(symbols, geometry, charge=1, alpha=alpha)
+    args = [mol.alpha]
+    dev = qml.device("default.qubit", wires=6)
 
-    def dipole(mol, idx):
+    def dipole(mol):
         @qml.qnode(dev)
         def circuit(*args):
             qml.PauliX(0)
             qml.PauliX(1)
-            qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            d_qubit = dipole_moment(mol)(*args)[idx]
-            return qml.expval(d_qubit)
+            qml.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
+            qml.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
+            d_qubit = dipole_moment(mol)(*args)
+            return qml.expval(d_qubit[0])
 
         return circuit
 
-    grad_autograd = autograd.grad(dipole(mol, idx), argnum=0)(*args)
+    grad_autograd = autograd.grad(dipole(mol))(*args)
 
     alpha_1 = np.array(
-        [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        [
+            [3.42515091, 0.62391373, 0.1688554],
+            [3.42525091, 0.62391373, 0.1688554],
+            [3.42525091, 0.62391373, 0.1688554],
+        ],
         requires_grad=False,
     )  # alpha[0][0] -= 0.0001
 
     alpha_2 = np.array(
-        [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        [
+            [3.42535091, 0.62391373, 0.1688554],
+            [3.42525091, 0.62391373, 0.1688554],
+            [3.42525091, 0.62391373, 0.1688554],
+        ],
         requires_grad=False,
     )  # alpha[0][0] += 0.0001
 
-    d_1 = dipole(mol, idx)(*[alpha_1])
-    d_2 = dipole(mol, idx)(*[alpha_2])
+    d_1 = dipole(mol)(*[alpha_1])
+    d_2 = dipole(mol)(*[alpha_2])
 
     grad_finitediff = (d_2 - d_1) / 0.0002
 

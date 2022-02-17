@@ -286,8 +286,7 @@ def qubit_operator(o_ferm, cutoff=1.0e-12):
     for n, t in enumerate(o_ferm[1]):
 
         if len(t) == 0:
-            coeffs = anp.array([0.0])
-            coeffs = coeffs + np.array([o_ferm[0][n]])
+            coeffs = np.concatenate((coeffs, np.array([o_ferm[0][n]]) + 0.0))
             ops = ops + [qml.Identity(0)]
 
         else:
