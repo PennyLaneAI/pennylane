@@ -19,71 +19,6 @@ from pennylane.transforms import qfunc_transform, ctrl
 from pennylane.queuing import apply
 from pennylane.tape import QuantumTape, get_active_tape
 
-class Aux:
-    """
-    A wire label for a wire holding the state of the `self.base_wire` just before it was mid-circuit measured,
-    for the `self.count` time.
-    """
-
-    def __init__(self, wire_or_aux, count=0):
-        if isinstance(wire_or_aux, Aux):
-            self.base_wire = wire_or_aux.base_wire
-            self.count = wire_or_aux.count + count + 1
-        else:
-            self.base_wire = wire_or_aux
-            self.count = count
-
-    def __hash__(self):
-        return hash((Aux, self.base_wire, self.count))
-
-    def __eq__(self, other):
-        if isinstance(other, Aux):
-            return self.base_wire == other.base_wire and self.count == other.count
-        return False
-
-    def __str__(self):
-        return f"Aux({repr(self.base_wire)},{repr(self.count)})"
-
-    def __repr__(self):
-        return f"Aux({repr(self.base_wire)},{repr(self.count)})"
-
-
-class WireRemapper:
-
-    def __init__(self):
-        self._altered_wires = set()
-        self._measured_wires = {}
-
-    def mark_altered(self, wire):
-        self._altered_wires.add(wire)
-
-    def get_mapped(self, base_wire):
-        assert not isinstance(base_wire, Aux)
-        if base_wire in self._measured_wires.keys():
-            return Aux(base_wire, self._measured_wires[base_wire])
-        return base_wire
-
-    def mark_altered_and_get_mapped(self, base_wire):
-        assert not isinstance(base_wire, Aux)
-        mapped = self.get_mapped(base_wire)
-        self.mark_altered(mapped)
-        return mapped
-
-    def mark_measured_and_get_mapped(self, base_wire):
-        assert not isinstance(base_wire, Aux)
-        if base_wire not in self._measured_wires.keys():
-            if base_wire in self._altered_wires:
-                self._measured_wires[base_wire] = 0
-                return Aux(base_wire)
-            else:
-                # self._altered_wires.add(base_wire)  # not sure if this should be here?
-                return base_wire
-        else:
-            if Aux(base_wire, self._measured_wires[base_wire]) in self._altered_wires:
-                self._measured_wires[base_wire] += 1
-                return Aux(base_wire, self._measured_wires[base_wire])
-
-
 
 def make_mid_circuit_measurements_terminal(tape):
 
@@ -140,19 +75,6 @@ def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
                     if flip:
                         qml.PauliX(control[i])
 
-            elif op.__class__.__name__ == "_ConditionOp":
-                control = [measured_wires[m_id] for m_id in op.dependant_measurements]
-                flipped = [False] * len(control)
-                for branch, branch_op in op.branches.items():
-                    for i, wire_val in enumerate(branch):
-                        if wire_val and flipped[i] or not wire_val and not flipped[i]:
-                            qml.PauliX(control[i])
-                            flipped[i] = not flipped[i]
-                    ctrl(lambda: apply(branch_op), control=Wires(control))()
-                for i, flip in enumerate(flipped):
-                    if flip:
-                        qml.PauliX(control[i])
-
             else:
                 apply(op)
 
@@ -160,7 +82,4 @@ def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
 
 @qfunc_transform
 def defer_measurements(tape):
-    active_tape = get_active_tape()
-    with get_active_tape().stop_recording():
-        tape = make_mid_circuit_measurements_terminal(tape)
     defer_measurements_on_mid_circuit_measured_terminal_tape(tape)
