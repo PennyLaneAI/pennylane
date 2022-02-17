@@ -813,7 +813,6 @@ class TestVarianceQuantumGradients:
             qml.expval(qml.X(0))
 
         with monkeypatch.context() as m:
-            m.setattr(tape, "_grad_method_validation", lambda *args: ("A",))
             tape._par_info[0]["grad_method"] = "A"
             tape.trainable_params = {0}
 
