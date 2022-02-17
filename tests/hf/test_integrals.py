@@ -299,7 +299,7 @@ def test_gradient_overlap(symbols, geometry, alpha, coeff):
         (  # trivial case, ref = 0.0 for e == 0 and t != 0
             np.array([3.42525091]),
             np.array([3.42525091]),
-            1,
+            -1,
             0,
             np.array([1.5]),
             np.array([0.0]),

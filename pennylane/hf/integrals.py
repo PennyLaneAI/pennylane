@@ -357,9 +357,7 @@ def hermite_moment(alpha, beta, t, e, r):
     """
     p = anp.array(alpha + beta)
 
-    if t > e:
-        return 0.0
-    if e == 0 and t != 0:
+    if t > e or (e == 0 and t != 0):
         return 0.0
     if e == 0 and t == 0:
         return anp.sqrt(anp.pi / p)
@@ -417,7 +415,7 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, e, r):
     array([1.0157925])
     """
     s = 0.0
-    for t in range(min(li + lj + 1, e + 1)):
+    for t in range(min(li + lj, e) + 1):
         s = s + expansion(li, lj, ri, rj, alpha, beta, t) * hermite_moment(alpha, beta, t, e, r)
 
     return s
@@ -455,9 +453,9 @@ def moment_integral(basis_a, basis_b, e, idx):
     **Example**
 
     >>> symbols  = ['H', 'Li']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = True)
     >>> mol = qml.hf.Molecule(symbols, geometry)
-    >>> args = []
+    >>> args = [mol.r] # initial values of the differentiable parameters
     >>> e, idx =  1, 0
     >>> moment_integral(mol.basis_set[0], mol.basis_set[1], e, idx)(*args)
     3.12846324e-01
