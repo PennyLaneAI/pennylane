@@ -46,34 +46,6 @@ class _MidCircuitMeasure(Operation):
         super().__init__(wires=wires)
 
 
-# pylint: disable=protected-access
-def apply_to_measurement_dependant_values(fun):
-    """
-    Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
-    (fun should be a "pure" function)
-
-    Ex:
-
-    .. code-block:: python
-
-        m0 = qml.mid_measure(0)
-        m0_sin = qml.apply_to_measurement_dependant_value(np.sin)(m0)
-    """
-
-    @functools.wraps(fun)
-    def wrapper(*args, **kwargs):
-        partial = _Value()
-        for arg in args:
-            if not isinstance(arg, MeasurementDependantValue):
-                arg = _Value(arg)
-            partial = partial._merge(arg)
-        partial._transform_leaves_inplace(
-            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
-        )
-        return partial
-    return wrapper
-
-
 T = TypeVar("T")
 
 
@@ -83,8 +55,7 @@ class MeasurementDependantValue(Generic[T]):
     Since we don't know the actual outcomes at circuit creation time,
     consider all scenarios.
 
-    supports python __dunder__ mathematical operations. As well as arbitrary functions using
-    qml.apply_to_measurement_dependant_value.
+    supports python __dunder__ mathematical operations.
     """
 
     __slots__ = ("_depends_on", "_zero_case", "_one_case")
@@ -280,32 +251,3 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
             super().__init__(*args, **kwargs)
 
     return _IfOp
-
-
-def condition(condition_op: Type[Operation]):
-    """
-    Run an operation with parameters being outcomes of mid-circuit measurements.
-
-    .. code-block:: python
-
-        m0 = qml.mid_measure(0)
-        qml.condition(qml.RZ)(m0, wires=1)
-    """
-
-    class _ConditionOp(Operation):
-        """
-        Helper private class for `condition` function.
-        """
-
-        num_wires = condition_op.num_wires
-        op: Type[Operation] = condition_op
-
-        def __init__(self, *args, **kwargs):
-            measurement_dependant_op = apply_to_measurement_dependant_values(
-                lambda *unwrapped: self.op(*unwrapped, do_queue=False, **kwargs)
-            )(*args)
-            self.branches = measurement_dependant_op.branches
-            self.dependant_measurements = measurement_dependant_op.measurements
-            super().__init__(*args, **kwargs)
-
-    return _ConditionOp
