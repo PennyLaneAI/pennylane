@@ -26,8 +26,8 @@ import pennylane as qml
 
 from .gradient_transform import (
     gradient_transform,
-    _grad_method_validation,
-    _choose_params_with_methods,
+    grad_method_validation,
+    choose_grad_methods,
 )
 
 
@@ -307,7 +307,7 @@ def finite_diff(
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
             tape._update_gradient_info()
-        diff_methods = _grad_method_validation("numeric", tape)
+        diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
@@ -334,7 +334,7 @@ def finite_diff(
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
-    method_map = _choose_params_with_methods(diff_methods, argnum)
+    method_map = choose_grad_methods(diff_methods, argnum)
 
     for i, _ in enumerate(tape.trainable_params):
         if i not in method_map or method_map[i] == "0":

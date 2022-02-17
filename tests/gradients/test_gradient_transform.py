@@ -18,13 +18,13 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
     gradient_transform,
-    _choose_params_with_methods,
-    _grad_method_validation,
+    choose_grad_methods,
+    grad_method_validation,
 )
 
 
 class TestGradMethodValidation:
-    """Test the helper function _grad_method_validation, which is a
+    """Test the helper function grad_method_validation, which is a
     reduced copy of the eponymous method of ``JacobianTape``."""
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
@@ -38,7 +38,7 @@ class TestGradMethodValidation:
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = None
         with pytest.raises(ValueError, match="Cannot differentiate with respect"):
-            _grad_method_validation(method, tape)
+            grad_method_validation(method, tape)
 
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
@@ -50,11 +50,11 @@ class TestGradMethodValidation:
         tape._par_info[0]["grad_method"] = "A"
         tape._par_info[1]["grad_method"] = "F"
         with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
-            _grad_method_validation("analytic", tape)
+            grad_method_validation("analytic", tape)
 
 
-class TestChooseParamsWithMethods:
-    """Test the helper function _choose_params_with_methods, which is a
+class TestChooseGradMethods:
+    """Test the helper function choose_grad_methods, which is a
     reduced copy of the eponymous method of ``JacobianTape``."""
 
     all_diff_methods = [
@@ -68,7 +68,7 @@ class TestChooseParamsWithMethods:
     def test_without_argnum(self, diff_methods):
         """Test that the method returns all diff_methods when
         used with ``argnum=None``."""
-        chosen = _choose_params_with_methods(diff_methods, None)
+        chosen = choose_grad_methods(diff_methods, None)
         assert chosen == dict(enumerate(diff_methods))
 
     @pytest.mark.parametrize(
@@ -78,7 +78,7 @@ class TestChooseParamsWithMethods:
     def test_with_integer_argnum(self, diff_methods, argnum, expected):
         """Test that the method returns the correct single diff_method when
         used with an integer ``argnum``."""
-        chosen = _choose_params_with_methods(diff_methods, argnum)
+        chosen = choose_grad_methods(diff_methods, argnum)
         assert chosen == expected
 
     @pytest.mark.parametrize("diff_methods", all_diff_methods[:2] + [[]])
@@ -86,7 +86,7 @@ class TestChooseParamsWithMethods:
         """Test that the method raises a warning when an empty iterable
         is passed as ``argnum``."""
         with pytest.warns(UserWarning, match="No trainable parameters were specified"):
-            chosen = _choose_params_with_methods(diff_methods, [])
+            chosen = choose_grad_methods(diff_methods, [])
         assert chosen == {}
 
 
