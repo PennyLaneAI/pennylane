@@ -15,7 +15,7 @@
 """
 Unit tests for the old draw transform.
 """
-import functools
+from functools import partial
 import pytest
 
 import pennylane as qml
@@ -237,7 +237,10 @@ def test_invalid_wires():
 
 @pytest.mark.parametrize(
     "transform",
-    [qml.gradients.param_shift(shift=0.2), functools.partial(qml.gradients.param_shift, shift=0.2)],
+    [
+        qml.gradients.param_shift(shifts=[(0.2,)]),
+        partial(qml.gradients.param_shift, shifts=[(0.2,)]),
+    ],
 )
 def test_draw_batch_transform(transform):
     """Test that drawing a batch transform works correctly"""

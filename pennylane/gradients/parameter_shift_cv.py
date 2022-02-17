@@ -25,7 +25,8 @@ import pennylane as qml
 
 from .gradient_transform import gradient_transform
 from .finite_difference import finite_diff, generate_shifted_tapes
-from .parameter_shift import expval_param_shift, _get_operation_recipe, _process_gradient_recipe
+from .parameter_shift import expval_param_shift, _get_operation_recipe
+from .general_shift_rules import process_shifts
 
 
 def _grad_method(tape, idx):
@@ -164,7 +165,7 @@ def _transform_observable(obs, Z, device_wires):
     return qml.PolyXP(A, wires=device_wires)
 
 
-def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_recipes=None, f0=None):
+def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
     consisting of a mixture of expectation values and variances of observables.
 
@@ -182,10 +183,10 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shift (float): The shift value to use for the two-term parameter-shift formula.
-            Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-            is ``None``.
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -217,7 +218,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
     gradient_tapes = [expval_tape]
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shift, gradient_recipes, f0)
+    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0)
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
@@ -248,7 +249,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
     # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
     # observables.
     pdA2_tapes, pdA2_fn = second_order_param_shift(
-        expval_sq_tape, dev_wires, argnum, shift, gradient_recipes
+        expval_sq_tape, dev_wires, argnum, shifts, gradient_recipes
     )
     gradient_tapes.extend(pdA2_tapes)
 
@@ -266,7 +267,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_reci
     return gradient_tapes, processing_fn
 
 
-def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, gradient_recipes=None):
+def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None):
     r"""Generate the second-order CV parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -288,10 +289,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shift (float): The shift value to use for the two-term parameter-shift formula.
-            Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-            is ``None``.
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -323,12 +324,16 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
         shapes.append(1)
 
         # get the gradient recipe for the trainable parameter
-        recipe = gradient_recipes[argnum.index(idx)]
-        recipe = recipe or _get_operation_recipe(tape, idx, shift=shift)
-        recipe = _process_gradient_recipe(recipe)
-        coeffs, multipliers, shifts = recipe
+        arg_idx = argnum.index(idx)
+        recipe = gradient_recipes[arg_idx]
+        if recipe is not None:
+            recipe = process_shifts(np.array(recipe).T)
+        else:
+            op_shifts = None if shifts is None else shifts[arg_idx]
+            recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
+        coeffs, multipliers, op_shifts = recipe
 
-        if len(shifts) != 2:
+        if len(op_shifts) != 2:
             # The 2nd order CV parameter-shift rule only accepts two-term shifts
             raise NotImplementedError(
                 "Taking the analytic gradient for order-2 operators is "
@@ -336,7 +341,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shift=np.pi / 2, grad
                 "gradient recipe of more than two terms."
             )
 
-        shifted_tapes = generate_shifted_tapes(tape, idx, shifts, multipliers)
+        shifted_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
 
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z
@@ -466,7 +471,7 @@ def param_shift_cv(
     tape,
     dev,
     argnum=None,
-    shift=np.pi / 2,
+    shifts=None,
     gradient_recipes=None,
     fallback_fn=finite_diff,
     f0=None,
@@ -481,10 +486,10 @@ def param_shift_cv(
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
-        shift (float): The shift value to use for the two-term parameter-shift formula.
-            Only valid if the operation in question supports the two-term parameter-shift
-            rule (that is, it has two distinct eigenvalues) and ``gradient_recipes``
-            is ``None``.
+        shifts (list[tuple[int or float]]): List containing tuples of shift values.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
         gradient_recipes (tuple(list[list[float]] or None)): List of gradient recipes
             for the parameter-shift method. One gradient recipe must be provided
             per trainable parameter.
@@ -721,17 +726,17 @@ def param_shift_cv(
     gradient_recipes = gradient_recipes or [None] * len(argnum)
 
     if var_present:
-        _update(var_param_shift(tape, dev.wires, argnum, shift, gradient_recipes, f0))
+        _update(var_param_shift(tape, dev.wires, argnum, shifts, gradient_recipes, f0))
 
     else:
         # Only expectation values were specified
         if first_order_params:
-            _update(expval_param_shift(tape, first_order_params, shift, gradient_recipes, f0))
+            _update(expval_param_shift(tape, first_order_params, shifts, gradient_recipes, f0))
 
         if second_order_params:
             _update(
                 second_order_param_shift(
-                    tape, dev.wires, second_order_params, shift, gradient_recipes
+                    tape, dev.wires, second_order_params, shifts, gradient_recipes
                 )
             )
 
