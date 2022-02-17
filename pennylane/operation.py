@@ -1913,7 +1913,7 @@ class Tensor(Observable):
                 return 1
         return 0
 
-    def sparse_matrix(self, wires=None):  # pylint: disable=arguments-renamed
+    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
         r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
