@@ -419,10 +419,10 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_
     ham_calc = transform_hamiltonian(h, generator, paulix_ops, paulix_sector)
 
     # sort Hamiltonian terms and then compare with reference
-    sorted_terms = list(sorted(zip(ham_calc.terms[0], ham_calc.terms[1])))
+    sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
     for i, term in enumerate(sorted_terms):
-        assert np.allclose(term[0], ham_ref.terms[0][i])
-        assert term[1].compare(ham_ref.terms[1][i])
+        assert np.allclose(term[0], ham_ref.terms()[0][i])
+        assert term[1].compare(ham_ref.terms()[1][i])
 
 
 @pytest.mark.parametrize(

@@ -158,7 +158,7 @@ class RepresentationResolver:
         Returns:
             str: The formatted operation
         """
-        mat = operation.U
+        mat = operation.parameters[0]
         idx = RepresentationResolver.index_of_array_or_append(mat, cache) + offset
 
         return f"{symbol}{idx}"

@@ -21,6 +21,7 @@ import numpy as np
 import pennylane as qml
 
 from .parameter_shift import _gradient_analysis
+from .gradient_transform import grad_method_validation
 from .hessian_transform import hessian_transform
 
 
@@ -340,6 +341,6 @@ def param_shift_hessian(tape, f0=None):
             )
 
     _gradient_analysis(tape)
-    diff_methods = tape._grad_method_validation("analytic")  # pylint: disable=protected-access
+    diff_methods = grad_method_validation("analytic", tape)
 
     return compute_hessian_tapes(tape, diff_methods, f0)
