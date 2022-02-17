@@ -46,6 +46,31 @@ class _MidCircuitMeasure(Operation):
         super().__init__(wires=wires)
 
 
+# pylint: disable=protected-access
+def apply_to_measurement_dependant_values(fun):
+    """
+    Apply an arbitrary function to a `MeasurementDependantValue` or set of `MeasurementDependantValue`s.
+    (fun should be a "pure" function)
+    Ex:
+    .. code-block:: python
+        m0 = qml.mid_measure(0)
+        m0_sin = qml.apply_to_measurement_dependant_value(np.sin)(m0)
+    """
+
+    @functools.wraps(fun)
+    def wrapper(*args, **kwargs):
+        partial = _Value()
+        for arg in args:
+            if not isinstance(arg, MeasurementDependantValue):
+                arg = _Value(arg)
+            partial = partial._merge(arg)
+        partial._transform_leaves_inplace(
+            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
+        )
+        return partial
+    return wrapper
+
+
 T = TypeVar("T")
 
 
@@ -111,9 +136,11 @@ class MeasurementDependantValue(Generic[T]):
         return apply_to_measurement_dependant_values(lambda x, y: y * x)(self, other)
 
     def __and__(self, other: Any):
+        print('in and')
         return apply_to_measurement_dependant_values(lambda x, y: x and y)(self, other)
 
     def __rand__(self, other: Any):
+        print('in rand')
         return apply_to_measurement_dependant_values(lambda x, y: y and x)(self, other)
 
     def __or__(self, other: Any):
