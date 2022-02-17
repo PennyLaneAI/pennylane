@@ -204,7 +204,7 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
     f = fermionic_dipole(mol, core=core, active=active)(*args)[0]
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
-    # assert np.allclose(f[1], f_ref[1])  # fermionic operators
+    assert f[1] == f_ref[1]  # fermionic operators
 
 
 @pytest.mark.parametrize(
@@ -283,6 +283,55 @@ def test_expvalD(symbols, geometry, core, charge, active, d_ref):
         assert np.allclose(d, d_ref[i])
 
 
+def test_gradient_expvalD():
+    r"""Test that the gradient of expval(D) computed with ``autograd.grad`` is equal to the value
+    obtained with the finite difference method."""
+    symbols = ["H", "H"]
+    geometry = (
+        np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
+        / 0.529177210903
+    )
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+    idx = 0  # the x component of the dipole moment is tested
+
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    dev = qml.device("default.qubit", wires=4)
+
+    def dipole(mol, idx):
+        @qml.qnode(dev)
+        def circuit(*args):
+            qml.PauliX(0)
+            qml.PauliX(1)
+            qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
+            d_qubit = dipole_moment(mol)(*args)[idx]
+            return qml.expval(d_qubit)
+
+        return circuit
+
+    grad_autograd = autograd.grad(dipole(mol, idx), argnum=0)(*args)
+
+    alpha_1 = np.array(
+        [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=False,
+    )  # alpha[0][0] -= 0.0001
+
+    alpha_2 = np.array(
+        [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=False,
+    )  # alpha[0][0] += 0.0001
+
+    d_1 = dipole(mol, idx)(*[alpha_1])
+    d_2 = dipole(mol, idx)(*[alpha_2])
+
+    grad_finitediff = (d_2 - d_1) / 0.0002
+
+    assert np.allclose(grad_autograd[0][0], grad_finitediff)
+
+
 @pytest.mark.parametrize(
     ("core_constant", "integral", "f_ref"),
     [
@@ -346,11 +395,11 @@ def test_expvalD(symbols, geometry, core, charge, active, d_ref):
     ],
 )
 def test_fermionic_one(core_constant, integral, f_ref):
-    r"""Test that generate_electron_integrals returns the correct values."""
+    r"""Test that fermionic_one returns the correct fermionic observable."""
     f = fermionic_one(core_constant, integral)
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
-    assert np.allclose(f[0], f_ref[0])  # fermionic operators
+    assert f[1] == f_ref[1]  # fermionic operators
 
 
 @pytest.mark.parametrize(
@@ -394,7 +443,7 @@ def test_fermionic_one(core_constant, integral, f_ref):
     ],
 )
 def test_qubit_operator(f_operator, q_operator):
-    r"""Test that _generate_qubit_operator returns the correct operator."""
+    r"""Test that qubit_operator returns the correct operator."""
     h = qubit_operator(f_operator)
     h_ref = qml.Hamiltonian(q_operator[0], q_operator[1])
 

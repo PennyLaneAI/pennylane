@@ -157,30 +157,18 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
             tuple(array[float], list[list[int]]): the dipole moment coefficients and the indices of
             the spin orbitals the creation and annihilation operators act on
         """
-        f = []
         constants, integrals = dipole_integrals(mol, core, active)(*args)
-        # constants = anp.negative(constants)
 
-        nuc_constant = [anp.array([0]), anp.array([0]), anp.array([0])]
+        nd = [anp.array([0]), anp.array([0]), anp.array([0])]
         for i in range(len(mol.symbols)):  # nuclear contributions
-            nuc_constant[0] = (
-                nuc_constant[0] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
-            )
-            nuc_constant[1] = (
-                nuc_constant[1] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
-            )
-            nuc_constant[2] = (
-                nuc_constant[2] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
-            )
+            nd[0] = nd[0] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
+            nd[1] = nd[1] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
+            nd[2] = nd[2] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
 
+        f = []
         for i in range(3):
-            # f.append(fermionic_one(constants[i], integrals[i], cutoff=cutoff))
-            f_coeffs, f_ops = fermionic_one(constants[i], integrals[i], cutoff=cutoff)
-
-            f_coeffs = anp.concatenate((nuc_constant[i], f_coeffs * (-1)))
-            f_ops = [[]] + f_ops
-
-            f.append((f_coeffs, f_ops))
+            coeffs, ops = fermionic_one(constants[i], integrals[i], cutoff=cutoff)
+            f.append((anp.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
 
         return f
 
