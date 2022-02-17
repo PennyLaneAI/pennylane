@@ -449,28 +449,46 @@ def expand_fragment_tapes(
     :class:`~.MeasureNode` and :class:`~.PrepareNode` within the full circuit
     graph:
 
-    .. code-block:: python
+    Consider the following circuit, which contains a :class:`~.MeasureNode` and :class:`~.PrepareNode`
+    operation:
+
+    .. code-block: python
 
         from pennylane.transforms import qcut
 
-        >>> subgraphs, communication_graph = qcut.fragment_graph(graph)
-        >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+        with qml.tape.QuantumTape() as tape:
+            qcut.PrepareNode(wires=0)
+            qml.RX(0.5, wires=0)
+            qcut.MeasureNode(wires=0)
 
-        >>> fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
-        >>> fragment_configurations
-        [([<QuantumTape: wires=[0, 1], params=4>,
-           <QuantumTape: wires=[0, 1], params=4>,
-           <QuantumTape: wires=[0, 1], params=4>,
-           <QuantumTape: wires=[0, 1], params=4>],
-          [],
-          [MeasureNode(wires=[1])]),
-         ([<QuantumTape: wires=[1, 2], params=2>,
-           <QuantumTape: wires=[1, 2], params=2>,
-           <QuantumTape: wires=[1, 2], params=2>,
-           <QuantumTape: wires=[1, 2], params=2>],
-          [PrepareNode(wires=[1])],
-          [])]
+    We can expand over the measurement and preparation nodes using:
 
+    >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
+    >>> for t in tapes:
+    ...     print(t.draw())
+     0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
+
+     0: ──I──RX(0.5)──┤ ⟨X⟩ 
+
+     0: ──I──RX(0.5)──┤ ⟨Y⟩ 
+    
+     0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
+    
+     0: ──X──RX(0.5)──┤ ⟨X⟩ 
+    
+     0: ──X──RX(0.5)──┤ ⟨Y⟩ 
+    
+     0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
+    
+     0: ──H──RX(0.5)──┤ ⟨X⟩ 
+    
+     0: ──H──RX(0.5)──┤ ⟨Y⟩ 
+    
+     0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
+    
+     0: ──H──S──RX(0.5)──┤ ⟨X⟩ 
+    
+     0: ──H──S──RX(0.5)──┤ ⟨Y⟩ 
     """
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
