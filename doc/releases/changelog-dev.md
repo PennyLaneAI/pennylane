@@ -24,14 +24,33 @@
 
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
-  enters a circuit when using the operation.
+  enters a circuit. In addition, the general parameter-shift
+  rule is now automatically used by `qml.gradients.param_shift`.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+  [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
   parameter-shift rule. They assume that the circuit returns
   expectation values or probabilities, for a variance
   measurement the frequencies will differ.
+
+  By default, the frequencies will be obtained from the
+  `generator` property (if it is defined).
+
+  When using `qml.gradients.param_shift`, the parameter frequencies
+  are used to obtain the shift rule for the operation.
+
+  For operations that are registered to have an analytic gradient
+  method but that do not provide parameter frequencies, the
+  `grad_recipe` of the operation will be used for differentiation
+  instead. If there is no `grad_recipe`, the standard two-term shift
+  rule will be used.
+
+  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
+  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
+  for theoretical background information on the general
+  parameter-shift rule.
 
 * Continued development of the circuit-cutting compiler:
 
@@ -56,6 +75,11 @@
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
 
 <h3>Improvements</h3>
+
+* The `gradients` module has been streamlined and special-purpose functions
+  moved closer to their use cases. This does not change the behaviour for
+  users in any way.
+  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
 
 * Added a new `partition_pauli_group` function to the `grouping` module for
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
@@ -253,7 +277,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, 
+Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
 Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
 
