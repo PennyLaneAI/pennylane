@@ -505,9 +505,9 @@ def expand_fragment_tapes(
 
                 with qml.tape.stop_recording():
                     measurements = _get_measurements(group, tape.measurements)
-                if measurements is not None:
-                    for meas in measurements:
-                        apply(meas)
+
+                for meas in measurements:
+                    apply(meas)
 
                 tapes.append(tape_)
 
