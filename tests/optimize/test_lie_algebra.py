@@ -323,8 +323,7 @@ def test_docstring_example():
 
     for step in range(6):
         circuit, cost = opt.step_and_cost()
-        print(f"Step {step} - cost {cost}")
-    print(circuit())
+    circuit()
 
     assert np.isclose(cost, -2.23, atol=1e-2)
 
@@ -349,7 +348,6 @@ def test_docstring_example_exact():
 
     for step in range(6):
         _, cost = opt.step_and_cost()
-        print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
 
 
@@ -372,4 +370,3 @@ def test_example_shots():
 
     for step in range(3):
         _, cost = opt.step_and_cost()
-        print(f"Step {step} - cost {cost}")

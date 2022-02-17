@@ -219,7 +219,10 @@ class TestLayering:
 
 @pytest.mark.parametrize(
     "transform",
-    [qml.gradients.param_shift(shift=0.2), partial(qml.gradients.param_shift, shift=0.2)],
+    [
+        qml.gradients.param_shift(shifts=[(0.2,)]),
+        partial(qml.gradients.param_shift, shifts=[(0.2,)]),
+    ],
 )
 def test_draw_batch_transform(transform):
     """Test that drawing a batch transform works correctly."""

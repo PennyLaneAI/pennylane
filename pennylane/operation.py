@@ -1083,7 +1083,13 @@ class Operation(Operator):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        return None if self.num_params == 0 else "F"
+        if self.num_params == 0:
+            return None
+        try:
+            self.parameter_frequencies  # pylint:disable=pointless-statement
+            return "A"
+        except OperatorPropertyUndefined:
+            return "F"
 
     grad_recipe = None
     r"""tuple(Union(list[list[float]], None)) or None: Gradient recipe for the
@@ -1134,28 +1140,38 @@ class Operation(Operator):
         """
         raise NotImplementedError
 
-    def get_parameter_shift(self, idx, shift=np.pi / 2):
-        """Multiplier and shift for the parameter at position idx, based on its gradient recipe.
+    def get_parameter_shift(self, idx, shift=None):
+        r"""Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
             idx (int): parameter index
+            shift (float or None): The shift value to use for the two-term
+                parameter-shift rule. This is only used if the operation
+                does not have :attr:`Operator.grad_recipe` defined. If ``None``,
+                a shift value of :math:`\pi/2` is used.
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
+        if recipe is not None:
+            return recipe
 
         # Default values
+        if shift is None:
+            shift = np.pi / 2
         multiplier = 0.5 / np.sin(shift)
         a = 1
 
         # We set the following default recipe:
         # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
         # where we express a positive and a negative shift by default
-        default_param_shift = [[multiplier, a, shift], [-multiplier, a, -shift]]
-        param_shift = default_param_shift if recipe is None else recipe
-        return param_shift
+        default_param_shift = [
+            [multiplier, a, shift],
+            [-multiplier, a, -shift],  # pylint: disable=invalid-unary-operand-type
+        ]
+        return default_param_shift
 
     @property
     def parameter_frequencies(self):
@@ -1327,8 +1343,6 @@ class Operation(Operator):
                 assert (
                     len(self.grad_recipe) == self.num_params
                 ), "Gradient recipe must have one entry for each parameter!"
-        else:
-            assert self.grad_recipe is None, "Gradient recipe is only used by the A method!"
 
 
 class Channel(Operation, abc.ABC):
@@ -1632,7 +1646,7 @@ class Tensor(Observable):
 
     def __copy__(self):
         cls = self.__class__
-        copied_op = cls.__new__(cls)
+        copied_op = cls.__new__(cls)  # pylint: disable=no-value-for-parameter
         copied_op.obs = self.obs.copy()
         copied_op._eigvals_cache = self._eigvals_cache
         return copied_op

@@ -434,7 +434,11 @@ class TestExpectationQuantumGradients:
     """Tests for the quantum gradients of various gates
     with expectation value output"""
 
-    def test_rotation_gradient(self, mocker, tol):
+    @pytest.mark.parametrize(
+        "gradient_recipes",
+        [None, ([[1 / np.sqrt(2), 1, np.pi / 4], [-1 / np.sqrt(2), 1, -np.pi / 4]],)],
+    )
+    def test_rotation_gradient(self, gradient_recipes, mocker, tol):
         """Test the gradient of the rotation gate"""
         dev = qml.device("default.gaussian", wires=2, hbar=hbar)
 
@@ -450,11 +454,11 @@ class TestExpectationQuantumGradients:
 
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
-        tapes, fn = param_shift_cv(tape, dev)
+        tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes)
         grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
-        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
