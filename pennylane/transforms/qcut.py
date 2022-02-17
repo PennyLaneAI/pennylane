@@ -366,7 +366,9 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     return tape
 
 
-def _get_measurements(group: Sequence[Operator], measurements: Sequence[MeasurementProcess]) -> List[MeasurementProcess]:
+def _get_measurements(
+    group: Sequence[Operator], measurements: Sequence[MeasurementProcess]
+) -> List[MeasurementProcess]:
     """Pairs each observable in ``group`` with the fixed circuit ``measurements``.
 
     Only a single fixed measurement of an expectation value is currently supported.
@@ -382,16 +384,20 @@ def _get_measurements(group: Sequence[Operator], measurements: Sequence[Measurem
     """
     n_measurements = len(measurements)
     if n_measurements > 1:
-        raise ValueError("The circuit cutting workflow only supports circuits with a single output "
-                         "measurement")
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
     if n_measurements == 0:
         return [expval(g) for g in group]
 
     measurement = measurements[0]
 
     if measurement.return_type is not Expectation:
-        raise ValueError("The circuit cutting workflow only supports circuits with expectation "
-                         "value measurements")
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
 
     obs = measurement.obs
 
@@ -476,9 +482,7 @@ def expand_fragment_tapes(
     if n_meas >= 1:
         measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
     else:
-        measure_combinations = [
-            [""]
-        ]
+        measure_combinations = [[""]]
 
     tapes = []
 
