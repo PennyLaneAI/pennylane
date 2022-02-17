@@ -445,14 +445,10 @@ def expand_fragment_tapes(
 
     **Example**
 
-    Consider the following where ``graph`` contains a single
-    :class:`~.MeasureNode` and :class:`~.PrepareNode` within the full circuit
-    graph:
-
     Consider the following circuit, which contains a :class:`~.MeasureNode` and :class:`~.PrepareNode`
     operation:
 
-    .. code-block: python
+    .. code-block:: python
 
         from pennylane.transforms import qcut
 
@@ -463,32 +459,34 @@ def expand_fragment_tapes(
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
-    >>> for t in tapes:
-    ...     print(t.draw())
-     0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
+    .. code-block:: python
 
-     0: ──I──RX(0.5)──┤ ⟨X⟩ 
+        >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
+        >>> for t in tapes:
+        ...     print(t.draw())
+         0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
 
-     0: ──I──RX(0.5)──┤ ⟨Y⟩ 
-    
-     0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
-    
-     0: ──X──RX(0.5)──┤ ⟨X⟩ 
-    
-     0: ──X──RX(0.5)──┤ ⟨Y⟩ 
-    
-     0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
-    
-     0: ──H──RX(0.5)──┤ ⟨X⟩ 
-    
-     0: ──H──RX(0.5)──┤ ⟨Y⟩ 
-    
-     0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩ 
-    
-     0: ──H──S──RX(0.5)──┤ ⟨X⟩ 
-    
-     0: ──H──S──RX(0.5)──┤ ⟨Y⟩ 
+         0: ──I──RX(0.5)──┤ ⟨X⟩
+
+         0: ──I──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──X──RX(0.5)──┤ ⟨X⟩
+
+         0: ──X──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──H──RX(0.5)──┤ ⟨X⟩
+
+         0: ──H──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨X⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨Y⟩
     """
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
