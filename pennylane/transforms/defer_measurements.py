@@ -33,26 +33,11 @@ def defer_measurements(tape):
                 measured_wires[op.measurement_id] = op.wires[0]
 
             elif op.__class__.__name__ == "_IfOp":
-                # TODO: Why doesn't op.dependant_measurements only store the wire labels?
+                # TODO: Why does op.dependant_measurements store the wire ids instead of labels?
                 control = [measured_wires[m_id] for m_id in op.dependant_measurements]
-                flipped = [False] * len(control)
-                print(op.branches, op.dependant_measurements)
                 for branch, value in op.branches.items():
-                    print('value: ', value)
                     if value:
-                        print('within if: ')
-                        for i, wire_val in enumerate(branch):
-                            print('wire_val: ', wire_val)
-                            if wire_val and flipped[i] or not wire_val and not flipped[i]:
-                                print(control[i])
-                                qml.PauliX(control[i])
-                                flipped[i] = not flipped[i]
-                        print('control: ', control)
                         ctrl(lambda: apply(op.then_op), control=Wires(control))()
-                for i, flip in enumerate(flipped):
-                    if flip:
-                        qml.PauliX(control[i])
-
             else:
                 apply(op)
 
