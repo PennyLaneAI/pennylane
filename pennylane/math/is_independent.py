@@ -28,6 +28,7 @@ from autograd.core import VJPNode
 
 from pennylane import numpy as pnp
 
+
 def _autograd_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using Autograd.

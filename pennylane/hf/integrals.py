@@ -604,9 +604,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     for t, u, v in it.product(*[range(l) for l in [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1]]):
         a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
             m1, m2, ra[1], rb[1], alpha, beta, u
-        ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * _hermite_coulomb(
-            t, u, v, 0, p, dr
-        )
+        ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * _hermite_coulomb(t, u, v, 0, p, dr)
     a = a * 2 * anp.pi / p
     return a
 

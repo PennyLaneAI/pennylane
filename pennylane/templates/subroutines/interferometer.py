@@ -235,9 +235,7 @@ class Interferometer(CVOperation):
                             op_list.append(Rotation(phi[n], wires=Wires(w1)))
                             op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
                         elif beamsplitter == "pennylane":
-                            op_list.append(
-                                Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
-                            )
+                            op_list.append(Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2])))
                         else:
                             raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
                         n += 1
