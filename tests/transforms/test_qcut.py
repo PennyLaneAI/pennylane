@@ -935,6 +935,59 @@ class TestGraphToTape:
             compare_tapes(tape1, tape2)
 
 
+class TestGetMeasurements:
+    """Tests for the _get_measurements function"""
+
+    def test_multiple_measurements_raises(self):
+        """Tests if the function raises a ValueError when more than 1 fixed measurement is
+        specified"""
+        group = [qml.Identity(0)]
+        meas = [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(2))]
+
+        with pytest.raises(ValueError, match="with a single output measurement"):
+            qcut._get_measurements(group, meas)
+
+    def test_non_expectation_raises(self):
+        """Tests if the function raises a ValueError when the fixed measurement is not an
+        expectation value"""
+        group = [qml.Identity(0)]
+        meas = [qml.var(qml.PauliX(1))]
+
+        with pytest.raises(ValueError, match="with expectation value measurements"):
+            qcut._get_measurements(group, meas)
+
+    def test_no_measurements(self):
+        """Tests if the function simply processes ``group`` into expectation values when an empty
+        list of fixed measurements is provided"""
+        group = [qml.Identity(0)]
+        meas = []
+
+        out = qcut._get_measurements(group, meas)
+
+        assert len(out) == len(group)
+        assert out[0].return_type is qml.measure.Expectation
+        assert out[0].obs.name == "Identity"
+        assert out[0].obs.wires[0] == 0
+
+    def test_single_measurement(self):
+        """Tests if the function behaves as expected for a typical example"""
+        group = [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliX(0)]
+        meas = [qml.expval(qml.PauliZ(1))]
+
+        out = qcut._get_measurements(group, meas)
+
+        assert len(out) == 2
+        assert [o.return_type for o in out] == [qml.measure.Expectation, qml.measure.Expectation]
+
+        obs = [o.obs for o in out]
+
+        assert obs[0].wires.tolist() == [1, 0, 2]
+        assert obs[1].wires.tolist() == [1, 0]
+
+        assert [o.name for o in obs[0].obs] == ['PauliZ', 'PauliX', 'PauliZ']
+        assert [o.name for o in obs[1].obs] == ['PauliZ', 'PauliX']
+
+
 class TestExpandFragmentTapes:
     """
     Tests that fragment tapes are correctly expanded to all configurations
