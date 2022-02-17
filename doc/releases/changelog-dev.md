@@ -76,6 +76,11 @@
 
 <h3>Improvements</h3>
 
+* The `gradients` module has been streamlined and special-purpose functions
+  moved closer to their use cases. This does not change the behaviour for
+  users in any way.
+  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
+
 * Added a new `partition_pauli_group` function to the `grouping` module for
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
@@ -272,7 +277,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, 
+Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
 Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
 
