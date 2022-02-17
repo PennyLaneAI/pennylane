@@ -114,32 +114,31 @@ def cancel_inverses(tape):
             # If the wires are the same, then we can safely remove both
             if current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
-            # If wires are not equal, there are two things that can happen
+            # If wires are not equal, there are two things that can happen.
+            # There is not full overlap in the wires; we cannot cancel
+            elif len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
+                current_gate.wires
+            ):
+                apply(current_gate)
             else:
-                # There is not full overlap in the wires; we cannot cancel
-                if len(Wires.shared_wires([current_gate.wires, next_gate.wires])) != len(
-                    current_gate.wires
-                ):
-                    apply(current_gate)
-                # There is full overlap, but the wires are in a different order
-                else:
-                    # If the wires are in a different order, gates that are "symmetric"
-                    # over all wires (e.g., CZ), can be cancelled.
-                    if current_gate in symmetric_over_all_wires:
+                # There is full overlap, but the wires are in a different order.
+                # If the wires are in a different order, gates that are "symmetric"
+                # over all wires (e.g., CZ), can be cancelled.
+                if current_gate in symmetric_over_all_wires:
+                    list_copy.pop(next_gate_idx + 1)
+                # For other gates, as long as the control wires are the same, we can still
+                # cancel (e.g., the Toffoli gate).
+                elif current_gate in symmetric_over_control_wires:
+                    if (
+                        len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
+                        == len(current_gate.wires) - 1
+                    ):
                         list_copy.pop(next_gate_idx + 1)
-                    # For other gates, as long as the control wires are the same, we can still
-                    # cancel (e.g., the Toffoli gate).
-                    elif current_gate in symmetric_over_control_wires:
-                        if (
-                            len(Wires.shared_wires([current_gate.wires[:-1], next_gate.wires[:-1]]))
-                            == len(current_gate.wires) - 1
-                        ):
-                            list_copy.pop(next_gate_idx + 1)
-                        else:
-                            apply(current_gate)
-                    # Apply gate any cases where there is no wire symmetry
                     else:
                         apply(current_gate)
+                # Apply gate any cases where there is no wire symmetry
+                else:
+                    apply(current_gate)
         # If neither of the flags are true, queue and move on to the next item
         else:
             apply(current_gate)
