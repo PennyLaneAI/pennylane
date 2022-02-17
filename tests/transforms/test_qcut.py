@@ -19,9 +19,10 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
@@ -995,8 +996,8 @@ class TestGetMeasurements:
         assert obs[0].wires.tolist() == [1, 0, 2]
         assert obs[1].wires.tolist() == [1, 0]
 
-        assert [o.name for o in obs[0].obs] == ['PauliZ', 'PauliX', 'PauliZ']
-        assert [o.name for o in obs[1].obs] == ['PauliZ', 'PauliX']
+        assert [o.name for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
+        assert [o.name for o in obs[1].obs] == ["PauliZ", "PauliX"]
 
 
 class TestExpandFragmentTapes:
