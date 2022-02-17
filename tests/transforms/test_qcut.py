@@ -19,10 +19,9 @@ import string
 import sys
 from itertools import product
 
+import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
-
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
@@ -123,16 +122,18 @@ def compare_tapes(tape, expected_tape):
         assert meas.obs.name == exp_meas.obs.name
         assert meas.wires.tolist() == exp_meas.wires.tolist()
 
+
 def compare_measurements(meas1, meas2):
     """
     Helper function to compare measurements
     """
     assert meas1.return_type.name == meas2.return_type.name
-    obs1 = meas1.obs 
+    obs1 = meas1.obs
     obs2 = meas2.obs
     assert np.array(obs1.name == obs2.name).all()
     assert obs1.wires.tolist() == obs2.wires.tolist()
-    
+
+
 class TestTapeToGraph:
     """
     Tests conversion of tapes to graph representations that are amenable to
