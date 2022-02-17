@@ -31,7 +31,7 @@ def dipole_integrals(mol, core=None, active=None):
 
         D = \sum_{pq} d_{pq} c_p^{\dagger} c_q + D_n,
 
-    where the coefficients :math:`d_{pq}` are given by the integral over molecular orbitals
+    where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
     :math:`\phi`
 
     .. math::
@@ -89,8 +89,8 @@ def dipole_integrals(mol, core=None, active=None):
             args (array[array[float]]): initial values of the differentiable parameters
 
         Returns:
-            tuple[array[float]]: tuple containing the contributions due to the core orbitals and the
-            nuclei and the dipole moment integrals
+            tuple[array[float]]: tuple containing the core orbital contributions and the dipole
+            moment integrals
         """
         _, coeffs, _, _, _ = qml.hf.generate_scf(mol)(*args)
 
@@ -99,11 +99,6 @@ def dipole_integrals(mol, core=None, active=None):
         dz = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs)
 
         core_x, core_y, core_z = anp.array([0]), anp.array([0]), anp.array([0])
-
-        # for i in range(len(mol.symbols)):  # nuclear contributions
-        #     core_x = core_x + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
-        #     core_y = core_y + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
-        #     core_z = core_z + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
 
         if core is None and active is None:
             return (core_x, core_y, core_z), (dx, dy, dz)
@@ -266,8 +261,8 @@ def qubit_operator(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     The fermionic operator is a tuple containing the fermionic coefficients and operators. The
-    one-body fermionic operator :math:`a_2^\dagger a_0` is constructed as [2, 0] and the two-body
-    operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is constructed as [4, 3, 2, 1].
+    one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the two-body
+    operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
 
     Args:
         o_ferm tuple(array[float], list[int]): fermionic operator
