@@ -18,11 +18,19 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import warnings
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Expectation, Observable, Probability, Sample, State, Variance
+from pennylane.operation import (
+    Expectation,
+    Observable,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 from pennylane.wires import Wires
 
 
@@ -85,7 +93,7 @@ class MeasurementProcess:
         """
         try:
             return self.expand().operations
-        except NotImplementedError:
+        except qml.operation.DecompositionUndefinedError:
             return []
 
     def __repr__(self):
@@ -118,6 +126,10 @@ class MeasurementProcess:
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
+        .. warning::
+            The ``eigvals`` property is deprecated and will be removed in
+            an upcoming release.
+
         If the measurement process has an associated observable,
         the eigenvalues will correspond to this observable. Otherwise,
         they will be the eigenvalues provided when the measurement
@@ -129,7 +141,33 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.eigvals
+        >>> m.get_eigvals()
+        array([1, -1])
+
+        Returns:
+            array: eigvals representation
+        """
+        warnings.warn(
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            UserWarning,
+        )
+        return self.get_eigvals()
+
+    def get_eigvals(self):
+        r"""Eigenvalues associated with the measurement process.
+
+        If the measurement process has an associated observable,
+        the eigenvalues will correspond to this observable. Otherwise,
+        they will be the eigenvalues provided when the measurement
+        process was instantiated.
+
+        Note that the eigenvalues are not guaranteed to be in any
+        particular order.
+
+        **Example:**
+
+        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
+        >>> m.get_eigvals()
         array([1, -1])
 
         Returns:
@@ -137,8 +175,8 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.eigvals
-            except NotImplementedError:
+                return self.obs.get_eigvals()
+            except qml.operation.EigvalsUndefinedError:
                 pass
 
         return self._eigvals
@@ -171,19 +209,21 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].eigvals)
+        >>> print(tape.measurements[0].get_eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
         """
         if self.obs is None:
-            raise NotImplementedError("Cannot expand a measurement process with no observable.")
+            raise qml.operation.DecompositionUndefinedError
 
         from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 
         with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals)
+            MeasurementProcess(
+                self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
+            )
 
         return tape
 
@@ -440,9 +480,9 @@ def probs(wires=None, op=None):
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not hasattr(op, "diagonalizing_gates"):
+    if op is not None and not qml.operation.defines_diagonalizing_gates(op):
         raise qml.QuantumFunctionError(
-            f"{op} has not diagonalizing_gates attribute: cannot be used to rotate the probability"
+            f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
 
     if wires is not None:

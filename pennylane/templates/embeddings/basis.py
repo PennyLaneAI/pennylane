@@ -33,8 +33,8 @@ class BasisEmbedding(Operation):
         gradients with respect to the argument cannot be computed by PennyLane.
 
     Args:
-        features (tensor_like): binary input of shape ``(n, )``
-        wires (Iterable): wires that the template acts on
+        features (tensor_like): binary input of shape ``(len(wires), )``
+        wires (Any or Iterable[Any]): wires that the template acts on
 
     Example:
 
@@ -87,20 +87,41 @@ class BasisEmbedding(Operation):
         if not set(features).issubset({0, 1}):
             raise ValueError(f"Basis state must only consist of 0s and 1s; got {features}")
 
-        super().__init__(features, wires=wires, do_queue=do_queue, id=id)
+        self._hyperparameters = {"basis_state": features}
+
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
-        return 1
+        return 0
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(wires, basis_state):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        features = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            for wire, bit in zip(self.wires, features):
-                if bit == 1:
-                    qml.PauliX(wire)
 
-        return tape
+        .. seealso:: :meth:`~.BasisEmbedding.decomposition`.
+
+        Args:
+            features (tensor-like): binary input of shape ``(len(wires), )``
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> features = torch.tensor([1, 0, 1])
+        >>> qml.BasisEmbedding.compute_decomposition(features, wires=["a", "b", "c"])
+        [PauliX(wires=['a']),
+         PauliX(wires=['c'])]
+        """
+        ops_list = []
+        for wire, bit in zip(wires, basis_state):
+            if bit == 1:
+                ops_list.append(qml.PauliX(wire))
+
+        return ops_list
