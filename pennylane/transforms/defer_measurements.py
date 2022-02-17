@@ -20,38 +20,8 @@ from pennylane.queuing import apply
 from pennylane.tape import QuantumTape, get_active_tape
 
 
-def make_mid_circuit_measurements_terminal(tape):
-
-    ops = []
-    for op in tape.queue:
-        ops.append(op)
-
-    wr = WireRemapper()
-    new_ops_reversed = []
-    for op in reversed(ops):
-        # need to work in the reverse direction for this tape transform
-        if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-            wire = op.wires[0]
-            mapped_wire = wr.mark_measured_and_get_mapped(wire)
-            op._wires = Wires([mapped_wire])
-        else:
-            new_wires = []
-            for wire in op.wires:
-                new_wires.append(wr.mark_altered_and_get_mapped(wire))
-            op._wires = Wires(new_wires)
-
-        new_ops_reversed.append(op)
-
-    # reverse the tape back to original form
-    with QuantumTape() as new_tape:
-        for op in reversed(new_ops_reversed):
-            apply(op)
-
-    return new_tape
-
-
-def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
-
+@qfunc_transform
+def defer_measurements(tape):
     with QuantumTape() as new_tape:
         measured_wires = {}
         for op in tape.queue:
@@ -79,7 +49,3 @@ def defer_measurements_on_mid_circuit_measured_terminal_tape(tape):
                 apply(op)
 
     return new_tape
-
-@qfunc_transform
-def defer_measurements(tape):
-    defer_measurements_on_mid_circuit_measured_terminal_tape(tape)
