@@ -97,10 +97,12 @@ import abc
 import copy
 import itertools
 import functools
+from threading import Lock
 import warnings
 from enum import Enum, IntEnum
 from scipy.sparse import kron, eye, coo_matrix
 
+import cachetools
 import numpy as np
 from numpy.linalg import multi_dot
 
@@ -532,6 +534,45 @@ class Operator(abc.ABC):
         return copied_op
 
     @property
+    def interface(self):
+        return qml.math._multi_dispatch(self.parameters)
+
+    @classproperty
+    def cache(cls):
+        if not hasattr(cls, "_cache"):
+            cls._cache = cachetools.LRUCache(maxsize=32)
+
+        return cls._cache
+
+    @classproperty
+    def lock(cls):
+        if not hasattr(cls, "_lock"):
+            cls._lock = Lock()
+
+        return cls._lock
+
+    def _cache_method(self, method):
+        def key(*params, **hyperparameters):
+            wires = hyperparameters.pop("wires", Wires([]))
+            return hash(
+                (
+                    tuple(wires.tolist()),
+                    str(hyperparameters.values()),
+                    str(params),
+                )
+            )
+
+
+        return cachetools.cached(cache=self.cache, lock=self.lock, key=key)(method)
+
+    def enable_caching(self):
+        self.compute_matrix = self._cache_method(self.compute_matrix)
+        self.compute_sparse_matrix = self._cache_method(self.compute_sparse_matrix)
+        self.compute_terms = self._cache_method(self.compute_terms)
+        self.compute_decomposition = self._cache_method(self.compute_decomposition)
+        self.compute_diagonalizing_gates = self._cache_method(self.compute_diagonalizing_gates)
+
+    @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
         return hash(
@@ -885,6 +926,9 @@ class Operator(abc.ABC):
             )
 
         self.data = list(params)  #: list[Any]: parameters of the operator
+
+        if self.interface not in ("tensorflow", "jax"):
+            self.enable_caching()
 
         if do_queue:
             self.queue()

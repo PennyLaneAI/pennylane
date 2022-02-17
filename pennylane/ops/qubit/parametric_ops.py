@@ -100,6 +100,11 @@ class RX(Operation):
 
         js = -1j * s
 
+        print(theta)
+        print(qml.math.diag([c, c]) + qml.math.stack(
+            [qml.math.stack([0, js]), qml.math.stack([js, 0])]
+        ))
+
         return qml.math.diag([c, c]) + qml.math.stack(
             [qml.math.stack([0, js]), qml.math.stack([js, 0])]
         )
