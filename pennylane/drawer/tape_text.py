@@ -252,7 +252,7 @@ def tape_text(
                 finished_lines += totals
                 finished_lines[-1] += "\n"
                 totals = [filler] * n_wires
-                line_length = 1 + max_label_len
+                line_length = 2 + max_label_len
 
             totals = [filler.join([t, s]) for t, s in zip(totals, layer_str)]
         if ender:

@@ -1,4 +1,5 @@
 # Copyright 2022 Xanadu Quantum Technologies Inc.
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -18,9 +19,10 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
@@ -50,7 +52,7 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]))
 
-# tape containing mid-circuit measurement
+# tape containing mid-circuit measurements
 with qml.tape.QuantumTape() as mcm_tape:
     qml.Hadamard(wires=0)
     qml.RX(0.432, wires=0)
@@ -120,17 +122,6 @@ def compare_tapes(tape, expected_tape):
         assert meas.return_type.name == exp_meas.return_type.name
         assert meas.obs.name == exp_meas.obs.name
         assert meas.wires.tolist() == exp_meas.wires.tolist()
-
-
-def compare_measurements(meas1, meas2):
-    """
-    Helper function to compare measurements
-    """
-    assert meas1.return_type.name == meas2.return_type.name
-    obs1 = meas1.obs
-    obs2 = meas2.obs
-    assert np.array(obs1.name == obs2.name).all()
-    assert obs1.wires.tolist() == obs2.wires.tolist()
 
 
 class TestTapeToGraph:
@@ -860,8 +851,7 @@ class TestGraphToTape:
         include mid-circuit measurements, ensuring that the
         generated circuits apply the deferred measurement principle.
         """
-        tape = copy.copy(mcm_tape)
-        g = qcut.tape_to_graph(tape)
+        g = qcut.tape_to_graph(mcm_tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
@@ -882,11 +872,11 @@ class TestGraphToTape:
 
     def test_mid_circuit_measurements_fragments(self):
         """
-        Tests a circuit that is fragmented into subgraphs that
-        include mid-circuit measurements are converted to the correct tapes
+        Considers a circuit that is fragmented into subgraphs that
+        include mid-circuit measurements and tests that the subgraphs
+        are correctly converted to the expected tapes
         """
-        tape = copy.copy(mcm_tape)
-        g = qcut.tape_to_graph(tape)
+        g = qcut.tape_to_graph(mcm_tape)
         qcut.replace_wire_cut_nodes(g)
         subgraphs, communication_graph = qcut.fragment_graph(g)
 
@@ -920,75 +910,13 @@ class TestGraphToTape:
         for tape, expected_tape in zip(tapes, expected_tapes):
             compare_tapes(tape, expected_tape)
 
-    def test_non_unique_node_order(self):
-        """
-        Tests a fragment graph which contains operation nodes whose `order`
-        attribute is non-unique is correctly converted to tape
-        """
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.432, wires=0)
-            qml.RY(0.543, wires="a")
-            qml.WireCut(wires=[0, "a"])
-            qml.CNOT(wires=[0, "a"])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires="a")
-            qml.WireCut(wires="a")
-            qml.CNOT(wires=["a", 2])
-            qml.RX(0.432, wires="a")
-            qml.WireCut(wires=2)
-            qml.CNOT(wires=[2, 3])
-            qml.RY(0.543, wires=2)
-            qml.RZ(0.876, wires=3)
-            qml.expval(qml.PauliZ(wires=[0]))
-
-        g = qcut.tape_to_graph(tape)
-        qcut.replace_wire_cut_nodes(g)
-        subgraphs, communication_graph = qcut.fragment_graph(g)
-
-        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
-
-        with qml.tape.QuantumTape() as tape_0:
-            qml.RX(0.432, wires=[0])
-            qcut.MeasureNode(wires=[0])
-
-        with qml.tape.QuantumTape() as tape_1:
-            qml.RY(0.543, wires=["a"])
-            qcut.MeasureNode(wires=["a"])
-
-        with qml.tape.QuantumTape() as tape_2:
-            qcut.PrepareNode(wires=[0])
-            qcut.PrepareNode(wires=["a"])
-            qml.CNOT(wires=[0, "a"])
-            qml.RZ(0.24, wires=[0])
-            qml.RZ(0.133, wires=["a"])
-            qcut.MeasureNode(wires=["a"])
-            qml.expval(qml.PauliZ(wires=[0]))
-
-        with qml.tape.QuantumTape() as tape_3:
-            qcut.PrepareNode(wires=["a"])
-            qml.CNOT(wires=["a", 2])
-            qml.RX(0.432, wires=["a"])
-            qcut.MeasureNode(wires=[2])
-
-        with qml.tape.QuantumTape() as tape_4:
-            qcut.PrepareNode(wires=[2])
-            qml.CNOT(wires=[2, 3])
-            qml.RY(0.543, wires=[2])
-            qml.RZ(0.876, wires=[3])
-
-        expected_tapes = [tape_0, tape_1, tape_2, tape_3, tape_4]
-
-        for tape, expected_tape in zip(tapes, expected_tapes):
-            compare_tapes(tape, expected_tape)
-
     def test_multiple_conversions(self):
         """
-        Tests that the orignial tape is unaffected by cutting pipeline and can
-        be used multiple times to give consitent output.
+        Tests that the original tape is unaffected by cutting pipeline and can
+        be used multiple times to give a consistent output.
         """
-        # preserve orignal tape data for later comparison
-        copy_tape = copy.copy(mcm_tape)
+        # preserve original tape data for later comparison
+        copy_tape = copy.deepcopy(mcm_tape)
 
         g1 = qcut.tape_to_graph(mcm_tape)
         qcut.replace_wire_cut_nodes(g1)

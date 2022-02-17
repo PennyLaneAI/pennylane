@@ -28,6 +28,11 @@ class BasisStatePreparation(Operation):
         ``basis_state`` influences the circuit architecture and is therefore incompatible with
         gradient computations.
 
+    Args:
+        basis_state (array): Input array of shape ``(n,)``, where n is the number of wires
+            the state preparation acts on.
+        wires (Iterable): wires that the template acts on
+
     **Example**
 
     .. code-block:: python
@@ -41,12 +46,8 @@ class BasisStatePreparation(Operation):
 
         basis_state = [0, 1, 1, 0]
         print(circuit(basis_state)) # [ 1. -1. -1.  1.]
-
-    Args:
-        basis_state (tensor_like): Input of shape ``(n,)``, where n is the number of wires
-            the state preparation acts on.
-        wires (Iterable): wires that the template acts on
     """
+    num_params = 1
     num_wires = AnyWires
     grad_method = None
 
@@ -73,19 +74,37 @@ class BasisStatePreparation(Operation):
 
             if not all(bit in [0, 1] for bit in state):
                 raise ValueError(
-                    f"Basis states must only consist of 0s and 1s; state {i} is {basis_state}"
+                    f"Basis states must only consist of 0s and 1s; state {i} is {state}"
                 )
 
+        # TODO: basis_state should be a hyperparameter, not a trainable parameter.
+        # However, this breaks a test that ensures compatibility with batch_transform.
+        # The transform should be rewritten to support hyperparameters as well.
         super().__init__(basis_state, wires=wires, do_queue=do_queue, id=id)
 
-    @property
-    def num_params(self):
-        return 1
+    @staticmethod
+    def compute_decomposition(basis_state, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-    def expand(self):
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
-            for wire, state in zip(self.wires, self.parameters[0]):
-                if state == 1:
-                    qml.PauliX(wire)
-        return tape
+        .. seealso:: :meth:`~.BasisStatePreparation.decomposition`.
+
+        Args:
+            basis_state (array): Input array of shape ``(len(wires),)``
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> qml.BasisStatePreparation.compute_decomposition(basis_state=[1, 1], wires=["a", "b"])
+        [PauliX(wires=['a']),
+        PauliX(wires=['b'])]
+        """
+        op_list = []
+        for wire, state in zip(wires, basis_state):
+            if state == 1:
+                op_list.append(qml.PauliX(wire))
+        return op_list

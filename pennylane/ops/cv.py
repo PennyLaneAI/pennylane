@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=too-many-arguments
 r"""
 This module contains the available built-in continuous-variable
 quantum operations supported by PennyLane, as well as their conventions.
@@ -72,7 +73,7 @@ def _rotation(phi, bare=False):
 
 
 class Rotation(CVOperation):
-    r"""pennylane.Rotation(phi, wires)
+    r"""
     Phase space rotation.
 
     .. math::
@@ -95,10 +96,17 @@ class Rotation(CVOperation):
 
     Args:
         phi (float): the rotation angle
+        wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "A"
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -112,7 +120,7 @@ class Rotation(CVOperation):
 
 
 class Squeezing(CVOperation):
-    r"""pennylane.Squeezing(r, phi, wires)
+    r"""
     Phase space squeezing.
 
     .. math::
@@ -139,6 +147,9 @@ class Squeezing(CVOperation):
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
@@ -148,6 +159,9 @@ class Squeezing(CVOperation):
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -164,7 +178,7 @@ class Squeezing(CVOperation):
 
 
 class Displacement(CVOperation):
-    r"""pennylane.Displacement(a, phi, wires)
+    r"""
     Phase space displacement.
 
     .. math::
@@ -190,6 +204,9 @@ class Displacement(CVOperation):
         a (float): displacement magnitude :math:`a=|\alpha|`
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
@@ -199,6 +216,9 @@ class Displacement(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    def __init__(self, a, phi, wires, do_queue=True, id=None):
+        super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -217,7 +237,7 @@ class Displacement(CVOperation):
 
 
 class Beamsplitter(CVOperation):
-    r"""pennylane.Beamsplitter(theta, phi, wires)
+    r"""
     Beamsplitter interaction.
 
     .. math::
@@ -247,10 +267,16 @@ class Beamsplitter(CVOperation):
             beamsplitter is :math:`r = e^{i\phi}\sin(\theta)`.
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 2
     grad_method = "A"
+
+    def __init__(self, theta, phi, wires, do_queue=True, id=None):
+        super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
 
     # For the beamsplitter, both parameters are rotation-like
     @staticmethod
@@ -273,7 +299,7 @@ class Beamsplitter(CVOperation):
 
 
 class TwoModeSqueezing(CVOperation):
-    r"""pennylane.TwoModeSqueezing(r, phi, wires)
+    r"""
     Phase space two-mode squeezing.
 
     .. math::
@@ -304,6 +330,9 @@ class TwoModeSqueezing(CVOperation):
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 2
@@ -314,6 +343,9 @@ class TwoModeSqueezing(CVOperation):
     multiplier = 0.5 / math.sinh(shift)
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -337,7 +369,7 @@ class TwoModeSqueezing(CVOperation):
 
 
 class QuadraticPhase(CVOperation):
-    r"""pennylane.QuadraticPhase(s, wires)
+    r"""
     Quadratic phase shift.
 
     .. math::
@@ -362,6 +394,9 @@ class QuadraticPhase(CVOperation):
     Args:
         s (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
@@ -372,6 +407,9 @@ class QuadraticPhase(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    def __init__(self, s, wires, do_queue=True, id=None):
+        super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -384,7 +422,7 @@ class QuadraticPhase(CVOperation):
 
 
 class ControlledAddition(CVOperation):
-    r"""pennylane.ControlledAddition(s, wires)
+    r"""
     Controlled addition operation.
 
     .. math::
@@ -412,6 +450,9 @@ class ControlledAddition(CVOperation):
     Args:
         s (float): addition multiplier
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 2
@@ -421,6 +462,9 @@ class ControlledAddition(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    def __init__(self, s, wires, do_queue=True, id=None):
+        super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -437,7 +481,7 @@ class ControlledAddition(CVOperation):
 
 
 class ControlledPhase(CVOperation):
-    r"""pennylane.ControlledPhase(s, wires)
+    r"""
     Controlled phase operation.
 
     .. math::
@@ -465,6 +509,9 @@ class ControlledPhase(CVOperation):
     Args:
         s (float):  phase shift multiplier
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 2
@@ -474,6 +521,9 @@ class ControlledPhase(CVOperation):
     multiplier = 0.5 / shift
     a = 1
     grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]],)
+
+    def __init__(self, s, wires, do_queue=True, id=None):
+        super().__init__(s, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -490,7 +540,7 @@ class ControlledPhase(CVOperation):
 
 
 class Kerr(CVOperation):
-    r"""pennylane.Kerr(kappa, wires)
+    r"""
     Kerr interaction.
 
     .. math::
@@ -505,17 +555,23 @@ class Kerr(CVOperation):
     Args:
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, kappa, wires, do_queue=True, id=None):
+        super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self, do_queue=True):
         return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class CrossKerr(CVOperation):
-    r"""pennylane.CrossKerr(kappa, wires)
+    r"""
     Cross-Kerr interaction.
 
     .. math::
@@ -530,17 +586,23 @@ class CrossKerr(CVOperation):
     Args:
         kappa (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 2
     grad_method = "F"
+
+    def __init__(self, kappa, wires, do_queue=True, id=None):
+        super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self, do_queue=True):
         return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class CubicPhase(CVOperation):
-    r"""pennylane.CubicPhase(gamma, wires)
+    r"""
     Cubic phase shift.
 
     .. math::
@@ -555,10 +617,16 @@ class CubicPhase(CVOperation):
     Args:
         gamma (float): parameter
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, gamma, wires, do_queue=True, id=None):
+        super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
     def adjoint(self, do_queue=True):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
@@ -568,7 +636,7 @@ class CubicPhase(CVOperation):
 
 
 class InterferometerUnitary(CVOperation):
-    r"""pennylane.InterferometerUnitary(U, wires)
+    r"""
     A linear interferometer transforming the bosonic operators according to
     the unitary matrix :math:`U`.
 
@@ -600,11 +668,17 @@ class InterferometerUnitary(CVOperation):
     Args:
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
         wires (Sequence[int] or int): the wires the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = AnyWires
     grad_method = None
     grad_recipe = None
+
+    def __init__(self, U, wires, do_queue=True, id=None):
+        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -637,7 +711,7 @@ class InterferometerUnitary(CVOperation):
 
 
 class CoherentState(CVOperation):
-    r"""pennylane.CoherentState(a, phi, wires)
+    r"""
     Prepares a coherent state.
 
     **Details:**
@@ -650,14 +724,20 @@ class CoherentState(CVOperation):
         a (float): displacement magnitude :math:`r=|\alpha|`
         phi (float): phase angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, a, phi, wires, do_queue=True, id=None):
+        super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
+
 
 class SqueezedState(CVOperation):
-    r"""pennylane.SqueezedState(r, phi, wires)
+    r"""
     Prepares a squeezed vacuum state.
 
     **Details:**
@@ -670,14 +750,20 @@ class SqueezedState(CVOperation):
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, r, phi, wires, do_queue=True, id=None):
+        super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
+
 
 class DisplacedSqueezedState(CVOperation):
-    r"""pennylane.DisplacedSqueezedState(a, phi_a, r, phi_r, wires)
+    r"""
     Prepares a displaced squeezed vacuum state.
 
     A displaced squeezed state is prepared by squeezing a vacuum state, and
@@ -700,14 +786,20 @@ class DisplacedSqueezedState(CVOperation):
         r (float): squeezing magnitude :math:`r=|z|`
         phi_r (float): squeezing angle :math:`\phi_r`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 4
     num_wires = 1
     grad_method = "F"
 
+    def __init__(self, a, phi_a, r, phi_r, wires, do_queue=True, id=None):
+        super().__init__(a, phi_a, r, phi_r, wires=wires, do_queue=do_queue, id=id)
+
 
 class ThermalState(CVOperation):
-    r"""pennylane.ThermalState(nbar, wires)
+    r"""
     Prepares a thermal state.
 
     **Details:**
@@ -719,17 +811,23 @@ class ThermalState(CVOperation):
     Args:
         nbar (float): mean thermal population of the mode
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, nbar, wires, do_queue=True, id=None):
+        super().__init__(nbar, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Thermal")
 
 
 class GaussianState(CVOperation):
-    r"""pennylane.GaussianState(V, r, wires)
+    r"""
     Prepare subsystems in a given Gaussian state.
 
     **Details:**
@@ -743,17 +841,23 @@ class GaussianState(CVOperation):
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 2
     num_wires = AnyWires
     grad_method = "F"
+
+    def __init__(self, V, r, wires, do_queue=True, id=None):
+        super().__init__(V, r, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         return super().label(decimals=decimals, base_label=base_label or "Gaussian")
 
 
 class FockState(CVOperation):
-    r"""pennylane.FockState(n, wires)
+    r"""
     Prepares a single Fock state.
 
     **Details:**
@@ -765,10 +869,16 @@ class FockState(CVOperation):
     Args:
         n (int): Fock state to prepare
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
     grad_method = None
+
+    def __init__(self, n, wires, do_queue=True, id=None):
+        super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
@@ -796,7 +906,7 @@ class FockState(CVOperation):
 
 
 class FockStateVector(CVOperation):
-    r"""pennylane.FockStateVector(state, wires)
+    r"""
     Prepare subsystems using the given ket vector in the Fock basis.
 
     **Details:**
@@ -808,6 +918,10 @@ class FockStateVector(CVOperation):
     Args:
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
+        wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     .. UsageDetails::
 
@@ -853,6 +967,9 @@ class FockStateVector(CVOperation):
     num_wires = AnyWires
     grad_method = "F"
 
+    def __init__(self, state, wires, do_queue=True, id=None):
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.
 
@@ -877,7 +994,7 @@ class FockStateVector(CVOperation):
 
 
 class FockDensityMatrix(CVOperation):
-    r"""pennylane.FockDensityMatrix(state, wires)
+    r"""
     Prepare subsystems using the given density matrix in the Fock basis.
 
     **Details:**
@@ -889,14 +1006,21 @@ class FockDensityMatrix(CVOperation):
     Args:
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
+        wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = AnyWires
     grad_method = "F"
 
+    def __init__(self, state, wires, do_queue=True, id=None):
+        super().__init__(state, wires=wires, do_queue=do_queue, id=id)
+
 
 class CatState(CVOperation):
-    r"""pennylane.CatState(a, phi, p, wires)
+    r"""
     Prepares a cat state.
 
     A cat state is the coherent superposition of two coherent states,
@@ -920,10 +1044,16 @@ class CatState(CVOperation):
         p (float): parity, where :math:`p=0` corresponds to an even
             cat state, and :math:`p=1` an odd cat state.
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 3
     num_wires = 1
     grad_method = "F"
+
+    def __init__(self, a, phi, p, wires, do_queue=True, id=None):
+        super().__init__(a, phi, p, wires=wires, do_queue=do_queue, id=id)
 
 
 # =============================================================================
@@ -932,7 +1062,7 @@ class CatState(CVOperation):
 
 
 class NumberOperator(CVObservable):
-    r"""pennylane.ops.NumberOperator(wires)
+    r"""
     The photon number observable :math:`\langle \hat{n}\rangle`.
 
     The number operator is defined as
@@ -962,6 +1092,9 @@ class NumberOperator(CVObservable):
 
     ev_order = 2
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     @staticmethod
     def _heisenberg_rep(p):
         hbar = 2
@@ -972,7 +1105,7 @@ class NumberOperator(CVObservable):
 
 
 class TensorN(CVObservable):
-    r"""pennylane.ops.TensorN(wires)
+    r"""
     The tensor product of the :class:`~.NumberOperator` acting on different wires.
 
     If a single wire is defined, returns a :class:`~.NumberOperator` instance for convenient gradient computations.
@@ -1012,16 +1145,16 @@ class TensorN(CVObservable):
     num_wires = AnyWires
     ev_order = None
 
-    def __new__(cls, *params, wires=None, do_queue=True):
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
+    def __new__(cls, wires=None):
         # Custom definition for __new__ needed such that a NumberOperator can
         # be returned when a single mode is defined
 
-        if wires is None and len(params) != 0:
-            wires = params[-1]
-            params = params[:-1]
-
         if wires is not None and (isinstance(wires, int) or len(wires) == 1):
-            return NumberOperator(*params, wires=wires, do_queue=do_queue)
+            return NumberOperator(wires=wires)
+
         return super().__new__(cls)
 
     def label(self, decimals=None, base_label=None):
@@ -1031,7 +1164,7 @@ class TensorN(CVObservable):
 
 
 class X(CVObservable):
-    r"""pennylane.ops.X(wires)
+    r"""
     The position quadrature observable :math:`\hat{x}`.
 
     When used with the :func:`~.expval` function, the position expectation
@@ -1055,13 +1188,16 @@ class X(CVObservable):
 
     ev_order = 1
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 1, 0])
 
 
 class P(CVObservable):
-    r"""pennylane.ops.P(wires)
+    r"""
     The momentum quadrature observable :math:`\hat{p}`.
 
     When used with the :func:`~.expval` function, the momentum expectation
@@ -1085,13 +1221,16 @@ class P(CVObservable):
 
     ev_order = 1
 
+    def __init__(self, wires):
+        super().__init__(wires=wires)
+
     @staticmethod
     def _heisenberg_rep(p):
         return np.array([0, 0, 1])
 
 
 class QuadOperator(CVObservable):
-    r"""pennylane.ops.QuadOperator(phi, wires)
+    r"""
     The generalized quadrature observable :math:`\x_\phi = \x cos\phi+\p\sin\phi`.
 
     When used with the :func:`~.expval` function, the expectation
@@ -1111,12 +1250,18 @@ class QuadOperator(CVObservable):
         phi (float): axis in the phase space at which to calculate
             the generalized quadrature observable
         wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = 1
 
     grad_method = "A"
     ev_order = 1
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
     def _heisenberg_rep(p):
@@ -1157,7 +1302,7 @@ class QuadOperator(CVObservable):
 
 
 class PolyXP(CVObservable):
-    r"""pennylane.ops.PolyXP(q, wires)
+    r"""
     An arbitrary second-order polynomial observable.
 
     Represents an arbitrary observable :math:`P(\x,\p)` that is a second order
@@ -1181,6 +1326,10 @@ class PolyXP(CVObservable):
 
     Args:
         q (array[float]): expansion coefficients
+        wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
 
     """
     num_params = 1
@@ -1189,13 +1338,16 @@ class PolyXP(CVObservable):
     grad_method = "F"
     ev_order = 2
 
+    def __init__(self, q, wires, do_queue=True, id=None):
+        super().__init__(q, wires=wires, do_queue=do_queue, id=id)
+
     @staticmethod
     def _heisenberg_rep(p):
         return p[0]
 
 
 class FockStateProjector(CVObservable):
-    r"""pennylane.ops.FockStateProjector(n, wires)
+    r"""
     The number state observable :math:`\ket{n}\bra{n}`.
 
     Represents the non-Gaussian number state observable
@@ -1235,12 +1387,19 @@ class FockStateProjector(CVObservable):
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
+        wires (Sequence[int] or int): the wire the operation acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
     num_params = 1
     num_wires = AnyWires
 
     grad_method = None
     ev_order = None
+
+    def __init__(self, n, wires, do_queue=True, id=None):
+        super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None):
         r"""A customizable string representation of the operator.

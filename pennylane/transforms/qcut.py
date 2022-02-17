@@ -15,18 +15,19 @@
 This module provides the circuit cutting functionality that allows large
 circuits to be distributed across multiple devices.
 """
+
 import copy
-import itertools
 import string
 from itertools import product
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Sequence, Tuple
+
+from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
-from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import Hadamard, Identity, PauliX, PauliY, PauliZ, S, apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import AnyWires, Expectation, Operation, Operator, Tensor
+from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape, stop_recording
 from pennylane.wires import Wires
@@ -44,10 +45,6 @@ class PrepareNode(Operation):
 
     num_wires = 1
     grad_method = None
-
-
-SUBS = "₀₁₂₃₄₅₆₇₈₉"
-SUB = str.maketrans("0123456789", SUBS)
 
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
@@ -310,8 +307,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
     Each node in the graph should have an order attribute specifying the topological order of
-    the operations. This maintains ordering of operations and allows for the
-    deferred measurement principle to be applied when necessary.
+    the operations.
 
     .. note::
 
@@ -326,7 +322,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     **Example**
 
-    Consider the following, where ``graph`` contains three :class:`~.MeasureNode` and
+    Consider the following, where ``graph`` contains :class:`~.MeasureNode` and
     :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
     We can find the circuit fragments by using:
 
@@ -346,33 +342,66 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
+    reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    copy_ordered_ops = copy.deepcopy(ordered_ops)
+    copy_ops = [copy.copy(op) for _, op in ordered_ops]
 
-    updated = {}
     with QuantumTape() as tape:
-        for _, op in copy_ordered_ops:
-            name_and_wire = op.name + str(op.wires)
-
+        for op in copy_ops:
             new_wires = [wire_map[w] for w in op.wires]
             op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
             apply(op)
 
             if isinstance(op, MeasureNode):
                 assert len(op.wires) == 1
-                # if a wire has already been updated we still
-                # want to map *from* the original wire
-                if name_and_wire in updated:
-                    new_wire = updated[name_and_wire] + 1
-                    wire_map[measured_wire] = new_wire
-                else:
-                    measured_wire = op.wires[0]
-                    new_wire = _find_new_wire(wires)
-                    wires += new_wire
-                    wire_map[measured_wire] = new_wire
-                updated[name_and_wire] = new_wire
+                measured_wire = op.wires[0]
+
+                new_wire = _find_new_wire(wires)
+                wires += new_wire
+
+                original_wire = reverse_wire_map[measured_wire]
+                wire_map[original_wire] = new_wire
+                reverse_wire_map[new_wire] = original_wire
 
     return tape
+
+
+def _get_measurements(
+    group: Sequence[Operator], measurements: Sequence[MeasurementProcess]
+) -> List[MeasurementProcess]:
+    """Pairs each observable in ``group`` with the fixed circuit ``measurements``.
+
+    Only a single fixed measurement of an expectation value is currently supported.
+
+    Args:
+        group (Sequence[Operator]): a collection of qubit-wise commuting observables
+        measurements (Sequence[MeasurementProcess]): fixed circuit measurements
+
+    Returns:
+        List[MeasurementProcess]: the expectation values of ``g @ obs``, where ``g`` is iterated
+        over ``group`` and ``obs`` is the observable composing the single fixed circuit measurement
+        in ``measurements``
+    """
+    n_measurements = len(measurements)
+    if n_measurements > 1:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
+    if n_measurements == 0:
+        return [expval(g) for g in group]
+
+    measurement = measurements[0]
+
+    if measurement.return_type is not Expectation:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
+
+    obs = measurement.obs
+
+    return [expval(obs @ g) for g in group]
 
 
 def _prep_zero_state(wire):
@@ -399,14 +428,20 @@ def expand_fragment_tapes(
     tape: QuantumTape,
 ) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
     """
-    Expands a fragment tape into a tape for each configuration.
+    Expands a fragment tape into a collection of tapes for each configuration of
+    :class:`MeasureNode` and :class:`PrepareNode` operations.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
 
     Args:
         tape (QuantumTape): the fragment tape to be expanded.
 
     Returns:
         Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
-        tapes corresponding to each configration, the preparation nodes and
+        tapes corresponding to each configuration, the preparation nodes and
         the measurement nodes.
 
     **Example**
@@ -438,26 +473,22 @@ def expand_fragment_tapes(
           [])]
 
     """
-    obs_map = {"Identity": Identity, "PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
-
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
 
-    wire_map = {mn.wires.tolist()[0]: i for i, mn in enumerate(measure_nodes)}
+    wire_map = {mn.wires[0]: i for i, mn in enumerate(measure_nodes)}
 
-    n_qubits = len(measure_nodes)
-    if n_qubits >= 1:
-        measure_combinations = partition_pauli_group(len(measure_nodes))
+    n_meas = len(measure_nodes)
+    if n_meas >= 1:
+        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
     else:
-        measure_combinations = [
-            [""]
-        ]  # this helps `product()` give the desired effect in following loop
+        measure_combinations = [[""]]
 
     tapes = []
 
     for prepare_settings in product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes)):
         for measure_group in measure_combinations:
-            if n_qubits >= 1:
+            if n_meas >= 1:
                 group = [
                     string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group
                 ]
@@ -467,146 +498,24 @@ def expand_fragment_tapes(
             prepare_mapping = {
                 n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
             }
-            meas = []
 
             with QuantumTape() as tape_:
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
                         prepare_mapping[op](w)
-                    elif isinstance(op, MeasureNode):
-                        meas.append(op)
-                    else:
+                    elif not isinstance(op, MeasureNode):
                         apply(op)
 
-                for meas_op in group:
-                    with stop_recording():
-                        op_tensor = Tensor(meas_op)
+                with qml.tape.stop_recording():
+                    measurements = _get_measurements(group, tape.measurements)
 
-                    if len(tape.measurements) > 0:
-                        for m in tape.measurements:
-                            if m.return_type is not Expectation:
-                                raise ValueError("Only expectation values supported for now")
-                            with stop_recording():
-                                m_obs = obs_map[m.obs.name](wires=m.obs.wires)
-                                if isinstance(m_obs, Tensor):
-                                    terms = m_obs.obs
-                                    for t in terms:
-                                        if not isinstance(t, (Identity, PauliX, PauliY, PauliY)):
-                                            raise ValueError(
-                                                "Only tensor products of Paulis for now"
-                                            )
-                                    op_tensor_wires = [
-                                        (t.wires.tolist()[0], t) for t in op_tensor.obs
-                                    ]
-                                    m_obs_wires = [(t.wires.tolist()[0], t) for t in terms]
-                                    all_wires = sorted(op_tensor_wires + m_obs_wires)
-                                    all_terms = [t[1] for t in all_wires]
-                                    full_tensor = Tensor(*all_terms)
-                                else:
-                                    if not isinstance(m_obs, (Identity, PauliX, PauliY, PauliZ)):
-                                        raise ValueError("Only tensor products of Paulis for now")
-
-                                    op_tensor_wires = [
-                                        (t.wires.tolist()[0], t) for t in op_tensor.obs
-                                    ]
-                                    m_obs_wires = [(m_obs.wires.tolist()[0], m_obs)]
-                                    all_wires = sorted(op_tensor_wires + m_obs_wires)
-                                    all_terms = [t[1] for t in all_wires]
-                                    full_tensor = Tensor(*all_terms)
-                            expval(full_tensor)
-                    elif len(op_tensor.name) > 0:
-                        expval(op_tensor)
-                    else:
-                        expval(Identity(tape.wires[0]))
+                for meas in measurements:
+                    apply(meas)
 
                 tapes.append(tape_)
 
     return tapes, prepare_nodes, measure_nodes
-
-
-def partition_pauli_group(n_qubits: int) -> List[List[str]]:
-    """Partitions the :math:`n`-qubit Pauli group into qubit-wise commuting terms.
-    The :math:`n`-qubit Pauli group is composed of :math:`4^{n}` terms that can be partitioned into
-    :math:`3^{n}` qubit-wise commuting groups.
-    Args:
-        n_qubits (int): number of qubits
-    Returns:
-        List[List[str]]: A collection of qubit-wise commuting groups containing Pauli words as
-        simple strings
-    **Example**
-    >>> qml.grouping.partition_pauli_group(3)
-    [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
-     ['IIX', 'IZX', 'ZIX', 'ZZX'],
-     ['IIY', 'IZY', 'ZIY', 'ZZY'],
-     ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
-     ['IXX', 'ZXX'],
-     ['IXY', 'ZXY'],
-     ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
-     ['IYX', 'ZYX'],
-     ['IYY', 'ZYY'],
-     ['XII', 'XIZ', 'XZI', 'XZZ'],
-     ['XIX', 'XZX'],
-     ['XIY', 'XZY'],
-     ['XXI', 'XXZ'],
-     ['XXX'],
-     ['XXY'],
-     ['XYI', 'XYZ'],
-     ['XYX'],
-     ['XYY'],
-     ['YII', 'YIZ', 'YZI', 'YZZ'],
-     ['YIX', 'YZX'],
-     ['YIY', 'YZY'],
-     ['YXI', 'YXZ'],
-     ['YXX'],
-     ['YXY'],
-     ['YYI', 'YYZ'],
-     ['YYX'],
-     ['YYY']]
-    """
-    # Cover the case where n_qubits may be passed as a float
-    if isinstance(n_qubits, float):
-        if n_qubits.is_integer():
-            n_qubits = int(n_qubits)
-
-    # If not an int, or a float representing a int, raise an error
-    if not isinstance(n_qubits, int):
-        raise TypeError("Must specify an integer number of qubits.")
-
-    if n_qubits <= 0:
-        raise ValueError("Number of qubits must be at least 1.")
-
-    strings = set()  # tracks all the strings that have already been grouped
-    groups = []
-
-    # We know that I and Z always commute on a given qubit. The following generates all product
-    # sequences of len(n_qubits) over "FXYZ", with F indicating a free slot that can be swapped for
-    # the product over I and Z, and all other terms fixed to the given X/Y/Z. For example, if
-    # ``n_qubits = 3`` our first value for ``string`` will be ``('F', 'F', 'F')``. We then expand
-    # the product of I and Z over the three free slots, giving
-    # ``['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ']``, which is our first group. The
-    # next element of ``string`` will be ``('F', 'F', 'X')`` which we use to generate our second
-    # group ``['IIX', 'IZX', 'ZIX', 'ZZX']``.
-
-    for string in itertools.product("FXYZ", repeat=n_qubits):
-        if string not in strings:
-            num_free_slots = string.count("F")
-
-            group = []
-            commuting = itertools.product("IZ", repeat=num_free_slots)
-
-            for commuting_string in commuting:
-                commuting_string = list(commuting_string)
-                new_string = tuple(commuting_string.pop(0) if s == "F" else s for s in string)
-
-                if new_string not in strings:  # only add if string has not already been grouped
-                    group.append("".join(new_string))
-                    strings |= {new_string}
-
-            if len(group) > 0:
-                groups.append(group)
-
-    return groups
 
 
 def _get_symbol(i):
@@ -680,6 +589,9 @@ def contract_tensors(
     We first set up the tensors and their corresponding :class:`~.PrepareNode` and
     :class:`~.MeasureNode` orderings:
 
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
         import networkx as nx
         import numpy as np
 

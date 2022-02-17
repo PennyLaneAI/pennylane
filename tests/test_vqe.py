@@ -753,7 +753,7 @@ class TestNewVQE:
             return qml.expval(H1)
 
         res = qml.draw(circuit1)()
-        expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
+        expected = "0: ──H─┤ ╭<𝓗(1.00,1.00,1.00)>\n2: ────┤ ╰<𝓗(1.00,1.00,1.00)>"
         assert res == expected
 
     def test_multiple_expvals(self):
@@ -812,7 +812,9 @@ class TestNewVQE:
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
             circuit()
 
     def test_error_sample_measurement(self):

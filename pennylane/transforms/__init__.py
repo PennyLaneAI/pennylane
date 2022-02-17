@@ -98,7 +98,6 @@ The following are utility functions that compose the circuit cutting transform.
     ~transforms.expand_fragment_tapes
     ~transforms.contract_tensors
 
-
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -141,7 +140,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw, draw_mpl
+from .draw import draw, draw_mpl, draw_old
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -178,5 +177,4 @@ from .qcut import (
     graph_to_tape,
     expand_fragment_tapes,
     contract_tensors,
-
 )

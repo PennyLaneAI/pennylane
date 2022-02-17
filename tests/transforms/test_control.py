@@ -108,7 +108,7 @@ class TestAdjointOutsideQueuing:
         adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(par, wires=wires).adjoint()
 
         assert adjoint_of_controlled_op.control_wires == control_wires
-        res_ops = adjoint_of_controlled_op.subtape.operations[0].operations
+        res_ops = adjoint_of_controlled_op.subtape.operations
         expected = qml.adjoint(op)(par, wires=wires)
 
         for op1, op2 in zip(res_ops, expected):
