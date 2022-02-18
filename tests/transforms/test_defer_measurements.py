@@ -20,6 +20,7 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
+
 class TestQNode:
     """Test that the transform integrates well with QNodes."""
 
@@ -153,3 +154,29 @@ class TestMidCircuitMeasurements:
         teleported_probs = teleportation_circuit(r)
 
         assert np.allclose(normal_probs, teleported_probs)
+
+
+class TestDrawing:
+    """Tests drawing circuits with mid-circuit measurements and conditional
+    operations that have been transformed"""
+
+    def test_drawing(self):
+        """Test that drawing a func with mid-circuit measurements works and
+        that controlled operations are drawn for conditional operations."""
+        def qfunc():
+            m_0 = qml.mid_measure(0)
+            qml.if_then(m_0, qml.RY)(0.312, wires=1)
+
+            m_2 = qml.mid_measure(2)
+            qml.if_then(m_2, qml.RY)(0.312, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        transformed_qfunc = qml.transforms.defer_measurements(qfunc)
+        transformed_qnode = qml.QNode(transformed_qfunc, dev)
+
+        expected = ("0: ─╭C────────────────────────────────────────────────────┤     \n"
+                   "1: ─╰ControlledOperation(0.31)─╭ControlledOperation(0.31)─┤  <Z>\n"
+                   "2: ────────────────────────────╰C─────────────────────────┤     ")
+        assert qml.draw(transformed_qnode)() == expected
