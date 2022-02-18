@@ -124,9 +124,6 @@ class hessian_transform(qml.batch_transform):
 
             qhess = _wrapper(*args, **kwargs)
 
-            if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
-                qhess = qml.math.squeeze(qhess)
-
             if not hybrid:
                 return qhess
 

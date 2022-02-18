@@ -19,6 +19,7 @@ import inspect
 import os
 import types
 import warnings
+from collections.abc import Sequence
 
 import pennylane as qml
 
@@ -270,7 +271,7 @@ class batch_transform:
         and returns a function that 'wraps' the QNode execution.
 
         The returned function should accept the same keyword arguments as
-        the QNode, and return the output of the applying the tape transform
+        the QNode, and return the output of applying the tape transform
         to the QNode's constructed tape.
         """
         transform_max_diff = tkwargs.pop("max_diff", None)
@@ -316,6 +317,11 @@ class batch_transform:
                 gradient_kwargs=gradient_kwargs,
                 **execute_kwargs,
             )
+
+            # Apply the same squeezing as in qml.QNode to make the transform ouput consistent.
+            for i, r in enumerate(res):
+                if not isinstance(qnode._qfunc_output, Sequence):  # pylint: disable=protected-access
+                    res[i] = qml.math.squeeze(r)
 
             return processing_fn(res)
 

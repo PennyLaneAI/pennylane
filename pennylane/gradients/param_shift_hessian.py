@@ -183,13 +183,14 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
             hessian.append(g)
 
-        # Reshape the Hessian to have the dimensions of the QNode output on the outside, that is:
-        #         (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
+        # Reshape the Hessian to have the QNode output dimensions on the outside, that is:
+        #    (h_dim*h_dim, *out_dims) -> (h_dim, h_dim, *out_dims) -> (*out_dims, h_dim, h_dim)
+        # Remember: h_dim = num_gate_args
         hessian = qml.math.reshape(qml.math.stack(hessian), (h_dim, h_dim) + out_dim)
         reordered_axes = list(range(2, len(out_dim) + 2)) + [0, 1]
         hessian = qml.math.transpose(hessian, axes=reordered_axes)
 
-        return qml.math.squeeze(hessian)
+        return hessian
 
     return hessian_tapes, processing_fn
 
