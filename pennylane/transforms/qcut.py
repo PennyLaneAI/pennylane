@@ -683,11 +683,11 @@ CHANGE_OF_BASIS = qml.math.array(
 
 
 def _process_tensor(results, n_prep: int, n_meas: int):
-    """Convert a flat slice of execution results into a tensor.
+    """Convert a flat slice of an individual circuit fragment's execution results into a tensor.
 
     This function performs the following steps:
 
-    1. Reshapes ``results`` into the shape ``(4,) * n_prep + (4**n_meas,)``
+    1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
     2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
       ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
       will be the result of ``qml.grouping.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
