@@ -4,29 +4,64 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
-
 class TestQNode:
-    @pytest.mark.xfail(
-        reason="TODO: check why shape doesn't match (perhaps because it's a tape transform)"
-    )
-    def test_simple_decorated(self):
+    """Test that the transform integrates well with QNodes."""
+
+    def test_only_mcm(self):
+        """Test that a quantum function that only contains one mid-circuit
+        measurement yields the correct results and is transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
-        def circuit():
+        def qnode1():
             return qml.expval(qml.PauliZ(0))
 
         @qml.qnode(dev)
         @qml.defer_measurements
-        def transformed_circuit():
+        def qnode2():
             m = qml.mid_measure(1)
             return qml.expval(qml.PauliZ(0))
 
-        res1 = circuit()
-        res2 = transformed_circuit()
+        res1 = qnode1()
+        res2 = qnode2()
         assert res1 == res2
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
+
+        for op1, op2 in zip(qnode1.qtape.queue, qnode2.qtape.queue):
+            assert type(op1) == type(op2)
+            assert op1.data == op2.data
+
+    def test_ops_before_after(self):
+        """Test that a quantum function that contains one operation before and
+        after a mid-circuit measurement yields the correct results and is
+        transformed correctly."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def func1():
+            qml.RY(0.123, wires=0)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        def func2():
+            qml.RY(0.123, wires=0)
+            qml.mid_measure(1)
+            qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        tape_deferred_func = qml.defer_measurements(func2)
+        qnode1 = qml.QNode(func1, dev)
+        qnode2 = qml.QNode(tape_deferred_func, dev)
+
+        res1 = qnode1()
+        res2 = qnode2()
+        assert res1 == res2
+        assert isinstance(res1, type(res2))
+        assert res1.shape == res2.shape
+
+        for op1, op2 in zip(qnode1.qtape.queue, qnode2.qtape.queue):
+            assert type(op1) == type(op2)
+            assert op1.data == op2.data
 
 
 class TestMidCircuitMeasurements:

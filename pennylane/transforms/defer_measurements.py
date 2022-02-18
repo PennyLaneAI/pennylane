@@ -22,23 +22,20 @@ from pennylane.tape import QuantumTape, get_active_tape
 
 @qfunc_transform
 def defer_measurements(tape):
-    with QuantumTape() as new_tape:
-        # TODO: do we need a map or can we just have a list?
-        measured_wires = {}
-        for op in tape.queue:
-            if any([wire in measured_wires.values() for wire in op.wires]):
-                raise ValueError("cannot reuse measured wires.")
+    # TODO: do we need a map or can we just have a list?
+    measured_wires = {}
+    for op in tape.queue:
+        if any([wire in measured_wires.values() for wire in op.wires]):
+            raise ValueError("cannot reuse measured wires.")
 
-            if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
-                measured_wires[op.measurement_id] = op.wires[0]
+        if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
+            measured_wires[op.measurement_id] = op.wires[0]
 
-            elif op.__class__.__name__ == "_IfOp":
-                # TODO: Why does op.dependant_measurements store the wire ids instead of labels?
-                control = [measured_wires[m_id] for m_id in op.dependant_measurements]
-                for branch, value in op.branches.items():
-                    if value:
-                        ctrl(lambda: apply(op.then_op), control=Wires(control))()
-            else:
-                apply(op)
-
-    return new_tape
+        elif op.__class__.__name__ == "_IfOp":
+            # TODO: Why does op.dependant_measurements store the wire ids instead of labels?
+            control = [measured_wires[m_id] for m_id in op.dependant_measurements]
+            for branch, value in op.branches.items():
+                if value:
+                    ctrl(lambda: apply(op.then_op), control=Wires(control))()
+        else:
+            apply(op)
