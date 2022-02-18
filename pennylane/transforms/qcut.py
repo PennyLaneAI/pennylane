@@ -507,7 +507,9 @@ def contract_tensors(
     return contract(eqn, *tensors, **kwargs)
 
 
-CHANGE_OF_BASIS = qml.math.array([[1.0, 1, 0, 0], [-1, -1, 2, 0], [-1, -1, 0, 2], [1, -1, 0, 0]])
+CHANGE_OF_BASIS = qml.math.array(
+    [[1.0, 1.0, 0.0, 0.0], [-1.0, -1.0, 2.0, 0.0], [-1.0, -1.0, 0.0, 2.0], [1.0, -1.0, 0.0, 0.0]]
+)
 
 
 def _process_tensor(results, n_prep: int, n_meas: int):
