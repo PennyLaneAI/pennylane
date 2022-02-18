@@ -355,7 +355,7 @@ def hermite_moment(alpha, beta, t, order, r):
     >>> t = 0
     >>> order = 1
     >>> r = 1.5
-    >>> hermite_moment(alpha, beta, t, e, r)
+    >>> hermite_moment(alpha, beta, t, order, r)
     array([1.0157925])
     """
     p = anp.array(alpha + beta)
