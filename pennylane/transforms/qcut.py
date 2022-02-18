@@ -593,8 +593,8 @@ def contract_tensors(
             each tensor
         use_opt_einsum (bool): Determines whether to use the
             `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
-            for tensor contractions of large networks but must be installed separately using, e.g.,
-            ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
 
     Returns:
@@ -820,8 +820,8 @@ def qcut_processing_fn(
             each tensor
         use_opt_einsum (bool): Determines whether to use the
             `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
-            for tensor contractions of large networks but must be installed separately using, e.g.,
-            ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
 
     Returns:
