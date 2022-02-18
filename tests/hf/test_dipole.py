@@ -239,9 +239,9 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     d = dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
     d_ref = qml.Hamiltonian(coeffs, ops)
 
-    assert np.allclose(sorted(d.terms[0]), sorted(d_ref.terms[0]))
-    assert qml.Hamiltonian(np.ones(len(d.terms[0])), d.terms[1]).compare(
-        qml.Hamiltonian(np.ones(len(d_ref.terms[0])), d_ref.terms[1])
+    assert np.allclose(sorted(d.coeffs), sorted(d_ref.coeffs))
+    assert qml.Hamiltonian(np.ones(len(d.coeffs)), d.ops).compare(
+        qml.Hamiltonian(np.ones(len(d_ref.coeffs)), d_ref.ops)
     )
 
 
