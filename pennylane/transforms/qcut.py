@@ -18,10 +18,12 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
+from functools import partial
 from itertools import product
-from typing import List, Sequence, Tuple
+from typing import List, Sequence, Tuple, Optional, Callable, Union
 
 import pennylane as qml
+from .batch_transform import batch_transform
 from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
@@ -834,3 +836,36 @@ def qcut_processing_fn(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
     return result
+
+
+@batch_transform
+def cut_circuit(
+    tape: QuantumTape, method: Optional[Union[str, Callable]] = None, **kwargs
+) -> Tuple[Tuple[QuantumTape], Callable]:
+    """
+    TODO:Docstring
+    """
+    
+    g = tape_to_graph(tape)
+    replace_wire_cut_nodes(g)
+    fragments, communication_graph = fragment_graph(g)
+    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
+
+    configurations = []
+    prepare_nodes = []
+    measure_nodes = []
+    for tapes, p, m in expanded:
+        configurations.append(tapes)
+        prepare_nodes.append(p)
+        measure_nodes.append(m)
+
+    tapes = tuple(tape for c in configurations for tape in c)
+
+    return tapes, partial(
+        qcut_processing_fn,
+        communication_graph=communication_graph,
+        prepare_nodes=prepare_nodes,
+        measure_nodes=measure_nodes,
+    )    
+    

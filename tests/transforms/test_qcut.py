@@ -1738,3 +1738,32 @@ class TestQCutProcessingFn:
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
+
+
+class TestCutCircuitTransform:
+    """
+    Tests for the cut_circuit transform
+    """
+    
+    def test_cut_circuit(self):
+        """
+        TODO: Docstring
+        """
+        
+        dev = qml.device("default.qubit", wires=2)
+        
+        @qcut.cut_circuit()
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+        
+        results = circuit()
+        import pdb; pdb.set_trace()
+            
+        
