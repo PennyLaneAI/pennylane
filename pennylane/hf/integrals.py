@@ -315,16 +315,19 @@ def hermite_moment(alpha, beta, t, order, r):
 
     .. math::
 
-        \int_{-\infty }^{+\infty} x_C^e \Lambda_t dx,
+        M_{t}^{e} = \int_{-\infty }^{+\infty} q^e \Lambda_t dq,
 
-    where :math:`e` is a positive integer, that will be called order here, :math:`C` is the origin
-    of the Cartesian coordinates, and :math:`\Lambda_t` is the :math:`t` component of the Hermite
-    Gaussian function. The integral can be computed recursively as
+    where :math:`e` is a positive integer, that will be called order here, :math:`q = x, y, z` is
+    the coordinate at which the integral is evaluatedand and :math:`\Lambda_t` is the :math:`t`
+    component of the Hermite Gaussian function. The integral can be computed recursively as
     [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
 
-        M_{t}^{e+1} = t M_{t-1}^{e} + X_C M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e}.
+        M_{t}^{e+1} = t M_{t-1}^{e} + Q M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e},
+
+    where :math:`Q` is the distance between the center of the Hermite Gaussian function and the
+    origin at dimension :math:`q = x, y, z` of the Cartesian coordinates system.
 
     This integral is zero for :math:`t > e` and the base case solution is
 
@@ -376,11 +379,11 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
 
     .. math::
 
-        S_{ij}^e = \left \langle G_i | q_C^e | G_j \right \rangle,
+        S_{ij}^e = \left \langle G_i | q^e | G_j \right \rangle,
 
     where :math:`G` is a Gaussian function at dimension :math:`q = x, y, z` of the Cartesian
-    coordinates system, :math:`e` is a positive integer, that will be called order here, and
-    :math:`C` is the origin of the Cartesian coordinates. The integrals can be evaluated as
+    coordinates system, :math:`e` is a positive integer that will be called order here. The
+    integrals can be evaluated as
     [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
@@ -428,15 +431,14 @@ def moment_integral(basis_a, basis_b, order, idx):
 
     .. math::
 
-        S^e = \left \langle G_i | q_C^e | G_j \right \rangle
+        S^e = \left \langle G_i | q^e | G_j \right \rangle
                    \left \langle G_k | G_l \right \rangle
                    \left \langle G_m | G_n \right \rangle,
 
     where :math:`G_{i-n}` is a one-dimensional Gaussian function, :math:`q = x, y, z` is the
-    coordinate at which the integral is evaluated, :math:`C` is the origin of the Cartesian
-    coordinates and :math:`e` is a positive integer that will be called order here. For contracted
-    Gaussians, such integrals will be computed over primitive Gaussians, multiplied by the
-    normalized contraction coefficients and finally summed over.
+    coordinate at which the integral is evaluated and :math:`e` is a positive integer that will be
+    called order here. For contracted Gaussians, such integrals will be computed over primitive
+    Gaussians, multiplied by the normalized contraction coefficients and finally summed over.
 
     The ``idx`` argument determines the coordinate :math:`q` at which the integral is computed. It
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
