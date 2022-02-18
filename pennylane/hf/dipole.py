@@ -104,25 +104,33 @@ def dipole_integrals(mol, core=None, active=None):
         """
         _, coeffs, _, _, _ = qml.hf.generate_scf(mol)(*args)
 
-        dx = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0)(*args), coeffs)
-        dy = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1)(*args), coeffs)
-        dz = anp.einsum("qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs)
+        # x, y, z components
+        d_x = anp.einsum(
+            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0)(*args), coeffs
+        )
+        d_y = anp.einsum(
+            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1)(*args), coeffs
+        )
+        d_z = anp.einsum(
+            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs
+        )
 
+        # x, y, z components (core orbitals contribution)
         core_x, core_y, core_z = anp.array([0]), anp.array([0]), anp.array([0])
 
         if core is None and active is None:
-            return (core_x, core_y, core_z), (dx, dy, dz)
+            return (core_x, core_y, core_z), (d_x, d_y, d_z)
 
         for i in core:
-            core_x = core_x + 2 * dx[i][i]
-            core_y = core_y + 2 * dy[i][i]
-            core_z = core_z + 2 * dz[i][i]
+            core_x = core_x + 2 * d_x[i][i]
+            core_y = core_y + 2 * d_y[i][i]
+            core_z = core_z + 2 * d_z[i][i]
 
-        dx = dx[anp.ix_(active, active)]
-        dy = dy[anp.ix_(active, active)]
-        dz = dz[anp.ix_(active, active)]
+        d_x = d_x[anp.ix_(active, active)]
+        d_y = d_y[anp.ix_(active, active)]
+        d_z = d_z[anp.ix_(active, active)]
 
-        return (core_x, core_y, core_z), (dx, dy, dz)
+        return (core_x, core_y, core_z), (d_x, d_y, d_z)
 
     return _dipole_integrals
 
@@ -324,7 +332,7 @@ def fermionic_one(core_constant, integral, cutoff=1.0e-12):
     """
     coeffs = anp.array([])
 
-    if core_constant != 0:
+    if core_constant != anp.array([0.0]):
         coeffs = anp.concatenate((coeffs, core_constant))
         operators = [[]]
     else:
@@ -388,6 +396,6 @@ def qubit_operator(o_ferm, cutoff=1.0e-12):
                 coeffs = np.concatenate([coeffs, np.array(op[0]) * o_ferm[0][n]])
                 ops = ops + op[1]
 
-    d = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
+    o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
-    return d
+    return o_qubit
