@@ -760,12 +760,12 @@ def _to_tensors(
             expansion of circuit fragments in the communication graph over measurement and
             preparation node configurations. These results are processed into tensors by this
             function.
-        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
-            ``len(communication_graph.nodes)`` that determines the order of preparation indices in
-            each tensor
-        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence of size
-            ``len(communication_graph.nodes)`` that determines the order of measurement indices in
-            each tensor
+        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence whose length is equal to the
+            number of circuit fragments, with each element used here to determine the number of
+            preparation nodes in a given fragment
+        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence whose length is equal to the
+            number of circuit fragments, with each element used here to determine the number of
+            measurement nodes in a given fragment
 
     Returns:
         List[array-like]: the tensors for each circuit fragment in the communication graph
