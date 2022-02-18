@@ -73,6 +73,10 @@
   A differentiable tensor contraction function `contract_tensors` has been
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+  
+  A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
+  configurations.
+  [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
 
 <h3>Improvements</h3>
 
