@@ -180,26 +180,47 @@ class TestFiniteDiff:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, 0)
 
-    def test_no_trainable_parameters(self, mocker):
-        """Test that if the tape has no trainable parameters, no
-        subroutines are called and the returned Jacobian is empty"""
-        spy = mocker.spy(qml.gradients.finite_difference, "generate_shifted_tapes")
-
-        with qml.tape.JacobianTape() as tape:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliZ(0))
-
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_no_trainable_params_qnode(self, interface):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
-        tape.trainable_params = {}
 
-        tapes, fn = finite_diff(tape)
-        res = fn(dev.batch_execute(tapes))
+        @qml.qnode(dev, interface=interface)
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.finite_diff(circuit)(weights)
+
+        assert res == ()
+
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = qml.gradients.finite_diff(tape)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
         assert res.size == 0
         assert np.all(res == np.array([[]]))
-
-        spy.assert_not_called()
-        assert len(tapes) == 0
 
     def test_y0(self, mocker):
         """Test that if first order finite differences is used, then

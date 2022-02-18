@@ -260,8 +260,8 @@ class TestQuantumMonteCarlo:
         assert len(queue_before_qpe) == 2
         assert queue_before_qpe[0].name == "QubitUnitary"
         assert queue_before_qpe[1].name == "QubitUnitary"
-        assert np.allclose(queue_before_qpe[0].matrix, A)
-        assert np.allclose(queue_before_qpe[1].matrix, R)
+        assert np.allclose(queue_before_qpe[0].get_matrix(), A)
+        assert np.allclose(queue_before_qpe[1].get_matrix(), R)
         assert queue_before_qpe[0].wires == target_wires[:-1]
         assert queue_before_qpe[1].wires == target_wires
 
@@ -275,7 +275,7 @@ class TestQuantumMonteCarlo:
         assert len(queue_after_qpe) == len(qpe_tape.operations)
         assert all(o1.name == o2.name for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))
         assert all(
-            np.allclose(o1.matrix, o2.matrix)
+            np.allclose(o1.get_matrix(), o2.get_matrix())
             for o1, o2 in zip(queue_after_qpe, qpe_tape.operations)
         )
         assert all(o1.wires == o2.wires for o1, o2 in zip(queue_after_qpe, qpe_tape.operations))

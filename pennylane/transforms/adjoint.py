@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the adjoint transform."""
-
+from collections.abc import Sequence
 from functools import wraps
-from pennylane.operation import Operation
+import pennylane as qml
 from pennylane.tape import QuantumTape, stop_recording
-from pennylane.utils import decompose_ops_until_all
-from pennylane.queuing import QueuingContext
 
 
 def adjoint(fn):
@@ -120,35 +118,33 @@ def adjoint(fn):
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        with stop_recording(), QuantumTape() as tape:
+            res = fn(*args, **kwargs)
 
-        def is_adjoint_implemted(op):
+        if not tape.operations:
+            # we called op.expand(): get the outputted tape
+            tape = res
+
+        adjoint_ops = []
+        for op in reversed(tape.operations):
             try:
-                op.adjoint()
-            except NotImplementedError:
-                return False
-            else:
-                return True
+                new_op = op.adjoint()
+                adjoint_ops.append(new_op)
+            except qml.operation.AdjointUndefinedError:
+                # Expand the operation and adjoint the result.
+                new_ops = adjoint(op.expand)()
 
-        with stop_recording():
-            with QuantumTape() as tape:
-                fn(*args, **kwargs)
-            ops = tape.operations
-            ops = decompose_ops_until_all(ops, is_adjoint_implemted)
+                if isinstance(new_ops, QuantumTape):
+                    new_ops = new_ops.operations
 
-            adjoint_ops = []
-            for op in reversed(ops):
-                to_append = op.adjoint()
-                if isinstance(to_append, list):
-                    adjoint_ops += to_append
-                else:
-                    adjoint_ops.append(to_append)
-        
-        if QueuingContext.recording():
-            for op in adjoint_ops:
-                op.queue() # record to the 
+                if not isinstance(new_ops, Sequence):
+                    new_ops = [new_ops]
+
+                adjoint_ops.extend(new_ops)
 
         if len(adjoint_ops) == 1:
             adjoint_ops = adjoint_ops[0]
+
         return adjoint_ops
 
     return wrapper

@@ -82,6 +82,21 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
 
+Transforms for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following are utility functions that compose the circuit cutting transform.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.tape_to_graph
+    ~transforms.replace_wire_cut_node
+    ~transforms.replace_wire_cut_nodes
+    ~transforms.fragment_graph
+    ~transforms.graph_to_tape
+    ~transforms.contract_tensors
+
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -124,7 +139,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw, draw_mpl
+from .draw import draw, draw_mpl, draw_old
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -152,4 +167,12 @@ from .tape_expand import (
     create_expand_fn,
     create_decomp_expand_fn,
     set_decomposition,
+)
+from .qcut import (
+    tape_to_graph,
+    replace_wire_cut_node,
+    replace_wire_cut_nodes,
+    fragment_graph,
+    graph_to_tape,
+    contract_tensors,
 )

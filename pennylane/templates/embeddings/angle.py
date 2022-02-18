@@ -41,7 +41,7 @@ class AngleEmbedding(Operation):
     Args:
         features (tensor_like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Iterable): wires that the template acts on
+        wires (Any or Iterable[Any]): wires that the template acts on
         rotation (str): type of rotations used
 
     Example:
@@ -77,7 +77,6 @@ class AngleEmbedding(Operation):
 
         if rotation not in ROT:
             raise ValueError(f"Rotation option {rotation} not recognized.")
-        self.rotation = ROT[rotation]
 
         shape = qml.math.shape(features)[-1:]
         n_features = shape[0]
@@ -86,6 +85,8 @@ class AngleEmbedding(Operation):
                 f"Features must be of length {len(wires)} or less; got length {n_features}."
             )
 
+        self._hyperparameters = {"rotation": ROT[rotation]}
+
         wires = wires[:n_features]
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
@@ -93,16 +94,32 @@ class AngleEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(features, wires, rotation):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        features = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.AngleEmbedding.decomposition`.
+
+        Args:
+            features (tensor_like): input tensor of dimension ``(len(wires),)``
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            rotation (.Operator): rotation gate class
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> features = torch.tensor([1., 2.])
+        >>> qml.AngleEmbedding.compute_decomposition(features, wires=["a", "b"], rotation=qml.RX)
+        [RX(tensor(1.), wires=['a']),
+         RX(tensor(2.), wires=['b'])]
+        """
         batched = len(qml.math.shape(features)) > 1
-
         features = features.T if batched else features
 
-        with qml.tape.QuantumTape() as tape:
-
-            for i in range(len(self.wires)):
-                self.rotation(features[i], wires=self.wires[i])
-
-        return tape
+        return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]

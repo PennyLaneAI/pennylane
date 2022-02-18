@@ -46,6 +46,15 @@ class TestInsert:
         qml.RX(0.6, wires=1)
         qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
+    with QuantumTape() as custom_tape:
+        qml.RX(0.9, wires=0)
+        qml.RY(0.4, wires=1)
+        qml.CNOT(wires=[0, 1])
+        qml.RY(0.5, wires=0)
+        qml.PauliZ(wires=1)
+        qml.Identity(wires=2)
+        qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
     def test_multiwire_op(self):
         """Tests if a ValueError is raised when multiqubit operations are requested"""
         with pytest.raises(ValueError, match="Only single-qubit operations can be inserted into"):
@@ -140,18 +149,30 @@ class TestInsert:
         assert tape.observables[0].wires.tolist() == [0, 1]
         assert tape.measurements[0].return_type is Expectation
 
-    def test_operation_as_position(self):
+    op_lst = [qml.RX, qml.PauliZ, qml.Identity]
+
+    @pytest.mark.parametrize("op", op_lst)
+    def test_operation_as_position(self, op):
         """Test if expected tape is returned when an operation is passed in position"""
-        tape = insert(qml.PhaseDamping, 0.4, position=qml.RX, before=True)(self.tape)
+        tape = insert(qml.PhaseDamping, 0.4, position=op, before=True)(self.custom_tape)
 
         with QuantumTape() as tape_exp:
-            qml.PhaseDamping(0.4, wires=0)
+            if op == qml.RX:
+                qml.PhaseDamping(0.4, wires=0)
             qml.RX(0.9, wires=0)
+
             qml.RY(0.4, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.RY(0.5, wires=0)
-            qml.PhaseDamping(0.4, wires=1)
-            qml.RX(0.6, wires=1)
+
+            if op == qml.PauliZ:
+                qml.PhaseDamping(0.4, wires=1)
+            qml.PauliZ(wires=1)
+
+            if op == qml.Identity:
+                qml.PhaseDamping(0.4, wires=2)
+            qml.Identity(wires=2)
+
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))

@@ -19,47 +19,6 @@ import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 
 
-def qaoa_feature_encoding_hamiltonian(features, wires):
-    """Implements the encoding Hamiltonian of the QAOA embedding.
-
-    Args:
-        features (tensor_like): tensor of features to encode
-        wires (Iterable): wires that the template acts on
-    """
-    n_features = qml.math.shape(features)[0]
-
-    for i in range(n_features):
-        qml.RX(features[i], wires=wires[i])
-    for i in range(n_features, len(wires)):
-        qml.Hadamard(wires=wires[i])
-
-
-def qaoa_ising_hamiltonian(weights, wires, local_fields):
-    """Implements the Ising-like Hamiltonian of the QAOA embedding.
-
-    Args:
-        weights (tensor_like): tensor of weights for one layer
-        wires (Iterable): qubit indices that the template acts on
-        local_fields (str): gate implementing the local field
-    """
-
-    if len(wires) == 1:
-        local_fields(weights[0], wires=wires)
-
-    elif len(wires) == 2:
-        # deviation for 2 wires: we do not connect last to first qubit
-        # with the entangling gates
-        qml.MultiRZ(weights[0], wires=wires.subset([0, 1]))
-        local_fields(weights[1], wires=wires[0:1])
-        local_fields(weights[2], wires=wires[1:2])
-
-    else:
-        for i in range(len(wires)):
-            qml.MultiRZ(weights[i], wires=wires.subset([i, i + 1], periodic_boundary=True))
-        for i in range(len(wires)):
-            local_fields(weights[len(wires) + i], wires=wires[i])
-
-
 class QAOAEmbedding(Operation):
     r"""
     Encodes :math:`N` features into :math:`n>N` qubits, using a layered, trainable quantum
@@ -202,55 +161,13 @@ class QAOAEmbedding(Operation):
     def __init__(self, features, weights, wires, local_field="Y", do_queue=True, id=None):
 
         if local_field == "Z":
-            self.local_field = qml.RZ
+            local_field = qml.RZ
         elif local_field == "X":
-            self.local_field = qml.RX
+            local_field = qml.RX
         elif local_field == "Y":
-            self.local_field = qml.RY
+            local_field = qml.RY
         else:
             raise ValueError(f"did not recognize local field {local_field}")
-
-        self._preprocess(features, weights, wires)
-        super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def num_params(self):
-        return 2
-
-    def expand(self):
-
-        features = self.parameters[0]
-        weights = self.parameters[1]
-
-        # first dimension of the weights tensor determines
-        # the number of layers
-        repeat = qml.math.shape(weights)[0]
-
-        with qml.tape.QuantumTape() as tape:
-
-            for l in range(repeat):
-                # apply alternating Hamiltonians
-                qaoa_feature_encoding_hamiltonian(features, self.wires)
-                qaoa_ising_hamiltonian(weights[l], self.wires, self.local_field)
-
-            # repeat the feature encoding once more at the end
-            qaoa_feature_encoding_hamiltonian(features, self.wires)
-
-        return tape
-
-    @staticmethod
-    def _preprocess(features, weights, wires):
-        """Validate and pre-process inputs as follows:
-
-        * Check that the features tensor is one-dimensional.
-        * Check that the first dimension of the features tensor
-          has length :math:`n` or less, where :math:`n` is the number of qubits.
-        * Check that the shape of the weights tensor is correct for the number of qubits.
-
-        Args:
-            features (tensor_like): feature tensor
-            weights (tensor_like): weight tensor
-        """
 
         shape = qml.math.shape(features)
 
@@ -278,6 +195,88 @@ class QAOAEmbedding(Operation):
                 raise ValueError(
                     f"Weights tensor must be of shape {(repeat, 2*len(wires))}; got {shape}"
                 )
+
+        self._hyperparameters = {"local_field": local_field}
+        super().__init__(features, weights, wires=wires, do_queue=do_queue, id=id)
+
+    @property
+    def num_params(self):
+        return 2
+
+    @staticmethod
+    def compute_decomposition(
+        features, weights, wires, local_field
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.QAOAEmbedding.decomposition`.
+
+        Args:
+            features (tensor_like): tensor of features to encode
+            weights (tensor_like): tensor of weights
+            wires (Any or Iterable[Any]): wires that the template acts on
+            local_field (.Operator): class of local field gate
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> features = torch.tensor([1., 2.])
+        >>> weights = torch.tensor([[0.1, -0.3, 1.3], [0.9, -0.2, -2.1]])
+        >>> qml.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qml.RY)
+        [RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
+        MultiRZ(tensor(0.1000), wires=['a', 'b']), RY(tensor(-0.3000), wires=['a']), RY(tensor(1.3000), wires=['b']),
+        RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
+        MultiRZ(tensor(0.9000), wires=['a', 'b']), RY(tensor(-0.2000), wires=['a']), RY(tensor(-2.1000), wires=['b']),
+        RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b'])]
+        """
+        wires = qml.wires.Wires(wires)
+        # first dimension of the weights tensor determines
+        # the number of layers
+        repeat = qml.math.shape(weights)[0]
+        op_list = []
+        n_features = qml.math.shape(features)[0]
+
+        for l in range(repeat):
+            # ---- apply encoding Hamiltonian
+            for i in range(n_features):
+                op_list.append(qml.RX(features[i], wires=wires[i]))
+            for i in range(n_features, len(wires)):
+                op_list.append(qml.Hadamard(wires=wires[i]))
+
+            # ---- apply weight Hamiltonian
+            if len(wires) == 1:
+                op_list.append(local_field(weights[l][0], wires=wires))
+
+            elif len(wires) == 2:
+                # deviation for 2 wires: we do not connect last to first qubit
+                # with the entangling gates
+                op_list.append(qml.MultiRZ(weights[l][0], wires=wires.subset([0, 1])))
+                op_list.append(local_field(weights[l][1], wires=wires[0:1]))
+                op_list.append(local_field(weights[l][2], wires=wires[1:2]))
+
+            else:
+                for i in range(len(wires)):
+                    op_list.append(
+                        qml.MultiRZ(
+                            weights[l][i], wires=wires.subset([i, i + 1], periodic_boundary=True)
+                        )
+                    )
+                for i in range(len(wires)):
+                    op_list.append(local_field(weights[l][len(wires) + i], wires=wires[i]))
+
+        # repeat the feature encoding once more at the end
+        for i in range(n_features):
+            op_list.append(qml.RX(features[i], wires=wires[i]))
+        for i in range(n_features, len(wires)):
+            op_list.append(qml.Hadamard(wires=wires[i]))
+
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):
