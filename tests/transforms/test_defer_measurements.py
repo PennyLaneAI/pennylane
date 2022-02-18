@@ -4,11 +4,13 @@ import math
 import pennylane as qml
 import pennylane.numpy as np
 
-class TestQNode:
 
-    @pytest.mark.xfail(reason="TODO: check why shape doesn't match (perhaps because it's a tape transform)")
+class TestQNode:
+    @pytest.mark.xfail(
+        reason="TODO: check why shape doesn't match (perhaps because it's a tape transform)"
+    )
     def test_simple_decorated(self):
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit():
@@ -25,6 +27,7 @@ class TestQNode:
         assert res1 == res2
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
+
 
 class TestMidCircuitMeasurements:
     """Tests mid circuit measurements"""
@@ -73,7 +76,7 @@ class TestMidCircuitMeasurements:
 
         assert np.allclose(normal_probs, teleported_probs)
 
-    @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi-0.1, 4))
+    @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
     def test_conditional_rotations(self, device, r, ops):
@@ -84,7 +87,7 @@ class TestMidCircuitMeasurements:
         @qml.qnode(dev)
         def normal_circuit(rads):
             qml.Hadamard(0)
-            controlled_op(rads, wires=[0,1])
+            controlled_op(rads, wires=[0, 1])
             return qml.probs(wires=1)
 
         @qml.qnode(dev)
