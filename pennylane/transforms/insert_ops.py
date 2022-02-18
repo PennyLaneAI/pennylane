@@ -35,13 +35,13 @@ def _check_position(position):
         req_ops = position.copy()
         for operation in req_ops:
             try:
-                if operation.__base__ != Operation:
+                if Operation not in operation.__bases__:
                     not_op = True
             except AttributeError:
                 not_op = True
     elif not isinstance(position, list):
         try:
-            if position.__base__ == Operation:
+            if Operation in position.__bases__:
                 req_ops = [position]
             else:
                 not_op = True

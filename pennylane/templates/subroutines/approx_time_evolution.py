@@ -111,26 +111,44 @@ class ApproxTimeEvolution(Operation):
         wire_list = [term.wires for term in hamiltonian.ops]
         wires = qml.wires.Wires.all_wires(wire_list)
 
-        # non-trainable and non-numeric parameters are stored as
-        # attributes
-        self.hamiltonian = hamiltonian
-        self.n = n
+        self._hyperparameters = {"hamiltonian": hamiltonian, "n": n}
 
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=wires, do_queue=do_queue, id=id)
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        *coeffs_and_time, wires, hamiltonian, n
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators.
 
-        coeffs = self.parameters[:-1]
-        time = self.parameters[-1]
+        .. math:: O = O_1 O_2 \dots O_n.
 
+
+
+        .. seealso:: :meth:`~.ApproxTimeEvolution.decomposition`.
+
+        Args:
+            coeffs_and_time (list[tensor_like or float]): list of coefficients of the Hamiltonian, appended by the time
+                variable
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            hamiltonian (.Hamiltonian): The Hamiltonian defining the
+               time-evolution operator. The Hamiltonian must be explicitly written
+               in terms of products of Pauli gates (:class:`~.PauliX`, :class:`~.PauliY`,
+               :class:`~.PauliZ`, and :class:`~.Identity`).
+            n (int): The number of Trotter steps used when approximating the time-evolution operator.
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
         pauli = {"Identity": "I", "PauliX": "X", "PauliY": "Y", "PauliZ": "Z"}
 
         theta = []
         pauli_words = []
         wires = []
-
-        for i, term in enumerate(self.hamiltonian.ops):
+        coeffs = coeffs_and_time[:-1]
+        time = coeffs_and_time[-1]
+        for i, term in enumerate(hamiltonian.ops):
 
             word = ""
 
@@ -148,14 +166,14 @@ class ApproxTimeEvolution(Operation):
 
             # skips terms composed solely of identities
             if word.count("I") != len(word):
-                theta.append((2 * time * coeffs[i]) / self.n)
+                theta.append((2 * time * coeffs[i]) / n)
                 pauli_words.append(word)
                 wires.append(term.wires)
 
-        with qml.tape.QuantumTape() as tape:
+        op_list = []
 
-            for i in range(self.n):
-                for j, term in enumerate(pauli_words):
-                    PauliRot(theta[j], term, wires=wires[j])
+        for i in range(n):
+            for j, term in enumerate(pauli_words):
+                op_list.append(PauliRot(theta[j], term, wires=wires[j]))
 
-        return tape
+        return op_list
