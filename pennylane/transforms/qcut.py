@@ -748,7 +748,8 @@ def _to_tensors(
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
 ) -> List:
-    """Process a flat list of execution results into the tensors of circuit fragments.
+    """Process a flat list of execution results from all circuit fragments into the corresponding
+    tensors.
 
     This function slices ``results`` according to the expected size of fragment tensors derived from
     the ``prepare_nodes`` and ``measure_nodes`` and then passes onto ``_process_tensor`` for further
