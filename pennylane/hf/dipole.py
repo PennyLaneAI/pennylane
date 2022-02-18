@@ -42,7 +42,7 @@ def dipole_integrals(mol, core=None, active=None):
 
     :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
     respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei to the dipole operator.
+    of the core orbitals and nuclei to the dipole operator, respectivel.
 
     The molecular orbitals are represented as a linear combination of atomic orbitals as
 
@@ -57,22 +57,14 @@ def dipole_integrals(mol, core=None, active=None):
         d_{pq} = \sum_{\mu \nu} C_{p \mu} d_{\mu \nu} C_{\nu q},
 
     where :math:`d_{\mu \nu}` is the dipole moment integral over the atomic orbitals and :math:`C`
-    is the molecular orbital expansion coefficient matrix.
-
-    The contribution of the core molecular orbitals to the dipole operator is given by
-
-    .. math::
-
-        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii}.
-
-    The contribution of the nuclei to the dipole operator is given by
+    is the molecular orbital expansion coefficient matrix. The contribution of the core molecular
+    orbitals to the dipole operator is computed as
 
     .. math::
 
-        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii},
 
-    where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
-    nuclear coordinates of the :math:`i`-th atom of the molecule.
+    where :math:`N_\mathrm{core}` is the number of core orbitals.
 
     Args:
         mol (Molecule): the molecule object
@@ -155,15 +147,13 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
     :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
     respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei to the dipole operator.
-
-    The contribution of the core molecular orbitals to the dipole operator is given by
+    of the core orbitals and nuclei to the dipole operator, respectively, which are computed as
 
     .. math::
 
-        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii}.
+        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii},
 
-    The contribution of the nuclei to the dipole operator is given by
+    and
 
     .. math::
 
@@ -171,7 +161,6 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
-
 
     Args:
         mol (Molecule): the molecule object
@@ -243,15 +232,13 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
 
     :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
     respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei to the dipole operator.
-
-    The contribution of the core molecular orbitals to the dipole operator is given by
+    of the core orbitals and nuclei to the dipole operator, respectively, which are computed as
 
     .. math::
 
-        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii}.
+        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii},
 
-    The contribution of the nuclei to the dipole operator is given by
+    and
 
     .. math::
 
@@ -260,7 +247,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
 
-    This fermonic dipole operator is then transformed to the qubit basis
+    The fermonic dipole operator is then transformed to the qubit basis which gives
 
     .. math::
 
