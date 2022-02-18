@@ -29,17 +29,20 @@ def dipole_integrals(mol, core=None, active=None):
 
     .. math::
 
-        D = \sum_{pq} d_{pq} c_p^{\dagger} c_q + D_n,
+        \hat{D} = -\sum_{pq} d_{pq} [\hat{c}_{p\uparrow}^\dagger \hat{c}_{q\uparrow} +
+        \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
+        \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
 
     where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
     :math:`\phi`
 
     .. math::
 
-        d_{pq} = \int \phi_p^*(r) r \phi_q(r) dr,
+        d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
 
-    :math:`c^{\dagger}` and :math:`c` are the creation and annihilation operators, respectively, and
-    :math:`D_n` is the contribution of the nuclei to the dipole operator.
+    :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
+    of the core orbitals and nuclei to the dipole operator.
 
     The molecular orbitals are represented as a linear combination of atomic orbitals as
 
@@ -55,6 +58,21 @@ def dipole_integrals(mol, core=None, active=None):
 
     where :math:`d_{\mu \nu}` is the dipole moment integral over the atomic orbitals and :math:`C`
     is the molecular orbital expansion coefficient matrix.
+
+    The contribution of the core molecular orbitals to the dipole operator is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii}.
+
+    The contribution of the nuclei to the dipole operator is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+
+    where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
+    nuclear coordinates of the :math:`i`-th atom of the molecule.
 
     Args:
         mol (Molecule): the molecule object
