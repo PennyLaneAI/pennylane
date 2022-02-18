@@ -527,7 +527,7 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     warnings.warn(
         "The black-box finite_diff function will be deprecated, users can "
         "instead use qml.gradients.finite_diff to compute the gradient of "
-        "tapes or qnodes. Otherwise a manually implementation is required.",
+        "tapes or QNodes. Otherwise, manual implementation is required.",
         UserWarning,
     )
 
