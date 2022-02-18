@@ -138,6 +138,41 @@ def dipole_integrals(mol, core=None, active=None):
 def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that builds the fermionic dipole moment observable.
 
+    The dipole operator in the second-quantized form is
+
+    .. math::
+
+        \hat{D} = -\sum_{pq} d_{pq} [\hat{c}_{p\uparrow}^\dagger \hat{c}_{q\uparrow} +
+        \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
+        \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
+
+    where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
+    :math:`\phi`
+
+    .. math::
+
+        d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
+
+    :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
+    of the core orbitals and nuclei to the dipole operator.
+
+    The contribution of the core molecular orbitals to the dipole operator is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii}.
+
+    The contribution of the nuclei to the dipole operator is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+
+    where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
+    nuclear coordinates of the :math:`i`-th atom of the molecule.
+
+
     Args:
         mol (Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
@@ -190,6 +225,49 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
 def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit dipole moment observable.
+
+    The dipole operator in the second-quantized form is
+
+    .. math::
+
+        \hat{D} = -\sum_{pq} d_{pq} [\hat{c}_{p\uparrow}^\dagger \hat{c}_{q\uparrow} +
+        \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
+        \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
+
+    where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
+    :math:`\phi`
+
+    .. math::
+
+        d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
+
+    :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
+    of the core orbitals and nuclei to the dipole operator.
+
+    The contribution of the core molecular orbitals to the dipole operator is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii}.
+
+    The contribution of the nuclei to the dipole operator is given by
+
+    .. math::
+
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+
+    where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
+    nuclear coordinates of the :math:`i`-th atom of the molecule.
+
+    This fermonic dipole operator is then transformed to the qubit basis
+
+    .. math::
+
+        \hat{D} = \sum_{j} c_j P_j,
+
+    where :math:`c_j` is a numerical coefficient and :math:`P_j` is a ternsor product of
+    single-qubit Pauli operators :math:`X, Y, Z, I`.
 
     Args:
         mol (Molecule): the molecule object
