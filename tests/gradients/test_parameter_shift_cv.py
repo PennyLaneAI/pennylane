@@ -271,6 +271,48 @@ class TestTransformObservable:
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
 
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    def test_no_trainable_params_qnode(self, interface):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        if interface != "autograd":
+            pytest.importorskip(interface)
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(weights):
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            return qml.expval(qml.X(0))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_cv(circuit)(weights)
+
+        assert res == ()
+
+    def test_no_trainable_params_tape(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.gaussian", wires=2)
+
+        weights = [0.1, 0.2]
+        with qml.tape.JacobianTape() as tape:
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            qml.expval(qml.X(0))
+
+        # TODO: remove once #2155 is resolved
+        tape.trainable_params = []
+
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            g_tapes, post_processing = qml.gradients.param_shift_cv(tape, dev)
+        res = post_processing(qml.execute(g_tapes, dev, None))
+
+        assert g_tapes == []
+        assert res.size == 0
+        assert np.all(res == np.array([[]]))
+
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
         respect to a state"""
@@ -392,7 +434,11 @@ class TestExpectationQuantumGradients:
     """Tests for the quantum gradients of various gates
     with expectation value output"""
 
-    def test_rotation_gradient(self, mocker, tol):
+    @pytest.mark.parametrize(
+        "gradient_recipes",
+        [None, ([[1 / np.sqrt(2), 1, np.pi / 4], [-1 / np.sqrt(2), 1, -np.pi / 4]],)],
+    )
+    def test_rotation_gradient(self, gradient_recipes, mocker, tol):
         """Test the gradient of the rotation gate"""
         dev = qml.device("default.gaussian", wires=2, hbar=hbar)
 
@@ -408,11 +454,11 @@ class TestExpectationQuantumGradients:
 
         spy2 = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
-        tapes, fn = param_shift_cv(tape, dev)
+        tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes)
         grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
-        tapes, fn = param_shift_cv(tape, dev, force_order2=True)
+        tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
@@ -836,7 +882,7 @@ class TestVarianceQuantumGradients:
 
         tape.trainable_params = {0}
 
-        with pytest.raises(ValueError, match=r"cannot be used with the argument\(s\) \{0\}"):
+        with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             param_shift_cv(tape, dev, fallback_fn=None)
 
     def test_error_unsupported_grad_recipe(self, monkeypatch):
@@ -858,15 +904,14 @@ class TestVarianceQuantumGradients:
             DummyOp(1, wires=[0])
             qml.expval(qml.X(0))
 
-        with monkeypatch.context() as m:
-            m.setattr(tape, "_grad_method_validation", lambda *args: ("A",))
-            tape._par_info[0]["grad_method"] = "A"
-            tape.trainable_params = {0}
+        tape._gradient_fn = param_shift_cv
+        tape._par_info[0]["grad_method"] = "A"
+        tape.trainable_params = {0}
 
-            with pytest.raises(
-                NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
-            ):
-                param_shift_cv(tape, dev, force_order2=True)
+        with pytest.raises(
+            NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
+        ):
+            param_shift_cv(tape, dev, force_order2=True)
 
     @pytest.mark.parametrize("obs", [qml.X, qml.NumberOperator])
     @pytest.mark.parametrize(

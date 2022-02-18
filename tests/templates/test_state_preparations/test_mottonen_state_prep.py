@@ -17,6 +17,7 @@ Unit tests for the ArbitraryStatePreparation template.
 import pytest
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 torch = pytest.importorskip("torch", minversion="1.3")
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
@@ -339,7 +340,11 @@ class TestGradient:
     # Make the template fully differentiable and test it.
 
     @pytest.mark.parametrize(
-        "state_vector", [np.array([0.70710678, 0.70710678]), np.array([0.70710678, 0.70710678j])]
+        "state_vector",
+        [
+            pnp.array([0.70710678, 0.70710678], requires_grad=True),
+            pnp.array([0.70710678, 0.70710678j], requires_grad=True),
+        ],
     )
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only

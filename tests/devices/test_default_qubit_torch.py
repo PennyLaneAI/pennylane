@@ -1445,7 +1445,7 @@ class TestPassthruIntegration:
         assert qml.math.isclose(grad, torch.tensor(0.0))
         assert qml.math.isclose(hess, torch.tensor(-1.0))
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_torch_interface_gradient(self, torch_device, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
