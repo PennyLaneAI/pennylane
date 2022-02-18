@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import _generate_qubit_operator, _return_pauli, simplify
 
+
 def particle_number(orbitals):
     r"""Computes the particle number observable :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
     in the Pauli basis.

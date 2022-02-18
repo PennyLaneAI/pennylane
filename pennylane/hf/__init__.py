@@ -49,7 +49,8 @@ from .matrices import (
     molecular_density_matrix,
 )
 from .molecule import Molecule
-from .spin import particle_number, spin2, spin_z
+from .particle_number import particle_number
+from .spin import spin2, spinz
 from .tapering import (
     clifford,
     generate_paulis,

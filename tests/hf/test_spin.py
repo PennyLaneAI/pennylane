@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for computing the spin and particle number observables.
+Unit tests for functions needed for computing the spin observables.
 """
 import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane.hf.spin import _spin2_matrix_elements, particle_number, spin2, spin_z
+from pennylane.hf.spin import _spin2_matrix_elements, spin2, spinz
 
 
 @pytest.mark.parametrize(
@@ -215,80 +215,26 @@ def test_exception_spin2(electrons, orbitals, msg_match):
         ),
     ],
 )
-def test_spin_z(orbitals, coeffs_ref, ops_ref):
+def test_spinz(orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
     """
-    sz = spin_z(orbitals)
+    sz = spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert sz.compare(sz_ref)
 
 
 @pytest.mark.parametrize(
-    ("orbitals", "coeffs_ref", "ops_ref"),
-    [
-        (  # computed with PL-QChem using OpenFermion
-            4,
-            np.array([2.0, -0.5, -0.5, -0.5, -0.5]),
-            [
-                Identity(wires=[0]),
-                PauliZ(wires=[0]),
-                PauliZ(wires=[1]),
-                PauliZ(wires=[2]),
-                PauliZ(wires=[3]),
-            ],
-        ),
-        (
-            6,
-            np.array([3.0, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5]),
-            [
-                Identity(wires=[0]),
-                PauliZ(wires=[0]),
-                PauliZ(wires=[1]),
-                PauliZ(wires=[2]),
-                PauliZ(wires=[3]),
-                PauliZ(wires=[4]),
-                PauliZ(wires=[5]),
-            ],
-        ),
-    ],
-)
-def test_particle_number(orbitals, coeffs_ref, ops_ref):
-    r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
-    function `'spin_z'`.
-    """
-    n = particle_number(orbitals)
-    n_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
-
-    assert n.compare(n_ref)
-
-
-@pytest.mark.parametrize(
     ("orbitals", "msg_match"),
     [
         (-3, "'orbitals' must be greater than 0"),
         (0, "'orbitals' must be greater than 0"),
     ],
 )
-def test_exception_spin_z(orbitals, msg_match):
+def test_exception_spinz(orbitals, msg_match):
     """Test that the function `'spin_z'` throws an exception if the
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        spin_z(orbitals)
-
-
-@pytest.mark.parametrize(
-    ("orbitals", "msg_match"),
-    [
-        (-3, "'orbitals' must be greater than 0"),
-        (0, "'orbitals' must be greater than 0"),
-    ],
-)
-def test_exception_particle_number(orbitals, msg_match):
-    """Test that the function `'particle_number'` throws an exception if the
-    number of orbitals is less than zero."""
-
-    with pytest.raises(ValueError, match=msg_match):
-        particle_number(orbitals)
+        spinz(orbitals)
