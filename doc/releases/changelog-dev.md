@@ -124,6 +124,7 @@
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
+
 * A deprecation warning has been added to the `qml.finite_diff()` method.
   [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
 
