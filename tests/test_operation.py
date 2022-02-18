@@ -1867,7 +1867,7 @@ class TestDeprecationWarnings:
             return qml.state()
 
         with pytest.warns(UserWarning, match="is now an instance method"):
-            print(qnode(0.1, 0.2))
+            result1 = qnode(0.1, 0.2)
 
         # using an instance method will not raise a deprecation warning
 
@@ -1888,4 +1888,6 @@ class TestDeprecationWarnings:
         with warnings.catch_warnings():
             # any warnings emitted will be raised as errors
             warnings.simplefilter("error")
-            print(qnode(0.1, 0.2))
+            result2 = qnode(0.1, 0.2)
+
+        assert np.allclose(result1, result2)
