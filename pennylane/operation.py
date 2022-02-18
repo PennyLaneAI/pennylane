@@ -1152,6 +1152,9 @@ class Operation(Operator):
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
+
+        Note that the default value for ``shift`` is None, which is replaced by the
+        default shift :math:`\pi/2`.
         """
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]

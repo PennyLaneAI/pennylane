@@ -882,7 +882,7 @@ class TestVarianceQuantumGradients:
 
         tape.trainable_params = {0}
 
-        with pytest.raises(ValueError, match=r"cannot be used with the argument\(s\) \{0\}"):
+        with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             param_shift_cv(tape, dev, fallback_fn=None)
 
     def test_error_unsupported_grad_recipe(self, monkeypatch):
@@ -904,15 +904,14 @@ class TestVarianceQuantumGradients:
             DummyOp(1, wires=[0])
             qml.expval(qml.X(0))
 
-        with monkeypatch.context() as m:
-            m.setattr(tape, "_grad_method_validation", lambda *args: ("A",))
-            tape._par_info[0]["grad_method"] = "A"
-            tape.trainable_params = {0}
+        tape._gradient_fn = param_shift_cv
+        tape._par_info[0]["grad_method"] = "A"
+        tape.trainable_params = {0}
 
-            with pytest.raises(
-                NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
-            ):
-                param_shift_cv(tape, dev, force_order2=True)
+        with pytest.raises(
+            NotImplementedError, match=r"analytic gradient for order-2 operators is unsupported"
+        ):
+            param_shift_cv(tape, dev, force_order2=True)
 
     @pytest.mark.parametrize("obs", [qml.X, qml.NumberOperator])
     @pytest.mark.parametrize(
