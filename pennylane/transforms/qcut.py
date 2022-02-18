@@ -368,17 +368,18 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 def _get_measurements(
     group: Sequence[Operator], measurements: Sequence[MeasurementProcess]
 ) -> List[MeasurementProcess]:
-    """Pairs each observable in ``group`` with the fixed circuit ``measurements``.
+    """Pairs each observable in ``group`` with the circuit ``measurements``.
 
-    Only a single fixed measurement of an expectation value is currently supported.
+    Only a single measurement of an expectation value is currently supported
+    in ``measurements``.
 
     Args:
-        group (Sequence[Operator]): a collection of qubit-wise commuting observables
-        measurements (Sequence[MeasurementProcess]): fixed circuit measurements
+        group (Sequence[Operator]): a collection of observables
+        measurements (Sequence[MeasurementProcess]): measurements from the circuit
 
     Returns:
         List[MeasurementProcess]: the expectation values of ``g @ obs``, where ``g`` is iterated
-        over ``group`` and ``obs`` is the observable composing the single fixed circuit measurement
+        over ``group`` and ``obs`` is the observable composing the single measurement
         in ``measurements``
     """
     n_measurements = len(measurements)
@@ -427,7 +428,7 @@ def expand_fragment_tapes(
     tape: QuantumTape,
 ) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
     """
-    Expands a fragment tape into a collection of tapes for each configuration of
+    Expands a fragment tape into a collection of tapes for each configuration of the
     :class:`MeasureNode` and :class:`PrepareNode` operations.
 
     .. note::

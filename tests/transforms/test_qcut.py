@@ -1155,7 +1155,7 @@ class TestExpandFragmentTapes:
         all_measurements = [tape.measurements for tape in frag_tapes]
 
         # The 9 unique measurements are repeated 16 times since there are 4**2
-        # prepareations. This list prepares the indexing.
+        # preparations. This list prepares the indexing.
         index_list = []
         for i in range(len(frag_tapes)):
             if i % 9 == 0:
