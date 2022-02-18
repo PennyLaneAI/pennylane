@@ -328,7 +328,7 @@ def hermite_moment(alpha, beta, t, order, r):
         M_{t}^{e+1} = t M_{t-1}^{e} + Q M_{t}^{e} + \frac{1}{2p} M_{t+1}^{e},
 
     where :math:`Q` is the distance between the center of the Hermite Gaussian function and the
-    origin at dimension :math:`q = x, y, z` of the Cartesian coordinates system.
+    origin, at dimension :math:`q = x, y, z` of the Cartesian coordinates system.
 
     This integral is zero for :math:`t > e` and the base case solution is
 
@@ -340,8 +340,8 @@ def hermite_moment(alpha, beta, t, order, r):
     functions that construct the Hermite Gaussian function :math:`\Lambda`.
 
     Args:
-        alpha (array[float]): exponent of the first Gaussian function
-        beta (array[float]): exponent of the second Gaussian function
+        alpha (array[float]): exponent of the left Gaussian function
+        beta (array[float]): exponent of the right Gaussian function
         t (integer): order of the Hermite Gaussian function
         order (integer): exponent of the position component
         r (array[float]): distance between the center of the Hermite Gaussian function and the origin
@@ -383,7 +383,7 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
         S_{ij}^e = \left \langle G_i | q^e | G_j \right \rangle,
 
     where :math:`G` is a Gaussian function at dimension :math:`q = x, y, z` of the Cartesian
-    coordinates system, :math:`e` is a positive integer that is represented by the ``order``
+    coordinates system and :math:`e` is a positive integer that is represented by the ``order``
     argument. The integrals can be evaluated as
     [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
@@ -397,10 +397,10 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
     Args:
         li (integer): angular momentum for the left Gaussian function
         lj (integer): angular momentum for the right Gaussian function
-        ri (float): position of the first Gaussian function
-        rj (float): position of the second Gaussian function
-        alpha (array[float]): exponent of the first Gaussian function
-        beta (array[float]): exponent of the second Gaussian function
+        ri (float): position of the left Gaussian function
+        rj (float): position of the right Gaussian function
+        alpha (array[float]): exponent of the left Gaussian function
+        beta (array[float]): exponent of the right Gaussian function
         order (integer): exponent of the position component
         r (array[float]): distance between the center of the Hermite Gaussian function and origin
 
@@ -438,7 +438,7 @@ def moment_integral(basis_a, basis_b, order, idx):
 
     where :math:`G_{i-n}` is a one-dimensional Gaussian function, :math:`q = x, y, z` is the
     coordinate at which the integral is evaluated and :math:`e` is a positive integer that is
-    represented by the ``order`` argument. For contracted Gaussians, such integrals will be
+    represented by the ``order`` argument. For contracted Gaussians, these integrals will be
     computed over primitive Gaussians, multiplied by the normalized contraction coefficients and
     finally summed over.
 
@@ -446,8 +446,8 @@ def moment_integral(basis_a, basis_b, order, idx):
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (BasisFunction): left basis function
+        basis_b (BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
