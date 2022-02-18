@@ -15,6 +15,8 @@
 This module contains the functions needed for computing matrices.
 """
 # pylint: disable= too-many-branches
+import itertools as it
+
 import autograd.numpy as anp
 from pennylane.hf.integrals import (
     generate_attraction,
@@ -141,19 +143,18 @@ def moment_matrix(basis_functions, e, idx):
         """
         n = len(basis_functions)
         matrix = anp.zeros((n, n))
-        for i, a in enumerate(basis_functions):
-            for j, b in enumerate(basis_functions):
-                if i <= j:
-                    if args:
-                        args_ab = []
-                        for arg in args:
-                            args_ab.append(arg[[i, j]])
-                        integral = moment_integral(a, b, e, idx)(*args_ab)
-                    else:
-                        integral = moment_integral(a, b, e, idx)()
-                    o = anp.zeros((n, n))
-                    o[i, j] = o[j, i] = 1.0
-                    matrix = matrix + integral * o
+
+        for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
+
+            args_ab = []
+            if args:
+                args_ab.extend(arg[[i, j]] for arg in args)
+            integral = moment_integral(a, b, e, idx)(*args_ab)
+
+            o = anp.zeros((n, n))
+            o[i, j] = o[j, i] = 1.0
+            matrix = matrix + integral * o
+
         return matrix
 
     return _moment_matrix
