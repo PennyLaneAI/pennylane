@@ -160,8 +160,8 @@ class TestTFMatrix:
     )
     def test_one_qubit_tf_matrix(self, op, params, wires):
         tf_params = [tf.Variable(x) for x in params]
-        expected_mat = op(*params, wires=wires).matrix
-        obtained_mat = op(*tf_params, wires=wires).matrix
+        expected_mat = op(*params, wires=wires).get_matrix()
+        obtained_mat = op(*tf_params, wires=wires).get_matrix()
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
 
@@ -176,12 +176,12 @@ class TestTFMatrix:
     )
     def test_pauli_rot_tf_(self, param, pauli, wires):
         op = qml.PauliRot(param, pauli, wires=wires)
-        expected_mat = op.matrix
-        expected_eigvals = op.eigvals
+        expected_mat = op.get_matrix()
+        expected_eigvals = op.get_eigvals()
 
         tf_op = qml.PauliRot(tf.Variable(param), pauli, wires=wires)
-        obtained_mat = tf_op.matrix
-        obtained_eigvals = tf_op.eigvals
+        obtained_mat = tf_op.get_matrix()
+        obtained_eigvals = tf_op.get_eigvals()
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.get_interface(obtained_eigvals) == "tensorflow"
@@ -199,14 +199,14 @@ class TestTFMatrix:
         ],
     )
     def test_expand_tf_matrix(self, op, param, wires):
-        reg_mat = op(param, wires=wires).matrix
+        reg_mat = op(param, wires=wires).get_matrix()
 
         if len(wires) == 1:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, qml.math.kron(I, I)))
         else:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
 
-        tf_mat = op(tf.Variable(param), wires=wires).matrix
+        tf_mat = op(tf.Variable(param), wires=wires).get_matrix()
         obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
@@ -1350,7 +1350,7 @@ class TestPassthruIntegration:
         assert qml.math.isclose(hess_grad, -1.0)
         assert qml.math.isclose(hess_jac, -1.0)
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_tf_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct

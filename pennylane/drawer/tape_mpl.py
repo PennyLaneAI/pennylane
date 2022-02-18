@@ -49,7 +49,7 @@ def _add_cx(drawer, layer, mapped_wires, op):
 
 def _add_multicontrolledx(drawer, layer, mapped_wires, op):
     # convert control values
-    control_values = [(i == "1") for i in op.control_values]
+    control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
     drawer.CNOT(layer, mapped_wires, control_values=control_values)
 
 

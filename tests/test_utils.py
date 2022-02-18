@@ -22,7 +22,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.queuing
 import pennylane.utils as pu
 import scipy.sparse
 
@@ -132,7 +131,9 @@ class TestDecomposition:
         linear combination of Pauli matrices"""
         decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
 
-        linear_comb = sum([decomposed_coeff[i] * o.matrix for i, o in enumerate(decomposed_obs)])
+        linear_comb = sum(
+            [decomposed_coeff[i] * o.get_matrix() for i, o in enumerate(decomposed_obs)]
+        )
         assert np.allclose(hamiltonian, linear_comb)
 
 
