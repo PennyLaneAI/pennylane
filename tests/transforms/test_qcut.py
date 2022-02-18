@@ -23,12 +23,10 @@ from itertools import product
 import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
-from scipy.stats import unitary_group
-
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
+from scipy.stats import unitary_group
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -64,6 +62,7 @@ def kron(*args):
         return np.kron(args[0], args[1])
     else:
         return np.kron(args[0], kron(*args[1:]))
+
 
 # tape containing mid-circuit measurements
 with qml.tape.QuantumTape() as mcm_tape:

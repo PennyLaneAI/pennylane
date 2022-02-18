@@ -18,10 +18,8 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
-
 from itertools import product
 from typing import List, Sequence, Tuple
-from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
