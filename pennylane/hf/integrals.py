@@ -317,9 +317,10 @@ def hermite_moment(alpha, beta, t, order, r):
 
         M_{t}^{e} = \int_{-\infty }^{+\infty} q^e \Lambda_t dq,
 
-    where :math:`e` is a positive integer, that will be called order here, :math:`q = x, y, z` is
-    the coordinate at which the integral is evaluatedand and :math:`\Lambda_t` is the :math:`t`
-    component of the Hermite Gaussian function. The integral can be computed recursively as
+    where :math:`e` is a positive integer, that is represented by the ``order`` argument,
+    :math:`q = x, y, z` is the coordinate at which the integral is evaluatedand and
+    :math:`\Lambda_t` is the :math:`t` component of the Hermite Gaussian function. The integral can
+    be computed recursively as
     [`Helgaker (1995) p802 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
@@ -382,8 +383,8 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
         S_{ij}^e = \left \langle G_i | q^e | G_j \right \rangle,
 
     where :math:`G` is a Gaussian function at dimension :math:`q = x, y, z` of the Cartesian
-    coordinates system, :math:`e` is a positive integer that will be called order here. The
-    integrals can be evaluated as
+    coordinates system, :math:`e` is a positive integer that is represented by the ``order``
+    argument. The integrals can be evaluated as
     [`Helgaker (1995) p803 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
@@ -436,9 +437,10 @@ def moment_integral(basis_a, basis_b, order, idx):
                    \left \langle G_m | G_n \right \rangle,
 
     where :math:`G_{i-n}` is a one-dimensional Gaussian function, :math:`q = x, y, z` is the
-    coordinate at which the integral is evaluated and :math:`e` is a positive integer that will be
-    called order here. For contracted Gaussians, such integrals will be computed over primitive
-    Gaussians, multiplied by the normalized contraction coefficients and finally summed over.
+    coordinate at which the integral is evaluated and :math:`e` is a positive integer that is
+    represented by the ``order`` argument. For contracted Gaussians, such integrals will be
+    computed over primitive Gaussians, multiplied by the normalized contraction coefficients and
+    finally summed over.
 
     The ``idx`` argument determines the coordinate :math:`q` at which the integral is computed. It
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
@@ -472,8 +474,8 @@ def moment_integral(basis_a, basis_b, order, idx):
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
         """
-        args_a = [i[0] for i in args]
-        args_b = [i[1] for i in args]
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
 
         la = basis_a.l
         lb = basis_b.l
