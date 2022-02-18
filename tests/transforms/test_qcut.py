@@ -28,6 +28,20 @@ from pennylane.transforms import qcut
 from pennylane.wires import Wires
 from scipy.stats import unitary_group
 
+I, X, Y, Z = (
+    np.eye(2),
+    qml.PauliX.compute_matrix(),
+    qml.PauliY.compute_matrix(),
+    qml.PauliZ.compute_matrix(),
+)
+
+states_pure = [
+    np.array([1, 0]),
+    np.array([0, 1]),
+    np.array([1, 1]) / np.sqrt(2),
+    np.array([1, 1j]) / np.sqrt(2),
+]
+
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
     qml.RY(0.543, wires="a")
@@ -1507,12 +1521,6 @@ class TestQCutProcessingFn:
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
         dev = qml.device("default.qubit", wires=n)
-        states = [
-            np.array([1, 0]),
-            np.array([0, 1]),
-            np.array([1, 1]) / np.sqrt(2),
-            np.array([1, 1j]) / np.sqrt(2),
-        ]
 
         @qml.qnode(dev)
         def f(state, measurement):
@@ -1526,7 +1534,7 @@ class TestQCutProcessingFn:
         results = []
 
         for inp, out in itertools.product(prod_inp, prod_out):
-            input = kron(*[states[i] for i in inp])
+            input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
         results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
@@ -1560,19 +1568,8 @@ class TestQCutProcessingFn:
         expected_result = f(x, y, z)
 
         ### Find the result using qcut_processing_fn
-        I, X, Y, Z = (
-            np.eye(2),
-            qml.PauliX.compute_matrix(),
-            qml.PauliY.compute_matrix(),
-            qml.PauliZ.compute_matrix(),
-        )
+
         meas_basis = [I, Z, X, Y]
-        states_pure = [
-            np.array([1, 0]),
-            np.array([0, 1]),
-            np.array([1, 1]) / np.sqrt(2),
-            np.array([1, 1j]) / np.sqrt(2),
-        ]
         states = [np.outer(s.conj(), s) for s in states_pure]
         zero_proj = states[0]
 
