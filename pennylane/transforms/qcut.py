@@ -23,7 +23,7 @@ from typing import List, Sequence, Tuple
 
 import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
-from pennylane import Hadamard, Identity, PauliX, S, apply, expval
+from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Expectation, Operation, Operator, Tensor
@@ -405,20 +405,20 @@ def _get_measurements(
 
 
 def _prep_zero_state(wire):
-    Identity(wire)
+    qml.Identity(wire)
 
 
 def _prep_one_state(wire):
-    PauliX(wire)
+    qml.PauliX(wire)
 
 
 def _prep_plus_state(wire):
-    Hadamard(wire)
+    qml.Hadamard(wire)
 
 
 def _prep_iplus_state(wire):
-    Hadamard(wire)
-    S(wires=wire)
+    qml.Hadamard(wire)
+    qml.S(wires=wire)
 
 
 PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]

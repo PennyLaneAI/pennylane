@@ -19,10 +19,9 @@ import string
 import sys
 from itertools import product
 
+import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
-
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
@@ -1097,8 +1096,8 @@ class TestExpandFragmentTapes:
 
     def test_multi_qubit_expansion_measurements(self):
         """
-        Tests that a circuit with multiple MeasureNodes on a single wire gives
-        the correct measurements after expansion
+        Tests that a circuit with multiple MeasureNodes gives the correct
+        measurements after expansion
         """
 
         with qml.tape.QuantumTape() as tape:
@@ -1171,8 +1170,8 @@ class TestExpandFragmentTapes:
 
     def test_multi_qubit_expansion_preparation(self):
         """
-        Tests that a circuit with multiple MeasureNodes on a single wire gives
-        the correct preparation after expansion
+        Tests that a circuit with multiple PrepareNodes gives the correct
+        preparation after expansion
         """
 
         with qml.tape.QuantumTape() as tape:
