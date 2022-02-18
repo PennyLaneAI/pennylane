@@ -133,7 +133,7 @@ def drawable_grid(ops, wire_map=None):
         wire_map=None (dict): a map from wire label to non-negative integers
 
     Returns:
-        List[List[~.Operator]] : layers compatible with grid objects
+        List[list[.Operator]] : layers compatible with grid objects
     """
     if wire_map is None:
         wire_map = default_wire_map(ops)

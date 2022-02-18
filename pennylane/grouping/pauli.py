@@ -15,16 +15,19 @@
 Functions for constructing the :math:`n`-qubit Pauli group, and performing the
 group operation (multiplication).
 """
+import itertools
+from functools import lru_cache
+from typing import List
 
 import numpy as np
 
 from pennylane import Identity
 from pennylane.grouping.utils import (
+    _wire_map_from_pauli_pair,
+    are_identical_pauli_words,
     binary_to_pauli,
     pauli_to_binary,
     pauli_word_to_string,
-    are_identical_pauli_words,
-    _wire_map_from_pauli_pair,
 )
 
 
@@ -250,3 +253,92 @@ def pauli_mult_with_phase(pauli_1, pauli_2, wire_map=None):
             phase *= -1j
 
     return pauli_product, phase
+
+
+@lru_cache()
+def partition_pauli_group(n_qubits: int) -> List[List[str]]:
+    """Partitions the :math:`n`-qubit Pauli group into qubit-wise commuting terms.
+
+    The :math:`n`-qubit Pauli group is composed of :math:`4^{n}` terms that can be partitioned into
+    :math:`3^{n}` qubit-wise commuting groups.
+
+    Args:
+        n_qubits (int): number of qubits
+
+    Returns:
+        List[List[str]]: A collection of qubit-wise commuting groups containing Pauli words as
+        strings
+
+    **Example**
+
+    >>> qml.grouping.partition_pauli_group(3)
+    [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
+     ['IIX', 'IZX', 'ZIX', 'ZZX'],
+     ['IIY', 'IZY', 'ZIY', 'ZZY'],
+     ['IXI', 'IXZ', 'ZXI', 'ZXZ'],
+     ['IXX', 'ZXX'],
+     ['IXY', 'ZXY'],
+     ['IYI', 'IYZ', 'ZYI', 'ZYZ'],
+     ['IYX', 'ZYX'],
+     ['IYY', 'ZYY'],
+     ['XII', 'XIZ', 'XZI', 'XZZ'],
+     ['XIX', 'XZX'],
+     ['XIY', 'XZY'],
+     ['XXI', 'XXZ'],
+     ['XXX'],
+     ['XXY'],
+     ['XYI', 'XYZ'],
+     ['XYX'],
+     ['XYY'],
+     ['YII', 'YIZ', 'YZI', 'YZZ'],
+     ['YIX', 'YZX'],
+     ['YIY', 'YZY'],
+     ['YXI', 'YXZ'],
+     ['YXX'],
+     ['YXY'],
+     ['YYI', 'YYZ'],
+     ['YYX'],
+     ['YYY']]
+    """
+    # Cover the case where n_qubits may be passed as a float
+    if isinstance(n_qubits, float):
+        if n_qubits.is_integer():
+            n_qubits = int(n_qubits)
+
+    # If not an int, or a float representing a int, raise an error
+    if not isinstance(n_qubits, int):
+        raise TypeError("Must specify an integer number of qubits.")
+
+    if n_qubits <= 0:
+        raise ValueError("Number of qubits must be at least 1.")
+
+    strings = set()  # tracks all the strings that have already been grouped
+    groups = []
+
+    # We know that I and Z always commute on a given qubit. The following generates all product
+    # sequences of len(n_qubits) over "FXYZ", with F indicating a free slot that can be swapped for
+    # the product over I and Z, and all other terms fixed to the given X/Y/Z. For example, if
+    # ``n_qubits = 3`` our first value for ``string`` will be ``('F', 'F', 'F')``. We then expand
+    # the product of I and Z over the three free slots, giving
+    # ``['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ']``, which is our first group. The
+    # next element of ``string`` will be ``('F', 'F', 'X')`` which we use to generate our second
+    # group ``['IIX', 'IZX', 'ZIX', 'ZZX']``.
+    for string in itertools.product("FXYZ", repeat=n_qubits):
+        if string not in strings:
+            num_free_slots = string.count("F")
+
+            group = []
+            commuting = itertools.product("IZ", repeat=num_free_slots)
+
+            for commuting_string in commuting:
+                commuting_string = list(commuting_string)
+                new_string = tuple(commuting_string.pop(0) if s == "F" else s for s in string)
+
+                if new_string not in strings:  # only add if string has not already been grouped
+                    group.append("".join(new_string))
+                    strings |= {new_string}
+
+            if len(group) > 0:
+                groups.append(group)
+
+    return groups

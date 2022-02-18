@@ -223,7 +223,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = generate_hamiltonian(mol)(*args)
-    >>> h.terms[0]
+    >>> h.coeffs
     tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
             -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
@@ -380,14 +380,14 @@ def simplify(h, cutoff=1.0e-12):
 
     c = []
     o = []
-    for i, op in enumerate(h.terms[1]):
+    for i, op in enumerate(h.terms()[1]):
         op = qml.operation.Tensor(op).prune()
         op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
         if op not in o:
-            c.append(h.terms[0][i])
+            c.append(h.terms()[0][i])
             o.append(op)
         else:
-            c[o.index(op)] += h.terms[0][i]
+            c[o.index(op)] += h.terms()[0][i]
 
     coeffs = []
     ops = []
