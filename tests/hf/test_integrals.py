@@ -25,11 +25,14 @@ from pennylane.hf.integrals import (
     contracted_norm,
     expansion,
     gaussian_kinetic,
+    gaussian_moment,
     gaussian_overlap,
     generate_attraction,
     generate_kinetic,
     generate_overlap,
     generate_repulsion,
+    hermite_moment,
+    moment_integral,
     primitive_norm,
 )
 from pennylane.hf.molecule import Molecule
@@ -244,7 +247,7 @@ def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
         ),
     ],
 )
-def test_gradient(symbols, geometry, alpha, coeff):
+def test_gradient_overlap(symbols, geometry, alpha, coeff):
     r"""Test that the overlap gradient computed with respect to the basis parameters is correct."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
@@ -276,6 +279,163 @@ def test_gradient(symbols, geometry, alpha, coeff):
             coeff_plus[i][j] = coeff_plus[i][j] + delta
             o_minus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_minus])
             o_plus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_plus])
+            g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
+
+    assert np.allclose(g_alpha, g_ref_alpha)
+    assert np.allclose(g_coeff, g_ref_coeff)
+
+
+@pytest.mark.parametrize(
+    ("alpha", "beta", "t", "e", "rc", "ref"),
+    [
+        (  # trivial case, ref = 0.0 for t > e
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            2,
+            1,
+            np.array([1.5]),
+            np.array([0.0]),
+        ),
+        (  # trivial case, ref = 0.0 for e == 0 and t != 0
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            -1,
+            0,
+            np.array([1.5]),
+            np.array([0.0]),
+        ),
+        (  # trivial case, ref = np.sqrt(np.pi / (alpha + beta))
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            0,
+            0,
+            np.array([1.5]),
+            np.array([0.677195]),
+        ),
+        (  # manually computed, ref = 1.0157925
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            0,
+            1,
+            np.array([1.5]),
+            np.array([1.0157925]),
+        ),
+    ],
+)
+def test_hermite_moment(alpha, beta, t, e, rc, ref):
+    r"""Test that hermite_moment function returns correct values."""
+    assert np.allclose(hermite_moment(alpha, beta, t, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "e", "rc", "ref"),
+    [
+        (  # manually computed, ref = 1.0157925
+            0,
+            0,
+            np.array([2.0]),
+            np.array([2.0]),
+            np.array([3.42525091]),
+            np.array([3.42525091]),
+            1,
+            np.array([1.5]),
+            np.array([1.0157925]),
+        ),
+    ],
+)
+def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
+    r"""Test that gaussian_moment function returns correct values."""
+    assert np.allclose(gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "e", "idx", "ref"),
+    [
+        (
+            ["H", "Li"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            0,  # 'x' component
+            3.12846324e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
+        (
+            ["H", "Li"],
+            np.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], requires_grad=True),
+            1,
+            0,  # 'x' component
+            4.82090830e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
+        (
+            ["N", "N"],
+            np.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], requires_grad=False),
+            1,
+            2,  # 'z' component
+            -4.70075530e-02,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+        ),
+    ],
+)
+def test_moment_integral(symbols, geometry, e, idx, ref):
+    r"""Test that generate_moment function returns a correct value for the moment integral."""
+    mol = Molecule(symbols, geometry)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+    args = [p for p in [geometry] if p.requires_grad]
+    s = moment_integral(basis_a, basis_b, e, idx)(*args)
+
+    assert np.allclose(s, ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "e", "idx"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.1, 0.2, 0.3], [2.0, 0.1, 0.2]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            np.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            1,
+            0,
+        ),
+    ],
+)
+def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
+    r"""Test that the moment gradient computed with respect to the basis parameters is correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+    args = [mol.alpha, mol.coeff]
+
+    g_alpha = autograd.grad(moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
+    g_coeff = autograd.grad(moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
+
+    # compute moment gradients with respect to alpha and coeff using finite diff
+    delta = 0.0001
+    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+
+    for i in range(len(alpha)):
+        for j in range(len(alpha[0])):
+
+            alpha_minus = alpha.copy()
+            alpha_plus = alpha.copy()
+            alpha_minus[i][j] = alpha_minus[i][j] - delta
+            alpha_plus[i][j] = alpha_plus[i][j] + delta
+            o_minus = moment_integral(basis_a, basis_b, e, idx)(*[alpha_minus, coeff])
+            o_plus = moment_integral(basis_a, basis_b, e, idx)(*[alpha_plus, coeff])
+            g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
+
+            coeff_minus = coeff.copy()
+            coeff_plus = coeff.copy()
+            coeff_minus[i][j] = coeff_minus[i][j] - delta
+            coeff_plus[i][j] = coeff_plus[i][j] + delta
+            o_minus = moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_minus])
+            o_plus = moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
