@@ -1108,8 +1108,8 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    is_controlled = None
-    """str or None: Return the name ``Str`` of the target gate if the operation is controlled."""
+    control_base = None
+    """str or None: Return the name of the target gate if the operation is controlled."""
 
     basis = None
     """str or None: The target operation for controlled gates.

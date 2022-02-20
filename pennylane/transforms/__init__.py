@@ -82,6 +82,13 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
 
+There are also utility functions that take a circuit and return a DAG.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.commutation_dag
+
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -159,7 +166,7 @@ from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .get_unitary_matrix import get_unitary_matrix
-from .get_dag_commutation import get_dag_commutation, is_commuting
+from .commutation_dag import commutation_dag, is_commuting
 from .tape_expand import (
     expand_invalid_trainable,
     expand_multipar,

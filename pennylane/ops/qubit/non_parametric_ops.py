@@ -898,7 +898,7 @@ class CNOT(Operation):
     """
     num_wires = 2
 
-    is_controlled = "PauliX"
+    control_base = "PauliX"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -967,7 +967,7 @@ class CZ(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    is_controlled = "PauliZ"
+    control_base = "PauliZ"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1058,7 +1058,7 @@ class CY(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    is_controlled = "PauliY"
+    control_base = "PauliY"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1491,7 +1491,7 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-    is_controlled = "SWAP"
+    control_base = "SWAP"
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1603,7 +1603,7 @@ class Toffoli(Operation):
         wires (Sequence[int]): the subsystem the gate acts on
     """
     num_wires = 3
-    is_controlled = "PauliX"
+    control_base = "PauliX"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1763,7 +1763,7 @@ class MultiControlledX(Operation):
     """
     is_self_inverse = True
     num_wires = AnyWires
-    is_controlled = "PauliX"
+    control_base = "PauliX"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 

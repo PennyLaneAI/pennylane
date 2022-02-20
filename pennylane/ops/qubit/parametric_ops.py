@@ -473,7 +473,7 @@ class ControlledPhaseShift(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    is_controlled = "PhaseShift"
+    control_base = "PhaseShift"
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -1219,7 +1219,7 @@ class CRX(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    is_controlled = "RX"
+    control_base = "RX"
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1375,7 +1375,7 @@ class CRY(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
-    is_controlled = "RY"
+    control_base = "RY"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
@@ -1523,7 +1523,7 @@ class CRZ(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
-    is_controlled = "RZ"
+    control_base = "RZ"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
@@ -1692,7 +1692,7 @@ class CRot(Operation):
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
 
-    is_controlled = "Rot"
+    control_base = "Rot"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]

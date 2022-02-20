@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+* Commutation DAG [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
+  
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
   deprecation of the `charset` keyword, and minor cosmetic changes.
@@ -278,6 +280,6 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
-Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
-David Wierichs
+Maria Fernanda Morris, Romain Moyard, Maria Schuld, Jay Soni,
+Antal Száva, David Wierichs
 

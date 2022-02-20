@@ -19,7 +19,7 @@ from collections import OrderedDict
 from pennylane.wires import Wires
 import pennylane.numpy as np
 import pennylane as qml
-from pennylane.transforms.get_dag_commutation import simplify
+from pennylane.transforms.commutation_dag import simplify
 
 
 class TestCommutingFunction:
@@ -705,7 +705,7 @@ class TestCommutationDAG:
         def circuit():
             qml.PauliZ(wires=0)
 
-        dag_object = qml.transforms.get_dag_commutation(circuit)()
+        dag_object = qml.transforms.commutation_dag(circuit)()
         dag = dag_object.graph
 
         assert len(dag) != 0
@@ -714,7 +714,7 @@ class TestCommutationDAG:
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
 
         with pytest.raises(ValueError, match="Input is not a tape, QNode, or quantum function"):
-            qml.transforms.get_dag_commutation(qml.PauliZ(0))()
+            qml.transforms.commutation_dag(qml.PauliZ(0))()
 
     def test_dag_wrong_function(self):
         """Assert error raised when input function is not a quantum function"""
@@ -723,7 +723,7 @@ class TestCommutationDAG:
             return x
 
         with pytest.raises(ValueError, match="Function contains no quantum operation"):
-            qml.transforms.get_dag_commutation(test_function)(1)
+            qml.transforms.commutation_dag(test_function)(1)
 
     def test_dag_transform_simple_dag_function(self):
         """Test a simple DAG on 1 wire with a quantum function."""
@@ -732,7 +732,7 @@ class TestCommutationDAG:
             qml.PauliZ(wires=0)
             qml.PauliX(wires=0)
 
-        dag = qml.transforms.get_dag_commutation(circuit)()
+        dag = qml.transforms.commutation_dag(circuit)()
 
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
@@ -756,7 +756,7 @@ class TestCommutationDAG:
             qml.PauliZ(wires=0)
             qml.PauliX(wires=0)
 
-        dag = qml.transforms.get_dag_commutation(tape)()
+        dag = qml.transforms.commutation_dag(tape)()
 
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
@@ -781,7 +781,7 @@ class TestCommutationDAG:
             qml.PauliZ(wires="a")
             qml.PauliX(wires="c")
 
-        dag = qml.transforms.get_dag_commutation(circuit)()
+        dag = qml.transforms.commutation_dag(circuit)()
 
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=1)
@@ -810,7 +810,7 @@ class TestCommutationDAG:
             qml.PauliX(wires=0)
             return qml.expval(qml.PauliX(wires=0))
 
-        dag = qml.transforms.get_dag_commutation(circuit)()
+        dag = qml.transforms.commutation_dag(circuit)()
 
         a = qml.PauliZ(wires=0)
         b = qml.PauliX(wires=0)
@@ -847,7 +847,7 @@ class TestCommutationDAG:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 3])
 
-        dag = qml.transforms.get_dag_commutation(circuit)()
+        dag = qml.transforms.commutation_dag(circuit)()
 
         wires = [3, 0, 4, 2, 1]
         consecutive_wires = Wires(range(len(wires)))
