@@ -54,7 +54,7 @@ def commutation_dag(circuit):
 
     The commutation dag can be returned by using the following code:
 
-    >>> get_dag = get_dag_commutation(circuit)
+    >>> get_dag = commutation_dag(circuit)
     >>> theta = np.pi/4
     >>> phi = np.pi/3
     >>> psi = np.pi/2
