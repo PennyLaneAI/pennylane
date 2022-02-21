@@ -691,7 +691,6 @@ class TestCommutingFunction:
         with pytest.raises(qml.QuantumFunctionError, match="Operation PauliRot not supported."):
             qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
 
-
     def test_operation_1_multiple_targets(self):
         """Test that giving a multiple target controlled operation raises an error."""
 
