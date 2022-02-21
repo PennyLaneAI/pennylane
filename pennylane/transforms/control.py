@@ -108,10 +108,6 @@ class ControlledOperation(Operation):
     def control_wires(self):
         return self._control_wires
 
-    @property
-    def target_wires(self):
-        return self.subtape.wires
-
     def expand(self):
         tape = self.subtape
         for wire in self.control_wires:

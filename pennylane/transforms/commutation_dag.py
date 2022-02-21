@@ -239,6 +239,7 @@ def simplify_controlled_rotation(crot):
     Returns:
          qml.operation: Simplified controlled rotation if possible.
     """
+    target_wires = [w for w in crot.wires if w not in crot.control_wires]
 
     if np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi / 2) and np.allclose(
         np.mod(crot.data[2], -2 * np.pi), -np.pi / 2
@@ -256,7 +257,7 @@ def simplify_controlled_rotation(crot):
         and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
     ):
         hadamard = qml.Hadamard
-        return qml.ctrl(hadamard, control=crot.control_wires)(wires=crot.target_wires)
+        return qml.ctrl(hadamard, control=crot.control_wires)(wires=target_wires)
 
     return crot
 
@@ -350,9 +351,15 @@ def two_non_simplified_crot(operation1, operation2):
          Bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
+    target_wires_1 = qml.wires.Wires(
+        [w for w in operation1.wires if w not in operation1.control_wires]
+    )
+    target_wires_2 = qml.wires.Wires(
+        [w for w in operation2.wires if w not in operation2.control_wires]
+    )
 
     control_control = intersection(operation1.control_wires, operation2.control_wires)
-    target_target = intersection(operation1.target_wires, operation2.target_wires)
+    target_target = intersection(target_wires_1, target_wires_2)
 
     if control_control and target_target:
         return np.all(
@@ -413,34 +420,41 @@ def two_non_simplified_rotations(operation1, operation2):
     if (operation1.name in ["U2", "U3", "Rot", "CRot"]) and (
         operation2.name in ["U2", "U3", "Rot", "CRot"]
     ):
+        target_wires_1 = qml.wires.Wires(
+            [w for w in operation1.wires if w not in operation1.control_wires]
+        )
+        target_wires_2 = qml.wires.Wires(
+            [w for w in operation2.wires if w not in operation2.control_wires]
+        )
+
         if operation1.name == "CRot":
-            if not intersection(operation1.target_wires, operation2.wires):
+            if not intersection(target_wires_1, operation2.wires):
                 return bool(commutation_map["ctrl"][position[operation2.name]])
             return np.all(
                 np.allclose(
                     np.matmul(
-                        qml.Rot(*operation1.data, wires=operation1.target_wires).get_matrix(),
+                        qml.Rot(*operation1.data, wires=target_wires_1).get_matrix(),
                         operation2.get_matrix(),
                     ),
                     np.matmul(
                         operation2.get_matrix(),
-                        qml.Rot(*operation1.data, wires=operation1.target_wires).get_matrix(),
+                        qml.Rot(*operation1.data, wires=target_wires_1).get_matrix(),
                     ),
                 )
             )
 
         if operation2.name == "CRot":
-            if not intersection(operation2.target_wires, operation1.wires):
+            if not intersection(target_wires_2, operation1.wires):
                 return bool(commutation_map[operation1.name][position["ctrl"]])
             return np.all(
                 np.allclose(
                     np.matmul(
-                        qml.Rot(*operation2.data, wires=operation2.target_wires).get_matrix(),
+                        qml.Rot(*operation2.data, wires=target_wires_2).get_matrix(),
                         operation1.get_matrix(),
                     ),
                     np.matmul(
                         operation1.get_matrix(),
-                        qml.Rot(*operation2.data, wires=operation2.target_wires).get_matrix(),
+                        qml.Rot(*operation2.data, wires=target_wires_2).get_matrix(),
                     ),
                 )
             )
@@ -528,6 +542,21 @@ def is_commuting(operation1, operation2):
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-return-statements
 
+    control_base = {
+        "CNOT": "PauliX",
+        "CZ": "PauliZ",
+        "CY": "PauliY",
+        "CSWAP": "SWAP",
+        "Toffoli": "PauliX",
+        "ControlledPhaseShift": "PhaseShift",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
+        "CRot": "Rot",
+        "MultiControlledX": "PauliX",
+        "ControlledOperation": "ControlledOperation",
+    }
+
     if operation1.name in not_supported_operations or isinstance(
         operation1, (qml.operation.CVOperation, qml.operation.Channel)
     ):
@@ -537,6 +566,12 @@ def is_commuting(operation1, operation2):
         operation2, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
+
+    if operation1.name == "ControlledOperation" and operation1.control_base == "MultipleTargets":
+        raise qml.QuantumFunctionError(f"{operation1.control_base} controlled is not supported.")
+
+    if operation2.name == "ControlledOperation" and operation2.control_base == "MultipleTargets":
+        raise qml.QuantumFunctionError(f"{operation2.control_base} controlled is not supported.")
 
     # Simplify the rotations if possible
     if operation1.name in ["U2", "U3", "Rot", "CRot"]:
@@ -572,11 +607,28 @@ def is_commuting(operation1, operation2):
         return two_non_simplified_rot
 
     # Case 2 both operations are controlled
-    if operation1.control_base and operation2.control_base:
+    if control_base.get(operation1.name) and control_base.get(operation2.name):
+        if control_base.get(operation1.name) != "ControlledOperation":
+            control_base_1 = control_base.get(operation1.name)
+        else:
+            control_base_1 = operation1.control_base
+
+        if control_base.get(operation2.name) != "ControlledOperation":
+            control_base_2 = control_base.get(operation2.name)
+        else:
+            control_base_2 = operation2.control_base
+
+        target_wires_1 = qml.wires.Wires(
+            [w for w in operation1.wires if w not in operation1.control_wires]
+        )
+        target_wires_2 = qml.wires.Wires(
+            [w for w in operation2.wires if w not in operation2.control_wires]
+        )
+
         control_control = intersection(operation1.control_wires, operation2.control_wires)
-        target_target = intersection(operation1.target_wires, operation2.target_wires)
-        control_target = intersection(operation1.control_wires, operation2.target_wires)
-        target_control = intersection(operation1.target_wires, operation2.control_wires)
+        target_target = intersection(target_wires_1, target_wires_2)
+        control_target = intersection(operation1.control_wires, target_wires_2)
+        target_control = intersection(target_wires_1, operation2.control_wires)
 
         # Case 2.1: disjoint targets
         if control_control and not target_target and not control_target and not target_control:
@@ -584,63 +636,65 @@ def is_commuting(operation1, operation2):
 
         # Case 2.2: disjoint controls
         if not control_control and target_target and not control_target and not target_control:
-            return bool(
-                commutation_map[operation1.control_base][position[operation2.control_base]]
-            )
+            return bool(commutation_map[control_base_1][position[control_base_2]])
 
         # Case 2.3: targets overlap and controls overlap
         if target_target and control_control and not control_target and not target_control:
-            return bool(
-                commutation_map[operation1.control_base][position[operation2.control_base]]
-            )
+            return bool(commutation_map[control_base_1][position[control_base_2]])
 
         # Case 2.4: targets and controls overlap
         if control_target and target_control and not target_target:
-            return bool(commutation_map["ctrl"][position[operation2.control_base]]) and bool(
-                commutation_map[operation1.control_base][position["ctrl"]]
+            return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
+                commutation_map[control_base_1][position["ctrl"]]
             )
 
         # Case 2.5: targets overlap with and controls and targets
         if control_target and not target_control and target_target:
-            return bool(commutation_map["ctrl"][position[operation2.control_base]]) and bool(
-                commutation_map[operation1.control_base][position[operation2.control_base]]
+            return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
+                commutation_map[control_base_1][position[control_base_2]]
             )
 
         # Case 2.6: targets overlap with and controls and targets
         if target_control and not control_target and target_target:
-            return bool(commutation_map[operation1.control_base][position["ctrl"]]) and bool(
-                commutation_map[operation1.control_base][position[operation2.control_base]]
+            return bool(commutation_map[control_base_1][position["ctrl"]]) and bool(
+                commutation_map[control_base_1][position[control_base_2]]
             )
 
         # Case 2.7: targets overlap with control
         if target_control and not control_target and not target_target:
-            return bool(commutation_map[operation1.control_base][position["ctrl"]])
+            return bool(commutation_map[control_base_1][position["ctrl"]])
 
         # Case 2.8: targets overlap with control
         if not target_control and control_target and not target_target:
-            return bool(commutation_map["ctrl"][position[operation2.control_base]])
+            return bool(commutation_map["ctrl"][position[control_base_2]])
 
         # Case 2.9: targets and controls overlap with targets and controls
         if target_control and control_target and target_target:
             return (
-                bool(commutation_map[operation1.control_base][position["ctrl"]])
-                and bool(commutation_map["ctrl"][position[operation2.control_base]])
-                and bool(
-                    commutation_map[operation1.control_base][position[operation2.control_base]]
-                )
+                bool(commutation_map[control_base_1][position["ctrl"]])
+                and bool(commutation_map["ctrl"][position[control_base_2]])
+                and bool(commutation_map[control_base_1][position[control_base_2]])
             )
 
     # Case 3: only operation 1 is controlled
-    elif operation1.control_base:
+    elif control_base.get(operation1.name):
+        if control_base.get(operation1.name) != "ControlledOperation":
+            control_base_1 = control_base.get(operation1.name)
+        else:
+            control_base_1 = operation1.control_base
+
+        target_wires_1 = qml.wires.Wires(
+            [w for w in operation1.wires if w not in operation1.control_wires]
+        )
 
         control_target = intersection(operation1.control_wires, operation2.wires)
-        target_target = intersection(operation1.target_wires, operation2.wires)
+        target_target = intersection(target_wires_1, operation2.wires)
 
         # Case 3.1: control and target 1 overlap with target 2
         if control_target and target_target:
-            return bool(
-                commutation_map[operation1.control_base][position[operation2.name]]
-            ) and bool(commutation_map["ctrl"][position[operation2.name]])
+            return bool(commutation_map[control_base_1][position[operation2.name]]) and bool(
+                commutation_map["ctrl"][position[operation2.name]]
+            )
 
         # Case 3.2: control operation 1 overlap with target 2
         if control_target and not target_target:
@@ -648,18 +702,27 @@ def is_commuting(operation1, operation2):
 
         # Case 3.3: target 1 overlaps with target 2
         if not control_target and target_target:
-            return bool(commutation_map[operation1.control_base][position[operation2.name]])
+            return bool(commutation_map[control_base_1][position[operation2.name]])
 
     # Case 4: only operation 2 is controlled
-    elif operation2.control_base:
+    elif control_base.get(operation2.name):
+        if control_base.get(operation2.name) != "ControlledOperation":
+            control_base_2 = control_base.get(operation2.name)
+        else:
+            control_base_2 = operation2.control_base
+
+        target_wires_2 = qml.wires.Wires(
+            [w for w in operation2.wires if w not in operation2.control_wires]
+        )
+
         target_control = intersection(operation1.wires, operation2.control_wires)
-        target_target = intersection(operation1.wires, operation2.target_wires)
+        target_target = intersection(operation1.wires, target_wires_2)
 
         # Case 4.1: control and target 2 overlap with target 1
         if target_control and target_target:
-            return bool(
-                commutation_map[operation1.name][position[operation2.control_base]]
-            ) and bool(commutation_map[operation1.name][position[operation2.control_base]])
+            return bool(commutation_map[operation1.name][position[control_base_2]]) and bool(
+                commutation_map[operation1.name][position[control_base_2]]
+            )
 
         # Case 4.2: control operation 2 overlap with target 1
         if target_control and not target_target:
@@ -667,7 +730,7 @@ def is_commuting(operation1, operation2):
 
         # Case 4.3: target 1 overlaps with target 2
         if not target_control and target_target:
-            return bool(commutation_map[operation1.name][position[operation2.control_base]])
+            return bool(commutation_map[operation1.name][position[control_base_2]])
 
     # Case 5: no controlled operations
     # Case 5.1: no controlled operations we simply check the commutation table
@@ -799,10 +862,11 @@ class CommutationDAG:
             operation (qml.operation): PennyLane quantum operation to add to the DAG.
         """
         if operation.control_base:
+            target_wires = [w for w in operation.wires if w not in operation.control_wires]
             new_node = CommutationDAGNode(
                 op=operation,
                 wires=operation.wires.tolist(),
-                target_wires=operation.target_wires.tolist(),
+                target_wires=target_wires,
                 control_wires=operation.control_wires.tolist(),
                 successors=[],
                 predecessors=[],

@@ -1108,9 +1108,6 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    control_base = None
-    """str or None: Return the name of the target gate if the operation is controlled."""
-
     basis = None
     """str or None: The target operation for controlled gates.
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
