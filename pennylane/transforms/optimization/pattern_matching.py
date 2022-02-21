@@ -17,12 +17,10 @@ import itertools
 import copy
 import pennylane as qml
 from pennylane import apply
-from pennylane.transforms import qfunc_transform, get_dag_commutation, make_tape
+from pennylane.transforms import qfunc_transform, commutation_dag
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import (
-    self_inverses,
     symmetric_over_all_wires,
-    symmetric_over_control_wires,
 )
 
 
@@ -72,8 +70,8 @@ def pattern_matching(tape, pattern_tapes):
         # Verify that the pattern has less qubits and less gates
 
         # Construct Dag representation of the circuit and the pattern.
-        circuit_dag = qml.transforms.get_dag_commutation(tape)()
-        pattern_dag = qml.transforms.get_dag_commutation(pattern)()
+        circuit_dag = qml.transforms.commutation_dag(tape)()
+        pattern_dag = qml.transforms.commutation_dag(pattern)()
 
         # Match list
 
